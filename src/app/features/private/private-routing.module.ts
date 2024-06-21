@@ -19,7 +19,24 @@ const routes: Routes = [
     {
       path:"mantenimientos",
       loadChildren: () => import('./pages/mantenimientos/modulo-mantenimiento').then(m => m.ModuloMantenimiento)
+    },
+    {
+      path:"facturacion",
+      loadChildren: () => import('./pages/facturacion/facturacion-modulo').then(m => m.ModuloFacturacion)
+    },
+    {
+      path:"caja",
+      loadChildren: () => import('./pages/caja/caja-modulo').then(m => m.ModuloCaja)
+    },
+    {
+      path:"almacen",
+      loadChildren: () => import('./pages/almacen/almacen-modulo').then(m => m.ModuloAlmacen)
+    },
+    {
+      path:"despacho",
+      loadChildren: () => import('./pages/despacho/despacho-modulo').then(m => m.ModuloDespacho)
     }
+
     ]
   }
 ];
