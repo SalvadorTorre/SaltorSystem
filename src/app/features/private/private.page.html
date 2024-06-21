@@ -1,19 +1,83 @@
-<nav class="navbar navbar-expand-lg bg-primary">
+<nav class="navbar navbar-expand-lg" style="background-color: #0f1f6a">
   <div class="container-fluid">
-    <a class="navbar-brand" href="#">GRUPO HIERRO</a>
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
-      <span class="navbar-toggler-icon"></span>
+    <a class="navbar-brand" href="#">
+      <img src="assets/logo.jpg" alt="" height="60px" />
+    </a>
+    <button
+      class="navbar-toggler"
+      type="button"
+      data-bs-toggle="collapse"
+      data-bs-target="#navbarNavAltMarkup"
+      aria-controls="navbarNavAltMarkup"
+      aria-expanded="false"
+      aria-label="Toggle navigation"
+    >
+      <span class="navbar-toggler-icon" style="color: white"
+        ><i class="bi bi-list"></i
+      ></span>
     </button>
     <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
-      <div class="navbar-nav">
-        <button class="btn btn-link custon-link" [routerLink]="['/private/mantenimientos']" routerLinkActive="active">Mantenimientos</button>
-        <button class="btn btn-link custon-link" [routerLink]="['/private/facturacion']" routerLinkActive="active">Facturacion</button>
-        <a class="nav-link" href="#">Caja</a>
-        <a class="nav-link" href="#">Almacen</a>
-        <a class="nav-link" href="#">Despacho</a>
-        <a class="nav-link" href="#">Contabilidad</a>
-        <a class="nav-link" href="#">Almacen</a>
-
+      <div class="navbar-nav me-auto mb-2 mb-lg-0">
+        <button
+          class="btn btn-link custon-link"
+          [routerLink]="['/private/home']"
+          routerLinkActive="active"
+        >
+          <i class="bi bi-house-fill" style="font-size: 28px"></i>
+        </button>
+        <button
+          class="btn btn-link custon-link"
+          [routerLink]="['/private/mantenimientos']"
+          routerLinkActive="active"
+        >
+          Mantenimientos
+        </button>
+        <button
+          class="btn btn-link custon-link"
+          [routerLink]="['/private/facturacion']"
+          routerLinkActive="active"
+        >
+          Facturacion
+        </button>
+        <button
+          class="btn btn-link custon-link"
+          [routerLink]="['/private/caja']"
+          routerLinkActive="active"
+        >
+          Caja
+        </button>
+        <button
+          class="btn btn-link custon-link"
+          [routerLink]="['/private/almacen']"
+          routerLinkActive="active"
+        >
+          Almacen
+        </button>
+        <button
+          class="btn btn-link custon-link"
+          [routerLink]="['/private/despacho']"
+          routerLinkActive="active"
+        >
+          Despacho
+        </button>
+        <button
+          class="btn btn-link custon-link"
+          [routerLink]="['/private/contabilidad']"
+          routerLinkActive="active"
+        >
+          Contabilidad
+        </button>
+      </div>
+      <div class="d-flex">
+        <div class="custom-avatar">SA</div>
+        <div class="name-charge">
+          <span class="name-person">Salvador Torres</span>
+          <span class="local-trabajo">Centrar Hierro</span>
+        </div>
+        <i
+          class="bi bi-box-arrow-left"
+          style="font-size: 38px; color: #af372c"
+        ></i>
       </div>
     </div>
   </div>

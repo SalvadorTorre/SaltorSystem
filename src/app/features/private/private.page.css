@@ -1,12 +1,56 @@
-.custon-link{
+.custon-link {
   text-decoration: none;
-  color :white;
-  font-size: .875em;
+  color: white;
+  font-size: 14px;
+  margin-left: 5px;
 }
 
-.custon-link.active{
+.custon-link.active {
   text-decoration: none;
-  color :red;
+  color: #AF372C;
   font-size: 18px;
   font-weight: bold;
+  padding: 2px 5px;
+  border-radius: 8px;
+  background-color: #F0F0F0;
+}
+
+.custon-link:hover {
+  text-decoration: none;
+  color: #af372c;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.custom-avatar {
+  height: 60px;
+  width: 60px;
+  background-color: #F0F0F0;
+  border-radius: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 24px;
+  margin-right: 10px;
+  color: #AF372C;
+}
+
+.name-charge {
+  display: flex;
+  flex-flow: column;
+  justify-content: center;
+  align-items: flex-start;
+  margin-right: 20px;
+}
+
+.name-person {
+  color: #F0F0F0;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.local-trabajo {
+  color: #AF372C;
+  font-size: 14px;
+  font-weight: 500;
 }
