@@ -3,11 +3,26 @@ import { RouterModule, Routes } from '@angular/router';
 import { Mantenimiento, } from './mantenimiento';
 
 const routes: Routes = [
-  {path:"",
-    component:Mantenimiento
+  {
+    path:"",
+    redirectTo:"inventario",
+    pathMatch:"full"
+  },
+    {path:"",
+      component:Mantenimiento,
+      children:[
+        {
+          path:"inventario",
+          loadChildren: () => import('./pages/inventario-page/inventario-modulo').then(m => m.ModuloInventario)
+        },
 
-  }
-];
+
+
+
+
+      ]
+    }
+  ];
 
 @NgModule({
   imports: [RouterModule.forChild(routes)],
