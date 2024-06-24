@@ -35,7 +35,16 @@ const routes: Routes = [
     {
       path:"despacho",
       loadChildren: () => import('./pages/despacho/despacho-modulo').then(m => m.ModuloDespacho)
+    },
+    {
+      path:"contabilidad",
+      loadChildren: () => import('./pages/contabilidad/contabilidad-modulo').then(m => m.ModuloContabilidad)
+    },
+    {
+      path:"reporte",
+      loadChildren: () => import('./pages/reporte/reporte-modulo').then(m => m.ModuloReporte)
     }
+
 
     ]
   }
