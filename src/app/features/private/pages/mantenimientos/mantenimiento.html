@@ -4,11 +4,12 @@
       <div class="left-sidebar" style="width:100%;">
         <ul class="nav flex-column" style="background-color :  #d00606; height: 87vh;" >
        <li class="nav-item" >
-         <a class="nav-link active"  aria-current="page" href="#">Inventario</a>
+        <!--<a class="nav-link active" aria-current="page" href="#">Inventario</a>-->
+        <a class="nav-link active" [routerLink]="['/mantenimientos/inventario']" >Inventario</a>
        </li>
        <li class="nav-item">
-         <a class="nav-link "  href="#">Cliente</a>
-       </li>
+        <a class="nav-link "[routerLink]="['/mantenimientos/cliente']"  >Cliente</a>
+    </li>
        <li class="nav-item">
          <a class="nav-link">Suplidor</a>
        </li>
