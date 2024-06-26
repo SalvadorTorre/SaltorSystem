@@ -8,7 +8,7 @@ declare var $: any;
   styleUrls: ['./inventario.css']
 })
 export class Inventario {
-  habilitarBusqueda: boolean = true;
+  habilitarBusqueda: boolean = false;
   tituloModalProducto!: string;
   formularioInventario!:FormGroup;
 

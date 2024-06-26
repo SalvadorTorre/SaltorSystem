@@ -8,7 +8,7 @@ declare var $: any;
   styleUrls: ['./cliente.css']
 })
 export class Cliente {
-  habilitarBusqueda: boolean = true;
+  habilitarBusqueda: boolean = false;
   tituloModalCliente!: string;
   formularioCliente!:FormGroup;
 
@@ -32,12 +32,12 @@ export class Cliente {
 
  nuevoCliente(){
    this.tituloModalCliente = 'Agregar Cliente';
-   $('#modalProducto').modal('show');
+   $('#modalcliente').modal('show');
  }
 
  editarCliente(){
   this.tituloModalCliente = 'Editar Producto';
-  $('#modalCliente').modal('show');
+  $('#modalcliente').modal('show');
 }
 
 onSubmitCliente(){
