@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
+import { ServicioCliente } from 'src/app/core/services/mantenimientos/clientes/cliente.service';
 declare var $: any;
 
 @Component({
@@ -12,7 +13,7 @@ export class Cliente {
   tituloModalCliente!: string;
   formularioCliente!:FormGroup;
 
-  constructor(private fb:FormBuilder) {
+  constructor(private fb:FormBuilder, private servicioCliente:ServicioCliente) {
     this.crearFormularioCliente();
   }
 
@@ -42,7 +43,9 @@ export class Cliente {
 
 onSubmitCliente(){
   if(this.formularioCliente.valid){
-  console.log(this.formularioCliente.value);
+  this.servicioCliente.guardarCliente(this.formularioCliente.value).subscribe(response => {
+    alert("Cliente guardado correctamente");
+  });
   }else{
     alert("Formulario Cliente");
   }
