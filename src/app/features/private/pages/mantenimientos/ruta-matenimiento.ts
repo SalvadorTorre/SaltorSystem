@@ -20,9 +20,12 @@ const routes: Routes = [
         {
           path:"cliente",
           loadChildren: () => import('./pages/cliente-page/cliente-modulo').then(m => m.ModuloCliente)
+        },
+
+        {
+          path:"zona",
+          loadChildren: () => import('./pages/zona-page/zona-modulo').then(m => m.ModuloZona)
         }
-
-
 
       ]
     }

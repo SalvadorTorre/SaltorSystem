@@ -1,6 +1,8 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { ServicioCliente } from 'src/app/core/services/mantenimientos/clientes/cliente.service';
+import { ModeloZona, ModeloZonaData } from 'src/app/core/services/mantenimientos/zonas';
+import { ServicioZona } from 'src/app/core/services/mantenimientos/zonas/zonas.service';
 declare var $: any;
 
 @Component({
@@ -8,20 +10,24 @@ declare var $: any;
   templateUrl: './cliente.html',
   styleUrls: ['./cliente.css']
 })
-export class Cliente {
+export class Cliente implements OnInit {
   habilitarBusqueda: boolean = false;
   tituloModalCliente!: string;
   formularioCliente!:FormGroup;
+  zonasList:ModeloZonaData[] = [];
 
-  constructor(private fb:FormBuilder, private servicioCliente:ServicioCliente) {
+  constructor(private fb:FormBuilder, private servicioCliente:ServicioCliente, private servicioZona:ServicioZona) {
     this.crearFormularioCliente();
+  }
+  ngOnInit(): void {
+    this.getAllZona();
   }
 
   crearFormularioCliente(){
     this.formularioCliente = this.fb.group({
       cl_codClie: ['', Validators.required],
       cl_nomClie: ['', Validators.required],
-      cl_dirClie: [''], 
+      cl_dirClie: [''],
       cl_codSect: [''],
       cl_codZona: [''],
       cl_telClie: [''],
@@ -45,8 +51,16 @@ export class Cliente {
   $('#modalcliente').modal('show');
 }
 
+getAllZona(){
+  this.servicioZona.obtenerTodasZonas().subscribe(response => {
+    console.log(response);
+    this.zonasList = response.data;
+  });
+}
+
 onSubmitCliente(){
   if(this.formularioCliente.valid){
+
   this.servicioCliente.guardarCliente(this.formularioCliente.value).subscribe(response => {
     alert("Cliente guardado correctamente");
   });

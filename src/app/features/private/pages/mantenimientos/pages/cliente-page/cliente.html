@@ -115,13 +115,16 @@
             </div>
             <div class="col">
               <label for="">Zona</label>
-              <input type="text" class="form-control" formControlName="zona">
+              <select name="" id="" class="form-control" formControlName="zona">
+                <option value="" selected disabled>Seleccione una zona</option>
+                <option *ngFor="let zona of zonasList" [value]="zona.zo_codZona">{{zona.zo_descrip}}</option>
+              </select>
            </div>
           </div>
 
           <div class="row">
             <div class="col">
-              <label for="">Telefono</label>  
+              <label for="">Telefono</label>
               <input type="text" class="form-control" formControlName="telefono">
              </div>
             <div class="col">
@@ -133,12 +136,12 @@
               <input type="text" class="form-control" formControlName="status">
            </div>
           </div>
-          
+
           <br>
 
 
 
-                      <!-- boton agregar -->
+
           <br><br>
           <div class="row">
             <div class="col">
