@@ -19,8 +19,9 @@ export class Cliente {
 
   crearFormularioCliente(){
     this.formularioCliente = this.fb.group({
+      cl_codClie: ['', Validators.required],
       cl_nomClie: ['', Validators.required],
-      cl_dirClie: ['', Validators.required],
+      cl_dirClie: [''], 
       cl_codSect: [''],
       cl_codZona: [''],
       cl_telClie: [''],
