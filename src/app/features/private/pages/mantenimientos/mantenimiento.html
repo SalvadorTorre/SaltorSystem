@@ -1,40 +1,63 @@
-<div class="container-fluid" >
+<div class="container-fluid">
   <div class="row">
     <div class="col-2">
-      <div class="left-sidebar" style="width:100%;">
-        <ul class="nav flex-column" style="background-color :  #d00606; height: 87vh;" >
-          <br>
-       <li class="nav-item" >
-        <a class="nav-link"  routerLinkActive="active"  [routerLink]="['inventario']" >Inventario</a>
-       </li>
-       <li class="nav-item">
-        <a class="nav-link "  routerLinkActive="active" [routerLink]="['cliente']"  >Cliente</a>
-       </li>
-       <li class="nav-item">
-         <a class="nav-link"  routerLinkActive="active" [routerLink]="['suplidor']">Suplidor</a>
-       </li>
-       <li class="nav-item">
-        <a class="nav-link"  routerLinkActive="active" [routerLink]="['zona']">Zonas</a>
-      </li>
-        <li class="nav-item">
-         <a class="nav-link" href="#">Usuario</a>
-       </li>
-       <li class="nav-item">
-         <a class="nav-link" href="#">Choferes</a>
-       </li>
-       <li class="nav-item">
-         <a class="nav-link" href="#">Despachadores</a>
-       </li>
+      <div class="left-sidebar" style="width: 100%">
+        <ul
+          class="nav flex-column"
+          style="background-color: #af3d2c; height: 87vh"
+        >
+          <br />
+          <li class="nav-item">
+            <a
+              class="nav-link"
+              routerLinkActive="active"
+              [routerLink]="['inventario']"
+              >Inventario</a
+            >
+          </li>
+          <li class="nav-item">
+            <a
+              class="nav-link"
+              routerLinkActive="active"
+              [routerLink]="['cliente']"
+              >Cliente</a
+            >
+          </li>
+          <li class="nav-item">
+            <a
+              class="nav-link"
+              routerLinkActive="active"
+              [routerLink]="['suplidor']"
+              >Suplidor</a
+            >
+          </li>
+          <li class="nav-item">
+            <a
+              class="nav-link"
+              routerLinkActive="active"
+              [routerLink]="['zona']"
+              >Zonas</a
+            >
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#">Usuario</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#">Choferes</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#">Despachadores</a>
+          </li>
 
-       <li class="nav-item">
-         <a class="nav-link" href="#">Configuracion</a>
-       </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#">Configuracion</a>
+          </li>
 
-       <li class="nav-item">
-         <a class="nav-link" href="#"> </a>
-       </li>
-     </ul>
-  </div>
+          <li class="nav-item">
+            <a class="nav-link" href="#"> </a>
+          </li>
+        </ul>
+      </div>
     </div>
     <div class="col">
       <router-outlet></router-outlet>
