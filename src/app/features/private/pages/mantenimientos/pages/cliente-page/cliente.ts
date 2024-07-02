@@ -20,7 +20,7 @@ export class Cliente implements OnInit {
     this.crearFormularioCliente();
   }
   ngOnInit(): void {
-    this.getAllZona();
+    this.getAllCliente();
   }
 
   crearFormularioCliente(){
@@ -51,14 +51,14 @@ export class Cliente implements OnInit {
   $('#modalcliente').modal('show');
 }
 
-getAllZona(){
+getAllCliente(){
   this.servicioZona.obtenerTodasZonas().subscribe(response => {
     console.log(response);
     this.zonasList = response.data;
   });
 }
 
-onSubmitCliente(){
+guardarCliente(){
   if(this.formularioCliente.valid){
 
   this.servicioCliente.guardarCliente(this.formularioCliente.value).subscribe(response => {

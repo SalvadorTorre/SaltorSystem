@@ -55,7 +55,7 @@ getAllZona(){
 
 gualdarZona(){
   if(this.zonadescripcion!= ''){
-  this.servicioZona.guardarZona({zo_descrip: this.zonadescripcion}).subscribe(response => {
+  this.servicioZona.guardarZona({zo_descrip: this.zonadescripcion.toUpperCase()}).subscribe(response => {
     alert("Zona guardado correctamente");
     this.getAllZona();
     this.zonadescripcion = '';
