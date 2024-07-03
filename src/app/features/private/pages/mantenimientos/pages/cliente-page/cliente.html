@@ -1,10 +1,139 @@
-<div class="card " style="height: 80vh;">
+ <div class="card " style="height: 80vh;">
   <div class="card-header">
     <h4>Modulo Cliente</h4>
   </div>
   <div class="card-body">
 
     <!-- buscador -->
+    <div class="row ">
+      <div class="col-2">
+        <label for="">Buscar Codigo</label>
+        <input type="text" placeholder="Digite codigo" class="form-control" [disabled]="habilitarBusqueda">
+      </div>
+      <div class="col-3">
+        <label for="">Buscar Nombre</label>
+        <input type="text" placeholder="Digite el Nombre..." class="form-control" [disabled]="habilitarBusqueda">
+      </div>
+      <div class=" col-2">
+        <button class="btn btn-primary" (click)="nuevoCliente()">Nuevo Cliente</button>
+        <!-- <button class="btn btn-primary" (click)="obtenerTodosCliente()">Buscar Cliente</button> -->
+      </div>
+    </div>
+    <!-- fin buscador -->
+
+
+    <!-- Grid -->
+    <div class="table-responsive">
+      <table class="table table-bordered table-hover table-striped table-sm">
+        <thead class="table-dark">
+          <tr>
+            <th>Codigo</th>
+            <th>Nombre</th>
+            <th>Telefono</th>
+            <th>Rnc</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let clientes of clienteList">
+            <td>{{clientes.cl_codClie}}</td>
+            <td>{{clientes.cl_nomClie}}</td>
+            <td>{{clientes.cl_telClie}}</td>
+            <td>{{clientes.cl_rnc}}</td>
+            <td>
+              <button class="btn btn-link" (click)="editarCliente()"><i class="bi bi-pencil text-warning"></i></button>
+              &nbsp;
+              <button class="btn btn-link"><i class="bi bi-trash text-danger"></i></button>
+              &nbsp;
+              <button class="btn btn-link"><i class="bi bi-card-list text-success"></i></button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <br>
+
+    <!-- Formulario de cliente -->
+    <div class="modal fade" id="modalcliente" tabindex="-1" aria-labelledby="modalClienteLabel" aria-hidden="true">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h1 class="modal-title fs-5" id="modalClienteLabel">{{tituloModalCliente}}</h1>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+
+
+
+
+
+
+          <div *ngIf="habilitarBusqueda" class="mb-3">
+            <form [formGroup]="formularioCliente" (ngSubmit)="guardarCliente()">
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="cl_codClie">Codigo</label>
+                  <input id="cl_codClie" formControlName="cl_codClie" class="form-control" />
+                </div>
+                <div class="form-group">
+                  <label for="cl_nomClie">Nombre</label>
+                  <input id="cl_nomClie" formControlName="cl_nomClie" class="form-control" />
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="cl_dirClie">Direccion</label>
+                  <input id="cl_dirClie" formControlName="cl_dirClie" class="form-control" />
+                </div>
+                <div class="form-group">
+                  <label for="cl_codSect">Codigo de Sector</label>
+                  <input id="cl_codSect" formControlName="cl_codSect" class="form-control" />
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="cl_codZona">Codigo de Zona</label>
+                  <input id="cl_codZona" formControlName="cl_codZona" class="form-control" />
+                </div>
+                <div class="form-group">
+                  <label for="cl_telClie">Telefono</label>
+                  <input id="cl_telClie" formControlName="cl_telClie" class="form-control" />
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="cl_tipo">Tipo</label>
+                  <input id="cl_tipo" formControlName="cl_tipo" class="form-control" />
+                </div>
+                <div class="form-group">
+                  <label for="cl_status">Status</label>
+                  <input id="cl_status" formControlName="cl_status" class="form-control" />
+                </div>
+              </div>
+              <button type="submit" class="btn btn-success">Guardar</button>
+              <!-- <button type="button" class="btn btn-secondary" (click)="mostrarFormulario = false">Cancelar</button> -->
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+
+
+
+
+
+
+
+<!-- <div class="card " style="height: 80vh;">
+  <div class="card-header">
+    <h4>Modulo Cliente</h4>
+  </div>
+  <div class="card-body">
+
+    <!- buscador ->
 
     <div class="row ">
       <div class="col-2">
@@ -18,34 +147,31 @@
       <div class=" col-2">
 
         <button class="btn btn-primary" (click)="nuevoCliente()" >Nuevo Cliente</button>
+      <button class="btn btn-primary" (click)="obtenerTodosCliente()" >Buscar Cliente</button>
 
       </div>
     </div>
 
-    <!-- fin buscador -->
+    <!- fin buscador ->
 
 <br>
-<!--   Grid -->
+<!-   Grid ->
     <div class="table-responsive">
       <table class="table table-bordered table-hover table-striped table-sm">
         <thead class="table-dark">
           <tr >
-            <th>Codigo</th>
-            <th>Nombre</th>
+            <th>Codigo       </th>
+            <th>Nombre              </th>
             <th>Telefono</th>
-            <th></th>
+            <th>Rnc</th>
+              <th></th>
           </tr>
         </thead>
         <tbody>
           <tr *ngFor="let clientes of clienteList" >
              <td>{{clientes.cl_codClie}}</td>
              <td>{{clientes.cl_nomClie}}</td>
-             <td>{{clientes.cl_codSect}}</td>
-             <td>{{clientes.cl_dirClie}}</td>
-             <td>{{clientes.cl_codZona}}</td>
              <td>{{clientes.cl_telClie}}</td>
-             <td>{{clientes.cl_tipo}}</td>
-             <td>{{clientes.cl_status}}</td>
              <td>{{clientes.cl_rnc}}</td>
              <td>
                 <button class="btn btn-link" (click)="editarCliente()"><i class="bi bi-pencil text-warning" ></i></button>
@@ -59,10 +185,14 @@
       </table>
     </div>
   </div>
-</div>
+</div> -->
+
+
+
+
 <!--Fin del Grid-->
 
-<div class="modal fade" id="modalcliente" tabindex="-1" aria-labelledby="modalClienteLabel" aria-hidden="true">
+ <!-- <div class="modal fade" id="modalcliente" tabindex="-1" aria-labelledby="modalClienteLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <div class="modal-header">
@@ -74,26 +204,26 @@
           <div class="row">
             <div class="col-3">
               <label for="">Codigo</label>
-              <input type="text" class="form-control" formControlName="codigo">
+              <input type="text" class="form-control" formControlName="cl_codClie">
             </div>
             <div class="col">
               <label for="">Nombre</label>
-              <input type="text" class="form-control" formControlName="nombre">
+              <input type="text" class="form-control" formControlName="cl_nomClie">
             </div>
             <div class="col">
               <label for="">Rnc</label>
-              <input type="text" class="form-control" formControlName="rnc">
+              <input type="text" class="form-control" formControlName="cl_rnc">
             </div>
           </div>
 
           <div class="row">
             <div class="col">
               <label for="">Direccion</label>
-              <input type="text" class="form-control" formControlName="direccion">
+              <input type="text" class="form-control" formControlName="cl_dirClie">
             </div>
             <div class="col">
                <label for="">Sector</label>
-               <input type="text" class="form-control" formControlName="sector">
+               <input type="text" class="form-control" formControlName="cl_codsect">
             </div>
             <div class="col">
               <label for="">Cliente</label>
@@ -135,4 +265,4 @@
 
     </div>
   </div>
-</div>
+</div> -->

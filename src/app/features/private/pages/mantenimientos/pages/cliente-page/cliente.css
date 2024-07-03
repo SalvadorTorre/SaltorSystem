@@ -1,0 +1,24 @@
+.form-container {
+  background-color: #fcfeff; /* Color de fondo claro */
+  padding: 20px; /* Espaciado interno */
+  border-radius: 10px; /* Bordes redondeados */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Sombra */
+}
+
+.form-group {
+  margin-bottom: 15px; /* Espaciado entre grupos de campos */
+}
+
+.form-group label {
+  font-weight: bold; /* Negrita para etiquetas */
+}
+
+.form-row {
+  display: flex; /* Display flex para alinear los campos */
+  justify-content: space-between; /* Espaciado entre campos */
+  flex-wrap: wrap; /* Permitir que los campos se envuelvan */
+}
+
+.form-row .form-group {
+  flex: 0 0 48%; /* Campos ocupan el 48% del ancho cada uno */
+}

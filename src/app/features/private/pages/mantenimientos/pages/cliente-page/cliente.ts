@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { ServicioCliente } from 'src/app/core/services/mantenimientos/clientes/cliente.service';
-import { ModeloCliente } from 'src/app/core/services/mantenimientos/clientes';
+import { ModeloClienteData } from 'src/app/core/services/mantenimientos/clientes';
 declare var $: any;
 
 @Component({
@@ -13,9 +13,9 @@ export class Cliente implements OnInit {
   habilitarBusqueda: boolean = false;
   tituloModalCliente!: string;
   formularioCliente!:FormGroup;
-  clienteList:ModeloCliente[] = [];
+  clienteList:ModeloClienteData[] = [];
 
-  constructor(private fb:FormBuilder, private servicioCliente:ServicioCliente) 
+  constructor(private fb:FormBuilder, private servicioCliente:ServicioCliente)
   {
     this.crearFormularioCliente();
   }
@@ -44,6 +44,7 @@ export class Cliente implements OnInit {
  nuevoCliente(){
    this.tituloModalCliente = 'Agregar Cliente';
    $('#modalcliente').modal('show');
+   this.habilitarBusqueda = true;
  }
 
  editarCliente(){
