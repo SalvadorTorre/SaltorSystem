@@ -1,8 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { ServicioCliente } from 'src/app/core/services/mantenimientos/clientes/cliente.service';
-import { ModeloZona, ModeloZonaData } from 'src/app/core/services/mantenimientos/zonas';
-import { ServicioZona } from 'src/app/core/services/mantenimientos/zonas/zonas.service';
+import { ModeloCliente } from 'src/app/core/services/mantenimientos/clientes';
 declare var $: any;
 
 @Component({
@@ -14,13 +13,14 @@ export class Cliente implements OnInit {
   habilitarBusqueda: boolean = false;
   tituloModalCliente!: string;
   formularioCliente!:FormGroup;
-  zonasList:ModeloZonaData[] = [];
+  clienteList:ModeloCliente[] = [];
 
-  constructor(private fb:FormBuilder, private servicioCliente:ServicioCliente, private servicioZona:ServicioZona) {
+  constructor(private fb:FormBuilder, private servicioCliente:ServicioCliente) 
+  {
     this.crearFormularioCliente();
   }
   ngOnInit(): void {
-    this.getAllCliente();
+    this.obtenerTodosCliente();
   }
 
   crearFormularioCliente(){
@@ -33,7 +33,7 @@ export class Cliente implements OnInit {
       cl_telClie: [''],
       cl_tipo: [''],
       cl_status: [true],
-      cl_rnc: ['']
+      cl_rnc: [''],
     });
   }
 
@@ -51,10 +51,10 @@ export class Cliente implements OnInit {
   $('#modalcliente').modal('show');
 }
 
-getAllCliente(){
-  this.servicioZona.obtenerTodasZonas().subscribe(response => {
+obtenerTodosCliente(){
+  this.servicioCliente.obtenerTodosCliente().subscribe(response => {
     console.log(response);
-    this.zonasList = response.data;
+    this.clienteList = response.data;
   });
 }
 

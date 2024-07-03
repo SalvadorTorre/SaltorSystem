@@ -37,41 +37,23 @@
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <td>0022544885454</td>
-            <td>Lorem ipsum dolor sit amet consectetur, adipisicing elit.</td>
-           <td>809-568-2020</td>
-            <td>
-              <button class="btn btn-link" (click)="editarCliente()"><i class="bi bi-pencil text-warning" ></i></button>
-              &nbsp;
-              <button class="btn btn-link"><i class="bi bi-trash text-danger"></i></button>
-              &nbsp;
-              <button class="btn btn-link"><i class="bi bi-card-list text-success"></i></button>
-            </td>
-          </tr>
-          <tr>
-            <td>0022544885454</td>
-            <td>Lorem ipsum dolor sit amet consectetur, adipisicing elit.</td>
-           <td>809-210-2548</td>
-            <td>
-              <button class="btn btn-link" (click)="editarCliente()"><i class="bi bi-pencil text-warning"></i></button>
-              &nbsp;
-              <button class="btn btn-link"><i class="bi bi-trash text-danger"></i></button>
-              &nbsp;
-              <button class="btn btn-link"><i class="bi bi-card-list text-success"></i></button>
-            </td>
-          </tr>
-          <tr>
-            <td>0022544885454</td>
-            <td>Lorem ipsum dolor sit amet consectetur, adipisicing elit.</td>
-           <td>809-325-5458</td>
-            <td>
-              <button class="btn btn-link"><i class="bi bi-pencil text-warning"></i></button>
-              &nbsp;
-              <button class="btn btn-link"><i class="bi bi-trash text-danger"></i></button>
-              &nbsp;
-              <button class="btn btn-link"><i class="bi bi-card-list text-success"></i></button>
-            </td>
+          <tr *ngFor="let clientes of clienteList" >
+             <td>{{clientes.cl_codClie}}</td>
+             <td>{{clientes.cl_nomClie}}</td>
+             <td>{{clientes.cl_codSect}}</td>
+             <td>{{clientes.cl_dirClie}}</td>
+             <td>{{clientes.cl_codZona}}</td>
+             <td>{{clientes.cl_telClie}}</td>
+             <td>{{clientes.cl_tipo}}</td>
+             <td>{{clientes.cl_status}}</td>
+             <td>{{clientes.cl_rnc}}</td>
+             <td>
+                <button class="btn btn-link" (click)="editarCliente()"><i class="bi bi-pencil text-warning" ></i></button>
+                &nbsp;
+                <button class="btn btn-link"><i class="bi bi-trash text-danger"></i></button>
+                &nbsp;
+                <button class="btn btn-link"><i class="bi bi-card-list text-success"></i></button>
+             </td>
           </tr>
         </tbody>
       </table>
@@ -114,10 +96,10 @@
                <input type="text" class="form-control" formControlName="sector">
             </div>
             <div class="col">
-              <label for="">Zona</label>
-              <select name="" id="" class="form-control" formControlName="zona">
-                <option value="" selected disabled>Seleccione una zona</option>
-                <option *ngFor="let zona of zonasList" [value]="zona.zo_codZona">{{zona.zo_descrip}}</option>
+              <label for="">Cliente</label>
+              <select name="" id="" class="form-control" formControlName="clientes">
+                <option value="" selected disabled>Seleccione una Cliente</option>
+                <option *ngFor="let clientes of clienteList" [value]="clientes.cl_codClie">{{clientes.cl_nomClie}}</option>
               </select>
            </div>
           </div>

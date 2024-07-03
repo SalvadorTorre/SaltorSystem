@@ -16,9 +16,6 @@ export class ServicioZona {
   editarzona(zo_codZona:number,zona:ModeloZona): Observable<any>{
     return this.http.PutRequest<any,any>(`/zonas/${zo_codZona}`,zona);
   }
-
-
-
   obtenerTodasZonas(): Observable<ModeloZona>{
     return this.http.GetRequest<ModeloZona>("/zonas");
   }

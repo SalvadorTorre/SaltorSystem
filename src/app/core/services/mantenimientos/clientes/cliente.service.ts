@@ -9,6 +9,9 @@ import { HttpInvokeService } from "../../http-invoke.service";
 export class ServicioCliente {
   constructor(private http:HttpInvokeService) {}
 
+  obtenerTodosCliente(): Observable<ModeloCliente>{
+    return this.http.GetRequest<ModeloCliente>("/clientes");
+  }
   guardarCliente(cliente:ModeloCliente): Observable<any>{
     return this.http.PostRequest<any,any>("/clientes",cliente);
   }
