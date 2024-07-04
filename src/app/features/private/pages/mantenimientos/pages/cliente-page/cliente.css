@@ -20,5 +20,5 @@
 }
 
 .form-row .form-group {
-  flex: 0 0 48%; /* Campos ocupan el 48% del ancho cada uno */
+  flex: 0 0 48%;  /*Campos ocupan el 48% del ancho cada uno */
 }
