@@ -41,7 +41,7 @@
             <td>{{clientes.cl_telClie}}</td>
             <td>{{clientes.cl_rnc}}</td>
             <td>
-              <button class="btn btn-link" (click)="editarCliente()"><i class="bi bi-pencil text-warning"></i></button>
+              <button class="btn btn-link" (click)="editarCliente(clientes)"><i class="bi bi-pencil text-warning"></i></button>
               &nbsp;
               <button class="btn btn-link"><i class="bi bi-trash text-danger"></i></button>
               &nbsp;
@@ -67,8 +67,8 @@
             <form [formGroup]="formularioCliente" (ngSubmit)="guardarCliente()">
               <div class="form-row">
                 <div class="form-group">
-                  <label for="cl_codClie">Codigo</label>
-                  <input id="cl_codClie" formControlName="cl_codClie" class="form-control" />
+                  <label for="cl_codClie"> Rnc</label>
+                  <input  type="number" formControlName="cl_rnc" class="form-control" />
                 </div>
                 <div class="form-group">
                   <label for="cl_nomClie">Nombre</label>
@@ -88,7 +88,10 @@
               <div class="form-row">
                 <div class="form-group">
                   <label for="cl_codZona">Codigo de Zona</label>
-                  <input id="cl_codZona" formControlName="cl_codZona" class="form-control" />
+                  <select formControlName="cl_codZona" class="form-control">
+                    <option disabled selected >Selecione una Zona</option>
+                    <option *ngFor="let zona of zonasList" [value]="zona.zo_codZona">{{zona.zo_descrip}}</option>
+                  </select>
                 </div>
                 <div class="form-group">
                   <label for="cl_telClie">Telefono</label>
@@ -105,7 +108,7 @@
                   <input id="cl_status" formControlName="cl_status" class="form-control" />
                 </div>
               </div>
-              <button type="submit" class="btn btn-success">Guardar</button>
+              <button type="submit" class="btn btn-success">{{modoedicioncliente ? "Editar" : "Guardar"}}</button>
               <!-- <button type="button" class="btn btn-secondary" (click)="mostrarFormulario = false">Cancelar</button> -->
             </form>
           </div>

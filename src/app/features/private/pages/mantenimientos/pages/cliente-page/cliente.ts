@@ -2,6 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { ServicioCliente } from 'src/app/core/services/mantenimientos/clientes/cliente.service';
 import { ModeloClienteData } from 'src/app/core/services/mantenimientos/clientes';
+import { ModeloZonaData } from 'src/app/core/services/mantenimientos/zonas';
+import { ServicioZona } from 'src/app/core/services/mantenimientos/zonas/zonas.service';
 declare var $: any;
 
 @Component({
@@ -14,18 +16,20 @@ export class Cliente implements OnInit {
   tituloModalCliente!: string;
   formularioCliente!:FormGroup;
   clienteList:ModeloClienteData[] = [];
-
-  constructor(private fb:FormBuilder, private servicioCliente:ServicioCliente)
+  zonasList:ModeloZonaData[] = [];
+  modoedicioncliente:boolean = false;
+  clienteid!:number
+  constructor(private fb:FormBuilder, private servicioCliente:ServicioCliente, private servicioZona:ServicioZona)
   {
     this.crearFormularioCliente();
   }
   ngOnInit(): void {
+    this.buscartadaZona();
     this.obtenerTodosCliente();
   }
 
   crearFormularioCliente(){
     this.formularioCliente = this.fb.group({
-      cl_codClie: ['', Validators.required],
       cl_nomClie: ['', Validators.required],
       cl_dirClie: [''],
       cl_codSect: [''],
@@ -34,7 +38,7 @@ export class Cliente implements OnInit {
       cl_tipo: [''],
       cl_status: [true],
       cl_rnc: [''],
-    });
+      });
   }
 
   habilitarBuscador(){
@@ -42,14 +46,19 @@ export class Cliente implements OnInit {
   }
 
  nuevoCliente(){
+  this.modoedicioncliente = false;
    this.tituloModalCliente = 'Agregar Cliente';
    $('#modalcliente').modal('show');
    this.habilitarBusqueda = true;
  }
 
- editarCliente(){
-  this.tituloModalCliente = 'Editar Producto';
+ editarCliente(cliente:ModeloClienteData){
+  this.clienteid = cliente.cl_codClie;
+  this.modoedicioncliente = true;
+  this.formularioCliente.patchValue(cliente);
+  this.tituloModalCliente = 'Editar Cliente';
   $('#modalcliente').modal('show');
+  this.habilitarBusqueda = true;
 }
 
 obtenerTodosCliente(){
@@ -60,13 +69,35 @@ obtenerTodosCliente(){
 }
 
 guardarCliente(){
+  console.log(this.formularioCliente.value);
   if(this.formularioCliente.valid){
-
-  this.servicioCliente.guardarCliente(this.formularioCliente.value).subscribe(response => {
-    alert("Cliente guardado correctamente");
-  });
-  }else{
+     if(this.modoedicioncliente){
+       this.servicioCliente.editarCliente(this.clienteid, this.formularioCliente.value).subscribe(response => {
+        alert("Cliente editado correctamente");
+        this.obtenerTodosCliente();
+        this.formularioCliente.reset();
+        this.crearFormularioCliente();
+        $('#modalcliente').modal('hide');
+      });
+    }else{
+      this.servicioCliente.guardarCliente(this.formularioCliente.value).subscribe(response => {
+        alert("Cliente guardado correctamente");
+        this.obtenerTodosCliente();
+        this.formularioCliente.reset();
+        this.crearFormularioCliente();
+        $('#modalcliente').modal('hide');
+      });
+    }
+      }else{
     alert("Formulario Cliente");
+
   }
+
+}
+buscartadaZona(){
+  this.servicioZona.obtenerTodasZonas().subscribe(response => {
+    console.log(response);
+    this.zonasList = response.data;
+  });
 }
 }
