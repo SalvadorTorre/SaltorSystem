@@ -25,6 +25,10 @@ const routes: Routes = [
         {
           path:"zona",
           loadChildren: () => import('./pages/zona-page/zona-modulo').then(m => m.ModuloZona)
+        },
+        {
+          path:"suplidor",
+          loadChildren: () => import('./pages/suplidor-page/suplidor-modulo').then(m => m.ModuloSuplidor)
         }
 
       ]

@@ -72,7 +72,7 @@ guardarCliente(){
   console.log(this.formularioCliente.value);
   if(this.formularioCliente.valid){
      if(this.modoedicioncliente){
-       this.servicioCliente.editarCliente(this.clienteid, this.formularioCliente.value).subscribe(response => {
+      this.servicioCliente.editarCliente(this.clienteid, this.formularioCliente.value).subscribe(response => {
         alert("Cliente editado correctamente");
         this.obtenerTodosCliente();
         this.formularioCliente.reset();
