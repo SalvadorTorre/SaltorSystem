@@ -1,5 +1,5 @@
 import { Injectable } from "@angular/core";
-import { ModeloSuplidor } from ".";
+import { ModeloSuplidor, ModeloSuplidorData } from ".";
 import { Observable } from "rxjs";
 import { HttpInvokeService } from "../../http-invoke.service";
 
@@ -12,7 +12,7 @@ export class ServicioSuplidor {
   buscarTodosSuplidor(): Observable<ModeloSuplidor>{
     return this.http.GetRequest<ModeloSuplidor>("/suplidor");
   }
-  guardarSuplidor(suplidor:ModeloSuplidor): Observable<any>{
+  guardarSuplidor(suplidor:ModeloSuplidorData): Observable<any>{
     return this.http.PostRequest<any,any>("/suplidor",suplidor);
   }
 

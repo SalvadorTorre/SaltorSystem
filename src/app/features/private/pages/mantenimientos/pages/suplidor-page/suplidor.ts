@@ -16,6 +16,7 @@ export class Suplidor implements OnInit {
   clienteList:ModeloSuplidorData[] = [];
   modoedicionSuplidor:boolean = false;
   suplidorid!:number
+  modoconsultaSuplidor:boolean = false;
   suplidorList:ModeloSuplidorData[] = [];
   constructor(private fb:FormBuilder, private servicioSuplidor:ServicioSuplidor)
   {
@@ -27,8 +28,8 @@ export class Suplidor implements OnInit {
 
   crearFormularioSuplidor(){
     this.formularioSuplidor = this.fb.group({
-      su_nomSupl: ['', Validators.required],
       su_rncsupl: [''],
+      su_nomSupl: ['', Validators.required],
       su_dirSupl: [''],
       su_telSupl: [''],
       su_contact: [''],
@@ -42,16 +43,25 @@ habilitarFormularioSuplidor(){
  nuevoSuplidor(){
   this.modoedicionSuplidor = false;
    this.tituloModalSuplidor = 'Agregar Suplidor';
-   $('#modalcliente').modal('show');
+   $('#modalsuplidor').modal('show');
    this.habilitarFormiarioSuplidor = true;
  }
 
+ cerrarModalSuplidor(){
+  this.habilitarFormiarioSuplidor = false;
+  this.formularioSuplidor.reset();
+  this.modoedicionSuplidor = false;
+  this.modoconsultaSuplidor = false;
+  $('#modalsuplidor').modal('hide');
+  this.crearFormularioSuplidor();
+
+ }
  editarSuplidor(suplidor:ModeloSuplidorData){
   this.suplidorid = suplidor.su_codSupl;
   this.modoedicionSuplidor = true;
   this.formularioSuplidor.patchValue(suplidor);
   this.tituloModalSuplidor = 'Editar Suplidor';
-  $('#modalcliente').modal('show');
+  $('#modalsuplidor').modal('show');
   this.habilitarFormiarioSuplidor = true;
 }
 
@@ -61,19 +71,32 @@ buscarTodosSuplidor(){
     this.suplidorList = response.data;
   });
 }
+consultarSuplidor(Suplidor:ModeloSuplidorData){
+  this.tituloModalSuplidor = 'Consultar Suplidor';
+ this.formularioSuplidor.patchValue(Suplidor);
+$('#modalsuplidor').modal('show');
+this.habilitarFormiarioSuplidor = true;
+this.modoconsultaSuplidor = true;
+};
+
+
+
 
 guardarSuplidor(){
   console.log(this.formularioSuplidor.value);
   if(this.formularioSuplidor.valid){
      if(this.modoedicionSuplidor){
+      console.log("asdasdasnda adahdadahdjahd");
       this.servicioSuplidor.editarSuplidor(this.suplidorid, this.formularioSuplidor.value).subscribe(response => {
         alert("Suplidor editado correctamente");
         this.buscarTodosSuplidor();
         this.formularioSuplidor.reset();
         this.crearFormularioSuplidor();
-        $('#modalcliente').modal('hide');
+        $('#modalsuplidor').modal('hide');
       });
     }else{
+      console.log("asdasdasnda adahdadahdjahd 23");
+
       this.servicioSuplidor.guardarSuplidor(this.formularioSuplidor.value).subscribe(response => {
         alert("Cliente guardado correctamente");
         this.buscarTodosSuplidor();
