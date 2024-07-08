@@ -3,25 +3,25 @@
       <h4>Modulo Suplidor</h4>
     </div>
     <div class="card-body">
-  
+
       <!-- buscador -->
       <div class="row ">
         <div class="col-2">
           <label for="">Buscar Codigo</label>
-          <input type="text" placeholder="Digite codigo" class="form-control" [disabled]="habilitarBusqueda">
+          <input type="text" placeholder="Digite codigo" class="form-control" [disabled]="habilitarFormiarioSuplidor">
         </div>
         <div class="col-3">
           <label for="">Buscar Nombre</label>
-          <input type="text" placeholder="Digite el Nombre..." class="form-control" [disabled]="habilitarBusqueda">
+          <input type="text" placeholder="Digite el Nombre..." class="form-control" [disabled]="habilitarFormiarioSuplidor">
         </div>
         <div class=" col-2">
-          <button class="btn btn-primary" (click)="nuevoCliente()">Nuevo Cliente</button>
+          <button class="btn btn-primary" (click)="nuevoSuplidor()">Nuevo Cliente</button>
           <!-- <button class="btn btn-primary" (click)="obtenerTodosCliente()">Buscar Cliente</button> -->
         </div>
       </div>
       <!-- fin buscador -->
-  
-  
+
+
       <!-- Grid -->
       <div class="table-responsive">
         <table class="table table-bordered table-hover table-striped table-sm">
@@ -38,8 +38,8 @@
             <tr *ngFor="let suplidor of suplidorList">
               <td>{{suplidor.su_codSupl}}</td>
               <td>{{suplidor.su_nomSupl}}</td>
-              <td>{{suplidor.su_telsupl}}</td>
-              <td>{{suplidor.su_rncsupl}}</td>
+              <td>{{suplidor.su_telSupl}}</td>
+              <td>{{suplidor.su_rncSupl}}</td>
               <td>
                 <button class="btn btn-link" (click)="editarSuplidor(suplidor)"><i class="bi bi-pencil text-warning"></i></button>
                 &nbsp;
@@ -51,9 +51,9 @@
           </tbody>
         </table>
       </div>
-  
+
       <br>
-  
+
       <!-- Formulario de cliente -->
       <div class="modal fade" id="modalsuplidor" tabindex="-1" aria-labelledby="modalSuplidorLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg">
@@ -63,18 +63,18 @@
               <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-            <div *ngIf="habilitarBusqueda" class="mb-3">
+            <div *ngIf="habilitarFormiarioSuplidor" class="mb-3">
               <form [formGroup]="formularioSuplidor" (ngSubmit)="guardarSuplidor()">
                 <div class="form-row">
                   <div class="form-group">
                     <label for="su_rncsupl"> Rnc</label>
                     <input  type="number" formControlName="su_rncsupl" class="form-control" />
-                    
+
                   </div>
                   <div class="form-group">
                     <label for="su_nomSupl"></label>
                     <input  formControlName="su_nomSupl" class="form-control" />
-                    
+
                   </div>
                 </div>
                 <div class="form-row">
@@ -97,10 +97,9 @@
                     <input formControlName="su_status" class="form-control" />
                   </div>
                 </div>
-                <button type="submit" class="btn btn-success">{{modoedicioncliente ? "Editar" : "Guardar"}}</button>
+                <button type="submit" class="btn btn-success">{{modoedicionSuplidor ? "Editar" : "Guardar"}}</button>
               </form>
             </div>
           </div>
         </div>
       </div>
-  

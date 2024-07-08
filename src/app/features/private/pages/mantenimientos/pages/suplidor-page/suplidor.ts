@@ -1,12 +1,12 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { ModeloSuplidorData } from 'src/app/core/services/mantenimientos/suplidor';
-import { servicioSuplidor } from 'src/app/core/services/mantenimientos/suplidor/suplidor.service';
+import { ServicioSuplidor } from 'src/app/core/services/mantenimientos/suplidor/suplidor.service';
 declare var $: any;
 
 @Component({
   selector: 'Suplidor',
-  templateUrl: './suplidr.html',
+  templateUrl: './suplidor.html',
   styleUrls: ['./suplidor.css']
 })
 export class Suplidor implements OnInit {
@@ -16,7 +16,8 @@ export class Suplidor implements OnInit {
   clienteList:ModeloSuplidorData[] = [];
   modoedicionSuplidor:boolean = false;
   suplidorid!:number
-  constructor(private fb:FormBuilder, private servicioSuplidor:servicioSuplidor)
+  suplidorList:ModeloSuplidorData[] = [];
+  constructor(private fb:FormBuilder, private servicioSuplidor:ServicioSuplidor)
   {
     this.crearFormularioSuplidor();
   }
@@ -65,7 +66,7 @@ guardarSuplidor(){
   console.log(this.formularioSuplidor.value);
   if(this.formularioSuplidor.valid){
      if(this.modoedicionSuplidor){
-      this.servicioSuplidor.editarSuplidor(this.suplidor, this.formularioSuplidor.value).subscribe(response => {
+      this.servicioSuplidor.editarSuplidor(this.suplidorid, this.formularioSuplidor.value).subscribe(response => {
         alert("Suplidor editado correctamente");
         this.buscarTodosSuplidor();
         this.formularioSuplidor.reset();
@@ -73,7 +74,7 @@ guardarSuplidor(){
         $('#modalcliente').modal('hide');
       });
     }else{
-      this.servicioSuplidor.guardarCliente(this.formularioSuplidor.value).subscribe(response => {
+      this.servicioSuplidor.guardarSuplidor(this.formularioSuplidor.value).subscribe(response => {
         alert("Cliente guardado correctamente");
         this.buscarTodosSuplidor();
         this.formularioSuplidor.reset();

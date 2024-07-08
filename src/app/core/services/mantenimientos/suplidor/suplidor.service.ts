@@ -9,7 +9,7 @@ import { HttpInvokeService } from "../../http-invoke.service";
 export class ServicioSuplidor {
   constructor(private http:HttpInvokeService) {}
 
-  buscaTodosSuplidor(): Observable<ModeloSuplidor>{
+  buscarTodosSuplidor(): Observable<ModeloSuplidor>{
     return this.http.GetRequest<ModeloSuplidor>("/suplidor");
   }
   guardarSuplidor(suplidor:ModeloSuplidor): Observable<any>{
