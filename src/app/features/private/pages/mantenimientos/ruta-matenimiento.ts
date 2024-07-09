@@ -23,14 +23,19 @@ const routes: Routes = [
         },
 
         {
+          path:"suplidor",
+          loadChildren: () => import('./pages/suplidor-page/suplidor-modulo').then(m => m.ModuloSuplidor)
+        },
+
+        {
           path:"zona",
           loadChildren: () => import('./pages/zona-page/zona-modulo').then(m => m.ModuloZona)
         },
-        {
-          path:"suplidor",
-          loadChildren: () => import('./pages/suplidor-page/suplidor-modulo').then(m => m.ModuloSuplidor)
-        }
 
+      /*  {
+          path:"sector",
+          loadChildren: () => import('./pages/sector-page/sector-modulo').then(m => m.ModuloSector)
+        },*/
       ]
     }
   ];

@@ -1,0 +1,55 @@
+<div class="card " style="height: 80vh;">
+  <div class="card-header">
+    <h1>Sector</h1>
+  </div>
+  <div class="card-body">
+
+    <!-- buscador -->
+
+    <div class="row ">
+      <div class="col-2">
+        <label >Codigo Sector</label>
+         <input type="text" disabled class="form-control"  [(ngModel)]="sectorcodigo">
+       </div>
+     <div class="col-2">
+       <label >Descripcion Sector</label>
+        <input type="text" class="form-control"  [(ngModel)]="sectordescripcion">
+      </div>
+      <div class="col-2">
+        <button class="btn btn-primary" (click)="gualdarSector()" >Nuevo Sector</button>
+      </div>
+    </div>
+
+    <!-- fin buscador -->
+
+<br>
+<!--   Grid -->
+    <div class="table-responsive">
+      <table class="table table-bordered table-hover table-striped table-sm">
+        <thead class="table-dark">
+          <tr>
+
+            <th>Codigo</th>
+            <th>Descripcion</th>
+            <th>Zona</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let sector of sectorList ">
+            <td>{{sector.se_codSect}}</td>
+            <td>{{sector.se_desSect}}</td>
+            <td>´{{sector.se_codZona}}</td>
+            <td>
+              <button class="btn btn-link" (click)="editarsector(Sector)"><i class="bi bi-pencil text-warning" ></i></button>
+              &nbsp;
+              <button class="btn btn-link"><i class="bi bi-trash text-danger"></i></button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<!--Fin del Grid-->
+

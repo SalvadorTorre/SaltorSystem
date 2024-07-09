@@ -1,6 +1,6 @@
 <div class="card " style="height: 80vh;">
     <div class="card-header">
-      <h4>Modulo Suplidor</h4>
+      <h1>Suplidor</h1>
     </div>
     <div class="card-body">
 
@@ -43,7 +43,7 @@
               <td>
                 <button class="btn btn-link" (click)="editarSuplidor(suplidor)"><i class="bi bi-pencil text-primary"></i></button>
                 &nbsp;
-                <button class="btn btn-link" ><i class="bi bi-trash text-danger"></i></button>
+                <button class="btn btn-link" (click)="eliminarSuplidor(suplidor)" ><i class="bi bi-trash text-danger"></i></button>
                 &nbsp;
                 <button class="btn btn-link" (click)="consultarSuplidor(suplidor)"><i class="bi bi-card-list text-success"></i></button>
               </td>
@@ -69,12 +69,10 @@
                   <div class="form-group">
                     <label for="su_rncSupl"> Rnc</label>
                     <input  type="number" formControlName="su_rncSupl" class="form-control" />
-
                   </div>
                   <div class="form-group">
                     <label for="su_nomSupl">Nombre</label>
                     <input  formControlName="su_nomSupl" class="form-control" />
-
                   </div>
                 </div>
                 <div class="form-row">

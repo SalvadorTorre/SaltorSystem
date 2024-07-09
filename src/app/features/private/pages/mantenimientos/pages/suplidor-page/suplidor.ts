@@ -42,7 +42,7 @@ habilitarFormularioSuplidor(){
 
  nuevoSuplidor(){
   this.modoedicionSuplidor = false;
-   this.tituloModalSuplidor = 'Agregar Suplidor';
+   this.tituloModalSuplidor = 'Agregando Suplidor';
    $('#modalsuplidor').modal('show');
    this.habilitarFormiarioSuplidor = true;
  }
@@ -60,7 +60,7 @@ habilitarFormularioSuplidor(){
   this.suplidorid = suplidor.su_codSupl;
   this.modoedicionSuplidor = true;
   this.formularioSuplidor.patchValue(suplidor);
-  this.tituloModalSuplidor = 'Editar Suplidor';
+  this.tituloModalSuplidor = 'Editando Suplidor';
   $('#modalsuplidor').modal('show');
   this.habilitarFormiarioSuplidor = true;
 }
@@ -72,41 +72,43 @@ buscarTodosSuplidor(){
   });
 }
 consultarSuplidor(Suplidor:ModeloSuplidorData){
-  this.tituloModalSuplidor = 'Consultar Suplidor';
+  this.tituloModalSuplidor = 'Consulta Suplidor';
  this.formularioSuplidor.patchValue(Suplidor);
 $('#modalsuplidor').modal('show');
 this.habilitarFormiarioSuplidor = true;
 this.modoconsultaSuplidor = true;
 };
 
-
+eliminarSuplidor(suplidor:ModeloSuplidorData){
+  this.servicioSuplidor.eliminarSuplidor(suplidor.su_codSupl).subscribe(response => {
+    alert("Suplidor Eliminado");
+    this.buscarTodosSuplidor();
+  });
+}
 
 
 guardarSuplidor(){
   console.log(this.formularioSuplidor.value);
   if(this.formularioSuplidor.valid){
-     if(this.modoedicionSuplidor){
+    if(this.modoedicionSuplidor){
       this.servicioSuplidor.editarSuplidor(this.suplidorid, this.formularioSuplidor.value).subscribe(response => {
-        alert("Suplidor editado correctamente");
-        this.buscarTodosSuplidor();
-        this.formularioSuplidor.reset();
-        this.crearFormularioSuplidor();
-        $('#modalsuplidor').modal('hide');
+      alert("Suplidor Editado");
+      this.buscarTodosSuplidor();
+      this.formularioSuplidor.reset();
+      this.crearFormularioSuplidor();
+      $('#modalsuplidor').modal('hide');
       });
     }else{
-
       this.servicioSuplidor.guardarSuplidor(this.formularioSuplidor.value).subscribe(response => {
-        alert("Cliente guardado correctamente");
-        this.buscarTodosSuplidor();
-        this.formularioSuplidor.reset();
-        this.crearFormularioSuplidor();
-        $('#modalcliente').modal('hide');
+      alert("Suplidor Guardado");
+      this.buscarTodosSuplidor();
+      this.formularioSuplidor.reset();
+      this.crearFormularioSuplidor();
+      $('#modalcliente').modal('hide');
       });
     }
-      }else{
-    alert("Formulario Cliente");
-
-  }
-
+    }else{
+       alert("Este Suplidor no fue Guardado");
+    }
 }
 }
