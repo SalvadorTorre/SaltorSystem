@@ -1,6 +1,6 @@
  <div class="card " style="height: 80vh;">
   <div class="card-header">
-    <h4>Modulo Cliente</h4>
+    <h1>Cliente</h1>
   </div>
   <div class="card-body">
 
@@ -24,6 +24,16 @@
 
     <!-- Grid -->
     <div class="table-responsive">
+<!--  ***********************************-->
+<style>
+  table tr:hover {
+    background-color: #963737; /* Cambia este color al que desees */
+  }
+</style>
+<!--**********************************-->
+
+
+
       <table class="table table-bordered table-hover table-striped table-sm">
         <thead class="table-dark">
           <tr>
@@ -45,7 +55,7 @@
               &nbsp;
               <button class="btn btn-link"><i class="bi bi-trash text-danger"></i></button>
               &nbsp;
-              <button class="btn btn-link"><i class="bi bi-card-list text-success"></i></button>
+              <button class="btn btn-link" (click)="consultarCliente(clientes)"><i class="bi bi-card-list text-success"></i></button>
             </td>
           </tr>
         </tbody>

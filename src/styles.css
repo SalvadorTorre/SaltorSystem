@@ -9,7 +9,9 @@ body,html{
   margin-top: 10px;
 }
 
-
+table tr:hover {
+  background-color: #936e6e; /* Cambia este color al que desees */
+}
 
 
 

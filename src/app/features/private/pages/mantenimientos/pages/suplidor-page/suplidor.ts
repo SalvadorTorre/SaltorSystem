@@ -86,7 +86,6 @@ guardarSuplidor(){
   console.log(this.formularioSuplidor.value);
   if(this.formularioSuplidor.valid){
      if(this.modoedicionSuplidor){
-      console.log("asdasdasnda adahdadahdjahd");
       this.servicioSuplidor.editarSuplidor(this.suplidorid, this.formularioSuplidor.value).subscribe(response => {
         alert("Suplidor editado correctamente");
         this.buscarTodosSuplidor();
@@ -95,7 +94,6 @@ guardarSuplidor(){
         $('#modalsuplidor').modal('hide');
       });
     }else{
-      console.log("asdasdasnda adahdadahdjahd 23");
 
       this.servicioSuplidor.guardarSuplidor(this.formularioSuplidor.value).subscribe(response => {
         alert("Cliente guardado correctamente");

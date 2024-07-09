@@ -18,6 +18,8 @@ export class Cliente implements OnInit {
   clienteList:ModeloClienteData[] = [];
   zonasList:ModeloZonaData[] = [];
   modoedicioncliente:boolean = false;
+  habilitarFormularioCliente:boolean= false
+  modoconsultaCliente:boolean= false
   clienteid!:number
   constructor(private fb:FormBuilder, private servicioCliente:ServicioCliente, private servicioZona:ServicioZona)
   {
@@ -67,6 +69,25 @@ obtenerTodosCliente(){
     this.clienteList = response.data;
   });
 }
+
+consultarCliente(Cliente:ModeloClienteData){
+  this.tituloModalCliente = 'Consultar Cliente';
+ this.formularioCliente.patchValue(Cliente);
+$('#modalcliente').modal('show');
+this.habilitarFormularioCliente = true;
+this.modoconsultaCliente = true;
+this.habilitarBusqueda = true;
+
+};
+
+cerrarModalCliente(){
+  this.habilitarFormularioCliente = false;
+  this.formularioCliente.reset();
+  this.modoedicioncliente = false;
+  this.modoconsultaCliente = false;
+  $('#modalclienter').modal('hide');
+  this.crearFormularioCliente();
+};
 
 guardarCliente(){
   console.log(this.formularioCliente.value);
