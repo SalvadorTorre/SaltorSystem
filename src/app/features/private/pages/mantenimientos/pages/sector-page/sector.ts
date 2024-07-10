@@ -7,7 +7,7 @@ declare var $: any;
 @Component({
   selector: 'Sector',
   templateUrl: './sector.html',
-  styleUrls: ['./sector.css']
+  styleUrls:  ['./sector.css']
 })
 export class Sector implements OnInit {
   habilitarBusqueda: boolean = false;
