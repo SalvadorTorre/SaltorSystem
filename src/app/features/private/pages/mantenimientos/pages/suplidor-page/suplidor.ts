@@ -18,9 +18,14 @@ export class Suplidor implements OnInit {
   suplidorid!:number
   modoconsultaSuplidor:boolean = false;
   suplidorList:ModeloSuplidorData[] = [];
+  selectedSuplidor: any = null;
   constructor(private fb:FormBuilder, private servicioSuplidor:ServicioSuplidor)
   {
     this.crearFormularioSuplidor();
+  }
+
+  seleccionarSuplidor(suplidor: any) {
+    this.selectedSuplidor = suplidor;
   }
   ngOnInit(): void {
     this.buscarTodosSuplidor();

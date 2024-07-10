@@ -16,7 +16,7 @@
         <input type="text" class="form-control"  [(ngModel)]="sectordescripcion">
       </div>
       <div class="col-2">
-        <button class="btn btn-primary" (click)="gualdarSector()" >Nuevo Sector</button>
+        <button class="btn btn-primary" (click)="guardarSector()" >Nuevo Sector</button>
       </div>
     </div>
 
@@ -39,9 +39,9 @@
           <tr *ngFor="let sector of sectorList ">
             <td>{{sector.se_codSect}}</td>
             <td>{{sector.se_desSect}}</td>
-            <td>´{{sector.se_codZona}}</td>
+            <td>{{sector.se_codZona}}</td>
             <td>
-              <button class="btn btn-link" (click)="editarsector(Sector)"><i class="bi bi-pencil text-warning" ></i></button>
+              <button class="btn btn-link" (click)="editarSector(sector)"><i class="bi bi-pencil text-warning" ></i></button>
               &nbsp;
               <button class="btn btn-link"><i class="bi bi-trash text-danger"></i></button>
             </td>

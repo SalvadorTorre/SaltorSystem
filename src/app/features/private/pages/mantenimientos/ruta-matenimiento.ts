@@ -32,10 +32,10 @@ const routes: Routes = [
           loadChildren: () => import('./pages/zona-page/zona-modulo').then(m => m.ModuloZona)
         },
 
-        /*{
+        {
           path:"sector",
           loadChildren: () => import('./pages/sector-page/sector-modulo').then(m => m.ModuloSector)
-        },*/
+        },
       ]
     }
   ];

@@ -22,3 +22,11 @@
 .form-row .form-group {
   flex: 0 0 48%;  /*Campos ocupan el 48% del ancho cada uno */
 }
+.table-responsive {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.selected {
+  background-color: #c30404 !important;
+}

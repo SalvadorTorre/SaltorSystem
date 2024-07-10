@@ -7,7 +7,7 @@ declare var $: any;
 @Component({
   selector: 'Sector',
   templateUrl: './sector.html',
-  styleUrls:  ['./sector.css']
+  styleUrls: ['./sector.css']
 })
 export class Sector implements OnInit {
   habilitarBusqueda: boolean = false;
@@ -16,7 +16,7 @@ export class Sector implements OnInit {
   sectorList:ModeloSectorData[] = [];
   sectordescripcion:string = '';
   sectorcodigo:any;
-
+  
   constructor(private fb:FormBuilder,  private servicioSector:ServicioSector) {
     this.crearFormularioSector();
   }
@@ -36,8 +36,8 @@ export class Sector implements OnInit {
   }
 
  nuevoSector(){
-   this.tituloModalSector = 'Agregar Cliente';
-   $('#modalcliente').modal('show');
+   this.tituloModalSector = 'Agregar Sector';
+   $('#modalsector').modal('show');
  }
 
  editarSector(sector:ModeloSectorData){
@@ -53,9 +53,9 @@ getAllSector(){
   });
 }
 
-gualdarZona(){
+gualdarSector(){
   if(this.sectordescripcion!= ''){
-  this.servicioSector.guardarSector({zo_descrip: this.sectordescripcion.toUpperCase()}).subscribe(response => {
+  this.servicioSector.guardarSector({se_dessect: this.sectordescripcion.toUpperCase()}).subscribe(response => {
     alert("Sector guardado correctamente");
     this.getAllSector();
     this.sectordescripcion = '';

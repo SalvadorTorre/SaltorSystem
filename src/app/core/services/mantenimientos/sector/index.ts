@@ -1,4 +1,4 @@
-export interface ModeloSector{
+export interface ModeloSecotSector{
   status: string;
   code: number;
   message: string;
@@ -6,7 +6,7 @@ export interface ModeloSector{
 }
 
 export interface ModeloSectorData{
-  se_codSect: number;
-  se_desSect: string;
+  zo_codZona: number;
+  zo_descrip: string;
 
 }
