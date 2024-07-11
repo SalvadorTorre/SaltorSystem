@@ -1,4 +1,4 @@
-<div class="card " style="height: 80vh;">
+<div class="card "style="height: 80vh;">
   <div class="card-header">
     <h1>Sector</h1>
   </div>
@@ -14,6 +14,13 @@
      <div class="col-2">
        <label >Descripcion Sector</label>
         <input type="text" class="form-control"  [(ngModel)]="sectordescripcion">
+      </div>
+      <div class="col-2">
+         <label for="se_codZona" >Zona</label>
+         <select formControlName="se_codZona" class="form-control">
+            <option disabled selected >Selecione una Zona</option>
+            <option *ngFor="let zona of zonaList" [value]="zona.zo_codZona">{{zona.zo_descrip}}</option>
+         </select>
       </div>
       <div class="col-2">
         <button class="btn btn-primary" (click)="gualdarSector()" >Nuevo Sector</button>
@@ -35,7 +42,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let sector of sectorList ">
+          <tr *ngFor="let sector of sectorList">
             <td>{{sector.se_codSect}}</td>
             <td>{{sector.se_desSect}}</td>
             <td>
@@ -49,5 +56,4 @@
     </div>
   </div>
 </div>
-<!--Fin del Grid-->
 

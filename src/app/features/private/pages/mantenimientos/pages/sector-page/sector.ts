@@ -2,6 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { ModeloSector } from 'src/app/core/services/mantenimientos/sector';
 import { ServicioSector } from 'src/app/core/services/mantenimientos/sector/sector.service';
+import { ModeloZonaData } from 'src/app/core/services/mantenimientos/zonas';
+import { ServicioZona } from 'src/app/core/services/mantenimientos/zonas/zonas.service';
 declare var $: any;
 
 @Component({
@@ -14,14 +16,18 @@ export class Sector implements OnInit {
   tituloModalSector!: string;
   formularioSector!:FormGroup;
   sectorList:ModeloSector[] = [];
+  zonaList:ModeloZonaData[] = [];
   sectordescripcion:string = '';
   sectorcodigo:any;
-
-  constructor(private fb:FormBuilder,  private servicioSector:ServicioSector) {
+  sectorzona:any;
+  modoedicionSector:boolean = false;
+  modoconsultaSector:boolean = false;
+  constructor(private fb:FormBuilder,  private servicioSector:ServicioSector,private servicioZona:ServicioZona) {
     this.crearFormularioSector();
   }
   ngOnInit(): void {
     this.getAllSector();
+    this.buscartadaZona();
   }
 
   crearFormularioSector(){
@@ -43,8 +49,8 @@ export class Sector implements OnInit {
  editarSector(sector:ModeloSector){
   this.sectorcodigo = sector.se_codSect;
   this.sectordescripcion = sector.se_desSect;
-
-}
+  this.sectorzona = sector.se_codZona;
+ }
 
 getAllSector(){
   this.servicioSector.obtenerTodasSector().subscribe(response => {
@@ -53,16 +59,29 @@ getAllSector(){
   });
 }
 
+buscartadaZona(){
+  this.servicioZona.obtenerTodasZonas().subscribe(response => {
+    console.log(response);
+    this.zonaList = response.data;
+  });
+}
 gualdarSector(){
   if(this.sectordescripcion!= ''){
-  this.servicioSector.guardarSector({se_desset: this.sectordescripcion.toUpperCase()}).subscribe(response => {
-    alert("Sector guardado correctamente");
-    this.getAllSector();
-    this.sectordescripcion = '';
-    this.sectorcodigo = '';
+      var data = {
+      se_desSect: this.sectordescripcion.toUpperCase(),
+      se_codZona: this.sectorzona
+      }
+      this.servicioSector.guardarSector(data).subscribe(response => {
+      alert("Sector guardado correctamente");
+      this.getAllSector();
+      this.sectordescripcion = '';
+       this.sectorcodigo = '';
+       this.sectorzona = '';
+       this.formularioSector.reset();
+       this.buscartadaZona();
   });
-  }else{
-    alert("Formulario Sector");
-  }
+
+}else{
+    alert("Formulario Sector");}
 }
 }
