@@ -1,12 +1,13 @@
-export interface ModeloSecotSector{
-  status: string;
-  code: number;
-  message: string;
-  data: ModeloSectorData[];
-}
-
-export interface ModeloSectorData{
-  zo_codZona: number;
-  zo_descrip: string;
-
-}
+export interface ModeloSector{
+    status: string;
+    code: number;
+    message: string;
+    data: ModeloSector[];
+  }
+  
+  export interface ModeloSector{
+    se_codSect: number;
+    se_desSect: string;
+  
+  }
+  

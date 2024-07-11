@@ -9,12 +9,12 @@ import { ModeloSector } from ".";
 export class ServicioSector {
   constructor(private http:HttpInvokeService) {}
 
-  guardarZona(sector:any): Observable<any>{
+  guardarSector(sector:any): Observable<any>{
     return this.http.PostRequest<any,any>("/sector",sector);
   }
 
-  editarsector(se_codSect:number,sector:ModeloSector): Observable<any>{
-    return this.http.PutRequest<any,any>(`/sector/${se_codSect}`,sector);
+  editarSector(se_codSect:number,sector:ModeloSector): Observable<any>{
+    return this.http.PutRequest<any,any>(`/zonas/${se_codSect}`,sector);
   }
   obtenerTodasSector(): Observable<ModeloSector>{
     return this.http.GetRequest<ModeloSector>("/sector");

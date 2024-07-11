@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
-import { ModeloSectorData } from 'src/app/core/services/mantenimientos/sector';
+import { ModeloSector } from 'src/app/core/services/mantenimientos/sector';
 import { ServicioSector } from 'src/app/core/services/mantenimientos/sector/sector.service';
 declare var $: any;
 
@@ -13,10 +13,10 @@ export class Sector implements OnInit {
   habilitarBusqueda: boolean = false;
   tituloModalSector!: string;
   formularioSector!:FormGroup;
-  sectorList:ModeloSectorData[] = [];
+  sectorList:ModeloSector[] = [];
   sectordescripcion:string = '';
   sectorcodigo:any;
-  
+
   constructor(private fb:FormBuilder,  private servicioSector:ServicioSector) {
     this.crearFormularioSector();
   }
@@ -26,7 +26,7 @@ export class Sector implements OnInit {
 
   crearFormularioSector(){
     this.formularioSector = this.fb.group({
-      zo_descrip: ['', Validators.required],
+      se_dessect: ['', Validators.required],
 
     });
   }
@@ -37,10 +37,10 @@ export class Sector implements OnInit {
 
  nuevoSector(){
    this.tituloModalSector = 'Agregar Sector';
-   $('#modalsector').modal('show');
+   $('#modalsecto').modal('show');
  }
 
- editarSector(sector:ModeloSectorData){
+ editarSector(sector:ModeloSector){
   this.sectorcodigo = sector.se_codSect;
   this.sectordescripcion = sector.se_desSect;
 
@@ -55,7 +55,7 @@ getAllSector(){
 
 gualdarSector(){
   if(this.sectordescripcion!= ''){
-  this.servicioSector.guardarSector({se_dessect: this.sectordescripcion.toUpperCase()}).subscribe(response => {
+  this.servicioSector.guardarSector({se_desset: this.sectordescripcion.toUpperCase()}).subscribe(response => {
     alert("Sector guardado correctamente");
     this.getAllSector();
     this.sectordescripcion = '';
