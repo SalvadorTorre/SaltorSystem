@@ -8,8 +8,8 @@ export interface ModeloInventario {
 export interface ModeloInventarioData {
   in_codmerc:  string;
   in_desmerc:  string;
-  in_grumerc:  number;
-  in_tramo:    string;
+  in_grumerc:  string;
+  in_tipoproduct:    string;
   in_canmerc:  string;
   in_caninve:  string;
   in_fecinve:  null;
@@ -29,4 +29,6 @@ export interface ModeloInventarioData {
   in_amacen:   string;
   in_imagen:   string;
   in_status:   string;
+  in_itbis:    boolean;
+  in_minvent:  number;
 }

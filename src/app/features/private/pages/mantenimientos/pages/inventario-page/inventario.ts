@@ -28,7 +28,7 @@ export class Inventario implements OnInit {
       in_codmerc: ["", Validators.required],
       in_desmerc: ["", Validators.required],
       in_grumerc: [null, Validators.required],
-      in_tramo: ["", Validators.required],
+      in_tipoproduct: ["", Validators.required],
       in_canmerc: ["", Validators.required],
       in_caninve: ["", Validators.required],
       in_fecinve: [null],
@@ -47,7 +47,8 @@ export class Inventario implements OnInit {
       in_fecmodif: [null],
       in_amacen: ["", Validators.required],
       in_imagen: ["", Validators.required],
-      in_status: ["", Validators.required]
+      in_status: ["", Validators.required],
+      in_minvent: [null],
     });
   }
 
@@ -62,6 +63,7 @@ export class Inventario implements OnInit {
 
  editarProducto(invetario:ModeloInventarioData){
   this.tituloModalProducto = 'Editar Producto';
+  this.formularioInventario.patchValue(invetario);
   $('#modalProducto').modal('show');
 }
 

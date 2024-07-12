@@ -107,33 +107,56 @@
                   <div class="row">
                     <div class="col-7">
                       <label for="">Código</label>
-                      <input type="text" class="form-control form-control-sm" />
+                      <input
+                        type="text"
+                        class="form-control form-control-sm"
+                        formControlName="in_codmerc"
+                      />
                     </div>
                   </div>
 
                   <div class="row">
                     <div class="col">
                       <label for="">Descripción</label>
-                      <input type="text" class="form-control form-control-sm" />
+                      <input
+                        type="text"
+                        class="form-control form-control-sm"
+                        formControlName="in_desmerc"
+                      />
                     </div>
                   </div>
 
                   <div class="row">
                     <div class="col-3">
                       <label for="">Unidad</label>
-                      <input type="text" class="form-control form-control-sm" />
+                      <input
+                        type="text"
+                        class="form-control form-control-sm"
+                        formControlName="in_unidad"
+                      />
                     </div>
                     <div class="col-3">
                       <label for="">Peso</label>
-                      <input type="text" class="form-control form-control-sm" />
+                      <input
+                        type="text"
+                        class="form-control form-control-sm"
+                        formControlName="in_peso"
+                      />
                     </div>
                     <div class="col-3">
                       <label for="">Longitud</label>
-                      <input type="text" class="form-control form-control-sm" />
+                      <input
+                        type="text"
+                        class="form-control form-control-sm"
+                        formControlName="in_longitud"
+                      />
                     </div>
                     <div class="col-3">
                       <label for="">Tipo</label>
-                      <select class="form-control form-control-sm">
+                      <select
+                        class="form-control form-control-sm"
+                        formControlName="in_tipoproduct"
+                      >
                         <option value="F">Forja</option>
                         <option value="H">Hierro</option>
                       </select>
@@ -143,15 +166,26 @@
                   <div class="row">
                     <div class="col-7">
                       <label for="">Grupo</label>
-                      <input type="text" class="form-control form-control-sm" />
+                      <input
+                        type="text"
+                        class="form-control form-control-sm"
+                        formControlName="in_grumerc"
+                      />
                     </div>
                     <div class="col-2">
                       <label for="">&nbsp; &nbsp;</label>
-                      <input type="text" class="form-control form-control-sm" />
+                      <input
+                        type="text"
+                        class="form-control form-control-sm"
+                        readonly
+                      />
                     </div>
                     <div class="col-3">
                       <label for="">Status</label>
-                      <select class="form-control form-control-sm">
+                      <select
+                        class="form-control form-control-sm"
+                        formControlName="in_status"
+                      >
                         <option value="A">Activo</option>
                         <option value="I">Inactivo</option>
                         <option value="E">Escaso</option>
@@ -176,22 +210,38 @@
                   <div class="row">
                     <div class="col-6">
                       <label for="">Compra</label>
-                      <input type="text" class="form-control form-control-sm" />
+                      <input
+                        type="text"
+                        class="form-control form-control-sm"
+                        formControlName="in_cosmerc"
+                      />
                     </div>
                     <div class="col-6">
                       <label for="">Promedio</label>
-                      <input type="text" class="form-control form-control-sm" />
+                      <input
+                        type="text"
+                        class="form-control form-control-sm"
+                        formControlName="in_costpro"
+                      />
                     </div>
                   </div>
 
                   <div class="row">
                     <div class="col-6">
-                      <label for="">Compra Ant</label>
-                      <input type="text" class="form-control form-control-sm" />
+                      <label for="">Compra Anterior</label>
+                      <input
+                        type="text"
+                        class="form-control form-control-sm"
+                        formControlName="in_ucosto"
+                      />
                     </div>
                     <div class="col-6">
                       <label for="">% Ventas</label>
-                      <input type="text" class="form-control form-control-sm" />
+                      <input
+                        type="text"
+                        class="form-control form-control-sm"
+                        formControlName="in_porgana"
+                      />
                     </div>
                   </div>
 
@@ -203,16 +253,28 @@
                   <div class="row">
                     <div class="col-4">
                       <label for="">Venta</label>
-                      <input type="text" class="form-control form-control-sm" />
+                      <input
+                        type="text"
+                        class="form-control form-control-sm"
+                        formControlName="in_premerc"
+                      />
                     </div>
                     <div class="col-4">
                       <label for="">Mínimo</label>
-                      <input type="text" class="form-control form-control-sm" />
+                      <input
+                        type="text"
+                        class="form-control form-control-sm"
+                        formControlName="in_precmin"
+                      />
                     </div>
 
                     <div class="col-4">
                       <label for="">Actualizada</label>
-                      <input type="text" class="form-control form-control-sm" />
+                      <input
+                        type="date"
+                        class="form-control form-control-sm"
+                        formControlName="in_fecmodif"
+                      />
                     </div>
                   </div>
                 </div>
@@ -230,15 +292,27 @@
                   <div class="row">
                     <div class="col-4">
                       <label for="">En Almacén</label>
-                      <input type="text" class="form-control form-control-sm" />
+                      <input
+                        type="number"
+                        class="form-control form-control-sm"
+                        formControlName="in_canmerc"
+                      />
                     </div>
                     <div class="col-4">
                       <label for="">Minima</label>
-                      <input type="text" class="form-control form-control-sm" />
+                      <input
+                        type="number"
+                        class="form-control form-control-sm"
+                        formControlName="in_eximini"
+                      />
                     </div>
                     <div class="col-4">
                       <label for="">Minima venta</label>
-                      <input type="text" class="form-control form-control-sm" />
+                      <input
+                        type="number"
+                        class="form-control form-control-sm"
+                        formControlName="in_minvent"
+                      />
                     </div>
                   </div>
                 </div>
@@ -253,11 +327,19 @@
                   <div class="row">
                     <div class="col-6">
                       <label for="">Fecha</label>
-                      <input type="text" class="form-control form-control-sm" />
+                      <input
+                        type="date"
+                        class="form-control form-control-sm"
+                        formControlName="in_fecinve"
+                      />
                     </div>
                     <div class="col-6">
                       <label for="">Cantidad</label>
-                      <input type="text" class="form-control form-control-sm" />
+                      <input
+                        type="number"
+                        class="form-control form-control-sm"
+                        formControlName="in_caninve"
+                      />
                     </div>
                   </div>
                 </div>
