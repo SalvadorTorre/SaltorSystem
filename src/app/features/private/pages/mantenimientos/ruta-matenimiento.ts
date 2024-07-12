@@ -36,7 +36,10 @@ const routes: Routes = [
           path:"sector",
           loadChildren: () => import('./pages/sector-page/sector-modulo').then(m => m.ModuloSector)
         },
-      ]
+        {
+          path:"usuario",
+          loadChildren: () => import('./pages/usuario-page/usuario-modulo').then(m => m.ModuloUsuario)
+        },      ]
     }
   ];
 

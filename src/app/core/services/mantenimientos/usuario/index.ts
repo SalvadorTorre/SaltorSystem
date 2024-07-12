@@ -31,7 +31,7 @@ export interface ModeloUsuario{
     credito:       boolean;
     vendedor:      boolean;
     metaVenta:     string;
-    correo: s      tring;
+    correo:        string;
     claveCorreo:   string;
     despacho:      boolean;
   }

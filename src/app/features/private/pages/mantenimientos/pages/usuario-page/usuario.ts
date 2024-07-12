@@ -10,7 +10,7 @@ declare var $: any;
   styleUrls: ['./usuario.css']
 })
 export class Usuario implements OnInit {
-  habilitarFormiarioUsuario: boolean = false;
+ habilitarFormulario: boolean = false;
   tituloModalUsuario!: string;
   formularioUsuario!:FormGroup;
   clienteList:ModeloUsuarioData[] = [];
@@ -60,22 +60,22 @@ export class Usuario implements OnInit {
         correo: [''],
         claveCorreo: [''],
         despacho: [true],
-   
+
       });
   }
 habilitarFormularioUsuario(){
-    this.habilitarFormiarioUsuario = false;
+    this.habilitarFormulario = false;
   }
 
  nuevoUsuario(){
   this.modoedicionUsuario = false;
    this.tituloModalUsuario = 'Agregando Usuario';
    $('#modalusuario').modal('show');
-   this.habilitarFormiarioUsuario = true;
+   this.habilitarFormulario = true;
  }
 
  cerrarModalUsuario(){
-  this.habilitarFormiarioUsuario = false;
+  this.habilitarFormulario = false;
   this.formularioUsuario.reset();
   this.modoedicionUsuario = false;
   this.modoconsultaUsuario = false;
@@ -83,13 +83,13 @@ habilitarFormularioUsuario(){
   this.crearFormularioUsuario();
 
  }
- editarUsuario(Usuario:ModeloUsuarioData){
-  this.usuarioid = usuario.su_codSupl;
+ editarUsuario(usuario:ModeloUsuarioData){
+  this.usuarioid = usuario.codUsuario;
   this.modoedicionUsuario = true;
   this.formularioUsuario.patchValue(Usuario);
   this.tituloModalUsuario = 'Editando Usuario';
   $('#modalusuario').modal('show');
-  this.habilitarFormiarioUsuario = true;
+  this.habilitarFormulario = true;
 }
 
 buscarTodosUsuario(){
@@ -102,12 +102,12 @@ consultarUsuario(Usuario:ModeloUsuarioData){
   this.tituloModalUsuario = 'Consulta Usuario';
  this.formularioUsuario.patchValue(Usuario);
 $('#modalusuario').modal('show');
-this.habilitarFormiarioUsuario = true;
+this.habilitarFormulario = true;
 this.modoconsultaUsuario = true;
 };
 
 eliminarUsuario(Usuario:ModeloUsuarioData){
-  this.servicioUsuario.eliminarUsuario(Usuario.su_codSupl).subscribe(response => {
+  this.servicioUsuario.eliminarUsuario(Usuario.codUsuario).subscribe(response => {
     alert("Usuario Eliminado");
     this.buscarTodosUsuario();
   });

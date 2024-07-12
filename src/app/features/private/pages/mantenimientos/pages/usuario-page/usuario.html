@@ -8,11 +8,11 @@
       <div class="row ">
         <div class="col-2">
           <label for="">Buscar Codigo</label>
-          <input type="text" placeholder="Digite codigo" class="form-control" [disabled]="habilitarFormiarioSuplidor">
+          <input type="text" placeholder="Digite codigo" class="form-control" [disabled]="habilitarFormulario">
         </div>
         <div class="col-3">
           <label for="">Buscar Nombre</label>
-          <input type="text" placeholder="Digite el Nombre..." class="form-control" [disabled]="habilitarFormiarioSuplidor">
+          <input type="text" placeholder="Digite el Nombre..." class="form-control" [disabled]="habilitarFormulario">
         </div>
         <div class=" col-2">
           <button class="btn btn-primary" (click)="nuevoUsuario()">Nuevo Usuario</button>
@@ -20,33 +20,32 @@
       </div>
       <!-- fin buscador -->
 
-
       <!-- Grid -->
         <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
         <table class="table table-bordered table-hover table-striped table-sm">
           <thead class="table-dark">
             <tr>
-              <th style="width: 10%;">Codigo</th>
-              <th style="width: 40%;">Nombre</th>
-              <th style="width: 20%;">Nivel</th>
-              <th style="width: 15%;">Vendedor</th>
-              <th style="width: 15%;">Mantenimiento</th>
-              <th style="width: 15%;">Caja</th>
-              <th style="width: 15%;">Despachador</th>
-              <th style="width: 15%;">Almacen</th>
+              <th style="width: 5%;">Codigo</th>
+              <th style="width: 30%;">Nombre</th>
+              <th style="width: 3%;">Nivel</th>
+              <th style="width: 5%;">Vendedor</th>
+              <th style="width: 5%;">Mantenimiento</th>
+              <th style="width: 3%;">Caja</th>
+              <th style="width: 5%;">Despacho</th>
+              <th style="width: 5%;">Almacen</th>
               <th></th>
             </tr>
           </thead>
           <tbody>
             <tr *ngFor="let usuario of usuarioList"  [ngClass]="{'selected':usuario === selectedUsuario}" (click)="seleccionarUsuario(usuario)">
-              <td>{{usuario.codUsuario}}</td>
-              <td>{{usuario.nomUsuario}}</td>
-              <td>{{usuario.nivel1}}</td>
-              <td>{{usuario.vendedor}}</td>
-              <td>{{usuario.mantenimiento}}</td>
-              <td>{{usuario.caja}}</td>
-              <td>{{usuario.despacho}}</td>
-              <td>{{usuario.alnacen}}</td>
+              <td class="text-center">{{usuario.codUsuario}}</td>
+              <td>{{usuario.nombreUsuario}}</td>
+              <td class="text-center">{{usuario.nivel}}</td>
+              <td class="text-center"><input type="checkbox" [checked]="usuario.vendedor"></td>
+              <td class="text-center"><input type="checkbox" [checked]="usuario.mantenimiento"></td>
+              <td class="text-center"><input type="checkbox" [checked]="usuario.caja"></td>
+              <td class="text-center"><input type="checkbox" [checked]="usuario.despacho"></td>
+              <td class="text-center"><input type="checkbox" [checked]="usuario.almacen"></td>
               <td>
                 <button class="btn btn-link" (click)="editarUsuario(usuario) ; $event.stopPropagation()"><i class="bi bi-pencil text-primary"></i></button>
                 &nbsp;
@@ -62,64 +61,78 @@
       <br>
 
       <!-- Formulario de cliente -->
-      <div class="modal fade" id="modalusuario" tabindex="-1" aria-labelledby="modalUsuarioLabel" aria-hidden="true">
+      <div
+        class="modal fade"
+        id="modalusuario"
+        tabindex="-1"
+        aria-labelledby="modalUsuarioLabel"
+        aria-hidden="true">
+
         <div class="modal-dialog modal-lg">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h1 class="modal-title fs-5" id="modalSuplidorLabel">{{tituloModalusuario}}</h1>
-              <button type="button" class="btn-close" (click)="cerrarModalusuario()" aria-label="Close"></button>
+           <div class="modal-content">
+              <div class="modal-header">
+              <h4 class="modal-title fs-5" id="modalSuplidorLabel">
+                {{tituloModalUsuario}}
+              </h4>
+              <button
+                type="button"
+                class="btn-close" (click)="cerrarModalUsuario()"
+                aria-label="Close">
+              </button>
             </div>
             <div class="modal-body">
-            <div *ngIf="habilitarFormiarioUsuario" class="mb-3">
-              <form [formGroup]="formularioUsuario" (ngSubmit)="guardarUsuario()">
-                <div class="form-row">
-                  <div class="form-group">
-                    <label for="nomUsuario"> Nombre</label>
-                    <input  type="number" formControlName="nomUsuario" class="form-control" />
+              <form
+                 [formGroup]="formularioUsuario"
+                 (ngSubmit)="guardarUsuario()"
+              >
+              <div class="form-row">
+                   <!--<div class="form-group">-->
+              <div class="col-9">
+                <div class="card">
+                  <div class="card-header">
+                    <h4>Datos del Usuario</h4>
                   </div>
-                  <div class="form-group">
-                    <label for="idUsuario">Id Usuario</label>
-                    <input  formControlName="idUsuario" class="form-control" />
-                  </div>
-                  <div class="form-group">
-                    <label for="claveUsuario_nomSupl">Clave Usuario</label>
-                    <input  formControlName="claveUsuario" class="form-control" />
+                  <div class="card-body">
+
+                    <div class="row">
+                      <div class="col-3">
+                        <label for="">Id Usuario</label>
+                        <input
+                          type="text"
+                          class="form-control form-control-sm"
+                          formControlName="idUsuario"
+                        />
+                      </div>
+                      <div class="col-3">
+                        <label for="">Clave</label>
+                        <input
+                          type="text"
+                          class="form-control form-control-sm"
+                          formControlName="claveUsuario"
+                        />
+                      </div>
+                      <div class="col-7">
+                        <label for="">Nombre</label>
+                        <input
+                          type="text"
+                          class="form-control form-control-sm"
+                          formControlName="nombreUsuario"
+                        />
+                      </div>
+
+
+
+
+
+
+
+
+                    </div>
                   </div>
                 </div>
-                <div class="form-row">
-                  <div class="form-group">
-                    <label for="nivel1">Nivel</label>
-                    <input  formControlName="nivel1" class="form-control" />
-                  </div>
-                  <div class="form-group">
-                    <label for="nive2">Nivel2</label>
-                    <input  formControlName="nivel2" class="form-control" />
-                  </div>
-                  <div class="form-group">
-                    <label for="facturacion">Facturacion</label>
-                    <input formControlName="facturacion" class="form-control" />
-                  </div>
-                </div>
-                <div class="form-row">
-                  <div class="form-group">
-                    <label for="su_dirSupl">Facturacion</label>
-                    <input id="su_dirSupl" formControlName="su_dirSupl" class="form-control" />
-                  </div>
-                  <div class="form-group">
-                    <label for="su_telSupl">Telefono</label>
-                    <input formControlName="su_telSupl" class="form-control" />
-                  </div>
-                </div>
-                <div class="form-row">
-                  <div class="form-group">
-                    <label for="su_contact">Contacto</label>
-                    <input formControlName="su_contact" class="form-control" />
-                  </div>
-                  <div class="form-group">
-                    <label for="su_status">Status</label>
-                    <input formControlName="su_status" class="form-control" />
-                  </div>
-                </div>
+              </div>
+            </div>
+
                 <button type="submit" *ngIf="!modoconsultaUsuario" class="btn btn-success">{{modoedicionUsuario ? "Editar" : "Guardar"}}</button>
 
               </form>
