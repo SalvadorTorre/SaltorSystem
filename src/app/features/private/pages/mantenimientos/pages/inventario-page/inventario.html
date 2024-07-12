@@ -1,35 +1,44 @@
-<div class="card " style="height: 80vh;">
+<div class="card" style="height: 80vh">
   <div class="card-header">
     <h4>Modulo inventario</h4>
   </div>
   <div class="card-body">
-
     <!-- buscador -->
 
-    <div class="row ">
+    <div class="row">
       <div class="col-2">
         <label for="">Buscar Codigo</label>
-        <input type="text" placeholder="Digite codigo" class="form-control" [disabled]="habilitarBusqueda">
+        <input
+          type="text"
+          placeholder="Digite codigo"
+          class="form-control"
+          [disabled]="habilitarBusqueda"
+        />
       </div>
       <div class="col-3">
         <label for="">Buscar Descripcion</label>
-        <input type="text" placeholder="Digite descripcion..." class="form-control" [disabled]="habilitarBusqueda">
+        <input
+          type="text"
+          placeholder="Digite descripcion..."
+          class="form-control"
+          [disabled]="habilitarBusqueda"
+        />
       </div>
-      <div class=" col-2">
-
-        <button class="btn btn-primary" (click)="nuevoProducto()" >Nuevo producto</button>
-
+      <div class="col-2">
+        <button class="btn btn-primary" (click)="nuevoProducto()">
+          Nuevo producto
+        </button>
       </div>
     </div>
 
     <!-- fin buscador -->
 
-<br>
+    <br />
 
     <div class="table-responsive">
       <table class="table table-bordered table-hover table-striped table-sm">
         <thead class="table-dark">
-          <tr >
+          <tr>
             <th>Codigo</th>
             <th>Descripcion</th>
             <th>Existencia</th>
@@ -38,56 +47,23 @@
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <td>0022544885454</td>
-            <td>Lorem ipsum dolor sit amet consectetur, adipisicing elit.</td>
-           <td>100</td>
-            <td>150.00</td>
+          <tr *ngFor="let inventario of invenarioList">
+            <td>{{inventario.in_codmerc}}</td>
+            <td>{{inventario.in_desmerc}}</td>
+            <td>{{inventario.in_canmerc}}</td>
+            <td>{{inventario.in_premerc}}</td>
             <td>
-              <button class="btn btn-link" (click)="editarProducto()"><i class="bi bi-pencil text-warning" ></i></button>
+              <button class="btn btn-link" (click)="editarProducto(inventario)">
+                <i class="bi bi-pencil text-warning"></i>
+              </button>
               &nbsp;
-              <button class="btn btn-link"><i class="bi bi-trash text-danger"></i></button>
+              <button class="btn btn-link">
+                <i class="bi bi-trash text-danger"></i>
+              </button>
               &nbsp;
-              <button class="btn btn-link"><i class="bi bi-card-list text-success"></i></button>
-            </td>
-          </tr>
-          <tr>
-            <td>0022544885454</td>
-            <td>Lorem ipsum dolor sit amet consectetur, adipisicing elit.</td>
-           <td>100</td>
-            <td>150.00</td>
-            <td>
-              <button class="btn btn-link" (click)="editarProducto()"><i class="bi bi-pencil text-warning"></i></button>
-              &nbsp;
-              <button class="btn btn-link"><i class="bi bi-trash text-danger"></i></button>
-              &nbsp;
-              <button class="btn btn-link"><i class="bi bi-card-list text-success"></i></button>
-            </td>
-          </tr>
-          <tr>
-            <td>0022544885454</td>
-            <td>Lorem ipsum dolor sit amet consectetur, adipisicing elit.</td>
-           <td>100</td>
-            <td>150.00</td>
-            <td>
-              <button class="btn btn-link"><i class="bi bi-pencil text-warning"></i></button>
-              &nbsp;
-              <button class="btn btn-link"><i class="bi bi-trash text-danger"></i></button>
-              &nbsp;
-              <button class="btn btn-link"><i class="bi bi-card-list text-success"></i></button>
-            </td>
-          </tr>
-          <tr>
-            <td>0022544885454</td>
-            <td>Lorem ipsum dolor sit amet consectetur, adipisicing elit.</td>
-           <td>100</td>
-            <td>150.00</td>
-            <td>
-              <button class="btn btn-link"><i class="bi bi-pencil text-warning"></i></button>
-              &nbsp;
-              <button class="btn btn-link"><i class="bi bi-trash text-danger"></i></button>
-              &nbsp;
-              <button class="btn btn-link"><i class="bi bi-card-list text-success"></i></button>
+              <button class="btn btn-link">
+                <i class="bi bi-card-list text-success"></i>
+              </button>
             </td>
           </tr>
         </tbody>
@@ -96,50 +72,95 @@
   </div>
 </div>
 
-
-<div class="modal fade" id="modalProducto" tabindex="-1" aria-labelledby="modalProductoLabel" aria-hidden="true">
+<div
+  class="modal fade"
+  id="modalProducto"
+  tabindex="-1"
+  aria-labelledby="modalProductoLabel"
+  aria-hidden="true"
+>
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <div class="modal-header">
-        <h1 class="modal-title fs-5" id="modalProductoLabel">{{tituloModalProducto}}</h1>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <h1 class="modal-title fs-5" id="modalProductoLabel">
+          {{tituloModalProducto}}
+        </h1>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
       </div>
       <div class="modal-body">
-        <form [formGroup]="formularioInventario" (ngSubmit)="onSubmitInventario()">
+        <form
+          [formGroup]="formularioInventario"
+          (ngSubmit)="onSubmitInventario()"
+        >
           <div class="row">
             <div class="col-3">
               <label for="">Codigo</label>
-              <input type="text" class="form-control" formControlName="codigo">
+              <input
+                type="text"
+                class="form-control"
+                formControlName="codigo"
+              />
             </div>
             <div class="col">
               <label for="">Descripcion</label>
-              <input type="text" class="form-control" formControlName="descripcion">
+              <input
+                type="text"
+                class="form-control"
+                formControlName="descripcion"
+              />
             </div>
           </div>
-          <br>
+          <br />
           <div class="row">
             <div class="col-3">
               <label for="">Unidad</label>
-              <select name="" class="form-control" formControlName="unidad" id="">
+              <select
+                name=""
+                class="form-control"
+                formControlName="unidad"
+                id=""
+              >
                 <option value="" selected disabled>Selecciona uno...</option>
               </select>
             </div>
             <div class="col-3">
               <label for="">Peso</label>
-              <input type="number" name="" class="form-control" formControlName="peso" id="">
+              <input
+                type="number"
+                name=""
+                class="form-control"
+                formControlName="peso"
+                id=""
+              />
             </div>
             <div class="col-3">
               <label for="">Longitud</label>
-              <input type="number" name="" class="form-control" formControlName="longitud" id="">
+              <input
+                type="number"
+                name=""
+                class="form-control"
+                formControlName="longitud"
+                id=""
+              />
             </div>
             <div class="col-3">
               <label for="">Tipo</label>
-              <select name="" class="form-control" formControlName="unidad" id="">
+              <select
+                name=""
+                class="form-control"
+                formControlName="unidad"
+                id=""
+              >
                 <option value="" selected disabled>Selecciona uno...</option>
               </select>
             </div>
           </div>
-          <br><br>
+          <br /><br />
           <div class="row">
             <div class="col">
               <button type="submit" class="btn btn-primary">Agregar</button>
@@ -147,7 +168,6 @@
           </div>
         </form>
       </div>
-
     </div>
   </div>
 </div>
