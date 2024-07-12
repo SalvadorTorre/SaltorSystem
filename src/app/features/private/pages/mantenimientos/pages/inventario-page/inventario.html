@@ -25,7 +25,7 @@
         />
       </div>
       <div class="col-2">
-        <button class="btn btn-primary" (click)="nuevoProducto()">
+        <button class="btn btn-primary mt-4" (click)="nuevoProducto()">
           Nuevo producto
         </button>
       </div>
@@ -39,8 +39,8 @@
       <table class="table table-bordered table-hover table-striped table-sm">
         <thead class="table-dark">
           <tr>
-            <th>Codigo</th>
-            <th>Descripcion</th>
+            <th>Código</th>
+            <th>Descripción</th>
             <th>Existencia</th>
             <th>Precio</th>
             <th></th>
@@ -79,7 +79,7 @@
   aria-labelledby="modalProductoLabel"
   aria-hidden="true"
 >
-  <div class="modal-dialog modal-lg">
+  <div class="modal-dialog modal-xl">
     <div class="modal-content">
       <div class="modal-header">
         <h1 class="modal-title fs-5" id="modalProductoLabel">
@@ -98,72 +98,177 @@
           (ngSubmit)="onSubmitInventario()"
         >
           <div class="row">
-            <div class="col-3">
-              <label for="">Codigo</label>
-              <input
-                type="text"
-                class="form-control"
-                formControlName="codigo"
-              />
+            <div class="col-6">
+              <div class="card">
+                <div class="card-header">
+                  <h4>Datos del producto</h4>
+                </div>
+                <div class="card-body">
+                  <div class="row">
+                    <div class="col-7">
+                      <label for="">Código</label>
+                      <input type="text" class="form-control form-control-sm" />
+                    </div>
+                  </div>
+
+                  <div class="row">
+                    <div class="col">
+                      <label for="">Descripción</label>
+                      <input type="text" class="form-control form-control-sm" />
+                    </div>
+                  </div>
+
+                  <div class="row">
+                    <div class="col-3">
+                      <label for="">Unidad</label>
+                      <input type="text" class="form-control form-control-sm" />
+                    </div>
+                    <div class="col-3">
+                      <label for="">Peso</label>
+                      <input type="text" class="form-control form-control-sm" />
+                    </div>
+                    <div class="col-3">
+                      <label for="">Longitud</label>
+                      <input type="text" class="form-control form-control-sm" />
+                    </div>
+                    <div class="col-3">
+                      <label for="">Tipo</label>
+                      <select class="form-control form-control-sm">
+                        <option value="F">Forja</option>
+                        <option value="H">Hierro</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div class="row">
+                    <div class="col-7">
+                      <label for="">Grupo</label>
+                      <input type="text" class="form-control form-control-sm" />
+                    </div>
+                    <div class="col-2">
+                      <label for="">&nbsp; &nbsp;</label>
+                      <input type="text" class="form-control form-control-sm" />
+                    </div>
+                    <div class="col-3">
+                      <label for="">Status</label>
+                      <select class="form-control form-control-sm">
+                        <option value="A">Activo</option>
+                        <option value="I">Inactivo</option>
+                        <option value="E">Escaso</option>
+                        <option value="X">Autorizado</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div class="col">
-              <label for="">Descripcion</label>
-              <input
-                type="text"
-                class="form-control"
-                formControlName="descripcion"
-              />
+            <div class="col-6">
+              <div class="card">
+                <div class="card-header">
+                  <h4>Costo y Precio</h4>
+                </div>
+                <div class="card-body">
+                  <div class="row">
+                    <div class="col">
+                      <h6 class="text-danger">Costo</h6>
+                    </div>
+                  </div>
+                  <div class="row">
+                    <div class="col-6">
+                      <label for="">Compra</label>
+                      <input type="text" class="form-control form-control-sm" />
+                    </div>
+                    <div class="col-6">
+                      <label for="">Promedio</label>
+                      <input type="text" class="form-control form-control-sm" />
+                    </div>
+                  </div>
+
+                  <div class="row">
+                    <div class="col-6">
+                      <label for="">Compra Ant</label>
+                      <input type="text" class="form-control form-control-sm" />
+                    </div>
+                    <div class="col-6">
+                      <label for="">% Ventas</label>
+                      <input type="text" class="form-control form-control-sm" />
+                    </div>
+                  </div>
+
+                  <div class="row">
+                    <div class="col">
+                      <h6 class="text-danger">Precio</h6>
+                    </div>
+                  </div>
+                  <div class="row">
+                    <div class="col-4">
+                      <label for="">Venta</label>
+                      <input type="text" class="form-control form-control-sm" />
+                    </div>
+                    <div class="col-4">
+                      <label for="">Mínimo</label>
+                      <input type="text" class="form-control form-control-sm" />
+                    </div>
+
+                    <div class="col-4">
+                      <label for="">Actualizada</label>
+                      <input type="text" class="form-control form-control-sm" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-6">
+              <div class="card">
+                <div class="card-header">
+                  <h4>Existencia</h4>
+                </div>
+                <div class="card-body">
+                  <div class="row">
+                    <div class="col-4">
+                      <label for="">En Almacén</label>
+                      <input type="text" class="form-control form-control-sm" />
+                    </div>
+                    <div class="col-4">
+                      <label for="">Minima</label>
+                      <input type="text" class="form-control form-control-sm" />
+                    </div>
+                    <div class="col-4">
+                      <label for="">Minima venta</label>
+                      <input type="text" class="form-control form-control-sm" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="card">
+                <div class="card-header">
+                  <h4>Inventario</h4>
+                </div>
+                <div class="card-body">
+                  <div class="row">
+                    <div class="col-6">
+                      <label for="">Fecha</label>
+                      <input type="text" class="form-control form-control-sm" />
+                    </div>
+                    <div class="col-6">
+                      <label for="">Cantidad</label>
+                      <input type="text" class="form-control form-control-sm" />
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
           <br />
+          <br />
           <div class="row">
-            <div class="col-3">
-              <label for="">Unidad</label>
-              <select
-                name=""
-                class="form-control"
-                formControlName="unidad"
-                id=""
-              >
-                <option value="" selected disabled>Selecciona uno...</option>
-              </select>
-            </div>
-            <div class="col-3">
-              <label for="">Peso</label>
-              <input
-                type="number"
-                name=""
-                class="form-control"
-                formControlName="peso"
-                id=""
-              />
-            </div>
-            <div class="col-3">
-              <label for="">Longitud</label>
-              <input
-                type="number"
-                name=""
-                class="form-control"
-                formControlName="longitud"
-                id=""
-              />
-            </div>
-            <div class="col-3">
-              <label for="">Tipo</label>
-              <select
-                name=""
-                class="form-control"
-                formControlName="unidad"
-                id=""
-              >
-                <option value="" selected disabled>Selecciona uno...</option>
-              </select>
-            </div>
-          </div>
-          <br /><br />
-          <div class="row">
-            <div class="col">
-              <button type="submit" class="btn btn-primary">Agregar</button>
+            <div class="col d-flex justify-content-end">
+              <button class="btn btn-success">Guardar</button>
             </div>
           </div>
         </form>

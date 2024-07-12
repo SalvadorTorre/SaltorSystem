@@ -1,84 +1,138 @@
-<div class="card " style="height: 80vh;">
-    <div class="card-header">
-      <h1>Suplidor</h1>
+<div class="card" style="height: 80vh">
+  <div class="card-header">
+    <h1>Suplidor</h1>
+  </div>
+  <div class="card-body">
+    <!-- buscador -->
+    <div class="row">
+      <div class="col-2">
+        <label for="">Buscar Codigo</label>
+        <input
+          type="text"
+          placeholder="Digite codigo"
+          class="form-control"
+          [disabled]="habilitarFormiarioSuplidor"
+        />
+      </div>
+      <div class="col-3">
+        <label for="">Buscar Nombre</label>
+        <input
+          type="text"
+          placeholder="Digite el Nombre..."
+          class="form-control"
+          [disabled]="habilitarFormiarioSuplidor"
+        />
+      </div>
+      <div class="col-2">
+        <button class="btn btn-primary mt-4" (click)="nuevoSuplidor()">
+          Nuevo Suplidor
+        </button>
+        <!-- <button class="btn btn-primary" (click)="obtenerTodosCliente()">Buscar Cliente</button> -->
+      </div>
     </div>
-    <div class="card-body">
+    <br />
+    <!-- fin buscador -->
 
-      <!-- buscador -->
-      <div class="row ">
-        <div class="col-2">
-          <label for="">Buscar Codigo</label>
-          <input type="text" placeholder="Digite codigo" class="form-control" [disabled]="habilitarFormiarioSuplidor">
-        </div>
-        <div class="col-3">
-          <label for="">Buscar Nombre</label>
-          <input type="text" placeholder="Digite el Nombre..." class="form-control" [disabled]="habilitarFormiarioSuplidor">
-        </div>
-        <div class=" col-2">
-          <button class="btn btn-primary" (click)="nuevoSuplidor()">Nuevo Suplidor</button>
-          <!-- <button class="btn btn-primary" (click)="obtenerTodosCliente()">Buscar Cliente</button> -->
-        </div>
-      </div>
-      <!-- fin buscador -->
+    <!-- Grid -->
+    <div class="table-responsive" style="max-height: 400px; overflow-y: auto">
+      <table class="table table-bordered table-hover table-striped table-sm">
+        <thead class="table-dark">
+          <tr>
+            <th style="width: 10%">Codigo</th>
+            <th style="width: 40%">Nombre</th>
+            <th style="width: 20%">Telefono</th>
+            <th style="width: 15%">Rnc</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            *ngFor="let suplidor of suplidorList"
+            [ngClass]="{'selected':suplidor === selectedSuplidor}"
+            (click)="seleccionarSuplidor(suplidor)"
+          >
+            <td>{{suplidor.su_codSupl}}</td>
+            <td>{{suplidor.su_nomSupl}}</td>
+            <td>{{suplidor.su_telSupl}}</td>
+            <td>{{suplidor.su_rncSupl}}</td>
+            <td>
+              <button
+                class="btn btn-link"
+                (click)="editarSuplidor(suplidor) ; $event.stopPropagation()"
+              >
+                <i class="bi bi-pencil text-primary"></i>
+              </button>
+              &nbsp;
+              <button
+                class="btn btn-link"
+                (click)="eliminarSuplidor(suplidor); $event.stopPropagation()"
+              >
+                <i class="bi bi-trash text-danger"></i>
+              </button>
+              &nbsp;
+              <button
+                class="btn btn-link"
+                (click)="consultarSuplidor(suplidor); $event.stopPropagation()"
+              >
+                <i class="bi bi-card-list text-success"></i>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
 
+    <br />
 
-      <!-- Grid -->
-        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
-        <table class="table table-bordered table-hover table-striped table-sm">
-          <thead class="table-dark">
-            <tr>
-              <th style="width: 10%;">Codigo</th>
-              <th style="width: 40%;">Nombre</th>
-              <th style="width: 20%;">Telefono</th>
-              <th style="width: 15%;">Rnc</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let suplidor of suplidorList"  [ngClass]="{'selected':suplidor === selectedSuplidor}" (click)="seleccionarSuplidor(suplidor)">
-              <td>{{suplidor.su_codSupl}}</td>
-              <td>{{suplidor.su_nomSupl}}</td>
-              <td>{{suplidor.su_telSupl}}</td>
-              <td>{{suplidor.su_rncSupl}}</td>
-              <td>
-                <button class="btn btn-link" (click)="editarSuplidor(suplidor) ; $event.stopPropagation()"><i class="bi bi-pencil text-primary"></i></button>
-                &nbsp;
-                <button class="btn btn-link" (click)="eliminarSuplidor(suplidor); $event.stopPropagation()" ><i class="bi bi-trash text-danger"></i></button>
-                &nbsp;
-                <button class="btn btn-link" (click)="consultarSuplidor(suplidor); $event.stopPropagation()"><i class="bi bi-card-list text-success"></i></button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <br>
-
-      <!-- Formulario de cliente -->
-      <div class="modal fade" id="modalsuplidor" tabindex="-1" aria-labelledby="modalSuplidorLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h1 class="modal-title fs-5" id="modalSuplidorLabel">{{tituloModalSuplidor}}</h1>
-              <button type="button" class="btn-close" (click)="cerrarModalSuplidor()" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
+    <!-- Formulario de cliente -->
+    <div
+      class="modal fade"
+      id="modalsuplidor"
+      tabindex="-1"
+      aria-labelledby="modalSuplidorLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h1 class="modal-title fs-5" id="modalSuplidorLabel">
+              {{tituloModalSuplidor}}
+            </h1>
+            <button
+              type="button"
+              class="btn-close"
+              (click)="cerrarModalSuplidor()"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
             <div *ngIf="habilitarFormiarioSuplidor" class="mb-3">
-              <form [formGroup]="formularioSuplidor" (ngSubmit)="guardarSuplidor()">
+              <form
+                [formGroup]="formularioSuplidor"
+                (ngSubmit)="guardarSuplidor()"
+              >
                 <div class="form-row">
                   <div class="form-group">
                     <label for="su_rncSupl"> Rnc</label>
-                    <input  type="number" formControlName="su_rncSupl" class="form-control" />
+                    <input
+                      type="number"
+                      formControlName="su_rncSupl"
+                      class="form-control"
+                    />
                   </div>
                   <div class="form-group">
                     <label for="su_nomSupl">Nombre</label>
-                    <input  formControlName="su_nomSupl" class="form-control" />
+                    <input formControlName="su_nomSupl" class="form-control" />
                   </div>
                 </div>
                 <div class="form-row">
                   <div class="form-group">
                     <label for="su_dirSupl">Direccion</label>
-                    <input id="su_dirSupl" formControlName="su_dirSupl" class="form-control" />
+                    <input
+                      id="su_dirSupl"
+                      formControlName="su_dirSupl"
+                      class="form-control"
+                    />
                   </div>
                   <div class="form-group">
                     <label for="su_telSupl">Telefono</label>
@@ -95,10 +149,18 @@
                     <input formControlName="su_status" class="form-control" />
                   </div>
                 </div>
-                <button type="submit" *ngIf="!modoconsultaSuplidor" class="btn btn-success">{{modoedicionSuplidor ? "Editar" : "Guardar"}}</button>
-
+                <button
+                  type="submit"
+                  *ngIf="!modoconsultaSuplidor"
+                  class="btn btn-success"
+                >
+                  {{modoedicionSuplidor ? "Editar" : "Guardar"}}
+                </button>
               </form>
             </div>
           </div>
         </div>
       </div>
+    </div>
+  </div>
+</div>

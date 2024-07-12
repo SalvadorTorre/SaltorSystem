@@ -10,13 +10,13 @@ export class ServicioInventario {
   constructor(private http:HttpInvokeService) {}
 
   guardarInventario(inventario:ModeloInventarioData): Observable<any>{
-    return this.http.PostRequest<any,any>("/inventario",inventario);
+    return this.http.PostRequest<any,any>("/productos",inventario);
   }
 
   editarInventario(in_codmerc:number,inventario:ModeloInventarioData): Observable<any>{
-    return this.http.PutRequest<any,any>(`/inventario/${in_codmerc}`,inventario);
+    return this.http.PutRequest<any,any>(`/productos/${in_codmerc}`,inventario);
   }
   obtenerTodosInventario(): Observable<ModeloInventario>{
-    return this.http.GetRequest<ModeloInventario>("/inventario");
+    return this.http.GetRequest<ModeloInventario>("/productos");
   }
 }
