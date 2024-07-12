@@ -34,7 +34,7 @@ export class Usuario implements OnInit {
   crearFormularioUsuario(){
     this.formularioUsuario = this.fb.group({
          idUsuario: ['', Validators.required],
-        claveUsuario: ['',Validators.required],
+        claveUsuario: ['12345678',Validators.required],
         nombreUsuario: ['',Validators.required],
         nivel: [''],
         nivel2: [''],
@@ -70,7 +70,7 @@ habilitarFormularioUsuario(){
  nuevoUsuario(){
   this.modoedicionUsuario = false;
    this.tituloModalUsuario = 'Agregando Usuario';
-   $('#modalUsuario').modal('show');
+   $('#modalusuario').modal('show');
    this.habilitarFormiarioUsuario = true;
  }
 
@@ -79,7 +79,7 @@ habilitarFormularioUsuario(){
   this.formularioUsuario.reset();
   this.modoedicionUsuario = false;
   this.modoconsultaUsuario = false;
-  $('#modalUsuario').modal('hide');
+  $('#modalusuario').modal('hide');
   this.crearFormularioUsuario();
 
  }
@@ -88,7 +88,7 @@ habilitarFormularioUsuario(){
   this.modoedicionUsuario = true;
   this.formularioUsuario.patchValue(Usuario);
   this.tituloModalUsuario = 'Editando Usuario';
-  $('#modalUsuario').modal('show');
+  $('#modalusuario').modal('show');
   this.habilitarFormiarioUsuario = true;
 }
 
@@ -101,7 +101,7 @@ buscarTodosUsuario(){
 consultarUsuario(Usuario:ModeloUsuarioData){
   this.tituloModalUsuario = 'Consulta Usuario';
  this.formularioUsuario.patchValue(Usuario);
-$('#modalUsuario').modal('show');
+$('#modalusuario').modal('show');
 this.habilitarFormiarioUsuario = true;
 this.modoconsultaUsuario = true;
 };
@@ -123,7 +123,7 @@ guardarUsuario(){
       this.buscarTodosUsuario();
       this.formularioUsuario.reset();
       this.crearFormularioUsuario();
-      $('#modalUsuario').modal('hide');
+      $('#modalusuario').modal('hide');
       });
     }else{
       this.servicioUsuario.guardarUsuario(this.formularioUsuario.value).subscribe(response => {
@@ -131,7 +131,7 @@ guardarUsuario(){
       this.buscarTodosUsuario();
       this.formularioUsuario.reset();
       this.crearFormularioUsuario();
-      $('#modalcliente').modal('hide');
+      $('#modalusuario').modal('hide');
       });
     }
     }else{
