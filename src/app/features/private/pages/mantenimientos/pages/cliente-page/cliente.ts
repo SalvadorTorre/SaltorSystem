@@ -17,7 +17,7 @@ export class Cliente implements OnInit {
   formularioCliente!:FormGroup;
   clienteList:ModeloClienteData[] = [];
   zonasList:ModeloZonaData[] = [];
-  modoedicioncliente:boolean = false;
+  modoedicionChofer:boolean = false;
   habilitarFormularioCliente:boolean= false
   modoconsultaCliente:boolean= false
   clienteid!:number
@@ -48,7 +48,7 @@ export class Cliente implements OnInit {
   }
 
  nuevoCliente(){
-  this.modoedicioncliente = false;
+  this.modoedicionChofer = false;
    this.tituloModalCliente = 'Agregar Cliente';
    $('#modalcliente').modal('show');
    this.habilitarBusqueda = true;
@@ -56,7 +56,7 @@ export class Cliente implements OnInit {
 
  editarCliente(cliente:ModeloClienteData){
   this.clienteid = cliente.cl_codClie;
-  this.modoedicioncliente = true;
+  this.modoedicionChofer = true;
   this.formularioCliente.patchValue(cliente);
   this.tituloModalCliente = 'Editar Cliente';
   $('#modalcliente').modal('show');
@@ -83,7 +83,7 @@ this.habilitarBusqueda = true;
 cerrarModalCliente(){
   this.habilitarFormularioCliente = false;
   this.formularioCliente.reset();
-  this.modoedicioncliente = false;
+  this.modoedicionChofer = false;
   this.modoconsultaCliente = false;
   $('#modalclienter').modal('hide');
   this.crearFormularioCliente();
@@ -92,7 +92,7 @@ cerrarModalCliente(){
 guardarCliente(){
   console.log(this.formularioCliente.value);
   if(this.formularioCliente.valid){
-     if(this.modoedicioncliente){
+     if(this.modoedicionChofer){
       this.servicioCliente.editarCliente(this.clienteid, this.formularioCliente.value).subscribe(response => {
         alert("Cliente editado correctamente");
         this.obtenerTodosCliente();
