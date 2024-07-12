@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
-import { ModeloSector } from 'src/app/core/services/mantenimientos/sector';
+import { ModeloSector, ModeloSectorData } from 'src/app/core/services/mantenimientos/sector';
 import { ServicioSector } from 'src/app/core/services/mantenimientos/sector/sector.service';
 import { ModeloZonaData } from 'src/app/core/services/mantenimientos/zonas';
 import { ServicioZona } from 'src/app/core/services/mantenimientos/zonas/zonas.service';
@@ -15,7 +15,7 @@ export class Sector implements OnInit {
   habilitarBusqueda: boolean = false;
   tituloModalSector!: string;
   formularioSector!:FormGroup;
-  sectorList:ModeloSector[] = [];
+  sectorList:ModeloSectorData[] = [];
   zonaList:ModeloZonaData[] = [];
   sectordescripcion:string = '';
   sectorcodigo:any;
@@ -46,7 +46,7 @@ export class Sector implements OnInit {
    $('#modalsecto').modal('show');
  }
 
- editarSector(sector:ModeloSector){
+ editarSector(sector:ModeloSectorData){
   this.sectorcodigo = sector.se_codSect;
   this.sectordescripcion = sector.se_desSect;
   this.sectorzona = sector.se_codZona;

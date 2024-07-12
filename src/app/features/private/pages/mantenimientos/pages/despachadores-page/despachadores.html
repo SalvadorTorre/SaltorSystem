@@ -1,0 +1,177 @@
+<div class="card" style="height: 80vh">
+  <div class="card-header">
+    <h1>Despachadores</h1>
+  </div>
+  <div class="card-body">
+    <!-- buscador -->
+    <div class="row">
+      <div class="col-2">
+        <label for="">Buscar Codigo</label>
+        <input
+          type="text"
+          placeholder="Digite codigo"
+          class="form-control"
+          [disabled]="habilitarFormiarioDespachador"
+        />
+      </div>
+      <div class="col-3">
+        <label for="">Buscar Nombre</label>
+        <input
+          type="text"
+          placeholder="Digite el Nombre..."
+          class="form-control"
+          [disabled]="habilitarFormiarioDespachador"
+        />
+      </div>
+      <div class="col-3">
+        <button class="btn btn-primary mt-4" (click)="nuevoDespachador()">
+          Nuevo Despachador
+        </button>
+        <!-- <button class="btn btn-primary" (click)="obtenerTodosCliente()">Buscar Cliente</button> -->
+      </div>
+    </div>
+    <br />
+    <!-- fin buscador -->
+
+    <!-- Grid -->
+    <div class="table-responsive" style="max-height: 400px; overflow-y: auto">
+      <table class="table table-bordered table-hover table-striped table-sm">
+        <thead class="table-dark">
+          <tr>
+            <th>Código</th>
+            <th>Nombre</th>
+            <th>Cédula</th>
+            <th>Tipo</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let despachador of despachadoresList">
+            <td>{{despachador.CodDesp}}</td>
+            <td>{{despachador.nomDesp}}</td>
+            <td>{{despachador.cedDesp}}</td>
+            <td>{{despachador.tipoDesp}}</td>
+            <td class="text-center">
+              <div
+                [ngClass]="despachador.statusDespachadores ? 'chofer-activo' : 'chofer-inactivo'"
+              >
+                {{despachador.statusDespachadores ? 'Activo': 'Inactivo'}}
+              </div>
+            </td>
+            <td>
+              <button
+                class="btn btn-link"
+                (click)="editarDespachador(despachador) ; $event.stopPropagation()"
+              >
+                <i class="bi bi-pencil text-primary"></i>
+              </button>
+              &nbsp;
+              <button
+                class="btn btn-link"
+                (click)="eliminarDespachador(despachador.CodDesp)"
+              >
+                <i class="bi bi-trash text-danger"></i>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <br />
+
+    <!-- Formulario de cliente -->
+    <div
+      class="modal fade"
+      id="modaldespachador"
+      tabindex="-1"
+      aria-labelledby="modalSuplidorLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h1 class="modal-title fs-5" id="modalSuplidorLabel">
+              {{tituloModalDespachador}}
+            </h1>
+            <button
+              type="button"
+              class="btn-close"
+              (click)="cerrarModalDespachador()"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <form
+                [formGroup]="formularioDespachador"
+                (ngSubmit)="guardarDespachador()"
+              >
+                <div class="row">
+                  <div class="col">
+                    <div class="form-group">
+                      <label for="su_rncSupl">Nombre de despachador</label>
+                      <input
+                        type="text"
+                        formControlName="nomDesp"
+                        class="form-control"
+                      />
+                    </div>
+                  </div>
+                </div>
+                <br />
+                <div class="row">
+                  <div class="col-4">
+                    <div class="form-group">
+                      <label for="su_nomSupl">Cédula</label>
+                      <input formControlName="cedDesp" class="form-control" />
+                    </div>
+                  </div>
+                  <div class="col-4">
+                    <div class="form-group">
+                      <label for="su_nomSupl">Tipo</label>
+                      <select formControlName="tipoDesp" class="form-control">
+                        <option disabled selected value="">
+                          Escoge uno...
+                        </option>
+                        <option value="H">Hierro</option>
+                        <option value="F">Forja</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="col-3">
+                    <div class="form-check mt-4">
+                      <input
+                        class="form-check-input"
+                        type="checkbox"
+                        formControlName="statusDespachadores"
+                        value=""
+                        id="flexCheckDefault"
+                      />
+                      <label class="form-check-label" for="flexCheckDefault">
+                        Status
+                      </label>
+                    </div>
+                  </div>
+                </div>
+                <br />
+                <div class="row">
+                  <div class="col d-flex justify-content-end">
+                    <button
+                      type="submit"
+                      *ngIf="!modoconsultaDespachador"
+                      class="btn btn-success"
+                    >
+                      {{modoedicionDespachador ? "Editar" : "Guardar"}}
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
