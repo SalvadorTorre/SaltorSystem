@@ -3,6 +3,7 @@ import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms'
 import { ModeloUsuarioData } from 'src/app/core/services/mantenimientos/usuario';
 import { ServicioUsuario } from 'src/app/core/services/mantenimientos/usuario/usuario.service';
 declare var $: any;
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'Usuario',
@@ -37,7 +38,6 @@ export class Usuario implements OnInit {
         claveUsuario: ['1234',Validators.required],
         nombreUsuario: ['',Validators.required],
         nivel: [''],
-       // nivel2: [''],
         facturacion: [false],
         factLectura: [false],
         compra:[false],
@@ -54,12 +54,9 @@ export class Usuario implements OnInit {
         contLectura: [false],
         mercadeo: [false],
         usuario: [false],
-        credito: [false],
         vendedor: [false],
-        metaVenta: [''],
         correo: [''],
-        claveCorreo: [''],
-        despacho: [true],
+        despacho: [false],
 
       });
   }
@@ -86,7 +83,7 @@ habilitarFormularioUsuario(){
  editarUsuario(usuario:ModeloUsuarioData){
   this.usuarioid = usuario.codUsuario;
   this.modoedicionUsuario = true;
-  this.formularioUsuario.patchValue(Usuario);
+  this.formularioUsuario.patchValue(usuario);
   this.tituloModalUsuario = 'Editando Usuario';
   $('#modalusuario').modal('show');
   this.habilitarFormulario = true;
@@ -127,8 +124,15 @@ guardarUsuario(){
       });
     }else{
       this.servicioUsuario.guardarUsuario(this.formularioUsuario.value).subscribe(response => {
-      alert("Usuario Guardado");
-      this.buscarTodosUsuario();
+        Swal.fire({
+          title: "Excelente!",
+          text: "Usuario Guardado correctamente.",
+          icon: "success",
+          timer: 3000,
+          showConfirmButton: false,
+        });
+
+        this.buscarTodosUsuario();
       this.formularioUsuario.reset();
       this.crearFormularioUsuario();
       $('#modalusuario').modal('hide');

@@ -10,7 +10,7 @@ export interface ModeloUsuario{
     idUsuario:     string;
     claveUsuario:  string;
     nombreUsuario: string;
-    nivel:         string;
+    nivel:         number;
     nivel2:        string;
     facturacion:   boolean;
     factLectura:   boolean;

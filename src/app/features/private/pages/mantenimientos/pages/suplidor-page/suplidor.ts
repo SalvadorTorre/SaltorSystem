@@ -33,7 +33,7 @@ export class Suplidor implements OnInit {
 
   crearFormularioSuplidor(){
     this.formularioSuplidor = this.fb.group({
-      su_rncsupl: [''],
+      su_rncSupl: ['', Validators.required],
       su_nomSupl: ['', Validators.required],
       su_dirSupl: [''],
       su_telSupl: [''],
