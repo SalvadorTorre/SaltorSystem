@@ -34,10 +34,10 @@ export class Usuario implements OnInit {
   crearFormularioUsuario(){
     this.formularioUsuario = this.fb.group({
          idUsuario: ['', Validators.required],
-        claveUsuario: ['12345678',Validators.required],
+        claveUsuario: ['1234',Validators.required],
         nombreUsuario: ['',Validators.required],
         nivel: [''],
-        nivel2: [''],
+       // nivel2: [''],
         facturacion: [false],
         factLectura: [false],
         compra:[false],

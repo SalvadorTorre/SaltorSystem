@@ -1,0 +1,12 @@
+.row {
+    margin-bottom: 5px;
+  }
+  .form-check {
+    display: flex;
+    align-items: center;
+  }
+  
+  .form-check-input {
+    margin-left: 5px;
+  }
+  
