@@ -1,0 +1,199 @@
+<div class="card" style="height: 80vh">
+  <div class="card-header">
+    <h1>Cliente</h1>
+  </div>
+  <div class="card-body">
+    <!-- buscador -->
+    <div class="row">
+      <div class="col-2">
+        <label for="">Buscar Codigo</label>
+        <input
+          type="text"
+          placeholder="Digite codigo"
+          class="form-control"
+          [disabled]="habilitarBusqueda"
+        />
+      </div>
+      <div class="col-3">
+        <label for="">Buscar Nombre</label>
+        <input
+          type="text"
+          placeholder="Digite el Nombre..."
+          class="form-control"
+          [disabled]="habilitarBusqueda"
+        />
+      </div>
+      <div class="col-2">
+        <button class="btn btn-primary mt-4" (click)="nuevoCliente()">
+          Nuevo Cliente
+        </button>
+        <!-- <button class="btn btn-primary" (click)="obtenerTodosCliente()">Buscar Cliente</button> -->
+      </div>
+    </div>
+    <br />
+    <!-- fin buscador -->
+
+    <!-- Grid -->
+    <div class="table-responsive">
+      <!--  ***********************************-->
+      <style>
+        table tr:hover {
+          background-color: #963737; /* Cambia este color al que desees */
+        }
+      </style>
+      <!--**********************************-->
+
+      <table class="table table-bordered table-hover table-striped table-sm">
+        <thead class="table-dark">
+          <tr>
+            <th>Codigo</th>
+            <th>Nombre</th>
+            <th>Telefono</th>
+            <th>Rnc</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let clientes of clienteList">
+            <td>{{clientes.cl_codClie}}</td>
+            <td>{{clientes.cl_nomClie}}</td>
+            <td>{{clientes.cl_telClie}}</td>
+            <td>{{clientes.cl_rnc}}</td>
+            <td>
+              <button class="btn btn-link" (click)="editarCliente(clientes)">
+                <i class="bi bi-pencil text-primary"></i>
+              </button>
+              &nbsp;
+              <button class="btn btn-link">
+                <i class="bi bi-trash text-danger"></i>
+              </button>
+              &nbsp;
+              <button class="btn btn-link" (click)="consultarCliente(clientes)">
+                <i class="bi bi-card-list text-success"></i>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <br />
+
+    <!-- Formulario de cliente -->
+    <div
+      class="modal fade"
+      id="modalcliente"
+      tabindex="-1"
+      aria-labelledby="modalClienteLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h1 class="modal-title fs-5" id="modalClienteLabel">
+              {{tituloModalCliente}}
+            </h1>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <div *ngIf="habilitarBusqueda" class="mb-3">
+              <form
+                [formGroup]="formularioCliente"
+                (ngSubmit)="guardarCliente()"
+              >
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="cl_codClie"> Rnc</label>
+                    <input
+                      type="number"
+                      formControlName="cl_rnc"
+                      class="form-control"
+                    />
+                  </div>
+                  <div class="form-group">
+                    <label for="cl_nomClie">Nombre</label>
+                    <!-- <input id="cl_nomClie" formControlName="cl_nomClie" class="form-control" />-->
+                    <input formControlName="cl_nomClie" class="form-control" />
+                  </div>
+                </div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="cl_dirClie">Direccion</label>
+                    <input
+                      id="cl_dirClie"
+                      formControlName="cl_dirClie"
+                      class="form-control"
+                    />
+                  </div>
+                  <div class="form-group">
+                    <label for="cl_codSect">Codigo de Sector</label>
+                    <input
+                      id="cl_codSect"
+                      formControlName="cl_codSect"
+                      class="form-control"
+                    />
+                  </div>
+                </div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="cl_codZona">Codigo de Zona</label>
+                    <select formControlName="cl_codZona" class="form-control">
+                      <option disabled selected>Selecione una Zona</option>
+                      <option
+                        *ngFor="let zona of zonasList"
+                        [value]="zona.zo_codZona"
+                      >
+                        {{zona.zo_descrip}}
+                      </option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="cl_telClie">Telefono</label>
+                    <input
+                      id="cl_telClie"
+                      formControlName="cl_telClie"
+                      class="form-control"
+                    />
+                  </div>
+                </div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="cl_tipo">Tipo</label>
+                    <input
+                      id="cl_tipo"
+                      formControlName="cl_tipo"
+                      class="form-control"
+                    />
+                  </div>
+                  <div class="form-group">
+                    <label for="cl_status">Status</label>
+                    <select formControlName="cl_status" class="form-control">
+                      <option value="" disabled selected>
+                        Selecciona un status...
+                      </option>
+                      <option value="1">Activo</option>
+                      <option value="0">Inactivo</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="col d-flex justify-content-end">
+                    <button type="submit" class="btn btn-success">
+                      {{modoedicionChofer ? "Editar" : "Guardar"}}
+                    </button>
+                  </div>
+                </div>
+                <!-- <button type="button" class="btn btn-secondary" (click)="mostrarFormulario = false">Cancelar</button> -->
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

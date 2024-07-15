@@ -1,0 +1,160 @@
+<div class="card" style="height: 80vh">
+  <div class="card-header">
+    <h1>Choferes</h1>
+  </div>
+  <div class="card-body">
+    <!-- buscador -->
+    <div class="row">
+      <div class="col-2">
+        <label for="">Buscar Codigo</label>
+        <input
+          type="text"
+          placeholder="Digite codigo"
+          class="form-control"
+          [disabled]="habilitarFormiarioChofer"
+        />
+      </div>
+      <div class="col-3">
+        <label for="">Buscar Nombre</label>
+        <input
+          type="text"
+          placeholder="Digite el Nombre..."
+          class="form-control"
+          [disabled]="habilitarFormiarioChofer"
+        />
+      </div>
+      <div class="col-2">
+        <button class="btn btn-primary mt-4" (click)="nuevoChofer()">
+          Nuevo Chofer
+        </button>
+        <!-- <button class="btn btn-primary" (click)="obtenerTodosCliente()">Buscar Cliente</button> -->
+      </div>
+    </div>
+    <br />
+    <!-- fin buscador -->
+
+    <!-- Grid -->
+    <div class="table-responsive" style="max-height: 400px; overflow-y: auto">
+      <table class="table table-bordered table-hover table-striped table-sm">
+        <thead class="table-dark">
+          <tr>
+            <th>Código</th>
+            <th>Nombre</th>
+            <th>Cédula</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let chofer of choferesList">
+            <td>{{chofer.codChofer}}</td>
+            <td>{{chofer.nomChofer}}</td>
+            <td>{{chofer.cedChofer}}</td>
+            <td class="text-center">
+              <div
+                [ngClass]="chofer.statusChofer ? 'chofer-activo' : 'chofer-inactivo'"
+              >
+                {{chofer.statusChofer ? 'Activo': 'Inactivo'}}
+              </div>
+            </td>
+            <td>
+              <button
+                class="btn btn-link"
+                (click)="editarChofer(chofer) ; $event.stopPropagation()"
+              >
+                <i class="bi bi-pencil text-primary"></i>
+              </button>
+              &nbsp;
+              <button
+                class="btn btn-link"
+                (click)="eliminarChofer(chofer.codChofer)"
+              >
+                <i class="bi bi-trash text-danger"></i>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <br />
+
+    <!-- Formulario de cliente -->
+    <div
+      class="modal fade"
+      id="modalchofer"
+      tabindex="-1"
+      aria-labelledby="modalSuplidorLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h1 class="modal-title fs-5" id="modalSuplidorLabel">
+              {{tituloModalChofer}}
+            </h1>
+            <button
+              type="button"
+              class="btn-close"
+              (click)="cerrarModalChofer()"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <form [formGroup]="formularioChofer" (ngSubmit)="guardarChofer()">
+                <div class="row">
+                  <div class="col">
+                    <div class="form-group">
+                      <label for="su_rncSupl">Nombre de chofer</label>
+                      <input
+                        type="text"
+                        formControlName="nomChofer"
+                        class="form-control"
+                      />
+                    </div>
+                  </div>
+                </div>
+                <br />
+                <div class="row">
+                  <div class="col-6">
+                    <div class="form-group">
+                      <label for="su_nomSupl">Cédula chofer</label>
+                      <input formControlName="cedChofer" class="form-control" />
+                    </div>
+                  </div>
+                  <div class="col-6">
+                    <div class="form-check mt-4">
+                      <input
+                        class="form-check-input"
+                        type="checkbox"
+                        formControlName="statusChofer"
+                        value=""
+                        id="flexCheckDefault"
+                      />
+                      <label class="form-check-label" for="flexCheckDefault">
+                        Status
+                      </label>
+                    </div>
+                  </div>
+                </div>
+                <br />
+                <div class="row">
+                  <div class="col d-flex justify-content-end">
+                    <button
+                      type="submit"
+                      *ngIf="!modoconsultaChofer"
+                      class="btn btn-success"
+                    >
+                      {{modoedicionChofer ? "Editar" : "Guardar"}}
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

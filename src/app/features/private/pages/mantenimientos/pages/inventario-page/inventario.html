@@ -1,0 +1,360 @@
+<div class="card" style="height: 80vh">
+  <div class="card-header">
+    <h4>Modulo inventario</h4>
+  </div>
+  <div class="card-body">
+    <!-- buscador -->
+
+    <div class="row">
+      <div class="col-2">
+        <label for="">Buscar Codigo</label>
+        <input
+          type="text"
+          placeholder="Digite codigo"
+          class="form-control"
+          [disabled]="habilitarBusqueda"
+        />
+      </div>
+      <div class="col-3">
+        <label for="">Buscar Descripcion</label>
+        <input
+          type="text"
+          placeholder="Digite descripcion..."
+          class="form-control"
+          [disabled]="habilitarBusqueda"
+        />
+      </div>
+      <div class="col-2">
+        <button class="btn btn-primary mt-4" (click)="nuevoProducto()">
+          Nuevo producto
+        </button>
+      </div>
+    </div>
+
+    <!-- fin buscador -->
+
+    <br />
+
+    <div class="table-responsive">
+      <table class="table table-bordered table-hover table-striped table-sm">
+        <thead class="table-dark">
+          <tr>
+            <th>Código</th>
+            <th>Descripción</th>
+            <th>Existencia</th>
+            <th>Precio</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let inventario of invenarioList">
+            <td>{{inventario.in_codmerc}}</td>
+            <td>{{inventario.in_desmerc}}</td>
+            <td>{{inventario.in_canmerc}}</td>
+            <td>{{inventario.in_premerc}}</td>
+            <td>
+              <button class="btn btn-link" (click)="editarProducto(inventario)">
+                <i class="bi bi-pencil text-warning"></i>
+              </button>
+              &nbsp;
+              <button class="btn btn-link">
+                <i class="bi bi-trash text-danger"></i>
+              </button>
+              &nbsp;
+              <button class="btn btn-link">
+                <i class="bi bi-card-list text-success"></i>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div
+  class="modal fade"
+  id="modalProducto"
+  tabindex="-1"
+  aria-labelledby="modalProductoLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h1 class="modal-title fs-5" id="modalProductoLabel">
+          {{tituloModalProducto}}
+        </h1>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
+      </div>
+      <div class="modal-body">
+        <form
+          [formGroup]="formularioInventario"
+          (ngSubmit)="onSubmitInventario()"
+        >
+          <div class="row">
+            <div class="col-6">
+              <div class="card">
+                <div class="card-header">
+                  <h4>Datos del producto</h4>
+                </div>
+                <div class="card-body">
+                  <div class="row">
+                    <div class="col-7">
+                      <label for="">Código</label>
+                      <input
+                        type="text"
+                        class="form-control form-control-sm"
+                        formControlName="in_codmerc"
+                      />
+                    </div>
+                  </div>
+
+                  <div class="row">
+                    <div class="col">
+                      <label for="">Descripción</label>
+                      <input
+                        type="text"
+                        class="form-control form-control-sm"
+                        formControlName="in_desmerc"
+                      />
+                    </div>
+                  </div>
+
+                  <div class="row">
+                    <div class="col-3">
+                      <label for="">Unidad</label>
+                      <input
+                        type="text"
+                        class="form-control form-control-sm"
+                        formControlName="in_unidad"
+                      />
+                    </div>
+                    <div class="col-3">
+                      <label for="">Peso</label>
+                      <input
+                        type="text"
+                        class="form-control form-control-sm"
+                        formControlName="in_peso"
+                      />
+                    </div>
+                    <div class="col-3">
+                      <label for="">Longitud</label>
+                      <input
+                        type="text"
+                        class="form-control form-control-sm"
+                        formControlName="in_longitud"
+                      />
+                    </div>
+                    <div class="col-3">
+                      <label for="">Tipo</label>
+                      <select
+                        class="form-control form-control-sm"
+                        formControlName="in_tipoproduct"
+                      >
+                        <option value="F">Forja</option>
+                        <option value="H">Hierro</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div class="row">
+                    <div class="col-7">
+                      <label for="">Grupo</label>
+                      <input
+                        type="text"
+                        class="form-control form-control-sm"
+                        formControlName="in_grumerc"
+                      />
+                    </div>
+                    <div class="col-2">
+                      <label for="">&nbsp; &nbsp;</label>
+                      <input
+                        type="text"
+                        class="form-control form-control-sm"
+                        readonly
+                      />
+                    </div>
+                    <div class="col-3">
+                      <label for="">Status</label>
+                      <select
+                        class="form-control form-control-sm"
+                        formControlName="in_status"
+                      >
+                        <option value="A">Activo</option>
+                        <option value="I">Inactivo</option>
+                        <option value="E">Escaso</option>
+                        <option value="X">Autorizado</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="card">
+                <div class="card-header">
+                  <h4>Costo y Precio</h4>
+                </div>
+                <div class="card-body">
+                  <div class="row">
+                    <div class="col">
+                      <h6 class="text-danger">Costo</h6>
+                    </div>
+                  </div>
+                  <div class="row">
+                    <div class="col-6">
+                      <label for="">Compra</label>
+                      <input
+                        type="text"
+                        class="form-control form-control-sm"
+                        formControlName="in_cosmerc"
+                      />
+                    </div>
+                    <div class="col-6">
+                      <label for="">Promedio</label>
+                      <input
+                        type="text"
+                        class="form-control form-control-sm"
+                        formControlName="in_costpro"
+                      />
+                    </div>
+                  </div>
+
+                  <div class="row">
+                    <div class="col-6">
+                      <label for="">Compra Anterior</label>
+                      <input
+                        type="text"
+                        class="form-control form-control-sm"
+                        formControlName="in_ucosto"
+                      />
+                    </div>
+                    <div class="col-6">
+                      <label for="">% Ventas</label>
+                      <input
+                        type="text"
+                        class="form-control form-control-sm"
+                        formControlName="in_porgana"
+                      />
+                    </div>
+                  </div>
+
+                  <div class="row">
+                    <div class="col">
+                      <h6 class="text-danger">Precio</h6>
+                    </div>
+                  </div>
+                  <div class="row">
+                    <div class="col-4">
+                      <label for="">Venta</label>
+                      <input
+                        type="text"
+                        class="form-control form-control-sm"
+                        formControlName="in_premerc"
+                      />
+                    </div>
+                    <div class="col-4">
+                      <label for="">Mínimo</label>
+                      <input
+                        type="text"
+                        class="form-control form-control-sm"
+                        formControlName="in_precmin"
+                      />
+                    </div>
+
+                    <div class="col-4">
+                      <label for="">Actualizada</label>
+                      <input
+                        type="date"
+                        class="form-control form-control-sm"
+                        formControlName="in_fecmodif"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-6">
+              <div class="card">
+                <div class="card-header">
+                  <h4>Existencia</h4>
+                </div>
+                <div class="card-body">
+                  <div class="row">
+                    <div class="col-4">
+                      <label for="">En Almacén</label>
+                      <input
+                        type="number"
+                        class="form-control form-control-sm"
+                        formControlName="in_canmerc"
+                      />
+                    </div>
+                    <div class="col-4">
+                      <label for="">Minima</label>
+                      <input
+                        type="number"
+                        class="form-control form-control-sm"
+                        formControlName="in_eximini"
+                      />
+                    </div>
+                    <div class="col-4">
+                      <label for="">Minima venta</label>
+                      <input
+                        type="number"
+                        class="form-control form-control-sm"
+                        formControlName="in_minvent"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="card">
+                <div class="card-header">
+                  <h4>Inventario</h4>
+                </div>
+                <div class="card-body">
+                  <div class="row">
+                    <div class="col-6">
+                      <label for="">Fecha</label>
+                      <input
+                        type="date"
+                        class="form-control form-control-sm"
+                        formControlName="in_fecinve"
+                      />
+                    </div>
+                    <div class="col-6">
+                      <label for="">Cantidad</label>
+                      <input
+                        type="number"
+                        class="form-control form-control-sm"
+                        formControlName="in_caninve"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <br />
+          <br />
+          <div class="row">
+            <div class="col d-flex justify-content-end">
+              <button class="btn btn-success">Guardar</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

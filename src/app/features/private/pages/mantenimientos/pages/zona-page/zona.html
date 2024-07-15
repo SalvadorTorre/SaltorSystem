@@ -1,0 +1,61 @@
+<div class="card" style="height: 80vh">
+  <div class="card-header">
+    <h1>Zona</h1>
+  </div>
+  <div class="card-body">
+    <!-- buscador -->
+
+    <div class="row">
+      <div class="col-2">
+        <label>Codigo Zona</label>
+        <input
+          type="text"
+          disabled
+          class="form-control"
+          [(ngModel)]="zonacodigo"
+        />
+      </div>
+      <div class="col-2">
+        <label>Descripcion Zona</label>
+        <input type="text" class="form-control" [(ngModel)]="zonadescripcion" />
+      </div>
+      <div class="col-2">
+        <button class="btn btn-primary mt-4" (click)="gualdarZona()">
+          Nuevo Zona
+        </button>
+      </div>
+    </div>
+
+    <!-- fin buscador -->
+
+    <br />
+    <!--   Grid -->
+    <div class="table-responsive">
+      <table class="table table-bordered table-hover table-striped table-sm">
+        <thead class="table-dark">
+          <tr>
+            <th>Codigo</th>
+            <th>Descripcion</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let zona of zonasList ">
+            <td>{{zona.zo_codZona}}</td>
+            <td>{{zona.zo_descrip}}</td>
+            <td>
+              <button class="btn btn-link" (click)="editarZona(zona)">
+                <i class="bi bi-pencil text-warning"></i>
+              </button>
+              &nbsp;
+              <button class="btn btn-link">
+                <i class="bi bi-trash text-danger"></i>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<!--Fin del Grid-->
