@@ -3,6 +3,7 @@ import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms'
 import { ModeloSuplidorData } from 'src/app/core/services/mantenimientos/suplidor';
 import { ServicioSuplidor } from 'src/app/core/services/mantenimientos/suplidor/suplidor.service';
 declare var $: any;
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'Suplidor',
@@ -97,7 +98,13 @@ guardarSuplidor(){
   if(this.formularioSuplidor.valid){
     if(this.modoedicionSuplidor){
       this.servicioSuplidor.editarSuplidor(this.suplidorid, this.formularioSuplidor.value).subscribe(response => {
-      alert("Suplidor Editado");
+        Swal.fire({
+          title: "Excelente!",
+          text: "Suplidor Guardado correctamente.",
+          icon: "success",
+          timer: 3000,
+          showConfirmButton: false,
+        });
       this.buscarTodosSuplidor();
       this.formularioSuplidor.reset();
       this.crearFormularioSuplidor();
@@ -105,7 +112,13 @@ guardarSuplidor(){
       });
     }else{
       this.servicioSuplidor.guardarSuplidor(this.formularioSuplidor.value).subscribe(response => {
-      alert("Suplidor Guardado");
+        Swal.fire({
+          title: "Excelente!",
+          text: "Suplidor Guardado correctamente.",
+          icon: "success",
+          timer: 3000,
+          showConfirmButton: false,
+        });
       this.buscarTodosSuplidor();
       this.formularioSuplidor.reset();
       this.crearFormularioSuplidor();

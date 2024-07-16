@@ -64,11 +64,18 @@
 </div>
 
 <!-- Formulario de cliente -->
-<div class="modal fade"  id="modalusuario"  tabindex="-1" aria-labelledby="modalUsuarioLabel" aria-hidden="true">
-  <div class="modal-dialog custom-modal">
+
+<!--<div class="card " style="height: 80vh;">
+  <div class="card-header">
+    <h1>Usuario</h1>
+  </div>
+  <div class="card-body">-->
+
+<div class="modal fade"   id="modalusuario"  tabindex="-1" aria-labelledby="modalUsuarioLabel" aria-hidden="true">
+  <div class="modal-dialog  modal-lg">
     <div class="modal-content">
       <div class="modal-header">
-        <h4 class="modal-title fs-5" id="modalSuplidorLabel">
+        <h4 class="modal-title fs-5 " id="modalSuplidorLabel">
           {{tituloModalUsuario}}
         </h4>
         <button
@@ -82,34 +89,33 @@
           [formGroup]="formularioUsuario"
           (ngSubmit)="guardarUsuario()">
           <div class="form-row">
-            <div class="col-20">
+            <div class="col-30">
               <div class="card">
-                <div class="card-header">
-                  <h4>Datos del Usuario</h4>
+                <div class="card-header ">
+                  <h6>Datos del Usuario</h6>
                 </div>
                 <div class="card-body">
                   <div class="row">
                     <div class="col-3">
                       <label for="">Id Usuario</label>
-                      <input type="text" class="form-control form-control-sm" formControlName="idUsuario" />
+                      <input type="text" class="form-control form-control-sm " formControlName="idUsuario" />
                     </div>
-                    <div class="col-3">
+                    <div class="col-2">
                       <label for="">Clave</label>
                       <input type="text" class="form-control form-control-sm" formControlName="claveUsuario"/>
                     </div>
-                  </div>
-                  <div class="row">
-                    <div class="col-6">
+                    <div class="col-7">
                       <label for="">Nombre</label>
                       <input type="text" class="form-control form-control-sm" formControlName="nombreUsuario"/>
                     </div>
-                    <div class="col-3">
-                      <label for="">Nivel de Usuario</label>
-                      <input type="text" class="form-control form-control-sm" formControlName="nivel"/>
-                    </div>
                   </div>
                   <div class="row">
-                    <div class="col-6">
+                    
+                    <div class="col-2">
+                      <label for="">Nivel</label>
+                      <input type="text" class="form-control form-control-sm" formControlName="nivel"/>
+                    </div>
+                      <div class="col-8">
                       <label for="">Email</label>
                       <input type="text" class="form-control form-control-sm" formControlName="correo"/>
                     </div>
@@ -126,11 +132,11 @@
               <h6>Permiso</h6>
             </div>
             <div class="card-body">
-              <div class="row d-flex justify-content-end">
-                <div class="col-3">
+              <div class="row ">
+                <div class="col-8 text-end">
                   <h6 class="text-danger">Acceso</h6>
                 </div>
-                <div class="col-3 text-center">
+                <div class="col-4 d-flex justify-content-center">
                   <h6 class="text-danger">Lectura</h6>
                 </div>
               </div>
@@ -152,10 +158,10 @@
               </div>
             </div>
             <div class="row">
-              <div class="col">
+              <div class="col-6">
                 <h6>Facturacion</h6>
               </div>
-              <div class="col">
+              <div class="col-3">
                 <div class="form-check">
                   <label class="form-check-label" for="facturacion"></label>
                   <input type="checkbox" class="form-check-input custom-checkbox" formControlName="facturacion" id="facturacion">
@@ -169,10 +175,10 @@
                 </div>
               </div>
               <div class="row">
-                <div class="col">
+                <div class="col-6">
                   <h6>Caja</h6>
                 </div>
-                <div class="col">
+                <div class="col-3">
                   <div class="form-check">
                     <label class="form-check-label" for="caja"></label>
                      <input type="checkbox" class="form-check-input custom-checkbox" formControlName="caja" id="caja">
@@ -186,10 +192,10 @@
                 </div>
               </div>
               <div class="row">
-                <div class="col">
+                <div class="col-6">
                   <h6>Compra</h6>
                 </div>
-                <div class="col">
+                <div class="col-3">
                   <div class="form-check">
                     <label class="form-check-label" for="compra"></label>
                     <input type="checkbox" class="form-check-input custom-checkbox" formControlName="compra" id="compra">
@@ -203,10 +209,10 @@
                 </div>
               </div>
               <div class="row">
-                <div class="col">
+                <div class="col-6">
                   <h6>Reporte</h6>
                 </div>
-                <div class="col">
+                <div class="col-3">
                   <div class="form-check">
                     <label class="form-check-label" for="reporte"></label>
                     <input type="checkbox" class="form-check-input custom-checkbox" formControlName="reporte" id="reporte">
@@ -220,10 +226,10 @@
                 </div>
               </div>
               <div class="row">
-                <div class="col">
+                <div class="col-6">
                   <h6>Almacen</h6>
                 </div>
-                <div class="col">
+                <div class="col-3">
                   <div class="form-check">
                     <label class="form-check-label" for="almacen"></label>
                     <input type="checkbox" class="form-check-input custom-checkbox" formControlName="almacen" id="almacen">
@@ -237,10 +243,10 @@
                 </div>
               </div>
               <div class="row">
-                <div class="col-8 ">
+                <div class="col-6 ">
                   <h6>Mercadeo</h6>
                 </div>
-                <div class="col-2">
+                <div class="col-3">
                   <div class="form-check">
                     <label class="form-check-label" for="mercadeo"></label>
                     <input type="checkbox" class="form-check-input custom-checkbox" formControlName="mercadeo" id="mercadeo">
@@ -248,10 +254,10 @@
                 </div>
               </div>
               <div class="row">
-                <div class="col">
+                <div class="col-6">
                   <h6>Usuaario</h6>
                 </div>
-                <div class="col ">
+                <div class="col-3 ">
                   <div class="form-check">
                     <label class="form-check-label" for="usuario"></label>
                     <input type="checkbox" class="form-check-input custom-checkbox" formControlName="usuario" id="usuario">
@@ -259,10 +265,10 @@
                 </div>
               </div>
               <div class="row">
-                <div class="col ">
+                <div class="col-6 ">
                   <h6>Vendedor</h6>
                 </div>
-                <div class="col ">
+                <div class="col-3 ">
                   <div class="form-check">
                     <label class="form-check-label" for="vendedor"></label>
                     <input type="checkbox" class="form-check-input custom-checkbox" formControlName="vendedor" id="vendedor">
@@ -270,10 +276,10 @@
                 </div>
               </div>
               <div class="row">
-                <div class="col">
+                <div class="col-6">
                   <h6>Despacho</h6>
                 </div>
-                  <div class="col ">
+                  <div class="col-3 ">
                     <div class="form-check">
                       <label class="form-check-label" for="despacho"></label>
                       <input type="checkbox" class="form-check-input custom-checkbox" formControlName="despacho" id="despacho">

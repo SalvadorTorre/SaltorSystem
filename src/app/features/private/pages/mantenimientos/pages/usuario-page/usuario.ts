@@ -103,11 +103,40 @@ this.habilitarFormulario = true;
 this.modoconsultaUsuario = true;
 };
 
-eliminarUsuario(Usuario:ModeloUsuarioData){
+/*eliminarUsuario(Usuario:ModeloUsuarioData){
   this.servicioUsuario.eliminarUsuario(Usuario.codUsuario).subscribe(response => {
     alert("Usuario Eliminado");
     this.buscarTodosUsuario();
   });
+}*/
+
+
+
+eliminarUsuario(Usuario:ModeloUsuarioData){
+  Swal.fire({
+    title: '¿Está seguro de eliminar este Usuario?',
+    text: "¡No podrá revertir esto!",
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#3085d6',
+    cancelButtonColor: '#d33',
+    confirmButtonText: 'Si, eliminar!'
+  }).then((result) => {
+    if (result.isConfirmed) {
+      this.servicioUsuario.eliminarUsuario(Usuario.codUsuario).subscribe(response => {
+        Swal.fire(
+          {
+            title: "Excelente!",
+            text: "Usuario eliminado correctamente.",
+            icon: "success",
+            timer: 3000,
+            showConfirmButton: false,
+          }
+        )
+        this.buscarTodosUsuario();
+      });
+    }
+  })
 }
 
 
@@ -116,7 +145,13 @@ guardarUsuario(){
   if(this.formularioUsuario.valid){
     if(this.modoedicionUsuario){
       this.servicioUsuario.editarUsuario(this.usuarioid, this.formularioUsuario.value).subscribe(response => {
-      alert("Usuario Editado");
+        Swal.fire({
+          title: "Excelente!",
+          text: "Usuario Editado correctamente.",
+          icon: "success",
+          timer: 5000,
+          showConfirmButton: false,
+        });
       this.buscarTodosUsuario();
       this.formularioUsuario.reset();
       this.crearFormularioUsuario();
