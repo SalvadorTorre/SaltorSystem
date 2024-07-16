@@ -55,13 +55,19 @@ input[type="checkbox"]:disabled {
 .uppercase-input {
   text-transform: uppercase;
 }
+/* styles.css o app.component.css */
+.custom-form-background {
+  background-color: rgb(232, 246, 251); /* Cambia este color según tus necesidades */
+  padding: 20px; /* Ajusta el padding si es necesario */
+}
+
 
 /*<!.form-check-label {
-  font-size: 0.875rem; /* Ajusta el tamaño de la etiqueta 
+  font-size: 0.875rem; /* Ajusta el tamaño de la etiqueta
 }*/
 
 /*.form-check-input {
-  transform: scale(2); /* Reduce el tamaño del checkbox 
-  margin-left: 15px; /* Ajusta el margen si es necesario 
+  transform: scale(2); /* Reduce el tamaño del checkbox
+  margin-left: 15px; /* Ajusta el margen si es necesario
 }
 */
