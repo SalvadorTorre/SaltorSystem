@@ -7,11 +7,11 @@ import Swal from 'sweetalert2';
 
 
 @Component({
-  selector: 'Inventario',
-  templateUrl: './inventario.html',
-  styleUrls: ['./inventario.css']
+  selector: 'Grupomerc',
+  templateUrl: './grupomerc.html',
+  styleUrls: ['./grupomerc.css']
 })
-export class Inventario implements OnInit {
+export class GrupoMercancias implements OnInit {
   habilitarBusqueda: boolean = false;
   tituloModalProducto!: string;
   formularioInventario!:FormGroup;
