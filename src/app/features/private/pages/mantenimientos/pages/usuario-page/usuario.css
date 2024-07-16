@@ -52,6 +52,9 @@ input[type="checkbox"]:disabled {
   background-color: light-dark(rgba(255, 0, 0, 0.3), rgba(255, 0, 0, 0.3)) !important;
   color: light-dark(rgb(12, 243, 27), rgb(166, 246, 5)) !important;
 }
+.uppercase-input {
+  text-transform: uppercase;
+}
 
 /*<!.form-check-label {
   font-size: 0.875rem; /* Ajusta el tamaño de la etiqueta 

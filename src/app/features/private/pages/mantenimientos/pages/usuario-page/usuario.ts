@@ -11,6 +11,22 @@ import Swal from 'sweetalert2';
   styleUrls: ['./usuario.css']
 })
 export class Usuario implements OnInit {
+
+
+    moveFocus(event: KeyboardEvent, nextElement: HTMLInputElement | null): void {
+      if (event.key === 'Enter' && nextElement) {
+        event.preventDefault(); // Evita el comportamiento predeterminado del Enter
+        nextElement.focus(); // Enfoca el siguiente campo
+      }
+    }
+
+
+      convertToUpperCase(event: Event): void {
+        const input = event.target as HTMLInputElement;
+        input.value = input.value.toUpperCase();
+      }
+
+
  habilitarFormulario: boolean = false;
   tituloModalUsuario!: string;
   formularioUsuario!:FormGroup;
