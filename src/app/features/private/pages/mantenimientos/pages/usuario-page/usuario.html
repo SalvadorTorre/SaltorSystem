@@ -88,58 +88,79 @@
         <form class="custom-form-background"
           [formGroup]="formularioUsuario"
           (ngSubmit)="guardarUsuario()">
-          <div class="form-row">
+          <div class="row">
             <div class="col-6">
               <div class="card">
                 <div class="card-header ">
                   <h4>Datos del Usuario</h4>
                 </div>
                 <div class="card-body" >
-                  <div class="row">
-                    <div class="col">
-                      <label for="input1">ID:</label>
-                      <input type="text" class="uppercase-input" (input)="convertToUpperCase($event)"
-                      (keydown)="moveFocus($event, input2)" #input1
-                       class="form-control form-control-sm "
-                      formControlName="idUsuario" />
-                    </div>
+                <div class="row">
+                  <div class="col-4">
+                    <h6>ID del Usuario</h6>
                   </div>
-                  <div class="row">
-                    <div class="col">
-                      <label for="input2">Clave</label>
-                      <input type="text" class="uppercase-input" (input)="convertToUpperCase($event)"
-                      (keydown)="moveFocus($event, input3)" #input2
-                       class="form-control form-control-sm"
-                       formControlName="claveUsuario"/>
-                    </div>
+                <div class="row">
+                  <div class="col-4">
+                    <input type="text" class="uppercase-input" (input)="convertToUpperCase($event)"
+                    (keydown)="moveFocus($event, input2)" #input1
+                    class="form-control form-control-sm "
+                    formControlName="idUsuario" />
                   </div>
-                  <div class="row" >
-                    <div class="col">
-                      <label for="input3">Nombre</label>
-                      <input type="text" class="uppercase-input" (input)="convertToUpperCase($event)"
-                      (keydown)="moveFocus($event, input4)" #input3
-                      class="form-control form-control-sm"
-                      formControlName="nombreUsuario"/>
-                    </div>
+                </div>
+                <div class="row">
+                  <div class="col-4">
+                    <h6>Clave Usuario</h6>
                   </div>
-                  <div class="row">
-                    <div class="col">
-                      <label for="input4">Nivel</label>
-                      <input type="number"
-                      (keydown)="moveFocus($event, input5)"#input4
-                      class="form-control form-control-sm"
-                      formControlName="nivel"/>
-                    </div>
+                </div>
+                <div class="row">
+                  <div class="col-4">
+                    <input type="text" class="uppercase-input" (input)="convertToUpperCase($event)"
+                    (keydown)="moveFocus($event, input3)" #input2
+                    class="form-control form-control-sm"
+                    formControlName="claveUsuario"/>
                   </div>
-                  <div class="row">
-                    <div class="col">
-                      <label for="input5">Email</label>
-                      <input type="text"
-                      (keydown)="moveFocus($event,input5)" #input5
-                      class="form-control form-control-sm"
-                      formControlName="correo"/>
-                    </div>
+                </div>
+                <div class="row">
+                  <div class="col-4">
+                    <h6>Nivel de Usuario</h6>
                   </div>
+                </div>
+                <div class="row">
+                  <div class="col-2 d-flex justify-content-end">
+                    <input type="number"
+                    (keydown)="moveFocus($event, input5)"#input4
+                    class="form-control form-control-sm"
+                    formControlName="nivel"/>
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="col">
+                    <h6>Nombre del Empleado</h6>
+                  </div>
+                </div>
+                <div class="row" >
+                  <div class="col">
+                    <input type="text" class="uppercase-input" (input)="convertToUpperCase($event)"
+                    (keydown)="moveFocus($event, input4)" #input3
+                    class="form-control form-control-sm"
+                    formControlName="nombreUsuario"/>
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="col">
+                    <h6>Email de Empleado</h6>
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="col">
+                    <input type="text"
+                    (keydown)="moveFocus($event,input5)" #input5
+                    class="form-control form-control-sm"
+                    formControlName="correo"/>
+                  </div>
+                </div>
+              </div>
+
                 </div>
               </div>
             </div>
@@ -261,6 +282,25 @@
                     </div>
                   </div>
                   <div class="row">
+                    <div class="col-6">
+                      <h6>Contabilidad</h6>
+                    </div>
+                    <div class="col-3">
+                      <div class="form-check">
+                        <label class="form-check-label" for="contabilida"></label>
+                        <input type="checkbox" class="form-check-input custom-checkbox" formControlName="contabilidad" id="contabilidad">
+                      </div>
+                    </div>
+                    <div class="col-3">
+                      <div class="form-check">
+                        <label class="form-check-label" for="contLectura"></label>
+                        <input type="checkbox" class="form-check-input  custom-checkbox" formControlName="contLectura" id="contLectura">
+                      </div>
+                    </div>
+                  </div>
+
+
+                  <div class="row">
                     <div class="col-6 ">
                       <h6>Mercadeo</h6>
                     </div>
@@ -273,13 +313,12 @@
                   </div>
                   <div class="row">
                     <div class="col-6">
-                      <h6>Usuaario</h6>
-                      </div>
-                      <div class="col-3 ">
-                        <div class="form-check">
-                          <label class="form-check-label" for="usuario"></label>
-                          <input type="checkbox" class="form-check-input custom-checkbox" formControlName="usuario" id="usuario">
-                        </div>
+                      <h6>Usuario</h6>
+                    </div>
+                    <div class="col-3 ">
+                      <div class="form-check">
+                        <label class="form-check-label" for="usuario"></label>
+                        <input type="checkbox" class="form-check-input custom-checkbox" formControlName="usuario" id="usuario">
                       </div>
                     </div>
                   </div>
@@ -311,6 +350,7 @@
                     </div>
                   </div>
                 </div>
+              </div>
             </div>
           </div>
         </form>
