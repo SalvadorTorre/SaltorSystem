@@ -48,6 +48,10 @@ const routes: Routes = [
           path:"despachadores",
           loadChildren: () => import('./pages/despachadores-page/despachadores-modulo').then(m => m.ModuloDespachadores)
         },
+        {
+          path:"grupo-mercancias",
+          loadChildren: () => import('./pages/grupormerc/grupomerc-modulo').then(m => m.ModuloGrupoMercancias)
+        },
       ]
     }
   ];

@@ -9,14 +9,23 @@ import { ModeloGrupoMercancias, ModeloGrupoMercanciasData } from ".";
 export class ServicioGrupoMercancias {
   constructor(private http:HttpInvokeService) {}
 
-  guardarGrupoMercancias(inventario:ModeloGrupoMercanciasData): Observable<any>{
-    return this.http.PostRequest<any,any>("/grupomerc",inventario);
+  guardarGrupoMercancias(grupomerc:ModeloGrupoMercanciasData): Observable<any>{
+    return this.http.PostRequest<any,any>("/grupomerc",grupomerc);
   }
 
-  editarGrupoMercancias(in_codmerc:number,inventario:ModeloGrupoMercanciasData): Observable<any>{
-    return this.http.PutRequest<any,any>(`/grupomerc/${in_codmerc}`,inventario);
+  editarGrupoMercancias(Codgrupo:number,grupomerc:ModeloGrupoMercanciasData): Observable<any>{
+    return this.http.PutRequest<any,any>(`/grupomerc/${Codgrupo}`,grupomerc);
   }
-  obtenerGrupoMercancias(): Observable<ModeloGrupoMercancias>{
-    return this.http.GetRequest<ModeloGrupoMercancias>("/grupomerc");
+  obtenerGrupoMercancias(pageIndex: number, pageSize: number, codigo?: string, descripcion?: string): Observable<any> {
+    let url = `/grupomerc?page=${pageIndex}&limit=${pageSize}`;
+
+    if (codigo) {
+      url += `&codigo=${codigo}`;
+    }
+    if (descripcion) {
+      url += `&descripcion=${descripcion}`;
+    }
+
+    return this.http.GetRequest<any>(url);
   }
 }
