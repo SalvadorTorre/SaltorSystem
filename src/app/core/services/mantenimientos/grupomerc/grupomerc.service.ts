@@ -28,4 +28,8 @@ export class ServicioGrupoMercancias {
 
     return this.http.GetRequest<any>(url);
   }
+
+  obtenerTodosGrupoMercancias(): Observable<any> {
+    return this.http.GetRequest<any>("/grupomerc");
+  }
 }
