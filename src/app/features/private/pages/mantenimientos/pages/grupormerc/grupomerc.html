@@ -1,6 +1,6 @@
-<div class="card" style="height: 80vh">
+<div class="card" style="height: 85vh">
   <div class="card-header">
-    <h4>Modulo inventario</h4>
+    <h4>Modulo Grupo de Mercancías</h4>
   </div>
   <div class="card-body">
     <!-- buscador -->
@@ -11,8 +11,8 @@
         <input
           type="text"
           placeholder="Digite codigo"
-          class="form-control"
-          [disabled]="habilitarBusqueda"
+          class="form-control uppercase"
+          (input)="onCodigoInput($event)"
         />
       </div>
       <div class="col-3">
@@ -20,15 +20,15 @@
         <input
           type="text"
           placeholder="Digite descripcion..."
-          class="form-control"
-          [disabled]="habilitarBusqueda"
+          class="form-control uppercase"
+          (input)="onDescripcionInput($event)"
         />
       </div>
-      <div class="col-2">
+      <!-- <div class="col-2">
         <button class="btn btn-primary mt-4" (click)="nuevoProducto()">
           Nuevo producto
         </button>
-      </div>
+      </div> -->
     </div>
 
     <!-- fin buscador -->
@@ -41,19 +41,18 @@
           <tr>
             <th>Código</th>
             <th>Descripción</th>
-            <th>Existencia</th>
-            <th>Precio</th>
+            <th>Tipo</th>
             <th></th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let inventario of invenarioList">
-            <td>{{inventario.in_codmerc}}</td>
-            <td>{{inventario.in_desmerc}}</td>
-            <td>{{inventario.in_canmerc}}</td>
-            <td>{{inventario.in_premerc}}</td>
+          <tr *ngFor="let grupomerc of grupoMercList">
+            <td>{{grupomerc.Codgrupo}}</td>
+            <td>{{grupomerc.Descgrupo}}</td>
+            <td>{{grupomerc.Tipomerc}}</td>
+
             <td>
-              <button class="btn btn-link" (click)="editarProducto(inventario)">
+              <button class="btn btn-link">
                 <i class="bi bi-pencil text-warning"></i>
               </button>
               &nbsp;
@@ -69,11 +68,53 @@
         </tbody>
       </table>
     </div>
+    <nav aria-label="Page navigation">
+      <ul class="pagination justify-content-center">
+        <li class="page-item" [class.disabled]="currentPage === 1">
+          <a class="page-link" (click)="changePage(1)" aria-label="First">
+            <span aria-hidden="true">&laquo;&laquo;</span>
+          </a>
+        </li>
+        <li class="page-item" [class.disabled]="currentPage === 1">
+          <a
+            class="page-link"
+            (click)="changePage(currentPage - 1)"
+            aria-label="Previous"
+          >
+            <span aria-hidden="true">&laquo;</span>
+          </a>
+        </li>
+        <li
+          *ngFor="let page of pages"
+          class="page-item"
+          [class.active]="currentPage === page"
+        >
+          <a class="page-link" (click)="changePage(page)">{{ page }}</a>
+        </li>
+        <li class="page-item" [class.disabled]="currentPage === totalPages">
+          <a
+            class="page-link"
+            (click)="changePage(currentPage + 1)"
+            aria-label="Next"
+          >
+            <span aria-hidden="true">&raquo;</span>
+          </a>
+        </li>
+        <li class="page-item" [class.disabled]="currentPage === totalPages">
+          <a
+            class="page-link"
+            (click)="changePage(totalPages)"
+            aria-label="Last"
+          >
+            <span aria-hidden="true">&raquo;&raquo;</span>
+          </a>
+        </li>
+      </ul>
+    </nav>
   </div>
 </div>
 
-
-<div
+<!-- <div
   class="modal fade"
   id="modalProducto"
   tabindex="-1"
@@ -363,4 +404,4 @@
       </div>
     </div>
   </div>
-</div>
+</div> -->

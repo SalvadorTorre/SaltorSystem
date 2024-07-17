@@ -1,19 +1,24 @@
 /* You can add global styles to this file, and also import other style files */
 @import "~bootstrap-icons/font/bootstrap-icons.css";
 
-body,html{
+body,
+html {
   background-color: #edf2fa;
 }
 
-.card{
+.card {
   margin-top: 10px;
 }
 
 table tr:hover {
-  background-color: #936e6e; /* Cambia este color al que desees */
+  background-color: #936e6e;
+  /* Cambia este color al que desees */
 }
 
+.pagination .page-item .page-link {
+  cursor: pointer;
+}
 
-
-
-
+input.uppercase {
+  text-transform: uppercase;
+}
