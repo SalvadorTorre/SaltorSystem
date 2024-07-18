@@ -37,7 +37,7 @@ export class Inventario implements OnInit {
   constructor(private fb:FormBuilder, private servicioInventario:ServicioInventario, private servicioGrupmerc: ServicioGrupoMercancias) {
     this.crearFormularioInventario();
     this.codigoSubject.pipe(
-      debounceTime(1000),
+      debounceTime(500),
       distinctUntilChanged(),
       switchMap(codigo => {
         this.codigo = codigo;
@@ -50,7 +50,7 @@ export class Inventario implements OnInit {
     });
 
     this.descripcionSubject.pipe(
-      debounceTime(1000),
+      debounceTime(500),
       distinctUntilChanged(),
       switchMap(descripcion => {
         console.log('descripcion', descripcion);

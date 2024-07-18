@@ -13,6 +13,7 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
     CommonModule,
     RutaUsuario,
     ReactiveFormsModule,
+    FormsModule
   ],
   providers: [],
   bootstrap: [Usuario]
