@@ -7,13 +7,16 @@
     <!-- buscador -->
 
     <div class="row ">
-      <div class="col-2">
-        <label for="">Buscar Codigo</label>
-        <input type="text" placeholder="Digite codigo" class="form-control" [disabled]="habilitarFormulario">
-      </div>
       <div class="col-3">
         <label for="">Buscar Nombre</label>
-        <input type="text" placeholder="Digite el Nombre..." class="form-control" [disabled]="habilitarFormulario">
+        <input 
+        type="text"
+         placeholder="Digite el Nombre..." 
+         class="form-control uppercase"
+         (input)="buscaUsuario($event)"/>
+      </div>
+      <div class="col-6">
+
       </div>
       <div class=" col-2">
         <button class="btn btn-primary" (click)="nuevoUsuario()">Nuevo Usuario</button>

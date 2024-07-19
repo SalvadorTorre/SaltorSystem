@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
+import { BehaviorSubject } from 'rxjs';
 import { ModeloUsuarioData } from 'src/app/core/services/mantenimientos/usuario';
 import { ServicioUsuario } from 'src/app/core/services/mantenimientos/usuario/usuario.service';
 declare var $: any;
@@ -36,7 +37,13 @@ export class Usuario implements OnInit {
   modoconsultaUsuario:boolean = false;
   usuarioList:ModeloUsuarioData[] = [];
   selectedUsuario: any = null;
+  descripcion: string = '';
+  private buscaXusuario = new BehaviorSubject<string>('');
+
+  
   constructor(private fb:FormBuilder, private servicioUsuario:ServicioUsuario)
+  
+
   {
     this.crearFormularioUsuario();
   }
@@ -118,6 +125,14 @@ $('#modalusuario').modal('show');
 this.habilitarFormulario = true;
 this.modoconsultaUsuario = true;
 };
+buscaUsuario(event: Event) {
+  const inputElement = event.target as HTMLInputElement;
+  this.buscaXusuario.next(inputElement.value.toUpperCase());
+}
+
+
+
+
 
 /*eliminarUsuario(Usuario:ModeloUsuarioData){
   this.servicioUsuario.eliminarUsuario(Usuario.codUsuario).subscribe(response => {
