@@ -11,7 +11,6 @@
           type="text"
           placeholder="Digite codigo"
           class="form-control"
-          [disabled]="habilitarFormiario"
         />
       </div>
       <div class="col-3">
@@ -20,7 +19,6 @@
           type="text"
           placeholder="Digite el Nombre..."
           class="form-control"
-          [disabled]="habilitarFormularioChofer"
         />
       </div>
       <div class="col-2">
@@ -46,14 +44,13 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let chofer of choferesList">
+          <tr *ngFor="let chofer of choferList">
             <td>{{chofer.codChofer}}</td>
             <td>{{chofer.nomChofer}}</td>
             <td>{{chofer.cedChofer}}</td>
             <td class="text-center">
               <div
-                [ngClass]="chofer.statusChofer ? 'chofer-activo' : 'chofer-inactivo'"
-              >
+                [ngClass]="chofer.statusChofer ? 'chofer-activo' : 'chofer-inactivo'" >
                 {{chofer.statusChofer ? 'Activo': 'Inactivo'}}
               </div>
             </td>

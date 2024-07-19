@@ -1,18 +1,22 @@
-
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { BehaviorSubject,debounceTime, distinctUntilChanged, switchMap} from 'rxjs';
-import { ModeloChoferData } from 'src/app/core/services/mantenimientos/choferes';
-import { ServicioChofer } from 'src/app/core/services/mantenimientos/choferes/choferes.service';
-declare var $: any;
 import Swal from 'sweetalert2';
+import { ServicioCliente } from 'src/app/core/services/mantenimientos/clientes/cliente.service';
+import { ModeloClienteData } from 'src/app/core/services/mantenimientos/clientes';
+import { ModeloZonaData } from 'src/app/core/services/mantenimientos/zonas';
+import { ServicioZona } from 'src/app/core/services/mantenimientos/zonas/zonas.service';
+import { ServicioChofer } from 'src/app/core/services/mantenimientos/choferes/choferes.service';
+import { ModeloChoferData } from 'src/app/core/services/mantenimientos/choferes';
+declare var $: any;
+
 
 @Component({
-  selector: 'Chofer',
+  selector: 'Choferes',
   templateUrl: './choferes.html',
   styleUrls: ['./choferes.css']
 })
-export class Chofer implements OnInit {
+export class Choferes implements OnInit {
   totalItems = 0;
   pageSize = 8
   currentPage = 1;
@@ -22,8 +26,8 @@ export class Chofer implements OnInit {
   descripcion: string = '';
   private descripcionBuscar = new BehaviorSubject<string>('');
 
- 
- habilitarFormulario: boolean = false;
+
+  habilitarFormulario: boolean = false;
   tituloModalChofer!: string;
   formularioChofer!:FormGroup;
   modoedicionChofer:boolean = false;
@@ -36,8 +40,8 @@ export class Chofer implements OnInit {
   this.descripcionBuscar.pipe(
     debounceTime(500),
     distinctUntilChanged(),
-    switchMap(descripcion => {
-      this.descripcion = descripcion;
+    switchMap(nombre => {
+      this.descripcion =nombre;
       return this.servicioChofer.buscarTodosChofer(this.currentPage, this.pageSize, this.descripcion);
     })
   )
@@ -50,7 +54,7 @@ export class Chofer implements OnInit {
  }
 
   seleccionarChofer(chofer: any)
-   { this.selectedChofer = Chofer; }
+   { this.selectedChofer = Choferes; }
   ngOnInit(): void
   {this.buscarTodosChofer(1);  }
 
@@ -105,7 +109,7 @@ this.modoconsultaChofer = true;
 };
 
 
-eliminarChofer(Chofer:ModeloChoferData){
+eliminarChofer(Chofer:number){
   Swal.fire({
   title: '¿Está seguro de eliminar este Chofer?',
   text: "¡No podrá revertir esto!",
@@ -116,7 +120,7 @@ eliminarChofer(Chofer:ModeloChoferData){
   confirmButtonText: 'Si, eliminar!'
   }).then((result) => {
   if (result.isConfirmed) {
-    this.servicioChofer.eliminarChofer(Chofer.codChofer).subscribe(response => {
+    this.servicioChofer.eliminarChofer(Chofer).subscribe(response => {
     Swal.fire(
     {
      title: "Excelente!",
