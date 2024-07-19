@@ -23,19 +23,7 @@ export class Usuario implements OnInit {
   private idBuscar = new BehaviorSubject<string>('');
   private descripcionBuscar = new BehaviorSubject<string>('');
 
-    moveFocus(event: KeyboardEvent, nextElement: HTMLInputElement | null): void {
-      if (event.key === 'Enter' && nextElement) {
-        event.preventDefault(); // Evita el comportamiento predeterminado del Enter
-        nextElement.focus(); // Enfoca el siguiente campo
-      }
-    }
-
-
-      convertToUpperCase(event: Event): void {
-        const input = event.target as HTMLInputElement;
-        input.value = input.value.toUpperCase();
-      }
-
+ 
 
  habilitarFormulario: boolean = false;
   tituloModalUsuario!: string;
@@ -129,8 +117,8 @@ habilitarFormularioUsuario(){
   this.modoconsultaUsuario = false;
   $('#modalusuario').modal('hide');
   this.crearFormularioUsuario();
-
  }
+
  editarUsuario(usuario:ModeloUsuarioData){
   this.usuarioid = usuario.codUsuario;
   this.modoedicionUsuario = true;
@@ -154,39 +142,31 @@ this.habilitarFormulario = true;
 this.modoconsultaUsuario = true;
 };
 
-/*eliminarUsuario(Usuario:ModeloUsuarioData){
-  this.servicioUsuario.eliminarUsuario(Usuario.codUsuario).subscribe(response => {
-    alert("Usuario Eliminado");
-    this.buscarTodosUsuario();
-  });
-}*/
-
-
 
 eliminarUsuario(Usuario:ModeloUsuarioData){
   Swal.fire({
-    title: '¿Está seguro de eliminar este Usuario?',
-    text: "¡No podrá revertir esto!",
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonColor: '#3085d6',
-    cancelButtonColor: '#d33',
-    confirmButtonText: 'Si, eliminar!'
+  title: '¿Está seguro de eliminar este Usuario?',
+  text: "¡No podrá revertir esto!",
+  icon: 'warning',
+  showCancelButton: true,
+  confirmButtonColor: '#3085d6',
+  cancelButtonColor: '#d33',
+  confirmButtonText: 'Si, eliminar!'
   }).then((result) => {
-    if (result.isConfirmed) {
-      this.servicioUsuario.eliminarUsuario(Usuario.codUsuario).subscribe(response => {
-        Swal.fire(
-          {
-            title: "Excelente!",
-            text: "Usuario eliminado correctamente.",
-            icon: "success",
-            timer: 3000,
-            showConfirmButton: false,
-          }
-        )
-        this.buscarTodosUsuario(this.currentPage);
-      });
+  if (result.isConfirmed) {
+    this.servicioUsuario.eliminarUsuario(Usuario.codUsuario).subscribe(response => {
+    Swal.fire(
+    {
+     title: "Excelente!",
+     text: "Usuario eliminado correctamente.",
+     icon: "success",
+     timer: 3000,
+     showConfirmButton: false,
     }
+    )
+    this.buscarTodosUsuario(this.currentPage);
+    });
+  }
   })
 }
 
@@ -199,43 +179,55 @@ idEntra(event: Event) {
   this.idBuscar.next(inputElement.value.toUpperCase());
 }
 guardarUsuario(){
-  console.log(this.formularioUsuario.value);
-  if(this.formularioUsuario.valid){
-    if(this.modoedicionUsuario){
-      this.servicioUsuario.editarUsuario(this.usuarioid, this.formularioUsuario.value).subscribe(response => {
-        Swal.fire({
-          title: "Excelente!",
-          text: "Usuario Editado correctamente.",
-          icon: "success",
-          timer: 5000,
-          showConfirmButton: false,
-        });
-      this.buscarTodosUsuario(1);
-      this.formularioUsuario.reset();
-      this.crearFormularioUsuario();
-      $('#modalusuario').modal('hide');
-      });
-    }else{
-      this.servicioUsuario.guardarUsuario(this.formularioUsuario.value).subscribe(response => {
-        Swal.fire({
-          title: "Excelente!",
-          text: "Usuario Guardado correctamente.",
-          icon: "success",
-          timer: 3000,
-          showConfirmButton: false,
-        });
+console.log(this.formularioUsuario.value);
+if(this.formularioUsuario.valid){
+  if(this.modoedicionUsuario){
+    this.servicioUsuario.editarUsuario(this.usuarioid, this.formularioUsuario.value).subscribe(response => {
+    Swal.fire({
+    title: "Excelente!",
+    text: "Usuario Editado correctamente.",
+    icon: "success",
+    timer: 5000,
+    showConfirmButton: false,
+    });
+    this.buscarTodosUsuario(1);
+    this.formularioUsuario.reset();
+    this.crearFormularioUsuario();
+    $('#modalusuario').modal('hide');
+    });
+  }
+  else{
+    this.servicioUsuario.guardarUsuario(this.formularioUsuario.value).subscribe(response => {
+    Swal.fire({
+    title: "Excelente!",
+    text: "Usuario Guardado correctamente.",
+    icon: "success",
+    timer: 3000,
+    showConfirmButton: false,
+    });
 
-        this.buscarTodosUsuario(1);
-      this.formularioUsuario.reset();
-      this.crearFormularioUsuario();
-      $('#modalusuario').modal('hide');
-      });
-    }
-    }else{
-       alert("Este Usuario no fue Guardado");
-    }
+    this.buscarTodosUsuario(1);
+    this.formularioUsuario.reset();
+    this.crearFormularioUsuario();
+    $('#modalusuario').modal('hide');
+    });
+  }
+  }
+  else{
+    alert("Este Usuario no fue Guardado");
+  }
 }
 
+convertToUpperCase(event: Event): void {
+  const input = event.target as HTMLInputElement;
+  input.value = input.value.toUpperCase();
+}
+moveFocus(event: KeyboardEvent, nextElement: HTMLInputElement | null): void {
+  if (event.key === 'Enter' && nextElement) {
+   event.preventDefault(); // Evita el comportamiento predeterminado del Enter
+   nextElement.focus(); // Enfoca el siguiente campo
+ }
+ }
 
 changePage(page: number) {
   this.currentPage = page;

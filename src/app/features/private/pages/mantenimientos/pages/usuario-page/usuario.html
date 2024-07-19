@@ -20,14 +20,14 @@
         <input
       [(ngModel)]="txtdescripcion"
           type="text"
-          placeholder="Digite descripcion..."
+          placeholder="Digite Nombre..."
           class="form-control uppercase"
           (input)="descripcionEntra($event)"
         />
 
       </div>
       <div class="col-2">
-        <button class="btn btn-danger mt-4" (click)="limpiaBusqueda()"><i class="bi bi-eraser"></i></button>
+        <button class="btn btn-danger mt-4" (click)="limpiaBusqueda()"><i class="bi bi-arrow-counterclockwise"></i></button>
       </div>
       <div class=" col-2">
         <button class="btn btn-primary mt-4" (click)="nuevoUsuario()">Nuevo Usuario</button>
