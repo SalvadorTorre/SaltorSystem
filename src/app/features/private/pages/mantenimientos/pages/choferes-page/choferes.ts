@@ -18,12 +18,12 @@ declare var $: any;
 })
 export class Choferes implements OnInit {
   totalItems = 0;
-  pageSize = 8
+  pageSize = 8;
   currentPage = 1;
   maxPagesToShow = 5;
   txtdescripcion: string = '';
-  txtcodigo: string = '';
-  descripcion: string = '';
+  txtcodigo = '';
+   descripcion: string = '';
   private descripcionBuscar = new BehaviorSubject<string>('');
 
 
@@ -77,7 +77,7 @@ export class Choferes implements OnInit {
  nuevoChofer(){
   this.modoedicionChofer = false;
    this.tituloModalChofer = 'Agregando Chofer';
-   $('#modalChofer').modal('show');
+   $('#modalchofer').modal('show');
    this.habilitarFormulario = true;
  }
 
@@ -86,7 +86,7 @@ export class Choferes implements OnInit {
   this.formularioChofer.reset();
   this.modoedicionChofer = false;
   this.modoconsultaChofer = false;
-  $('#modalChofer').modal('hide');
+  $('#modalchofer').modal('hide');
   this.crearFormularioChofer();
  }
 
@@ -95,7 +95,7 @@ export class Choferes implements OnInit {
   this.modoedicionChofer = true;
   this.formularioChofer.patchValue(Chofer);
   this.tituloModalChofer = 'Editando Chofer';
-  $('#modalChofer').modal('show');
+  $('#modalchofer').modal('show');
   this.habilitarFormulario = true;
 }
 
@@ -108,7 +108,7 @@ buscarTodosChofer(page:number){
 consultarChofer(Chofer:ModeloChoferData){
   this.tituloModalChofer = 'Consulta Chofer';
  this.formularioChofer.patchValue(Chofer);
-$('#modalChofer').modal('show');
+$('#modalchofer').modal('show');
 this.habilitarFormulario = true;
 this.modoconsultaChofer = true;
 };
@@ -161,7 +161,7 @@ if(this.formularioChofer.valid){
     this.buscarTodosChofer(1);
     this.formularioChofer.reset();
     this.crearFormularioChofer();
-    $('#modalChofer').modal('hide');
+    $('#modalchofer').modal('hide');
     });
   }
   else{
@@ -177,7 +177,7 @@ if(this.formularioChofer.valid){
     this.buscarTodosChofer(1);
     this.formularioChofer.reset();
     this.crearFormularioChofer();
-    $('#modalChofer').modal('hide');
+    $('#modalchofer').modal('hide');
     });
   }
   }
@@ -229,7 +229,6 @@ get pages(): number[] {
 
   return Array.from({ length: endPage - startPage + 1 }, (_, i) => startPage + i);
 }
-
 limpiaBusqueda(){
   this.txtdescripcion = '';
   this.txtcodigo = '';

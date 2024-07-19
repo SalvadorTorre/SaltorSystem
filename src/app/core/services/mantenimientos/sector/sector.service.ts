@@ -19,4 +19,15 @@ export class ServicioSector {
   obtenerTodasSector(): Observable<ModeloSector>{
     return this.http.GetRequest<ModeloSector>("/sector");
   }
+  getAllSector(pageIndex: number, pageSize: number,  codigo?:string, descripcion?: string): Observable<any> {
+    let url = `/sector?page=${pageIndex}&limit=${pageSize}`;
+    if (codigo) {
+      url += `&codigo=${codigo}`;
+    }
+    if (descripcion) {
+      url += `&descripcion=${descripcion}`;
+    }
+console.log(url);
+    return this.http.GetRequest<any>(url);
+  }
 }

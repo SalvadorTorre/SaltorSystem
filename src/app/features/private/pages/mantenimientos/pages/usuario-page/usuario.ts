@@ -23,7 +23,7 @@ export class Usuario implements OnInit {
   private idBuscar = new BehaviorSubject<string>('');
   private descripcionBuscar = new BehaviorSubject<string>('');
 
- 
+
 
  habilitarFormulario: boolean = false;
   tituloModalUsuario!: string;
@@ -64,7 +64,6 @@ export class Usuario implements OnInit {
     this.currentPage = response.pagination.page;
   });
 }
-
   seleccionarUsuario(usuario: any)
    { this.selectedUsuario = Usuario; }
   ngOnInit(): void
