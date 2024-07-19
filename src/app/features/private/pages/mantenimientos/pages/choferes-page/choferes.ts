@@ -53,6 +53,11 @@ export class Choferes implements OnInit {
 
  }
 
+ onDescripcionInput(event: Event) {
+  const inputElement = event.target as HTMLInputElement;
+  this.descripcionBuscar.next(inputElement.value.toUpperCase());
+}
+
   seleccionarChofer(chofer: any)
    { this.selectedChofer = Choferes; }
   ngOnInit(): void

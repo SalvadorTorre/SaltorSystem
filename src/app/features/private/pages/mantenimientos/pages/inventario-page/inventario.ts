@@ -30,6 +30,7 @@ export class Inventario implements OnInit {
 
   codigo: string = '';
   descripcion: string = '';
+  codigoInput:string = '';
 
   private codigoSubject = new BehaviorSubject<string>('');
   private descripcionSubject = new BehaviorSubject<string>('');
@@ -74,6 +75,10 @@ export class Inventario implements OnInit {
   onCodigoInput(event: Event) {
     const inputElement = event.target as HTMLInputElement;
     this.codigoSubject.next(inputElement.value.toUpperCase());
+  }
+
+  clearInput(): void {
+    this.codigoInput = '';
   }
 
   onDescripcionInput(event: Event) {

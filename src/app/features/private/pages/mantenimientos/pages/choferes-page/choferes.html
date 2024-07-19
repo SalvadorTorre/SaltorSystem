@@ -5,20 +5,13 @@
   <div class="card-body">
     <!-- buscador -->
     <div class="row">
-      <div class="col-2">
-        <label for="">Buscar Codigo</label>
-        <input
-          type="text"
-          placeholder="Digite codigo"
-          class="form-control"
-        />
-      </div>
       <div class="col-3">
         <label for="">Buscar Nombre</label>
         <input
           type="text"
           placeholder="Digite el Nombre..."
           class="form-control"
+          (input)="onDescripcionInput($event)"
         />
       </div>
       <div class="col-2">
@@ -50,7 +43,8 @@
             <td>{{chofer.cedChofer}}</td>
             <td class="text-center">
               <div
-                [ngClass]="chofer.statusChofer ? 'chofer-activo' : 'chofer-inactivo'" >
+                [ngClass]="chofer.statusChofer ? 'chofer-activo' : 'chofer-inactivo'"
+              >
                 {{chofer.statusChofer ? 'Activo': 'Inactivo'}}
               </div>
             </td>
@@ -74,7 +68,49 @@
       </table>
     </div>
 
-    <br />
+    <nav aria-label="Page navigation">
+      <ul class="pagination justify-content-center">
+        <li class="page-item" [class.disabled]="currentPage === 1">
+          <a class="page-link" (click)="changePage(1)" aria-label="First">
+            <span aria-hidden="true">&laquo;&laquo;</span>
+          </a>
+        </li>
+        <li class="page-item" [class.disabled]="currentPage === 1">
+          <a
+            class="page-link"
+            (click)="changePage(currentPage - 1)"
+            aria-label="Previous"
+          >
+            <span aria-hidden="true">&laquo;</span>
+          </a>
+        </li>
+        <li
+          *ngFor="let page of pages"
+          class="page-item"
+          [class.active]="currentPage === page"
+        >
+          <a class="page-link" (click)="changePage(page)">{{ page }}</a>
+        </li>
+        <li class="page-item" [class.disabled]="currentPage === totalPages">
+          <a
+            class="page-link"
+            (click)="changePage(currentPage + 1)"
+            aria-label="Next"
+          >
+            <span aria-hidden="true">&raquo;</span>
+          </a>
+        </li>
+        <li class="page-item" [class.disabled]="currentPage === totalPages">
+          <a
+            class="page-link"
+            (click)="changePage(totalPages)"
+            aria-label="Last"
+          >
+            <span aria-hidden="true">&raquo;&raquo;</span>
+          </a>
+        </li>
+      </ul>
+    </nav>
 
     <!-- Formulario de cliente -->
     <div
