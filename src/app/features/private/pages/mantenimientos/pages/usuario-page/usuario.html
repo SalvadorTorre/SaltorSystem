@@ -7,30 +7,42 @@
     <!-- buscador -->
 
     <div class="row ">
+      <div class="col-2">
+        <label for="">Buscar ID de Usuario</label>
+        <input
+      [(ngModel)]="txtcodigo"
+
+        type="text" placeholder="Digite ID" class="form-control" (input)="idEntra($event)" />
+      </div>
+
       <div class="col-3">
         <label for="">Buscar Nombre</label>
-        <input 
-        type="text"
-         placeholder="Digite el Nombre..." 
-         class="form-control uppercase"
-         (input)="buscaUsuario($event)"/>
-      </div>
-      <div class="col-6">
+        <input
+      [(ngModel)]="txtdescripcion"
+          type="text"
+          placeholder="Digite descripcion..."
+          class="form-control uppercase"
+          (input)="descripcionEntra($event)"
+        />
 
+      </div>
+      <div class="col-2">
+        <button class="btn btn-danger mt-4" (click)="limpiaBusqueda()"><i class="bi bi-eraser"></i></button>
       </div>
       <div class=" col-2">
-        <button class="btn btn-primary" (click)="nuevoUsuario()">Nuevo Usuario</button>
+        <button class="btn btn-primary mt-4" (click)="nuevoUsuario()">Nuevo Usuario</button>
       </div>
+
     </div>
     <!-- fin buscador -->
-
+    <br>
     <!-- Grid -->
     <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
       <table class="table table-bordered table-hover table-striped table-sm">
         <thead class="table-dark">
           <tr>
-            <th style="width: 5%; ">Codigo</th>
-            <th style="width: 25%;">Nombre</th>
+            <th style="width: 7%; ">ID</th>
+            <th style="width: 23%;">Nombre</th>
             <th class="text-center" style="width: 10%;">Nivel</th>
             <th class="text-center" style="width: 10%; ">Vendedor</th>
             <th class="text-center" style="width: 12%; ">Mantenimiento</th>
@@ -42,7 +54,7 @@
         </thead>
         <tbody>
           <tr *ngFor="let usuario of usuarioList" >
-            <td class="text-center">{{usuario.codUsuario}}</td>
+            <td class="text-center">{{usuario.idUsuario}}</td>
             <td>{{usuario.nombreUsuario}}</td>
             <td class="text-center">{{usuario.nivel}}</td>
             <td class="text-center"><input type="checkbox" disabled [checked]="usuario.vendedor"></td>
@@ -61,7 +73,49 @@
         </tbody>
       </table>
     </div>
-    <br>
+    <nav aria-label="Page navigation">
+      <ul class="pagination justify-content-center">
+        <li class="page-item" [class.disabled]="currentPage === 1">
+          <a class="page-link" (click)="changePage(1)" aria-label="First">
+            <span aria-hidden="true">&laquo;&laquo;</span>
+          </a>
+        </li>
+        <li class="page-item" [class.disabled]="currentPage === 1">
+          <a
+            class="page-link"
+            (click)="changePage(currentPage - 1)"
+            aria-label="Previous"
+          >
+            <span aria-hidden="true">&laquo;</span>
+          </a>
+        </li>
+        <li
+          *ngFor="let page of pages"
+          class="page-item"
+          [class.active]="currentPage === page"
+        >
+          <a class="page-link" (click)="changePage(page)">{{ page }}</a>
+        </li>
+        <li class="page-item" [class.disabled]="currentPage === totalPages">
+          <a
+            class="page-link"
+            (click)="changePage(currentPage + 1)"
+            aria-label="Next"
+          >
+            <span aria-hidden="true">&raquo;</span>
+          </a>
+        </li>
+        <li class="page-item" [class.disabled]="currentPage === totalPages">
+          <a
+            class="page-link"
+            (click)="changePage(totalPages)"
+            aria-label="Last"
+          >
+            <span aria-hidden="true">&raquo;&raquo;</span>
+          </a>
+        </li>
+      </ul>
+    </nav>
     <!-- Fin grid -->
   </div>
 </div>

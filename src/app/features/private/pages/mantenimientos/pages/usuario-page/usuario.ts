@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject,debounceTime, distinctUntilChanged, switchMap} from 'rxjs';
 import { ModeloUsuarioData } from 'src/app/core/services/mantenimientos/usuario';
 import { ServicioUsuario } from 'src/app/core/services/mantenimientos/usuario/usuario.service';
 declare var $: any;
@@ -12,7 +12,16 @@ import Swal from 'sweetalert2';
   styleUrls: ['./usuario.css']
 })
 export class Usuario implements OnInit {
-
+  totalItems = 0;
+  pageSize = 8
+  currentPage = 1;
+  maxPagesToShow = 5;
+  txtdescripcion: string = '';
+  txtcodigo: string = '';
+  idUsuario: string = '';
+  descripcion: string = '';
+  private idBuscar = new BehaviorSubject<string>('');
+  private descripcionBuscar = new BehaviorSubject<string>('');
 
     moveFocus(event: KeyboardEvent, nextElement: HTMLInputElement | null): void {
       if (event.key === 'Enter' && nextElement) {
@@ -37,23 +46,42 @@ export class Usuario implements OnInit {
   modoconsultaUsuario:boolean = false;
   usuarioList:ModeloUsuarioData[] = [];
   selectedUsuario: any = null;
-  descripcion: string = '';
-  private buscaXusuario = new BehaviorSubject<string>('');
-
-  
   constructor(private fb:FormBuilder, private servicioUsuario:ServicioUsuario)
-  
+    {this.crearFormularioUsuario();
+  this.descripcionBuscar.pipe(
+    debounceTime(1000),
+    distinctUntilChanged(),
+    switchMap(descripcion => {
+      this.descripcion = descripcion;
+      return this.servicioUsuario.buscarTodosUsuario(this.currentPage, this.pageSize,this.idUsuario, this.descripcion);
+    })
+  )
+  .subscribe(response => {
+    this.usuarioList = response.data;
+    this.totalItems = response.pagination.total;
+    this.currentPage = response.pagination.page;
+  });
 
-  {
-    this.crearFormularioUsuario();
-  }
+  this.idBuscar.pipe(
+    debounceTime(500),
+    distinctUntilChanged(),
+    switchMap(idusuario => {
+      this.idUsuario = idusuario;
+      return this.servicioUsuario.buscarTodosUsuario(this.currentPage, this.pageSize, this.idUsuario,this.descripcion);
+    })
+  )
+  .subscribe(response => {
+    this.usuarioList = response.data;
+    this.totalItems = response.pagination.total;
+    this.currentPage = response.pagination.page;
+  });
+}
 
-  seleccionarUsuario(usuario: any) {
-    this.selectedUsuario = Usuario;
-  }
-  ngOnInit(): void {
-    this.buscarTodosUsuario();
-  }
+  seleccionarUsuario(usuario: any)
+   { this.selectedUsuario = Usuario; }
+  ngOnInit(): void
+  {this.buscarTodosUsuario(1);  }
+
 
   crearFormularioUsuario(){
     this.formularioUsuario = this.fb.group({
@@ -112,8 +140,8 @@ habilitarFormularioUsuario(){
   this.habilitarFormulario = true;
 }
 
-buscarTodosUsuario(){
-  this.servicioUsuario.buscarTodosUsuario().subscribe(response => {
+buscarTodosUsuario(page:number){
+  this.servicioUsuario.buscarTodosUsuario(page,this.pageSize).subscribe(response => {
     console.log(response);
     this.usuarioList = response.data;
   });
@@ -125,14 +153,6 @@ $('#modalusuario').modal('show');
 this.habilitarFormulario = true;
 this.modoconsultaUsuario = true;
 };
-buscaUsuario(event: Event) {
-  const inputElement = event.target as HTMLInputElement;
-  this.buscaXusuario.next(inputElement.value.toUpperCase());
-}
-
-
-
-
 
 /*eliminarUsuario(Usuario:ModeloUsuarioData){
   this.servicioUsuario.eliminarUsuario(Usuario.codUsuario).subscribe(response => {
@@ -164,13 +184,20 @@ eliminarUsuario(Usuario:ModeloUsuarioData){
             showConfirmButton: false,
           }
         )
-        this.buscarTodosUsuario();
+        this.buscarTodosUsuario(this.currentPage);
       });
     }
   })
 }
 
-
+descripcionEntra(event: Event) {
+  const inputElement = event.target as HTMLInputElement;
+  this.descripcionBuscar.next(inputElement.value.toUpperCase());
+}
+idEntra(event: Event) {
+  const inputElement = event.target as HTMLInputElement;
+  this.idBuscar.next(inputElement.value.toUpperCase());
+}
 guardarUsuario(){
   console.log(this.formularioUsuario.value);
   if(this.formularioUsuario.valid){
@@ -183,7 +210,7 @@ guardarUsuario(){
           timer: 5000,
           showConfirmButton: false,
         });
-      this.buscarTodosUsuario();
+      this.buscarTodosUsuario(1);
       this.formularioUsuario.reset();
       this.crearFormularioUsuario();
       $('#modalusuario').modal('hide');
@@ -198,7 +225,7 @@ guardarUsuario(){
           showConfirmButton: false,
         });
 
-        this.buscarTodosUsuario();
+        this.buscarTodosUsuario(1);
       this.formularioUsuario.reset();
       this.crearFormularioUsuario();
       $('#modalusuario').modal('hide');
@@ -207,6 +234,47 @@ guardarUsuario(){
     }else{
        alert("Este Usuario no fue Guardado");
     }
+}
+
+
+changePage(page: number) {
+  this.currentPage = page;
+  // Trigger a new search with the current codigo and descripcion
+  const codigo = this.idBuscar.getValue();
+  const descripcion = this.descripcionBuscar.getValue();
+  this.servicioUsuario.buscarTodosUsuario(this.currentPage, this.pageSize, codigo, descripcion)
+    .subscribe(response => {
+      this.usuarioList = response.data;
+    this.totalItems = response.pagination.total;
+    this.currentPage = page;
+    });
+}
+
+
+get totalPages() {
+  // Asegúrate de que totalItems sea un número antes de calcular el total de páginas
+  return Math.ceil(this.totalItems / this.pageSize);
+}
+
+get pages(): number[] {
+  const totalPages = this.totalPages;
+  const currentPage = this.currentPage;
+  const maxPagesToShow = this.maxPagesToShow;
+
+  if (totalPages <= maxPagesToShow) {
+    return Array.from({ length: totalPages }, (_, i) => i + 1);
+  }
+
+  const startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
+  const endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+
+  return Array.from({ length: endPage - startPage + 1 }, (_, i) => startPage + i);
+}
+
+limpiaBusqueda(){
+  this.txtdescripcion = '';
+  this.txtcodigo = '';
+this.buscarTodosUsuario(1);
 }
 }
 

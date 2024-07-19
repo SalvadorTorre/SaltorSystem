@@ -9,9 +9,23 @@ import { HttpInvokeService } from "../../http-invoke.service";
 export class ServicioUsuario {
   constructor(private http:HttpInvokeService) {}
 
-  buscarTodosUsuario(): Observable<ModeloUsuario>{
-    return this.http.GetRequest<ModeloUsuario>("/usuario");
+  buscarTodosUsuario(pageIndex: number, pageSize: number,  codigo?:string, descripcion?: string): Observable<any> {
+    let url = `/usuario?page=${pageIndex}&limit=${pageSize}`;
+    if (codigo) {
+      url += `&codigo=${codigo}`;
+    }
+    if (descripcion) {
+      url += `&descripcion=${descripcion}`;
+    }
+console.log(url);
+    return this.http.GetRequest<any>(url);
   }
+
+ // buscarTodosUsuario(currentPage: number, pageSize: number, codigo: string, descripcion: string): Observable<ModeloUsuario>{
+  //  return this.http.GetRequest<ModeloUsuario>("/usuario");
+ // }
+
+
   guardarUsuario(usuario:ModeloUsuarioData): Observable<any>{
     return this.http.PostRequest<any,any>("/usuario",usuario);
   }
