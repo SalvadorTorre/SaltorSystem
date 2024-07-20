@@ -41,7 +41,7 @@ export class Usuario implements OnInit {
     distinctUntilChanged(),
     switchMap(descripcion => {
       this.descripcion = descripcion;
-      return this.servicioUsuario.buscarTodosUsuario(this.currentPage, this.pageSize,this.idUsuario, this.descripcion);
+      return this.servicioUsuario.buscarTodosUsuario(this.currentPage, this.pageSize, this.descripcion);
     })
   )
   .subscribe(response => {

@@ -30,4 +30,17 @@ export class ServicioSector {
 console.log(url);
     return this.http.GetRequest<any>(url);
   }
+
+  buscarTodossector(pageIndex: number, pageSize: number,  codigo?:string, descripcion?: string): Observable<any> {
+    let url = `/sector?page=${pageIndex}&limit=${pageSize}`;
+    if (codigo) {
+      url += `&codigo=${codigo}`;
+    }
+    if (descripcion) {
+      url += `&descripcion=${descripcion}`;
+    }
+console.log(url);
+    return this.http.GetRequest<any>(url);
+  }
+
 }

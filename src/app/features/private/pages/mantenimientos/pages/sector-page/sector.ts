@@ -43,7 +43,7 @@ export class Sector implements OnInit {
         distinctUntilChanged(),
         switchMap(descripcion => {
           this.descripcion = descripcion;
-          return this.servicioSector.getAllSector(this.currentPage, this.pageSize,this.idUsuario, this.descripcion);
+          return this.servicioSector.getAllSector(this.currentPage, this.pageSize, this.descripcion);
         })
       )
       .subscribe(response => {
@@ -80,7 +80,12 @@ export class Sector implements OnInit {
   this.sectordescripcion = sector.se_desSect;
   this.sectorzona = sector.se_codZona;
  }
-
+ buscarTodossector(page:number){
+  this.servicioSector.buscarTodossector(page,this.pageSize).subscribe(response => {
+    console.log(response);
+    this.sectorList = response.data;
+  });
+}
 getAllSector(){
   this.servicioSector.obtenerTodasSector().subscribe(response => {
     console.log(response);
@@ -162,7 +167,7 @@ get pages(): number[] {
 
 limpiaBusqueda(){
   this.txtdescripcion = '';
-this.getAllSector(1);
+this.buscarTodossector(1);
 }
 
 }
