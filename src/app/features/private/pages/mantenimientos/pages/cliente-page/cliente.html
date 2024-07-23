@@ -109,34 +109,46 @@
                 <div class="form-row">
                   <div class="form-group">
                     <label for="cl_codClie"> Rnc</label>
-                    <input
-                      type="number"
-                      formControlName="cl_rnc"
-                      class="form-control"
+                    <input type="number" class="uppercase-input" (input)="convertToUpperCase($event)"
+                    (keydown)="moveFocus($event, input2)" #input1
+                    class="form-control form-control-sm "
+                    formControlName="cl_rnc"
                     />
                   </div>
                   <div class="form-group">
                     <label for="cl_nomClie">Nombre</label>
-                    <!-- <input id="cl_nomClie" formControlName="cl_nomClie" class="form-control" />-->
-                    <input formControlName="cl_nomClie" class="form-control" />
+                    <input type="text" class="uppercase-input" (input)="convertToUpperCase($event)"
+                    (keydown)="moveFocus($event, input3)" #input2
+                    class="form-control form-control-sm "
+                    formControlName="cl_nomClie" />
                   </div>
                 </div>
                 <div class="form-row">
                   <div class="form-group">
                     <label for="cl_dirClie">Direccion</label>
-                    <input
-                      id="cl_dirClie"
-                      formControlName="cl_dirClie"
-                      class="form-control"
+                    <input type="text" class="uppercase-input" (input)="convertToUpperCase($event)"
+                    (keydown)="moveFocus($event, input5)" #input3
+                    class="form-control form-control-sm "
+                    formControlName="cl_dirClie"
                     />
                   </div>
                   <div class="form-group">
                     <label for="cl_codSect">Codigo de Sector</label>
-                    <input
-                      id="cl_codSect"
-                      formControlName="cl_codSect"
-                      class="form-control"
-                    />
+                    <select formControlName="cl_codSect" class="form-control">
+                      <option disabled selected>Selecione un Sector</option>
+                      <option
+                        *ngFor="let sector of sectorList"
+                        [value]="sector.se_codSect"
+                      >
+                        {{sector.se_desSect}}
+                      </option>
+                    </select>
+
+                    <!--<input type="text" class="uppercase-input" (input)="convertToUpperCase($event)"
+                    (keydown)="moveFocus($event, input5)" #input4
+                    class="form-control form-control-sm "
+                    formControlName="cl_codSect"
+                    />-->
                   </div>
                 </div>
                 <div class="form-row">
@@ -154,10 +166,10 @@
                   </div>
                   <div class="form-group">
                     <label for="cl_telClie">Telefono</label>
-                    <input
-                      id="cl_telClie"
-                      formControlName="cl_telClie"
-                      class="form-control"
+                    <input type="text" class="uppercase-input" (input)="convertToUpperCase($event)"
+                    (keydown)="moveFocus($event, input5)" #input5
+                    class="form-control form-control-sm "
+                    formControlName="cl_telClie"
                     />
                   </div>
                 </div>

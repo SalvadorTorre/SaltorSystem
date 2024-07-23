@@ -66,7 +66,8 @@ export class Usuario implements OnInit {
 }
   seleccionarUsuario(usuario: any)
    { this.selectedUsuario = Usuario; }
-  ngOnInit(): void
+
+   ngOnInit(): void
   {this.buscarTodosUsuario(1);  }
 
 

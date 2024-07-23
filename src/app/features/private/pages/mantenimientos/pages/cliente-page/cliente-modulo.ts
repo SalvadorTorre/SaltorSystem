@@ -14,6 +14,7 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
     CommonModule,
     RutaCliente,
     ReactiveFormsModule,
+    FormsModule,
   ],
   providers: [],
   bootstrap: [Cliente]
