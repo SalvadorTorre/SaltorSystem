@@ -44,7 +44,7 @@ export class Cliente implements OnInit {
 
   constructor(private fb:FormBuilder, private servicioCliente:ServicioCliente, private servicioSector:ServicioSector, private servicioZona:ServicioZona)
   {this.crearFormularioCliente();
-this.descripcionBuscar.pipe(
+  this.descripcionBuscar.pipe(
   debounceTime(1000),
   distinctUntilChanged(),
   switchMap(descripcion => {
@@ -62,8 +62,10 @@ seleccionarCliente(cliente: any)
  { this.selectedCliente = Cliente; }
 
  ngOnInit(): void
-{this.buscarTodosCliente(1);  }
-
+{this.buscarTodosCliente(1);
+this. buscardatosSector();
+this.buscartodaZona();
+}
 
 crearFormularioCliente(){
   this.formularioCliente = this.fb.group({
@@ -271,132 +273,3 @@ buscartodaZona(){
 }
 
 
-
-
-
-  /*
-  constructor(private fb:FormBuilder, private ServicioSector:ServicioSector, private servicioCliente:ServicioCliente, private servicioZona:ServicioZona
-  )
-  {
-    this.crearFormularioCliente();
-  }
-
-
-  ngOnInit(): void {
-    this.buscartadaZona();
-    this.obtenerTodosCliente();
-    this.buscardatosSector();
-  }
-
-  convertToUpperCase(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    input.value = input.value.toUpperCase();
-  }
-  moveFocus(event: KeyboardEvent, nextElement: HTMLInputElement | null): void {
-    if (event.key === 'Enter' && nextElement) {
-     event.preventDefault(); // Evita el comportamiento predeterminado del Enter
-     nextElement.focus(); // Enfoca el siguiente campo
-   }
-   }
-
-  crearFormularioCliente(){
-    this.formularioCliente = this.fb.group({
-      cl_nomClie: ['', Validators.required],
-      cl_dirClie: [''],
-      cl_codSect: [''],
-      cl_codZona: [''],
-      cl_telClie: [''],
-      cl_tipo: [''],
-      cl_status: [true],
-      cl_rnc: [''],
-      });
-  }
-
-  habilitarBuscador(){
-    this.habilitarBusqueda = false;
-  }
-
- nuevoCliente(){
-  this.modoedicionChofer = false;
-   this.tituloModalCliente = 'Agregar Cliente';
-   $('#modalcliente').modal('show');
-   this.habilitarBusqueda = true;
- }
-
- editarCliente(cliente:ModeloClienteData){
-  this.clienteid = cliente.cl_codClie;
-  this.modoedicionChofer = true;
-  this.formularioCliente.patchValue(cliente);
-  this.tituloModalCliente = 'Editar Cliente';
-  $('#modalcliente').modal('show');
-  this.habilitarBusqueda = true;
-}
-
-obtenerTodosCliente(){
-  this.servicioCliente.obtenerTodosCliente().subscribe(response => {
-    console.log(response);
-    this.clienteList = response.data;
-  });
-}
-
-consultarCliente(Cliente:ModeloClienteData){
-  this.tituloModalCliente = 'Consultar Cliente';
- this.formularioCliente.patchValue(Cliente);
-$('#modalcliente').modal('show');
-this.habilitarFormularioCliente = true;
-this.modoconsultaCliente = true;
-this.habilitarBusqueda = true;
-
-};
-
-cerrarModalCliente(){
-  this.habilitarFormularioCliente = false;
-  this.formularioCliente.reset();
-  this.modoedicionChofer = false;
-  this.modoconsultaCliente = false;
-  $('#modalclienter').modal('hide');
-  this.crearFormularioCliente();
-};
-
-guardarCliente(){
-  console.log(this.formularioCliente.value);
-  if(this.formularioCliente.valid){
-     if(this.modoedicionChofer){
-      this.servicioCliente.editarCliente(this.clienteid, this.formularioCliente.value).subscribe(response => {
-        alert("Cliente editado correctamente");
-        this.obtenerTodosCliente();
-        this.formularioCliente.reset();
-        this.crearFormularioCliente();
-        $('#modalcliente').modal('hide');
-      });
-    }else{
-      this.servicioCliente.guardarCliente(this.formularioCliente.value).subscribe(response => {
-        alert("Cliente guardado correctamente");
-        this.obtenerTodosCliente();
-        this.formularioCliente.reset();
-        this.crearFormularioCliente();
-        $('#modalcliente').modal('hide');
-      });
-    }
-      }else{
-    alert("Formulario Cliente");
-
-  }
-
-}
-buscartadaZona(){
-  this.servicioZona.obtenerTodasZonas().subscribe(response => {
-    console.log(response);
-    this.zonasList = response.data;
-  });
-}
-  buscardatosSector(){
-    this.ServicioSector.obtenerTodosSector().subscribe(response => {
-      console.log(response);
-      this.sectorList = response.data;
-    });
-
-
-}
-
-}*/
