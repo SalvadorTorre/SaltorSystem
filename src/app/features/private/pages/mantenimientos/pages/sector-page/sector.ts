@@ -46,7 +46,7 @@ export class Sector implements OnInit {
         distinctUntilChanged(),
         switchMap(descripcion => {
           this.descripcion = descripcion;
-          return this.servicioSector.buscarTodossector(this.currentPage, this.pageSize, this.descripcion);
+          return this.servicioSector.buscarTodosSector(this.currentPage, this.pageSize, this.descripcion);
         })
       )
       .subscribe(response => {
@@ -126,7 +126,7 @@ descripcionEntra(event: Event) {
 
 
  buscarTodossector(page:number){
-  this.servicioSector.buscarTodossector(page,this.pageSize).subscribe(response => {
+  this.servicioSector.buscarTodosSector(page,this.pageSize).subscribe(response => {
     console.log(response);
     this.sectorList = response.data;
   });
@@ -154,7 +154,7 @@ guardarSector(){
       this.buscarTodossector(1);
       this.formularioSector.reset();
       this.crearFormularioSector();
-      $('#modalusuario').modal('hide');
+      $('#modalsector').modal('hide');
       });
     }
     else{
@@ -170,7 +170,7 @@ guardarSector(){
       this.buscarTodossector(1);
       this.formularioSector.reset();
       this.crearFormularioSector();
-      $('#modalusuario').modal('hide');
+      $('#modalsector').modal('hide');
       });
     }
     }
@@ -204,7 +204,7 @@ changePage(page: number) {
   // Trigger a new search with the current codigo and descripcion
   const codigo = this.idBuscar.getValue();
   const descripcion = this.descripcionBuscar.getValue();
-  this.servicioSector.buscarTodossector(this.currentPage, this.pageSize,  descripcion)
+  this.servicioSector.buscarTodosSector(this.currentPage, this.pageSize,  descripcion)
     .subscribe(response => {
       this.sectorList = response.data;
     this.totalItems = response.pagination.total;

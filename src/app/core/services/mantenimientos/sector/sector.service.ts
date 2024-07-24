@@ -20,7 +20,7 @@ export class ServicioSector {
     return this.http.DeleteRequest(`/sector/${se_codSect}`, "");
   }
 
-  buscarTodossector(pageIndex: number, pageSize: number,   descripcion?: string): Observable<any> {
+  buscarTodosSector(pageIndex: number, pageSize: number,   descripcion?: string): Observable<any> {
     let url = `/sector?page=${pageIndex}&limit=${pageSize}`;
        if (descripcion) {
       url += `&descripcion=${descripcion}`;

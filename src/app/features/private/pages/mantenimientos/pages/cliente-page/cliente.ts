@@ -6,7 +6,8 @@ import { ModeloZonaData } from 'src/app/core/services/mantenimientos/zonas';
 import { ServicioZona } from 'src/app/core/services/mantenimientos/zonas/zonas.service';
 import { ModeloSectorData } from 'src/app/core/services/mantenimientos/sector';
 import { ServicioSector } from 'src/app/core/services/mantenimientos/sector/sector.service';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, debounceTime, distinctUntilChanged, switchMap } from 'rxjs';
+import Swal from 'sweetalert2';
 declare var $: any;declare var $: any;
 declare var $: any;
 
@@ -58,26 +59,12 @@ this.descripcionBuscar.pipe(
   this.totalItems = response.pagination.total;
   this.currentPage = response.pagination.page;
 });
-
-this.idBuscar.pipe(
-  debounceTime(500),
-  distinctUntilChanged(),
-  switchMap(idusuario => {
-    this.idUsuario = idusuario;
-    return this.servicioCliente.buscarTodosCliente(this.currentPage, this.pageSize, this.idUsuario,this.descripcion);
-  })
-)
-.subscribe(response => {
-  this.clienteList = response.data;
-  this.totalItems = response.pagination.total;
-  this.currentPage = response.pagination.page;
-});
-}
-seleccionarUsuario(usuario: any)
+ }
+seleccionarCliente(cliente: any)
  { this.selectedCliente = Cliente; }
 
  ngOnInit(): void
-{this.buscarTodosUsuario(1);  }
+{this.buscarTodosCliente(1);  }
 
 
 crearFormularioCliente(){
@@ -100,20 +87,20 @@ habilitarBuscador(){
 nuevoCliente(){
 this.modoedicionCliente = false;
  this.tituloModalCliente = 'Agregando Usuario';
- $('#modalusuario').modal('show');
+ $('#modalcliente').modal('show');
  this.habilitarFormulario = true;
 }
 
-cerrarModalUsuario(){
+cerrarModalCliente(){
 this.habilitarFormulario = false;
 this.formularioCliente.reset();
 this.modoedicionCliente = false;
 this.modoconsultaCliente = false;
-$('#modalusuario').modal('hide');
+$('#modalcliente')('hide');
 this.crearFormularioCliente();
 }
 
-editarUsuario(clientes:ModeloClienteData){
+editarCliente(clientes:ModeloClienteData){
 this.clienteid = clientes.cl_codClie;
 this.modoedicionCliente = true;
 this.formularioCliente.patchValue(clientes);
@@ -122,23 +109,23 @@ $('#modalcliente').modal('show');
 this.habilitarFormulario = true;
 }
 
-buscarTodosUsuario(page:number){
+buscarTodosCliente(page:number){
 this.servicioCliente.buscarTodosCliente(page,this.pageSize).subscribe(response => {
   console.log(response);
   this.
   clienteList = response.data;
 });
 }
-consultarUsuario(Usuario:ModeloClienteData){
+consultarCliente(Cliente:ModeloClienteData){
 this.tituloModalCliente = 'Consulta Cliente';
 this.formularioCliente.patchValue(Cliente);
-$('#modalusuario').modal('show');
+$('#modalcliente').modal('show');
 this.habilitarFormulario = true;
 this.modoconsultaCliente = true;
 };
 
 
-eliminarUsuario(Cliente:ModeloClienteData){
+eliminarCliente(Cliente:ModeloClienteData){
 Swal.fire({
 title: '¿Está seguro de eliminar este Cliente?',
 text: "¡No podrá revertir esto!",
@@ -173,7 +160,7 @@ idEntra(event: Event) {
 const inputElement = event.target as HTMLInputElement;
 this.idBuscar.next(inputElement.value.toUpperCase());
 }
-guardarUsuario(){
+guardarCliente(){
 console.log(this.formularioCliente.value);
 if(this.formularioCliente.valid){
 if(this.modoedicionCliente){
@@ -185,10 +172,10 @@ if(this.modoedicionCliente){
   timer: 5000,
   showConfirmButton: false,
   });
-  this.buscarTodosUsuario(1);
+  this.buscarTodosCliente(1);
   this.formularioCliente.reset();
   this.crearFormularioCliente();
-  $('#modalusuario').modal('hide');
+  $('#modalcliente')('hide');
   });
 }
 else{
@@ -204,14 +191,17 @@ else{
   this.buscarTodosCliente(1);
   this.formularioCliente.reset();
   this.crearFormularioCliente();
-  $('#modalusuario').modal('hide');
+  $('#modalcliente').modal('hide');
   });
 }
 }
 else{
-  alert("Este Usuario no fue Guardado");
+  alert("Este Cliente no fue Guardado");
 }
 }
+  buscarTodoCliente(arg0: number) {
+    throw new Error('Method not implemented.');
+  }
 
 convertToUpperCase(event: Event): void {
 const input = event.target as HTMLInputElement;
@@ -261,18 +251,18 @@ return Array.from({ length: endPage - startPage + 1 }, (_, i) => startPage + i);
 limpiaBusqueda(){
 this.txtdescripcion = '';
 this.txtcodigo = '';
-this.buscarTodosUsuario(1);
+this.buscarTodosCliente(1);
 }
 
 
 buscartadaZona(){
-  this.servicioZona.obtenerTodasZonas().subscribe(response => {
+  this.servicioZona.obtenerTodasZonas().subscribe((response: { data: ModeloZonaData[]; }) => {
     console.log(response);
     this.zonasList = response.data;
   });
 }
   buscardatosSector(){
-    this.ServicioSector.obtenerTodosSector().subscribe(response => {
+    this.ServicioSector.obtenerTodosSector().subscribe((response: { data: ModeloSectorData[]; }) => {
       console.log(response);
       this.sectorList = response.data;
     });
