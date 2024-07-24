@@ -252,15 +252,15 @@ this.txtcodigo = '';
 this.buscarTodosCliente(1);
 }
 
-buscartadaZona(){
-  this.ServicioZona.obtenerTodasZonas().subscribe(response => {
+buscartodaZona(){
+  this.servicioZona.obtenerTodasZonas().subscribe(response => {
     console.log(response);
     this.zonasList = response.data;
   });
 }
 
   buscardatosSector(){
-    this.ServicioSector.obtenerTodosSector().subscribe(response => {
+    this.servicioSector.obtenerTodosSector().subscribe(response => {
       console.log(response);
       this.sectorList = response.data;
     });
