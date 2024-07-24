@@ -101,11 +101,11 @@
             ></button>
           </div>
           <div class="modal-body">
-            <div *ngIf="habilitarBusqueda" class="mb-3">
+            <div *ngIf="habilitarFormulario" class="mb-3">
               <form
                 [formGroup]="formularioCliente"
                 (ngSubmit)="guardarCliente()"
-              >
+                >
                 <div class="form-row">
                   <div class="form-group">
                     <label for="cl_codClie"> Rnc</label>

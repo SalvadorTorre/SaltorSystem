@@ -2,10 +2,10 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { ServicioCliente } from 'src/app/core/services/mantenimientos/clientes/cliente.service';
 import { ModeloClienteData } from 'src/app/core/services/mantenimientos/clientes';
+import {ModeloSectorData } from 'src/app/core/services/mantenimientos/sector';
+import { ServicioSector } from 'src/app/core/services/mantenimientos/sector/sector.service';
 import { ModeloZonaData } from 'src/app/core/services/mantenimientos/zonas';
 import { ServicioZona } from 'src/app/core/services/mantenimientos/zonas/zonas.service';
-import { ModeloSectorData } from 'src/app/core/services/mantenimientos/sector';
-import { ServicioSector } from 'src/app/core/services/mantenimientos/sector/sector.service';
 import { BehaviorSubject, debounceTime, distinctUntilChanged, switchMap } from 'rxjs';
 import Swal from 'sweetalert2';
 declare var $: any;declare var $: any;
@@ -28,7 +28,7 @@ export class Cliente implements OnInit {
   modoconsultaCliente:boolean= false
   clienteid!:number
   totalItems = 0;
-  pageSize = 3
+  pageSize = 8
   currentPage = 1;
   maxPagesToShow = 5;
   txtcodigo: string = '';
@@ -38,13 +38,11 @@ export class Cliente implements OnInit {
   selectedCliente: any = null;
   private idBuscar = new BehaviorSubject<string>('');
   private descripcionBuscar = new BehaviorSubject<string>('');
-  servicioZona: any;
-  ServicioSector: any;
 
 
 
 
-  constructor(private fb:FormBuilder, private servicioCliente:ServicioCliente)
+  constructor(private fb:FormBuilder, private servicioCliente:ServicioCliente, private servicioSector:ServicioSector, private servicioZona:ServicioZona)
   {this.crearFormularioCliente();
 this.descripcionBuscar.pipe(
   debounceTime(1000),
@@ -86,7 +84,7 @@ habilitarBuscador(){
 
 nuevoCliente(){
 this.modoedicionCliente = false;
- this.tituloModalCliente = 'Agregando Usuario';
+ this.tituloModalCliente = 'Agregando Cliente';
  $('#modalcliente').modal('show');
  this.habilitarFormulario = true;
 }
@@ -96,7 +94,7 @@ this.habilitarFormulario = false;
 this.formularioCliente.reset();
 this.modoedicionCliente = false;
 this.modoconsultaCliente = false;
-$('#modalcliente')('hide');
+$('#modalcliente').modal('hide');
 this.crearFormularioCliente();
 }
 
@@ -175,7 +173,7 @@ if(this.modoedicionCliente){
   this.buscarTodosCliente(1);
   this.formularioCliente.reset();
   this.crearFormularioCliente();
-  $('#modalcliente')('hide');
+  $('#modalcliente').modal('hide');
   });
 }
 else{
@@ -254,15 +252,15 @@ this.txtcodigo = '';
 this.buscarTodosCliente(1);
 }
 
-
 buscartadaZona(){
-  this.servicioZona.obtenerTodasZonas().subscribe((response: { data: ModeloZonaData[]; }) => {
+  this.ServicioZona.obtenerTodasZonas().subscribe(response => {
     console.log(response);
     this.zonasList = response.data;
   });
 }
+
   buscardatosSector(){
-    this.ServicioSector.obtenerTodosSector().subscribe((response: { data: ModeloSectorData[]; }) => {
+    this.ServicioSector.obtenerTodosSector().subscribe(response => {
       console.log(response);
       this.sectorList = response.data;
     });
