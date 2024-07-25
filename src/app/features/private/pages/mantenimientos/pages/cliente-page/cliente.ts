@@ -57,6 +57,19 @@ export class Cliente implements OnInit {
   this.totalItems = response.pagination.total;
   this.currentPage = response.pagination.page;
 });
+this.idBuscar.pipe(
+  debounceTime(500),
+  distinctUntilChanged(),
+  switchMap(codigo => {
+    this.codigo = codigo;
+    return this.servicioCliente.buscarTodosCliente(this.currentPage, this.pageSize, this.codigo,this.descripcion);
+  })
+)
+.subscribe(response => {
+  this.clienteList = response.data;
+  this.totalItems = response.pagination.total;
+  this.currentPage = response.pagination.page;
+});
  }
 seleccionarCliente(cliente: any)
  { this.selectedCliente = Cliente; }

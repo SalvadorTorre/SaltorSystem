@@ -8,20 +8,23 @@
       <div class="col-2">
         <label for="">Buscar Codigo</label>
         <input
-          type="text"
-          placeholder="Digite codigo"
-          class="form-control"
-          [disabled]="habilitarBusqueda"
+        [(ngModel)]="txtcodigo"  
+          type="text" placeholder="Digite codigo"  class="form-control"
+          (input)="idEntra($event)" 
         />
       </div>
       <div class="col-3">
         <label for="">Buscar Nombre</label>
         <input
-          type="text"
-          placeholder="Digite el Nombre..."
+          
+          [(ngModel)]="txtdescripcion"
+          type="text" placeholder="Digite el Nombre..."
           class="form-control"
-          [disabled]="habilitarBusqueda"
+          (input)="descripcionEntra($event)"
         />
+      </div>
+      <div class="col-2">
+        <button class="btn btn-danger mt-4" (click)="limpiaBusqueda()"><i class="bi bi-arrow-counterclockwise"></i></button>
       </div>
       <div class="col-2">
         <button class="btn btn-primary mt-4" (click)="nuevoCliente()">
