@@ -22,3 +22,8 @@ table tr:hover {
 input.uppercase {
   text-transform: uppercase;
 }
+
+small {
+  font-size: 12px;
+  color: #999;
+}

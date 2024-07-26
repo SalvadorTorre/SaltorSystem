@@ -3,6 +3,8 @@ import { BrowserModule } from '@angular/platform-browser';
 import { CommonModule } from '@angular/common';
 import { Home } from './home';
 import { RutaHome } from './ruta-home';
+import { NgApexchartsModule } from "ng-apexcharts";
+
 
 @NgModule({
   declarations: [
@@ -10,7 +12,8 @@ import { RutaHome } from './ruta-home';
   ],
   imports: [
     CommonModule,
-    RutaHome
+    RutaHome,
+    NgApexchartsModule
   ],
   providers: [],
   bootstrap: [Home]

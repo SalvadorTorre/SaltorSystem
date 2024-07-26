@@ -1,19 +1,456 @@
+<div class="row">
+  <div class="col-5">
+    <div class="card">
+      <div class="card-header">
+        <h4 class="card-title">Datos de la facturación</h4>
+      </div>
+      <div class="card-body" style="background-color: #e6e4e4">
+        <div class="row">
+          <div class="col d-flex justify-content-center">
+            <div
+              class="btn-group"
+              role="group"
+              aria-label="Basic radio toggle button group"
+            >
+              <input
+                type="radio"
+                class="btn-check"
+                name="btnradioType"
+                id="btnradio1"
+                autocomplete="off"
+                checked
+              />
+              <label class="btn btn-outline-primary" for="btnradio1"
+                >Facturación</label
+              >
 
+              <input
+                type="radio"
+                class="btn-check"
+                name="btnradioType"
+                id="btnradio2"
+                autocomplete="off"
+              />
+              <label class="btn btn-outline-dark" for="btnradio2"
+                >Cotización</label
+              >
 
-<div class="left-sidebar" style="width:15%">
-  <ul class="nav flex-column" style="background-color :  #d00606" >
- <li class="nav-item" >
-   <a class="nav-link active" style="color: rgb(250, 247, 247);" aria-current="page" href="#">Factura</a>
- </li>
- <li class="nav-item">
-   <a class="nav-link " style="color: rgb(250, 247, 247);" href="#">Cotizacion</a>
- </li>
- <li class="nav-item">
-   <a class="nav-link" style="color: rgb(250, 247, 248);"href="#">Pedido</a>
- </li>
+              <input
+                type="radio"
+                class="btn-check"
+                name="btnradioType"
+                id="btnradio3"
+                autocomplete="off"
+              />
+              <label class="btn btn-outline-danger" for="btnradio3"
+                >Pedido</label
+              >
+            </div>
+          </div>
+        </div>
+        <br />
 
- <li class="nav-item">
-   <a class="nav-link" href="#"> </a>
- </li>
-</ul>
+        <form>
+          <div class="row">
+            <div class="col-6">
+              <label for="">RNC</label>
+              <input type="text" class="form-control form-control-sm" />
+            </div>
+          </div>
+          <div class="row">
+            <div class="col">
+              <label for="">Nombre del cliente</label>
+              <input type="text" class="form-control form-control-sm" />
+            </div>
+          </div>
+          <div class="row">
+            <div class="col">
+              <label for="">Dirección</label>
+              <input type="text" class="form-control form-control-sm" />
+            </div>
+          </div>
+          <div class="row">
+            <div class="col">
+              <label for="">Telefono</label>
+              <input type="text" class="form-control form-control-sm" />
+            </div>
+            <div class="col">
+              <label for="">Telefono</label>
+              <input type="text" class="form-control form-control-sm" />
+            </div>
+          </div>
+          <div class="row">
+            <div class="col">
+              <label for="">Sector</label>
+              <input type="text" class="form-control form-control-sm" />
+            </div>
+            <div class="col">
+              <label for="">Zona</label>
+              <input type="text" class="form-control form-control-sm" />
+            </div>
+          </div>
+          <div class="row">
+            <div class="col">
+              <label for="">Contacto</label>
+              <input type="text" class="form-control form-control-sm" />
+            </div>
+            <div class="col">
+              <label for="">Correo</label>
+              <input type="text" class="form-control form-control-sm" />
+            </div>
+            <div class="col">
+              <label for="">Referencia</label>
+              <input type="text" class="form-control form-control-sm" />
+            </div>
+          </div>
+          <div class="row">
+            <div class="col">
+              <label for="">Forma de pago</label>
+              <div
+                class="btn-group"
+                role="group"
+                aria-label="Basic radio toggle button group"
+              >
+                <input
+                  type="radio"
+                  class="btn-check"
+                  name="btnradio"
+                  id="btnradio1"
+                  autocomplete="off"
+                  checked
+                />
+                <label class="btn btn-outline-primary" for="btnradio1"
+                  >Efectivo</label
+                >
+
+                <input
+                  type="radio"
+                  class="btn-check"
+                  name="btnradio"
+                  id="btnradio2"
+                  autocomplete="off"
+                />
+                <label class="btn btn-outline-primary" for="btnradio2"
+                  >Cheque</label
+                >
+
+                <input
+                  type="radio"
+                  class="btn-check"
+                  name="btnradio"
+                  id="btnradio3"
+                  autocomplete="off"
+                />
+                <label class="btn btn-outline-primary" for="btnradio3"
+                  >T Credito</label
+                >
+
+                <input
+                  type="radio"
+                  class="btn-check"
+                  name="btnradio"
+                  id="btnradio4"
+                  autocomplete="off"
+                />
+                <label class="btn btn-outline-primary" for="btnradio4"
+                  >Credito</label
+                >
+
+                <input
+                  type="radio"
+                  class="btn-check"
+                  name="btnradio"
+                  id="btnradio5"
+                  autocomplete="off"
+                />
+                <label class="btn btn-outline-primary" for="btnradio5"
+                  >Deposito o Transferencia</label
+                >
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col">
+              <label for="">Para</label>
+              <br />
+              <div
+                class="btn-group"
+                role="group"
+                aria-label="Basic radio toggle button group"
+              >
+                <input
+                  type="radio"
+                  class="btn-check"
+                  name="btnradio"
+                  id="btnradio1"
+                  autocomplete="off"
+                  checked
+                />
+                <label class="btn btn-outline-primary" for="btnradio1"
+                  >Enviar</label
+                >
+
+                <input
+                  type="radio"
+                  class="btn-check"
+                  name="btnradio"
+                  id="btnradio2"
+                  autocomplete="off"
+                />
+                <label class="btn btn-outline-primary" for="btnradio2"
+                  >Retirar cliente</label
+                >
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-7">
+    <div class="card">
+      <div class="card-header">
+        <h4 class="card-title">Detalles de la factura</h4>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-2">
+            <label for=""> Código </label>
+            <input type="text" class="form-control form-control-sm" />
+          </div>
+          <div class="col-4">
+            <label for=""> Descripción </label>
+            <input type="text" class="form-control form-control-sm" />
+          </div>
+          <div class="col-2">
+            <label for=""> Cant. </label>
+            <input type="text" class="form-control form-control-sm" />
+          </div>
+          <div class="col-2">
+            <label for=""> Precio </label>
+            <input type="text" class="form-control form-control-sm" />
+          </div>
+          <div class="col-2">
+            <button class="btn btn-success mt-3">
+              <i class="bi bi-plus"></i>
+            </button>
+            &nbsp;&nbsp;
+            <button class="btn btn-danger mt-3"><i class="bi bi-x"></i></button>
+          </div>
+        </div>
+        <br />
+        <div class="row">
+          <div class="col">
+            <div
+              class="table-responsive"
+              style="height: 250px; overflow-y: auto"
+            >
+              <table class="table table-sm table-bordered">
+                <thead class="table-dark">
+                  <tr style="background-color: red">
+                    <th>Código</th>
+                    <th>Descripción</th>
+                    <th>Cant.</th>
+                    <th>Precio</th>
+                    <th>Total</th>
+                    <th>Opciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>1000</td>
+                    <td>Descripción</td>
+                    <td class="text-end">2</td>
+                    <td class="text-end">1000</td>
+                    <td class="text-end">2000</td>
+                    <td>
+                      <i class="bi bi-pencil text-warning"></i>
+                      &nbsp;&nbsp;
+                      <i class="bi bi-trash text-danger"></i>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>1000</td>
+                    <td>Descripción</td>
+                    <td class="text-end">2</td>
+                    <td class="text-end">1000</td>
+                    <td class="text-end">2000</td>
+                    <td>
+                      <i class="bi bi-pencil text-warning"></i>
+                      &nbsp;&nbsp;
+                      <i class="bi bi-trash text-danger"></i>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>1000</td>
+                    <td>Descripción</td>
+                    <td class="text-end">2</td>
+                    <td class="text-end">1000</td>
+                    <td class="text-end">2000</td>
+                    <td>
+                      <i class="bi bi-pencil text-warning"></i>
+                      &nbsp;&nbsp;
+                      <i class="bi bi-trash text-danger"></i>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>1000</td>
+                    <td>Descripción</td>
+                    <td class="text-end">2</td>
+                    <td class="text-end">1000</td>
+                    <td class="text-end">2000</td>
+                    <td>
+                      <i class="bi bi-pencil text-warning"></i>
+                      &nbsp;&nbsp;
+                      <i class="bi bi-trash text-danger"></i>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>1000</td>
+                    <td>Descripción</td>
+                    <td class="text-end">2</td>
+                    <td class="text-end">1000</td>
+                    <td class="text-end">2000</td>
+                    <td>
+                      <i class="bi bi-pencil text-warning"></i>
+                      &nbsp;&nbsp;
+                      <i class="bi bi-trash text-danger"></i>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>1000</td>
+                    <td>Descripción</td>
+                    <td class="text-end">2</td>
+                    <td class="text-end">1000</td>
+                    <td class="text-end">2000</td>
+                    <td>
+                      <i class="bi bi-pencil text-warning"></i>
+                      &nbsp;&nbsp;
+                      <i class="bi bi-trash text-danger"></i>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>1000</td>
+                    <td>Descripción</td>
+                    <td class="text-end">2</td>
+                    <td class="text-end">1000</td>
+                    <td class="text-end">2000</td>
+                    <td>
+                      <i class="bi bi-pencil text-warning"></i>
+                      &nbsp;&nbsp;
+                      <i class="bi bi-trash text-danger"></i>
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td>1000</td>
+                    <td>Descripción</td>
+                    <td class="text-end">2</td>
+                    <td class="text-end">1000</td>
+                    <td class="text-end">2000</td>
+                    <td>
+                      <i class="bi bi-pencil text-warning"></i>
+                      &nbsp;&nbsp;
+                      <i class="bi bi-trash text-danger"></i>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>1000</td>
+                    <td>Descripción</td>
+                    <td class="text-end">2</td>
+                    <td class="text-end">1000</td>
+                    <td class="text-end">2000</td>
+                    <td>
+                      <i class="bi bi-pencil text-warning"></i>
+                      &nbsp;&nbsp;
+                      <i class="bi bi-trash text-danger"></i>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>1000</td>
+                    <td>Descripción</td>
+                    <td class="text-end">2</td>
+                    <td class="text-end">1000</td>
+                    <td class="text-end">2000</td>
+                    <td>
+                      <i class="bi bi-pencil text-warning"></i>
+                      &nbsp;&nbsp;
+                      <i class="bi bi-trash text-danger"></i>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="row mt-2">
+          <div class="col-8"></div>
+          <div class="col-4">
+            <div class="row">
+              <div
+                class="col"
+                style="
+                  background-color: #a24533;
+                  padding: 15px;
+                  border-radius: 8px;
+                "
+              >
+                <div class="mb-1 row">
+                  <h6 class="col-sm-5 col-form-label text-white">Sub Total</h6>
+                  <div class="col-sm-7">
+                    <input
+                      type="text"
+                      disabled
+                      class="form-control"
+                      id="inputPassword"
+                    />
+                  </div>
+                </div>
+                <div class="mb-1 row">
+                  <h6 class="col-sm-5 col-form-label text-white">Descuento</h6>
+                  <div class="col-sm-7">
+                    <input
+                      type="text"
+                      disabled
+                      class="form-control"
+                      id="inputPassword"
+                    />
+                  </div>
+                </div>
+                <div class="mb-1 row">
+                  <h6 class="col-sm-5 col-form-label text-white">ITBI</h6>
+                  <div class="col-sm-7">
+                    <input
+                      type="text"
+                      disabled
+                      class="form-control"
+                      id="inputPassword"
+                    />
+                  </div>
+                </div>
+                <div class="mb-1 row">
+                  <h6 class="col-sm-5 col-form-label text-white">Total</h6>
+                  <div class="col-sm-7">
+                    <input
+                      type="text"
+                      disabled
+                      class="form-control"
+                      id="inputPassword"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="row mt-2">
+              <div class="col">
+                <button class="btn btn-primary btn-block btn-lg w-100">
+                  Facturar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
