@@ -9,13 +9,13 @@ import { HttpInvokeService } from "../../http-invoke.service";
 export class ServicioFactura {
   constructor(private http:HttpInvokeService) {}
 
-  buscarTodasFactura(pageIndex: number, pageSize: number,  codigo?:string, nombre                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         ?: string): Observable<any> {
+  buscarTodasFactura(pageIndex: number, pageSize: number,  codigo?:string, descripcion                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          ?: string): Observable<any> {
     let url = `/Factura?page=${pageIndex}&limit=${pageSize}`;
     if (codigo) {
       url += `&codigo=${codigo}`;
     }
-    if (nombre) {
-      url += `&nombre=${nombre}`;
+    if (descripcion ) {
+      url += `&descripcion =${descripcion }`;
     }
 console.log(url);
     return this.http.GetRequest<any>(url);
@@ -33,12 +33,7 @@ console.log(url);
     return this.http.DeleteRequest(`/factura/${fa_codFact}`, "");
   }
 
-  buscarFactura(fa_codFact:string): Observable<any>{
-    return this.http.GetRequest<any>(`/factura{fa_codFact}`);
-  }
 
-  buscartodafactura(): Observable<ModeloFactura>{
-    return this.http.GetRequest<ModeloFactura>("/factura");
-  }
+
 }
 
