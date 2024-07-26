@@ -17,6 +17,7 @@ export class ServicioFactura {
     if (descripcion ) {
       url += `&descripcion =${descripcion }`;
     }
+
 console.log(url);
     return this.http.GetRequest<any>(url);
   }
