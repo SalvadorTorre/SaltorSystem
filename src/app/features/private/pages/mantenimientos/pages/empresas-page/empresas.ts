@@ -19,8 +19,11 @@ export class Empresas implements OnInit {
   maxPagesToShow = 5;
   txtdescripcion: string = '';
   txtcodigo = '';
-   descripcion: string = '';
+  rnc: string = '';
+  descripcion: string = '';
+  codigo: string = '';
   private descripcionBuscar = new BehaviorSubject<string>('');
+  private codigoBuscar = new BehaviorSubject<string>('');
   habilitarFormulario: boolean = false;
   tituloModalEmpresa!: string;
   formularioEmpresa!:FormGroup;
@@ -31,6 +34,7 @@ export class Empresas implements OnInit {
   selectedEmpresa: any = null;
   constructor(private fb:FormBuilder, private servicioEmpresa:ServicioEmpresa)
     {this.crearFormularioEmpresa();
+
     this.descripcionBuscar.pipe(
     debounceTime(500),
     distinctUntilChanged(),
@@ -44,13 +48,22 @@ export class Empresas implements OnInit {
     this.totalItems = response.pagination.total;
     this.currentPage = response.pagination.page;
   });
+  this.codigoBuscar.pipe(
+    debounceTime(500),
+    distinctUntilChanged(),
+    switchMap(rnc => {
+      this.codigo =rnc;
+      return this.servicioEmpresa.buscarTodasEmpresa(this.currentPage, this.pageSize, this.descripcion);
+    })
+  )
+  .subscribe(response => {
+    this.empresaList = response.data;
+    this.totalItems = response.pagination.total;
+    this.currentPage = response.pagination.page;
+  });
 
  }
 
- onDescripcionInput(event: Event) {
-  const inputElement = event.target as HTMLInputElement;
-  this.descripcionBuscar.next(inputElement.value.toUpperCase());
-}
 
   seleccionarEmpresa(empresas: any)
    { this.selectedEmpresa = Empresas; }
@@ -61,7 +74,7 @@ export class Empresas implements OnInit {
     this.formularioEmpresa = this.fb.group({
       rnc_empre: ['', Validators.required],
       nom_empre: ['', Validators.required],
-      dir_empre: [true, Validators.required],
+      dir_empre: ['', Validators.required],
       letra_empre: [''],
       orden_compra:[''],
       });
@@ -73,7 +86,7 @@ export class Empresas implements OnInit {
  nuevaEmpresa(){
   this.modoedicionEmpresa = false;
    this.tituloModalEmpresa = 'Agregando Empresa';
-   $('#modaleEmpresa').modal('show');
+   $('#modalempresa').modal('show');
    this.habilitarFormulario = true;
  }
 
@@ -109,7 +122,6 @@ this.habilitarFormulario = true;
 this.modoconsultaEmpresa = true;
 };
 
-
 eliminarEmpresa(Empresa:number){
   Swal.fire({
   title: '¿Está seguro de eliminar este Empresa?',
@@ -141,7 +153,10 @@ descripcionEntra(event: Event) {
   const inputElement = event.target as HTMLInputElement;
   this.descripcionBuscar.next(inputElement.value.toUpperCase());
 }
-
+codigoEntra(event: Event) {
+  const inputElement = event.target as HTMLInputElement;
+  this.codigoBuscar.next(inputElement.value.toUpperCase());
+}
 guardarEmpresa(){
 console.log(this.formularioEmpresa.value);
 if(this.formularioEmpresa.valid){
