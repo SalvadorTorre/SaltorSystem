@@ -134,63 +134,117 @@
           [formGroup]="formularioEmpresa"
           (ngSubmit)="guardarEmpresa()">
           <div class="row">
-            <div class="col-8">
+            <div class="col-12">
               <div class="card">
                 <div class="card-header ">
                   <h4>Datos de la Empresa</h4>
                 </div>
                 <div class="card-body" >
-                  <div class="row">
-                    <div class="col-4">
-                      <h6>Codigo Empresa</h6>
-                    </div>
-                    <div class="col-2">
-                    </div>
-                    <div class="col-6">
-                      <h6>Rnc</h6>
-                    </div>
 
-                  </div>
                   <div class="row">
-                    <div class="col-3">
-                      <input type="text" class="uppercase-input" (input)="convertToUpperCase($event)"
+                    <div class="col-2">
+                      <label >Cod. Empresa</label>
+                      <input type= "tect" class="uppercase-input" (input)="convertToUpperCase($event)"
                       (keydown)="moveFocus($event, input2)" #input1
                       class="form-control form-control-sm "
                       formControlName="cod_empre" />
                     </div>
+
                     <div class="col-3">
-                    </div>
-                    <div class="col-4">
-                      <input type="text" class="uppercase-input" (input)="convertToUpperCase($event)"
+                      <label >Rnc. Empresa</label>
+                      <input type= number class="uppercase-input" (input)="convertToUpperCase($event)"
                       (keydown)="moveFocus($event, input3)" #input2
                       class="form-control form-control-sm"
                       formControlName="rnc_empre"/>
                     </div>
-                  </div>
-                  <div class="row">
-                    <div class="col-4">
-                      <h6>Nombre</h6>
-                    </div>
-                  </div>
-                  <div class="row">
-                    <div class="col-12 ">
+                    <div class="col-7 ">
+                      <label >Nombre</label>
                       <input type="text"
                       (keydown)="moveFocus($event, input4)"#input3
                       class="form-control form-control-sm"
                       formControlName="nom_empre"/>
                     </div>
                   </div>
+                  <br>
                   <div class="row">
+                    <div class="col-4">
+                      <h6>Telefono</h6>
+                    </div>
                     <div class="col-4">
                       <h6>Direccion</h6>
                     </div>
                   </div>
                   <div class="row">
-                    <div class="col-12 ">
+                    <div class="col-4">
                       <input type="text"
-                      (keydown)="moveFocus($event, input4)"#input4
+                      (keydown)="moveFocus($event, input5)"#input4
+                      class="form-control form-control-sm"
+                      formControlName="tel_empre"/>
+                    </div>
+                    <div class="col-8 ">
+                      <input type="text"
+                      (keydown)="moveFocus($event, input6)"#input5
                       class="form-control form-control-sm"
                       formControlName="dir_empre"/>
+                    </div>
+                  </div>
+                  <br>
+
+
+
+
+                  <div class="row">
+                    <div class="col-2">
+                      <label for="">Iniciales</label>
+                      <input type="text"
+                      (keydown)="moveFocus($event, input7)"#input6
+                      class="form-control form-control-sm"
+                      formControlName="letra_empre"/>
+                    </div>
+                    <div class="col-2">
+                    </div>
+                    <div class="col-4 ">
+                      <label for="">Control Orden Compra</label>
+                      <input type= number
+                      (keydown)="moveFocus($event, input7)"#input7
+                      class="form-control form-control-sm"
+                      formControlName="orden_compra"/>
+                    </div>
+                  </div>
+                  <br>
+
+                  <div class="row">
+                    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                      <table class="table table-bordered table-hover table-striped table-sm">
+                        <thead class="table-dark">
+                          <tr>
+                            <th style="width: 8%; ">Codigo</th>
+                            <th style="width: 30%; ">Sucursal</th>
+                            <th style="width: 50%;">Direcion</th>
+                            <th></th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr *ngFor="let empresa of empresaList">
+                            <td class="text-center">{{empresa.cod_empre}}</td>
+                            <td class="text-center">{{empresa.rnc_empre}}</td>
+                            <td class="text-center">{{empresa.nom_empre}}</td>
+                            <td>
+                              <button class="btn btn-link" (click)="editarEmpresa(empresa)"><i class="bi bi-pencil text-primary"></i></button>
+                               
+                              <button class="btn btn-link" (click)="eliminarEmpresa(empresa.cod_empre)" ><i class="bi bi-trash text-danger"></i></button>
+                               
+                              <button class="btn btn-link" (click)="consultarEmpresa(empresa)"><i class="bi bi-card-list text-success"></i></button>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                  </div>
+                    <div class="row">
+                    <div class="col d-flex justify-content-end">
+                       <button type="submit" *ngIf="!modoconsultaEmpresa" class="btn btn-success">{{modoedicionEmpresa ? "Guardar Cambio" : "Guardar"}}</button>
                     </div>
                   </div>
                 </div>

@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ɵNG_COMP_DEF } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { BehaviorSubject,debounceTime, distinctUntilChanged, switchMap} from 'rxjs';
 import Swal from 'sweetalert2';
@@ -72,9 +72,11 @@ export class Empresas implements OnInit {
 
   crearFormularioEmpresa(){
     this.formularioEmpresa = this.fb.group({
+      cod_empre: ['', Validators.required],
       rnc_empre: ['', Validators.required],
       nom_empre: ['', Validators.required],
       dir_empre: ['', Validators.required],
+      tel_empre: ['', Validators.required],
       letra_empre: [''],
       orden_compra:[''],
       });
@@ -164,7 +166,7 @@ if(this.formularioEmpresa.valid){
     this.servicioEmpresa.editarEmpresa(this.empresaid, this.formularioEmpresa.value).subscribe(response => {
     Swal.fire({
     title: "Excelente!",
-    text: "Chofer Editado correctamente.",
+    text: "Empresa Editada correctamente.",
     icon: "success",
     timer: 5000,
     showConfirmButton: false,
@@ -179,7 +181,7 @@ if(this.formularioEmpresa.valid){
     this.servicioEmpresa.guardarEmpresa(this.formularioEmpresa.value).subscribe(response => {
     Swal.fire({
     title: "Excelente!",
-    text: "Empresa Guardado correctamente.",
+    text: "Empresa Guardada correctamente.",
     icon: "success",
     timer: 3000,
     showConfirmButton: false,
@@ -193,7 +195,7 @@ if(this.formularioEmpresa.valid){
   }
   }
   else{
-    alert("Este Chofer no fue Guardado");
+    alert("Esta Empresa no fue Guardado");
   }
 }
 
