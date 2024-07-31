@@ -1,7 +1,7 @@
 import { Injectable } from "@angular/core";
 import { Observable } from "rxjs";
 import { HttpInvokeService } from "../../http-invoke.service";
-import { ModeloEmpresa, ModeloEmpresaData } from ".";
+import { EmpresaModel, EmpresaModelData } from ".";
 
 @Injectable({
   providedIn: "root"
@@ -13,7 +13,7 @@ export class ServicioEmpresa {
     return this.http.PostRequest<any,any>("/empresa",empresas);
   }
 
-  editarEmpresa(cod_empre:number,empresas:ModeloEmpresa): Observable<any>{
+  editarEmpresa(cod_empre:string,empresas:EmpresaModel): Observable<any>{
     return this.http.PutRequest<any,any>(`/empresa/${cod_empre}`,empresas);
   }
 
@@ -26,11 +26,11 @@ console.log(url);
     return this.http.GetRequest<any>(url);
   }
 
-  eliminarEmpresa(cod_empre:number): Observable<any>{
+  eliminarEmpresa(cod_empre:string): Observable<any>{
     return this.http.DeleteRequest(`/empresa/${cod_empre}`, "");
   }
 
-  buscarEmpres(cod_empre:number): Observable<any>{
+  buscarEmpres(cod_empre:string): Observable<any>{
     return this.http.GetRequest<any>(`/empresa/${cod_empre}`);
   }
 

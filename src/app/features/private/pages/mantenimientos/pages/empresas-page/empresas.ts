@@ -3,7 +3,7 @@ import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms'
 import { BehaviorSubject,debounceTime, distinctUntilChanged, switchMap} from 'rxjs';
 import Swal from 'sweetalert2';
 import { ServicioEmpresa } from 'src/app/core/services/mantenimientos/empresas/empresas.service';
-import { ModeloEmpresaData } from 'src/app/core/services/mantenimientos/empresas';
+import { EmpresaModelData } from 'src/app/core/services/mantenimientos/empresas';
 declare var $: any;
 
 
@@ -27,10 +27,11 @@ export class Empresas implements OnInit {
   habilitarFormulario: boolean = false;
   tituloModalEmpresa!: string;
   formularioEmpresa!:FormGroup;
+  formularioSucursal!:FormGroup;
   modoedicionEmpresa:boolean = false;
-  empresaid!:number
+  empresaid!:string
   modoconsultaEmpresa:boolean = false;
-  empresaList:ModeloEmpresaData[] = [];
+  empresaList:EmpresaModelData[] = [];
   selectedEmpresa: any = null;
   constructor(private fb:FormBuilder, private servicioEmpresa:ServicioEmpresa)
     {this.crearFormularioEmpresa();
@@ -64,11 +65,29 @@ export class Empresas implements OnInit {
 
  }
 
+ agregarSucursal()
+ {
+    this.formularioEmpresa.disable();
 
+ }
+ cancelarSucursal(){
+ this.formularioSucursal.reset();
+ this.crearformularioSucursal();
+ this.formularioEmpresa.enable();
+ }
   seleccionarEmpresa(empresas: any)
    { this.selectedEmpresa = Empresas; }
   ngOnInit(): void
   {this.buscarTodasEmpresa(1);  }
+
+  crearformularioSucursal(){
+    this.formularioSucursal = this.fb.group({
+      cod_empre: ['', Validators.required],
+      nom_sucursal: ['', Validators.required],
+      dir_sucursal: ['', Validators.required],
+      tel_sucursal: ['', Validators.required],
+      });
+}
 
   crearFormularioEmpresa(){
     this.formularioEmpresa = this.fb.group({
@@ -81,7 +100,7 @@ export class Empresas implements OnInit {
       orden_compra:[''],
       });
 
-  }habilitarFormularioChofer(){
+  }habilitarFormularioEmpresa(){
     this.habilitarFormulario = false;
   }
 
@@ -101,7 +120,7 @@ export class Empresas implements OnInit {
   this.crearFormularioEmpresa();
  }
 
- editarEmpresa(Empresa:ModeloEmpresaData){
+ editarEmpresa(Empresa:EmpresaModelData){
   this.empresaid = Empresa.cod_empre;
   this.modoedicionEmpresa = true;
   this.formularioEmpresa.patchValue(Empresa);
@@ -116,7 +135,7 @@ buscarTodasEmpresa(page:number){
     this.empresaList = response.data;
   });
 }
-consultarEmpresa(Empresa:ModeloEmpresaData){
+consultarEmpresa(Empresa:EmpresaModelData){
   this.tituloModalEmpresa = 'Consulta Empresa';
  this.formularioEmpresa.patchValue(Empresa);
 $('#modalempresa').modal('show');
@@ -124,7 +143,7 @@ this.habilitarFormulario = true;
 this.modoconsultaEmpresa = true;
 };
 
-eliminarEmpresa(Empresa:number){
+eliminarEmpresa(Empresa:string){
   Swal.fire({
   title: '¿Está seguro de eliminar este Empresa?',
   text: "¡No podrá revertir esto!",
