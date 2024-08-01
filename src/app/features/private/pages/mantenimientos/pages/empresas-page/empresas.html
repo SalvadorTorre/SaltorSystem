@@ -137,7 +137,7 @@
             <div class="col-12">
               <div class="card">
                 <div class="card-header ">
-                  <h4>Datos de la Empresa</h4>
+                  <h6>Datos de la Empresa</h6>
                 </div>
                 <div class="card-body" >
 
@@ -165,7 +165,6 @@
                       formControlName="nom_empre"/>
                     </div>
                   </div>
-                  <br>
                   <div class="row">
                     <div class="col-4">
                       <h6>Telefono</h6>
@@ -188,11 +187,6 @@
                       formControlName="dir_empre"/>
                     </div>
                   </div>
-                  <br>
-
-
-
-
                   <div class="row">
                     <div class="col-2">
                       <label for="">Iniciales</label>
@@ -226,37 +220,44 @@
           </div>
         </form>
         <br>
-        <div class="card" *ngIf="formularioEmpresa.disabled">
-          <div class="card-body">
-            <form >
-              <div class="row">
-                <div class="col-7">
-                  <label>Nombre Sucursal</label>
-                  <input type="text"
-                  (keydown)="moveFocus($event, input2)"#input1
-                  class="form-control form-control-sm"
-                  formControlName="nom_sucursal"/>
-                </div>
-                <div class="col-5">
-                  <label>TElefono</label>
-                  <input type="text"
-                  (keydown)="moveFocus($event, input3)"#input2
-                  class="form-control form-control-sm"
-                  formControlName="tel_sucursal"/>
-                </div>
-
+        <div class="row">
+          <div class="col-18">
+            <div class="card" *ngIf="formularioEmpresa.disabled">
+              <div class="card-header ">
+                <h6>Datos de Sucursal</h6>
               </div>
-              <br>
-              <div class="row">
-                <div class="col-7">
-                  <label>Direccion</label>
-                  <input type="text"
-                  (keydown)="moveFocus($event, input3)"#input3
-                  class="form-control form-control-sm"
-                  formControlName="dir_sucursal"/>
+              <div class="card-body">
+              <form >
+                <div class="row">
+                  <div class="col-8">
+                    <label>Nombre Sucursal</label>
+                    <input type="text"
+                    (keydown)="moveFocus($event, input2)"#input1
+                    class="form-control form-control-sm"
+                    formControlName="nom_sucursal"/>
+                  </div>
+                  <div class="col-4">
+                    <label>Telefono</label>
+                    <input type="text"
+                    (keydown)="moveFocus($event, input3)"#input2
+                    class="form-control form-control-sm"
+                    formControlName="tel_sucursal"/>
+                  </div>
                 </div>
-              </div>
-            </form>
+                <div class="row">
+                  <div class="col-12">
+                    <label>Direccion</label>
+                    <input type="text"
+                    (keydown)="moveFocus($event, input3)"#input3
+                    class="form-control form-control-sm"
+                    formControlName="dir_sucursal"/>
+                  </div>
+                </div>
+              </form>
+            </div>  
+          </div>
+          <div class="col-4" *ngIf="formularioEmpresa.disabled">
+            <button type="button" class="btn btn-secondary" (click)="agregarSucursal()" > Cancelar</button>
           </div>
         </div>
         <div class="row" *ngIf="formularioEmpresa.enabled">
@@ -272,9 +273,9 @@
               </thead>
               <tbody>
                 <tr *ngFor="let sucursal of empresaList[0].sucursales">
-                  <td class="text-center">{{sucursal.cod_empre}}</td>
-                  <td class="text-center">{{sucursal.nom_sucursal}}</td>
-                  <td class="text-center">{{sucursal.dir_sucursal}}</td>
+                  <td class="text-center">{{sucursal.cod_sucursal}}</td>
+                  <td class="text">{{sucursal.nom_sucursal}}</td>
+                  <td class="text">{{sucursal.dir_sucursal}}</td>
                   <td>
                     <!-- <button class="btn btn-link" (click)="editarEmpresa(sucursal)"><i class="bi bi-pencil text-primary"></i></button>
                      
