@@ -207,9 +207,9 @@
                   </div>
                   <br>
                     <div class="row">
-                      <div class="col-4">
-                        <button type="button" class="btn btn-secondary" (click)="agregarSucursal()" > Agregar Sucursal</button>
-                      </div>
+                    <!--  <div class="col-4">
+                       <button type="button" class="btn btn-secondary" (click)="agregarSucursal()" > Agregar Sucursal</button>
+                      </div>-->
                       <div class="col d-flex justify-content-end">
                         <button type="submit" *ngIf="!modoconsultaEmpresa" class="btn btn-success">{{modoedicionEmpresa ? "Guardar Cambio" : "Guardar"}}</button>
                       </div>
@@ -221,13 +221,13 @@
         </form>
         <br>
         <div class="row">
-          <div class="col-18">
+          <div class="col-10">
             <div class="card" *ngIf="formularioEmpresa.disabled">
               <div class="card-header ">
                 <h6>Datos de Sucursal</h6>
               </div>
               <div class="card-body">
-              <form >
+                <form >
                 <div class="row">
                   <div class="col-8">
                     <label>Nombre Sucursal</label>
@@ -253,14 +253,16 @@
                     formControlName="dir_sucursal"/>
                   </div>
                 </div>
-              </form>
-            </div>  
+                </form>
+              </div>
+            </div>
           </div>
-          <div class="col-4" *ngIf="formularioEmpresa.disabled">
+          <div class="col-2" *ngIf="formularioEmpresa.disabled">
             <button type="button" class="btn btn-secondary" (click)="agregarSucursal()" > Cancelar</button>
           </div>
         </div>
-        <div class="row" *ngIf="formularioEmpresa.enabled">
+        <div class="row" *ngIf="activatablaSucursal">
+        <!--  && modoconsultaEmpresa && modoedicionEmpresa">-->
           <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
             <table class="table table-bordered table-hover table-striped table-sm">
               <thead class="table-dark">
@@ -272,14 +274,12 @@
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let sucursal of empresaList[0].sucursales">
+                <tr *ngFor="let sucursal of sucursalList">
                   <td class="text-center">{{sucursal.cod_sucursal}}</td>
                   <td class="text">{{sucursal.nom_sucursal}}</td>
                   <td class="text">{{sucursal.dir_sucursal}}</td>
                   <td>
-                    <!-- <button class="btn btn-link" (click)="editarEmpresa(sucursal)"><i class="bi bi-pencil text-primary"></i></button>
-                     
-                    <button class="btn btn-link" (click)="eliminarEmpresa(sucursal.cod_empre)" ><i class="bi bi-trash text-danger"></i></button> -->
+                      <!-- ºAutton class="btn btn-link" (click)="eliminarEmpresa(sucursal.cod_empre)" ><i class="bi bi-trash text-danger"></i></button> -->
                      
                     <!-- <button class="btn btn-link" (click)="consultarEmpresa(empresa)"><i class="bi bi-card-list text-success"></i></button> -->
                   </td>
