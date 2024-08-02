@@ -206,13 +206,13 @@
                     </div>
                   </div>
                   <br>
-                    <div class="row">
-                    <!--  <div class="col-4">
+                  <div class="row">
+                      <!--<div class="col-4" *ngIf="activaformularioSucursal && modoedicionEmpresa ">
                        <button type="button" class="btn btn-secondary" (click)="agregarSucursal()" > Agregar Sucursal</button>
-                      </div>-->
-                      <div class="col d-flex justify-content-end">
-                        <button type="submit" *ngIf="!modoconsultaEmpresa" class="btn btn-success">{{modoedicionEmpresa ? "Guardar Cambio" : "Guardar"}}</button>
-                      </div>
+                      </div>-->>
+                    <div class="col d-flex justify-content-end" *ngIf="!activaformularioSucursal">
+                      <button type="submit" *ngIf="!modoconsultaEmpresa" class="btn btn-success">{{modoedicionEmpresa ? "Guardar Cambio" : "Guardar"}}</button>
+                  </div>
                     </div>
                 </div>
               </div>
@@ -222,7 +222,7 @@
         <br>
         <div class="row">
           <div class="col-10">
-            <div class="card" *ngIf="formularioEmpresa.disabled">
+            <div class="card" *ngIf="activaformularioSucursal">
               <div class="card-header ">
                 <h6>Datos de Sucursal</h6>
               </div>
@@ -257,8 +257,8 @@
               </div>
             </div>
           </div>
-          <div class="col-2" *ngIf="formularioEmpresa.disabled">
-            <button type="button" class="btn btn-secondary" (click)="agregarSucursal()" > Cancelar</button>
+          <div class="col-2" *ngIf="activaformularioSucursal">
+            <button type="button" class="btn btn-secondary" (click)="cancelarSucursal()" > Cancelar</button>
           </div>
         </div>
         <div class="row" *ngIf="activatablaSucursal">
