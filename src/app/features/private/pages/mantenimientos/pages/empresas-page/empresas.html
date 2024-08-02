@@ -172,7 +172,7 @@
                       />
                     </div>
 
-                    <div class="col-3">
+                    <div class="col-4">
                       <label>Rnc. Empresa</label>
                       <input
                         type="number"
@@ -184,7 +184,7 @@
                         formControlName="rnc_empre"
                       />
                     </div>
-                    <div class="col-7">
+                    <div class="col-6">
                       <label>Nombre</label>
                       <input
                         type="text"
@@ -195,7 +195,7 @@
                       />
                     </div>
                   </div>
-                  <div class="row">
+                  <div class="row mt-2">
                     <div class="col-4">
                       <h6>Telefono</h6>
                     </div>
@@ -203,7 +203,7 @@
                       <h6>Direccion</h6>
                     </div>
                   </div>
-                  <div class="row">
+                  <div class="row mt-2">
                     <div class="col-4">
                       <input
                         type="text"
@@ -223,7 +223,7 @@
                       />
                     </div>
                   </div>
-                  <div class="row">
+                  <div class="row mt-2">
                     <div class="col-2">
                       <label for="">Iniciales</label>
                       <input
@@ -234,7 +234,7 @@
                         formControlName="letra_empre"
                       />
                     </div>
-                    <div class="col-2"></div>
+
                     <div class="col-4">
                       <label for="">Control Orden Compra</label>
                       <input
@@ -248,7 +248,7 @@
                   </div>
                 </div>
               </div>
-              <div class="row">
+              <div class="row mt-4">
                 <div
                   class="col d-flex justify-content-end"
                   *ngIf="!activaformularioSucursal"
@@ -266,9 +266,10 @@
           </div>
         </form>
         <br />
-        <div class="row">
+        <div class="row" *ngIf="activaformularioSucursal">
           <div class="col-12">
-            <div class="card" *ngIf="activaformularioSucursal">
+            <!--  -->
+            <div class="card">
               <div class="card-header">
                 <h6>Datos de Sucursal</h6>
               </div>
@@ -277,60 +278,62 @@
                   [formGroup]="formularioSucursal"
                   (ngSubmit)="guardarSucursal()"
                 >
-                  <div class="col-8">
-                    <div class="row">
-                      <div class="col-8">
-                        <label>Nombre Sucursal</label>
-                        <input
-                          type="text"
-                          (keydown)="moveFocus($event, input2)"
-                          #input1
-                          class="form-control form-control-sm"
-                          formControlName="nom_sucursal"
-                        />
+                  <div class="row">
+                    <div class="col-10">
+                      <div class="row">
+                        <div class="col-8">
+                          <label>Nombre Sucursal</label>
+                          <input
+                            type="text"
+                            (keydown)="moveFocus($event, input2)"
+                            #input1
+                            class="form-control form-control-sm"
+                            formControlName="nom_sucursal"
+                          />
+                        </div>
+                        <div class="col-4">
+                          <label>Telefono</label>
+                          <input
+                            type="text"
+                            (keydown)="moveFocus($event, input3)"
+                            #input2
+                            class="form-control form-control-sm"
+                            formControlName="tel_sucursal"
+                          />
+                        </div>
                       </div>
-                      <div class="col-4">
-                        <label>Telefono</label>
-                        <input
-                          type="text"
-                          (keydown)="moveFocus($event, input3)"
-                          #input2
-                          class="form-control form-control-sm"
-                          formControlName="tel_sucursal"
-                        />
-                      </div>
-                    </div>
-                    <div class="row">
-                      <div class="col-12">
-                        <label>Direccion</label>
-                        <input
-                          type="text"
-                          (keydown)="moveFocus($event, input3)"
-                          #input3
-                          class="form-control form-control-sm"
-                          formControlName="dir_sucursal"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                  <div class="col-4">
-                    <div class="row">
-                      <div class="col">
-                        <button type="submit" class="btn btn-success">
-                          Guardar
-                        </button>
+                      <div class="row">
+                        <div class="col-12">
+                          <label>Direccion</label>
+                          <input
+                            type="text"
+                            (keydown)="moveFocus($event, input3)"
+                            #input3
+                            class="form-control form-control-sm"
+                            formControlName="dir_sucursal"
+                          />
+                        </div>
                       </div>
                     </div>
-                    <br />
-                    <div class="row">
-                      <div class="col">
-                        <button
-                          type="button"
-                          class="btn btn-danger"
-                          (click)="cancelarSucursal()"
-                        >
-                          Cancelar
-                        </button>
+                    <div class="col-2 mt-4">
+                      <div class="row">
+                        <div class="col">
+                          <button type="submit" class="btn btn-success">
+                            Guardar
+                          </button>
+                        </div>
+                      </div>
+                      &nbsp;&nbsp;
+                      <div class="row">
+                        <div class="col">
+                          <button
+                            type="button"
+                            class="btn btn-danger"
+                            (click)="cancelarSucursal()"
+                          >
+                            Cancelar
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
