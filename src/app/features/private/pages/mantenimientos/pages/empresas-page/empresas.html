@@ -1,48 +1,53 @@
-<div class="card " style="height: 80vh;">
+<div class="card" style="height: 80vh">
   <div class="card-header">
     <h1>Empresas</h1>
   </div>
   <div class="card-body">
-
     <!-- buscador -->
 
-    <div class="row ">
+    <div class="row">
       <div class="col-2">
         <label for="">Buscar Rnc Empresa</label>
         <input
-        [(ngModel)]="txtcodigo"
-        type="text" placeholder="Digite RNC" class="form-control" (input)="codigoEntra($event)" />
+          [(ngModel)]="txtcodigo"
+          type="text"
+          placeholder="Digite RNC"
+          class="form-control"
+          (input)="codigoEntra($event)"
+        />
       </div>
 
       <div class="col-3">
         <label for="">Buscar Nombre</label>
         <input
-        [(ngModel)]="txtdescripcion"
+          [(ngModel)]="txtdescripcion"
           type="text"
           placeholder="Digite Nombre..."
           class="form-control uppercase"
           (input)="descripcionEntra($event)"
         />
-
       </div>
       <div class="col-2">
-        <button class="btn btn-danger mt-4" (click)="limpiaBusqueda()"><i class="bi bi-arrow-counterclockwise"></i></button>
+        <button class="btn btn-danger mt-4" (click)="limpiaBusqueda()">
+          <i class="bi bi-arrow-counterclockwise"></i>
+        </button>
       </div>
-      <div class=" col-2">
-        <button class="btn btn-primary mt-4" (click)="nuevaEmpresa()">Nueva Empresa</button>
+      <div class="col-2">
+        <button class="btn btn-primary mt-4" (click)="nuevaEmpresa()">
+          Nueva Empresa
+        </button>
       </div>
-
     </div>
     <!-- fin buscador -->
-    <br>
+    <br />
     <!-- Grid -->
-    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+    <div class="table-responsive" style="max-height: 400px; overflow-y: auto">
       <table class="table table-bordered table-hover table-striped table-sm">
         <thead class="table-dark">
           <tr>
-            <th style="width: 10%; ">Codigo</th>
-            <th style="width: 10%; ">Rnc</th>
-            <th style="width: 23%;">Empresa</th>
+            <th style="width: 10%">Codigo</th>
+            <th style="width: 10%">Rnc</th>
+            <th style="width: 23%">Empresa</th>
             <th></th>
           </tr>
         </thead>
@@ -52,11 +57,20 @@
             <td class="text-center">{{empresa.rnc_empre}}</td>
             <td class="text-center">{{empresa.nom_empre}}</td>
             <td>
-              <button class="btn btn-link" (click)="editarEmpresa(empresa)"><i class="bi bi-pencil text-primary"></i></button>
-               
-              <button class="btn btn-link" (click)="eliminarEmpresa(empresa.cod_empre)" ><i class="bi bi-trash text-danger"></i></button>
-               
-              <button class="btn btn-link" (click)="consultarEmpresa(empresa)"><i class="bi bi-card-list text-success"></i></button>
+              <button class="btn btn-link" (click)="editarEmpresa(empresa)">
+                <i class="bi bi-pencil text-primary"></i>
+              </button>
+
+              <button
+                class="btn btn-link"
+                (click)="eliminarEmpresa(empresa.cod_empre)"
+              >
+                <i class="bi bi-trash text-danger"></i>
+              </button>
+
+              <button class="btn btn-link" (click)="consultarEmpresa(empresa)">
+                <i class="bi bi-card-list text-success"></i>
+              </button>
             </td>
           </tr>
         </tbody>
@@ -111,13 +125,14 @@
 
 <!-- Formulario de cliente -->
 
-
-<div class="modal fade"
+<div
+  class="modal fade"
   id="modalempresa"
   tabindex="-1"
   aria-labelledby="modalEmpresaLabel"
-  aria-hidden="true">
-  <div class="modal-dialog  modal-dialog-centered modal-lg">
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-dialog-centered modal-lg">
     <div class="modal-content">
       <div class="modal-header">
         <h1 class="modal-title fs-5" id="modalEmpresaLabel">
@@ -125,44 +140,59 @@
         </h1>
         <button
           type="button"
-          class="btn-close" (click)="cerrarModalEmpresa()"
-          aria-label="Close">
-        </button>
+          class="btn-close"
+          (click)="cerrarModalEmpresa()"
+          aria-label="Close"
+        ></button>
       </div>
       <div class="modal-body">
-        <form class="custom-form-background"
+        <form
+          class="custom-form-background"
           [formGroup]="formularioEmpresa"
-          (ngSubmit)="guardarEmpresa()">
+          (ngSubmit)="guardarEmpresa()"
+        >
           <div class="row">
             <div class="col-12">
               <div class="card">
-                <div class="card-header ">
+                <div class="card-header">
                   <h6>Datos de la Empresa</h6>
                 </div>
-                <div class="card-body" >
-
+                <div class="card-body">
                   <div class="row">
                     <div class="col-2">
-                      <label >Cod. Empresa</label>
-                      <input type= "tect" class="uppercase-input" (input)="convertToUpperCase($event)"
-                      (keydown)="moveFocus($event, input2)" #input1
-                      class="form-control form-control-sm "
-                      formControlName="cod_empre" />
+                      <label>Cod. Empresa</label>
+                      <input
+                        type="tect"
+                        class="uppercase-input"
+                        (input)="convertToUpperCase($event)"
+                        (keydown)="moveFocus($event, input2)"
+                        #input1
+                        class="form-control form-control-sm"
+                        formControlName="cod_empre"
+                      />
                     </div>
 
                     <div class="col-3">
-                      <label >Rnc. Empresa</label>
-                      <input type= number class="uppercase-input" (input)="convertToUpperCase($event)"
-                      (keydown)="moveFocus($event, input3)" #input2
-                      class="form-control form-control-sm"
-                      formControlName="rnc_empre"/>
+                      <label>Rnc. Empresa</label>
+                      <input
+                        type="number"
+                        class="uppercase-input"
+                        (input)="convertToUpperCase($event)"
+                        (keydown)="moveFocus($event, input3)"
+                        #input2
+                        class="form-control form-control-sm"
+                        formControlName="rnc_empre"
+                      />
                     </div>
-                    <div class="col-7 ">
-                      <label >Nombre</label>
-                      <input type="text"
-                      (keydown)="moveFocus($event, input4)"#input3
-                      class="form-control form-control-sm"
-                      formControlName="nom_empre"/>
+                    <div class="col-7">
+                      <label>Nombre</label>
+                      <input
+                        type="text"
+                        (keydown)="moveFocus($event, input4)"
+                        #input3
+                        class="form-control form-control-sm"
+                        formControlName="nom_empre"
+                      />
                     </div>
                   </div>
                   <div class="row">
@@ -175,133 +205,173 @@
                   </div>
                   <div class="row">
                     <div class="col-4">
-                      <input type="text"
-                      (keydown)="moveFocus($event, input5)"#input4
-                      class="form-control form-control-sm"
-                      formControlName="tel_empre"/>
+                      <input
+                        type="text"
+                        (keydown)="moveFocus($event, input5)"
+                        #input4
+                        class="form-control form-control-sm"
+                        formControlName="tel_empre"
+                      />
                     </div>
-                    <div class="col-8 ">
-                      <input type="text"
-                      (keydown)="moveFocus($event, input6)"#input5
-                      class="form-control form-control-sm"
-                      formControlName="dir_empre"/>
+                    <div class="col-8">
+                      <input
+                        type="text"
+                        (keydown)="moveFocus($event, input6)"
+                        #input5
+                        class="form-control form-control-sm"
+                        formControlName="dir_empre"
+                      />
                     </div>
                   </div>
                   <div class="row">
                     <div class="col-2">
                       <label for="">Iniciales</label>
-                      <input type="text"
-                      (keydown)="moveFocus($event, input7)"#input6
-                      class="form-control form-control-sm"
-                      formControlName="letra_empre"/>
+                      <input
+                        type="text"
+                        (keydown)="moveFocus($event, input7)"
+                        #input6
+                        class="form-control form-control-sm"
+                        formControlName="letra_empre"
+                      />
                     </div>
-                    <div class="col-2">
-                    </div>
-                    <div class="col-4 ">
+                    <div class="col-2"></div>
+                    <div class="col-4">
                       <label for="">Control Orden Compra</label>
-                      <input type= number
-                      (keydown)="moveFocus($event, input7)"#input7
-                      class="form-control form-control-sm"
-                      formControlName="orden_compra"/>
+                      <input
+                        type="number"
+                        (keydown)="moveFocus($event, input7)"
+                        #input7
+                        class="form-control form-control-sm"
+                        formControlName="orden_compra"
+                      />
                     </div>
                   </div>
                 </div>
               </div>
               <div class="row">
-                <div class="col d-flex justify-content-end" *ngIf="!activaformularioSucursal">
-                  <button type="submit" *ngIf="!modoconsultaEmpresa" class="btn btn-success">{{modoedicionEmpresa ? "Guardar Cambio" : "Guardar"}}</button>
+                <div
+                  class="col d-flex justify-content-end"
+                  *ngIf="!activaformularioSucursal"
+                >
+                  <button
+                    type="submit"
+                    *ngIf="!modoconsultaEmpresa"
+                    class="btn btn-success"
+                  >
+                    {{modoedicionEmpresa ? "Guardar Cambio" : "Guardar"}}
+                  </button>
                 </div>
               </div>
             </div>
           </div>
         </form>
-        <br>
+        <br />
         <div class="row">
-          <div class="col-10">
+          <div class="col-12">
             <div class="card" *ngIf="activaformularioSucursal">
-              <div class="card-header ">
+              <div class="card-header">
                 <h6>Datos de Sucursal</h6>
               </div>
               <div class="card-body">
-                <form >
-                <div class="row">
+                <form
+                  [formGroup]="formularioSucursal"
+                  (ngSubmit)="guardarSucursal()"
+                >
                   <div class="col-8">
-                    <label>Nombre Sucursal</label>
-                    <input type="text"
-                    (keydown)="moveFocus($event, input2)"#input1
-                    class="form-control form-control-sm"
-                    formControlName="nom_sucursal"/>
+                    <div class="row">
+                      <div class="col-8">
+                        <label>Nombre Sucursal</label>
+                        <input
+                          type="text"
+                          (keydown)="moveFocus($event, input2)"
+                          #input1
+                          class="form-control form-control-sm"
+                          formControlName="nom_sucursal"
+                        />
+                      </div>
+                      <div class="col-4">
+                        <label>Telefono</label>
+                        <input
+                          type="text"
+                          (keydown)="moveFocus($event, input3)"
+                          #input2
+                          class="form-control form-control-sm"
+                          formControlName="tel_sucursal"
+                        />
+                      </div>
+                    </div>
+                    <div class="row">
+                      <div class="col-12">
+                        <label>Direccion</label>
+                        <input
+                          type="text"
+                          (keydown)="moveFocus($event, input3)"
+                          #input3
+                          class="form-control form-control-sm"
+                          formControlName="dir_sucursal"
+                        />
+                      </div>
+                    </div>
                   </div>
                   <div class="col-4">
-                    <label>Telefono</label>
-                    <input type="text"
-                    (keydown)="moveFocus($event, input3)"#input2
-                    class="form-control form-control-sm"
-                    formControlName="tel_sucursal"/>
+                    <div class="row">
+                      <div class="col">
+                        <button type="submit" class="btn btn-success">
+                          Guardar
+                        </button>
+                      </div>
+                    </div>
+                    <br />
+                    <div class="row">
+                      <div class="col">
+                        <button
+                          type="button"
+                          class="btn btn-danger"
+                          (click)="cancelarSucursal()"
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <div class="row">
-                  <div class="col-12">
-                    <label>Direccion</label>
-                    <input type="text"
-                    (keydown)="moveFocus($event, input3)"#input3
-                    class="form-control form-control-sm"
-                    formControlName="dir_sucursal"/>
-                  </div>
-                </div>
                 </form>
               </div>
             </div>
           </div>
-          <div class="col-2" *ngIf="activaformularioSucursal">
-            <div class="card no-border">
-              <form >
-                <div class="row">
-                  <br>
-                  <div class="col-2"></div>
-                  <div class="col-10">
-                    <button type="button"  class="btn btn-success" (click)="cancelarSucursal()" > Guardar</button>
-                  </div>
-                </div>
-                <br>
-                <br>
-                <div class="row">
-                  <div class col-6>
-                    <button type="button" class="btn btn-danger" (click)="cancelarSucursal()" > Cancelar</button>
-                  </div>
-                </div> 
-              </form>  
+          <div class="row" *ngIf="activatablaSucursal">
+            <!--  && modoconsultaEmpresa && modoedicionEmpresa">-->
+            <div
+              class="table-responsive"
+              style="max-height: 400px; overflow-y: auto"
+            >
+              <table
+                class="table table-bordered table-hover table-striped table-sm"
+              >
+                <thead class="table-dark">
+                  <tr>
+                    <th style="width: 8%">Codigo</th>
+                    <th style="width: 30%">Sucursal</th>
+                    <th style="width: 50%">Direcion</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let sucursal of sucursalList">
+                    <td class="text-center">{{sucursal.cod_sucursal}}</td>
+                    <td class="text">{{sucursal.nom_sucursal}}</td>
+                    <td class="text">{{sucursal.dir_sucursal}}</td>
+                    <td>
+                      <!-- ºAutton class="btn btn-link" (click)="eliminarEmpresa(sucursal.cod_empre)" ><i class="bi bi-trash text-danger"></i></button> -->
+
+                      <!-- <button class="btn btn-link" (click)="consultarEmpresa(empresa)"><i class="bi bi-card-list text-success"></i></button> -->
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
-        <div class="row" *ngIf="activatablaSucursal">
-        <!--  && modoconsultaEmpresa && modoedicionEmpresa">-->
-          <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
-            <table class="table table-bordered table-hover table-striped table-sm">
-              <thead class="table-dark">
-                <tr>
-                  <th style="width: 8%; ">Codigo</th>
-                  <th style="width: 30%; ">Sucursal</th>
-                  <th style="width: 50%;">Direcion</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let sucursal of sucursalList">
-                  <td class="text-center">{{sucursal.cod_sucursal}}</td>
-                  <td class="text">{{sucursal.nom_sucursal}}</td>
-                  <td class="text">{{sucursal.dir_sucursal}}</td>
-                  <td>
-                      <!-- ºAutton class="btn btn-link" (click)="eliminarEmpresa(sucursal.cod_empre)" ><i class="bi bi-trash text-danger"></i></button> -->
-                     
-                    <!-- <button class="btn btn-link" (click)="consultarEmpresa(empresa)"><i class="bi bi-card-list text-success"></i></button> -->
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
         </div>
       </div>
     </div>
+  </div>
 </div>
-

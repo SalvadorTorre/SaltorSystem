@@ -4,6 +4,7 @@ import { BehaviorSubject,debounceTime, distinctUntilChanged, switchMap} from 'rx
 import Swal from 'sweetalert2';
 import { ServicioEmpresa } from 'src/app/core/services/mantenimientos/empresas/empresas.service';
 import { EmpresaModelData, SucursalesData } from 'src/app/core/services/mantenimientos/empresas';
+import { ServicioSucursal } from 'src/app/core/services/mantenimientos/sucursal/sucursal.service';
 declare var $: any;
 
 
@@ -36,7 +37,7 @@ export class Empresas implements OnInit {
   activatablaSucursal:boolean=false;
   activaformularioSucursal:boolean=false;
   selectedEmpresa: any = null;
-  constructor(private fb:FormBuilder, private servicioEmpresa:ServicioEmpresa)
+  constructor(private fb:FormBuilder, private servicioEmpresa:ServicioEmpresa, private servicioSucursal:ServicioSucursal)
     {this.crearFormularioEmpresa();
 
     this.descripcionBuscar.pipe(
@@ -107,7 +108,7 @@ export class Empresas implements OnInit {
     orden_compra:[''],
     });
   }
- 
+
   habilitarFormularioEmpresa(){
     this.habilitarFormulario = false;
   }
@@ -208,16 +209,16 @@ guardarSucursal(){
       timer:3000,
       showConfirmButton: false,
     })
-    this.buscarTodasSucursal(1);
+    this.buscarTodasEmpresa(1);
     this.formularioSucursal.reset();
-    this.crearFormularioSucursal();
+    this.crearformularioSucursal();
     $('#modalsucursal').modal('hide');
     })
   }
   else{
-    alert("Esta Empresa no fue Guardado");
+    alert("Esta Sucursal no fue Guardado");
   }
-   
+
 }
 
 guardarEmpresa(){
@@ -249,7 +250,7 @@ guardarEmpresa(){
       confirmButtonColor: '#3085d6',
       cancelButtonColor: '#d33',
       confirmButtonText: 'Crear Sucursal'
-    }).then((result) => 
+    }).then((result) =>
     {
       if (result.isConfirmed)
       {
@@ -263,7 +264,7 @@ guardarEmpresa(){
        this.crearFormularioEmpresa();
        this.formularioEmpresa.enable();
        $('#modalempresa').modal('hide');
-   
+
       }
 
     });
