@@ -38,8 +38,9 @@ export class Empresas implements OnInit {
   activaformularioSucursal:boolean=false;
   selectedEmpresa: any = null;
   constructor(private fb:FormBuilder, private servicioEmpresa:ServicioEmpresa, private servicioSucursal:ServicioSucursal)
-    {this.crearFormularioEmpresa();
-
+    {
+      this.crearFormularioEmpresa();
+      this.crearformularioSucursal();
     this.descripcionBuscar.pipe(
     debounceTime(500),
     distinctUntilChanged(),
@@ -85,7 +86,7 @@ export class Empresas implements OnInit {
 
  crearformularioSucursal(){
   this.formularioSucursal = this.fb.group({
-  cod_empre: ['', Validators.required],
+  cod_empre: ['', ],
   nom_sucursal: ['', Validators.required],
   dir_sucursal: ['', Validators.required],
   tel_sucursal: ['', Validators.required],
@@ -160,6 +161,17 @@ consultarEmpresa(Empresa:EmpresaModelData){
  this.sucursalList = Empresa.sucursales
 };
 
+consultarSucursal(Empresa:EmpresaModelData){
+  //this.tituloModalEmpresa = 'Consulta Empresa';
+  this.formularioEmpresa.patchValue(Empresa);
+  this.activaformularioSucursal= true;
+
+  this.habilitarFormulario = true;
+  this.modoconsultaEmpresa = true;
+  this.activatablaSucursal= true;
+  this.sucursalList = Empresa.sucursales
+ };
+
 eliminarEmpresa(Empresa:string){
   Swal.fire({
   title: '¿Está seguro de eliminar este Empresa?',
@@ -198,13 +210,15 @@ codigoEntra(event: Event) {
 }
 guardarSucursal(){
  console.log(this.formularioSucursal.value);
+ var datosFormulariEmpresa = this.formularioEmpresa.value;
+ this.formularioSucursal.patchValue({cod_empre:datosFormulariEmpresa.cod_empre});
  if(this.formularioSucursal.valid)
  {
    this.servicioSucursal.guardarSucursal(this.formularioSucursal.value).subscribe(response => {
     Swal.fire
     ({
       title: "Excelente!",
-      text: "Empresa eliminado correctamente.",
+      text: "Empresa Guardada correctamente.",
       icon: 'warning',
       timer:3000,
       showConfirmButton: false,

@@ -266,6 +266,7 @@
           </div>
         </form>
         <br />
+        <!--s+++++++++++++++-->
         <div class="row" *ngIf="activaformularioSucursal">
           <div class="col-12">
             <!--  -->
@@ -364,10 +365,20 @@
                     <td class="text">{{sucursal.nom_sucursal}}</td>
                     <td class="text">{{sucursal.dir_sucursal}}</td>
                     <td>
-                      <!-- ºAutton class="btn btn-link" (click)="eliminarEmpresa(sucursal.cod_empre)" ><i class="bi bi-trash text-danger"></i></button> -->
+                      <!-- <button
+                        class="btn btn-link"
+                        (click)="eliminarSucursa(sucursal.cod_sucursal)"
+                      >
+                        <i class="bi bi-trash text-danger"></i>
+                      </button>
 
-                      <!-- <button class="btn btn-link" (click)="consultarEmpresa(empresa)"><i class="bi bi-card-list text-success"></i></button> -->
-                    </td>
+                      <button
+                      class="btn btn-link"
+                      (click)="consultarSucursal(sucursales¿)"
+                    >
+                      <i class="bi bi-card-list text-success"></i>
+                    </button>
+                    --></td>
                   </tr>
                 </tbody>
               </table>

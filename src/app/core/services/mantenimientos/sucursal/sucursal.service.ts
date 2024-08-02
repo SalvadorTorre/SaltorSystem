@@ -10,18 +10,16 @@ export class ServicioSucursal {
   constructor(private http:HttpInvokeService) {}
 
   guardarSucursal(sucursal:any): Observable<any>{
-    return this.http.PostRequest<any,any>("/sucursal",sucursal);
+    return this.http.PostRequest<any,any>("/sucursales",sucursal);
   }
 
-  editarEmpresa(cod_sucursal:string,sucursal:SucursalModel): Observable<any>{
-    return this.http.PutRequest<any,any>(`/empresa/${cod_sucursal}`,sucursal);
+  editaSucursal(cod_sucursal:string,sucursal:SucursalModel): Observable<any>{
+    return this.http.PutRequest<any,any>(`/sucursales/${cod_sucursal}`,sucursal);
   }
 
-  buscarTodasSucursal(pageIndex: number, pageSize: number,  descripcion?: string): Observable<any> {
-    let url = `/sucursal?page=${pageIndex}&limit=${pageSize}`;
-    if (descripcion) {
-      url += `&descripcion=${descripcion}`;
-    }
+  buscarTodasSucursal(): Observable<any> {
+    let url = `/sucursales`;
+
 console.log(url);
     return this.http.GetRequest<any>(url);
   }
