@@ -195,6 +195,30 @@ codigoEntra(event: Event) {
  const inputElement = event.target as HTMLInputElement;
  this.codigoBuscar.next(inputElement.value.toUpperCase());
 }
+guardarSucursal(){
+ console.log(this.formularioSucursal.value);
+ if(this.formularioSucursal.valid)
+ {
+   this.servicioSucursal.guardarSucursal(this.formularioSucursal.value).subscribe(response => {
+    Swal.fire
+    ({
+      title: "Excelente!",
+      text: "Empresa eliminado correctamente.",
+      icon: 'warning',
+      timer:3000,
+      showConfirmButton: false,
+    })
+    this.buscarTodasSucursal(1);
+    this.formularioSucursal.reset();
+    this.crearFormularioSucursal();
+    $('#modalsucursal').modal('hide');
+    })
+  }
+  else{
+    alert("Esta Empresa no fue Guardado");
+  }
+   
+}
 
 guardarEmpresa(){
  console.log(this.formularioEmpresa.value);
