@@ -249,10 +249,8 @@
                 </div>
               </div>
               <div class="row mt-4">
-                <div
-                  class="col d-flex justify-content-end"
-                  *ngIf="!activaformularioSucursal"
-                >
+                <div class="col d-flex justify-content-end"
+                  *ngIf="!activaformularioSucursal" >
                   <button
                     type="submit"
                     *ngIf="!modoconsultaEmpresa"
@@ -265,13 +263,13 @@
             </div>
           </div>
         </form>
-        <br />
+        <br>
         <!--s+++++++++++++++-->
-        <div class="row" *ngIf="activaformularioSucursal">
+        <div class="row"> 
           <div class="col-12">
             <!--  -->
-            <div class="card">
-              <div class="card-header">
+            <div class="card" *ngif="activaformularioSucursal">
+              <div class="card-header" >
                 <h6>Datos de Sucursal</h6>
               </div>
               <div class="card-body">

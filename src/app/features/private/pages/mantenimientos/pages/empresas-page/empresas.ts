@@ -119,6 +119,8 @@ export class Empresas implements OnInit {
    this.tituloModalEmpresa = 'Agregando Empresa';
    $('#modalempresa').modal('show');
    this.habilitarFormulario = true;
+   this.activatablaSucursal= false
+   this.activaformularioSucursal = true;
  }
 
  cerrarModalEmpresa(){
@@ -141,7 +143,8 @@ export class Empresas implements OnInit {
    this.tituloModalEmpresa = 'Editando Empresa';
    $('#modalempresa').modal('show');
    this.habilitarFormulario = true;
-   this.activaformularioSucursal= false
+   this.activaformularioSucursal= false;
+   this.activatablaSucursal= true;
    this.sucursalList = Empresa.sucursales
 }
 
@@ -157,6 +160,7 @@ consultarEmpresa(Empresa:EmpresaModelData){
  $('#modalempresa').modal('show');
  this.habilitarFormulario = true;
  this.modoconsultaEmpresa = true;
+ this.activaformularioSucursal=false;
  this.activatablaSucursal= true;
  this.sucursalList = Empresa.sucursales
 };
@@ -268,8 +272,10 @@ guardarEmpresa(){
     {
       if (result.isConfirmed)
       {
-        this.activaformularioSucursal= true;
+        
         this.formularioEmpresa.disable();
+        this.activaformularioSucursal= true;
+        this.activatablaSucursal = false;
       }
       else {
        this.activaformularioSucursal= false;
