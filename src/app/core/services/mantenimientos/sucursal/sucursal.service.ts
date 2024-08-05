@@ -24,7 +24,7 @@ console.log(url);
     return this.http.GetRequest<any>(url);
   }
 
-  eliminarsucursal(cod_sucursal:string): Observable<any>{
+  eliminarSucursal(cod_sucursal:string): Observable<any>{
     return this.http.DeleteRequest(`/sucursal/${cod_sucursal}`, "");
   }
 

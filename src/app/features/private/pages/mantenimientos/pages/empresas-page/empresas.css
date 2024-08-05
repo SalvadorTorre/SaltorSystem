@@ -1,3 +1,15 @@
 .no-border {
-    border: none !important;
+  border: none !important;
+}
+
+.table- class th,
+.table-class td {
+  padding: 1px 1px;
+  /* Ajusta los valores según tus necesidades */
+  /* height: 1px;
+  /* Establece una altura fija si es necesario */
+}
+
+.tabla-estrecha th {
+  font-weight: bold;
 }

@@ -37,6 +37,7 @@ export class Empresas implements OnInit {
   activatablaSucursal:boolean=false;
   activaformularioSucursal:boolean=false;
   selectedEmpresa: any = null;
+  modoedicionSucursal: boolean=false;
   constructor(private fb:FormBuilder, private servicioEmpresa:ServicioEmpresa, private servicioSucursal:ServicioSucursal)
     {
       this.crearFormularioEmpresa();
@@ -82,7 +83,8 @@ export class Empresas implements OnInit {
   this.formularioSucursal.reset();
  this.formularioEmpresa.enable();
  this.formularioEmpresa.reset();
-  }
+
+ }
 
  crearformularioSucursal(){
   this.formularioSucursal = this.fb.group({
@@ -98,7 +100,7 @@ export class Empresas implements OnInit {
   ngOnInit(): void
   {this.buscarTodasEmpresa(1);  }
 
-  crearFormularioEmpresa(){
+ crearFormularioEmpresa(){
     this.formularioEmpresa = this.fb.group({
     cod_empre: ['', Validators.required],
     rnc_empre: ['', Validators.required],
@@ -108,11 +110,11 @@ export class Empresas implements OnInit {
     letra_empre: [''],
     orden_compra:[''],
     });
-  }
+ }
 
-  habilitarFormularioEmpresa(){
+ habilitarFormularioEmpresa(){
     this.habilitarFormulario = false;
-  }
+ }
 
  nuevaEmpresa(){
    this.modoedicionEmpresa = false;
@@ -120,7 +122,6 @@ export class Empresas implements OnInit {
    $('#modalempresa').modal('show');
    this.habilitarFormulario = true;
    this.activatablaSucursal= false
-   this.activaformularioSucursal = true;
  }
 
  cerrarModalEmpresa(){
@@ -135,6 +136,14 @@ export class Empresas implements OnInit {
    this.sucursalList = []
  }
 
+ editarSucursal(sucursal:SucursalesData){
+  this.empresaid = sucursal.cod_empre;
+  this.modoedicionSucursal = true;
+  this.activatablaSucursal= false;
+  this.formularioEmpresa.patchValue(sucursal);
+  this.activaformularioSucursal= false;
+
+ }
  editarEmpresa(Empresa:EmpresaModelData){
    this.empresaid = Empresa.cod_empre;
    this.modoedicionEmpresa = true;
@@ -160,6 +169,8 @@ consultarEmpresa(Empresa:EmpresaModelData){
  $('#modalempresa').modal('show');
  this.habilitarFormulario = true;
  this.modoconsultaEmpresa = true;
+ this.formularioEmpresa.disable();
+
  this.activaformularioSucursal=false;
  this.activatablaSucursal= true;
  this.sucursalList = Empresa.sucursales
@@ -193,7 +204,7 @@ eliminarEmpresa(Empresa:string){
      title: "Excelente!",
      text: "Empresa eliminado correctamente.",
      icon: "success",
-     timer: 3000,
+     timer: 2000,
      showConfirmButton: false,
     }
     )
@@ -202,6 +213,33 @@ eliminarEmpresa(Empresa:string){
   }
   })
 }
+eliminarSucursal(sucursal:string){
+  Swal.fire({
+  title: '¿Está seguro de eliminar esta Sucursal?',
+  text: "¡No podrá revertir esto!",
+  icon: 'warning',
+  showCancelButton: true,
+  confirmButtonColor: '#3085d6',
+  cancelButtonColor: '#d33',
+  confirmButtonText: 'Si, eliminar!'
+  }).then((result) => {
+  if (result.isConfirmed) {
+    this.servicioSucursal.eliminarSucursal(sucursal).subscribe(response => {
+    Swal.fire(
+    {
+     title: "Excelente!",
+     text: "Sucursal eliminado correctamente.",
+     icon: "success",
+     timer: 2000,
+     showConfirmButton: false,
+    }
+    )
+    this.buscarTodasEmpresa(this.currentPage);
+    });
+  }
+  })
+}
+
 
 descripcionEntra(event: Event) {
  const inputElement = event.target as HTMLInputElement;
@@ -222,7 +260,7 @@ guardarSucursal(){
     Swal.fire
     ({
       title: "Excelente!",
-      text: "Empresa Guardada correctamente.",
+      text: "Sucursal Guardada correctamente.",
       icon: 'warning',
       timer:3000,
       showConfirmButton: false,
@@ -230,6 +268,7 @@ guardarSucursal(){
     this.buscarTodasEmpresa(1);
     this.formularioSucursal.reset();
     this.crearformularioSucursal();
+    this.cerrarModalEmpresa();
     $('#modalsucursal').modal('hide');
     })
   }
@@ -272,7 +311,7 @@ guardarEmpresa(){
     {
       if (result.isConfirmed)
       {
-        
+
         this.formularioEmpresa.disable();
         this.activaformularioSucursal= true;
         this.activatablaSucursal = false;
