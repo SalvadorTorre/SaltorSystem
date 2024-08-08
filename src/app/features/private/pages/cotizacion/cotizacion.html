@@ -52,135 +52,202 @@
               <input type="text" class="form-control form-control-sm" />
             </div>
           </div>
-          <div class="row">
-            <div class="col">
-              <label for="">Contacto</label>
-              <input type="text" class="form-control form-control-sm" />
-            </div>
-            <div class="col">
-              <label for="">Correo</label>
-              <input type="text" class="form-control form-control-sm" />
-            </div>
-            <div class="col">
-              <label for="">Referencia</label>
-              <input type="text" class="form-control form-control-sm" />
-            </div>
-          </div>
-          <div class="row">
-            <div class="col">
-              <label for="" class="custom-label">Forma de pago</label>
-              <div
-                class="btn-group"
-                role="group"
-                aria-label="Basic radio toggle button group"
-              >
-                <div
-                  class="form-check custom-space"
-                  style="margin-bottom: 20px"
-                >
-                  <input
-                    type="radio"
-                    class="form-check-input"
-                    name="btnradio"
-                    id="btnradio1"
-                    autocomplete="off"
-                    checked
-                  />
-                  <label class="form-check-label" for="btnradio1"
-                    >Efectivo
-                  </label>
-                </div>
-                <div class="form-check custom-space">
-                  <input
-                    type="radio"
-                    class="form-check-input"
-                    name="btnradio"
-                    id="btnradio2"
-                    autocomplete="off"
-                  />
-                  <label class="form-check-label" for="btnradio2">Cheque</label>
-                </div>
-                <div class="form-check custom-space">
-                  <input
-                    type="radio"
-                    class="form-check-input"
-                    name="btnradio"
-                    id="btnradio3"
-                    autocomplete="off"
-                  />
-                  <label class="form-check-label" for="btnradio3"
-                    >T Credito</label
-                  >
-                </div>
-                <div class="form-check custom-space">
-                  <input
-                    type="radio"
-                    class="form-check-input"
-                    name="btnradio"
-                    id="btnradio4"
-                    autocomplete="off"
-                  />
-                  <label class="form-check-label" for="btnradio4"
-                    >Credito</label
-                  >
-                </div>
-                <div class="form-check custom-space">
-                  <input
-                    type="radio"
-                    class="form-check-input"
-                    name="btnradio"
-                    id="btnradio5"
-                    autocomplete="off"
-                  />
-                  <label class="form-check-label" for="btnradio5"
-                    >Deposito o Transferencia</label
-                  >
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="row">
-            <div class="col">
-              <label for="" class="custom-label">Para</label>
-              <br />
-              <div
-                class="btn-group"
-                role="group"
-                aria-label="Basic radio toggle button group"
-              >
-                <div class="form-check custom-space">
-                  <input
-                    type="radio"
-                    class="form-check-input"
-                    name="btnradio"
-                    id="btnradioq"
-                    autocomplete="off"
-                  />
-                  <label class="form-check-label" for="btnradioq">Enviar</label>
-                </div>
-                <div class="form-check custom-space">
-                  <input
-                    type="radio"
-                    class="form-check-input"
-                    name="btnradio"
-                    id="btnradiox"
-                    autocomplete="off"
-                  />
-                  <label class="form-check-label" for="btnradiox"
-                    >Retirar cliente</label
-                  >
-                </div>
-              </div>
-              <br />
-              <br />
-              <br />
-            </div>
-          </div>
+          
         </form>
       </div>
     </div>
   </div>
+
+<!--***********************-->
+  <div class="row">
+    <div class="col">
+      <div class="card-body">
+        <!-- buscador -->
+        <div class="row">
+          <div class="col-2">
+           <label for="">Buscar No. Cotizacion</label>
+           <input type="text" class="form-control form-control-sm" 
+             placeholder="Digite No."
+            class="form-control" />
+          </div>
+          <div class="col-3">
+            <label for="">Buscar por Nombre</label>
+            <input type="text" class="form-control form-control-sm" 
+              placeholder="Digite Nombre..."
+              class="form-control uppercase"
+            />
+          </div>
+          <div class="col-3">
+            <label for="">Buscar por Fecha</label>
+            <input type="text" class="form-control form-control-sm" 
+              placeholder="Digite la Fecha..."
+            />
+          </div>
+          <div class="col-2">
+            <button class="btn btn-danger mt-4">
+             <i class="bi bi-arrow-counterclockwise"></i>
+            </button>
+          </div>
+           <!-- fin buscador -->
+           <br />
+           <!-- Grid -->
+          <div class="table-responsive" style="max-height: 400px; overflow-y: auto">
+      <table
+        class="table table-bordered table-hover table-striped table-sm table-class"
+      >
+        <thead class="table-dark">
+          <tr>
+            <th style="width: 8%">Numero</th>
+            <th style="width: 40%">Nombre</th>
+            <th style="width: 6">Fecha</th>
+            <th style="width: 17%">Valor</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>2024000001</td>
+            <td >SALVADOR TORRES2</td>
+            <td >01/08/2024</td>
+            <td class="text-end">2000</td>
+            <td>
+              <i class="bi bi-pencil text-warning"></i>
+              &nbsp;&nbsp;
+              <i class="bi bi-trash text-danger"></i>
+            </td>
+          </tr>
+          <tr>
+            <td>2024000002</td>
+            <td>JOSE SANTANA MARRERO</td>
+            <td >01/08/2024</td>
+            <td class="text-end">1000</td>
+            <td>
+              <i class="bi bi-pencil text-warning"></i>
+              &nbsp;&nbsp;
+              <i class="bi bi-trash text-danger"></i>
+            </td>
+          </tr>
+          <tr>
+            <td>1000</td>
+            <td>PEDRO ALCANTARA</td>
+            <td>02/02/2024</td>
+            <td class="text-end">2000</td>
+            <td>
+              <i class="bi bi-pencil text-warning"></i>
+              &nbsp;&nbsp;
+              <i class="bi bi-trash text-danger"></i>
+            </td>
+          </tr>
+          <tr>
+            <td>1000</td>
+            <td>Descripción</td>
+            <td class="text-end">2</td>
+            <td class="text-end">2000</td>
+            <td>
+              <i class="bi bi-pencil text-warning"></i>
+              &nbsp;&nbsp;
+              <i class="bi bi-trash text-danger"></i>
+            </td>
+          </tr>
+          <tr>
+            <td>1000</td>
+            <td>Descripción</td>
+            <td class="text-end">2</td>
+            <td class="text-end">2000</td>
+            <td>
+              <i class="bi bi-pencil text-warning"></i>
+              &nbsp;&nbsp;
+              <i class="bi bi-trash text-danger"></i>
+            </td>
+          </tr>
+          <tr>
+            <td>1000</td>
+            <td>Descripción</td>
+            <td class="text-end">2</td>
+            <td class="text-end">2000</td>
+            <td>
+              <i class="bi bi-pencil text-warning"></i>
+              &nbsp;&nbsp;
+              <i class="bi bi-trash text-danger"></i>
+            </td>
+          </tr>
+          <tr>
+            <td>1000</td>
+            <td>Descripción</td>
+            <td class="text-end">2</td>
+            <td class="text-end">2000</td>
+            <td>
+              <i class="bi bi-pencil text-warning"></i>
+              &nbsp;&nbsp;
+              <i class="bi bi-trash text-danger"></i>
+            </td>
+          </tr>
+          <tr>
+            <td>1000</td>
+            <td>Descripción</td>
+            <td class="text-end">2</td>
+            <td class="text-end">2000</td>
+            <td>
+              <i class="bi bi-pencil text-warning"></i>
+              &nbsp;&nbsp;
+              <i class="bi bi-trash text-danger"></i>
+            </td>
+          </tr>
+          <tr>
+            <td>1000</td>
+            <td>Descripción</td>
+            <td class="text-end">2</td>
+            <td class="text-end">2000</td>
+            <td>
+              <i class="bi bi-pencil text-warning"></i>
+              &nbsp;&nbsp;
+              <i class="bi bi-trash text-danger"></i>
+            </td>
+          </tr>
+          <tr>
+            <td>1000</td>
+            <td>Descripción</td>
+            <td class="text-end">2</td>
+            <td class="text-end">2000</td>
+            <td>
+              <i class="bi bi-pencil text-warning"></i>
+              &nbsp;&nbsp;
+              <i class="bi bi-trash text-danger"></i>
+            </td>
+          </tr>
+          <tr>
+            <td>1000</td>
+            <td>Descripción</td>
+            <td class="text-end">2</td>
+            <td class="text-end">2000</td>
+            <td>
+              <i class="bi bi-pencil text-warning"></i>
+              &nbsp;&nbsp;
+              <i class="bi bi-trash text-danger"></i>
+            </td>
+          </tr>
+          <tr>
+            <td>1000</td>
+            <td>Descripción</td>
+            <td>02/02/2024</td>
+            <td class="text-end">2000</td>
+            <td>
+              <i class="bi bi-pencil text-warning"></i>
+              &nbsp;&nbsp;
+              <i class="bi bi-trash text-danger"></i>
+            </td>
+          </tr>
+        </tbody>
+        
+      </table>
+    </div>
+    
+    <!-- Fin grid -->
+  </div>
+  </div>
+  </div>
+<!--*************************************-->
+
 
   <div class="col-7">
     <div class="card">
