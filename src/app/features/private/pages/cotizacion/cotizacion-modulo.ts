@@ -12,7 +12,6 @@ import { RutaCotizacion } from './cotizacion-ruta';
     CommonModule,
     RutaCotizacion
   ],
-
   providers: [],
   bootstrap: [Cotizacion]
 })
