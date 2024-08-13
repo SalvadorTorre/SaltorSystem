@@ -50,12 +50,12 @@
         </div>
         
         <div class="col-1">
-          <button class="btn btn-danger mt-3">
+          <button class="btn btn-danger mt-3" (click)="limpiaBusqueda()">
             <i class="bi bi-arrow-counterclockwise"></i>
           </button>
         </div>
         <div class="col-2">
-          <button class="btn btn-primary mt-4" >
+          <button class="btn btn-primary mt-4" (click)="nuevaCotizacion()">
             Nueva Cotizacion
           </button>
         </div>
@@ -650,26 +650,29 @@
 
 <div
   class="modal fade"
-  id="modalCotizacion"
+  id="modalcotizacion"
   tabindex="-1"
   aria-labelledby="modalCotizacionlabel"
-  aria-hidden="true"
->
+  aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-lg"> 
     <div class="modal-content">
       <div class="modal-header">
-        <h1 class="modal-title fs-5" id="modalEmpresaLabel">
+        <h1 class="modal-title fs-5" id="modalCotizacionLabel">
         </h1>
         <button
           type="button"
           class="btn-close"
-          aria-label="Close"
+          (click)="cerrarModalCotizacion()"
+          aria-label="Close"  aria-label="Close"
         ></button>
       </div>
       <div class="modal-body">
         <form
-          class="custom-form-background"   >
-          <div class="row">
+          class="custom-form-background"
+          
+          (ngSubmit)="guardarCotizacion()"
+        >
+        <div class="row">
             <div class="col-4">
               <label for="">RNC</label>
               <input type="text" class="form-control form-control-sm" />

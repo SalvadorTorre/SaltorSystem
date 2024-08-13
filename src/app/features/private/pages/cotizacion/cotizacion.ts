@@ -1,35 +1,19 @@
-import { Cotizacion } from './cotizacion';
-/*import { Component, OnInit, ɵNG_COMP_DEF } from '@angular/core';
-import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
-import { BehaviorSubject, debounceTime, distinctUntilChanged, switchMap } from 'rxjs';
-import Swal from 'sweetalert2';
-import { ServicioCotizacion } from 'src/app/core/services/cotizaciones/cotizacion/cotizacion.service';
-import { CotizacionModelData, detCotizacionData } from 'src/app/core/services/cotizaciones/cotizacion';
-declare var $: any;
-@Component({
-  selector: 'cotizacion',
-  templateUrl: './cotizacion.html',
-  styleUrls: ['./cotizacion.css']
-})
-export class Cotizacion {
-}
-*/
 import { Component, OnInit, ɵNG_COMP_DEF } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { BehaviorSubject, debounceTime, distinctUntilChanged, switchMap } from 'rxjs';
 import Swal from 'sweetalert2';
 import { ServicioCotizacion } from 'src/app/core/services/cotizaciones/cotizacion/cotizacion.service';
 import { CotizacionModelData, detCotizacionData } from 'src/app/core/services/cotizaciones/cotizacion';
-import { ServicioSucursal } from 'src/app/core/services/mantenimientos/sucursal/sucursal.service';
+import { ServiciodetCotizacion } from 'src/app/core/services/cotizaciones/detcotizacion/detcotizacion.service';
 declare var $: any;
 
 
 @Component({
-  selector: 'Empresas',
+  selector: 'Cotizacion',
   templateUrl: './cotizacion.html',
   styleUrls: ['./cotizacion.css']
 })
-export class cotizacion implements OnInit {
+export class Cotizacion implements OnInit {
   totalItems = 0;
   pageSize = 8;
   currentPage = 1;
@@ -98,34 +82,34 @@ export class cotizacion implements OnInit {
       dc_canmerc: ['',],
       dc_premerc: ['',],
       dc_valmerc: ['',],
-      dc_unidad:  ['',],
+      dc_unidad: ['',],
       dc_costmer: ['',],
       dc_codclie: ['',],
-      dc_status:  ['',],
+      dc_status: ['',],
 
 
     });
   }
 
-  seleccionarCotizacion(cotizacion: any) { this.selectedCotizacion = Cotizacion; }
+  seleccionarCotizacion(cotizacion: any) { this.selectedCotizacion = cotizacion; }
   ngOnInit(): void { this.buscarTodasCotizacion(1); }
 
   crearFormularioCotizacion() {
     this.formularioCotizacion = this.fb.group({
-    ct_codcoti: ['', Validators.required],
-    ct_feccoti: ['', Validators.required],
-    ct_valcoti: [''],
-    ct_itbis:   [''],
-    ct_codclie: [''],
-    ct_nomclie: [''],
-    ct_rnc:     [''],
-    ct_telclie: [''],
-    ct_dirclie: [''],
-    ct_correo:  [''],
-    ct_codvend: [''],
-    ct_nomvend: [''],
-    ct_nota:    [''],
-    ct_status:  [''],
+      ct_codcoti: ['', Validators.required],
+      ct_feccoti: ['', Validators.required],
+      ct_valcoti: [''],
+      ct_itbis: [''],
+      ct_codclie: [''],
+      ct_nomclie: [''],
+      ct_rnc: [''],
+      ct_telclie: [''],
+      ct_dirclie: [''],
+      ct_correo: [''],
+      ct_codvend: [''],
+      ct_nomvend: [''],
+      ct_nota: [''],
+      ct_status: [''],
 
     });
   }
@@ -141,7 +125,7 @@ export class cotizacion implements OnInit {
     this.habilitarFormulario = true;
   }
 
-  cerrarModalEmpresa() {
+  cerrarModalCotizacion() {
     this.habilitarFormulario = false;
     this.formularioCotizacion.reset();
     this.modoedicionCotizacion = false;
@@ -152,9 +136,9 @@ export class cotizacion implements OnInit {
   }
 
 
-  editardetCotizacion(sucursal: detCotizacionData) {
+  editardetCotizacion(detcotizacion: detCotizacionData) {
     this.cotizacionid = detcotizacion.dc_codcoti;
-    this.formularioCotizacion.patchValue(sucursal);
+    this.formularioCotizacion.patchValue(detcotizacion);
 
   }
   editarEmpresa(Cotizacion: CotizacionModelData) {
@@ -167,7 +151,7 @@ export class cotizacion implements OnInit {
     this.detCotizacionList = Cotizacion.detCotizacion
   }
 
-  buscarTodasEmpresa(page: number) {
+  buscarTodasCotizacion(page: number) {
     this.servicioCotizacion.buscarTodasCotizacion(page, this.pageSize).subscribe(response => {
       console.log(response);
       this.cotizacionList = response.data;
@@ -203,7 +187,7 @@ export class cotizacion implements OnInit {
       confirmButtonText: 'Si, eliminar!'
     }).then((result) => {
       if (result.isConfirmed) {
-        this.servicioCotizacion.eliminarCotizacion(Cotizacion).subscribe(response => {
+        this.servicioCotizacion.eliminarCotizacion(this.cotizacionid).subscribe(response => {
           Swal.fire(
             {
               title: "Excelente!",
@@ -254,18 +238,18 @@ export class cotizacion implements OnInit {
       else {
         this.servicioCotizacion.guardarCotizacion(this.formularioCotizacion.value).subscribe(response => {
           Swal.fire
-          ({
+            ({
               title: "Cotizacion Guardada correctamente",
               text: "Desea Crear una Sucursal",
               icon: 'warning',
               timer: 5000,
               showConfirmButton: false,
-          });
-            this.buscarTodasCotizacion(1);
-            this.formularioCotizacion.reset();
-            this.crearFormularioCotizacion();
-            this.formularioCotizacion.enable();
-            $('#modalcotizacion').modal('hide');
+            });
+          this.buscarTodasCotizacion(1);
+          this.formularioCotizacion.reset();
+          this.crearFormularioCotizacion();
+          this.formularioCotizacion.enable();
+          $('#modalcotizacion').modal('hide');
         })
 
       }
