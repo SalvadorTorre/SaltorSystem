@@ -7,6 +7,14 @@
   /* Mantén el color de fondo del encabezado */
 }
 
+tfoot {
+  position: sticky;
+  bottom: 0;
+  background-color: #f1f1f1;
+  /* Color de fondo del tfoot */
+  z-index: 1;
+}
+
 .table-responsive th,
 .table-responsive td {
   padding: 1px;

@@ -92,7 +92,7 @@ export class Cotizacion implements OnInit {
   }
 
   seleccionarCotizacion(cotizacion: any) { this.selectedCotizacion = cotizacion; }
-  ngOnInit(): void { this.buscarTodasCotizacion(1); }
+  ngOnInit(): void {}
 
   crearFormularioCotizacion() {
     this.formularioCotizacion = this.fb.group({
