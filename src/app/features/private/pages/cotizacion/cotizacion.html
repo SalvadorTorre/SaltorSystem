@@ -282,89 +282,228 @@
     </div>
     <!--***************Fin**********************-->
   </div>
-</div>  
+</div>
 <!--formulario-->
 
-<div class="modal fade" id="modalcotizacion" tabindex="-1" aria-labelledby="tituloModalCotizacion" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered modal-xl">
+<div
+  class="modal fade"
+  id="modalcotizacion"
+  tabindex="-1"
+  aria-labelledby="tituloModalCotizacion"
+  aria-hidden="true"
+>
+  <div
+    class="modal-dialog modal-dialog-centered modal-xl"
+    style="margin: 2px auto"
+  >
     <div class="modal-content">
-      <div class="modal-header">
-        <h1 class="modal-title fs-5" id="tituloModalCotizacion"></h1>
+      <div class="modal-header" style="height: 10px">
+        <h1 class="modal-title fs-5" id="tituloModalCotizacion">
+          {{tituloModalCotizacion}}
+        </h1>
         <button
           type="button"
           class="btn-close"
           (click)="cerrarModalCotizacion()"
           aria-label="Close"
           aria-label="Close"
-          ></button>
+        ></button>
       </div>
       <div class="modal-body">
         <form class="custom-form-background" (ngSubmit)="guardarCotizacion()">
           <div class="row">
             <div class="col-8">
-              <div class="row">
-                <div class="col-4">
-                  <label for="">RNC</label>
-                  <input type="text" class="form-control form-control-sm" />
-                </div>
-                <div class="col">
-                  <label for="">Nombre del cliente</label>
-                  <input type="text" class="form-control form-control-sm" />
-                </div>
-                <div class="row">
-                  <div class="col">
-                    <label for="">Dirección</label>
-                    <input type="text" class="form-control form-control-sm" />
+              <div class="card">
+                <div class="card-body" style="background-color: #e6e4e4">
+                  <div class="row">
+                    <div class="col d-flex justify-content-center">
+                      <div
+                        class="btn-group"
+                        role="group"
+                        aria-label="Basic radio toggle button group"
+                      ></div>
+                    </div>
                   </div>
-              </div>
-              <div class="row">
-                <div class="col-5">
-                  <label for="">Teléfono</label>
-                  <input type="text" class="form-control form-control-sm" />
+                  <form>
+                    <div class="mb-1 row mt-2">
+                      <div class="col-1">
+                        <label for="">RNC</label>
+                      </div>
+                      <div class="col-4">
+                        <input
+                          type="number"
+                          (keydown)="moveFocus($event, input2)"
+                          #input1
+                          class="form-control form-control-sm"
+                        />
+                      </div>
+                    </div>
+                    <div class="mb-1 row">
+                      <div class="col-1">
+                        <label for="">Nombre</label>
+                      </div>
+                      <div class="col-11">
+                        <input
+                          type="text"
+                          (input)="convertToUpperCase($event)"
+                          (keydown)="moveFocus($event, input3)"
+                          #input2
+                          class="form-control form-control-sm"
+                        />
+                      </div>
+                      <div class="mb-1 row">
+                        <div class="col-1">
+                          <label for="">Dirección</label>
+                        </div>
+                        <div class="col-11">
+                          <input
+                            type="text"
+                            (input)="convertToUpperCase($event)"
+                            (keydown)="moveFocus($event, input4)"
+                            #input3
+                            class="form-control form-control-sm"
+                          />
+                        </div>
+                      </div>
+                      <div class="mb-1 row">
+                        <div class="col-1">
+                          <label for="">Sector</label>
+                        </div>
+                        <div class="col-3">
+                          <input
+                            type="text"
+                            (input)="convertToUpperCase($event)"
+                            (keydown)="moveFocus($event, input5)"
+                            #input4
+                            class="form-control form-control-sm"
+                          />
+                        </div>
+                        <div class="col-1">
+                          <label for="">Zona</label>
+                        </div>
+                        <div class="col-2">
+                          <input
+                            type="text"
+                            (input)="convertToUpperCase($event)"
+                            (keydown)="moveFocus($event, input6)"
+                            #input5
+                            class="form-control form-control-sm"
+                          />
+                        </div>
+                        <div class="col-1">
+                          <label for="">Telefono</label>
+                        </div>
+                        <div class="col-4">
+                          <input
+                            type="text"
+                            (keydown)="moveFocus($event, input7)"
+                            #input6
+                            class="form-control form-control-sm"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </form>
                 </div>
-                <div class="col-5">
-                  <label for="">Sector</label>
-                  <input type="text" class="form-control form-control-sm" />
-                </div>
-                <div class="col-2">
-                  <label for="">Zona</label>
-                  <input type="text" class="form-control form-control-sm" />
-                </div>
-              </div>
-            </div>  
-            <div class="col-4">
-              <div class="row">
-                <div class="col-6">
-                  <label for="">factura</label>
-                </div>
-
               </div>
             </div>
-           </div>
-          </div>  
-          <br />
+            <div class="col-4">
+              <div class="card">
+                <div class="card-body" style="background-color: #e6e4e4">
+                  <div class="row">
+                    <div class="col d-flex justify-content-center">
+                      <div
+                        class="btn-group"
+                        role="group"
+                        aria-label="Basic radio toggle button group"
+                      ></div>
+                    </div>
+                  </div>
+                  <form>
+                    <div class="mb-1 row">
+                      <div class="col-5">
+                        <label for="">No. Cotizacion</label>
+                      </div>
+                      <div class="col-6">
+                        <input
+                          type="text"
+                          class="form-control form-control-sm"
+                        />
+                      </div>
+                    </div>
+                    <div class="mb-2 row">
+                      <div class="col-5">
+                        <label for="">Fecha</label>
+                      </div>
+                      <div class="col-6">
+                        <input
+                          type="text"
+                          class="form-control form-control-sm"
+                        />
+                      </div>
+                    </div>
+                    <div class="mb-2 row">
+                      <div class="col-5">
+                        <label for="">Vendedor</label>
+                      </div>
+                      <div class="col-6">
+                        <input
+                          type="text"
+                          (keydown)="moveFocus($event, input8)"
+                          #input7
+                          class="form-control form-control-sm"
+                        />
+                      </div>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
           <div class="row">
             <div class="col-2">
               <label for="">Código</label>
-              <input type="text" class="form-control form-control-sm" />
+              <input
+                type="text"
+                (keydown)="moveFocus($event, input9)"
+                #input8
+                class="form-control form-control-sm"
+              />
             </div>
             <div class="col-5">
               <label for="">Descripción</label>
-              <input type="text" class="form-control form-control-sm" />
+              <input
+                type="text"
+                (keydown)="moveFocus($event, input10)"
+                #input9
+                class="form-control form-control-sm"
+              />
             </div>
             <div class="col-2">
               <label for="">Cantidad</label>
-              <input type="number" class="form-control form-control-sm" />
+              <input
+                type="number"
+                (keydown)="moveFocus($event, input11)"
+                #input10
+                class="form-control form-control-sm"
+              />
             </div>
             <div class="col-2">
               <label for="">Precio</label>
-              <input type="number" class="form-control form-control-sm" />
+              <input
+                type="number"
+                (keydown)="moveFocus($event, input8)"
+                #input11
+                class="form-control form-control-sm"
+              />
             </div>
           </div>
           <div class="row">
             <div class="col">
-              <div class="table-responsive"
-                style="height: 300px; overflow-y: auto">
+              <div
+                class="table-responsive"
+                style="height: 300px; overflow-y: auto"
+              >
                 <table class="table table-sm table-bordered">
                   <thead class="table-dark">
                     <tr style="background-color: red">
@@ -486,9 +625,53 @@
                         <i class="bi bi-trash text-danger"></i>
                       </td>
                     </tr>
+                    <tr>
+                      <td>1000</td>
+                      <td>Descripción</td>
+                      <td class="text-end">2</td>
+                      <td class="text-end">1000</td>
+                      <td class="text-end">2000</td>
+                      <td>
+                        <i class="bi bi-pencil text-warning"></i>
+                        &nbsp;&nbsp;
+                        <i class="bi bi-trash text-danger"></i>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>1000</td>
+                      <td>Descripción</td>
+                      <td class="text-end">2</td>
+                      <td class="text-end">1000</td>
+                      <td class="text-end">2000</td>
+                      <td>
+                        <i class="bi bi-pencil text-warning"></i>
+                        &nbsp;&nbsp;
+                        <i class="bi bi-trash text-danger"></i>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>1000</td>
+                      <td>Descripción</td>
+                      <td class="text-end">2</td>
+                      <td class="text-end">1000</td>
+                      <td class="text-end">2000</td>
+                      <td>
+                        <i class="bi bi-pencil text-warning"></i>
+                        &nbsp;&nbsp;
+                        <i class="bi bi-trash text-danger"></i>
+                      </td>
+                    </tr>
                   </tbody>
                 </table>
               </div>
+            </div>
+          </div>
+          <div class="row mt-2">
+            <div class="col-4"></div>
+            <div class="col-2">
+              <button class="btn btn-primary btn-block btn-lg w-100">
+                Guardar
+              </button>
             </div>
           </div>
         </form>
