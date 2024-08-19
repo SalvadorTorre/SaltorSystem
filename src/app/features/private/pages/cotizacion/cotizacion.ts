@@ -1,9 +1,12 @@
 import { Component, OnInit, ɵNG_COMP_DEF } from '@angular/core';
+//import { NgxMaskModule } from 'ngx-mask';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { BehaviorSubject, debounceTime, distinctUntilChanged, switchMap } from 'rxjs';
 import Swal from 'sweetalert2';
 import { ModeloSectorData } from 'src/app/core/services/mantenimientos/sector';
 import { ServicioSector } from 'src/app/core/services/mantenimientos/sector/sector.service';
+import { ModeloZonaData } from 'src/app/core/services/mantenimientos/zonas';
+import { ServicioZona } from 'src/app/core/services/mantenimientos/zonas/zonas.service';
 import { ServicioCotizacion } from 'src/app/core/services/cotizaciones/cotizacion/cotizacion.service';
 import { CotizacionModelData, detCotizacionData } from 'src/app/core/services/cotizaciones/cotizacion';
 import { ServiciodetCotizacion } from 'src/app/core/services/cotizaciones/detcotizacion/detcotizacion.service';
@@ -37,39 +40,41 @@ export class Cotizacion implements OnInit {
   cotizacionid!: string
   modoconsultaCotizacion: boolean = false;
   sectorList: ModeloSectorData[] = [];
+  zonasList: ModeloZonaData[] = [];
   cotizacionList: CotizacionModelData[] = [];
   detCotizacionList: detCotizacionData[] = [];
   selectedCotizacion: any = null;
   items: { codigo: string; descripcion: string; cantidad: number; precio: number; total: number; }[] = [];
+  totalGral:number = 0;
 
-  constructor(private fb: FormBuilder, private servicioCotizacion: ServicioCotizacion, private servicioSector: ServicioSector, private serviciodetCotizacion: ServiciodetCotizacion) {
+  constructor(private fb: FormBuilder, private servicioCotizacion: ServicioCotizacion, private servicioSector: ServicioSector, private ServicioZona: ServicioZona, private serviciodetCotizacion: ServiciodetCotizacion) {
     this.crearFormularioCotizacion();
-    this.descripcionBuscar.pipe(
-      debounceTime(500),
-      distinctUntilChanged(),
-      switchMap(nombre => {
-        this.descripcion = nombre;
-        return this.servicioCotizacion.buscarTodasCotizacion(this.currentPage, this.pageSize, this.descripcion);
-      })
-    )
-      .subscribe(response => {
-        this.cotizacionList = response.data;
-        this.totalItems = response.pagination.total;
-        this.currentPage = response.pagination.page;
-      });
-    this.codigoBuscar.pipe(
-      debounceTime(500),
-      distinctUntilChanged(),
-      switchMap(rnc => {
-        this.codigo = rnc;
-        return this.servicioCotizacion.buscarTodasCotizacion(this.currentPage, this.pageSize, this.descripcion);
-      })
-    )
-      .subscribe(response => {
-        this.cotizacionList = response.data;
-        this.totalItems = response.pagination.total;
-        this.currentPage = response.pagination.page;
-      });
+    // this.descripcionBuscar.pipe(
+    //   debounceTime(500),
+    //   distinctUntilChanged(),
+    //   switchMap(nombre => {
+    //     this.descripcion = nombre;
+    //     return this.servicioCotizacion.buscarTodasCotizacion(this.currentPage, this.pageSize, this.descripcion);
+    //   })
+    // )
+    //   .subscribe(response => {
+    //     this.cotizacionList = response.data;
+    //     this.totalItems = response.pagination.total;
+    //     this.currentPage = response.pagination.page;
+    //   });
+    // this.codigoBuscar.pipe(
+    //   debounceTime(500),
+    //   distinctUntilChanged(),
+    //   switchMap(rnc => {
+    //     this.codigo = rnc;
+    //     return this.servicioCotizacion.buscarTodasCotizacion(this.currentPage, this.pageSize, this.descripcion);
+    //   })
+    // )
+    //   .subscribe(response => {
+    //     this.cotizacionList = response.data;
+    //     this.totalItems = response.pagination.total;
+    //     this.currentPage = response.pagination.page;
+    //   });
 
   }
 
@@ -101,19 +106,18 @@ export class Cotizacion implements OnInit {
 
   crearFormularioCotizacion() {
     this.formularioCotizacion = this.fb.group({
-      ct_codcoti: ['', Validators.required],
+      ct_codcoti: ['202400001', Validators.required],
       ct_feccoti: ['', Validators.required],
       ct_valcoti: [''],
       ct_itbis: [''],
       ct_codclie: [''],
       ct_nomclie: [''],
       ct_rnc: [''],
-      ct_telclie: [''],
+      ct_telclie: ['',Validators.pattern(/^\(\d{3}\) \d{3}-\d{4}$/)],
       ct_dirclie: [''],
       ct_correo: [''],
       ct_codvend: [''],
       ct_nomvend: [''],
-      ct_nota: [''],
       ct_status: [''],
 
     });
@@ -146,14 +150,14 @@ export class Cotizacion implements OnInit {
     this.formularioCotizacion.patchValue(detcotizacion);
 
   }
-  editarEmpresa(Cotizacion: CotizacionModelData) {
-    this.cotizacionid = Cotizacion.ct_codcoti;
+  editarCotizacion() {
+   /* this.cotizacionid = Cotizacion.ct_codcoti;
     this.modoedicionCotizacion = true;
     this.formularioCotizacion.patchValue(Cotizacion);
     this.tituloModalCotizacion = 'Editando Cotizacion';
     $('#modalcotizacion').modal('show');
     this.habilitarFormulario = true;
-    this.detCotizacionList = Cotizacion.detCotizacion
+    this.detCotizacionList = Cotizacion.detCotizacion*/
   }
 
   buscarTodasCotizacion(page: number) {
@@ -223,45 +227,54 @@ export class Cotizacion implements OnInit {
   }
 
   guardarCotizacion() {
-    console.log(this.formularioCotizacion.value);
-    if (this.formularioCotizacion.valid) {
-      if (this.modoedicionCotizacion) {
-        this.servicioCotizacion.editarCotizacion(this.cotizacionid, this.formularioCotizacion.value).subscribe(response => {
-          Swal.fire({
-            title: "Excelente!",
-            text: "Cotizacion Editada correctamente.",
-            icon: "success",
-            timer: 5000,
-            showConfirmButton: false,
-          });
-          this.buscarTodasCotizacion(1);
-          this.formularioCotizacion.reset();
-          this.crearFormularioCotizacion();
-          $('#modalcotizacion').modal('hide');
-        });
-      }
-      else {
-        this.servicioCotizacion.guardarCotizacion(this.formularioCotizacion.value).subscribe(response => {
-          Swal.fire
-            ({
-              title: "Cotizacion Guardada correctamente",
-              text: "Desea Crear una Sucursal",
-              icon: 'warning',
-              timer: 5000,
-              showConfirmButton: false,
-            });
-          this.buscarTodasCotizacion(1);
-          this.formularioCotizacion.reset();
-          this.crearFormularioCotizacion();
-          this.formularioCotizacion.enable();
-          $('#modalcotizacion').modal('hide');
-        })
 
-      }
-    }
-    else {
-      alert("Esta Empresa no fue Guardado");
-    }
+    this.formularioCotizacion.get('ct_valcoti')?.patchValue(this.totalGral);
+
+    const payload = {
+      cotizacion: this.formularioCotizacion.value,
+      detalle: this.items,
+      idCotizacion: this.formularioCotizacion.get('ct_codcoti')?.value,
+    };
+
+    console.log(payload);
+    // if (this.formularioCotizacion.valid) {
+    //   if (this.modoedicionCotizacion) {
+    //     this.servicioCotizacion.editarCotizacion(this.cotizacionid, this.formularioCotizacion.value).subscribe(response => {
+    //       Swal.fire({
+    //         title: "Excelente!",
+    //         text: "Cotizacion Editada correctamente.",
+    //         icon: "success",
+    //         timer: 5000,
+    //         showConfirmButton: false,
+    //       });
+    //       this.buscarTodasCotizacion(1);
+    //       this.formularioCotizacion.reset();
+    //       this.crearFormularioCotizacion();
+    //       $('#modalcotizacion').modal('hide');
+    //     });
+    //   }
+    //   else {
+    //     this.servicioCotizacion.guardarCotizacion(this.formularioCotizacion.value).subscribe(response => {
+    //       Swal.fire
+    //         ({
+    //           title: "Cotizacion Guardada correctamente",
+    //           text: "Desea Crear una Sucursal",
+    //           icon: 'warning',
+    //           timer: 5000,
+    //           showConfirmButton: false,
+    //         });
+    //       this.buscarTodasCotizacion(1);
+    //       this.formularioCotizacion.reset();
+    //       this.crearFormularioCotizacion();
+    //       this.formularioCotizacion.enable();
+    //       $('#modalcotizacion').modal('hide');
+    //     })
+
+    //   }
+    // }
+    // else {
+    //   alert("Esta Empresa no fue Guardado");
+    // }
   }
 
   convertToUpperCase(event: Event): void {
@@ -320,6 +333,7 @@ export class Cotizacion implements OnInit {
   // Función para agregar un nuevo item a la tabla
   agregaItem(codigo: string, descripcion: string, cantidad: number, precio: number) {
     const total = cantidad * precio;
+    this.totalGral += total;
     this.items.push({ codigo, descripcion, cantidad, precio, total });
   }
 
@@ -338,7 +352,16 @@ export class Cotizacion implements OnInit {
     });
   }
 
+  buscartodaZona(){
+    this.ServicioZona.obtenerTodasZonas().subscribe(response => {
+      console.log(response);
+      this.zonasList = response.data;
+    });
+  }
 
+  buscarPorCodigo(codigo: string) {
+
+  }
 
 
 

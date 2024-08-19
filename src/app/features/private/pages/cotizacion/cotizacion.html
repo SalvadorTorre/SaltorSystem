@@ -1,287 +1,339 @@
-<div class="row">
-  <div class="col-1"></div>
-  <div class="col-10">
-    <div class="card">
-      <div class="card-header"  style="height: 50px">
-        <h4
-          class="card-title"
-          style="
-            background-color: #ef1008;
-            color: white;
-            padding: 10px;
-            text-align: center;
-          "
-        >
-          Cotización
-        </h4>
-      </div>
-      <div class="card-body" style="background-color: #fcfdfd">
-        <!-- buscador -->
-        <div class="row">
-          <div class="col-2">
-            <label for="">No. Cotización</label>
-            <input
-              type="text"
-              class="form-control form-control-sm"
-              placeholder="No. Cotización"
-              class="form-control"
-            />
-          </div>
-          <div class="col-5">
-            <label for="">Nombre Cliente</label>
-            <input
-              type="text"
-              class="form-control form-control-sm"
-              placeholder="Nombre"
-              class="form-control uppercase"
-            />
-          </div>
-          <div class="col-2">
-            <label for="">Fecha Cot.</label>
-            <input
-              type="date"
-              class="form-control form-control-sm"
-              placeholder="Fecha..."
-            />
-          </div>
-
-          <div class="col-1">
-            <button class="btn btn-danger mt-3" (click)="limpiaBusqueda()">
-              <i class="bi bi-arrow-counterclockwise"></i>
-            </button>
-          </div>
-          <div class="col-2">
-            <button class="btn btn-primary mt-4" (click)="nuevaCotizacion()">
-              Nueva Cotizacion
-            </button>
-          </div>
-        </div>
-        <!-- fin buscador -->
-        <br />
-        <!-- Grid -->
-        <div class="table-responsive" style="height: 400px; overflow-y: auto">
-          <table
-            class="table table-bordered table-hover table-striped table-sm table-class"
+<div class="container">
+  <div class="row">
+    <div class="col">
+      <div class="card">
+        <div class="card-header" style="height: 50px">
+          <h4
+            class="card-title"
+            style="
+              background-color: #ef1008;
+              color: white;
+              padding: 10px;
+              text-align: center;
+            "
           >
-            <thead class="table-dark">
-              <tr>
-                <th style="width: 10%">Numero</th>
-                <th style="width: 40%">Nombre</th>
-                <th class="text-center" style="width: 10%">Fecha</th>
-                <th style="width: 8">Valor</th>
-                <th class="text-center" >Opcuines</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td style="width: 12%">2024000001</td>
-                <td style="width: 40%">SALVADOR TORRES2</td>
-                <td class="text-center" style="width: 10%">01/08/2024</td>
-                <td class="text-end" style="width: 00%">2000</td>
-                <td class="text-center">
-                  <button class="btn btn-link">
-                    <i class="bi bi-pencil text-primary"></i>
-                  </button>
-                  <button class="btn btn-link">
-                    <i class="bi bi-trash text-danger"></i>
-                  </button>
-
-                  <button class="btn btn-link"j>
-                    <i class="bi bi-card-list text-success"></i>
-                  </button>
-                </td>
-              </tr>
-              <tr>
-                <td>2024000002</td>
-                <td>JOSE SANTANA MARRERO</td>
-                <td class="text-center">01/08/2024</td>
-                <td class="text-end">10,250,350.00</td>
-                <td class="text-center">
-                  <button class="btn btn-link">
-                    <i class="bi bi-pencil text-primary"></i>
-                  </button>
-
-                  <button class="btn btn-link">
-                    <i class="bi bi-trash text-danger"></i>
-                  </button>
-
-                  <button class="btn btn-link">
-                    <i class="bi bi-card-list text-success"></i>
-                  </button>
-                </td>
-              </tr>
-              <tr>
-                <td>1000</td>
-                <td>PEDRO ALCÁNTARA</td>
-                <td class="text-center">02/02/2024</td>
-                <td class="text-end">2000</td>
-                <td class="text-center">
-                  <i class="bi bi-pencil text-warning text-center"></i>
-                  &nbsp;&nbsp;
-                  <i class="bi bi-trash text-danger"></i>
-                </td>
-              </tr>
-              <tr>
-                <td>1000</td>
-                <td>Descripción</td>
-                <td class="text-center">01/02/2024</td>
-                <td class="text-end">2000</td>
-                <td class="text-center">
-                  <i class="bi bi-pencil text-warning"></i>
-                  &nbsp;&nbsp;
-                  <i class="bi bi-trash text-danger"></i>
-                </td>
-              </tr>
-              <tr>
-                <td>2024000001</td>
-                <td>SALVADOR TORRES2</td>
-                <td>01/08/2024</td>
-                <td class="text-end">2000</td>
-                <td>
-                  <i class="bi bi-pencil text-warning"></i>
-                  &nbsp;&nbsp;
-                  <i class="bi bi-trash text-danger"></i>
-                  &nbsp;&nbsp;
-                  <i class="bi bi-card-list text-success"></i>
-                </td>
-              </tr>
-              <tr>
-                <td>2024000002</td>
-                <td>JOSE SANTANA MARRERO</td>
-                <td>01/08/2024</td>
-                <td class="text-end">10,250,350.00</td>
-                <td>
-                  <i class="bi bi-pencil text-warning"></i>
-                  &nbsp;&nbsp;
-                  <i class="bi bi-trash text-danger"></i>
-                </td>
-              </tr>
-              <tr>
-                <td>1000</td>
-                <td>PEDRO ALCÁNTARA</td>
-                <td>02/02/2024</td>
-                <td class="text-end">2000</td>
-                <td>
-                  <button class="btn btn-link">
-                    <i class="bi bi-pencil text-primary"></i>
-                  </button>
-
-                  <button class="btn btn-link">
-                    <i class="bi bi-trash text-danger"></i>
-                  </button>
-
-                  <button class="btn btn-link">
-                    <i class="bi bi-card-list text-success"></i>
-                  </button>
-                </td>
-              </tr>
-              <tr>
-                <td>1000</td>
-                <td>Descripción</td>
-                <td class="text-end">2</td>
-                <td class="text-end">2000</td>
-                <td>
-                  <i class="bi bi-pencil text-warning"></i>
-                  &nbsp;&nbsp;
-                  <i class="bi bi-trash text-danger"></i>
-                </td>
-              </tr>
-              <tr>
-                <td>2024000001</td>
-                <td>SALVADOR TORRES2</td>
-                <td>01/08/2024</td>
-                <td class="text-end">2000</td>
-                <td>
-                  <i class="bi bi-pencil text-warning"></i>
-                  &nbsp;&nbsp;
-                  <i class="bi bi-trash text-danger"></i>
-                </td>
-              </tr>
-              <tr>
-                <td>2024000002</td>
-                <td>JOSE SANTANA MARRERO</td>
-                <td>01/08/2024</td>
-                <td class="text-end">10,250,350.00</td>
-                <td>
-                  <i class="bi bi-pencil text-warning"></i>
-                  &nbsp;&nbsp;
-                  <i class="bi bi-trash text-danger"></i>
-                </td>
-              </tr>
-              <tr>
-                <td>1000</td>
-                <td>PEDRO ALCÁNTARA</td>
-                <td>02/02/2024</td>
-                <td class="text-end">2000</td>
-                <td>
-                  <i class="bi bi-pencil text-warning"></i>
-                  &nbsp;&nbsp;
-                  <i class="bi bi-trash text-danger"></i>
-                </td>
-              </tr>
-              <tr>
-                <td>1000</td>
-                <td>Descripción</td>
-                <td class="text-end">2</td>
-                <td class="text-end">2000</td>
-                <td>
-                  <i class="bi bi-pencil text-warning"></i>
-                  &nbsp;&nbsp;
-                  <i class="bi bi-trash text-danger"></i>
-                </td>
-              </tr>
-              <tr>
-                <td>2024000001</td>
-                <td>SALVADOR TORRES2</td>
-                <td>01/08/2024</td>
-                <td class="text-end">2000</td>
-                <td>
-                  <i class="bi bi-pencil text-warning"></i>
-                  &nbsp;&nbsp;
-                  <i class="bi bi-trash text-danger"></i>
-                </td>
-              </tr>
-              <tr>
-                <td>2024000002</td>
-                <td>JOSE SANTANA MARRERO</td>
-                <td>01/08/2024</td>
-                <td class="text-end">10,250,350.00</td>
-                <td>
-                  <i class="bi bi-pencil text-warning"></i>
-                  &nbsp;&nbsp;
-                  <i class="bi bi-trash text-danger"></i>
-                </td>
-              </tr>
-              <tr>
-                <td>1000</td>
-                <td>PEDRO ALCÁNTARA</td>
-                <td>02/02/2024</td>
-                <td class="text-end">2000</td>
-                <td>
-                  <i class="bi bi-pencil text-warning"></i>
-                  &nbsp;&nbsp;
-                  <i class="bi bi-trash text-danger"></i>
-                </td>
-              </tr>
-              <tr>
-                <td>1000</td>
-                <td>Descripción</td>
-                <td class="text-end">2</td>
-                <td class="text-end">2000</td>
-                <td>
-                  <i class="bi bi-pencil text-warning"></i>
-                  &nbsp;&nbsp;
-                  <i class="bi bi-trash text-danger"></i>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+            Cotización
+          </h4>
         </div>
-        <!-- Fin grid -->
+        <div class="card-body" style="background-color: #fcfdfd">
+          <!-- buscador -->
+          <div class="row">
+            <div class="col-2">
+              <label for="">No. Cotización</label>
+              <input
+                type="text"
+                class="form-control form-control-sm"
+                placeholder="No. Cotización"
+                class="form-control"
+              />
+            </div>
+            <div class="col-5">
+              <label for="">Nombre Cliente</label>
+              <input
+                type="text"
+                class="form-control form-control-sm"
+                placeholder="Nombre"
+                class="form-control uppercase"
+              />
+            </div>
+            <div class="col-2">
+              <label for="">Fecha Cot.</label>
+              <input
+                type="date"
+                class="form-control form-control-sm"
+                placeholder="Fecha..."
+              />
+            </div>
+
+            <div class="col-1">
+              <button class="btn btn-danger mt-3" (click)="limpiaBusqueda()">
+                <i class="bi bi-arrow-counterclockwise"></i>
+              </button>
+            </div>
+            <div class="col-2">
+              <button class="btn btn-primary mt-4" (click)="nuevaCotizacion()">
+                Nueva Cotizacion
+              </button>
+            </div>
+          </div>
+          <!-- fin buscador -->
+          <br />
+          <!-- Grid -->
+          <div class="table-responsive" style="height: 400px; overflow-y: auto">
+            <table
+              class="table table-bordered table-hover table-striped table-sm table-class"
+            >
+              <thead class="table-dark">
+                <tr>
+                  <th style="width: 10%">Numero</th>
+                  <th style="width: 40%">Nombre</th>
+                  <th class="text-center" style="width: 10%">Fecha</th>
+                  <th style="width: 8">Valor</th>
+                  <th class="text-center">Opciones</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td style="width: 12%">2024000001</td>
+                  <td style="width: 40%">SALVADOR TORRES2</td>
+                  <td class="text-center" style="width: 10%">01/08/2024</td>
+                  <td class="text-end" style="width: 00%">2000</td>
+                  <td class="text-center">
+                    <i
+                      (click)="editarCotizacion()"
+                      class="bi bi-pencil text-primary"
+                    ></i>
+                    <a class="btn-link">
+                      <i class="bi bi-trash text-danger"></i>
+                    </a>
+
+                    <a class="btn-link" j>
+                      <i class="bi bi-card-list text-success"></i>
+                    </a>
+                  </td>
+                </tr>
+                <tr>
+                  <td>2024000002</td>
+                  <td>JOSE SANTANA MARRERO</td>
+                  <td class="text-center">01/08/2024</td>
+                  <td class="text-end">10,250,350.00</td>
+                  <td class="text-center">
+                    <button class="btn btn-link">
+                      <i class="bi bi-pencil text-primary"></i>
+                    </button>
+
+                    <button class="btn btn-link">
+                      <i class="bi bi-trash text-danger"></i>
+                    </button>
+
+                    <button class="btn btn-link">
+                      <i class="bi bi-card-list text-success"></i>
+                    </button>
+                  </td>
+                </tr>
+                <tr>
+                  <td>1000</td>
+                  <td>PEDRO ALCÁNTARA</td>
+                  <td class="text-center">02/02/2024</td>
+                  <td class="text-end">2000</td>
+                  <td class="text-center">
+                    <i class="bi bi-pencil text-warning text-center"></i>
+                    &nbsp;&nbsp;
+                    <i class="bi bi-trash text-danger"></i>
+                  </td>
+                </tr>
+                <tr>
+                  <td>1000</td>
+                  <td>Descripción</td>
+                  <td class="text-center">01/02/2024</td>
+                  <td class="text-end">2000</td>
+                  <td class="text-center">
+                    <i class="bi bi-pencil text-warning"></i>
+                    &nbsp;&nbsp;
+                    <i class="bi bi-trash text-danger"></i>
+                  </td>
+                </tr>
+                <tr>
+                  <td>2024000001</td>
+                  <td>SALVADOR TORRES2</td>
+                  <td>01/08/2024</td>
+                  <td class="text-end">2000</td>
+                  <td>
+                    <i class="bi bi-pencil text-warning"></i>
+                    &nbsp;&nbsp;
+                    <i class="bi bi-trash text-danger"></i>
+                    &nbsp;&nbsp;
+                    <i class="bi bi-card-list text-success"></i>
+                  </td>
+                </tr>
+                <tr>
+                  <td>2024000002</td>
+                  <td>JOSE SANTANA MARRERO</td>
+                  <td>01/08/2024</td>
+                  <td class="text-end">10,250,350.00</td>
+                  <td>
+                    <i class="bi bi-pencil text-warning"></i>
+                    &nbsp;&nbsp;
+                    <i class="bi bi-trash text-danger"></i>
+                  </td>
+                </tr>
+                <tr>
+                  <td>1000</td>
+                  <td>PEDRO ALCÁNTARA</td>
+                  <td>02/02/2024</td>
+                  <td class="text-end">2000</td>
+                  <td>
+                    <button class="btn btn-link">
+                      <i class="bi bi-pencil text-primary"></i>
+                    </button>
+
+                    <button class="btn btn-link">
+                      <i class="bi bi-trash text-danger"></i>
+                    </button>
+
+                    <button class="btn btn-link">
+                      <i class="bi bi-card-list text-success"></i>
+                    </button>
+                  </td>
+                </tr>
+                <tr>
+                  <td>1000</td>
+                  <td>Descripción</td>
+                  <td class="text-end">2</td>
+                  <td class="text-end">2000</td>
+                  <td>
+                    <i class="bi bi-pencil text-warning"></i>
+                    &nbsp;&nbsp;
+                    <i class="bi bi-trash text-danger"></i>
+                  </td>
+                </tr>
+                <tr>
+                  <td>2024000001</td>
+                  <td>SALVADOR TORRES2</td>
+                  <td>01/08/2024</td>
+                  <td class="text-end">2000</td>
+                  <td>
+                    <i class="bi bi-pencil text-warning"></i>
+                    &nbsp;&nbsp;
+                    <i class="bi bi-trash text-danger"></i>
+                  </td>
+                </tr>
+                <tr>
+                  <td>2024000002</td>
+                  <td>JOSE SANTANA MARRERO</td>
+                  <td>01/08/2024</td>
+                  <td class="text-end">10,250,350.00</td>
+                  <td>
+                    <i class="bi bi-pencil text-warning"></i>
+                    &nbsp;&nbsp;
+                    <i class="bi bi-trash text-danger"></i>
+                  </td>
+                </tr>
+                <tr>
+                  <td>1000</td>
+                  <td>PEDRO ALCÁNTARA</td>
+                  <td>02/02/2024</td>
+                  <td class="text-end">2000</td>
+                  <td>
+                    <i class="bi bi-pencil text-warning"></i>
+                    &nbsp;&nbsp;
+                    <i class="bi bi-trash text-danger"></i>
+                  </td>
+                </tr>
+                <tr>
+                  <td>1000</td>
+                  <td>Descripción</td>
+                  <td class="text-end">2</td>
+                  <td class="text-end">2000</td>
+                  <td>
+                    <i class="bi bi-pencil text-warning"></i>
+                    &nbsp;&nbsp;
+                    <i class="bi bi-trash text-danger"></i>
+                  </td>
+                </tr>
+                <tr>
+                  <td>2024000001</td>
+                  <td>SALVADOR TORRES2</td>
+                  <td>01/08/2024</td>
+                  <td class="text-end">2000</td>
+                  <td>
+                    <i class="bi bi-pencil text-warning"></i>
+                    &nbsp;&nbsp;
+                    <i class="bi bi-trash text-danger"></i>
+                  </td>
+                </tr>
+                <tr>
+                  <td>2024000002</td>
+                  <td>JOSE SANTANA MARRERO</td>
+                  <td>01/08/2024</td>
+                  <td class="text-end">10,250,350.00</td>
+                  <td>
+                    <i class="bi bi-pencil text-warning"></i>
+                    &nbsp;&nbsp;
+                    <i class="bi bi-trash text-danger"></i>
+                  </td>
+                </tr>
+                <tr>
+                  <td>1000</td>
+                  <td>PEDRO ALCÁNTARA</td>
+                  <td>02/02/2024</td>
+                  <td class="text-end">2000</td>
+                  <td>
+                    <i class="bi bi-pencil text-warning"></i>
+                    &nbsp;&nbsp;
+                    <i class="bi bi-trash text-danger"></i>
+                  </td>
+                </tr>
+                <tr>
+                  <td>1000</td>
+                  <td>Descripción</td>
+                  <td class="text-end">2</td>
+                  <td class="text-end">2000</td>
+                  <td>
+                    <i class="bi bi-pencil text-warning"></i>
+                    &nbsp;&nbsp;
+                    <i class="bi bi-trash text-danger"></i>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <br />
+          <nav aria-label="Page navigation">
+            <ul class="pagination justify-content-center">
+              <li class="page-item" [class.disabled]="currentPage === 1">
+                <a class="page-link" (click)="changePage(1)" aria-label="First">
+                  <span aria-hidden="true">««</span>
+                </a>
+              </li>
+              <li class="page-item" [class.disabled]="currentPage === 1">
+                <a
+                  class="page-link"
+                  (click)="changePage(currentPage - 1)"
+                  aria-label="Previous"
+                >
+                  <span aria-hidden="true">«</span>
+                </a>
+              </li>
+              <li
+                *ngFor="let page of pages"
+                class="page-item"
+                [class.active]="currentPage === page"
+              >
+                <a class="page-link" (click)="changePage(page)">{{ page }}</a>
+              </li>
+              <li
+                class="page-item"
+                [class.disabled]="currentPage === totalPages"
+              >
+                <a
+                  class="page-link"
+                  (click)="changePage(currentPage + 1)"
+                  aria-label="Next"
+                >
+                  <span aria-hidden="true">»</span>
+                </a>
+              </li>
+              <li
+                class="page-item"
+                [class.disabled]="currentPage === totalPages"
+              >
+                <a
+                  class="page-link"
+                  (click)="changePage(totalPages)"
+                  aria-label="Last"
+                >
+                  <span aria-hidden="true">»»</span>
+                </a>
+              </li>
+            </ul>
+          </nav>
+          <!-- Fin grid -->
+        </div>
       </div>
+      <!--***************Fin**********************-->
     </div>
-    <!--***************Fin**********************-->
   </div>
 </div>
 <!--formulario-->
@@ -311,11 +363,31 @@
         ></button>
       </div>
       <div class="modal-body">
-        <form class="custom-form-background" (ngSubmit)="guardarCotizacion()">
+        <form
+          [formGroup]="formularioCotizacion"
+          class="custom-form-background"
+          (ngSubmit)="guardarCotizacion()"
+        >
           <div class="row">
             <div class="col-8">
-              <div class="card" style="margin-top: 0; margin-bottom: 0px; padding-top:0px; padding-bottom: 0px;">
-                <div class="card-body" style="background-color: #e6e4e4; margin-top: 0; padding-top: 0; padding-bottom: 0">
+              <div
+                class="card"
+                style="
+                  margin-top: 0;
+                  margin-bottom: 0px;
+                  padding-top: 0px;
+                  padding-bottom: 0px;
+                "
+              >
+                <div
+                  class="card-body"
+                  style="
+                    background-color: #e6e4e4;
+                    margin-top: 0;
+                    padding-top: 0;
+                    padding-bottom: 0;
+                  "
+                >
                   <div class="row">
                     <div class="col d-flex justify-content-center">
                       <div
@@ -325,186 +397,168 @@
                       ></div>
                     </div>
                   </div>
-                  <form>
-                    <div class="mb-1 row mt-1">
-                      <div class="col-1">
-                        <label  for="">RNC</label>
-                      </div>
-                      <div class="col-4">
-                        <input
-                          type="number"
-                          (keydown)="moveFocus($event, input2)"
-                          #input1
-                          class="form-control form-control-sm"
-                        />
-                      </div>
+                  <div class="mb-1 row mt-1">
+                    <div class="col-1">
+                      <label for="">RNC</label>
                     </div>
-                    <div class="mb-1 row mt-1">
-                      <div class="col-1">
-                        <label for="">Nombre</label>
-                      </div>
-                      <div class="col-11">
-                        <input
-                          type="text"
-                          (input)="convertToUpperCase($event)"
-                          (keydown)="moveFocus($event, input3)"
-                          #input2
-                          class="form-control form-control-sm"
-                        />
-                      </div>
-                    </div>  
-                    <div class="mb-1 row mt-1">
-                      <div class="col-1">
-                        <label for="">Dirección</label>
-                      </div>
-                      <div class="col-11">
-                        <input
-                          type="text"
-                          (input)="convertToUpperCase($event)"
-                          (keydown)="moveFocus($event, input5)"
-                          #input3
-                          class="form-control form-control-sm"
-                        />
-                      </div>
+                    <div class="col-4">
+                      <input
+                        type="number"
+                        (keydown)="moveFocus($event, input2)"
+                        #input1
+                        formControlName="ct_rnc"
+                        class="form-control form-control-sm"
+                      />
                     </div>
-                    <div class="mb-1 row mt-1">
-                      <div class="col-1">
-                        <label for="cl_codSect">Sector</label>
-                      </div>
-                      <div class="col-3">
-                        <select formControlName="cl_codSect" class="form-control" >
-                          <option disabled selected>Selecione un Sector</option>
-                          <option  (keydown)="moveFocus($event, input5)"
-                          #input4
-                            *ngFor="let sector of sectorList"
-                            [value]="sector.se_codSect">
-                            {{sector.se_desSect}}
-                          </option>
-                        </select>
-                      </div>
-                      <div class="col-1">
-                        <label for="">Zona</label>
-                      </div>
-                      <div class="col-2">
-                        <input
-                          type="text"
-                          (input)="convertToUpperCase($event)"
-                          (keydown)="moveFocus($event, input6)"
-                          #input5
-                          class="form-control form-control-sm"
-                        />
-                      </div>
-                      <div class="col-1">
-                        <label for="">Telefono</label>
-                      </div>
-                      <div class="col-4">
-                        <input
-                          type="text"
-                          (keydown)="moveFocus($event, input7)"
-                          #input6
-                          class="form-control form-control-sm"
-                        />
-                      </div>
+                  </div>
+                  <div class="mb-1 row mt-1">
+                    <div class="col-1">
+                      <label for="">Nombre</label>
                     </div>
-                  </form>
+                    <div class="col-11">
+                      <input
+                        type="text"
+                        (input)="convertToUpperCase($event)"
+                        (keydown)="moveFocus($event, input3)"
+                        formControlName="ct_nomclie"
+                        #input2
+                        class="form-control form-control-sm"
+                      />
+                    </div>
+                  </div>
+                  <div class="mb-1 row mt-1">
+                    <div class="col-1">
+                      <label for="">Dirección</label>
+                    </div>
+                    <div class="col-11">
+                      <input
+                        type="text"
+                        formControlName="ct_dirclie"
+                        (input)="convertToUpperCase($event)"
+                        (keydown)="moveFocus($event, input4)"
+                        #input3
+                        class="form-control form-control-sm"
+                      />
+                    </div>
+                  </div>
+                  <div class="mb-1 row mt-1">
+                    <div class="col-1">
+                      <label for="">Telefono</label>
+                    </div>
+                    <div class="col-4">
+                      <input
+                        type="tel"
+                        appPhoneNumberMask
+                        formControlName="ct_telclie"
+                        (keydown)="moveFocus($event, input5)"
+                        #input4
+                        class="form-control form-control-sm"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-            <div class="mb col-4">
+            <div class="col-4">
               <div class="card">
                 <div class="card-body" style="background-color: #e6e4e4">
-                  <div class="row">
-                    <div class="col d-flex justify-content-center">
-                      <div
-                        class="btn-group"
-                        role="group"
-                        aria-label="Basic radio toggle button group"
-                      ></div>
+                  <div class="mb-1 row">
+                    <div class="col-5">
+                      <label for="">No. Cotizacion</label>
+                    </div>
+                    <div class="col-6">
+                      <input
+                        type="text"
+                        formControlName="ct_codcoti"
+                        class="form-control form-control-sm"
+                      />
                     </div>
                   </div>
-                  <form>
-                    <div class="mb-1 row">
-                      <div class="col-5">
-                        <label for="">No. Cotizacion</label>
-                      </div>
-                      <div class="col-6">
-                        <input
-                          type="text"
-                          class="form-control form-control-sm"
-                        />
-                      </div>
+                  <div class="mb-1 row">
+                    <div class="col-5">
+                      <label for="">Fecha</label>
                     </div>
-                    <div class="mb-1 row">
-                      <div class="col-5">
-                        <label for="">Fecha</label>
-                      </div>
-                      <div class="col-6">
-                        <input
-                          type="text"
-                          class="form-control form-control-sm"
-                        />
-                      </div>
+                    <div class="col-6">
+                      <input
+                        formControlName="ct_feccoti"
+                        type="text"
+                        class="form-control form-control-sm"
+                      />
                     </div>
-                    <div class="mb-1 row">
-                      <div class="col-5">
-                        <label for="">Vendedor</label>
-                      </div>
-                      <div class="col-6">
-                        <input
-                          type="text"
-                          (input)="convertToUpperCase($event)"
-                          (keydown)="moveFocus($event, input8)"
-                          #input7
-                          class="form-control form-control-sm"
-                        />
-                      </div>
+                  </div>
+                  <div class="mb-1 row">
+                    <div class="col-5">
+                      <label for="">Vendedor</label>
                     </div>
-                  </form>
+                    <div class="col-6">
+                      <input
+                        type="text"
+                        (input)="convertToUpperCase($event)"
+                        (keydown)="moveFocus($event, input6)"
+                        #input5
+                        class="form-control form-control-sm"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
+          <br />
           <div class="row">
             <div class="col-2">
               <label for="">Código</label>
               <input
-                type="text"  #codigoInput class="form-control form-control-sm"
+                type="text"
+                #codigoInput
+                class="form-control form-control-sm"
                 (input)="convertToUpperCase($event)"
-                (keydown)="moveFocus($event, input9)"
-                #input8
+                (keydown)="moveFocus($event, input7)"
+                #input6
                 class="form-control form-control-sm"
               />
             </div>
             <div class="col-5">
               <label for="">Descripción</label>
               <input
-                type="text" #descripcionInput class="form-control form-control-sm"
+                type="text"
+                #descripcionInput
+                class="form-control form-control-sm"
                 (input)="convertToUpperCase($event)"
-                (keydown)="moveFocus($event, input10)"
-                #input9
+                (keydown)="moveFocus($event, input8)"
+                #input7
                 class="form-control form-control-sm"
               />
             </div>
             <div class="col-2">
               <label for="">Cantidad</label>
               <input
-                type="number" #cantidadInput class="form-control form-control-sm"
-                (keydown)="moveFocus($event, input11)"
-                #input10
+                type="number"
+                #cantidadInput
+                class="form-control form-control-sm"
+                (keydown)="moveFocus($event, input9)"
+                #input8
                 class="form-control form-control-sm"
               />
             </div>
             <div class="col-2">
               <label for="">Precio</label>
               <input
-                type="number" #precioInput class="form-control form-control-sm"
-                (keydown)="moveFocus($event, input8)"
-                #input11
+                type="number"
+                #precioInput
+                class="form-control form-control-sm"
+                (keydown)="moveFocus($event, input6)"
+                #input9
                 class="form-control form-control-sm"
               />
             </div>
             <div class="col-1">
-              <button (click)="agregaItem(codigoInput.value, descripcionInput.value, cantidadInput.valueAsNumber, precioInput.valueAsNumber)">
+              <button
+                type="button"
+                class="btn btn-primary mt-3"
+                (click)="agregaItem(codigoInput.value, descripcionInput.value,
+                cantidadInput.valueAsNumber, precioInput.valueAsNumber)"
+              >
                 Agregar
               </button>
             </div>
@@ -534,7 +588,9 @@
                       <td>{{ item.cantidad }}</td>
                       <td>{{ item.precio }}</td>
                       <td>{{ item.total }}</td>
-                      <td><button (click)="borarItem(item)">Eliminar</button></td>
+                      <td>
+                        <button (click)="borarItem(item)">Eliminar</button>
+                      </td>
                     </tr>
                   </tbody>
                   <tfoot>
@@ -542,22 +598,26 @@
                       <td></td>
                       <td></td>
                       <td></td>
-                      <td style="font-size: 18px;  font-weight: bold;">Sub-Total</td>
+                      <td style="font-size: 18px; font-weight: bold">
+                        Sub-Total
+                      </td>
                       <td colspan="2"></td>
                     </tr>
-                    <tr>  
+                    <tr>
                       <td></td>
                       <td></td>
                       <td></td>
-                      <td style="font-size: 18px;  font-weight: bold;">Itbis</td>
+                      <td style="font-size: 18px; font-weight: bold">Itbis</td>
                       <td colspan="2"></td>
                     </tr>
-                    <tr>   
+                    <tr>
                       <td></td>
                       <td></td>
-                      <td></td>               
-                      <td style="font-size: 18px;  font-weight: bold;">Total Gral</td>
-                      <td colspan="2"></td>
+                      <td></td>
+                      <td style="font-size: 18px; font-weight: bold">
+                        Total Gral
+                      </td>
+                      <td colspan="2">{{totalGral}}</td>
                     </tr>
                   </tfoot>
                 </table>
@@ -565,9 +625,8 @@
             </div>
           </div>
           <div class="row mt-2">
-              <div class="col-10"></div>
-              <div class="col">
-              <button class="btn btn-primary btn-block btn-ls w-100">
+            <div class="col d-flex justify-content-end">
+              <button class="btn btn-primary btn-xs" type="submit">
                 Guardar
               </button>
             </div>

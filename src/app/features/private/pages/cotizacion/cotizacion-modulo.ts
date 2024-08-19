@@ -3,6 +3,7 @@ import { BrowserModule } from '@angular/platform-browser';
 import { CommonModule } from '@angular/common';
 import { Cotizacion} from './cotizacion';
 import { RutaCotizacion } from './cotizacion-ruta';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 
 @NgModule({
   declarations: [
@@ -10,7 +11,9 @@ import { RutaCotizacion } from './cotizacion-ruta';
   ],
   imports: [
     CommonModule,
-    RutaCotizacion
+    RutaCotizacion,
+    ReactiveFormsModule,
+    FormsModule
   ],
   providers: [],
   bootstrap: [Cotizacion]
