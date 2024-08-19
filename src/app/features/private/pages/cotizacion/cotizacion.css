@@ -65,3 +65,8 @@ tfoot {
   /* margin-bottom: 5px;*/
   /* Espacio debajo del label */
 }
+
+.card {
+  margin: 0;
+  padding: 0;
+}

@@ -2,6 +2,8 @@ import { Component, OnInit, ɵNG_COMP_DEF } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { BehaviorSubject, debounceTime, distinctUntilChanged, switchMap } from 'rxjs';
 import Swal from 'sweetalert2';
+import { ModeloSectorData } from 'src/app/core/services/mantenimientos/sector';
+import { ServicioSector } from 'src/app/core/services/mantenimientos/sector/sector.service';
 import { ServicioCotizacion } from 'src/app/core/services/cotizaciones/cotizacion/cotizacion.service';
 import { CotizacionModelData, detCotizacionData } from 'src/app/core/services/cotizaciones/cotizacion';
 import { ServiciodetCotizacion } from 'src/app/core/services/cotizaciones/detcotizacion/detcotizacion.service';
@@ -34,10 +36,13 @@ export class Cotizacion implements OnInit {
   modoedicionCotizacion: boolean = false;
   cotizacionid!: string
   modoconsultaCotizacion: boolean = false;
+  sectorList: ModeloSectorData[] = [];
   cotizacionList: CotizacionModelData[] = [];
   detCotizacionList: detCotizacionData[] = [];
   selectedCotizacion: any = null;
-  constructor(private fb: FormBuilder, private servicioCotizacion: ServicioCotizacion, private serviciodetCotizacion: ServiciodetCotizacion) {
+  items: { codigo: string; descripcion: string; cantidad: number; precio: number; total: number; }[] = [];
+
+  constructor(private fb: FormBuilder, private servicioCotizacion: ServicioCotizacion, private servicioSector: ServicioSector, private serviciodetCotizacion: ServiciodetCotizacion) {
     this.crearFormularioCotizacion();
     this.descripcionBuscar.pipe(
       debounceTime(500),
@@ -92,7 +97,7 @@ export class Cotizacion implements OnInit {
   }
 
   seleccionarCotizacion(cotizacion: any) { this.selectedCotizacion = cotizacion; }
-  ngOnInit(): void {}
+  ngOnInit(): void { }
 
   crearFormularioCotizacion() {
     this.formularioCotizacion = this.fb.group({
@@ -308,7 +313,35 @@ export class Cotizacion implements OnInit {
     this.txtfecha = '';
     this.buscarTodasCotizacion(1);
   }
-}
 
+  // Array para almacenar los datos de la tabla
+
+
+  // Función para agregar un nuevo item a la tabla
+  agregaItem(codigo: string, descripcion: string, cantidad: number, precio: number) {
+    const total = cantidad * precio;
+    this.items.push({ codigo, descripcion, cantidad, precio, total });
+  }
+
+  // (Opcional) Función para eliminar un ítem de la tabla
+  borarItem(item: { codigo: string; descripcion: string; cantidad: number; precio: number; total: number; }) {
+    const index = this.items.indexOf(item);
+    if (index > -1) {
+      this.items.splice(index, 1);
+    }
+  }
+
+  buscardatosSector() {
+    this.servicioSector.obtenerTodosSector().subscribe(response => {
+      console.log(response);
+      this.sectorList = response.data;
+    });
+  }
+
+
+
+
+
+}
 
 

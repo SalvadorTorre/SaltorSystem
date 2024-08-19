@@ -2,7 +2,7 @@
   <div class="col-1"></div>
   <div class="col-10">
     <div class="card">
-      <div class="card-header">
+      <div class="card-header"  style="height: 50px">
         <h4
           class="card-title"
           style="
@@ -17,7 +17,6 @@
       </div>
       <div class="card-body" style="background-color: #fcfdfd">
         <!-- buscador -->
-        <br />
         <div class="row">
           <div class="col-2">
             <label for="">No. Cotización</label>
@@ -60,7 +59,7 @@
         <!-- fin buscador -->
         <br />
         <!-- Grid -->
-        <div class="table-responsive" style="height: 600px; overflow-y: auto">
+        <div class="table-responsive" style="height: 400px; overflow-y: auto">
           <table
             class="table table-bordered table-hover table-striped table-sm table-class"
           >
@@ -68,27 +67,27 @@
               <tr>
                 <th style="width: 10%">Numero</th>
                 <th style="width: 40%">Nombre</th>
-                <th class="text-center" style="width: 8%">Fecha</th>
-                <th style="width: 10%">Valor</th>
+                <th class="text-center" style="width: 10%">Fecha</th>
+                <th style="width: 8">Valor</th>
+                <th class="text-center" >Opcuines</th>
                 <th></th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td>2024000001</td>
-                <td>SALVADOR TORRES2</td>
-                <td class="text-center">01/08/2024</td>
-                <td class="text-end">2000</td>
-                <td>
+                <td style="width: 12%">2024000001</td>
+                <td style="width: 40%">SALVADOR TORRES2</td>
+                <td class="text-center" style="width: 10%">01/08/2024</td>
+                <td class="text-end" style="width: 00%">2000</td>
+                <td class="text-center">
                   <button class="btn btn-link">
                     <i class="bi bi-pencil text-primary"></i>
                   </button>
-
                   <button class="btn btn-link">
                     <i class="bi bi-trash text-danger"></i>
                   </button>
 
-                  <button class="btn btn-link">
+                  <button class="btn btn-link"j>
                     <i class="bi bi-card-list text-success"></i>
                   </button>
                 </td>
@@ -96,9 +95,9 @@
               <tr>
                 <td>2024000002</td>
                 <td>JOSE SANTANA MARRERO</td>
-                <td>01/08/2024</td>
+                <td class="text-center">01/08/2024</td>
                 <td class="text-end">10,250,350.00</td>
-                <td>
+                <td class="text-center">
                   <button class="btn btn-link">
                     <i class="bi bi-pencil text-primary"></i>
                   </button>
@@ -115,10 +114,10 @@
               <tr>
                 <td>1000</td>
                 <td>PEDRO ALCÁNTARA</td>
-                <td>02/02/2024</td>
+                <td class="text-center">02/02/2024</td>
                 <td class="text-end">2000</td>
-                <td>
-                  <i class="bi bi-pencil text-warning"></i>
+                <td class="text-center">
+                  <i class="bi bi-pencil text-warning text-center"></i>
                   &nbsp;&nbsp;
                   <i class="bi bi-trash text-danger"></i>
                 </td>
@@ -126,9 +125,9 @@
               <tr>
                 <td>1000</td>
                 <td>Descripción</td>
-                <td class="text-end">2</td>
+                <td class="text-center">01/02/2024</td>
                 <td class="text-end">2000</td>
-                <td>
+                <td class="text-center">
                   <i class="bi bi-pencil text-warning"></i>
                   &nbsp;&nbsp;
                   <i class="bi bi-trash text-danger"></i>
@@ -143,6 +142,8 @@
                   <i class="bi bi-pencil text-warning"></i>
                   &nbsp;&nbsp;
                   <i class="bi bi-trash text-danger"></i>
+                  &nbsp;&nbsp;
+                  <i class="bi bi-card-list text-success"></i>
                 </td>
               </tr>
               <tr>
@@ -313,8 +314,8 @@
         <form class="custom-form-background" (ngSubmit)="guardarCotizacion()">
           <div class="row">
             <div class="col-8">
-              <div class="card">
-                <div class="card-body" style="background-color: #e6e4e4">
+              <div class="card" style="margin-top: 0; margin-bottom: 0px; padding-top:0px; padding-bottom: 0px;">
+                <div class="card-body" style="background-color: #e6e4e4; margin-top: 0; padding-top: 0; padding-bottom: 0">
                   <div class="row">
                     <div class="col d-flex justify-content-center">
                       <div
@@ -325,9 +326,9 @@
                     </div>
                   </div>
                   <form>
-                    <div class="mb-1 row mt-2">
+                    <div class="mb-1 row mt-1">
                       <div class="col-1">
-                        <label for="">RNC</label>
+                        <label  for="">RNC</label>
                       </div>
                       <div class="col-4">
                         <input
@@ -338,7 +339,7 @@
                         />
                       </div>
                     </div>
-                    <div class="mb-1 row">
+                    <div class="mb-1 row mt-1">
                       <div class="col-1">
                         <label for="">Nombre</label>
                       </div>
@@ -351,63 +352,65 @@
                           class="form-control form-control-sm"
                         />
                       </div>
-                      <div class="mb-1 row">
-                        <div class="col-1">
-                          <label for="">Dirección</label>
-                        </div>
-                        <div class="col-11">
-                          <input
-                            type="text"
-                            (input)="convertToUpperCase($event)"
-                            (keydown)="moveFocus($event, input4)"
-                            #input3
-                            class="form-control form-control-sm"
-                          />
-                        </div>
+                    </div>  
+                    <div class="mb-1 row mt-1">
+                      <div class="col-1">
+                        <label for="">Dirección</label>
                       </div>
-                      <div class="mb-1 row">
-                        <div class="col-1">
-                          <label for="">Sector</label>
-                        </div>
-                        <div class="col-3">
-                          <input
-                            type="text"
-                            (input)="convertToUpperCase($event)"
-                            (keydown)="moveFocus($event, input5)"
-                            #input4
-                            class="form-control form-control-sm"
-                          />
-                        </div>
-                        <div class="col-1">
-                          <label for="">Zona</label>
-                        </div>
-                        <div class="col-2">
-                          <input
-                            type="text"
-                            (input)="convertToUpperCase($event)"
-                            (keydown)="moveFocus($event, input6)"
-                            #input5
-                            class="form-control form-control-sm"
-                          />
-                        </div>
-                        <div class="col-1">
-                          <label for="">Telefono</label>
-                        </div>
-                        <div class="col-4">
-                          <input
-                            type="text"
-                            (keydown)="moveFocus($event, input7)"
-                            #input6
-                            class="form-control form-control-sm"
-                          />
-                        </div>
+                      <div class="col-11">
+                        <input
+                          type="text"
+                          (input)="convertToUpperCase($event)"
+                          (keydown)="moveFocus($event, input5)"
+                          #input3
+                          class="form-control form-control-sm"
+                        />
+                      </div>
+                    </div>
+                    <div class="mb-1 row mt-1">
+                      <div class="col-1">
+                        <label for="cl_codSect">Sector</label>
+                      </div>
+                      <div class="col-3">
+                        <select formControlName="cl_codSect" class="form-control" >
+                          <option disabled selected>Selecione un Sector</option>
+                          <option  (keydown)="moveFocus($event, input5)"
+                          #input4
+                            *ngFor="let sector of sectorList"
+                            [value]="sector.se_codSect">
+                            {{sector.se_desSect}}
+                          </option>
+                        </select>
+                      </div>
+                      <div class="col-1">
+                        <label for="">Zona</label>
+                      </div>
+                      <div class="col-2">
+                        <input
+                          type="text"
+                          (input)="convertToUpperCase($event)"
+                          (keydown)="moveFocus($event, input6)"
+                          #input5
+                          class="form-control form-control-sm"
+                        />
+                      </div>
+                      <div class="col-1">
+                        <label for="">Telefono</label>
+                      </div>
+                      <div class="col-4">
+                        <input
+                          type="text"
+                          (keydown)="moveFocus($event, input7)"
+                          #input6
+                          class="form-control form-control-sm"
+                        />
                       </div>
                     </div>
                   </form>
                 </div>
               </div>
             </div>
-            <div class="col-4">
+            <div class="mb col-4">
               <div class="card">
                 <div class="card-body" style="background-color: #e6e4e4">
                   <div class="row">
@@ -431,7 +434,7 @@
                         />
                       </div>
                     </div>
-                    <div class="mb-2 row">
+                    <div class="mb-1 row">
                       <div class="col-5">
                         <label for="">Fecha</label>
                       </div>
@@ -442,13 +445,14 @@
                         />
                       </div>
                     </div>
-                    <div class="mb-2 row">
+                    <div class="mb-1 row">
                       <div class="col-5">
                         <label for="">Vendedor</label>
                       </div>
                       <div class="col-6">
                         <input
                           type="text"
+                          (input)="convertToUpperCase($event)"
                           (keydown)="moveFocus($event, input8)"
                           #input7
                           class="form-control form-control-sm"
@@ -464,7 +468,8 @@
             <div class="col-2">
               <label for="">Código</label>
               <input
-                type="text"
+                type="text"  #codigoInput class="form-control form-control-sm"
+                (input)="convertToUpperCase($event)"
                 (keydown)="moveFocus($event, input9)"
                 #input8
                 class="form-control form-control-sm"
@@ -473,7 +478,8 @@
             <div class="col-5">
               <label for="">Descripción</label>
               <input
-                type="text"
+                type="text" #descripcionInput class="form-control form-control-sm"
+                (input)="convertToUpperCase($event)"
                 (keydown)="moveFocus($event, input10)"
                 #input9
                 class="form-control form-control-sm"
@@ -482,7 +488,7 @@
             <div class="col-2">
               <label for="">Cantidad</label>
               <input
-                type="number"
+                type="number" #cantidadInput class="form-control form-control-sm"
                 (keydown)="moveFocus($event, input11)"
                 #input10
                 class="form-control form-control-sm"
@@ -491,18 +497,23 @@
             <div class="col-2">
               <label for="">Precio</label>
               <input
-                type="number"
+                type="number" #precioInput class="form-control form-control-sm"
                 (keydown)="moveFocus($event, input8)"
                 #input11
                 class="form-control form-control-sm"
               />
+            </div>
+            <div class="col-1">
+              <button (click)="agregaItem(codigoInput.value, descripcionInput.value, cantidadInput.valueAsNumber, precioInput.valueAsNumber)">
+                Agregar
+              </button>
             </div>
           </div>
           <div class="row">
             <div class="col">
               <div
                 class="table-responsive"
-                style="height: 300px; overflow-y: auto"
+                style="height: 370px; overflow-y: auto"
               >
                 <table class="table table-sm table-bordered">
                   <thead class="table-dark">
@@ -517,149 +528,13 @@
                     </tr>
                   </thead>
                   <tbody>
-                    <tr>
-                      <td>353811220G</td>
-                      <td>PERFIL 2 3/8 X 1 1/2 X 20 NGxcvcxv</td>
-                      <td class="text-end">10,000.00</td>
-                      <td class="text-end">5,526.00</td>
-                      <td class="text-end">505,055,260.00</td>
-                      <td>
-                        <i class="bi bi-pencil text-warning"></i>
-                        &nbsp;&nbsp;
-                        <i class="bi bi-trash text-danger"></i>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>1000</td>
-                      <td>Descripción</td>
-                      <td class="text-end">2</td>
-                      <td class="text-end">1000</td>
-                      <td class="text-end">2000</td>
-                      <td>
-                        <i class="bi bi-pencil text-warning"></i>
-                        &nbsp;&nbsp;
-                        <i class="bi bi-trash text-danger"></i>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>1000</td>
-                      <td>Descripción</td>
-                      <td class="text-end">2</td>
-                      <td class="text-end">1000</td>
-                      <td class="text-end">2000</td>
-                      <td>
-                        <i class="bi bi-pencil text-warning"></i>
-                        &nbsp;&nbsp;
-                        <i class="bi bi-trash text-danger"></i>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>1000</td>
-                      <td>Descripción</td>
-                      <td class="text-end">2</td>
-                      <td class="text-end">1000</td>
-                      <td class="text-end">2000</td>
-                      <td>
-                        <i class="bi bi-pencil text-warning"></i>
-                        &nbsp;&nbsp;
-                        <i class="bi bi-trash text-danger"></i>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>1000</td>
-                      <td>Descripción</td>
-                      <td class="text-end">2</td>
-                      <td class="text-end">1000</td>
-                      <td class="text-end">2000</td>
-                      <td>
-                        <i class="bi bi-pencil text-warning"></i>
-                        &nbsp;&nbsp;
-                        <i class="bi bi-trash text-danger"></i>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>1000</td>
-                      <td>Descripción</td>
-                      <td class="text-end">2</td>
-                      <td class="text-end">1000</td>
-                      <td class="text-end">2000</td>
-                      <td>
-                        <i class="bi bi-pencil text-warning"></i>
-                        &nbsp;&nbsp;
-                        <i class="bi bi-trash text-danger"></i>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>1000</td>
-                      <td>Descripción</td>
-                      <td class="text-end">2</td>
-                      <td class="text-end">1000</td>
-                      <td class="text-end">2000</td>
-                      <td>
-                        <i class="bi bi-pencil text-warning"></i>
-                        &nbsp;&nbsp;
-                        <i class="bi bi-trash text-danger"></i>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>1000</td>
-                      <td>Descripción</td>
-                      <td class="text-end">2</td>
-                      <td class="text-end">1000</td>
-                      <td class="text-end">2000</td>
-                      <td>
-                        <i class="bi bi-pencil text-warning"></i>
-                        &nbsp;&nbsp;
-                        <i class="bi bi-trash text-danger"></i>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>1000</td>
-                      <td>Descripción</td>
-                      <td class="text-end">2</td>
-                      <td class="text-end">1000</td>
-                      <td class="text-end">2000</td>
-                      <td>
-                        <i class="bi bi-pencil text-warning"></i>
-                        &nbsp;&nbsp;
-                        <i class="bi bi-trash text-danger"></i>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>1000</td>
-                      <td>Descripción</td>
-                      <td class="text-end">2</td>
-                      <td class="text-end">1000</td>
-                      <td class="text-end">2000</td>
-                      <td>
-                        <i class="bi bi-pencil text-warning"></i>
-                        &nbsp;&nbsp;
-                        <i class="bi bi-trash text-danger"></i>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>1000</td>
-                      <td>Descripción</td>
-                      <td class="text-end">2</td>
-                      <td class="text-end">1000</td>
-                      <td class="text-end">2000</td>
-                      <td>
-                        <i class="bi bi-pencil text-warning"></i>
-                        &nbsp;&nbsp;
-                        <i class="bi bi-trash text-danger"></i>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>1000</td>
-                      <td>Descripción</td>
-                      <td class="text-end">2</td>
-                      <td class="text-end">1000</td>
-                      <td class="text-end">2000</td>
-                      <td>
-                        <i class="bi bi-pencil text-warning"></i>
-                        &nbsp;&nbsp;
-                        <i class="bi bi-trash text-danger"></i>
-                      </td>
+                    <tr *ngFor="let item of items">
+                      <td>{{ item.codigo }}</td>
+                      <td>{{ item.descripcion }}</td>
+                      <td>{{ item.cantidad }}</td>
+                      <td>{{ item.precio }}</td>
+                      <td>{{ item.total }}</td>
+                      <td><button (click)="borarItem(item)">Eliminar</button></td>
                     </tr>
                   </tbody>
                   <tfoot>
@@ -667,11 +542,22 @@
                       <td></td>
                       <td></td>
                       <td></td>
-                      <td>Sub-Total</td>
-                      <td colspan="1"></td>
+                      <td style="font-size: 18px;  font-weight: bold;">Sub-Total</td>
+                      <td colspan="2"></td>
+                    </tr>
+                    <tr>  
                       <td></td>
-                      <td>Itbis</td>
-                      <td>Total Gral</td>
+                      <td></td>
+                      <td></td>
+                      <td style="font-size: 18px;  font-weight: bold;">Itbis</td>
+                      <td colspan="2"></td>
+                    </tr>
+                    <tr>   
+                      <td></td>
+                      <td></td>
+                      <td></td>               
+                      <td style="font-size: 18px;  font-weight: bold;">Total Gral</td>
+                      <td colspan="2"></td>
                     </tr>
                   </tfoot>
                 </table>
@@ -679,9 +565,9 @@
             </div>
           </div>
           <div class="row mt-2">
-            <div class="col-4"></div>
-            <div class="col-2">
-              <button class="btn btn-primary btn-block btn-lg w-100">
+              <div class="col-10"></div>
+              <div class="col">
+              <button class="btn btn-primary btn-block btn-ls w-100">
                 Guardar
               </button>
             </div>
