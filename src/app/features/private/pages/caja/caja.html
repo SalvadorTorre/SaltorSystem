@@ -1,23 +1,54 @@
-<h1>Estoy en caja</h1>
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-2">
+      <div class="left-sidebar" style="width: 100%">
+        <ul
+          class="nav flex-column"
+          style="background-color: #af3d2c; height: 87vh"
+        >
+          <br />
+          <li class="nav-item">
+            <a
+              class="nav-link"
+              style="color: rgb(250, 247, 247); font-size: 18px"
+              routerLinkActive="active"
+              [routerLink]="['cobro']"
+              >Cobro Factura</a
+            >
+          </li>
+          <li class="nav-item">
+            <a
+              class="nav-link"
+              style="color: rgb(250, 247, 247); font-size: 18px"
+              routerLinkActive="active"
+              [routerLink]="['cuadrecaja']"
+              >Cuadre Caja</a
+            >
+          </li>
+          <li class="nav-item">
+            <a
+              class="nav-link"
+              style="color: rgb(250, 247, 247); font-size: 18px"
+              routerLinkActive="active"
+              [routerLink]="['reciboingreso']"
+              >Recibo de Ingreso
+            </a>
+          </li>
 
-
-<div class="left-sidebar" style="width:15%">
-  <ul class="nav flex-column" style="background-color :  #d00606" >
- <li class="nav-item" >
-   <a class="nav-link active" style="color: rgb(250, 247, 247);" aria-current="page" href="#">Cobro Factura</a>
- </li>
- <li class="nav-item">
-   <a class="nav-link " style="color: rgb(250, 247, 247);" href="#">Cuadre de Caja</a>
- </li>
- <li class="nav-item">
-   <a class="nav-link" style="color: rgb(250, 247, 248);"href="#">Recibo de Ingreso</a>
- </li>
- <li class="nav-item">
-   <a class="nav-link"style="color: rgb(250, 247, 247);" href="#">Caja Envio</a>
- </li>
-
- <li class="nav-item">
-   <a class="nav-link" href="#"> </a>
- </li>
-</ul>
+          <li class="nav-item">
+            <a
+              class="nav-link"
+              style="color: rgb(250, 247, 247); font-size: 18px"
+              routerLinkActive="active"
+              [routerLink]="['cajaenvio']"
+              >Caja Envio
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+    <div class="col">
+      <router-outlet></router-outlet>
+    </div>
+  </div>
 </div>

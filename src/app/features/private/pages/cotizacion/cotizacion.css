@@ -70,3 +70,8 @@ tfoot {
   margin: 0;
   padding: 0;
 }
+
+.name-find {
+  margin-bottom: 14px;
+  text-decoration: none !important;
+}

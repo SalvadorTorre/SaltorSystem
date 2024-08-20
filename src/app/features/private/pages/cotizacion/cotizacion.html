@@ -74,11 +74,11 @@
                 </tr>
               </thead>
               <tbody>
-                <tr>
-                  <td style="width: 12%">2024000001</td>
-                  <td style="width: 40%">SALVADOR TORRES2</td>
-                  <td class="text-center" style="width: 10%">01/08/2024</td>
-                  <td class="text-end" style="width: 00%">2000</td>
+                <tr *ngFor="let cotizacion of cotizacionList">
+                  <td>{{cotizacion.ct_codcoti}}</td>
+                  <td>{{cotizacion.ct_nomclie}}</td>
+                  <td>{{cotizacion.ct_feccoti}}</td>
+                  <td>{{cotizacion.ct_valcoti}}</td>
                   <td class="text-center">
                     <i
                       (click)="editarCotizacion()"
@@ -93,7 +93,7 @@
                     </a>
                   </td>
                 </tr>
-                <tr>
+                <!--               <tr>
                   <td>2024000002</td>
                   <td>JOSE SANTANA MARRERO</td>
                   <td class="text-center">01/08/2024</td>
@@ -112,170 +112,7 @@
                     </button>
                   </td>
                 </tr>
-                <tr>
-                  <td>1000</td>
-                  <td>PEDRO ALCÁNTARA</td>
-                  <td class="text-center">02/02/2024</td>
-                  <td class="text-end">2000</td>
-                  <td class="text-center">
-                    <i class="bi bi-pencil text-warning text-center"></i>
-                    &nbsp;&nbsp;
-                    <i class="bi bi-trash text-danger"></i>
-                  </td>
-                </tr>
-                <tr>
-                  <td>1000</td>
-                  <td>Descripción</td>
-                  <td class="text-center">01/02/2024</td>
-                  <td class="text-end">2000</td>
-                  <td class="text-center">
-                    <i class="bi bi-pencil text-warning"></i>
-                    &nbsp;&nbsp;
-                    <i class="bi bi-trash text-danger"></i>
-                  </td>
-                </tr>
-                <tr>
-                  <td>2024000001</td>
-                  <td>SALVADOR TORRES2</td>
-                  <td>01/08/2024</td>
-                  <td class="text-end">2000</td>
-                  <td>
-                    <i class="bi bi-pencil text-warning"></i>
-                    &nbsp;&nbsp;
-                    <i class="bi bi-trash text-danger"></i>
-                    &nbsp;&nbsp;
-                    <i class="bi bi-card-list text-success"></i>
-                  </td>
-                </tr>
-                <tr>
-                  <td>2024000002</td>
-                  <td>JOSE SANTANA MARRERO</td>
-                  <td>01/08/2024</td>
-                  <td class="text-end">10,250,350.00</td>
-                  <td>
-                    <i class="bi bi-pencil text-warning"></i>
-                    &nbsp;&nbsp;
-                    <i class="bi bi-trash text-danger"></i>
-                  </td>
-                </tr>
-                <tr>
-                  <td>1000</td>
-                  <td>PEDRO ALCÁNTARA</td>
-                  <td>02/02/2024</td>
-                  <td class="text-end">2000</td>
-                  <td>
-                    <button class="btn btn-link">
-                      <i class="bi bi-pencil text-primary"></i>
-                    </button>
-
-                    <button class="btn btn-link">
-                      <i class="bi bi-trash text-danger"></i>
-                    </button>
-
-                    <button class="btn btn-link">
-                      <i class="bi bi-card-list text-success"></i>
-                    </button>
-                  </td>
-                </tr>
-                <tr>
-                  <td>1000</td>
-                  <td>Descripción</td>
-                  <td class="text-end">2</td>
-                  <td class="text-end">2000</td>
-                  <td>
-                    <i class="bi bi-pencil text-warning"></i>
-                    &nbsp;&nbsp;
-                    <i class="bi bi-trash text-danger"></i>
-                  </td>
-                </tr>
-                <tr>
-                  <td>2024000001</td>
-                  <td>SALVADOR TORRES2</td>
-                  <td>01/08/2024</td>
-                  <td class="text-end">2000</td>
-                  <td>
-                    <i class="bi bi-pencil text-warning"></i>
-                    &nbsp;&nbsp;
-                    <i class="bi bi-trash text-danger"></i>
-                  </td>
-                </tr>
-                <tr>
-                  <td>2024000002</td>
-                  <td>JOSE SANTANA MARRERO</td>
-                  <td>01/08/2024</td>
-                  <td class="text-end">10,250,350.00</td>
-                  <td>
-                    <i class="bi bi-pencil text-warning"></i>
-                    &nbsp;&nbsp;
-                    <i class="bi bi-trash text-danger"></i>
-                  </td>
-                </tr>
-                <tr>
-                  <td>1000</td>
-                  <td>PEDRO ALCÁNTARA</td>
-                  <td>02/02/2024</td>
-                  <td class="text-end">2000</td>
-                  <td>
-                    <i class="bi bi-pencil text-warning"></i>
-                    &nbsp;&nbsp;
-                    <i class="bi bi-trash text-danger"></i>
-                  </td>
-                </tr>
-                <tr>
-                  <td>1000</td>
-                  <td>Descripción</td>
-                  <td class="text-end">2</td>
-                  <td class="text-end">2000</td>
-                  <td>
-                    <i class="bi bi-pencil text-warning"></i>
-                    &nbsp;&nbsp;
-                    <i class="bi bi-trash text-danger"></i>
-                  </td>
-                </tr>
-                <tr>
-                  <td>2024000001</td>
-                  <td>SALVADOR TORRES2</td>
-                  <td>01/08/2024</td>
-                  <td class="text-end">2000</td>
-                  <td>
-                    <i class="bi bi-pencil text-warning"></i>
-                    &nbsp;&nbsp;
-                    <i class="bi bi-trash text-danger"></i>
-                  </td>
-                </tr>
-                <tr>
-                  <td>2024000002</td>
-                  <td>JOSE SANTANA MARRERO</td>
-                  <td>01/08/2024</td>
-                  <td class="text-end">10,250,350.00</td>
-                  <td>
-                    <i class="bi bi-pencil text-warning"></i>
-                    &nbsp;&nbsp;
-                    <i class="bi bi-trash text-danger"></i>
-                  </td>
-                </tr>
-                <tr>
-                  <td>1000</td>
-                  <td>PEDRO ALCÁNTARA</td>
-                  <td>02/02/2024</td>
-                  <td class="text-end">2000</td>
-                  <td>
-                    <i class="bi bi-pencil text-warning"></i>
-                    &nbsp;&nbsp;
-                    <i class="bi bi-trash text-danger"></i>
-                  </td>
-                </tr>
-                <tr>
-                  <td>1000</td>
-                  <td>Descripción</td>
-                  <td class="text-end">2</td>
-                  <td class="text-end">2000</td>
-                  <td>
-                    <i class="bi bi-pencil text-warning"></i>
-                    &nbsp;&nbsp;
-                    <i class="bi bi-trash text-danger"></i>
-                  </td>
-                </tr>
+-->
               </tbody>
             </table>
           </div>
@@ -416,14 +253,59 @@
                       <label for="">Nombre</label>
                     </div>
                     <div class="col-11">
-                      <input
+                      <!-- <input
                         type="text"
                         (input)="convertToUpperCase($event)"
                         (keydown)="moveFocus($event, input3)"
-                        formControlName="ct_nomclie"
                         #input2
+                        formControlName="ct_nomclie"
                         class="form-control form-control-sm"
-                      />
+                      /> -->
+                      <div class="input-group show">
+                        <input
+                          class="form-control dropdown-toggle searchInput me-2"
+                          data-id="agent"
+                          type="text"
+                          autocomplete="off"
+                          (input)="convertToUpperCase($event)"
+                          (keydown)="moveFocus($event, input3)"
+                          #input2
+                          [formControl]="buscarNombre"
+                          formControlName="ct_nomclie"
+                        />
+                        <div
+                          [ngClass]="{ 'show': resultadoNombre.length > 0 }"
+                          class="dropdown-menu"
+                          style="
+                            margin-right: 30px;
+                            margin-top: 45px;
+                            z-index: 300;
+                            width: 350px;
+                            position: absolute;
+                            will-change: transform;
+                          "
+                        >
+                          <div
+                            class="searchReturnItem name-find"
+                            *ngFor="let result of resultadoNombre"
+                          >
+                            <a
+                              (click)="cargarDatosCliente(result)"
+                              style="
+                                color: #222222 !important;
+                                font-size: 10pt;
+                                padding: 20px 0px;
+                                text-decoration: none !important;
+                                cursor: pointer;
+                              "
+                              class="px-3 cp"
+                            >
+                              <i class="far fa-user-circle mr-5"></i
+                              >&nbsp;&nbsp;{{ result.cl_nomClie }}
+                            </a>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                   <div class="mb-1 row mt-1">
@@ -587,7 +469,7 @@
                       <td>{{ item.descripcion }}</td>
                       <td>{{ item.cantidad }}</td>
                       <td>{{ item.precio }}</td>
-                      <td>{{ item.total }}</td>
+                      <td>{{ item.total | currency }}</td>
                       <td>
                         <button (click)="borarItem(item)">Eliminar</button>
                       </td>
@@ -626,7 +508,11 @@
           </div>
           <div class="row mt-2">
             <div class="col d-flex justify-content-end">
-              <button class="btn btn-primary btn-xs" type="submit">
+              <button
+                class="btn btn-primary btn-xs"
+                type="submit"
+                [disabled]="items.length === 0"
+              >
                 Guardar
               </button>
             </div>

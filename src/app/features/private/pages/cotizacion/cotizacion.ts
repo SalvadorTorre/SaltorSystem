@@ -1,7 +1,7 @@
 import { Component, OnInit, ɵNG_COMP_DEF } from '@angular/core';
 //import { NgxMaskModule } from 'ngx-mask';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
-import { BehaviorSubject, debounceTime, distinctUntilChanged, switchMap } from 'rxjs';
+import { BehaviorSubject, debounceTime, distinctUntilChanged, filter, switchMap, tap } from 'rxjs';
 import Swal from 'sweetalert2';
 import { ModeloSectorData } from 'src/app/core/services/mantenimientos/sector';
 import { ServicioSector } from 'src/app/core/services/mantenimientos/sector/sector.service';
@@ -10,6 +10,9 @@ import { ServicioZona } from 'src/app/core/services/mantenimientos/zonas/zonas.s
 import { ServicioCotizacion } from 'src/app/core/services/cotizaciones/cotizacion/cotizacion.service';
 import { CotizacionModelData, detCotizacionData } from 'src/app/core/services/cotizaciones/cotizacion';
 import { ServiciodetCotizacion } from 'src/app/core/services/cotizaciones/detcotizacion/detcotizacion.service';
+import { ServicioCliente } from 'src/app/core/services/mantenimientos/clientes/cliente.service';
+import { HttpInvokeService } from 'src/app/core/services/http-invoke.service';
+import { ModeloCliente, ModeloClienteData } from 'src/app/core/services/mantenimientos/clientes';
 declare var $: any;
 
 
@@ -47,7 +50,13 @@ export class Cotizacion implements OnInit {
   items: { codigo: string; descripcion: string; cantidad: number; precio: number; total: number; }[] = [];
   totalGral:number = 0;
 
-  constructor(private fb: FormBuilder, private servicioCotizacion: ServicioCotizacion, private servicioSector: ServicioSector, private ServicioZona: ServicioZona, private serviciodetCotizacion: ServiciodetCotizacion) {
+  constructor(
+    private fb: FormBuilder,
+    private servicioCotizacion: ServicioCotizacion,
+    private servicioCliente:ServicioCliente,
+    private serviciodetCotizacion: ServiciodetCotizacion,
+    private http:HttpInvokeService
+  ) {
     this.crearFormularioCotizacion();
     // this.descripcionBuscar.pipe(
     //   debounceTime(500),
@@ -101,13 +110,42 @@ export class Cotizacion implements OnInit {
     });
   }
 
+  buscarNombre = new FormControl();
+  resultadoNombre:ModeloClienteData[ ] = [] ;
+
   seleccionarCotizacion(cotizacion: any) { this.selectedCotizacion = cotizacion; }
-  ngOnInit(): void { }
+  ngOnInit(): void {
+    this.buscarTodasCotizacion(1);
+
+
+
+    this.buscarNombre.valueChanges.pipe(
+      debounceTime(500),
+      distinctUntilChanged(),
+      tap(() => {
+        this.resultadoNombre = [];
+      }),
+      filter((query: string) => query !== ''),
+      switchMap((query: string) => this.http.GetRequest<ModeloCliente>(`/cliente-nombre/${query}`))
+    ).subscribe((results: ModeloCliente) => {
+      console.log(results.data);
+      if (results) {
+        if (Array.isArray(results.data)) {
+          this.resultadoNombre = results.data;
+        }
+      } else {
+        this.resultadoNombre = [];
+      }
+
+    });
+   }
 
   crearFormularioCotizacion() {
+    const fechaActual = new Date();
+    const fechaActualStr = this.formatofecha(fechaActual);
     this.formularioCotizacion = this.fb.group({
-      ct_codcoti: ['202400001', Validators.required],
-      ct_feccoti: ['', Validators.required],
+      ct_codcoti: [''],
+      ct_feccoti: [fechaActualStr],
       ct_valcoti: [''],
       ct_itbis: [''],
       ct_codclie: [''],
@@ -292,7 +330,7 @@ export class Cotizacion implements OnInit {
     this.currentPage = page;
     // Trigger a new search with the current codigo and descripcion
     const descripcion = this.descripcionBuscar.getValue();
-    this.servicioCotizacion.buscarTodasCotizacion(this.currentPage, this.pageSize, descripcion)
+    this.servicioCotizacion.buscarTodasCotizacion(this.currentPage, this.pageSize)
       .subscribe(response => {
         this.cotizacionList = response.data;
         this.totalItems = response.pagination.total;
@@ -345,25 +383,37 @@ export class Cotizacion implements OnInit {
     }
   }
 
-  buscardatosSector() {
-    this.servicioSector.obtenerTodosSector().subscribe(response => {
-      console.log(response);
-      this.sectorList = response.data;
-    });
-  }
-
-  buscartodaZona(){
-    this.ServicioZona.obtenerTodasZonas().subscribe(response => {
-      console.log(response);
-      this.zonasList = response.data;
-    });
-  }
 
   buscarPorCodigo(codigo: string) {
 
   }
 
+  buscarClienteporNombre(){
+    this.servicioCliente.buscarporNombre(this.formularioCotizacion.get("ct_nomclie")!.value).subscribe(response => {
+      console.log(response);
+    });
+  }
 
+
+  formatofecha(date: Date): string {
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, '0'); // Los meses son 0-indexados, se agrega 1 y se llena con ceros
+    const day = date.getDate().toString().padStart(2, '0'); // Se llena con ceros si es necesario
+    return `${ day}/${month}/${year}`;
+  }
+
+  cargarDatosCliente(cliente:ModeloClienteData){
+    console.log(cliente);
+    this.resultadoNombre = [];
+    this.buscarNombre.reset();
+    this.formularioCotizacion.patchValue({
+      ct_codclie: cliente.cl_codClie,
+      ct_nomclie: cliente.cl_nomClie,
+      ct_rnc: cliente.cl_rnc,
+      ct_telclie: cliente.cl_telClie,
+      ct_dirclie: cliente.cl_dirClie,
+    });
+  }
 
 }
 

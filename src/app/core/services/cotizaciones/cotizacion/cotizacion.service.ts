@@ -17,11 +17,9 @@ export class ServicioCotizacion {
         return this.http.PutRequest<any, any>(`/cotizacion/${ct_codcoti}`, cotizacion);
     }
 
-    buscarTodasCotizacion(pageIndex: number, pageSize: number, descripcion?: string): Observable<any> {
+    buscarTodasCotizacion(pageIndex: number, pageSize: number): Observable<any> {
         let url = `/cotizacion?page=${pageIndex}&limit=${pageSize}`;
-        if (descripcion) {
-            url += `&descripcion=${descripcion}`;
-        }
+
         console.log(url);
         return this.http.GetRequest<any>(url);
     }
