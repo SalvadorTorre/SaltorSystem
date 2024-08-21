@@ -3,10 +3,6 @@ import { Component, OnInit, ɵNG_COMP_DEF } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { BehaviorSubject, debounceTime, distinctUntilChanged, filter, switchMap, tap } from 'rxjs';
 import Swal from 'sweetalert2';
-import { ModeloSectorData } from 'src/app/core/services/mantenimientos/sector';
-import { ServicioSector } from 'src/app/core/services/mantenimientos/sector/sector.service';
-import { ModeloZonaData } from 'src/app/core/services/mantenimientos/zonas';
-import { ServicioZona } from 'src/app/core/services/mantenimientos/zonas/zonas.service';
 import { ServicioCotizacion } from 'src/app/core/services/cotizaciones/cotizacion/cotizacion.service';
 import { CotizacionModelData, detCotizacionData } from 'src/app/core/services/cotizaciones/cotizacion';
 import { ServiciodetCotizacion } from 'src/app/core/services/cotizaciones/detcotizacion/detcotizacion.service';
@@ -42,13 +38,12 @@ export class Cotizacion implements OnInit {
   modoedicionCotizacion: boolean = false;
   cotizacionid!: string
   modoconsultaCotizacion: boolean = false;
-  sectorList: ModeloSectorData[] = [];
-  zonasList: ModeloZonaData[] = [];
   cotizacionList: CotizacionModelData[] = [];
   detCotizacionList: detCotizacionData[] = [];
   selectedCotizacion: any = null;
   items: { codigo: string; descripcion: string; cantidad: number; precio: number; total: number; }[] = [];
   totalGral:number = 0;
+  static detCotizacion: detCotizacionData[];
 
   constructor(
     private fb: FormBuilder,
@@ -189,13 +184,13 @@ export class Cotizacion implements OnInit {
 
   }
   editarCotizacion() {
-   /* this.cotizacionid = Cotizacion.ct_codcoti;
+    //this.cotizacionid = Cotizacion.ct_codcoti;
     this.modoedicionCotizacion = true;
     this.formularioCotizacion.patchValue(Cotizacion);
     this.tituloModalCotizacion = 'Editando Cotizacion';
     $('#modalcotizacion').modal('show');
     this.habilitarFormulario = true;
-    this.detCotizacionList = Cotizacion.detCotizacion*/
+    this.detCotizacionList = Cotizacion.detCotizacion
   }
 
   buscarTodasCotizacion(page: number) {
@@ -204,26 +199,18 @@ export class Cotizacion implements OnInit {
       this.cotizacionList = response.data;
     });
   }
-  consultarCotizacion(Cotizacion: CotizacionModelData) {
-    this.tituloModalCotizacion = 'Consulta Cotizacion';
-    this.formularioCotizacion.patchValue(Cotizacion);
-    $('#modalempresa').modal('show');
-    this.habilitarFormulario = true;
+  consultarCotizacion() {
     this.modoconsultaCotizacion = true;
+    this.formularioCotizacion.patchValue(Cotizacion);
+    this.tituloModalCotizacion = 'Consulta Cotizacion';
+    $('#modalcotizacion').modal('show');
+    this.habilitarFormulario = true;
     this.formularioCotizacion.disable();
-    this.detCotizacionList = Cotizacion.detCotizacion
+    //this.detCotizacionList = Cotizacion.detCotizacion
   };
 
-  consultarSucursal(Cotizacion: CotizacionModelData) {
-    this.tituloModalCotizacion = 'Consulta Cotizacion';
-    this.formularioCotizacion.patchValue(Cotizacion);
 
-    this.habilitarFormulario = true;
-    this.modoconsultaCotizacion = true;
-    this.detCotizacionList = Cotizacion.detCotizacion
-  };
-
-  eliminarCotizacion(CotizacionEmpresa: string) {
+  eliminarCotizacion(Cotizacion: string) {
     Swal.fire({
       title: '¿Está seguro de eliminar este Cotizacion?',
       text: "¡No podrá revertir esto!",

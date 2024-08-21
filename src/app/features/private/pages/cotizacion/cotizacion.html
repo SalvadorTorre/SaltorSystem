@@ -66,30 +66,46 @@
               <thead class="table-dark">
                 <tr>
                   <th style="width: 10%">Numero</th>
-                  <th style="width: 40%">Nombre</th>
+                  <th style="width: 45%">Nombre</th>
                   <th class="text-center" style="width: 10%">Fecha</th>
-                  <th style="width: 8">Valor</th>
+                  <th style="width: 12%">Valor</th>
                   <th class="text-center">Opciones</th>
                   <th></th>
                 </tr>
               </thead>
               <tbody>
                 <tr *ngFor="let cotizacion of cotizacionList">
-                  <td>{{cotizacion.ct_codcoti}}</td>
-                  <td>{{cotizacion.ct_nomclie}}</td>
-                  <td>{{cotizacion.ct_feccoti}}</td>
-                  <td>{{cotizacion.ct_valcoti}}</td>
-                  <td class="text-center">
+                  <td style="width: 10%">{{cotizacion.ct_codcoti}}</td>
+                  <td style="width: 45%">{{cotizacion.ct_nomclie}}</td>
+                  <td class="text-center" style="width: 10%">
+                    {{cotizacion.ct_feccoti}}
+                  </td>
+                  <td class="text-end" tyle="width: 12%">
+                    {{cotizacion.ct_valcoti}}
+                  </td>
+                  <td>
                     <i
                       (click)="editarCotizacion()"
                       class="bi bi-pencil text-primary"
-                    ></i>
-                    <a class="btn-link">
+                      style="padding: 10px"
+                    >
+                    </i>
+                    <a class="btn-link" style="padding: 10px">
                       <i class="bi bi-trash text-danger"></i>
                     </a>
+                    <i
+                      (click)="consultarCotizacion()"
+                      class="bi bi-card-list text-success"
+                      style="padding: 10px"
+                    >
+                    </i>
+                    <a class="btn-link" style="padding: 10px">
+                      <i class="bi bi-file-earmark-pdf text-danger"></i>
+                    </a>
+                    <a class="btn-link" style="padding: 10px">
+                      <i class="bi bi-printer"></i>
 
-                    <a class="btn-link" j>
-                      <i class="bi bi-card-list text-success"></i>
+                      <!-- <i class="bi bi-file-earmark-pdf text-info"></i>-->
                     </a>
                   </td>
                 </tr>
