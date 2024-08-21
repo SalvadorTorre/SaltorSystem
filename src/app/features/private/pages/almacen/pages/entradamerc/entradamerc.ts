@@ -6,11 +6,12 @@
 // import { ServicioEntradamerc } from 'src/app/core/services/almacen/entradamerc/entradamerc.service';
 // import { EntradamercModelData, detEntradamercData } from 'src/app/core/services/almacen/entradamerc';
 // import { ServiciodetEntradamerc } from 'src/app/core/services/almacen/detentradamerc/detentradamerc.service';
+// import { HttpInvokeService } from 'src/app/core/services/http-invoke.service';
 // declare var $: any;
 
 
 // @Component({
-//   selector: 'Entradamerc',
+//   selector: 'entradamerc',
 //   templateUrl: './entradamerc.html',
 //   styleUrls: ['./entradamerc.css']
 // })
@@ -33,28 +34,31 @@
 //   formularioEntradamerc!: FormGroup;
 //   formulariodetEntradamerc!: FormGroup;
 //   modoedicionEntradamerc: boolean = false;
-//   Entradamercid!: string
-//   modoconsultaCotizacion: boolean = false;
-//   sectorList: ModeloSectorData[] = [];
-//   zonasList: ModeloZonaData[] = [];
-//   cotizacionList: CotizacionModelData[] = [];
-//   detCotizacionList: detCotizacionData[] = [];
-//   selectedCotizacion: any = null;
+//   entradamerc!: string
+//   modoconsultaEntradamerc: boolean = false;
+//   entradamercList: EntradamercModelData[] = [];
+//   detEntradamercList: detEntradamercData[] = [];
+//   selectedEntradamerc: any = null;
 //   items: { codigo: string; descripcion: string; cantidad: number; precio: number; total: number; }[] = [];
 //   totalGral:number = 0;
 
-//   constructor(private fb: FormBuilder, private servicioCotizacion: ServicioCotizacion, private servicioSector: ServicioSector, private ServicioZona: ServicioZona, private serviciodetCotizacion: ServiciodetCotizacion) {
-//     this.crearFormularioCotizacion();
+//   constructor(
+//     private fb: FormBuilder,
+//     private servicioEntradamerc: ServicioEntradamerc,
+//     private serviciodetEntradamerc: ServiciodetEntradamerc,
+//     private http:HttpInvokeService
+//   ) {
+//     this.crearFormularioEntradamerc();
 //     // this.descripcionBuscar.pipe(
 //     //   debounceTime(500),
 //     //   distinctUntilChanged(),
 //     //   switchMap(nombre => {
 //     //     this.descripcion = nombre;
-//     //     return this.servicioCotizacion.buscarTodasCotizacion(this.currentPage, this.pageSize, this.descripcion);
+//     //     return this.servicioEntradamerc.buscarTodasEntradamerc(this.currentPage, this.pageSize, this.descripcion);
 //     //   })
 //     // )
 //     //   .subscribe(response => {
-//     //     this.cotizacionList = response.data;
+//     //     this.EntradamercList = response.data;
 //     //     this.totalItems = response.pagination.total;
 //     //     this.currentPage = response.pagination.page;
 //     //   });
@@ -63,24 +67,24 @@
 //     //   distinctUntilChanged(),
 //     //   switchMap(rnc => {
 //     //     this.codigo = rnc;
-//     //     return this.servicioCotizacion.buscarTodasCotizacion(this.currentPage, this.pageSize, this.descripcion);
+//     //     return this.servicioEntradamerc.buscarTodasEntradamerc(this.currentPage, this.pageSize, this.descripcion);
 //     //   })
 //     // )
 //     //   .subscribe(response => {
-//     //     this.cotizacionList = response.data;
+//     //     this.EntradamercList = response.data;
 //     //     this.totalItems = response.pagination.total;
 //     //     this.currentPage = response.pagination.page;
 //     //   });
 
 //   }
 
-//   agregarCotizacion() {
-//     this.formularioCotizacion.disable();
+//   agregarEntradamerc() {
+//     this.formularioEntradamerc.disable();
 
 //   }
 
-//   crearformulariodetCotizacion() {
-//     this.formulariodetCotizacion = this.fb.group({
+//   crearformulariodetEntradamerc() {
+//     this.formulariodetEntradamerc = this.fb.group({
 
 //       dc_codcoti: ['', Validators.required],
 //       dc_codmerc: ['',],
@@ -97,13 +101,42 @@
 //     });
 //   }
 
-//   seleccionarCotizacion(cotizacion: any) { this.selectedCotizacion = cotizacion; }
-//   ngOnInit(): void { }
+//   buscarNombre = new FormControl();
+//   //resultadoNombre:ModeloClienteData[ ] = [] ;
 
-//   crearFormularioCotizacion() {
-//     this.formularioCotizacion = this.fb.group({
-//       ct_codcoti: ['202400001', Validators.required],
-//       ct_feccoti: ['', Validators.required],
+//   seleccionarEntradamerc(Entradamerc: any) { this.selectedEntradamerc = Entradamerc; }
+//   ngOnInit(): void {
+//     this.buscarTodasEntradamerc(1);
+
+
+
+//     this.buscarNombre.valueChanges.pipe(
+//       debounceTime(500),
+//       distinctUntilChanged(),
+//       tap(() => {
+//         this.resultadoNombre = [];
+//       }),
+//       filter((query: string) => query !== ''),
+//       switchMap((query: string) => this.http.GetRequest<ModeloCliente>(`/cliente-nombre/${query}`))
+//     ).subscribe((results: ModeloCliente) => {
+//       console.log(results.data);
+//       if (results) {
+//         if (Array.isArray(results.data)) {
+//           this.resultadoNombre = results.data;
+//         }
+//       } else {
+//         this.resultadoNombre = [];
+//       }
+
+//     });
+//    }
+
+//   crearFormularioEntradamerc() {
+//     const fechaActual = new Date();
+//     const fechaActualStr = this.formatofecha(fechaActual);
+//     this.formularioEntradamerc = this.fb.group({
+//       ct_codcoti: [''],
+//       ct_feccoti: [fechaActualStr],
 //       ct_valcoti: [''],
 //       ct_itbis: [''],
 //       ct_codclie: [''],
@@ -123,67 +156,67 @@
 //     this.habilitarFormulario = false;
 //   }
 
-//   nuevaCotizacion() {
-//     this.modoedicionCotizacion = false;
-//     this.tituloModalCotizacion = 'Nueva Cotizacion';
-//     $('#modalcotizacion').modal('show');
+//   nuevaEntradamerc() {
+//     this.modoedicionEntradamerc = false;
+//     this.tituloModalEntradamerc = 'Nueva Entradamerc';
+//     $('#modalEntradamerc').modal('show');
 //     this.habilitarFormulario = true;
 //   }
 
-//   cerrarModalCotizacion() {
+//   cerrarModalEntradamerc() {
 //     this.habilitarFormulario = false;
-//     this.formularioCotizacion.reset();
-//     this.modoedicionCotizacion = false;
-//     this.modoconsultaCotizacion = false;
-//     $('#modalcotizacion').modal('hide');
-//     this.crearFormularioCotizacion();
-//     this.cotizacionList = []
+//     this.formularioEntradamerc.reset();
+//     this.modoedicionEntradamerc = false;
+//     this.modoconsultaEntradamerc = false;
+//     $('#modalEntradamerc').modal('hide');
+//     this.crearFormularioEntradamerc();
+//     this.EntradamercList = []
 //   }
 
 
-//   editardetCotizacion(detcotizacion: detCotizacionData) {
-//     this.cotizacionid = detcotizacion.dc_codcoti;
-//     this.formularioCotizacion.patchValue(detcotizacion);
+//   editardetEntradamerc(detEntradamerc: detEntradamercData) {
+//     this.Entradamercid = detEntradamerc.dc_codcoti;
+//     this.formularioEntradamerc.patchValue(detEntradamerc);
 
 //   }
-//   editarCotizacion() {
-//    /* this.cotizacionid = Cotizacion.ct_codcoti;
-//     this.modoedicionCotizacion = true;
-//     this.formularioCotizacion.patchValue(Cotizacion);
-//     this.tituloModalCotizacion = 'Editando Cotizacion';
-//     $('#modalcotizacion').modal('show');
+//   editarEntradamerc() {
+//    /* this.Entradamercid = Entradamerc.ct_codcoti;
+//     this.modoedicionEntradamerc = true;
+//     this.formularioEntradamerc.patchValue(Entradamerc);
+//     this.tituloModalEntradamerc = 'Editando Entradamerc';
+//     $('#modalEntradamerc').modal('show');
 //     this.habilitarFormulario = true;
-//     this.detCotizacionList = Cotizacion.detCotizacion*/
+//     this.detEntradamercList = Entradamerc.detEntradamerc*/
 //   }
 
-//   buscarTodasCotizacion(page: number) {
-//     this.servicioCotizacion.buscarTodasCotizacion(page, this.pageSize).subscribe(response => {
+//   buscarTodasEntradamerc(page: number) {
+//     this.servicioEntradamerc.buscarTodasEntradamerc(page, this.pageSize).subscribe(response => {
 //       console.log(response);
-//       this.cotizacionList = response.data;
+//       this.EntradamercList = response.data;
 //     });
 //   }
-//   consultarCotizacion(Cotizacion: CotizacionModelData) {
-//     this.tituloModalCotizacion = 'Consulta Cotizacion';
-//     this.formularioCotizacion.patchValue(Cotizacion);
+//   consultarEntradamerc(Entradamerc: EntradamercModelData) {
+//     this.tituloModalEntradamerc = 'Consulta Entradamerc';
+//     this.formularioEntradamerc.patchValue(Entradamerc);
 //     $('#modalempresa').modal('show');
 //     this.habilitarFormulario = true;
-//     this.modoconsultaCotizacion = true;
-//     this.formularioCotizacion.disable();
-//     this.detCotizacionList = Cotizacion.detCotizacion
+//     this.modoconsultaEntradamerc = true;
+//     this.formularioEntradamerc.disable();
+//     this.detEntradamercList = Entradamerc.detEntradamerc
 //   };
 
-//   consultarSucursal(Cotizacion: CotizacionModelData) {
-//     this.tituloModalCotizacion = 'Consulta Cotizacion';
-//     this.formularioCotizacion.patchValue(Cotizacion);
+//   consultarSucursal(Entradamerc: EntradamercModelData) {
+//     this.tituloModalEntradamerc = 'Consulta Entradamerc';
+//     this.formularioEntradamerc.patchValue(Entradamerc);
 
 //     this.habilitarFormulario = true;
-//     this.modoconsultaCotizacion = true;
-//     this.detCotizacionList = Cotizacion.detCotizacion
+//     this.modoconsultaEntradamerc = true;
+//     this.detEntradamercList = Entradamerc.detEntradamerc
 //   };
 
-//   eliminarCotizacion(CotizacionEmpresa: string) {
+//   eliminarEntradamerc(EntradamercEmpresa: string) {
 //     Swal.fire({
-//       title: '¿Está seguro de eliminar este Cotizacion?',
+//       title: '¿Está seguro de eliminar este Entradamerc?',
 //       text: "¡No podrá revertir esto!",
 //       icon: 'warning',
 //       showCancelButton: true,
@@ -192,7 +225,7 @@
 //       confirmButtonText: 'Si, eliminar!'
 //     }).then((result) => {
 //       if (result.isConfirmed) {
-//         this.servicioCotizacion.eliminarCotizacion(this.cotizacionid).subscribe(response => {
+//         this.servicioEntradamerc.eliminarEntradamerc(this.Entradamercid).subscribe(response => {
 //           Swal.fire(
 //             {
 //               title: "Excelente!",
@@ -202,7 +235,7 @@
 //               showConfirmButton: false,
 //             }
 //           )
-//           this.buscarTodasCotizacion(this.currentPage);
+//           this.buscarTodasEntradamerc(this.currentPage);
 //         });
 //       }
 //     })
@@ -222,48 +255,48 @@
 //     this.codigoBuscar.next(inputElement.value.toUpperCase());
 //   }
 
-//   guardarCotizacion() {
+//   guardarEntradamerc() {
 
-//     this.formularioCotizacion.get('ct_valcoti')?.patchValue(this.totalGral);
+//     this.formularioEntradamerc.get('ct_valcoti')?.patchValue(this.totalGral);
 
 //     const payload = {
-//       cotizacion: this.formularioCotizacion.value,
+//       Entradamerc: this.formularioEntradamerc.value,
 //       detalle: this.items,
-//       idCotizacion: this.formularioCotizacion.get('ct_codcoti')?.value,
+//       idEntradamerc: this.formularioEntradamerc.get('ct_codcoti')?.value,
 //     };
 
 //     console.log(payload);
-//     // if (this.formularioCotizacion.valid) {
-//     //   if (this.modoedicionCotizacion) {
-//     //     this.servicioCotizacion.editarCotizacion(this.cotizacionid, this.formularioCotizacion.value).subscribe(response => {
+//     // if (this.formularioEntradamerc.valid) {
+//     //   if (this.modoedicionEntradamerc) {
+//     //     this.servicioEntradamerc.editarEntradamerc(this.Entradamercid, this.formularioEntradamerc.value).subscribe(response => {
 //     //       Swal.fire({
 //     //         title: "Excelente!",
-//     //         text: "Cotizacion Editada correctamente.",
+//     //         text: "Entradamerc Editada correctamente.",
 //     //         icon: "success",
 //     //         timer: 5000,
 //     //         showConfirmButton: false,
 //     //       });
-//     //       this.buscarTodasCotizacion(1);
-//     //       this.formularioCotizacion.reset();
-//     //       this.crearFormularioCotizacion();
-//     //       $('#modalcotizacion').modal('hide');
+//     //       this.buscarTodasEntradamerc(1);
+//     //       this.formularioEntradamerc.reset();
+//     //       this.crearFormularioEntradamerc();
+//     //       $('#modalEntradamerc').modal('hide');
 //     //     });
 //     //   }
 //     //   else {
-//     //     this.servicioCotizacion.guardarCotizacion(this.formularioCotizacion.value).subscribe(response => {
+//     //     this.servicioEntradamerc.guardarEntradamerc(this.formularioEntradamerc.value).subscribe(response => {
 //     //       Swal.fire
 //     //         ({
-//     //           title: "Cotizacion Guardada correctamente",
+//     //           title: "Entradamerc Guardada correctamente",
 //     //           text: "Desea Crear una Sucursal",
 //     //           icon: 'warning',
 //     //           timer: 5000,
 //     //           showConfirmButton: false,
 //     //         });
-//     //       this.buscarTodasCotizacion(1);
-//     //       this.formularioCotizacion.reset();
-//     //       this.crearFormularioCotizacion();
-//     //       this.formularioCotizacion.enable();
-//     //       $('#modalcotizacion').modal('hide');
+//     //       this.buscarTodasEntradamerc(1);
+//     //       this.formularioEntradamerc.reset();
+//     //       this.crearFormularioEntradamerc();
+//     //       this.formularioEntradamerc.enable();
+//     //       $('#modalEntradamerc').modal('hide');
 //     //     })
 
 //     //   }
@@ -288,9 +321,9 @@
 //     this.currentPage = page;
 //     // Trigger a new search with the current codigo and descripcion
 //     const descripcion = this.descripcionBuscar.getValue();
-//     this.servicioCotizacion.buscarTodasCotizacion(this.currentPage, this.pageSize, descripcion)
+//     this.servicioEntradamerc.buscarTodasEntradamerc(this.currentPage, this.pageSize)
 //       .subscribe(response => {
-//         this.cotizacionList = response.data;
+//         this.EntradamercList = response.data;
 //         this.totalItems = response.pagination.total;
 //         this.currentPage = page;
 //       });
@@ -320,7 +353,7 @@
 //     this.txtdescripcion = '';
 //     this.txtcodigo = '';
 //     this.txtfecha = '';
-//     this.buscarTodasCotizacion(1);
+//     this.buscarTodasEntradamerc(1);
 //   }
 
 //   // Array para almacenar los datos de la tabla
@@ -341,25 +374,37 @@
 //     }
 //   }
 
-//   buscardatosSector() {
-//     this.servicioSector.obtenerTodosSector().subscribe(response => {
-//       console.log(response);
-//       this.sectorList = response.data;
-//     });
-//   }
-
-//   buscartodaZona(){
-//     this.ServicioZona.obtenerTodasZonas().subscribe(response => {
-//       console.log(response);
-//       this.zonasList = response.data;
-//     });
-//   }
 
 //   buscarPorCodigo(codigo: string) {
 
 //   }
 
+//   buscarClienteporNombre(){
+//     this.servicioCliente.buscarporNombre(this.formularioEntradamerc.get("ct_nomclie")!.value).subscribe(response => {
+//       console.log(response);
+//     });
+//   }
 
+
+//   formatofecha(date: Date): string {
+//     const year = date.getFullYear();
+//     const month = (date.getMonth() + 1).toString().padStart(2, '0'); // Los meses son 0-indexados, se agrega 1 y se llena con ceros
+//     const day = date.getDate().toString().padStart(2, '0'); // Se llena con ceros si es necesario
+//     return `${ day}/${month}/${year}`;
+//   }
+
+//   cargarDatosCliente(cliente:ModeloClienteData){
+//     console.log(cliente);
+//     this.resultadoNombre = [];
+//     this.buscarNombre.reset();
+//     this.formularioEntradamerc.patchValue({
+//       ct_codclie: cliente.cl_codClie,
+//       ct_nomclie: cliente.cl_nomClie,
+//       ct_rnc: cliente.cl_rnc,
+//       ct_telclie: cliente.cl_telClie,
+//       ct_dirclie: cliente.cl_dirClie,
+//     });
+//   }
 
 // }
 
