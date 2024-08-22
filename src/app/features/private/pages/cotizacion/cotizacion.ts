@@ -9,6 +9,7 @@ import { ServiciodetCotizacion } from 'src/app/core/services/cotizaciones/detcot
 import { ServicioCliente } from 'src/app/core/services/mantenimientos/clientes/cliente.service';
 import { HttpInvokeService } from 'src/app/core/services/http-invoke.service';
 import { ModeloCliente, ModeloClienteData } from 'src/app/core/services/mantenimientos/clientes';
+import { CotizacionDetalleModel, interfaceDetalleModel } from 'src/app/core/services/cotizaciones/cotizacion/cotizacion';
 declare var $: any;
 
 
@@ -41,7 +42,7 @@ export class Cotizacion implements OnInit {
   cotizacionList: CotizacionModelData[] = [];
   detCotizacionList: detCotizacionData[] = [];
   selectedCotizacion: any = null;
-  items: { codigo: string; descripcion: string; cantidad: number; precio: number; total: number; }[] = [];
+  items:interfaceDetalleModel[] = [];
   totalGral:number = 0;
   totalItbis:number = 0;
   subTotal:number = 0;
@@ -155,6 +156,7 @@ export class Cotizacion implements OnInit {
       ct_codvend: [''],
       ct_nomvend: [''],
       ct_status: [''],
+      ct_codzona : [''],
 
     });
   }
@@ -255,6 +257,9 @@ export class Cotizacion implements OnInit {
   }
 
   guardarCotizacion() {
+    const date = new Date();
+this.buscarTodasCotizacion(1),
+this.cotizacionid =`${date.getFullYear()}00000${this.cotizacionList.length + 1}`;
 
     this.formularioCotizacion.get('ct_valcoti')?.patchValue(this.totalGral);
     this.formularioCotizacion.get('ct_itbis')?.patchValue(this.totalItbis);
@@ -367,11 +372,12 @@ export class Cotizacion implements OnInit {
     const itbis = total * 0.18;
     this.totalItbis += itbis;
     this.subTotal = total - itbis;
-    this.items.push({ codigo, descripcion, cantidad, precio, total });
+
+    this.items.push({ cantidad, precio, total });
   }
 
   // (Opcional) Función para eliminar un ítem de la tabla
-  borarItem(item: { codigo: string; descripcion: string; cantidad: number; precio: number; total: number; }) {
+  borarItem(item:any) {
     const index = this.items.indexOf(item);
     if (index > -1) {
       this.items.splice(index, 1);
@@ -407,6 +413,7 @@ export class Cotizacion implements OnInit {
       ct_rnc: cliente.cl_rnc,
       ct_telclie: cliente.cl_telClie,
       ct_dirclie: cliente.cl_dirClie,
+      ct_codzona: cliente.cl_codZona,
 
     });
   }

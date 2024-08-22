@@ -384,9 +384,10 @@
                     </div>
                     <div class="col-6">
                       <input
-                        type="text"
+                        type="password"
                         (input)="convertToUpperCase($event)"
                         (keydown)="moveFocus($event, input6)"
+                        formControlName="ct_codvend"
                         #input5
                         class="form-control form-control-sm"
                       />
@@ -475,8 +476,8 @@
                   </thead>
                   <tbody>
                     <tr *ngFor="let item of items">
-                      <td>{{ item.codigo }}</td>
-                      <td>{{ item.descripcion }}</td>
+                      <td>{{ item.producto?.in_codmerc }}</td>
+                      <td>{{ item.producto?.in_desmerc }}</td>
                       <td>{{ item.cantidad }}</td>
                       <td>{{ item.precio }}</td>
                       <td>{{ item.total | currency }}</td>
