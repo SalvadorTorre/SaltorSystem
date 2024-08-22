@@ -1,4 +1,5 @@
 import { Component, OnInit, ɵNG_COMP_DEF } from '@angular/core';
+//import Inputmask from 'inputmask';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { BehaviorSubject, debounceTime, distinctUntilChanged, filter, switchMap, tap } from 'rxjs';
 import Swal from 'sweetalert2';
@@ -405,6 +406,7 @@ export class Cotizacion implements OnInit {
       ct_rnc: cliente.cl_rnc,
       ct_telclie: cliente.cl_telClie,
       ct_dirclie: cliente.cl_dirClie,
+
     });
   }
 
