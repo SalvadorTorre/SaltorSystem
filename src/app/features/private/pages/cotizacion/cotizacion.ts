@@ -109,6 +109,7 @@ export class Cotizacion implements OnInit {
 
   buscarNombre = new FormControl();
   resultadoNombre:ModeloClienteData[ ] = [] ;
+  selectedIndex = 1;
 
   seleccionarCotizacion(cotizacion: any) { this.selectedCotizacion = cotizacion; }
   ngOnInit(): void {
@@ -408,6 +409,27 @@ export class Cotizacion implements OnInit {
       ct_dirclie: cliente.cl_dirClie,
 
     });
+  }
+
+  handleKeydown(event: KeyboardEvent): void {
+    const key = event.key;
+    const maxIndex = this.resultadoNombre.length;
+
+    if (key === 'ArrowDown') {
+      // Mueve la selección hacia abajo
+      this.selectedIndex = this.selectedIndex < maxIndex ? this.selectedIndex + 1 : 0;
+      event.preventDefault();
+    } else if (key === 'ArrowUp') {
+      // Mueve la selección hacia arriba
+      this.selectedIndex = this.selectedIndex > 0 ? this.selectedIndex - 1 : maxIndex;
+      event.preventDefault();
+    } else if (key === 'Enter') {
+      // Selecciona el ítem actual
+      if (this.selectedIndex >= 0 && this.selectedIndex <= maxIndex) {
+        this.cargarDatosCliente(this.resultadoNombre[this.selectedIndex]);
+      }
+      event.preventDefault();
+    }
   }
 
 }

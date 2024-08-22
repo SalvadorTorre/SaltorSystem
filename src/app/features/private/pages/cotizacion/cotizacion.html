@@ -277,6 +277,7 @@
                           autocomplete="off"
                           (input)="convertToUpperCase($event)"
                           (keydown)="moveFocus($event, input3)"
+                          (keydown)="handleKeydown($event)"
                           #input2
                           [formControl]="buscarNombre"
                           formControlName="ct_nomclie"
@@ -295,7 +296,8 @@
                         >
                           <div
                             class="searchReturnItem name-find"
-                            *ngFor="let result of resultadoNombre"
+                            *ngFor="let result of resultadoNombre; let i = index"
+                            [class.active]="i === selectedIndex"
                           >
                             <a
                               (click)="cargarDatosCliente(result)"

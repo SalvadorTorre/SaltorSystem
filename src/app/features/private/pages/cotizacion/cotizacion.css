@@ -75,3 +75,8 @@ tfoot {
   margin-bottom: 14px;
   text-decoration: none !important;
 }
+
+.active {
+  background-color: #007bff;
+  color: white;
+}
