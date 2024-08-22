@@ -1,5 +1,4 @@
 import { Component, OnInit, ɵNG_COMP_DEF } from '@angular/core';
-//import { NgxMaskModule } from 'ngx-mask';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { BehaviorSubject, debounceTime, distinctUntilChanged, filter, switchMap, tap } from 'rxjs';
 import Swal from 'sweetalert2';
@@ -43,6 +42,8 @@ export class Cotizacion implements OnInit {
   selectedCotizacion: any = null;
   items: { codigo: string; descripcion: string; cantidad: number; precio: number; total: number; }[] = [];
   totalGral:number = 0;
+  totalItbis:number = 0;
+  subTotal:number = 0;
   static detCotizacion: detCotizacionData[];
 
   constructor(
@@ -174,7 +175,7 @@ export class Cotizacion implements OnInit {
     this.modoconsultaCotizacion = false;
     $('#modalcotizacion').modal('hide');
     this.crearFormularioCotizacion();
-    this.cotizacionList = []
+    this.buscarTodasCotizacion(1);
   }
 
 
@@ -183,8 +184,8 @@ export class Cotizacion implements OnInit {
     this.formularioCotizacion.patchValue(detcotizacion);
 
   }
-  editarCotizacion() {
-    //this.cotizacionid = Cotizacion.ct_codcoti;
+  editarCotizacion(Cotizacion: CotizacionModelData) {
+    this.cotizacionid = Cotizacion.ct_codcoti;
     this.modoedicionCotizacion = true;
     this.formularioCotizacion.patchValue(Cotizacion);
     this.tituloModalCotizacion = 'Editando Cotizacion';
@@ -199,7 +200,7 @@ export class Cotizacion implements OnInit {
       this.cotizacionList = response.data;
     });
   }
-  consultarCotizacion() {
+  consultarCotizacion( Cotizacion: CotizacionModelData) {
     this.modoconsultaCotizacion = true;
     this.formularioCotizacion.patchValue(Cotizacion);
     this.tituloModalCotizacion = 'Consulta Cotizacion';
@@ -254,7 +255,9 @@ export class Cotizacion implements OnInit {
   guardarCotizacion() {
 
     this.formularioCotizacion.get('ct_valcoti')?.patchValue(this.totalGral);
+    this.formularioCotizacion.get('ct_itbis')?.patchValue(this.totalItbis);
 
+    this.formularioCotizacion.get('ct_codcoti')?.patchValue(this.cotizacionid);
     const payload = {
       cotizacion: this.formularioCotizacion.value,
       detalle: this.items,
@@ -359,6 +362,9 @@ export class Cotizacion implements OnInit {
   agregaItem(codigo: string, descripcion: string, cantidad: number, precio: number) {
     const total = cantidad * precio;
     this.totalGral += total;
+    const itbis = total * 0.18;
+    this.totalItbis += itbis;
+    this.subTotal = total - itbis;
     this.items.push({ codigo, descripcion, cantidad, precio, total });
   }
 
