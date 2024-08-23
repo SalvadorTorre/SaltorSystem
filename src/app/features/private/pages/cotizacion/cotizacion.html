@@ -471,6 +471,7 @@
                 (keydown)="moveFocus($event, input8)"
                 #input7
                 class="form-control form-control-sm"
+                [formControl]="buscardescripcionmerc"
                 [(ngModel)]="descripcionmerc"
               />
             </div>
@@ -500,7 +501,7 @@
               <button
                 type="button"
                 class="btn btn-primary mt-3"
-                (click)="agregaItem(codigoInput.value, descripcionInput.value,
+                (click)="agregaItem(
                 cantidadInput.valueAsNumber, precioInput.valueAsNumber)"
               >
                 Agregar

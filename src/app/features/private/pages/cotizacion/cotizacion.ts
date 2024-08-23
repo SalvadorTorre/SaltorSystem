@@ -50,6 +50,7 @@ export class Cotizacion implements OnInit {
   static detCotizacion: detCotizacionData[];
 codmerc:string = '';
 descripcionmerc:string = '';
+productoselect!:ModeloInventarioData;
 
   constructor(
     private fb: FormBuilder,
@@ -116,6 +117,8 @@ descripcionmerc:string = '';
   resultadoNombre:ModeloClienteData[ ] = [] ;
   selectedIndex = 1;
   buscarcodmerc = new FormControl();
+  buscardescripcionmerc = new FormControl();
+
   resultadoCodmerc:ModeloInventarioData[ ] = [] ;
   selectedIndexcodmerc = 1;
 
@@ -394,14 +397,15 @@ this.cotizacionid =`${date.getFullYear()}00000${this.cotizacionList.length + 1}`
 
 
   // Función para agregar un nuevo item a la tabla
-  agregaItem(codigo: string, descripcion: string, cantidad: number, precio: number) {
+  agregaItem( cantidad: number, precio: number) {
     const total = cantidad * precio;
     this.totalGral += total;
     const itbis = total * 0.18;
     this.totalItbis += itbis;
     this.subTotal = total - itbis;
 
-    this.items.push({ cantidad, precio, total });
+    this.items.push({ producto: this.productoselect, cantidad, precio, total });
+    this.productoselect ;
   }
 
   // (Opcional) Función para eliminar un ítem de la tabla
@@ -472,6 +476,7 @@ this.cotizacionid =`${date.getFullYear()}00000${this.cotizacionList.length + 1}`
     //this.buscarcodmerc.reset();
     this.codmerc=inventario.in_codmerc;
     this.descripcionmerc=inventario.in_desmerc;
+    this.productoselect=inventario;
     this.formularioCotizacion.patchValue({
       dc_codmerc: inventario.in_codmerc,
       dc_desmerc: inventario.in_desmerc,
@@ -498,7 +503,7 @@ this.cotizacionid =`${date.getFullYear()}00000${this.cotizacionList.length + 1}`
     } else if (key === 'Enter') {
       // Selecciona el ítem actual
       if (this.selectedIndexcodmerc >= 0 && this.selectedIndexcodmerc <= maxIndex) {
-        this.cargarDatosInventario(this.resultadoCodmerc[this.selectedIndex]);
+        this.cargarDatosInventario(this.resultadoCodmerc[this.selectedIndexcodmerc]);
       }
       event.preventDefault();
     }
