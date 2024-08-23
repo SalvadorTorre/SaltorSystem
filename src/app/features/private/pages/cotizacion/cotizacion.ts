@@ -1,5 +1,4 @@
 import { Component, OnInit, ɵNG_COMP_DEF } from '@angular/core';
-//import Inputmask from 'inputmask';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { BehaviorSubject, debounceTime, distinctUntilChanged, filter, switchMap, tap } from 'rxjs';
 import Swal from 'sweetalert2';
@@ -9,9 +8,9 @@ import { ServiciodetCotizacion } from 'src/app/core/services/cotizaciones/detcot
 import { ServicioCliente } from 'src/app/core/services/mantenimientos/clientes/cliente.service';
 import { HttpInvokeService } from 'src/app/core/services/http-invoke.service';
 import { ModeloCliente, ModeloClienteData } from 'src/app/core/services/mantenimientos/clientes';
-import { ModeloInventario, ModeloInventarioData } from 'src/app/core/services/mantenimientos/inventario';
-import { ServicioInventario } from 'src/app/core/services/mantenimientos/inventario/inventario.service';
 import { CotizacionDetalleModel, interfaceDetalleModel } from 'src/app/core/services/cotizaciones/cotizacion/cotizacion';
+import { ServicioInventario } from 'src/app/core/services/mantenimientos/inventario/inventario.service';
+import { ModeloInventarioData } from 'src/app/core/services/mantenimientos/inventario';
 declare var $: any;
 
 
@@ -44,18 +43,20 @@ export class Cotizacion implements OnInit {
   cotizacionList: CotizacionModelData[] = [];
   detCotizacionList: detCotizacionData[] = [];
   selectedCotizacion: any = null;
-  items: interfaceDetalleModel[] = [];
-  totalGral: number = 0;
-  totalItbis: number = 0;
-  subTotal: number = 0;
+  items:interfaceDetalleModel[] = [];
+  totalGral:number = 0;
+  totalItbis:number = 0;
+  subTotal:number = 0;
   static detCotizacion: detCotizacionData[];
+
+   resultadocodmerc: any;
 
   constructor(
     private fb: FormBuilder,
     private servicioCotizacion: ServicioCotizacion,
-    private servicioCliente: ServicioCliente,
+    private servicioCliente:ServicioCliente,
     private serviciodetCotizacion: ServiciodetCotizacion,
-    private http: HttpInvokeService,
+    private http:HttpInvokeService,
     private servicioInventario: ServicioInventario
   ) {
     this.crearFormularioCotizacion();
@@ -112,8 +113,11 @@ export class Cotizacion implements OnInit {
   }
 
   buscarNombre = new FormControl();
-  resultadoNombre: ModeloClienteData[] = [];
+  resultadoNombre:ModeloClienteData[ ] = [] ;
   selectedIndex = 1;
+  buscarcodmerc = new FormControl();
+  resultadoCodmerc:ModeloInventarioData[ ] = [] ;
+  selectedIndexcodmerc = 1;
 
   seleccionarCotizacion(cotizacion: any) { this.selectedCotizacion = cotizacion; }
   ngOnInit(): void {
@@ -140,7 +144,7 @@ export class Cotizacion implements OnInit {
       }
 
     });
-  }
+   }
 
   crearFormularioCotizacion() {
     const fechaActual = new Date();
@@ -153,13 +157,13 @@ export class Cotizacion implements OnInit {
       ct_codclie: [''],
       ct_nomclie: [''],
       ct_rnc: [''],
-      ct_telclie: ['', Validators.pattern(/^\(\d{3}\) \d{3}-\d{4}$/)],
+      ct_telclie: ['',Validators.pattern(/^\(\d{3}\) \d{3}-\d{4}$/)],
       ct_dirclie: [''],
       ct_correo: [''],
       ct_codvend: [''],
       ct_nomvend: [''],
       ct_status: [''],
-      ct_codzona: [''],
+      ct_codzona : [''],
 
     });
   }
@@ -207,7 +211,7 @@ export class Cotizacion implements OnInit {
       this.cotizacionList = response.data;
     });
   }
-  consultarCotizacion(Cotizacion: CotizacionModelData) {
+  consultarCotizacion( Cotizacion: CotizacionModelData) {
     this.modoconsultaCotizacion = true;
     this.formularioCotizacion.patchValue(Cotizacion);
     this.tituloModalCotizacion = 'Consulta Cotizacion';
@@ -261,8 +265,8 @@ export class Cotizacion implements OnInit {
 
   guardarCotizacion() {
     const date = new Date();
-    this.buscarTodasCotizacion(1),
-      this.cotizacionid = `${date.getFullYear()}00000${this.cotizacionList.length + 1}`;
+this.buscarTodasCotizacion(1),
+this.cotizacionid =`${date.getFullYear()}00000${this.cotizacionList.length + 1}`;
 
     this.formularioCotizacion.get('ct_valcoti')?.patchValue(this.totalGral);
     this.formularioCotizacion.get('ct_itbis')?.patchValue(this.totalItbis);
@@ -380,7 +384,7 @@ export class Cotizacion implements OnInit {
   }
 
   // (Opcional) Función para eliminar un ítem de la tabla
-  borarItem(item: any) {
+  borarItem(item:any) {
     const index = this.items.indexOf(item);
     if (index > -1) {
       this.items.splice(index, 1);
@@ -392,21 +396,20 @@ export class Cotizacion implements OnInit {
 
   }
 
-  buscarClienteporNombre() {
+  buscarClienteporNombre(){
     this.servicioCliente.buscarporNombre(this.formularioCotizacion.get("ct_nomclie")!.value).subscribe(response => {
       console.log(response);
     });
   }
 
-
   formatofecha(date: Date): string {
     const year = date.getFullYear();
     const month = (date.getMonth() + 1).toString().padStart(2, '0'); // Los meses son 0-indexados, se agrega 1 y se llena con ceros
     const day = date.getDate().toString().padStart(2, '0'); // Se llena con ceros si es necesario
-    return `${day}/${month}/${year}`;
+    return `${ day}/${month}/${year}`;
   }
 
-  cargarDatosCliente(cliente: ModeloClienteData) {
+  cargarDatosCliente(cliente:ModeloClienteData){
     console.log(cliente);
     this.resultadoNombre = [];
     this.buscarNombre.reset();
@@ -420,7 +423,6 @@ export class Cotizacion implements OnInit {
 
     });
   }
-
 
   handleKeydown(event: KeyboardEvent): void {
     const key = event.key;
@@ -443,42 +445,41 @@ export class Cotizacion implements OnInit {
     }
   }
 
-  cargarDatosInventario(inventario: ModeloInventarioData) {
+  cargarDatosInventario(inventario:ModeloInventarioData){
     console.log(inventario);
-    this.resultadoCodigomerc = [];
-    this.buscarCodigomerc.reset();
+    this.resultadocodmerc = [];
+    this.buscarcodmerc.reset();
     this.formularioCotizacion.patchValue({
       dc_codmerc: inventario.in_codmerc,
-      dc_descrip: inventario.in_desmerc,
-      dc_premerc: inventario.in_premerc,
+      dc_desmerc: inventario.in_desmerc,
       dc_canmerc: inventario.in_canmerc,
-      dc_costmer: inventario.in_cosmerc,
-      dc_unidad: inventario.in_unidad,
+      dc_premerc: inventario.in_premerc,
+      dc_cosmerc: inventario.in_cosmerc,
+      dc_unidad:  inventario.in_unidad,
 
     });
   }
 
-  teclaAbajo(event: KeyboardEvent): void {
+  handleKeydownInventario(event: KeyboardEvent): void {
     const key = event.key;
-    const maxIndex = this.resultadoCodigomerc.length;
+    const maxIndex = this.resultadocodmerc.length;
 
     if (key === 'ArrowDown') {
       // Mueve la selección hacia abajo
-      this.selectedIndex = this.selectedIndex < maxIndex ? this.selectedIndex + 1 : 0;
+      this.selectedIndexcodmerc = this.selectedIndexcodmerc < maxIndex ? this.selectedIndexcodmerc + 1 : 0;
       event.preventDefault();
     } else if (key === 'ArrowUp') {
       // Mueve la selección hacia arriba
-      this.selectedIndex = this.selectedIndex > 0 ? this.selectedIndex - 1 : maxIndex;
+      this.selectedIndexcodmerc = this.selectedIndexcodmerc > 0 ? this.selectedIndexcodmerc - 1 : maxIndex;
       event.preventDefault();
     } else if (key === 'Enter') {
       // Selecciona el ítem actual
-      if (this.selectedIndex >= 0 && this.selectedIndex <= maxIndex) {
-        this.cargarDatosInventario(this.resultadoCodigomerc[this.selectedIndex]);
+      if (this.selectedIndexcodmerc >= 0 && this.selectedIndexcodmerc <= maxIndex) {
+        this.cargarDatosInventario(this.resultadocodmerc[this.selectedIndex]);
       }
       event.preventDefault();
     }
-  }
-
 }
 
 
+}

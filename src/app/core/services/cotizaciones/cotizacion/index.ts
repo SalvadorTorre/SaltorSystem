@@ -23,6 +23,7 @@ export interface CotizacionModelData {
     detCotizacion: detCotizacionData[];
 }
 
+
 export interface detCotizacionData {
     dc_codcoti: string;
     dc_codmerc: string;
