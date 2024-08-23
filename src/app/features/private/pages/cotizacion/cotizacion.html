@@ -416,7 +416,7 @@
                   formControlName="dc_codmerc"
                 />
                 <div
-                  [ngClass]="{ 'show': resultadocodmerc.length > 0 }"
+                  [ngClass]="{ 'show': resultadoCodmerc.length > 0 }"
                   class="dropdown-menu"
                   style="
                     margin-right: 30px;
@@ -429,7 +429,7 @@
                 >
                   <div
                     class="searchReturnItem name-find"
-                    *ngFor="let result of resultadocodmerc; let i = index"
+                    *ngFor="let result of resultadoCodmerc; let i = index"
                     [class.active]="i === selectedIndexcodmerc"
                   >
                     <a

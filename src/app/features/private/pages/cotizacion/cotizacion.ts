@@ -49,7 +49,6 @@ export class Cotizacion implements OnInit {
   subTotal:number = 0;
   static detCotizacion: detCotizacionData[];
 
-   resultadocodmerc: any;
 
   constructor(
     private fb: FormBuilder,
@@ -447,7 +446,7 @@ this.cotizacionid =`${date.getFullYear()}00000${this.cotizacionList.length + 1}`
 
   cargarDatosInventario(inventario:ModeloInventarioData){
     console.log(inventario);
-    this.resultadocodmerc = [];
+    this.resultadoCodmerc = [];
     this.buscarcodmerc.reset();
     this.formularioCotizacion.patchValue({
       dc_codmerc: inventario.in_codmerc,
@@ -462,7 +461,7 @@ this.cotizacionid =`${date.getFullYear()}00000${this.cotizacionList.length + 1}`
 
   handleKeydownInventario(event: KeyboardEvent): void {
     const key = event.key;
-    const maxIndex = this.resultadocodmerc.length;
+    const maxIndex = this.resultadoCodmerc.length;
 
     if (key === 'ArrowDown') {
       // Mueve la selección hacia abajo
@@ -475,7 +474,7 @@ this.cotizacionid =`${date.getFullYear()}00000${this.cotizacionList.length + 1}`
     } else if (key === 'Enter') {
       // Selecciona el ítem actual
       if (this.selectedIndexcodmerc >= 0 && this.selectedIndexcodmerc <= maxIndex) {
-        this.cargarDatosInventario(this.resultadocodmerc[this.selectedIndex]);
+        this.cargarDatosInventario(this.resultadoCodmerc[this.selectedIndex]);
       }
       event.preventDefault();
     }
