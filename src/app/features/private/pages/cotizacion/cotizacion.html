@@ -463,7 +463,55 @@
             </div>
             <div class="col-5">
               <label for="">Descripción</label>
-              <input
+              <div class="input-group show">
+                <input
+                  class="form-control dropdown-toggle searchInput me-2"
+                  data-id="agent"
+                  type="text"
+                  #descripcionInput
+                  autocomplete="off"
+                  (input)="convertToUpperCase($event)"
+                  (keydown)="moveFocus($event, input8)"
+                  (keydown)="handleKeydownInventariosdesc($event)"
+                  #input7
+                  [formControl]="buscardescripcionmerc"
+                  [(ngModel)]="descripcionmerc"
+                />
+                <div
+                  [ngClass]="{ 'show': resultadodescripcionmerc.length > 0 }"
+                  class="dropdown-menu"
+                  style="
+                    margin-right: 30px;
+                    margin-top: 45px;
+                    z-index: 300;
+                    width: 350px;
+                    position: absolute;
+                    will-change: transform;
+                  "
+                >
+                  <div
+                    class="searchReturnItem name-find"
+                    *ngFor="let result of resultadodescripcionmerc; let i = index"
+                    [class.active]="i === selectedIndexcoddescripcionmerc"
+                  >
+                    <a
+                      (click)="cargarDatosInventario(result)"
+                      style="
+                        color: #222222 !important;
+                        font-size: 10pt;
+                        padding: 20px 0px;
+                        text-decoration: none !important;
+                        cursor: pointer;
+                      "
+                      class="px-3 cp"
+                    >
+                      <i class="far fa-user-circle mr-5"></i>&nbsp;&nbsp;{{
+                      result.in_desmerc }}
+                    </a>
+                  </div>
+                </div>
+              </div>
+              <!--    <input
                 type="text"
                 #descripcionInput
                 class="form-control form-control-sm"
@@ -473,16 +521,14 @@
                 class="form-control form-control-sm"
                 [formControl]="buscardescripcionmerc"
                 [(ngModel)]="descripcionmerc"
-              />
+              />-->
             </div>
             <div class="col-2">
               <label for="">Cantidad</label>
               <input
                 type="number"
-                #cantidadInput
-                class="form-control form-control-sm"
-                (keydown)="moveFocus($event, input9)"
                 #input8
+                (keydown)="moveFocus($event, input9)"
                 class="form-control form-control-sm"
               />
             </div>
@@ -490,19 +536,18 @@
               <label for="">Precio</label>
               <input
                 type="number"
-                #precioInput
-                class="form-control form-control-sm"
-                (keydown)="moveFocus($event, input6)"
                 #input9
                 class="form-control form-control-sm"
+                (keydown.enter)="agregaItem(input8.valueAsNumber, input9.valueAsNumber)"
               />
             </div>
             <div class="col-1">
               <button
                 type="button"
+                id="Boton1"
                 class="btn btn-primary mt-3"
                 (click)="agregaItem(
-                cantidadInput.valueAsNumber, precioInput.valueAsNumber)"
+                input8.valueAsNumber, input9.valueAsNumber)"
               >
                 Agregar
               </button>

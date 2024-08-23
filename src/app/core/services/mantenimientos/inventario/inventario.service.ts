@@ -36,4 +36,7 @@ export class ServicioInventario {
   buscarPorCodigoMerc(codigo:string): Observable<any>{
     return this.http.GetRequest<any>(`/productos-buscador/${codigo}`);
   }
+  buscarPorDescripcionMerc(descripcion:string): Observable<any>{
+    return this.http.GetRequest<any>(`/productos-buscador-desc/${descripcion}`);
+  }
 }

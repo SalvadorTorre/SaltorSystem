@@ -49,6 +49,7 @@ export class Cotizacion implements OnInit {
   subTotal:number = 0;
   static detCotizacion: detCotizacionData[];
 codmerc:string = '';
+
 descripcionmerc:string = '';
 productoselect!:ModeloInventarioData;
 
@@ -121,7 +122,8 @@ productoselect!:ModeloInventarioData;
 
   resultadoCodmerc:ModeloInventarioData[ ] = [] ;
   selectedIndexcodmerc = 1;
-
+  resultadodescripcionmerc:ModeloInventarioData[ ] = [] ;
+  selectedIndexcoddescripcionmerc = 1;
   seleccionarCotizacion(cotizacion: any) { this.selectedCotizacion = cotizacion; }
   ngOnInit(): void {
     this.buscarTodasCotizacion(1);
@@ -146,6 +148,28 @@ productoselect!:ModeloInventarioData;
       }
 
     });
+
+
+    this.buscardescripcionmerc.valueChanges.pipe(
+      debounceTime(500),
+      distinctUntilChanged(),
+      tap(() => {
+        this.resultadodescripcionmerc = [];
+      }),
+      filter((query: string) => query !== ''),
+      switchMap((query: string) => this.http.GetRequest<ModeloInventario>(`/productos-buscador-desc/${query}`))
+    ).subscribe((results: ModeloInventario) => {
+      console.log(results.data);
+      if (results) {
+        if (Array.isArray(results.data)) {
+          this.resultadodescripcionmerc = results.data;
+        }
+      } else {
+        this.resultadodescripcionmerc = [];
+      }
+
+    });
+
 
 
 
@@ -406,6 +430,7 @@ this.cotizacionid =`${date.getFullYear()}00000${this.cotizacionList.length + 1}`
 
     this.items.push({ producto: this.productoselect, cantidad, precio, total });
     this.productoselect ;
+
   }
 
   // (Opcional) Función para eliminar un ítem de la tabla
@@ -473,6 +498,7 @@ this.cotizacionid =`${date.getFullYear()}00000${this.cotizacionList.length + 1}`
   cargarDatosInventario(inventario:ModeloInventarioData){
     console.log(inventario);
     this.resultadoCodmerc = [];
+    this.resultadodescripcionmerc = [];
     //this.buscarcodmerc.reset();
     this.codmerc=inventario.in_codmerc;
     this.descripcionmerc=inventario.in_desmerc;
@@ -509,5 +535,25 @@ this.cotizacionid =`${date.getFullYear()}00000${this.cotizacionList.length + 1}`
     }
 }
 
+handleKeydownInventariosdesc(event: KeyboardEvent): void {
+  const key = event.key;
+  const maxIndex = this.resultadodescripcionmerc.length;
+
+  if (key === 'ArrowDown') {
+    // Mueve la selección hacia abajo
+    this.selectedIndexcoddescripcionmerc = this.selectedIndexcoddescripcionmerc < maxIndex ? this.selectedIndexcoddescripcionmerc + 1 : 0;
+    event.preventDefault();
+  } else if (key === 'ArrowUp') {
+    // Mueve la selección hacia arriba
+    this.selectedIndexcoddescripcionmerc = this.selectedIndexcoddescripcionmerc > 0 ? this.selectedIndexcoddescripcionmerc - 1 : maxIndex;
+    event.preventDefault();
+  } else if (key === 'Enter') {
+    // Selecciona el ítem actual
+    if (this.selectedIndexcoddescripcionmerc >= 0 && this.selectedIndexcoddescripcionmerc <= maxIndex) {
+      this.cargarDatosInventario(this.resultadodescripcionmerc[this.selectedIndexcoddescripcionmerc]);
+    }
+    event.preventDefault();
+  }
+}
 
 }
