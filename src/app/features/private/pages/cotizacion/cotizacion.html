@@ -413,7 +413,7 @@
                   (keydown)=" handleKeydownInventario($event)"
                   #input6
                   [formControl]="buscarcodmerc"
-                  formControlName="dc_codmerc"
+                  [(ngModel)]="codmerc"
                 />
                 <div
                   [ngClass]="{ 'show': resultadoCodmerc.length > 0 }"
@@ -471,6 +471,7 @@
                 (keydown)="moveFocus($event, input8)"
                 #input7
                 class="form-control form-control-sm"
+                [(ngModel)]="descripcionmerc"
               />
             </div>
             <div class="col-2">

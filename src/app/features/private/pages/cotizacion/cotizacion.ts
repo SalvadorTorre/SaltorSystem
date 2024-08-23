@@ -10,7 +10,7 @@ import { HttpInvokeService } from 'src/app/core/services/http-invoke.service';
 import { ModeloCliente, ModeloClienteData } from 'src/app/core/services/mantenimientos/clientes';
 import { CotizacionDetalleModel, interfaceDetalleModel } from 'src/app/core/services/cotizaciones/cotizacion/cotizacion';
 import { ServicioInventario } from 'src/app/core/services/mantenimientos/inventario/inventario.service';
-import { ModeloInventarioData } from 'src/app/core/services/mantenimientos/inventario';
+import { ModeloInventario, ModeloInventarioData } from 'src/app/core/services/mantenimientos/inventario';
 declare var $: any;
 
 
@@ -48,7 +48,8 @@ export class Cotizacion implements OnInit {
   totalItbis:number = 0;
   subTotal:number = 0;
   static detCotizacion: detCotizacionData[];
-
+codmerc:string = '';
+descripcionmerc:string = '';
 
   constructor(
     private fb: FormBuilder,
@@ -121,6 +122,27 @@ export class Cotizacion implements OnInit {
   seleccionarCotizacion(cotizacion: any) { this.selectedCotizacion = cotizacion; }
   ngOnInit(): void {
     this.buscarTodasCotizacion(1);
+
+
+    this.buscarcodmerc.valueChanges.pipe(
+      debounceTime(500),
+      distinctUntilChanged(),
+      tap(() => {
+        this.resultadoCodmerc = [];
+      }),
+      filter((query: string) => query !== ''),
+      switchMap((query: string) => this.http.GetRequest<ModeloInventario>(`/productos-buscador/${query}`))
+    ).subscribe((results: ModeloInventario) => {
+      console.log(results.data);
+      if (results) {
+        if (Array.isArray(results.data)) {
+          this.resultadoCodmerc = results.data;
+        }
+      } else {
+        this.resultadoCodmerc = [];
+      }
+
+    });
 
 
 
@@ -447,7 +469,9 @@ this.cotizacionid =`${date.getFullYear()}00000${this.cotizacionList.length + 1}`
   cargarDatosInventario(inventario:ModeloInventarioData){
     console.log(inventario);
     this.resultadoCodmerc = [];
-    this.buscarcodmerc.reset();
+    //this.buscarcodmerc.reset();
+    this.codmerc=inventario.in_codmerc;
+    this.descripcionmerc=inventario.in_desmerc;
     this.formularioCotizacion.patchValue({
       dc_codmerc: inventario.in_codmerc,
       dc_desmerc: inventario.in_desmerc,
