@@ -511,7 +511,6 @@
                   </div>
                 </div>
               </div>
-              
             </div>
             <div class="col-2">
               <label for="">Cantidad</label>
@@ -525,11 +524,10 @@
             <div class="col-2">
               <label for="">Precio</label>
               <input
-              
-              type="number"
+                type="number"
                 #input9
                 class="form-control form-control-sm"
-                (keydown-enter)="onEnter($event)"
+                (keydown.enter)="agregaItem(input8.valueAsNumber, input9.valueAsNumber)"
               />
             </div>
             <div class="col-1">

@@ -52,6 +52,8 @@ codmerc:string = '';
 
 descripcionmerc:string = '';
 productoselect!:ModeloInventarioData;
+precio: number =0;
+cantidad: number =0;
 
   constructor(
     private fb: FormBuilder,
@@ -422,13 +424,15 @@ this.cotizacionid =`${date.getFullYear()}00000${this.cotizacionList.length + 1}`
 
   // Función para agregar un nuevo item a la tabla
   agregaItem( cantidad: number, precio: number) {
+    this.items.push({ producto: this.productoselect, cantidad, precio, total:cantidad*precio });
+    console.log(this.items);
     const total = cantidad * precio;
     this.totalGral += total;
     const itbis = total * 0.18;
     this.totalItbis += itbis;
     this.subTotal = total - itbis;
+console.log(cantidad);
 
-    this.items.push({ producto: this.productoselect, cantidad, precio, total });
     this.productoselect ;
 
   }
@@ -558,8 +562,20 @@ handleKeydownInventariosdesc(event: KeyboardEvent): void {
 
 
 
-onEnter(event: KeyboardEvent) {
-  const button = document.getElementById('myButton') as HTMLElement;
-  button.click(); // Simula el clic del botón
+// onEnter(event: KeyboardEvent) {
+//   const button = document.getElementById('myButton') as HTMLElement;
+//   button.click(); // Simula el clic del botón
+// }
+onEnter(cantidad: number, precio: number) {
+  const total = cantidad * precio;
+  this.totalGral += total;
+  const itbis = total * 0.18;
+  this.totalItbis += itbis;
+  this.subTotal = total - itbis;
+
+  this.items.push({ producto: this.productoselect, cantidad, precio, total });
+  this.productoselect ;
+
 }
+
 }
