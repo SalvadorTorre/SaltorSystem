@@ -511,17 +511,7 @@
                   </div>
                 </div>
               </div>
-              <!--    <input
-                type="text"
-                #descripcionInput
-                class="form-control form-control-sm"
-                (input)="convertToUpperCase($event)"
-                (keydown)="moveFocus($event, input8)"
-                #input7
-                class="form-control form-control-sm"
-                [formControl]="buscardescripcionmerc"
-                [(ngModel)]="descripcionmerc"
-              />-->
+              
             </div>
             <div class="col-2">
               <label for="">Cantidad</label>
@@ -535,16 +525,17 @@
             <div class="col-2">
               <label for="">Precio</label>
               <input
-                type="number"
+              
+              type="number"
                 #input9
                 class="form-control form-control-sm"
-                (keydown.enter)="agregaItem(input8.valueAsNumber, input9.valueAsNumber)"
+                (keydown-enter)="onEnter($event)"
               />
             </div>
             <div class="col-1">
               <button
                 type="button"
-                id="Boton1"
+                #mybutton
                 class="btn btn-primary mt-3"
                 (click)="agregaItem(
                 input8.valueAsNumber, input9.valueAsNumber)"

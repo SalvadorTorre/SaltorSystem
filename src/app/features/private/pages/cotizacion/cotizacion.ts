@@ -556,4 +556,10 @@ handleKeydownInventariosdesc(event: KeyboardEvent): void {
   }
 }
 
+
+
+onEnter(event: KeyboardEvent) {
+  const button = document.getElementById('myButton') as HTMLElement;
+  button.click(); // Simula el clic del botón
+}
 }
