@@ -386,11 +386,18 @@
                       <input
                         type="password"
                         (input)="convertToUpperCase($event)"
-                        (keydown)="moveFocus($event, input6)"
+                        (keydown)="moveFocusin($event, input6)"
                         formControlName="ct_codvend"
                         #input5
                         class="form-control form-control-sm"
                       />
+                      <div
+                        *ngIf="form.get('ct_codvend')?.touched && form.get('ct_codvend')?.invalid"
+                      >
+                        <small class="text-danger"
+                          >Este campo es obligatorio.</small
+                        >
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -409,7 +416,7 @@
                   #codigoInput
                   autocomplete="off"
                   (input)="convertToUpperCase($event)"
-                  (keydown)="moveFocus($event, input7)"
+                  (keydown)="moveFocusin($event, input7)"
                   (keydown)=" handleKeydownInventario($event)"
                   #input6
                   [formControl]="buscarcodmerc"
@@ -516,6 +523,7 @@
               <label for="">Cantidad</label>
               <input
                 type="number"
+                [(ngModel)]="cantidadmerc"
                 #input8
                 (keydown)="moveFocus($event, input9)"
                 class="form-control form-control-sm"
@@ -525,9 +533,11 @@
               <label for="">Precio</label>
               <input
                 type="number"
+                [(ngModel)]="preciomerc"
                 #input9
+                (keydown)="moveFocus($event, input6)"
                 class="form-control form-control-sm"
-                (keydown.enter)="agregaItem(input8.valueAsNumber, input9.valueAsNumber)"
+                (keydown.enter)="agregaItem($event)"
               />
             </div>
             <div class="col-1">
@@ -536,7 +546,7 @@
                 #mybutton
                 class="btn btn-primary mt-3"
                 (click)="agregaItem(
-                input8.valueAsNumber, input9.valueAsNumber)"
+                $event)"
               >
                 Agregar
               </button>

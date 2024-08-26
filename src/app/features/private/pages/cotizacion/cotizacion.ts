@@ -2,6 +2,8 @@ import { Component, OnInit, ɵNG_COMP_DEF } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { BehaviorSubject, debounceTime, distinctUntilChanged, filter, switchMap, tap } from 'rxjs';
 import Swal from 'sweetalert2';
+import { ModeloUsuarioData } from 'src/app/core/services/mantenimientos/usuario';
+import { ServicioUsuario } from 'src/app/core/services/mantenimientos/usuario/usuario.service';
 import { ServicioCotizacion } from 'src/app/core/services/cotizaciones/cotizacion/cotizacion.service';
 import { CotizacionModelData, detCotizacionData } from 'src/app/core/services/cotizaciones/cotizacion';
 import { ServiciodetCotizacion } from 'src/app/core/services/cotizaciones/detcotizacion/detcotizacion.service';
@@ -49,20 +51,28 @@ export class Cotizacion implements OnInit {
   subTotal:number = 0;
   static detCotizacion: detCotizacionData[];
 codmerc:string = '';
-
 descripcionmerc:string = '';
+cantidadmerc: number =0;
+preciomerc: number =0;
 productoselect!:ModeloInventarioData;
-precio: number =0;
-cantidad: number =0;
-
+precioform = new FormControl();
+cantidadform=new FormControl();
+form: FormGroup;
   constructor(
     private fb: FormBuilder,
     private servicioCotizacion: ServicioCotizacion,
     private servicioCliente:ServicioCliente,
     private serviciodetCotizacion: ServiciodetCotizacion,
     private http:HttpInvokeService,
-    private servicioInventario: ServicioInventario
+    private servicioInventario: ServicioInventario,
+    private ServicioUsuario: ServicioUsuario
   ) {
+
+    this.form = this.fb.group({
+      ct_codvend: ['', Validators.required], // El campo es requerido
+      // Otros campos...
+    });
+
     this.crearFormularioCotizacion();
     // this.descripcionBuscar.pipe(
     //   debounceTime(500),
@@ -210,7 +220,7 @@ cantidad: number =0;
       ct_telclie: ['',Validators.pattern(/^\(\d{3}\) \d{3}-\d{4}$/)],
       ct_dirclie: [''],
       ct_correo: [''],
-      ct_codvend: [''],
+      ct_codvend: ['', Validators.required],
       ct_nomvend: [''],
       ct_status: [''],
       ct_codzona : [''],
@@ -423,17 +433,20 @@ this.cotizacionid =`${date.getFullYear()}00000${this.cotizacionList.length + 1}`
 
 
   // Función para agregar un nuevo item a la tabla
-  agregaItem( cantidad: number, precio: number) {
-    this.items.push({ producto: this.productoselect, cantidad, precio, total:cantidad*precio });
-    console.log(this.items);
-    const total = cantidad * precio;
+  agregaItem(event: Event) {
+    event.preventDefault();
+    const total = this.cantidadmerc * this.preciomerc;
     this.totalGral += total;
     const itbis = total * 0.18;
     this.totalItbis += itbis;
     this.subTotal = total - itbis;
-console.log(cantidad);
+    this.items.push({ producto: this.productoselect, cantidad:this.cantidadmerc, precio:this.preciomerc, total})
 
     this.productoselect ;
+    this.codmerc = ""
+    this.descripcionmerc = ""
+    this.preciomerc = 0;
+    this.cantidadmerc = 0;
 
   }
 
@@ -577,5 +590,20 @@ onEnter(cantidad: number, precio: number) {
   this.productoselect ;
 
 }
+
+moveFocusin(event: KeyboardEvent, nextInput: HTMLInputElement) {
+  if (event.key === 'Enter') {
+    event.preventDefault(); // Previene el comportamiento predeterminado de Enter
+    const currentControl = this.form.get('ct_codvend');
+    if (currentControl?.invalid) {
+      currentControl.markAsTouched(); // Marca el campo como tocado para mostrar errores
+      alert('El campo "Vendedor" es obligatorio.'); // Muestra el mensaje de error
+    } else {
+      nextInput.focus(); // Si es válido, mueve el foco al siguiente input
+    }
+  }
+}
+
+
 
 }
