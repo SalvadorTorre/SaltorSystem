@@ -70,7 +70,6 @@
                   <th class="text-center" style="width: 10%">Fecha</th>
                   <th style="width: 12%">Valor</th>
                   <th class="text-center">Opciones</th>
-                  <th></th>
                 </tr>
               </thead>
               <tbody>
@@ -251,7 +250,7 @@
                     </div>
                   </div>
                   <div class="mb-1 row mt-1">
-                    <div class="col-1">
+                    <div class="col-2">
                       <label for="">RNC</label>
                     </div>
                     <div class="col-4">
@@ -265,13 +264,13 @@
                     </div>
                   </div>
                   <div class="mb-1 row mt-1">
-                    <div class="col-1">
+                    <div class="col-2">
                       <label for=" ">Nombre</label>
                     </div>
-                    <div class="col-11">
+                    <div class="col-10">
                       <div class="input-group show">
                         <input
-                          class="form-control dropdown-toggle searchInput me-2"
+                          class="form-control dropdown-toggle searchInput"
                           data-id="agent"
                           type="text"
                           autocomplete="off"
@@ -319,10 +318,10 @@
                     </div>
                   </div>
                   <div class="mb-1 row mt-1">
-                    <div class="col-1">
+                    <div class="col-2">
                       <label for="">Dirección</label>
                     </div>
-                    <div class="col-11">
+                    <div class="col-10">
                       <input
                         type="text"
                         formControlName="ct_dirclie"
@@ -334,7 +333,7 @@
                     </div>
                   </div>
                   <div class="mb-1 row mt-1">
-                    <div class="col-1">
+                    <div class="col-2">
                       <label for="">Telefono</label>
                     </div>
                     <div class="col-4">
@@ -392,7 +391,7 @@
                         class="form-control form-control-sm"
                       />
                       <div
-                        *ngIf="form.get('ct_codvend')?.touched && form.get('ct_codvend')?.invalid"
+                        *ngIf="formularioCotizacion.get('ct_codvend')?.touched && formularioCotizacion.get('ct_codvend')?.invalid"
                       >
                         <small class="text-danger"
                           >Este campo es obligatorio.</small
@@ -525,8 +524,9 @@
                 type="number"
                 [(ngModel)]="cantidadmerc"
                 #input8
+                [formControl]="cantidadform"
                 (keydown)="moveFocus($event, input9)"
-                class="form-control form-control-sm"
+                class="form-control"
               />
             </div>
             <div class="col-2">
@@ -534,13 +534,14 @@
               <input
                 type="number"
                 [(ngModel)]="preciomerc"
+                [formControl]="precioform"
                 #input9
                 (keydown)="moveFocus($event, input6)"
-                class="form-control form-control-sm"
+                class="form-control"
                 (keydown.enter)="agregaItem($event)"
               />
             </div>
-            <div class="col-1">
+            <!-- <div class="col-1">
               <button
                 type="button"
                 #mybutton
@@ -550,8 +551,9 @@
               >
                 Agregar
               </button>
-            </div>
+            </div> -->
           </div>
+          <br />
           <div class="row">
             <div class="col">
               <div
@@ -567,7 +569,6 @@
                       <th style="width: 15%">Precio ud</th>
                       <th style="width: 15%">Total</th>
                       <th>Opciones</th>
-                      <th></th>
                     </tr>
                   </thead>
                   <tbody>

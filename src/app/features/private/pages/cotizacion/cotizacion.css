@@ -80,3 +80,7 @@ tfoot {
   background-color: #007bff;
   color: white;
 }
+
+i {
+  cursor: pointer;
+}

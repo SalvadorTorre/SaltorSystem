@@ -45,25 +45,25 @@ export class Cotizacion implements OnInit {
   cotizacionList: CotizacionModelData[] = [];
   detCotizacionList: detCotizacionData[] = [];
   selectedCotizacion: any = null;
-  items:interfaceDetalleModel[] = [];
-  totalGral:number = 0;
-  totalItbis:number = 0;
-  subTotal:number = 0;
+  items: interfaceDetalleModel[] = [];
+  totalGral: number = 0;
+  totalItbis: number = 0;
+  subTotal: number = 0;
   static detCotizacion: detCotizacionData[];
-codmerc:string = '';
-descripcionmerc:string = '';
-cantidadmerc: number =0;
-preciomerc: number =0;
-productoselect!:ModeloInventarioData;
-precioform = new FormControl();
-cantidadform=new FormControl();
-form: FormGroup;
+  codmerc: string = '';
+  descripcionmerc: string = '';
+  cantidadmerc: number = 0;
+  preciomerc: number = 0;
+  productoselect!: ModeloInventarioData;
+  precioform = new FormControl();
+  cantidadform = new FormControl();
+  form: FormGroup;
   constructor(
     private fb: FormBuilder,
     private servicioCotizacion: ServicioCotizacion,
-    private servicioCliente:ServicioCliente,
+    private servicioCliente: ServicioCliente,
     private serviciodetCotizacion: ServiciodetCotizacion,
-    private http:HttpInvokeService,
+    private http: HttpInvokeService,
     private servicioInventario: ServicioInventario,
     private ServicioUsuario: ServicioUsuario
   ) {
@@ -127,27 +127,27 @@ form: FormGroup;
   }
 
   buscarNombre = new FormControl();
-  resultadoNombre:ModeloClienteData[ ] = [] ;
+  resultadoNombre: ModeloClienteData[] = [];
   selectedIndex = 1;
   buscarcodmerc = new FormControl();
   buscardescripcionmerc = new FormControl();
 
-  resultadoCodmerc:ModeloInventarioData[ ] = [] ;
+  resultadoCodmerc: ModeloInventarioData[] = [];
   selectedIndexcodmerc = 1;
-  resultadodescripcionmerc:ModeloInventarioData[ ] = [] ;
+  resultadodescripcionmerc: ModeloInventarioData[] = [];
   selectedIndexcoddescripcionmerc = 1;
   seleccionarCotizacion(cotizacion: any) { this.selectedCotizacion = cotizacion; }
+
+
   ngOnInit(): void {
     this.buscarTodasCotizacion(1);
-
-
     this.buscarcodmerc.valueChanges.pipe(
       debounceTime(500),
       distinctUntilChanged(),
       tap(() => {
         this.resultadoCodmerc = [];
       }),
-      filter((query: string) => query !== ''),
+      filter((query: string) => query !== '' && !this.cancelarBusquedaCodigo),
       switchMap((query: string) => this.http.GetRequest<ModeloInventario>(`/productos-buscador/${query}`))
     ).subscribe((results: ModeloInventario) => {
       console.log(results.data);
@@ -168,7 +168,7 @@ form: FormGroup;
       tap(() => {
         this.resultadodescripcionmerc = [];
       }),
-      filter((query: string) => query !== ''),
+      filter((query: string) => query !== '' && !this.cancelarBusquedaDescripcion),
       switchMap((query: string) => this.http.GetRequest<ModeloInventario>(`/productos-buscador-desc/${query}`))
     ).subscribe((results: ModeloInventario) => {
       console.log(results.data);
@@ -204,7 +204,7 @@ form: FormGroup;
       }
 
     });
-   }
+  }
 
   crearFormularioCotizacion() {
     const fechaActual = new Date();
@@ -217,13 +217,13 @@ form: FormGroup;
       ct_codclie: [''],
       ct_nomclie: [''],
       ct_rnc: [''],
-      ct_telclie: ['',Validators.pattern(/^\(\d{3}\) \d{3}-\d{4}$/)],
+      ct_telclie: ['', Validators.pattern(/^\(\d{3}\) \d{3}-\d{4}$/)],
       ct_dirclie: [''],
       ct_correo: [''],
       ct_codvend: ['', Validators.required],
       ct_nomvend: [''],
       ct_status: [''],
-      ct_codzona : [''],
+      ct_codzona: [''],
 
     });
   }
@@ -271,7 +271,7 @@ form: FormGroup;
       this.cotizacionList = response.data;
     });
   }
-  consultarCotizacion( Cotizacion: CotizacionModelData) {
+  consultarCotizacion(Cotizacion: CotizacionModelData) {
     this.modoconsultaCotizacion = true;
     this.formularioCotizacion.patchValue(Cotizacion);
     this.tituloModalCotizacion = 'Consulta Cotizacion';
@@ -325,8 +325,8 @@ form: FormGroup;
 
   guardarCotizacion() {
     const date = new Date();
-this.buscarTodasCotizacion(1),
-this.cotizacionid =`${date.getFullYear()}00000${this.cotizacionList.length + 1}`;
+    this.buscarTodasCotizacion(1),
+      this.cotizacionid = `${date.getFullYear()}00000${this.cotizacionList.length + 1}`;
 
     this.formularioCotizacion.get('ct_valcoti')?.patchValue(this.totalGral);
     this.formularioCotizacion.get('ct_itbis')?.patchValue(this.totalItbis);
@@ -439,10 +439,11 @@ this.cotizacionid =`${date.getFullYear()}00000${this.cotizacionList.length + 1}`
     this.totalGral += total;
     const itbis = total * 0.18;
     this.totalItbis += itbis;
-    this.subTotal = total - itbis;
-    this.items.push({ producto: this.productoselect, cantidad:this.cantidadmerc, precio:this.preciomerc, total})
-
-    this.productoselect ;
+    this.subTotal += total - itbis;
+    this.items.push({ producto: this.productoselect, cantidad: this.cantidadmerc, precio: this.preciomerc, total })
+    this.cancelarBusquedaDescripcion = false;
+    this.cancelarBusquedaCodigo = false;
+    this.productoselect;
     this.codmerc = ""
     this.descripcionmerc = ""
     this.preciomerc = 0;
@@ -451,7 +452,7 @@ this.cotizacionid =`${date.getFullYear()}00000${this.cotizacionList.length + 1}`
   }
 
   // (Opcional) Función para eliminar un ítem de la tabla
-  borarItem(item:any) {
+  borarItem(item: any) {
     const index = this.items.indexOf(item);
     if (index > -1) {
       this.items.splice(index, 1);
@@ -463,7 +464,7 @@ this.cotizacionid =`${date.getFullYear()}00000${this.cotizacionList.length + 1}`
 
   }
 
-  buscarClienteporNombre(){
+  buscarClienteporNombre() {
     this.servicioCliente.buscarporNombre(this.formularioCotizacion.get("ct_nomclie")!.value).subscribe(response => {
       console.log(response);
     });
@@ -473,10 +474,10 @@ this.cotizacionid =`${date.getFullYear()}00000${this.cotizacionList.length + 1}`
     const year = date.getFullYear();
     const month = (date.getMonth() + 1).toString().padStart(2, '0'); // Los meses son 0-indexados, se agrega 1 y se llena con ceros
     const day = date.getDate().toString().padStart(2, '0'); // Se llena con ceros si es necesario
-    return `${ day}/${month}/${year}`;
+    return `${day}/${month}/${year}`;
   }
 
-  cargarDatosCliente(cliente:ModeloClienteData){
+  cargarDatosCliente(cliente: ModeloClienteData) {
     console.log(cliente);
     this.resultadoNombre = [];
     this.buscarNombre.reset();
@@ -512,21 +513,26 @@ this.cotizacionid =`${date.getFullYear()}00000${this.cotizacionList.length + 1}`
     }
   }
 
-  cargarDatosInventario(inventario:ModeloInventarioData){
+  cancelarBusquedaDescripcion: boolean = false;
+  cancelarBusquedaCodigo: boolean = false;
+
+  cargarDatosInventario(inventario: ModeloInventarioData) {
     console.log(inventario);
     this.resultadoCodmerc = [];
     this.resultadodescripcionmerc = [];
     //this.buscarcodmerc.reset();
-    this.codmerc=inventario.in_codmerc;
-    this.descripcionmerc=inventario.in_desmerc;
-    this.productoselect=inventario;
+    this.codmerc = inventario.in_codmerc;
+    this.descripcionmerc = inventario.in_desmerc;
+    this.productoselect = inventario;
+    this.cancelarBusquedaDescripcion = true;
+    this.cancelarBusquedaCodigo = true;
     this.formularioCotizacion.patchValue({
       dc_codmerc: inventario.in_codmerc,
       dc_desmerc: inventario.in_desmerc,
       dc_canmerc: inventario.in_canmerc,
       dc_premerc: inventario.in_premerc,
       dc_cosmerc: inventario.in_cosmerc,
-      dc_unidad:  inventario.in_unidad,
+      dc_unidad: inventario.in_unidad,
 
     });
   }
@@ -547,63 +553,61 @@ this.cotizacionid =`${date.getFullYear()}00000${this.cotizacionList.length + 1}`
       // Selecciona el ítem actual
       if (this.selectedIndexcodmerc >= 0 && this.selectedIndexcodmerc <= maxIndex) {
         this.cargarDatosInventario(this.resultadoCodmerc[this.selectedIndexcodmerc]);
+
       }
       event.preventDefault();
     }
-}
-
-handleKeydownInventariosdesc(event: KeyboardEvent): void {
-  const key = event.key;
-  const maxIndex = this.resultadodescripcionmerc.length;
-
-  if (key === 'ArrowDown') {
-    // Mueve la selección hacia abajo
-    this.selectedIndexcoddescripcionmerc = this.selectedIndexcoddescripcionmerc < maxIndex ? this.selectedIndexcoddescripcionmerc + 1 : 0;
-    event.preventDefault();
-  } else if (key === 'ArrowUp') {
-    // Mueve la selección hacia arriba
-    this.selectedIndexcoddescripcionmerc = this.selectedIndexcoddescripcionmerc > 0 ? this.selectedIndexcoddescripcionmerc - 1 : maxIndex;
-    event.preventDefault();
-  } else if (key === 'Enter') {
-    // Selecciona el ítem actual
-    if (this.selectedIndexcoddescripcionmerc >= 0 && this.selectedIndexcoddescripcionmerc <= maxIndex) {
-      this.cargarDatosInventario(this.resultadodescripcionmerc[this.selectedIndexcoddescripcionmerc]);
-    }
-    event.preventDefault();
   }
-}
 
+  handleKeydownInventariosdesc(event: KeyboardEvent): void {
+    const key = event.key;
+    const maxIndex = this.resultadodescripcionmerc.length;
 
-
-// onEnter(event: KeyboardEvent) {
-//   const button = document.getElementById('myButton') as HTMLElement;
-//   button.click(); // Simula el clic del botón
-// }
-onEnter(cantidad: number, precio: number) {
-  const total = cantidad * precio;
-  this.totalGral += total;
-  const itbis = total * 0.18;
-  this.totalItbis += itbis;
-  this.subTotal = total - itbis;
-
-  this.items.push({ producto: this.productoselect, cantidad, precio, total });
-  this.productoselect ;
-
-}
-
-moveFocusin(event: KeyboardEvent, nextInput: HTMLInputElement) {
-  if (event.key === 'Enter') {
-    event.preventDefault(); // Previene el comportamiento predeterminado de Enter
-    const currentControl = this.form.get('ct_codvend');
-    if (currentControl?.invalid) {
-      currentControl.markAsTouched(); // Marca el campo como tocado para mostrar errores
-      alert('El campo "Vendedor" es obligatorio.'); // Muestra el mensaje de error
-    } else {
-      nextInput.focus(); // Si es válido, mueve el foco al siguiente input
+    if (key === 'ArrowDown') {
+      // Mueve la selección hacia abajo
+      this.selectedIndexcoddescripcionmerc = this.selectedIndexcoddescripcionmerc < maxIndex ? this.selectedIndexcoddescripcionmerc + 1 : 0;
+      event.preventDefault();
+    } else if (key === 'ArrowUp') {
+      // Mueve la selección hacia arriba
+      this.selectedIndexcoddescripcionmerc = this.selectedIndexcoddescripcionmerc > 0 ? this.selectedIndexcoddescripcionmerc - 1 : maxIndex;
+      event.preventDefault();
+    } else if (key === 'Enter') {
+      // Selecciona el ítem actual
+      if (this.selectedIndexcoddescripcionmerc >= 0 && this.selectedIndexcoddescripcionmerc <= maxIndex) {
+        this.cargarDatosInventario(this.resultadodescripcionmerc[this.selectedIndexcoddescripcionmerc]);
+      }
+      event.preventDefault();
     }
   }
-}
 
 
 
+  // onEnter(event: KeyboardEvent) {
+  //   const button = document.getElementById('myButton') as HTMLElement;
+  //   button.click(); // Simula el clic del botón
+  // }
+  onEnter(cantidad: number, precio: number) {
+    const total = cantidad * precio;
+    this.totalGral += total;
+    const itbis = total * 0.18;
+    this.totalItbis += itbis;
+    this.subTotal += total - itbis;
+
+    this.items.push({ producto: this.productoselect, cantidad, precio, total });
+    this.productoselect;
+
+  }
+
+  moveFocusin(event: KeyboardEvent, nextInput: HTMLInputElement) {
+    if (event.key === 'Enter') {
+      event.preventDefault(); // Previene el comportamiento predeterminado de Enter
+      const currentControl = this.formularioCotizacion.get('ct_codvend');
+      if (currentControl?.invalid) {
+        currentControl.markAsTouched(); // Marca el campo como tocado para mostrar errores
+        alert('El campo "Vendedor" es obligatorio.'); // Muestra el mensaje de error
+      } else {
+        nextInput.focus(); // Si es válido, mueve el foco al siguiente input
+      }
+    }
+  }
 }
