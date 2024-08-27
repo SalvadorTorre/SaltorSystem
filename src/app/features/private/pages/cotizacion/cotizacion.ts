@@ -604,8 +604,13 @@ export class Cotizacion implements OnInit {
       const currentControl = this.formularioCotizacion.get('ct_codvend');
       if (currentControl?.invalid) {
         currentControl.markAsTouched(); // Marca el campo como tocado para mostrar errores
-        alert('El campo "Vendedor" es obligatorio.'); // Muestra el mensaje de error
-      } else {
+     //   alert('El campo "Vendedor" es obligatorio.'); // Muestra el mensaje de error
+     Swal.fire({
+      icon: "error",
+      title: "Oops...",
+      text: 'El campo "Vendedor" es obligatorio.',
+    });
+    } else {
         nextInput.focus(); // Si es válido, mueve el foco al siguiente input
       }
     }
