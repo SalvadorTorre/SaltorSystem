@@ -435,12 +435,24 @@ export class Cotizacion implements OnInit {
   // Función para agregar un nuevo item a la tabla
   agregaItem(event: Event) {
     event.preventDefault();
+
+    if (!this.productoselect || this.cantidadmerc <= 0 || this.preciomerc <= 0) {
+      Swal.fire({
+        icon: "error",
+        title: "A V I S O",
+        text: 'Por favor complete todos los campos requeridos antes de agregar el ítem.',
+      });
+      return;
+    }
     const total = this.cantidadmerc * this.preciomerc;
     this.totalGral += total;
     const itbis = total * 0.18;
     this.totalItbis += itbis;
     this.subTotal += total - itbis;
-    this.items.push({ producto: this.productoselect, cantidad: this.cantidadmerc, precio: this.preciomerc, total })
+    this.items.push({ producto: this.productoselect, cantidad: this.cantidadmerc, precio: this.preciomerc, total
+
+    })
+
     this.cancelarBusquedaDescripcion = false;
     this.cancelarBusquedaCodigo = false;
     this.productoselect;
@@ -455,6 +467,16 @@ export class Cotizacion implements OnInit {
   borarItem(item: any) {
     const index = this.items.indexOf(item);
     if (index > -1) {
+      this.totalGral -= item.total;
+
+      // Calcular el itbis del ítem eliminado y restarlo del total itbis
+      const itbis = item.total * 0.18;
+      this.totalItbis -= itbis;
+
+      // Restar el subtotal del ítem eliminado
+      this.subTotal -= (item.total - itbis);
+
+      // Eliminar el ítem de la lista
       this.items.splice(index, 1);
     }
   }
@@ -607,7 +629,7 @@ export class Cotizacion implements OnInit {
         //   alert('El campo "Vendedor" es obligatorio.'); // Muestra el mensaje de error
         Swal.fire({
           icon: "error",
-          title: "A T E N C I O N",
+          title: "A V I S O",
           text: 'El campo "Vendedor" es obligatorio.',
         });
       } else {
@@ -634,7 +656,66 @@ export class Cotizacion implements OnInit {
         }
       );
     }
-  }
+ }
+
+  moveFocusdesc(event: KeyboardEvent, nextInput: HTMLInputElement) {
+    if (event.key === 'Enter') {
+      event.preventDefault(); // Previene el comportamiento predeterminado de Enter
+    // const currentControl = this.formularioCotizacion.get('ct_codvend');
+      if (this.descripcionmerc =" ") {
+        Swal.fire({
+          icon: "error",
+          title: "A V I S O",
+          text: 'Por favor complete el campo direccion es requeridos.',
+        });
+        return;
+      }
+      else {
+        nextInput.focus(); // Si es válido, mueve el foco al siguiente input
+      }
+    }
+
+
 }
+
+  moveFocuscant(event: Event, nextInput: HTMLInputElement) {
+    event.preventDefault();
+
+    if (!this.productoselect || this.cantidadmerc <= 0)
+    {
+      Swal.fire({
+        icon: "error",
+        title: "A V I S O",
+        text: 'Por favor complete todos los campos requeridos antes de agregar el ítem.',
+      });
+      return;
+    }
+    else
+    {
+      nextInput.focus(); // Si es válido, mueve el foco al siguiente input
+    }
+  }
+
+  moveFocusnomclie(event: Event, nextInput: HTMLInputElement) {
+    event.preventDefault();
+
+    if (!this.buscarNombre)
+    {
+      Swal.fire({
+        icon: "error",
+        title: "A V I S O",
+        text: 'Por favor complete todos los campos requeridos antes de agregar el ítem.',
+      });
+      return;
+    }
+    else
+    {
+      nextInput.focus(); // Si es válido, mueve el foco al siguiente input
+    }
+  }
+
+
+}
+
 
 

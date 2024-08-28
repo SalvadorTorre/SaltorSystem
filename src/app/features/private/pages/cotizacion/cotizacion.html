@@ -275,7 +275,7 @@
                           type="text"
                           autocomplete="off"
                           (input)="convertToUpperCase($event)"
-                          (keydown)="moveFocus($event, input3)"
+                          (keydown.enter)="moveFocusnomclie($event, input3)"
                           (keydown)="handleKeydown($event)"
                           #input2
                           [formControl]="buscarNombre"
@@ -351,9 +351,25 @@
               </div>
             </div>
             <div class="col-4">
-              <div class="card">
-                <div class="card-body" style="background-color: #e6e4e4">
-                  <div class="mb-1 row">
+              <div
+                class="card"
+                style="
+                  margin-top: 0;
+                  margin-bottom: 0px;
+                  padding-top: 0px;
+                  padding-bottom: 0px;
+                "
+              >
+                <div
+                  class="card-body"
+                  style="
+                    background-color: #e6e4e4;
+                    margin-top: 0;
+                    padding-top: 0;
+                    padding-bottom: 0;
+                  "
+                >
+                  <div class="mb-1 row mt-1">
                     <div class="col-5">
                       <label for="">No. Cotizacion</label>
                     </div>
@@ -386,7 +402,7 @@
                         type="password"
                         (input)="convertToUpperCase($event)"
                         (keydown)="moveFocusin($event, input6)"
-                        (keydown.enter)="buscarUsuario()" 
+                        (keydown.enter)="buscarUsuario()"
                         formControlName="ct_codvend"
                         #input5
                         class="form-control form-control-sm"
@@ -398,6 +414,19 @@
                           >Este campo es obligatorio.</small
                         >
                       </div>
+                    </div>
+                  </div>
+                  <div class="mb-1 row">
+                    <div class="col-5">
+                      <label for="">Nombre Vend.</label>
+                    </div>
+                    <div class="col-6">
+                      <input
+                        type="text"
+                        formControlName="ct_nomvend"
+                        #input5
+                        class="form-control form-control-sm"
+                      />
                     </div>
                   </div>
                 </div>
@@ -416,7 +445,7 @@
                   #codigoInput
                   autocomplete="off"
                   (input)="convertToUpperCase($event)"
-                  (keydown)="moveFocusin($event, input7)"
+                  (keydown)="moveFocus($event, input7)"
                   (keydown)=" handleKeydownInventario($event)"
                   #input6
                   [formControl]="buscarcodmerc"
@@ -478,7 +507,7 @@
                   #descripcionInput
                   autocomplete="off"
                   (input)="convertToUpperCase($event)"
-                  (keydown)="moveFocus($event, input8)"
+                  (keydown)="moveFocusdesc($event, input8)"
                   (keydown)="handleKeydownInventariosdesc($event)"
                   #input7
                   [formControl]="buscardescripcionmerc"
@@ -526,15 +555,14 @@
                 [(ngModel)]="cantidadmerc"
                 #input8
                 [formControl]="cantidadform"
-                (keydown)="moveFocus($event, input9)"
+                (keydown.enter)="moveFocuscant($event, input9)"
                 class="form-control"
               />
             </div>
             <div class="col-2">
               <label for="">Precio</label>
               <input
-               
-               type="number"
+                type="number"
                 [(ngModel)]="preciomerc"
                 [formControl]="precioform"
                 #input9
@@ -590,26 +618,55 @@
                       <td></td>
                       <td></td>
                       <td></td>
-                      <td class="text-end" style="font-size: 18px; font-weight: bold">
+                      <td
+                        class="text-end"
+                        style="font-size: 18px; font-weight: bold"
+                      >
                         Sub-Total
                       </td>
-                      <td class="text-end" style="font-size: 18px; font-weight: bold" colspan="1">{{this.subTotal | currency}}</td>
+                      <td
+                        class="text-end"
+                        style="font-size: 18px; font-weight: bold"
+                        colspan="1"
+                      >
+                        {{this.subTotal | currency}}
+                      </td>
                     </tr>
                     <tr>
                       <td></td>
                       <td></td>
                       <td></td>
-                      <td class="text-end" style="font-size: 18px; font-weight: bold">Itbis</td>
-                      <td class="text-end" style="font-size: 18px; font-weight: bold" colspan="1">{{totalItbis | currency}}</td>
+                      <td
+                        class="text-end"
+                        style="font-size: 18px; font-weight: bold"
+                      >
+                        Itbis
+                      </td>
+                      <td
+                        class="text-end"
+                        style="font-size: 18px; font-weight: bold"
+                        colspan="1"
+                      >
+                        {{totalItbis | currency}}
+                      </td>
                     </tr>
                     <tr>
                       <td></td>
                       <td></td>
                       <td></td>
-                      <td class="text-end" style="font-size: 18px; font-weight: bold">
+                      <td
+                        class="text-end"
+                        style="font-size: 18px; font-weight: bold"
+                      >
                         Total Gral
                       </td>
-                      <td class="text-end" style="font-size: 18px; font-weight: bold" colspan="1">{{totalGral | currency}}</td>
+                      <td
+                        class="text-end"
+                        style="font-size: 18px; font-weight: bold"
+                        colspan="1"
+                      >
+                        {{totalGral | currency}}
+                      </td>
                     </tr>
                   </tfoot>
                 </table>
