@@ -386,6 +386,7 @@
                         type="password"
                         (input)="convertToUpperCase($event)"
                         (keydown)="moveFocusin($event, input6)"
+                        (keydown.enter)="buscarUsuario()" 
                         formControlName="ct_codvend"
                         #input5
                         class="form-control form-control-sm"
@@ -532,7 +533,8 @@
             <div class="col-2">
               <label for="">Precio</label>
               <input
-                type="number"
+               
+               type="number"
                 [(ngModel)]="preciomerc"
                 [formControl]="precioform"
                 #input9
@@ -565,9 +567,9 @@
                     <tr style="background-color: red">
                       <th style="width: 15%">Código</th>
                       <th style="width: 40%">Descripción</th>
-                      <th style="width: 15%">Cantidad.</th>
-                      <th style="width: 15%">Precio ud</th>
-                      <th style="width: 15%">Total</th>
+                      <th class="text-center" style="width: 15%">Cantidad.</th>
+                      <th class="text-center" style="width: 15%">Precio ud</th>
+                      <th class="text-center" style="width: 15%">Total</th>
                       <th>Opciones</th>
                     </tr>
                   </thead>
@@ -575,9 +577,9 @@
                     <tr *ngFor="let item of items">
                       <td>{{ item.producto?.in_codmerc }}</td>
                       <td>{{ item.producto?.in_desmerc }}</td>
-                      <td>{{ item.cantidad }}</td>
-                      <td>{{ item.precio }}</td>
-                      <td>{{ item.total | currency }}</td>
+                      <td class="text-center">{{ item.cantidad }}</td>
+                      <td class="text-center">{{ item.precio }}</td>
+                      <td class="text-end">{{ item.total | currency }}</td>
                       <td>
                         <button (click)="borarItem(item)">Eliminar</button>
                       </td>
@@ -588,26 +590,26 @@
                       <td></td>
                       <td></td>
                       <td></td>
-                      <td style="font-size: 18px; font-weight: bold">
+                      <td class="text-end" style="font-size: 18px; font-weight: bold">
                         Sub-Total
                       </td>
-                      <td colspan="2">{{this.subTotal | currency}}</td>
+                      <td class="text-end" style="font-size: 18px; font-weight: bold" colspan="1">{{this.subTotal | currency}}</td>
                     </tr>
                     <tr>
                       <td></td>
                       <td></td>
                       <td></td>
-                      <td style="font-size: 18px; font-weight: bold">Itbis</td>
-                      <td colspan="2">{{totalItbis | currency}}</td>
+                      <td class="text-end" style="font-size: 18px; font-weight: bold">Itbis</td>
+                      <td class="text-end" style="font-size: 18px; font-weight: bold" colspan="1">{{totalItbis | currency}}</td>
                     </tr>
                     <tr>
                       <td></td>
                       <td></td>
                       <td></td>
-                      <td style="font-size: 18px; font-weight: bold">
+                      <td class="text-end" style="font-size: 18px; font-weight: bold">
                         Total Gral
                       </td>
-                      <td colspan="2">{{totalGral | currency}}</td>
+                      <td class="text-end" style="font-size: 18px; font-weight: bold" colspan="1">{{totalGral | currency}}</td>
                     </tr>
                   </tfoot>
                 </table>
