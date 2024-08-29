@@ -1,1 +1,94 @@
-<h1>Estoy en Almacen</h1>
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-2">
+      <div class="left-sidebar" style="width: 100%">
+        <ul
+          class="nav flex-column"
+          style="background-color: #af3d2c; height: 87vh"
+        >
+          <br />
+          <li class="nav-item">
+            <a
+              class="nav-link"
+              style="color: rgb(250, 247, 247); font-size: 18px"
+              routerLinkActive="active"
+              [routerLink]="['ctrfactura']"
+              >Control Factura</a
+            >
+          </li>
+          <li class="nav-item">
+            <a
+              class="nav-link"
+              style="color: rgb(250, 247, 247); font-size: 18px"
+              routerLinkActive="active"
+              [routerLink]="['entradamerc']"
+              >Entada Mercancias</a
+            >
+          </li>
+          <li class="nav-item">
+            <a
+              class="nav-link"
+              style="color: rgb(250, 247, 247); font-size: 18px"
+              routerLinkActive="active"
+              [routerLink]="['ventainterna']"
+              >Venta Interna
+            </a>
+          </li>
+
+          <li class="nav-item">
+            <a
+              class="nav-link"
+              style="color: rgb(250, 247, 247); font-size: 18px"
+              routerLinkActive="active"
+              [routerLink]="['pendiente']"
+              >Pendiente de Entrega
+            </a>
+          </li>
+
+          <li class="nav-item">
+            <a
+              class="nav-link"
+              style="color: rgb(250, 247, 247); font-size: 18px"
+              routerLinkActive="active"
+              [routerLink]="['salidadfact']"
+              >Control Salida Factura
+            </a>
+          </li>
+
+          <li class="nav-item">
+            <a
+              class="nav-link"
+              style="color: rgb(250, 247, 247); font-size: 18px"
+              routerLinkActive="active"
+              [routerLink]="['conduce']"
+              >Conduce</a
+            >
+          </li>
+
+          <li class="nav-item">
+            <a
+              class="nav-link"
+              style="color: rgb(250, 247, 247); font-size: 18px"
+              routerLinkActive="active"
+              [routerLink]="['solicitudprestamo']"
+              >Solicitud Prestamo
+            </a>
+          </li>
+
+          <li class="nav-item">
+            <a
+              class="nav-link"
+              style="color: rgb(250, 247, 247); font-size: 18px"
+              routerLinkActive="active"
+              [routerLink]="['controlgasoil']"
+              >Contol Gasoil</a
+            >
+          </li>
+        </ul>
+      </div>
+    </div>
+    <div class="col">
+      <router-outlet></router-outlet>
+    </div>
+  </div>
+</div>

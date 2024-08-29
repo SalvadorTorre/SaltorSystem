@@ -27,3 +27,12 @@ small {
   font-size: 12px;
   color: #999;
 }
+
+.modal-header {
+  background-color: #0f1f6a;
+  color: white;
+}
+
+.btn-close {
+  background-color: white !important;
+}

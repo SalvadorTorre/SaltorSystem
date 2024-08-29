@@ -25,6 +25,10 @@ const routes: Routes = [
       loadChildren: () => import('./pages/facturacion/facturacion-modulo').then(m => m.ModuloFacturacion)
     },
     {
+      path:"cotizacion",
+      loadChildren: () => import('./pages/cotizacion/cotizacion-modulo').then(m => m.ModuloCotizacion)
+    },
+    {
       path:"caja",
       loadChildren: () => import('./pages/caja/caja-modulo').then(m => m.ModuloCaja)
     },

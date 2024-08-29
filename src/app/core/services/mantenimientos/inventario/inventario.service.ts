@@ -32,4 +32,11 @@ export class ServicioInventario {
   borrarDeInventario(in_codmerc:number): Observable<any>{
     return this.http.DeleteRequest(`/productos/${in_codmerc}`, '');
   }
+
+  buscarPorCodigoMerc(codigo:string): Observable<any>{
+    return this.http.GetRequest<any>(`/productos-buscador/${codigo}`);
+  }
+  buscarPorDescripcionMerc(descripcion:string): Observable<any>{
+    return this.http.GetRequest<any>(`/productos-buscador-desc/${descripcion}`);
+  }
 }

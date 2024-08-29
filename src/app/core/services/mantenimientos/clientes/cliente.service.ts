@@ -37,8 +37,8 @@ console.log(url);
     return this.http.GetRequest<any>(`/cliente/${cl_codClie}`);
   }
 
-  buscartodoCliente(): Observable<ModeloCliente>{
-    return this.http.GetRequest<ModeloCliente>("/cliente");
+  buscarporNombre(nombre:string): Observable<ModeloCliente>{
+    return this.http.GetRequest<ModeloCliente>(`/cliente-nombre/${nombre}`);
   }
 }
 

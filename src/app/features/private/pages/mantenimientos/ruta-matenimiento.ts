@@ -49,6 +49,10 @@ const routes: Routes = [
           loadChildren: () => import('./pages/despachadores-page/despachadores-modulo').then(m => m.ModuloDespachadores)
         },
         {
+          path:"Empresas",
+          loadChildren: () => import('./pages/empresas-page/empresas-modulo').then(m => m.ModuloEmpresas)
+        },
+        {
           path:"grupo-mercancias",
           loadChildren: () => import('./pages/grupormerc/grupomerc-modulo').then(m => m.ModuloGrupoMercancias)
         },
