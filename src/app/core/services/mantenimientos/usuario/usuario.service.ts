@@ -38,10 +38,10 @@ export class ServicioUsuario {
   }
 
   buscartodoUsuario(claveUsuario: number): Observable<ModeloUsuario> {
-    return this.http.GetRequest<ModeloUsuario>("/usuario /${claveUsuario}");
+    return this.http.GetRequest<ModeloUsuario>("/usuario/${claveUsuario}");
   }
 
-  buscarUsuarioPorCodigo(claveUsuario: string): Observable<any> {
-    return this.http.GetRequest<any>(`/api/usuario/${claveUsuario}`);
+  buscarUsuarioPorClave(claveUsuario: string): Observable<any> {
+    return this.http.GetRequest<any>(`/usuario-clave/${claveUsuario}`);
   }
 }

@@ -108,26 +108,6 @@
                     </a>
                   </td>
                 </tr>
-                <!--               <tr>
-                  <td>2024000002</td>
-                  <td>JOSE SANTANA MARRERO</td>
-                  <td class="text-center">01/08/2024</td>
-                  <td class="text-end">10,250,350.00</td>
-                  <td class="text-center">
-                    <button class="btn btn-link">
-                      <i class="bi bi-pencil text-primary"></i>
-                    </button>
-
-                    <button class="btn btn-link">
-                      <i class="bi bi-trash text-danger"></i>
-                    </button>
-
-                    <button class="btn btn-link">
-                      <i class="bi bi-card-list text-success"></i>
-                    </button>
-                  </td>
-                </tr>
--->
               </tbody>
             </table>
           </div>
@@ -196,6 +176,8 @@
   tabindex="-1"
   aria-labelledby="tituloModalCotizacion"
   aria-hidden="true"
+  data-bs-backdrop="static"
+  data-bs-keyboard="false"
 >
   <div
     class="modal-dialog modal-dialog-centered modal-xl"
@@ -249,7 +231,7 @@
                       ></div>
                     </div>
                   </div>
-                  <div class="mb-1 row mt-1">
+                  <!--                  <div class="mb-1 row mt-1">
                     <div class="col-2">
                       <label for="">RNC</label>
                     </div>
@@ -262,7 +244,28 @@
                         class="form-control form-control-sm"
                       />
                     </div>
+                  </div>-->
+                  <!--*****************************************************-->
+                  <div class="mb-1 row MT-1">
+                    <div class="col-2">
+                      <label for="">Rnc</label>
+                    </div>
+                    <div class="col-4">
+                      <input
+                        type="text"
+                        #input1
+                        (keydown)="moveFocus($event, input2)"
+                        (keydown.enter)="buscarRnc()"
+                        formControlName="ct_rnc"
+                        class="form-control form-control-sm"
+                      />
+                      <!--<div
+                        *ngIf="formularioCotizacion.get('ct_rnc')?.touched && formularioCotizacion.get('ct_rnc')?.invalid"
+                      ></div> -->
+                    </div>
                   </div>
+                  <!--********************************************************-->
+
                   <div class="mb-1 row mt-1">
                     <div class="col-2">
                       <label for=" ">Nombre</label>
@@ -609,7 +612,17 @@
                       <td class="text-center">{{ item.precio }}</td>
                       <td class="text-end">{{ item.total | currency }}</td>
                       <td>
-                        <button (click)="borarItem(item)">Eliminar</button>
+                        <!-- <button class="btn btn-link" (click)="borarItem(item)">
+                          <i class="bi bi-trash text-danger"></i>
+                        </button>
+                         <button (click)="borarItem(item)">Eliminar</button>-->
+
+                        <i
+                          (click)="borarItem(item)"
+                          class="bi bi-trash text-danger"
+                          style="padding: 10px"
+                        >
+                        </i>
                       </td>
                     </tr>
                   </tbody>

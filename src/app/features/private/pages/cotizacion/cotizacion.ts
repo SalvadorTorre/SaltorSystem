@@ -3,6 +3,8 @@ import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms'
 import { BehaviorSubject, debounceTime, distinctUntilChanged, filter, switchMap, tap } from 'rxjs';
 import Swal from 'sweetalert2';
 import { ModeloUsuarioData } from 'src/app/core/services/mantenimientos/usuario';
+import { ModeloRncData } from 'src/app/core/services/mantenimientos/rnc';
+import { ServicioRnc } from 'src/app/core/services/mantenimientos/rnc/rnc.service';
 import { ServicioUsuario } from 'src/app/core/services/mantenimientos/usuario/usuario.service';
 import { ServicioCotizacion } from 'src/app/core/services/cotizaciones/cotizacion/cotizacion.service';
 import { CotizacionModelData, detCotizacionData } from 'src/app/core/services/cotizaciones/cotizacion';
@@ -13,6 +15,7 @@ import { ModeloCliente, ModeloClienteData } from 'src/app/core/services/mantenim
 import { CotizacionDetalleModel, interfaceDetalleModel } from 'src/app/core/services/cotizaciones/cotizacion/cotizacion';
 import { ServicioInventario } from 'src/app/core/services/mantenimientos/inventario/inventario.service';
 import { ModeloInventario, ModeloInventarioData } from 'src/app/core/services/mantenimientos/inventario';
+import { Usuario } from '../mantenimientos/pages/usuario-page/usuario';
 declare var $: any;
 
 
@@ -65,7 +68,8 @@ export class Cotizacion implements OnInit {
     private serviciodetCotizacion: ServiciodetCotizacion,
     private http: HttpInvokeService,
     private servicioInventario: ServicioInventario,
-    private ServicioUsuario: ServicioUsuario
+    private ServicioUsuario: ServicioUsuario,
+    private ServicioRnc: ServicioRnc
   ) {
 
     this.form = this.fb.group({
@@ -628,7 +632,7 @@ export class Cotizacion implements OnInit {
         currentControl.markAsTouched(); // Marca el campo como tocado para mostrar errores
         //   alert('El campo "Vendedor" es obligatorio.'); // Muestra el mensaje de error
         Swal.fire({
-          icon: "error",
+          icon: "info",
           title: "A V I S O",
           text: 'El campo "Vendedor" es obligatorio.',
         });
@@ -641,32 +645,75 @@ export class Cotizacion implements OnInit {
   buscarUsuario(): void {
     const claveUsuario = this.formularioCotizacion.get('ct_codvend')?.value;
     if (claveUsuario) {
-      this.ServicioUsuario.buscarUsuarioPorCodigo(claveUsuario).subscribe(
-        (usuario) => {
-          if (usuario) {
-            // Aquí puedes manejar los datos del vendedor encontrado
-            console.log('Vendedor encontrado:', usuario.nombreUsuario);
+      this.ServicioUsuario.buscarUsuarioPorClave(claveUsuario).subscribe(
+         (usuario) => {
+          if (usuario.data.length) {
+            this.formularioCotizacion.patchValue({ct_nomvend: usuario.data[0].idUsuario});
+            console.log(usuario.data[0].idUsuario);
           } else {
             console.log('Vendedor no encontrado');
           }
         },
         (error) => {
-
-          console.error('Error al buscar el vendedor', error);
+          Swal.fire({
+            icon: "error",
+            title: "A V I S O",
+            text: 'Codigo de usuarioinvalido.',
+          });
+          return;
+         // console.error('Error al buscar el vendedor', claveUsuario,error);
         }
       );
     }
  }
 
-  moveFocusdesc(event: KeyboardEvent, nextInput: HTMLInputElement) {
-    if (event.key === 'Enter') {
+
+ buscarRnc(): void {
+  const rnc = this.formularioCotizacion.get('ct_rnc')?.value;
+   if (rnc) {
+      if (rnc.length >= 9 && rnc.lenght <=11){
+        this.ServicioRnc.buscarRncPorId(rnc).subscribe(
+       (rnc) => {
+        console.log(rnc.data);
+        if (rnc.data.length) {
+          this.formularioCotizacion.patchValue({ct_nomclie: rnc.data[0].rason});
+          console.log(rnc.data[0].rason);
+        } else {
+          console.log('Rnc no encontrado');
+        }
+      }
+      );
+    }
+    else {
+    Swal.fire({
+      icon: "error",
+      title: "A V I S O",
+      text: 'Rnc invalido.',
+    });
+    return;
+   }
+  }
+  // }else {
+  //   Swal.fire({
+  //     icon: "error",
+  //     title: "A V I S O",
+  //     text: 'Rnc invalido.',
+  //   });
+  //   return;
+
+  // }
+
+}
+
+ moveFocusdesc(event: KeyboardEvent, nextInput: HTMLInputElement) {
+    if (event.key === 'Enter' || event.key === 'Tab') {
       event.preventDefault(); // Previene el comportamiento predeterminado de Enter
     // const currentControl = this.formularioCotizacion.get('ct_codvend');
-      if (this.descripcionmerc =" ") {
+      if (!this.descripcionmerc) {
         Swal.fire({
-          icon: "error",
+          icon: "info",
           title: "A V I S O",
-          text: 'Por favor complete el campo direccion es requeridos.',
+          text: 'Por favor complete el campo descripcion  es requeridos.',
         });
         return;
       }
@@ -698,19 +745,21 @@ export class Cotizacion implements OnInit {
 
   moveFocusnomclie(event: Event, nextInput: HTMLInputElement) {
     event.preventDefault();
-
-    if (!this.buscarNombre)
-    {
-      Swal.fire({
-        icon: "error",
-        title: "A V I S O",
-        text: 'Por favor complete todos los campos requeridos antes de agregar el ítem.',
-      });
-      return;
-    }
-    else
-    {
-      nextInput.focus(); // Si es válido, mueve el foco al siguiente input
+    console.log(nextInput);
+    if (event.target instanceof HTMLInputElement) {
+       if (!event.target.value)
+       {
+        Swal.fire({
+          icon: "error",
+          title: "A V I S O",
+          text: 'Por favor complete el campo Nombre del Cliente Para Poder continual.',
+        });
+        return;
+       }
+       else
+       {
+        nextInput.focus(); // Si es válido, mueve el foco al siguiente input
+      }
     }
   }
 
