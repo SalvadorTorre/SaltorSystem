@@ -439,7 +439,6 @@ export class Cotizacion implements OnInit {
   // Función para agregar un nuevo item a la tabla
   agregaItem(event: Event) {
     event.preventDefault();
-
     if (!this.productoselect || this.cantidadmerc <= 0 || this.preciomerc <= 0) {
       Swal.fire({
         icon: "error",
@@ -453,7 +452,8 @@ export class Cotizacion implements OnInit {
     const itbis = total * 0.18;
     this.totalItbis += itbis;
     this.subTotal += total - itbis;
-    this.items.push({ producto: this.productoselect, cantidad: this.cantidadmerc, precio: this.preciomerc, total
+    this.items.push({
+      producto: this.productoselect, cantidad: this.cantidadmerc, precio: this.preciomerc, total
 
     })
 
@@ -646,9 +646,9 @@ export class Cotizacion implements OnInit {
     const claveUsuario = this.formularioCotizacion.get('ct_codvend')?.value;
     if (claveUsuario) {
       this.ServicioUsuario.buscarUsuarioPorClave(claveUsuario).subscribe(
-         (usuario) => {
+        (usuario) => {
           if (usuario.data.length) {
-            this.formularioCotizacion.patchValue({ct_nomvend: usuario.data[0].idUsuario});
+            this.formularioCotizacion.patchValue({ ct_nomvend: usuario.data[0].idUsuario });
             console.log(usuario.data[0].idUsuario);
           } else {
             console.log('Vendedor no encontrado');
@@ -661,54 +661,67 @@ export class Cotizacion implements OnInit {
             text: 'Codigo de usuarioinvalido.',
           });
           return;
-         // console.error('Error al buscar el vendedor', claveUsuario,error);
+          // console.error('Error al buscar el vendedor', claveUsuario,error);
         }
-      );
-    }
- }
-
-
- buscarRnc(): void {
-  const rnc = this.formularioCotizacion.get('ct_rnc')?.value;
-   if (rnc) {
-      if (rnc.length >= 9 && rnc.lenght <=11){
-        this.ServicioRnc.buscarRncPorId(rnc).subscribe(
-       (rnc) => {
-        console.log(rnc.data);
-        if (rnc.data.length) {
-          this.formularioCotizacion.patchValue({ct_nomclie: rnc.data[0].rason});
-          console.log(rnc.data[0].rason);
-        } else {
-          console.log('Rnc no encontrado');
-        }
-      }
       );
     }
     else {
-    Swal.fire({
-      icon: "error",
-      title: "A V I S O",
-      text: 'Rnc invalido.',
-    });
-    return;
-   }
+      Swal.fire({
+        icon: "error",
+        title: "A V I S O",
+        text: 'Codigo de usuarioinvalido.',
+      });
+      return;
+
+    }
+
   }
-  // }else {
-  //   Swal.fire({
-  //     icon: "error",
-  //     title: "A V I S O",
-  //     text: 'Rnc invalido.',
-  //   });
-  //   return;
+  buscarRnc(): void {
+    const rnc = this.formularioCotizacion.get('ct_rnc')?.value;
+    if (rnc) {
+      if (rnc.length === 9 || rnc.length === 11) {
+        this.ServicioRnc.buscarRncPorId(rnc).subscribe(
+          (rnc) => {
+            console.log(rnc.data);
+            if (rnc.data.length) {
+              this.formularioCotizacion.patchValue({ ct_nomclie: rnc.data[0].rason });
+              console.log(rnc.data[0].rason);
+            } else {
+              Swal.fire({
+                icon: "error",
+                title: "A V I S O",
+                text: 'Rnc invalido.',
+              });
+              return;
+            }
+          }
+        );
+      }
+      else {
+        Swal.fire({
+          icon: "error",
+          title: "A V I S O",
+          text: 'Rnc invalido.',
+        });
+        return;
+      }
+    }
+    // }else {
+    //   Swal.fire({
+    //     icon: "error",
+    //     title: "A V I S O",
+    //     text: 'Rnc invalido.',
+    //   });
+    //   return;
 
-  // }
+    // }
 
-}
+  }
 
- moveFocusdesc(event: KeyboardEvent, nextInput: HTMLInputElement) {
+  moveFocusdesc(event: KeyboardEvent, nextInput: HTMLInputElement) {
     if (event.key === 'Enter' || event.key === 'Tab') {
       event.preventDefault(); // Previene el comportamiento predeterminado de Enter
-    // const currentControl = this.formularioCotizacion.get('ct_codvend');
+      // const currentControl = this.formularioCotizacion.get('ct_codvend');
       if (!this.descripcionmerc) {
         Swal.fire({
           icon: "info",
@@ -723,13 +736,12 @@ export class Cotizacion implements OnInit {
     }
 
 
-}
+  }
 
   moveFocuscant(event: Event, nextInput: HTMLInputElement) {
     event.preventDefault();
 
-    if (!this.productoselect || this.cantidadmerc <= 0)
-    {
+    if (!this.productoselect || this.cantidadmerc <= 0) {
       Swal.fire({
         icon: "error",
         title: "A V I S O",
@@ -737,8 +749,7 @@ export class Cotizacion implements OnInit {
       });
       return;
     }
-    else
-    {
+    else {
       nextInput.focus(); // Si es válido, mueve el foco al siguiente input
     }
   }
@@ -747,17 +758,15 @@ export class Cotizacion implements OnInit {
     event.preventDefault();
     console.log(nextInput);
     if (event.target instanceof HTMLInputElement) {
-       if (!event.target.value)
-       {
+      if (!event.target.value) {
         Swal.fire({
           icon: "error",
           title: "A V I S O",
           text: 'Por favor complete el campo Nombre del Cliente Para Poder continual.',
         });
         return;
-       }
-       else
-       {
+      }
+      else {
         nextInput.focus(); // Si es válido, mueve el foco al siguiente input
       }
     }
