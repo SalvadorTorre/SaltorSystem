@@ -453,6 +453,8 @@
                   #input6
                   [formControl]="buscarcodmerc"
                   [(ngModel)]="codmerc"
+                  name="codmerc"
+                  placeholder="Código"
                 />
                 <div
                   [ngClass]="{ 'show': resultadoCodmerc.length > 0 }"
@@ -596,27 +598,38 @@
                 <table class="table table-sm table-bordered">
                   <thead class="table-dark">
                     <tr style="background-color: red">
-                      <th style="width: 15%">Código</th>
-                      <th style="width: 40%">Descripción</th>
-                      <th class="text-center" style="width: 15%">Cantidad.</th>
-                      <th class="text-center" style="width: 15%">Precio ud</th>
+                      <th style="width: 13%">Código</th>
+                      <th style="width: 37%">Descripción</th>
+                      <th class="text-center" style="width: 13%">Cantidad.</th>
+                      <th class="text-center" style="width: 13%">Precio ud</th>
                       <th class="text-center" style="width: 15%">Total</th>
                       <th>Opciones</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr *ngFor="let item of items">
-                      <td>{{ item.producto?.in_codmerc }}</td>
-                      <td>{{ item.producto?.in_desmerc }}</td>
-                      <td class="text-center">{{ item.cantidad }}</td>
-                      <td class="text-center">{{ item.precio }}</td>
-                      <td class="text-end">{{ item.total | currency }}</td>
+                      <td style="width: 13%">
+                        {{ item.producto?.in_codmerc }}
+                      </td>
+                      <td style="width: 37%">
+                        {{ item.producto?.in_desmerc }}
+                      </td>
+                      <td class="text-center" style="width: 13%">
+                        {{ item.cantidad }}
+                      </td>
+                      <td class="text-center" style="width: 13%">
+                        {{ item.precio }}
+                      </td>
+                      <td class="text-end" style="width: 15%">
+                        {{ item.total | currency }}
+                      </td>
                       <td>
-                        <!-- <button class="btn btn-link" (click)="borarItem(item)">
-                          <i class="bi bi-trash text-danger"></i>
-                        </button>
-                         <button (click)="borarItem(item)">Eliminar</button>-->
-
+                        <i
+                          (click)="editarItem(item)"
+                          class="bi bi-pencil text-primary"
+                          style="padding: 10px"
+                        >
+                        </i>
                         <i
                           (click)="borarItem(item)"
                           class="bi bi-trash text-danger"

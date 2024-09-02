@@ -1,4 +1,5 @@
-import { Component, OnInit, ɵNG_COMP_DEF } from '@angular/core';
+import { Component, NgModule, OnInit, ɵNG_COMP_DEF } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { BehaviorSubject, debounceTime, distinctUntilChanged, filter, switchMap, tap } from 'rxjs';
 import Swal from 'sweetalert2';
@@ -18,7 +19,16 @@ import { ModeloInventario, ModeloInventarioData } from 'src/app/core/services/ma
 import { Usuario } from '../mantenimientos/pages/usuario-page/usuario';
 declare var $: any;
 
-
+@NgModule({
+  declarations: [
+    // Otros componentes
+  ],
+  imports: [
+    FormsModule,
+    // Otros módulos
+  ],
+})
+export class AppModule { }
 @Component({
   selector: 'Cotizacion',
   templateUrl: './cotizacion.html',
@@ -60,6 +70,8 @@ export class Cotizacion implements OnInit {
   productoselect!: ModeloInventarioData;
   precioform = new FormControl();
   cantidadform = new FormControl();
+  isEditing: boolean = false;
+  itemToEdit: any = null;
   form: FormGroup;
   constructor(
     private fb: FormBuilder,
@@ -439,6 +451,24 @@ export class Cotizacion implements OnInit {
   // Función para agregar un nuevo item a la tabla
   agregaItem(event: Event) {
     event.preventDefault();
+    if (this.isEditing) {
+      console.log("editando")
+      // Actualizar el ítem existente
+      this.itemToEdit.producto = this.productoselect;
+      this.itemToEdit.codmerc = this.codmerc;
+      this.itemToEdit.descripcionmerc = this.descripcionmerc;
+      this.itemToEdit.precio = this.preciomerc;
+      this.itemToEdit.cantidad = this.cantidadmerc;
+      this.itemToEdit.total = this.cantidadmerc * this.preciomerc;
+
+      // Actualizar los totales
+      this.actualizarTotales();
+
+      // Restablecer el estado de edición
+      this.isEditing = false;
+      this.itemToEdit = null;
+    } else {
+
     if (!this.productoselect || this.cantidadmerc <= 0 || this.preciomerc <= 0) {
       Swal.fire({
         icon: "error",
@@ -459,15 +489,24 @@ export class Cotizacion implements OnInit {
 
     this.cancelarBusquedaDescripcion = false;
     this.cancelarBusquedaCodigo = false;
+
+
+  }
+  this.limpiarCampos();
+
+  }
+  limpiarCampos(){
+    //Limpia campo
     this.productoselect;
     this.codmerc = ""
     this.descripcionmerc = ""
     this.preciomerc = 0;
     this.cantidadmerc = 0;
-
+    this.isEditing = false;
+    //this.itemToEdit = null;
   }
 
-  // (Opcional) Función para eliminar un ítem de la tabla
+   // (Opcional) Función para eliminar un ítem de la tabla
   borarItem(item: any) {
     const index = this.items.indexOf(item);
     if (index > -1) {
@@ -485,6 +524,25 @@ export class Cotizacion implements OnInit {
     }
   }
 
+  editarItem(item: any) {
+    const index = this.items.indexOf(item);
+    console.log("editando")
+    if (index > -1) {
+      this.isEditing = true;
+      this.itemToEdit = item;
+
+      this.productoselect = item.producto;
+      this.codmerc = item.codmerc;
+      this.descripcionmerc = item.descripcionmerc;
+      this.preciomerc = item.preciomerc
+      this.cantidadmerc = item.cantidadmerc
+    }
+  }
+  actualizarTotales(){
+    this.totalGral = this.items.reduce((sum, item) => sum + item.total, 0);
+    this.totalItbis = this.items.reduce((sum, item) => sum + (item.total * 0.18), 0);
+    this.subTotal = this.items.reduce((sum, item) => sum + (item.total - (item.total * 0.18)), 0);
+  }
 
   buscarPorCodigo(codigo: string) {
 
@@ -641,6 +699,40 @@ export class Cotizacion implements OnInit {
       }
     }
   }
+  // buscarCodgomerc(): void {
+  //   const claveUsuario = this.formularioCotizacion.get('codmerc')?.value;
+  //   if (codmerc) {
+  //     this.ServicioUsuario.buscarUsuarioPorClave(codmerc).subscribe(
+  //       (usuario) => {
+  //         if (inventario.data.length) {
+  //           this.formularioCotizacion.patchValue({ ct_nomvend: usuario.data[0].idUsuario });
+  //           console.log(usuario.data[0].idUsuario);
+  //         } else {
+  //           console.log('Vendedor no encontrado');
+  //         }
+  //       },
+  //       (error) => {
+  //         Swal.fire({
+  //           icon: "error",
+  //           title: "A V I S O",
+  //           text: 'Codigo de usuarioinvalido.',
+  //         });
+  //         return;
+  //         // console.error('Error al buscar el vendedor', claveUsuario,error);
+  //       }
+  //     );
+  //   }
+  //   else {
+  //     Swal.fire({
+  //       icon: "error",
+  //       title: "A V I S O",
+  //       text: 'Codigo de usuarioinvalido.',
+  //     });
+  //     return;
+
+  //   }
+
+  // }
 
   buscarUsuario(): void {
     const claveUsuario = this.formularioCotizacion.get('ct_codvend')?.value;
@@ -706,17 +798,10 @@ export class Cotizacion implements OnInit {
         return;
       }
     }
-    // }else {
-    //   Swal.fire({
-    //     icon: "error",
-    //     title: "A V I S O",
-    //     text: 'Rnc invalido.',
-    //   });
-    //   return;
-
-    // }
 
   }
+
+
 
   moveFocusdesc(event: KeyboardEvent, nextInput: HTMLInputElement) {
     if (event.key === 'Enter' || event.key === 'Tab') {
@@ -771,6 +856,7 @@ export class Cotizacion implements OnInit {
       }
     }
   }
+
 
 
 }
