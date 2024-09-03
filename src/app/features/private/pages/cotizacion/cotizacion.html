@@ -231,20 +231,7 @@
                       ></div>
                     </div>
                   </div>
-                  <!--                  <div class="mb-1 row mt-1">
-                    <div class="col-2">
-                      <label for="">RNC</label>
-                    </div>
-                    <div class="col-4">
-                      <input
-                        type="number"
-                        (keydown)="moveFocus($event, input2)"
-                        #input1
-                        formControlName="ct_rnc"
-                        class="form-control form-control-sm"
-                      />
-                    </div>
-                  </div>-->
+
                   <!--*****************************************************-->
                   <div class="mb-1 row MT-1">
                     <div class="col-2">
@@ -254,8 +241,7 @@
                       <input
                         type="text"
                         #input1
-                        (keydown)="moveFocus($event, input2)"
-                        (keydown.enter)="buscarRnc()"
+                        (keydown.enter)="buscarRnc($event,input2)"
                         formControlName="ct_rnc"
                         class="form-control form-control-sm"
                       />
@@ -404,8 +390,7 @@
                       <input
                         type="password"
                         (input)="convertToUpperCase($event)"
-                        (keydown)="moveFocusin($event, input6)"
-                        (keydown.enter)="buscarUsuario()"
+                        (keydown.enter)="buscarUsuario($event, input6)"
                         formControlName="ct_codvend"
                         #input5
                         class="form-control form-control-sm"
@@ -448,7 +433,7 @@
                   #codigoInput
                   autocomplete="off"
                   (input)="convertToUpperCase($event)"
-                  (keydown)="moveFocus($event, input7)"
+                  (keydown.enter)="buscarCodigomerc($event, input7)"
                   (keydown)=" handleKeydownInventario($event)"
                   #input6
                   [formControl]="buscarcodmerc"

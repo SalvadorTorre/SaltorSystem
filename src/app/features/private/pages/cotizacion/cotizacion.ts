@@ -1,3 +1,4 @@
+import { Inventario } from './../mantenimientos/pages/inventario-page/inventario';
 import { Component, NgModule, OnInit, ɵNG_COMP_DEF } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
@@ -19,16 +20,6 @@ import { ModeloInventario, ModeloInventarioData } from 'src/app/core/services/ma
 import { Usuario } from '../mantenimientos/pages/usuario-page/usuario';
 declare var $: any;
 
-@NgModule({
-  declarations: [
-    // Otros componentes
-  ],
-  imports: [
-    FormsModule,
-    // Otros módulos
-  ],
-})
-export class AppModule { }
 @Component({
   selector: 'Cotizacion',
   templateUrl: './cotizacion.html',
@@ -72,6 +63,7 @@ export class Cotizacion implements OnInit {
   cantidadform = new FormControl();
   isEditing: boolean = false;
   itemToEdit: any = null;
+  index_item!: number;
   form: FormGroup;
   constructor(
     private fb: FormBuilder,
@@ -163,7 +155,7 @@ export class Cotizacion implements OnInit {
       tap(() => {
         this.resultadoCodmerc = [];
       }),
-      filter((query: string) => query !== '' && !this.cancelarBusquedaCodigo),
+      filter((query: string) => query !== '' && !this.cancelarBusquedaCodigo && !this.isEditing),
       switchMap((query: string) => this.http.GetRequest<ModeloInventario>(`/productos-buscador/${query}`))
     ).subscribe((results: ModeloInventario) => {
       console.log(results.data);
@@ -184,7 +176,7 @@ export class Cotizacion implements OnInit {
       tap(() => {
         this.resultadodescripcionmerc = [];
       }),
-      filter((query: string) => query !== '' && !this.cancelarBusquedaDescripcion),
+      filter((query: string) => query !== '' && !this.cancelarBusquedaDescripcion && !this.isEditing),
       switchMap((query: string) => this.http.GetRequest<ModeloInventario>(`/productos-buscador-desc/${query}`))
     ).subscribe((results: ModeloInventario) => {
       console.log(results.data);
@@ -221,6 +213,7 @@ export class Cotizacion implements OnInit {
 
     });
   }
+
 
   crearFormularioCotizacion() {
     const fechaActual = new Date();
@@ -525,18 +518,18 @@ export class Cotizacion implements OnInit {
   }
 
   editarItem(item: any) {
-    const index = this.items.indexOf(item);
-    console.log("editando")
-    if (index > -1) {
+    this.index_item = this.items.indexOf(item);
+
+
       this.isEditing = true;
       this.itemToEdit = item;
 
       this.productoselect = item.producto;
-      this.codmerc = item.codmerc;
-      this.descripcionmerc = item.descripcionmerc;
-      this.preciomerc = item.preciomerc
-      this.cantidadmerc = item.cantidadmerc
-    }
+      this.codmerc = item.producto.in_codmerc;
+      this.descripcionmerc = item.producto.in_desmerc;
+      this.preciomerc = item.precio
+      this.cantidadmerc = item.cantidad
+
   }
   actualizarTotales(){
     this.totalGral = this.items.reduce((sum, item) => sum + item.total, 0);
@@ -699,50 +692,50 @@ export class Cotizacion implements OnInit {
       }
     }
   }
-  // buscarCodgomerc(): void {
-  //   const claveUsuario = this.formularioCotizacion.get('codmerc')?.value;
-  //   if (codmerc) {
-  //     this.ServicioUsuario.buscarUsuarioPorClave(codmerc).subscribe(
-  //       (usuario) => {
-  //         if (inventario.data.length) {
-  //           this.formularioCotizacion.patchValue({ ct_nomvend: usuario.data[0].idUsuario });
-  //           console.log(usuario.data[0].idUsuario);
-  //         } else {
-  //           console.log('Vendedor no encontrado');
-  //         }
-  //       },
-  //       (error) => {
-  //         Swal.fire({
-  //           icon: "error",
-  //           title: "A V I S O",
-  //           text: 'Codigo de usuarioinvalido.',
-  //         });
-  //         return;
-  //         // console.error('Error al buscar el vendedor', claveUsuario,error);
-  //       }
-  //     );
-  //   }
-  //   else {
-  //     Swal.fire({
-  //       icon: "error",
-  //       title: "A V I S O",
-  //       text: 'Codigo de usuarioinvalido.',
-  //     });
-  //     return;
+  buscarCodigomerc(event: Event, nextElement: HTMLInputElement | null): void {
+    const in_codmerc = this.formularioCotizacion.get('codmerc')?.value;
+    if (in_codmerc) {
+      this.servicioInventario.buscarporCodigoMerc(in_codmerc).subscribe(
+      (productos) => {
+        if (productos.data.length) {
+          this.formularioCotizacion.patchValue({ ct_nomvend: productos.data[0].in_desmerc });
+          nextElement?.focus()
+          console.log(productos.data[0].in_desmerc);
+        }
+        else {
+          Swal.fire({
+            icon: "error",
+            title: "A V I S O",
+            text: 'Codigo de mercacia invalido.',
+          });
+          return;
+        }
 
-  //   }
+      });
+    }
+    else {
+      nextElement?.focus()
+    }
 
-  // }
+  }
 
-  buscarUsuario(): void {
+  buscarUsuario(event: Event, nextElement: HTMLInputElement | null): void {
+    event.preventDefault();
     const claveUsuario = this.formularioCotizacion.get('ct_codvend')?.value;
     if (claveUsuario) {
       this.ServicioUsuario.buscarUsuarioPorClave(claveUsuario).subscribe(
         (usuario) => {
           if (usuario.data.length) {
             this.formularioCotizacion.patchValue({ ct_nomvend: usuario.data[0].idUsuario });
+            nextElement?.focus()
             console.log(usuario.data[0].idUsuario);
           } else {
+            Swal.fire({
+              icon: "error",
+              title: "A V I S O",
+              text: 'Codigo de usuario invalido.',
+            });
+            return;
             console.log('Vendedor no encontrado');
           }
         },
@@ -750,7 +743,7 @@ export class Cotizacion implements OnInit {
           Swal.fire({
             icon: "error",
             title: "A V I S O",
-            text: 'Codigo de usuarioinvalido.',
+            text: 'Codigo de usuario invalido.',
           });
           return;
           // console.error('Error al buscar el vendedor', claveUsuario,error);
@@ -768,7 +761,8 @@ export class Cotizacion implements OnInit {
     }
 
   }
-  buscarRnc(): void {
+  buscarRnc(event: Event, nextElement: HTMLInputElement | null): void {
+    event.preventDefault();
     const rnc = this.formularioCotizacion.get('ct_rnc')?.value;
     if (rnc) {
       if (rnc.length === 9 || rnc.length === 11) {
@@ -777,6 +771,7 @@ export class Cotizacion implements OnInit {
             console.log(rnc.data);
             if (rnc.data.length) {
               this.formularioCotizacion.patchValue({ ct_nomclie: rnc.data[0].rason });
+              nextElement?.focus()
               console.log(rnc.data[0].rason);
             } else {
               Swal.fire({

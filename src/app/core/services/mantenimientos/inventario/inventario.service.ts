@@ -33,7 +33,7 @@ export class ServicioInventario {
     return this.http.DeleteRequest(`/productos/${in_codmerc}`, '');
   }
 
-  buscarPorCodigoMerc(codigo:string): Observable<any>{
+  buscarporCodigoMerc(codigo:string): Observable<any>{
     return this.http.GetRequest<any>(`/productos-buscador/${codigo}`);
   }
   buscarPorDescripcionMerc(descripcion:string): Observable<any>{
