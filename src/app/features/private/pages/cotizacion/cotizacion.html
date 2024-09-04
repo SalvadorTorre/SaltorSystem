@@ -241,6 +241,7 @@
                       <input
                         type="text"
                         #input1
+                        id="input1"
                         (keydown.enter)="buscarRnc($event,input2)"
                         formControlName="ct_rnc"
                         class="form-control form-control-sm"
@@ -390,6 +391,7 @@
                       <input
                         type="password"
                         (input)="convertToUpperCase($event)"
+                        (keydown)="moveFocus($event, input6)"
                         (keydown.enter)="buscarUsuario($event, input6)"
                         formControlName="ct_codvend"
                         #input5
@@ -433,7 +435,7 @@
                   #codigoInput
                   autocomplete="off"
                   (input)="convertToUpperCase($event)"
-                  (keydown.enter)="buscarCodigomerc($event, input7)"
+                  (keydown)="moveFocus($event, input7)"
                   (keydown)=" handleKeydownInventario($event)"
                   #input6
                   [formControl]="buscarcodmerc"
@@ -441,6 +443,7 @@
                   name="codmerc"
                   placeholder="Código"
                 />
+
                 <div
                   [ngClass]="{ 'show': resultadoCodmerc.length > 0 }"
                   class="dropdown-menu"
@@ -475,17 +478,9 @@
                   </div>
                 </div>
               </div>
-              <!--<div class="col-2">
-              <label for="">Código</label>
-              <input
-                type="text"
-                #codigoInput
-                class="form-control form-control-sm"
-                (input)="convertToUpperCase($event)"
-                (keydown)="moveFocus($event, input7)"
-                #input6
-                class="form-control form-control-sm"
-              />-->
+              <div *ngIf="codnotfound">
+                <small class="text-danger">Este codigo no existe.</small>
+              </div>
             </div>
             <div class="col-5">
               <label for="">Descripción</label>
@@ -497,7 +492,7 @@
                   #descripcionInput
                   autocomplete="off"
                   (input)="convertToUpperCase($event)"
-                  (keydown)="moveFocusdesc($event, input8)"
+                  (keydown)="moveFocus($event, input8)"
                   (keydown)="handleKeydownInventariosdesc($event)"
                   #input7
                   [formControl]="buscardescripcionmerc"
@@ -537,6 +532,9 @@
                   </div>
                 </div>
               </div>
+              <div *ngIf="desnotfound">
+                <small class="text-danger">Esta descripcion no existe.</small>
+              </div>
             </div>
             <div class="col-2">
               <label for="">Cantidad</label>
@@ -544,6 +542,7 @@
                 type="number"
                 [(ngModel)]="cantidadmerc"
                 #input8
+                id="input8"
                 [formControl]="cantidadform"
                 (keydown.enter)="moveFocuscant($event, input9)"
                 class="form-control"

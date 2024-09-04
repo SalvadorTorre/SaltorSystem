@@ -64,6 +64,8 @@ export class Cotizacion implements OnInit {
   isEditing: boolean = false;
   itemToEdit: any = null;
   index_item!: number;
+  codnotfound: boolean = false;
+  desnotfound: boolean = false;
   form: FormGroup;
   constructor(
     private fb: FormBuilder,
@@ -160,11 +162,19 @@ export class Cotizacion implements OnInit {
     ).subscribe((results: ModeloInventario) => {
       console.log(results.data);
       if (results) {
-        if (Array.isArray(results.data)) {
-          this.resultadoCodmerc = results.data;
+        console.log(results)
+        if (Array.isArray(results.data) && results.data.length) {
+           this.resultadoCodmerc = results.data;
+           this.codnotfound = false;
+        }
+        else {
+          this.codnotfound = true;
         }
       } else {
         this.resultadoCodmerc = [];
+        console.log("paso")
+
+        return;
       }
 
     });
@@ -181,8 +191,12 @@ export class Cotizacion implements OnInit {
     ).subscribe((results: ModeloInventario) => {
       console.log(results.data);
       if (results) {
-        if (Array.isArray(results.data)) {
+        if (Array.isArray(results.data) && results.data.length) {
           this.resultadodescripcionmerc = results.data;
+          this.desnotfound = false;
+        }
+        else {
+          this.desnotfound = true;
         }
       } else {
         this.resultadodescripcionmerc = [];
@@ -219,8 +233,8 @@ export class Cotizacion implements OnInit {
     const fechaActual = new Date();
     const fechaActualStr = this.formatofecha(fechaActual);
     this.formularioCotizacion = this.fb.group({
-      ct_codcoti: [''],
-      ct_feccoti: [fechaActualStr],
+      ct_codcoti: [{ value: '', disabled: true }],
+      ct_feccoti: [{ value: fechaActualStr, disabled: true }],
       ct_valcoti: [''],
       ct_itbis: [''],
       ct_codclie: [''],
@@ -230,13 +244,11 @@ export class Cotizacion implements OnInit {
       ct_dirclie: [''],
       ct_correo: [''],
       ct_codvend: ['', Validators.required],
-      ct_nomvend: [''],
+      ct_nomvend: [{ value: '', disabled: true }],
       ct_status: [''],
       ct_codzona: [''],
-
     });
   }
-
   habilitarFormularioEmpresa() {
     this.habilitarFormulario = false;
   }
@@ -246,6 +258,9 @@ export class Cotizacion implements OnInit {
     this.tituloModalCotizacion = 'Nueva Cotizacion';
     $('#modalcotizacion').modal('show');
     this.habilitarFormulario = true;
+    setTimeout(() => {
+    $('#input1').focus();
+    }, 500); // Asegúrate de que el tiempo sea suficiente para que el modal se abra completamente
   }
 
   cerrarModalCotizacion() {
@@ -610,10 +625,10 @@ export class Cotizacion implements OnInit {
       dc_premerc: inventario.in_premerc,
       dc_cosmerc: inventario.in_cosmerc,
       dc_unidad: inventario.in_unidad,
-
     });
+    $("#input8").focus();
+    $("#input8").select();
   }
-
   handleKeydownInventario(event: KeyboardEvent): void {
     const key = event.key;
     const maxIndex = this.resultadoCodmerc.length;
@@ -698,8 +713,7 @@ export class Cotizacion implements OnInit {
     if (this.codmerc) {
       this.servicioInventario.buscarporCodigoMerc(in_codmerc).subscribe(
         (productos) => {
-          console.log("no esta en blanco zasas")
-          console.log((productos.data.length))
+          console.log((productos))
           console.log(this.codmerc)
           if (productos.data.length) {
             this.formularioCotizacion.patchValue({ codmerc: productos.data[0].in_desmerc });
@@ -723,6 +737,49 @@ export class Cotizacion implements OnInit {
     }
 
   }
+
+  buscarDesmerc(event: Event, nextElement: HTMLInputElement | null): void {
+    event.preventDefault();
+    const in_desmerc = this.formularioCotizacion.get('desmerc')?.value;
+    if (this.descripcionmerc) {
+      this.servicioInventario.buscarPorDescripcionMerc(in_desmerc).subscribe(
+        (inventario) => {
+          if (inventario.data.length) {
+            this.formularioCotizacion.patchValue({ desmerc: inventario.data[0].in_codmerc });
+            nextElement?.focus()
+            console.log(inventario.data[0].in_codmerc);
+          } else {
+            Swal.fire({
+              icon: "error",
+              title: "A V I S O",
+              text: 'Descripcion invalida.',
+            });
+            return;
+          }
+        },
+        (error) => {
+          Swal.fire({
+            icon: "error",
+            title: "A V I S O",
+            text: 'Codigo de usuario invalido.',
+          });
+          return;
+          // console.error('Error al buscar el vendedor', claveUsuario,error);
+        }
+      );
+    }
+    else {
+      Swal.fire({
+        icon: "error",
+        title: "A V I S O",
+        text: 'Codigo de usuarioinvalido.',
+      });
+      return;
+
+    }
+
+  }
+
 
   buscarUsuario(event: Event, nextElement: HTMLInputElement | null): void {
     event.preventDefault();
@@ -797,6 +854,9 @@ export class Cotizacion implements OnInit {
         });
         return;
       }
+    }
+    else {
+      nextElement?.focus()
     }
 
   }
