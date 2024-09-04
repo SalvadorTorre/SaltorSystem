@@ -462,33 +462,33 @@ export class Cotizacion implements OnInit {
       this.itemToEdit = null;
     } else {
 
-    if (!this.productoselect || this.cantidadmerc <= 0 || this.preciomerc <= 0) {
-      Swal.fire({
-        icon: "error",
-        title: "A V I S O",
-        text: 'Por favor complete todos los campos requeridos antes de agregar el ítem.',
-      });
-      return;
+      if (!this.productoselect || this.cantidadmerc <= 0 || this.preciomerc <= 0) {
+        Swal.fire({
+          icon: "error",
+          title: "A V I S O",
+          text: 'Por favor complete todos los campos requeridos antes de agregar el ítem.',
+        });
+        return;
+      }
+      const total = this.cantidadmerc * this.preciomerc;
+      this.totalGral += total;
+      const itbis = total * 0.18;
+      this.totalItbis += itbis;
+      this.subTotal += total - itbis;
+      this.items.push({
+        producto: this.productoselect, cantidad: this.cantidadmerc, precio: this.preciomerc, total
+
+      })
+
+      this.cancelarBusquedaDescripcion = false;
+      this.cancelarBusquedaCodigo = false;
+
+
     }
-    const total = this.cantidadmerc * this.preciomerc;
-    this.totalGral += total;
-    const itbis = total * 0.18;
-    this.totalItbis += itbis;
-    this.subTotal += total - itbis;
-    this.items.push({
-      producto: this.productoselect, cantidad: this.cantidadmerc, precio: this.preciomerc, total
-
-    })
-
-    this.cancelarBusquedaDescripcion = false;
-    this.cancelarBusquedaCodigo = false;
-
+    this.limpiarCampos();
 
   }
-  this.limpiarCampos();
-
-  }
-  limpiarCampos(){
+  limpiarCampos() {
     //Limpia campo
     this.productoselect;
     this.codmerc = ""
@@ -499,7 +499,7 @@ export class Cotizacion implements OnInit {
     //this.itemToEdit = null;
   }
 
-   // (Opcional) Función para eliminar un ítem de la tabla
+  // (Opcional) Función para eliminar un ítem de la tabla
   borarItem(item: any) {
     const index = this.items.indexOf(item);
     if (index > -1) {
@@ -521,17 +521,17 @@ export class Cotizacion implements OnInit {
     this.index_item = this.items.indexOf(item);
 
 
-      this.isEditing = true;
-      this.itemToEdit = item;
+    this.isEditing = true;
+    this.itemToEdit = item;
 
-      this.productoselect = item.producto;
-      this.codmerc = item.producto.in_codmerc;
-      this.descripcionmerc = item.producto.in_desmerc;
-      this.preciomerc = item.precio
-      this.cantidadmerc = item.cantidad
+    this.productoselect = item.producto;
+    this.codmerc = item.producto.in_codmerc;
+    this.descripcionmerc = item.producto.in_desmerc;
+    this.preciomerc = item.precio
+    this.cantidadmerc = item.cantidad
 
   }
-  actualizarTotales(){
+  actualizarTotales() {
     this.totalGral = this.items.reduce((sum, item) => sum + item.total, 0);
     this.totalItbis = this.items.reduce((sum, item) => sum + (item.total * 0.18), 0);
     this.subTotal = this.items.reduce((sum, item) => sum + (item.total - (item.total * 0.18)), 0);
@@ -693,25 +693,30 @@ export class Cotizacion implements OnInit {
     }
   }
   buscarCodigomerc(event: Event, nextElement: HTMLInputElement | null): void {
+    event.preventDefault();
     const in_codmerc = this.formularioCotizacion.get('codmerc')?.value;
-    if (in_codmerc) {
+    if (this.codmerc) {
       this.servicioInventario.buscarporCodigoMerc(in_codmerc).subscribe(
-      (productos) => {
-        if (productos.data.length) {
-          this.formularioCotizacion.patchValue({ ct_nomvend: productos.data[0].in_desmerc });
-          nextElement?.focus()
-          console.log(productos.data[0].in_desmerc);
-        }
-        else {
-          Swal.fire({
-            icon: "error",
-            title: "A V I S O",
-            text: 'Codigo de mercacia invalido.',
-          });
-          return;
-        }
+        (productos) => {
+          console.log("no esta en blanco zasas")
+          console.log((productos.data.length))
+          console.log(this.codmerc)
+          if (productos.data.length) {
+            this.formularioCotizacion.patchValue({ codmerc: productos.data[0].in_desmerc });
+            nextElement?.focus()
+            console.log(productos.data[0].in_desmerc);
+            console.log("no esta en blanco")
+          }
+          else {
+            Swal.fire({
+              icon: "error",
+              title: "A V I S O",
+              text: 'Codigo de mercacia invalido.0000',
+            });
+            return;
+          }
 
-      });
+        });
     }
     else {
       nextElement?.focus()
