@@ -162,18 +162,19 @@ export class Cotizacion implements OnInit {
     ).subscribe((results: ModeloInventario) => {
       console.log(results.data);
       if (results) {
-        console.log(results)
         if (Array.isArray(results.data) && results.data.length) {
-           this.resultadoCodmerc = results.data;
-           this.codnotfound = false;
+          this.resultadoCodmerc = results.data;
+          this.codnotfound = false;
         }
         else {
           this.codnotfound = true;
+          return
         }
       } else {
         this.resultadoCodmerc = [];
-        console.log("paso")
+        this.codnotfound = false;
 
+        console.log("paso")
         return;
       }
 
@@ -259,7 +260,7 @@ export class Cotizacion implements OnInit {
     $('#modalcotizacion').modal('show');
     this.habilitarFormulario = true;
     setTimeout(() => {
-    $('#input1').focus();
+      $('#input1').focus();
     }, 500); // Asegúrate de que el tiempo sea suficiente para que el modal se abra completamente
   }
 
@@ -271,6 +272,8 @@ export class Cotizacion implements OnInit {
     $('#modalcotizacion').modal('hide');
     this.crearFormularioCotizacion();
     this.buscarTodasCotizacion(1);
+    this.limpiarTabla()
+    this.limpiarCampos()
   }
 
 
@@ -514,6 +517,12 @@ export class Cotizacion implements OnInit {
     //this.itemToEdit = null;
   }
 
+  limpiarTabla() {
+    this.items = [];          // Limpiar el array de items
+    this.totalGral = 0;       // Reiniciar el total general
+    this.totalItbis = 0;      // Reiniciar el total del ITBIS
+    this.subTotal = 0;        // Reiniciar el subtotal
+  }
   // (Opcional) Función para eliminar un ítem de la tabla
   borarItem(item: any) {
     const index = this.items.indexOf(item);
