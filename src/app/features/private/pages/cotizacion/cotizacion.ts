@@ -66,6 +66,7 @@ export class Cotizacion implements OnInit {
   index_item!: number;
   codnotfound: boolean = false;
   desnotfound: boolean = false;
+  mensagePantalla:boolean = false;
   form: FormGroup;
   constructor(
     private fb: FormBuilder,
@@ -269,6 +270,7 @@ export class Cotizacion implements OnInit {
     this.formularioCotizacion.reset();
     this.modoedicionCotizacion = false;
     this.modoconsultaCotizacion = false;
+    this.mensagePantalla = false;
     $('#modalcotizacion').modal('hide');
     this.crearFormularioCotizacion();
     this.buscarTodasCotizacion(1);
@@ -845,6 +847,7 @@ export class Cotizacion implements OnInit {
               nextElement?.focus()
               console.log(rnc.data[0].rason);
             } else {
+              this.mensagePantalla = true;
               Swal.fire({
                 icon: "error",
                 title: "A V I S O",
@@ -918,6 +921,7 @@ export class Cotizacion implements OnInit {
           title: "A V I S O",
           text: 'Por favor complete el campo Nombre del Cliente Para Poder continual.',
         });
+        this.mensagePantalla = false
         return;
       }
       else {
@@ -925,7 +929,17 @@ export class Cotizacion implements OnInit {
       }
     }
   }
+  submitForm(): void {
+    if (this.mensagePantalla){
 
+       console.log(this.mensagePantalla);
+    } else {
+      console.log(this.mensagePantalla);
+      console.log(this.habilitarFormulario);
+       this.cerrarModalCotizacion()
+
+    }
+  }
 
 
 }
