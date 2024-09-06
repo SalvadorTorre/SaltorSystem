@@ -158,7 +158,7 @@ export class Cotizacion implements OnInit {
       tap(() => {
         this.resultadoCodmerc = [];
       }),
-      filter((query: string) => query !== '' && !this.cancelarBusquedaCodigo && !this.isEditing),
+      filter((query: string) => query.trim() !== '' && !this.cancelarBusquedaCodigo && !this.isEditing),
       switchMap((query: string) => this.http.GetRequest<ModeloInventario>(`/productos-buscador/${query}`))
     ).subscribe((results: ModeloInventario) => {
       console.log(results.data);
@@ -483,11 +483,12 @@ export class Cotizacion implements OnInit {
     } else {
 
       if (!this.productoselect || this.cantidadmerc <= 0 || this.preciomerc <= 0) {
+        this.mensagePantalla = true;
         Swal.fire({
-          icon: "error",
-          title: "A V I S O",
-          text: 'Por favor complete todos los campos requeridos antes de agregar el ítem.',
-        });
+        icon: "error",
+        title: "A V I S O",
+        text: 'Por favor complete todos los campos requeridos antes de agregar el ítem.',
+        }).then(()=>{this.mensagePantalla = false});
         return;
       }
       const total = this.cantidadmerc * this.preciomerc;
@@ -803,32 +804,27 @@ export class Cotizacion implements OnInit {
             nextElement?.focus()
             console.log(usuario.data[0].idUsuario);
           } else {
+            this.mensagePantalla = true;
             Swal.fire({
               icon: "error",
               title: "A V I S O",
               text: 'Codigo de usuario invalido.',
-            });
+            }).then(()=>{this.mensagePantalla = false});
             return;
             console.log('Vendedor no encontrado');
           }
         },
-        (error) => {
-          Swal.fire({
-            icon: "error",
-            title: "A V I S O",
-            text: 'Codigo de usuario invalido.',
-          });
-          return;
-          // console.error('Error al buscar el vendedor', claveUsuario,error);
-        }
+
+
       );
     }
     else {
+      this.mensagePantalla = true;
       Swal.fire({
         icon: "error",
         title: "A V I S O",
-        text: 'Codigo de usuarioinvalido.',
-      });
+        text: 'Codigo de usuario invalido.',
+      }).then(()=>{this.mensagePantalla = false});
       return;
 
     }
@@ -847,12 +843,13 @@ export class Cotizacion implements OnInit {
               nextElement?.focus()
               console.log(rnc.data[0].rason);
             } else {
-              this.mensagePantalla = true;
+             this.mensagePantalla = true;
+
               Swal.fire({
                 icon: "error",
                 title: "A V I S O",
                 text: 'Rnc invalido.',
-              });
+              }).then(()=>{this.mensagePantalla = false});
               return;
             }
           }
@@ -864,7 +861,7 @@ export class Cotizacion implements OnInit {
           icon: "error",
           title: "A V I S O",
           text: 'Rnc invalido.',
-        });
+        }).then(()=>{this.mensagePantalla = false});
         return;
       }
       this.mensagePantalla = false;
@@ -901,14 +898,16 @@ export class Cotizacion implements OnInit {
     event.preventDefault();
 
     if (!this.productoselect || this.cantidadmerc <= 0) {
+      this.mensagePantalla = true;
       Swal.fire({
-        icon: "error",
-        title: "A V I S O",
-        text: 'Por favor complete todos los campos requeridos antes de agregar el ítem.',
-      });
+      icon: "error",
+      title: "A V I S O",
+      text: 'Por favor complete todos los campos requeridos antes de agregar el ítem.',
+      }).then(()=>{this.mensagePantalla = false});
       return;
     }
     else {
+      this.mensagePantalla = false
       nextInput.focus(); // Si es válido, mueve el foco al siguiente input
     }
   }
