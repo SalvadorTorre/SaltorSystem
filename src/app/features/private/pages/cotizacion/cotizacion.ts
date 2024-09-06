@@ -66,7 +66,7 @@ export class Cotizacion implements OnInit {
   index_item!: number;
   codnotfound: boolean = false;
   desnotfound: boolean = false;
-  mensagePantalla:boolean = false;
+  mensagePantalla: boolean = false;
   form: FormGroup;
   constructor(
     private fb: FormBuilder,
@@ -859,6 +859,7 @@ export class Cotizacion implements OnInit {
         );
       }
       else {
+        this.mensagePantalla = true;
         Swal.fire({
           icon: "error",
           title: "A V I S O",
@@ -866,11 +867,12 @@ export class Cotizacion implements OnInit {
         });
         return;
       }
+      this.mensagePantalla = false;
     }
     else {
       nextElement?.focus()
     }
-
+    this.mensagePantalla = false;
   }
 
 
@@ -930,14 +932,15 @@ export class Cotizacion implements OnInit {
     }
   }
   submitForm(): void {
-    if (this.mensagePantalla){
+    if (this.mensagePantalla && this.form.invalid) {
 
-       console.log(this.mensagePantalla);
+      console.log(this.mensagePantalla);
+      console.log(this.form.invalid);
+
     } else {
       console.log(this.mensagePantalla);
-      console.log(this.habilitarFormulario);
-       this.cerrarModalCotizacion()
-
+      console.log(this.form.invalid);
+      this.cerrarModalCotizacion()
     }
   }
 
