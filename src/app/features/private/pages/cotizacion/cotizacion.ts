@@ -1,5 +1,5 @@
 import { Inventario } from './../mantenimientos/pages/inventario-page/inventario';
-import { Component, NgModule, OnInit, ɵNG_COMP_DEF } from '@angular/core';
+import { Component, NgModule, OnInit, ViewChild, ElementRef, ɵNG_COMP_DEF } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { BehaviorSubject, debounceTime, distinctUntilChanged, filter, switchMap, tap } from 'rxjs';
@@ -26,6 +26,7 @@ declare var $: any;
   styleUrls: ['./cotizacion.css']
 })
 export class Cotizacion implements OnInit {
+  @ViewChild('inputCodmerc') inputCodmerc!: ElementRef; // Para manejar el foco
   totalItems = 0;
   pageSize = 8;
   currentPage = 1;
@@ -485,10 +486,10 @@ export class Cotizacion implements OnInit {
       if (!this.productoselect || this.cantidadmerc <= 0 || this.preciomerc <= 0) {
         this.mensagePantalla = true;
         Swal.fire({
-        icon: "error",
-        title: "A V I S O",
-        text: 'Por favor complete todos los campos requeridos antes de agregar el ítem.',
-        }).then(()=>{this.mensagePantalla = false});
+          icon: "error",
+          title: "A V I S O",
+          text: 'Por favor complete todos los campos requeridos antes de agregar el ítem.',
+        }).then(() => { this.mensagePantalla = false });
         return;
       }
       const total = this.cantidadmerc * this.preciomerc;
@@ -809,7 +810,7 @@ export class Cotizacion implements OnInit {
               icon: "error",
               title: "A V I S O",
               text: 'Codigo de usuario invalido.',
-            }).then(()=>{this.mensagePantalla = false});
+            }).then(() => { this.mensagePantalla = false });
             return;
             console.log('Vendedor no encontrado');
           }
@@ -824,7 +825,7 @@ export class Cotizacion implements OnInit {
         icon: "error",
         title: "A V I S O",
         text: 'Codigo de usuario invalido.',
-      }).then(()=>{this.mensagePantalla = false});
+      }).then(() => { this.mensagePantalla = false });
       return;
 
     }
@@ -843,13 +844,13 @@ export class Cotizacion implements OnInit {
               nextElement?.focus()
               console.log(rnc.data[0].rason);
             } else {
-             this.mensagePantalla = true;
+              this.mensagePantalla = true;
 
               Swal.fire({
                 icon: "error",
                 title: "A V I S O",
                 text: 'Rnc invalido.',
-              }).then(()=>{this.mensagePantalla = false});
+              }).then(() => { this.mensagePantalla = false });
               return;
             }
           }
@@ -861,7 +862,7 @@ export class Cotizacion implements OnInit {
           icon: "error",
           title: "A V I S O",
           text: 'Rnc invalido.',
-        }).then(()=>{this.mensagePantalla = false});
+        }).then(() => { this.mensagePantalla = false });
         return;
       }
       this.mensagePantalla = false;
@@ -900,10 +901,10 @@ export class Cotizacion implements OnInit {
     if (!this.productoselect || this.cantidadmerc <= 0) {
       this.mensagePantalla = true;
       Swal.fire({
-      icon: "error",
-      title: "A V I S O",
-      text: 'Por favor complete todos los campos requeridos antes de agregar el ítem.',
-      }).then(()=>{this.mensagePantalla = false});
+        icon: "error",
+        title: "A V I S O",
+        text: 'Por favor complete todos los campos requeridos antes de agregar el ítem.',
+      }).then(() => { this.mensagePantalla = false });
       return;
     }
     else {
@@ -917,13 +918,14 @@ export class Cotizacion implements OnInit {
     console.log(nextInput);
     if (event.target instanceof HTMLInputElement) {
       if (!event.target.value) {
+        this.mensagePantalla = true;
         Swal.fire({
           icon: "error",
           title: "A V I S O",
           text: 'Por favor complete el campo Nombre del Cliente Para Poder continual.',
-        });
-        this.mensagePantalla = false
+        }).then(() => { this.mensagePantalla = false });
         return;
+
       }
       else {
         nextInput.focus(); // Si es válido, mueve el foco al siguiente input
