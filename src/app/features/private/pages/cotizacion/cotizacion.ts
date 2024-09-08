@@ -27,6 +27,8 @@ declare var $: any;
 })
 export class Cotizacion implements OnInit {
   @ViewChild('inputCodmerc') inputCodmerc!: ElementRef; // Para manejar el foco
+  @ViewChild('descripcionInput') descripcionInput!: ElementRef; // Para manejar el foco
+
   totalItems = 0;
   pageSize = 8;
   currentPage = 1;
@@ -137,13 +139,14 @@ export class Cotizacion implements OnInit {
 
     });
   }
-
+  @ViewChild('buscarcodmercInput') buscarcodmercElement!: ElementRef;
   buscarNombre = new FormControl();
   resultadoNombre: ModeloClienteData[] = [];
   selectedIndex = 1;
   buscarcodmerc = new FormControl();
   buscardescripcionmerc = new FormControl();
-
+  // buscarcodmercElement = new FormControl();
+  nativeElement = new FormControl();
   resultadoCodmerc: ModeloInventarioData[] = [];
   selectedIndexcodmerc = 1;
   resultadodescripcionmerc: ModeloInventarioData[] = [];
@@ -167,8 +170,10 @@ export class Cotizacion implements OnInit {
         if (Array.isArray(results.data) && results.data.length) {
           this.resultadoCodmerc = results.data;
           this.codnotfound = false;
+          console.log("el codigo existe")
         }
         else {
+          console.log("no existe el codigo")
           this.codnotfound = true;
           return
         }
@@ -176,11 +181,22 @@ export class Cotizacion implements OnInit {
         this.resultadoCodmerc = [];
         this.codnotfound = false;
 
-        console.log("paso")
+        console.log("paso blanco")
         return;
       }
 
     });
+    //************************************************ */
+    //  // Lógica para pasar al siguiente campo si está vacío y se presiona Enter
+    // this.buscarcodmercElement.nativeElement.addEventListener('keydown', (event: KeyboardEvent) => {
+    //   if (event.key === 'Enter') {
+    //     const query = this.buscarcodmerc.value?.trim();
+    //     if (!query) {
+    //       this.moveFocusToNextField();  // Función que mueve el foco al siguiente campo
+    //       event.preventDefault(); // Prevenir comportamiento por defecto (evitar que se envíe el formulario, por ejemplo)
+    //     }
+    //   }
+    // });
 
 
     this.buscardescripcionmerc.valueChanges.pipe(
@@ -723,6 +739,7 @@ export class Cotizacion implements OnInit {
   buscarCodigomerc(event: Event, nextElement: HTMLInputElement | null): void {
     event.preventDefault();
     const in_codmerc = this.formularioCotizacion.get('codmerc')?.value;
+
     if (this.codmerc) {
       this.servicioInventario.buscarporCodigoMerc(in_codmerc).subscribe(
         (productos) => {
@@ -874,7 +891,38 @@ export class Cotizacion implements OnInit {
   }
 
 
+  moveFocuscodmerc(event: KeyboardEvent, nextInput: HTMLInputElement) {
+    if (event.key === 'Enter' || event.key === 'Tab') {
+      event.preventDefault(); // Previene el comportamiento predeterminado de Enter
+      // const currentControl = this.formularioCotizacion.get('ct_codvend');
+      const currentInputValue = (event.target as HTMLInputElement).value.trim();
+      // if (currentInputValue === '') {
+      //   Swal.fire({
+      //     icon: "info",
+      //     title: "A V I S O",
+      //     text: 'El campo está vacío.',
+      //   });
+      //   return;
+      // }
 
+      if (!this.codnotfound === false) {
+        this.mensagePantalla = true;
+
+        Swal.fire({
+          icon: "error",
+          title: "A V I S O",
+          text: 'Codigo invalido.',
+        }).then(() => { this.mensagePantalla = false });
+        this.codnotfound = false
+        return;
+
+      }
+      else {
+        nextInput.focus(); // Si es válido, mueve el foco al siguiente input
+      }
+    }
+
+  }
   moveFocusdesc(event: KeyboardEvent, nextInput: HTMLInputElement) {
     if (event.key === 'Enter' || event.key === 'Tab') {
       event.preventDefault(); // Previene el comportamiento predeterminado de Enter

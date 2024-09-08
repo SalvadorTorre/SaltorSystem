@@ -436,7 +436,8 @@
                   #codigoInput
                   autocomplete="off"
                   (input)="convertToUpperCase($event)"
-                  (keydown)=" handleKeydownInventario($event)"
+                  (keydown)="handleKeydownInventario($event)"
+                  (keydown)="moveFocuscodmerc($event, input7)"
                   #input6
                   [formControl]="buscarcodmerc"
                   [(ngModel)]="codmerc"
@@ -478,9 +479,9 @@
                   </div>
                 </div>
               </div>
-              <div *ngIf="codnotfound">
+              <!-- <div *ngIf="codnotfound">
                 <small class="text-danger">Este codigo no existe.</small>
-              </div>
+              </div> -->
             </div>
             <div class="col-5">
               <label for="">Descripción</label>
