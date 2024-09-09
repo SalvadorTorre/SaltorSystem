@@ -70,6 +70,7 @@ export class Cotizacion implements OnInit {
   codnotfound: boolean = false;
   desnotfound: boolean = false;
   mensagePantalla: boolean = false;
+  codmerVacio: boolean = false;
   form: FormGroup;
   constructor(
     private fb: FormBuilder,
@@ -658,10 +659,10 @@ export class Cotizacion implements OnInit {
     $("#input8").focus();
     $("#input8").select();
   }
+
   handleKeydownInventario(event: KeyboardEvent): void {
     const key = event.key;
     const maxIndex = this.resultadoCodmerc.length;
-
     if (key === 'ArrowDown') {
       // Mueve la selección hacia abajo
       this.selectedIndexcodmerc = this.selectedIndexcodmerc < maxIndex ? this.selectedIndexcodmerc + 1 : 0;
@@ -683,7 +684,6 @@ export class Cotizacion implements OnInit {
   handleKeydownInventariosdesc(event: KeyboardEvent): void {
     const key = event.key;
     const maxIndex = this.resultadodescripcionmerc.length;
-
     if (key === 'ArrowDown') {
       // Mueve la selección hacia abajo
       this.selectedIndexcoddescripcionmerc = this.selectedIndexcoddescripcionmerc < maxIndex ? this.selectedIndexcoddescripcionmerc + 1 : 0;
@@ -701,22 +701,14 @@ export class Cotizacion implements OnInit {
     }
   }
 
-
-
-  // onEnter(event: KeyboardEvent) {
-  //   const button = document.getElementById('myButton') as HTMLElement;
-  //   button.click(); // Simula el clic del botón
-  // }
   onEnter(cantidad: number, precio: number) {
     const total = cantidad * precio;
     this.totalGral += total;
     const itbis = total * 0.18;
     this.totalItbis += itbis;
     this.subTotal += total - itbis;
-
     this.items.push({ producto: this.productoselect, cantidad, precio, total });
     this.productoselect;
-
   }
 
   moveFocusin(event: KeyboardEvent, nextInput: HTMLInputElement) {
@@ -739,7 +731,6 @@ export class Cotizacion implements OnInit {
   buscarCodigomerc(event: Event, nextElement: HTMLInputElement | null): void {
     event.preventDefault();
     const in_codmerc = this.formularioCotizacion.get('codmerc')?.value;
-
     if (this.codmerc) {
       this.servicioInventario.buscarporCodigoMerc(in_codmerc).subscribe(
         (productos) => {
@@ -749,7 +740,6 @@ export class Cotizacion implements OnInit {
             this.formularioCotizacion.patchValue({ codmerc: productos.data[0].in_desmerc });
             nextElement?.focus()
             console.log(productos.data[0].in_desmerc);
-            console.log("no esta en blanco")
           }
           else {
             Swal.fire({
@@ -765,7 +755,6 @@ export class Cotizacion implements OnInit {
     else {
       nextElement?.focus()
     }
-
   }
 
   buscarDesmerc(event: Event, nextElement: HTMLInputElement | null): void {
@@ -794,7 +783,6 @@ export class Cotizacion implements OnInit {
             text: 'Codigo de usuario invalido.',
           });
           return;
-          // console.error('Error al buscar el vendedor', claveUsuario,error);
         }
       );
     }
@@ -805,11 +793,8 @@ export class Cotizacion implements OnInit {
         text: 'Codigo de usuarioinvalido.',
       });
       return;
-
     }
-
   }
-
 
   buscarUsuario(event: Event, nextElement: HTMLInputElement | null): void {
     event.preventDefault();
@@ -832,8 +817,6 @@ export class Cotizacion implements OnInit {
             console.log('Vendedor no encontrado');
           }
         },
-
-
       );
     }
     else {
@@ -844,9 +827,7 @@ export class Cotizacion implements OnInit {
         text: 'Codigo de usuario invalido.',
       }).then(() => { this.mensagePantalla = false });
       return;
-
     }
-
   }
   buscarRnc(event: Event, nextElement: HTMLInputElement | null): void {
     event.preventDefault();
@@ -890,38 +871,37 @@ export class Cotizacion implements OnInit {
     this.mensagePantalla = false;
   }
 
-
   moveFocuscodmerc(event: KeyboardEvent, nextInput: HTMLInputElement) {
     if (event.key === 'Enter' || event.key === 'Tab') {
       event.preventDefault(); // Previene el comportamiento predeterminado de Enter
       // const currentControl = this.formularioCotizacion.get('ct_codvend');
       const currentInputValue = (event.target as HTMLInputElement).value.trim();
-      // if (currentInputValue === '') {
-      //   Swal.fire({
-      //     icon: "info",
-      //     title: "A V I S O",
-      //     text: 'El campo está vacío.',
-      //   });
-      //   return;
-      // }
-
+      if (currentInputValue === '') {
+        this.codmerVacio = true;
+      };
       if (!this.codnotfound === false) {
         this.mensagePantalla = true;
-
         Swal.fire({
           icon: "error",
           title: "A V I S O",
           text: 'Codigo invalido.',
         }).then(() => { this.mensagePantalla = false });
-        this.codnotfound = false
+        this.codnotfound = true
         return;
-
       }
       else {
-        nextInput.focus(); // Si es válido, mueve el foco al siguiente input
+        if(this.codmerVacio === true){
+          nextInput.focus();
+          this.codmerVacio = false;
+          console.log("vedadero");
+         }
+        else {
+          $("#input8").focus();
+          $("#input8").select();
+        }
+        this.codmerVacio = false;
       }
     }
-
   }
   moveFocusdesc(event: KeyboardEvent, nextInput: HTMLInputElement) {
     if (event.key === 'Enter' || event.key === 'Tab') {
@@ -939,13 +919,10 @@ export class Cotizacion implements OnInit {
         nextInput.focus(); // Si es válido, mueve el foco al siguiente input
       }
     }
-
-
   }
 
   moveFocuscant(event: Event, nextInput: HTMLInputElement) {
     event.preventDefault();
-
     if (!this.productoselect || this.cantidadmerc <= 0) {
       this.mensagePantalla = true;
       Swal.fire({
@@ -972,7 +949,6 @@ export class Cotizacion implements OnInit {
           title: "A V I S O",
           text: 'Por favor complete el campo Nombre del Cliente Para Poder continual.',
         }).then(() => { this.mensagePantalla = false });
-        return;
 
       }
       else {
@@ -980,21 +956,22 @@ export class Cotizacion implements OnInit {
       }
     }
   }
+
   submitForm(): void {
     if (this.mensagePantalla && this.form.invalid) {
-
       console.log(this.mensagePantalla);
       console.log(this.form.invalid);
-
-    } else {
+    }else {
       console.log(this.mensagePantalla);
       console.log(this.form.invalid);
       this.cerrarModalCotizacion()
     }
   }
-
-
 }
 
 
+
+function then(arg0: () => void) {
+  throw new Error('Function not implemented.');
+}
 
