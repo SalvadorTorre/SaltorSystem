@@ -71,6 +71,7 @@ export class Cotizacion implements OnInit {
   desnotfound: boolean = false;
   mensagePantalla: boolean = false;
   codmerVacio: boolean = false;
+  desmerVacio: boolean = false;
   form: FormGroup;
   constructor(
     private fb: FormBuilder,
@@ -171,10 +172,8 @@ export class Cotizacion implements OnInit {
         if (Array.isArray(results.data) && results.data.length) {
           this.resultadoCodmerc = results.data;
           this.codnotfound = false;
-          console.log("el codigo existe")
         }
         else {
-          console.log("no existe el codigo")
           this.codnotfound = true;
           return
         }
@@ -187,18 +186,6 @@ export class Cotizacion implements OnInit {
       }
 
     });
-    //************************************************ */
-    //  // Lógica para pasar al siguiente campo si está vacío y se presiona Enter
-    // this.buscarcodmercElement.nativeElement.addEventListener('keydown', (event: KeyboardEvent) => {
-    //   if (event.key === 'Enter') {
-    //     const query = this.buscarcodmerc.value?.trim();
-    //     if (!query) {
-    //       this.moveFocusToNextField();  // Función que mueve el foco al siguiente campo
-    //       event.preventDefault(); // Prevenir comportamiento por defecto (evitar que se envíe el formulario, por ejemplo)
-    //     }
-    //   }
-    // });
-
 
     this.buscardescripcionmerc.valueChanges.pipe(
       debounceTime(500),
@@ -220,6 +207,7 @@ export class Cotizacion implements OnInit {
         }
       } else {
         this.resultadodescripcionmerc = [];
+        this.desnotfound = false;
       }
 
     });
@@ -878,15 +866,20 @@ export class Cotizacion implements OnInit {
       const currentInputValue = (event.target as HTMLInputElement).value.trim();
       if (currentInputValue === '') {
         this.codmerVacio = true;
-      };
+      }
+      else{
+        this.codmerVacio = false;
+      }
       if (!this.codnotfound === false) {
+        console.log(this.codnotfound);
         this.mensagePantalla = true;
         Swal.fire({
           icon: "error",
           title: "A V I S O",
           text: 'Codigo invalido.',
         }).then(() => { this.mensagePantalla = false });
-        this.codnotfound = true
+        this.codmerVacio = false;
+        this.codnotfound = false;
         return;
       }
       else {
@@ -894,7 +887,7 @@ export class Cotizacion implements OnInit {
           nextInput.focus();
           this.codmerVacio = false;
           console.log("vedadero");
-         }
+        }
         else {
           $("#input8").focus();
           $("#input8").select();
@@ -906,38 +899,43 @@ export class Cotizacion implements OnInit {
   moveFocusdesc(event: KeyboardEvent, nextInput: HTMLInputElement) {
     if (event.key === 'Enter' || event.key === 'Tab') {
       event.preventDefault(); // Previene el comportamiento predeterminado de Enter
-      // const currentControl = this.formularioCotizacion.get('ct_codvend');
-      if (!this.descripcionmerc) {
+      const currentInputValue = (event.target as HTMLInputElement).value.trim();
+      if (currentInputValue === '') {
+        this.desmerVacio = true;
+        console.log("vedadero");
+      };
+
+      if (!this.desnotfound === false) {
+        this.mensagePantalla = true;
         Swal.fire({
-          icon: "info",
+          icon: "error",
           title: "A V I S O",
-          text: 'Por favor complete el campo descripcion  es requeridos.',
-        });
+          text: 'Codigo invalido.',
+        }).then(() => { this.mensagePantalla = false });
+        this.desnotfound = true
         return;
       }
       else {
-        nextInput.focus(); // Si es válido, mueve el foco al siguiente input
+        if(this.desmerVacio === true){
+          this.mensagePantalla = true;
+        Swal.fire({
+          icon: "error",
+          title: "A V I S O",
+          text: 'Codigo invalido.',
+        }).then(() => { this.mensagePantalla = false });
+        this.desnotfound = true
+        return;
+          // nextInput.focus();
+          // this.desmerVacio = false;
+         }
+        else {
+          $("#input8").focus();
+          $("#input8").select();
+        }
+        this.desmerVacio = false;
       }
     }
   }
-
-  moveFocuscant(event: Event, nextInput: HTMLInputElement) {
-    event.preventDefault();
-    if (!this.productoselect || this.cantidadmerc <= 0) {
-      this.mensagePantalla = true;
-      Swal.fire({
-        icon: "error",
-        title: "A V I S O",
-        text: 'Por favor complete todos los campos requeridos antes de agregar el ítem.',
-      }).then(() => { this.mensagePantalla = false });
-      return;
-    }
-    else {
-      this.mensagePantalla = false
-      nextInput.focus(); // Si es válido, mueve el foco al siguiente input
-    }
-  }
-
   moveFocusnomclie(event: Event, nextInput: HTMLInputElement) {
     event.preventDefault();
     console.log(nextInput);
