@@ -159,7 +159,7 @@ export class Cotizacion implements OnInit {
   ngOnInit(): void {
     this.buscarTodasCotizacion(1);
     this.buscarcodmerc.valueChanges.pipe(
-      debounceTime(500),
+      debounceTime(50),
       distinctUntilChanged(),
       tap(() => {
         this.resultadoCodmerc = [];
@@ -188,7 +188,7 @@ export class Cotizacion implements OnInit {
     });
 
     this.buscardescripcionmerc.valueChanges.pipe(
-      debounceTime(500),
+      debounceTime(50),
       distinctUntilChanged(),
       tap(() => {
         this.resultadodescripcionmerc = [];
@@ -208,6 +208,7 @@ export class Cotizacion implements OnInit {
       } else {
         this.resultadodescripcionmerc = [];
         this.desnotfound = false;
+        console.log("2")
       }
 
     });
@@ -848,6 +849,7 @@ export class Cotizacion implements OnInit {
           icon: "error",
           title: "A V I S O",
           text: 'Rnc invalido.',
+
         }).then(() => { this.mensagePantalla = false });
         return;
       }
@@ -867,7 +869,7 @@ export class Cotizacion implements OnInit {
       if (currentInputValue === '') {
         this.codmerVacio = true;
       }
-      else{
+      else {
         this.codmerVacio = false;
       }
       if (!this.codnotfound === false) {
@@ -877,6 +879,8 @@ export class Cotizacion implements OnInit {
           icon: "error",
           title: "A V I S O",
           text: 'Codigo invalido.',
+          focusConfirm: true,
+          allowEnterKey: true,
         }).then(() => { this.mensagePantalla = false });
         this.codmerVacio = false;
         this.codnotfound = false;
@@ -885,7 +889,7 @@ export class Cotizacion implements OnInit {
         return;
       }
       else {
-        if(this.codmerVacio === true){
+        if (this.codmerVacio === true) {
           nextInput.focus();
           this.codmerVacio = false;
           console.log("vedadero");
@@ -918,18 +922,18 @@ export class Cotizacion implements OnInit {
         return;
       }
       else {
-        if(this.desmerVacio === true){
+        if (this.desmerVacio === true) {
           this.mensagePantalla = true;
-        Swal.fire({
-          icon: "error",
-          title: "A V I S O",
-          text: 'Codigo invalido.',
-        }).then(() => { this.mensagePantalla = false });
-        this.desnotfound = true
-        return;
+          Swal.fire({
+            icon: "error",
+            title: "A V I S O",
+            text: 'Codigo invalido.',
+          }).then(() => { this.mensagePantalla = false });
+          this.desnotfound = true
+          return;
           // nextInput.focus();
           // this.desmerVacio = false;
-         }
+        }
         else {
           $("#input8").focus();
           $("#input8").select();
@@ -938,6 +942,30 @@ export class Cotizacion implements OnInit {
       }
     }
   }
+
+  moveFocusCantidad(event: KeyboardEvent, nextInput: HTMLInputElement) {
+    if (event.key === 'Enter' || event.key === 'Tab') {
+      event.preventDefault();
+      if (!this.productoselect || this.cantidadmerc <= 0) {
+        this.mensagePantalla = true;
+        Swal.fire({
+          icon: "error",
+          title: "A V I S O",
+          text: 'Por favor complete todos los campos requeridos antes de agregar el ítem.',
+        }).then(() => { this.mensagePantalla = false });
+        return;
+      }
+      else {
+        // nextInput.focus();
+        $("#input9").focus();
+        $("#input9").select();
+
+      }
+
+
+    }
+  }
+
   moveFocusnomclie(event: Event, nextInput: HTMLInputElement) {
     event.preventDefault();
     console.log(nextInput);
@@ -961,7 +989,7 @@ export class Cotizacion implements OnInit {
     if (this.mensagePantalla && this.form.invalid) {
       console.log(this.mensagePantalla);
       console.log(this.form.invalid);
-    }else {
+    } else {
       console.log(this.mensagePantalla);
       console.log(this.form.invalid);
       this.cerrarModalCotizacion()

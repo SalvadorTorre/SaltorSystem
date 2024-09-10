@@ -545,7 +545,7 @@
                 #input8
                 id="input8"
                 [formControl]="cantidadform"
-                (keydown)="moveFocus($event, input9)"
+                (keydown)="moveFocusCantidad($event, input9)"
                 class="form-control"
               />
             </div>
@@ -555,6 +555,7 @@
                 type="number"
                 [(ngModel)]="preciomerc"
                 [formControl]="precioform"
+                id="input9"
                 #input9
                 (keydown)="moveFocus($event, input6)"
                 class="form-control"
