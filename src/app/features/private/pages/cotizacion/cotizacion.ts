@@ -880,6 +880,8 @@ export class Cotizacion implements OnInit {
         }).then(() => { this.mensagePantalla = false });
         this.codmerVacio = false;
         this.codnotfound = false;
+        this.codmerc = ""
+        this.descripcionmerc = ""
         return;
       }
       else {
