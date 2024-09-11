@@ -72,6 +72,8 @@ export class Cotizacion implements OnInit {
   mensagePantalla: boolean = false;
   codmerVacio: boolean = false;
   desmerVacio: boolean = false;
+
+  isDisabled: boolean = true;
   form: FormGroup;
   constructor(
     private fb: FormBuilder,
@@ -138,7 +140,6 @@ export class Cotizacion implements OnInit {
       dc_codclie: ['',],
       dc_status: ['',],
 
-
     });
   }
   @ViewChild('buscarcodmercInput') buscarcodmercElement!: ElementRef;
@@ -170,12 +171,17 @@ export class Cotizacion implements OnInit {
       console.log(results.data);
       if (results) {
         if (Array.isArray(results.data) && results.data.length) {
-          this.resultadoCodmerc = results.data;
+          // Aquí ordenamos los resultados por el campo 'nombre' (puedes cambiar el campo según tus necesidades)
+          this.resultadoCodmerc = results.data.sort((a, b) => {
+            return a.in_codmerc.localeCompare(b.in_codmerc, undefined, { numeric: true, sensitivity: 'base' });
+          });
+      // Aquí seleccionamos automáticamente el primer ítem
+      this.selectedIndex = 0;
+
           this.codnotfound = false;
-        }
-        else {
+        } else {
           this.codnotfound = true;
-          return
+          return;
         }
       } else {
         this.resultadoCodmerc = [];
@@ -212,9 +218,6 @@ export class Cotizacion implements OnInit {
       }
 
     });
-
-
-
 
     this.buscarNombre.valueChanges.pipe(
       debounceTime(500),
@@ -505,26 +508,21 @@ export class Cotizacion implements OnInit {
       this.subTotal += total - itbis;
       this.items.push({
         producto: this.productoselect, cantidad: this.cantidadmerc, precio: this.preciomerc, total
-
       })
 
       this.cancelarBusquedaDescripcion = false;
       this.cancelarBusquedaCodigo = false;
-
-
     }
     this.limpiarCampos();
-
   }
+
   limpiarCampos() {
-    //Limpia campo
     this.productoselect;
     this.codmerc = ""
     this.descripcionmerc = ""
     this.preciomerc = 0;
     this.cantidadmerc = 0;
     this.isEditing = false;
-    //this.itemToEdit = null;
   }
 
   limpiarTabla() {
@@ -605,15 +603,23 @@ export class Cotizacion implements OnInit {
 
   handleKeydown(event: KeyboardEvent): void {
     const key = event.key;
-    const maxIndex = this.resultadoNombre.length;
+    const maxIndex = this.resultadoNombre.length - 1;  // Ajustamos el límite máximo
 
     if (key === 'ArrowDown') {
       // Mueve la selección hacia abajo
-      this.selectedIndex = this.selectedIndex < maxIndex ? this.selectedIndex + 1 : 0;
+      if (this.selectedIndex < maxIndex) {
+        this.selectedIndex++;
+      } else {
+        this.selectedIndex = 0;  // Vuelve al primer ítem
+      }
       event.preventDefault();
     } else if (key === 'ArrowUp') {
       // Mueve la selección hacia arriba
-      this.selectedIndex = this.selectedIndex > 0 ? this.selectedIndex - 1 : maxIndex;
+      if (this.selectedIndex > 0) {
+        this.selectedIndex--;
+      } else {
+        this.selectedIndex = maxIndex;  // Vuelve al último ítem
+      }
       event.preventDefault();
     } else if (key === 'Enter') {
       // Selecciona el ítem actual
@@ -623,6 +629,27 @@ export class Cotizacion implements OnInit {
       event.preventDefault();
     }
   }
+
+  // handleKeydown(event: KeyboardEvent): void {
+  //   const key = event.key;
+  //   const maxIndex = this.resultadoNombre.length;
+
+  //   if (key === 'ArrowDown') {
+  //     // Mueve la selección hacia abajo
+  //     this.selectedIndex = this.selectedIndex < maxIndex ? this.selectedIndex + 1 : 0;
+  //     event.preventDefault();
+  //   } else if (key === 'ArrowUp') {
+  //     // Mueve la selección hacia arriba
+  //     this.selectedIndex = this.selectedIndex > 0 ? this.selectedIndex - 1 : maxIndex;
+  //     event.preventDefault();
+  //   } else if (key === 'Enter') {
+  //     // Selecciona el ítem actual
+  //     if (this.selectedIndex >= 0 && this.selectedIndex <= maxIndex) {
+  //       this.cargarDatosCliente(this.resultadoNombre[this.selectedIndex]);
+  //     }
+  //     event.preventDefault();
+  //   }
+  // }
 
   cancelarBusquedaDescripcion: boolean = false;
   cancelarBusquedaCodigo: boolean = false;
@@ -653,20 +680,19 @@ export class Cotizacion implements OnInit {
     const key = event.key;
     const maxIndex = this.resultadoCodmerc.length;
     if (key === 'ArrowDown') {
-      // Mueve la selección hacia abajo
       this.selectedIndexcodmerc = this.selectedIndexcodmerc < maxIndex ? this.selectedIndexcodmerc + 1 : 0;
       event.preventDefault();
-    } else if (key === 'ArrowUp') {
-      // Mueve la selección hacia arriba
-      this.selectedIndexcodmerc = this.selectedIndexcodmerc > 0 ? this.selectedIndexcodmerc - 1 : maxIndex;
-      event.preventDefault();
-    } else if (key === 'Enter') {
-      // Selecciona el ítem actual
-      if (this.selectedIndexcodmerc >= 0 && this.selectedIndexcodmerc <= maxIndex) {
-        this.cargarDatosInventario(this.resultadoCodmerc[this.selectedIndexcodmerc]);
-
+    }
+    else
+      if (key === 'ArrowUp') {
+        this.selectedIndexcodmerc = this.selectedIndexcodmerc > 0 ? this.selectedIndexcodmerc - 1 : maxIndex;
+        event.preventDefault();
       }
-      event.preventDefault();
+      else if (key === 'Enter') {
+        if (this.selectedIndexcodmerc >= 0 && this.selectedIndexcodmerc <= maxIndex) {
+          this.cargarDatosInventario(this.resultadoCodmerc[this.selectedIndexcodmerc]);
+        }
+        event.preventDefault();
     }
   }
 
@@ -698,91 +724,6 @@ export class Cotizacion implements OnInit {
     this.subTotal += total - itbis;
     this.items.push({ producto: this.productoselect, cantidad, precio, total });
     this.productoselect;
-  }
-
-  moveFocusin(event: KeyboardEvent, nextInput: HTMLInputElement) {
-    if (event.key === 'Enter') {
-      event.preventDefault(); // Previene el comportamiento predeterminado de Enter
-      const currentControl = this.formularioCotizacion.get('ct_codvend');
-      if (currentControl?.invalid) {
-        currentControl.markAsTouched(); // Marca el campo como tocado para mostrar errores
-        //   alert('El campo "Vendedor" es obligatorio.'); // Muestra el mensaje de error
-        Swal.fire({
-          icon: "info",
-          title: "A V I S O",
-          text: 'El campo "Vendedor" es obligatorio.',
-        });
-      } else {
-        nextInput.focus(); // Si es válido, mueve el foco al siguiente input
-      }
-    }
-  }
-  buscarCodigomerc(event: Event, nextElement: HTMLInputElement | null): void {
-    event.preventDefault();
-    const in_codmerc = this.formularioCotizacion.get('codmerc')?.value;
-    if (this.codmerc) {
-      this.servicioInventario.buscarporCodigoMerc(in_codmerc).subscribe(
-        (productos) => {
-          console.log((productos))
-          console.log(this.codmerc)
-          if (productos.data.length) {
-            this.formularioCotizacion.patchValue({ codmerc: productos.data[0].in_desmerc });
-            nextElement?.focus()
-            console.log(productos.data[0].in_desmerc);
-          }
-          else {
-            Swal.fire({
-              icon: "error",
-              title: "A V I S O",
-              text: 'Codigo de mercacia invalido.0000',
-            });
-            return;
-          }
-
-        });
-    }
-    else {
-      nextElement?.focus()
-    }
-  }
-
-  buscarDesmerc(event: Event, nextElement: HTMLInputElement | null): void {
-    event.preventDefault();
-    const in_desmerc = this.formularioCotizacion.get('desmerc')?.value;
-    if (this.descripcionmerc) {
-      this.servicioInventario.buscarPorDescripcionMerc(in_desmerc).subscribe(
-        (inventario) => {
-          if (inventario.data.length) {
-            this.formularioCotizacion.patchValue({ desmerc: inventario.data[0].in_codmerc });
-            nextElement?.focus()
-            console.log(inventario.data[0].in_codmerc);
-          } else {
-            Swal.fire({
-              icon: "error",
-              title: "A V I S O",
-              text: 'Descripcion invalida.',
-            });
-            return;
-          }
-        },
-        (error) => {
-          Swal.fire({
-            icon: "error",
-            title: "A V I S O",
-            text: 'Codigo de usuario invalido.',
-          });
-          return;
-        }
-      );
-    }
-    else {
-      Swal.fire({
-        icon: "error",
-        title: "A V I S O",
-        text: 'Codigo de usuarioinvalido.',
-      });
-      return;
-    }
   }
 
   buscarUsuario(event: Event, nextElement: HTMLInputElement | null): void {
@@ -959,10 +900,7 @@ export class Cotizacion implements OnInit {
         // nextInput.focus();
         $("#input9").focus();
         $("#input9").select();
-
       }
-
-
     }
   }
 
@@ -995,7 +933,9 @@ export class Cotizacion implements OnInit {
       this.cerrarModalCotizacion()
     }
   }
+
 }
+
 
 
 

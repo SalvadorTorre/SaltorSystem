@@ -479,9 +479,6 @@
                   </div>
                 </div>
               </div>
-              <!-- <div *ngIf="codnotfound">
-                <small class="text-danger">Este codigo no existe.</small>
-              </div> -->
             </div>
             <div class="col-5">
               <label for="">Descripción</label>
@@ -533,14 +530,12 @@
                   </div>
                 </div>
               </div>
-              <div *ngIf="desnotfound">
-                <small class="text-danger">Esta descripcion no existe.</small>
-              </div>
             </div>
             <div class="col-2">
               <label for="">Cantidad</label>
               <input
                 type="number"
+                placeholder="Cantidad"
                 [(ngModel)]="cantidadmerc"
                 #input8
                 id="input8"
