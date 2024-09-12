@@ -92,6 +92,7 @@ export class Cotizacion implements OnInit {
     });
 
     this.crearFormularioCotizacion();
+    console.log(this.formularioCotizacion.value);
     // this.descripcionBuscar.pipe(
     //   debounceTime(500),
     //   distinctUntilChanged(),
@@ -175,8 +176,8 @@ export class Cotizacion implements OnInit {
           this.resultadoCodmerc = results.data.sort((a, b) => {
             return a.in_codmerc.localeCompare(b.in_codmerc, undefined, { numeric: true, sensitivity: 'base' });
           });
-      // Aquí seleccionamos automáticamente el primer ítem
-      this.selectedIndex = 0;
+          // Aquí seleccionamos automáticamente el primer ítem
+          this.selectedIndex = 0;
 
           this.codnotfound = false;
         } else {
@@ -245,8 +246,8 @@ export class Cotizacion implements OnInit {
     const fechaActual = new Date();
     const fechaActualStr = this.formatofecha(fechaActual);
     this.formularioCotizacion = this.fb.group({
-      ct_codcoti: [{ value: '', disabled: true }],
-      ct_feccoti: [{ value: fechaActualStr, disabled: true }],
+      ct_codcoti: [''],
+      ct_feccoti: [fechaActualStr],
       ct_valcoti: [''],
       ct_itbis: [''],
       ct_codclie: [''],
@@ -256,10 +257,12 @@ export class Cotizacion implements OnInit {
       ct_dirclie: [''],
       ct_correo: [''],
       ct_codvend: ['', Validators.required],
-      ct_nomvend: [{ value: '', disabled: true }],
+      ct_nomvend: [''],
       ct_status: [''],
       ct_codzona: [''],
     });
+
+    console.log(this.formularioCotizacion.value);
   }
   habilitarFormularioEmpresa() {
     this.habilitarFormulario = false;
@@ -270,6 +273,9 @@ export class Cotizacion implements OnInit {
     this.tituloModalCotizacion = 'Nueva Cotizacion';
     $('#modalcotizacion').modal('show');
     this.habilitarFormulario = true;
+    this.formularioCotizacion.get('ct_codcoti')!.disable();
+    this.formularioCotizacion.get('ct_feccoti')!.disable();
+    this.formularioCotizacion.get('ct_nomvend')!.disable();
     setTimeout(() => {
       $('#input1').focus();
     }, 500); // Asegúrate de que el tiempo sea suficiente para que el modal se abra completamente
@@ -291,7 +297,7 @@ export class Cotizacion implements OnInit {
 
   editardetCotizacion(detcotizacion: detCotizacionData) {
     this.cotizacionid = detcotizacion.dc_codcoti;
-    this.formularioCotizacion.patchValue(detcotizacion);
+    // this.formularioCotizacion.patchValue(detcotizacion);
 
   }
   editarCotizacion(Cotizacion: CotizacionModelData) {
@@ -317,6 +323,47 @@ export class Cotizacion implements OnInit {
     $('#modalcotizacion').modal('show');
     this.habilitarFormulario = true;
     this.formularioCotizacion.disable();
+    this.servicioCotizacion.buscarCotizacionDetalle(Cotizacion.ct_codcoti).subscribe(response => {
+      // console.log(response);
+      response.data.forEach((item: any) => {
+        var producto: ModeloInventarioData = {
+          in_codmerc: item.dc_codmerc,
+          in_desmerc: item.dc_descrip,
+          in_grumerc: '',
+          in_tipoproduct: '',
+          in_canmerc: 0,
+          in_caninve: 0,
+          in_fecinve: null,
+          in_eximini: 0,
+          in_cosmerc: 0,
+          in_premerc: 0,
+          in_precmin: 0,
+          in_costpro: 0,
+          in_ucosto: 0,
+          in_porgana: 0,
+          in_peso: 0,
+          in_longitud: 0,
+          in_unidad: 0,
+          in_medida: 0,
+          in_longitu: 0,
+          in_fecmodif: null,
+          in_amacen: 0,
+          in_imagen: '',
+          in_status: '',
+          in_itbis: false,
+          in_minvent: 0,
+        };
+        this.items.push({
+          producto: producto,
+          cantidad: item.dc_canmerc,
+          precio: item.dc_premerc,
+          total: item.dc_valmerc
+        });
+      });
+
+      // this.items = response.data;
+
+    });
     //this.detCotizacionList = Cotizacion.detCotizacion
   };
 
@@ -364,20 +411,25 @@ export class Cotizacion implements OnInit {
 
   guardarCotizacion() {
     const date = new Date();
-    this.buscarTodasCotizacion(1),
-      this.cotizacionid = `${date.getFullYear()}00000${this.cotizacionList.length + 1}`;
+    // this.buscarTodasCotizacion(1),
+    // this.cotizacionid = `${date.getFullYear()}00000${this.cotizacionList.length + 1}`;
 
     this.formularioCotizacion.get('ct_valcoti')?.patchValue(this.totalGral);
     this.formularioCotizacion.get('ct_itbis')?.patchValue(this.totalItbis);
 
-    this.formularioCotizacion.get('ct_codcoti')?.patchValue(this.cotizacionid);
+    this.formularioCotizacion.get('ct_codcoti')!.enable();
+    this.formularioCotizacion.get('ct_feccoti')!.enable();
+    this.formularioCotizacion.get('ct_nomvend')!.enable();
     const payload = {
       cotizacion: this.formularioCotizacion.value,
       detalle: this.items,
-      idCotizacion: this.formularioCotizacion.get('ct_codcoti')?.value,
+      // idCotizacion: this.formularioCotizacion.get('ct_codcoti')?.value,
     };
 
     console.log(payload);
+    this.servicioCotizacion.guardarCotizacion(payload).subscribe(response => {
+      console.log(response);
+    });
     // if (this.formularioCotizacion.valid) {
     //   if (this.modoedicionCotizacion) {
     //     this.servicioCotizacion.editarCotizacion(this.cotizacionid, this.formularioCotizacion.value).subscribe(response => {
@@ -693,7 +745,7 @@ export class Cotizacion implements OnInit {
           this.cargarDatosInventario(this.resultadoCodmerc[this.selectedIndexcodmerc]);
         }
         event.preventDefault();
-    }
+      }
   }
 
   handleKeydownInventariosdesc(event: KeyboardEvent): void {
