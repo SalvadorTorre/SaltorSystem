@@ -416,7 +416,6 @@ export class Cotizacion implements OnInit {
 
     this.formularioCotizacion.get('ct_valcoti')?.patchValue(this.totalGral);
     this.formularioCotizacion.get('ct_itbis')?.patchValue(this.totalItbis);
-
     this.formularioCotizacion.get('ct_codcoti')!.enable();
     this.formularioCotizacion.get('ct_feccoti')!.enable();
     this.formularioCotizacion.get('ct_nomvend')!.enable();
