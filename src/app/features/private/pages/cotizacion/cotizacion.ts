@@ -307,9 +307,48 @@ export class Cotizacion implements OnInit {
     this.tituloModalCotizacion = 'Editando Cotizacion';
     $('#modalcotizacion').modal('show');
     this.habilitarFormulario = true;
-    this.detCotizacionList = Cotizacion.detCotizacion
-  }
+    //this.detCotizacionList = Cotizacion.detCotizacion
+    this.servicioCotizacion.buscarCotizacionDetalle(Cotizacion.ct_codcoti).subscribe(response => {
+    response.data.forEach((item: any) => {
+    var producto: ModeloInventarioData = {
+      in_codmerc: item.dc_codmerc,
+      in_desmerc: item.dc_descrip,
+      in_grumerc: '',
+      in_tipoproduct: '',
+      in_canmerc: 0,
+      in_caninve: 0,
+      in_fecinve: null,
+      in_eximini: 0,
+      in_cosmerc: 0,
+      in_premerc: 0,
+      in_precmin: 0,
+      in_costpro: 0,
+      in_ucosto: 0,
+      in_porgana: 0,
+      in_peso: 0,
+      in_longitud: 0,
+      in_unidad: 0,
+      in_medida: 0,
+      in_longitu: 0,
+      in_fecmodif: null,
+      in_amacen: 0,
+      in_imagen: '',
+      in_status: '',
+      in_itbis: false,
+      in_minvent: 0,
+    };
+    this.items.push({
+      producto: producto,
+      cantidad: item.dc_canmerc,
+      precio: item.dc_premerc,
+      total: item.dc_valmerc
+    });
+  });
 
+});
+//this.detCotizacionList = Cotizacion.detCotizacion
+
+}
   buscarTodasCotizacion(page: number) {
     this.servicioCotizacion.buscarTodasCotizacion(page, this.pageSize).subscribe(response => {
       console.log(response);
@@ -368,7 +407,7 @@ export class Cotizacion implements OnInit {
   };
 
 
-  eliminarCotizacion(Cotizacion: string) {
+  eliminarCotizacion(Cotizacion:  CotizacionModelData) {
     Swal.fire({
       title: '¿Está seguro de eliminar este Cotizacion?',
       text: "¡No podrá revertir esto!",

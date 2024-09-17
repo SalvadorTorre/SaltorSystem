@@ -8,23 +8,27 @@
       <div class="col-2">
         <label for="">Buscar Codigo</label>
         <input
-        [(ngModel)]="txtcodigo"  
-          type="text" placeholder="Digite codigo"  class="form-control"
-          (input)="idEntra($event)" 
+          [(ngModel)]="txtcodigo"
+          type="text"
+          placeholder="Digite codigo"
+          class="form-control"
+          (input)="idEntra($event)"
         />
       </div>
       <div class="col-3">
         <label for="">Buscar Nombre</label>
         <input
-          
           [(ngModel)]="txtdescripcion"
-          type="text" placeholder="Digite el Nombre..."
+          type="text"
+          placeholder="Digite el Nombre..."
           class="form-control"
           (input)="descripcionEntra($event)"
         />
       </div>
       <div class="col-2">
-        <button class="btn btn-danger mt-4" (click)="limpiaBusqueda()"><i class="bi bi-arrow-counterclockwise"></i></button>
+        <button class="btn btn-danger mt-4" (click)="limpiaBusqueda()">
+          <i class="bi bi-arrow-counterclockwise"></i>
+        </button>
       </div>
       <div class="col-2">
         <button class="btn btn-primary mt-4" (click)="nuevoCliente()">
@@ -108,31 +112,44 @@
               <form
                 [formGroup]="formularioCliente"
                 (ngSubmit)="guardarCliente()"
-                >
+              >
                 <div class="form-row">
                   <div class="form-group">
                     <label for="cl_codClie"> Rnc</label>
-                    <input type="number" class="uppercase-input" (input)="convertToUpperCase($event)"
-                    (keydown)="moveFocus($event, input2)" #input1
-                    class="form-control form-control-sm "
-                    formControlName="cl_rnc"
+                    <input
+                      type="number"
+                      class="uppercase-input"
+                      (input)="convertToUpperCase($event)"
+                      (keydown)="moveFocus($event, input2)"
+                      #input1
+                      class="form-control form-control-sm"
+                      formControlName="cl_rnc"
                     />
                   </div>
                   <div class="form-group">
                     <label for="cl_nomClie">Nombre</label>
-                    <input type="text" class="uppercase-input" (input)="convertToUpperCase($event)"
-                    (keydown)="moveFocus($event, input3)" #input2
-                    class="form-control form-control-sm "
-                    formControlName="cl_nomClie" />
+                    <input
+                      type="text"
+                      class="uppercase-input"
+                      (input)="convertToUpperCase($event)"
+                      (keydown)="moveFocus($event, input3)"
+                      #input2
+                      class="form-control form-control-sm"
+                      formControlName="cl_nomClie"
+                    />
                   </div>
                 </div>
                 <div class="form-row">
                   <div class="form-group">
                     <label for="cl_dirClie">Direccion</label>
-                    <input type="text" class="uppercase-input" (input)="convertToUpperCase($event)"
-                    (keydown)="moveFocus($event, input5)" #input3
-                    class="form-control form-control-sm "
-                    formControlName="cl_dirClie"
+                    <input
+                      type="text"
+                      class="uppercase-input"
+                      (input)="convertToUpperCase($event)"
+                      (keydown)="moveFocus($event, input5)"
+                      #input3
+                      class="form-control form-control-sm"
+                      formControlName="cl_dirClie"
                     />
                   </div>
                   <div class="form-group">
@@ -169,10 +186,14 @@
                   </div>
                   <div class="form-group">
                     <label for="cl_telClie">Telefono</label>
-                    <input type="text" class="uppercase-input" (input)="convertToUpperCase($event)"
-                    (keydown)="moveFocus($event, input5)" #input5
-                    class="form-control form-control-sm "
-                    formControlName="cl_telClie"
+                    <input
+                      type="text"
+                      class="uppercase-input"
+                      (input)="convertToUpperCase($event)"
+                      (keydown)="moveFocus($event, input5)"
+                      #input5
+                      class="form-control form-control-sm"
+                      formControlName="cl_telClie"
                     />
                   </div>
                 </div>

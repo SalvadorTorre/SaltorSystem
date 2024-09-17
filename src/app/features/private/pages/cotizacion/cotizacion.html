@@ -30,10 +30,12 @@
             <div class="col-5">
               <label for="">Nombre Cliente</label>
               <input
+                [(ngModel)]="txtdescripcion"
                 type="text"
                 class="form-control form-control-sm"
-                placeholder="Nombre"
+                placeholder="Nombre Cliente"
                 class="form-control uppercase"
+                (input)="descripcionEntra($event)"
               />
             </div>
             <div class="col-2">
@@ -89,9 +91,13 @@
                       style="padding: 10px"
                     >
                     </i>
-                    <a class="btn-link" style="padding: 10px">
-                      <i class="bi bi-trash text-danger"></i>
-                    </a>
+                    <i
+                      (click)="eliminarCotizacion(cotizacion)"
+                      class="bi bi-trash text-danger"
+                      style="padding: 10px"
+                    >
+                    </i>
+
                     <i
                       (click)="consultarCotizacion(cotizacion)"
                       class="bi bi-card-list text-success"

@@ -39,9 +39,6 @@ export class Cliente implements OnInit {
   private idBuscar = new BehaviorSubject<string>('');
   private descripcionBuscar = new BehaviorSubject<string>('');
 
-
-
-
   constructor(private fb:FormBuilder, private servicioCliente:ServicioCliente, private servicioSector:ServicioSector, private servicioZona:ServicioZona)
   {this.crearFormularioCliente();
   this.descripcionBuscar.pipe(
