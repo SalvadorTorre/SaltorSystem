@@ -6,23 +6,23 @@ export interface EntradamercModel {
 }
 
 export interface EntradamercModelData {
-    em_codentra: string;
-    em_feccentra: string;
-    em_valentra: number;
-    em_codsupl: string;
-    em_nomsup: string;
-    em_rnc: number;
-    em_telsupl: string;
-    em_dirsupl: string;
-    em_codvend: string;
-    em_nomvend: string;
-    em_nota: string;
-    em_status: string;
+    me_codentr: string;
+    me_feccentr: string;
+    me_valentr: number;
+    me_codsupl: string;
+    me_nomsup: string;
+    me_rnc: number;
+    me_telsupl: string;
+    me_dirsupl: string;
+    me_codvend: string;
+    me_nomvend: string;
+    me_nota: string;
+    me_status: string;
     detemtradamerc: detEntradamercData[];
 }
 
 export interface detEntradamercData {
-    dm_codentra: string;
+    de_codentr: string;
     de_codmerc: string;
     de_descrip: string;
     de_canmerc: number;
