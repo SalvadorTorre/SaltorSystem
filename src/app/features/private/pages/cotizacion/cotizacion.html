@@ -92,12 +92,10 @@
                     >
                     </i>
                     <i
-                      (click)="eliminarCotizacion(cotizacion)"
                       class="bi bi-trash text-danger"
                       style="padding: 10px"
-                    >
-                    </i>
-
+                      (click)="eliminarCotizacion(cotizacion.ct_codcoti)"
+                    ></i>
                     <i
                       (click)="consultarCotizacion(cotizacion)"
                       class="bi bi-card-list text-success"

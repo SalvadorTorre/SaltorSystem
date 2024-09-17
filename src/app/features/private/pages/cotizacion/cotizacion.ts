@@ -130,7 +130,7 @@ export class Cotizacion implements OnInit {
   crearformulariodetCotizacion() {
     this.formulariodetCotizacion = this.fb.group({
 
-      dc_codcoti: ['', Validators.required],
+      dc_codcoti: ['',],
       dc_codmerc: ['',],
       dc_descrip: ['',],
       dc_canmerc: ['',],
@@ -177,7 +177,7 @@ export class Cotizacion implements OnInit {
             return a.in_codmerc.localeCompare(b.in_codmerc, undefined, { numeric: true, sensitivity: 'base' });
           });
           // Aquí seleccionamos automáticamente el primer ítem
-          this.selectedIndex = 0;
+          this.selectedIndex = -1;
 
           this.codnotfound = false;
         } else {
@@ -309,46 +309,46 @@ export class Cotizacion implements OnInit {
     this.habilitarFormulario = true;
     //this.detCotizacionList = Cotizacion.detCotizacion
     this.servicioCotizacion.buscarCotizacionDetalle(Cotizacion.ct_codcoti).subscribe(response => {
-    response.data.forEach((item: any) => {
-    var producto: ModeloInventarioData = {
-      in_codmerc: item.dc_codmerc,
-      in_desmerc: item.dc_descrip,
-      in_grumerc: '',
-      in_tipoproduct: '',
-      in_canmerc: 0,
-      in_caninve: 0,
-      in_fecinve: null,
-      in_eximini: 0,
-      in_cosmerc: 0,
-      in_premerc: 0,
-      in_precmin: 0,
-      in_costpro: 0,
-      in_ucosto: 0,
-      in_porgana: 0,
-      in_peso: 0,
-      in_longitud: 0,
-      in_unidad: 0,
-      in_medida: 0,
-      in_longitu: 0,
-      in_fecmodif: null,
-      in_amacen: 0,
-      in_imagen: '',
-      in_status: '',
-      in_itbis: false,
-      in_minvent: 0,
-    };
-    this.items.push({
-      producto: producto,
-      cantidad: item.dc_canmerc,
-      precio: item.dc_premerc,
-      total: item.dc_valmerc
+      response.data.forEach((item: any) => {
+        var producto: ModeloInventarioData = {
+          in_codmerc: item.dc_codmerc,
+          in_desmerc: item.dc_descrip,
+          in_grumerc: '',
+          in_tipoproduct: '',
+          in_canmerc: 0,
+          in_caninve: 0,
+          in_fecinve: null,
+          in_eximini: 0,
+          in_cosmerc: 0,
+          in_premerc: 0,
+          in_precmin: 0,
+          in_costpro: 0,
+          in_ucosto: 0,
+          in_porgana: 0,
+          in_peso: 0,
+          in_longitud: 0,
+          in_unidad: 0,
+          in_medida: 0,
+          in_longitu: 0,
+          in_fecmodif: null,
+          in_amacen: 0,
+          in_imagen: '',
+          in_status: '',
+          in_itbis: false,
+          in_minvent: 0,
+        };
+        this.items.push({
+          producto: producto,
+          cantidad: item.dc_canmerc,
+          precio: item.dc_premerc,
+          total: item.dc_valmerc
+        });
+      });
+
     });
-  });
+    //this.detCotizacionList = Cotizacion.detCotizacion
 
-});
-//this.detCotizacionList = Cotizacion.detCotizacion
-
-}
+  }
   buscarTodasCotizacion(page: number) {
     this.servicioCotizacion.buscarTodasCotizacion(page, this.pageSize).subscribe(response => {
       console.log(response);
@@ -407,7 +407,7 @@ export class Cotizacion implements OnInit {
   };
 
 
-  eliminarCotizacion(Cotizacion:  CotizacionModelData) {
+  eliminarCotizacion(CotizacionId: string) {
     Swal.fire({
       title: '¿Está seguro de eliminar este Cotizacion?',
       text: "¡No podrá revertir esto!",
@@ -418,7 +418,7 @@ export class Cotizacion implements OnInit {
       confirmButtonText: 'Si, eliminar!'
     }).then((result) => {
       if (result.isConfirmed) {
-        this.servicioCotizacion.eliminarCotizacion(this.cotizacionid).subscribe(response => {
+        this.servicioCotizacion.eliminarCotizacion(CotizacionId).subscribe(response => {
           Swal.fire(
             {
               title: "Excelente!",
@@ -464,10 +464,24 @@ export class Cotizacion implements OnInit {
       // idCotizacion: this.formularioCotizacion.get('ct_codcoti')?.value,
     };
 
-    console.log(payload);
-    this.servicioCotizacion.guardarCotizacion(payload).subscribe(response => {
-      console.log(response);
-    });
+    if (this.formularioCotizacion.valid) {
+      this.servicioCotizacion.guardarCotizacion(payload).subscribe(response => {
+        Swal.fire({
+          title: "Excelente!",
+          text: "Cotizacion creada correctamente.",
+          icon: "success",
+          timer: 5000,
+          showConfirmButton: false,
+        });
+        this.buscarTodasCotizacion(1);
+        this.formularioCotizacion.reset();
+        this.crearFormularioCotizacion();
+        $('#modalcotizacion').modal('hide');
+      });
+    } else {
+      console.log(this.formularioCotizacion.value);
+    }
+
     // if (this.formularioCotizacion.valid) {
     //   if (this.modoedicionCotizacion) {
     //     this.servicioCotizacion.editarCotizacion(this.cotizacionid, this.formularioCotizacion.value).subscribe(response => {
@@ -696,6 +710,8 @@ export class Cotizacion implements OnInit {
     const maxIndex = this.resultadoNombre.length - 1;  // Ajustamos el límite máximo
 
     if (key === 'ArrowDown') {
+      console.log("paso 56");
+
       // Mueve la selección hacia abajo
       if (this.selectedIndex < maxIndex) {
         this.selectedIndex++;
@@ -704,6 +720,8 @@ export class Cotizacion implements OnInit {
       }
       event.preventDefault();
     } else if (key === 'ArrowUp') {
+      console.log("paso 677");
+
       // Mueve la selección hacia arriba
       if (this.selectedIndex > 0) {
         this.selectedIndex--;
@@ -770,11 +788,13 @@ export class Cotizacion implements OnInit {
     const key = event.key;
     const maxIndex = this.resultadoCodmerc.length;
     if (key === 'ArrowDown') {
+      console.log("paso");
       this.selectedIndexcodmerc = this.selectedIndexcodmerc < maxIndex ? this.selectedIndexcodmerc + 1 : 0;
       event.preventDefault();
     }
     else
       if (key === 'ArrowUp') {
+        console.log("paso2");
         this.selectedIndexcodmerc = this.selectedIndexcodmerc > 0 ? this.selectedIndexcodmerc - 1 : maxIndex;
         event.preventDefault();
       }

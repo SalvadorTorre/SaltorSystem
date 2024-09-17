@@ -8,15 +8,12 @@ import { PhoneNumberMaskDirective } from 'src/app/core/directive/phonemask.direc
 @NgModule({
   declarations: [
     PrivatePage,
-    PhoneNumberMaskDirective
   ],
   imports: [
     CommonModule,
     PrivateRoutingModule
   ],
-  exports: [
-    PhoneNumberMaskDirective
-  ],
+
   providers: [],
   bootstrap: [PrivatePage]
 })

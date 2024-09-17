@@ -25,7 +25,7 @@ export class ServicioCotizacion {
   }
 
   eliminarCotizacion(ct_codcoti: string): Observable<any> {
-    return this.http.DeleteRequest(`/cotizacion/$ct_codcoti}`, "");
+    return this.http.DeleteRequest(`/eliminar-cotizacion/${ct_codcoti}`, "");
   }
 
   buscarCotizacion(ct_codcoti: string): Observable<any> {
