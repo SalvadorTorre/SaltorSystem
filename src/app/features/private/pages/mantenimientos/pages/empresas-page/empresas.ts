@@ -38,6 +38,7 @@ export class Empresas implements OnInit {
   activaformularioSucursal: boolean = false;
   selectedEmpresa: any = null;
   modoedicionSucursal: boolean = false;
+  static cod_empre: any;
   constructor(private fb: FormBuilder, private servicioEmpresa: ServicioEmpresa, private servicioSucursal: ServicioSucursal) {
     this.crearFormularioEmpresa();
     this.crearformularioSucursal();

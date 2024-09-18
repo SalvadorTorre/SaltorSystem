@@ -1,10 +1,14 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
-import { BehaviorSubject,debounceTime, distinctUntilChanged, switchMap} from 'rxjs';
+import { BehaviorSubject,debounceTime, distinctUntilChanged, filter, switchMap, tap} from 'rxjs';
 import { ModeloUsuarioData } from 'src/app/core/services/mantenimientos/usuario';
 import { ServicioUsuario } from 'src/app/core/services/mantenimientos/usuario/usuario.service';
-declare var $: any;
+import { ServicioEmpresa } from 'src/app/core/services/mantenimientos/empresas/empresas.service';
+import { EmpresaModelData, SucursalesData } from 'src/app/core/services/mantenimientos/empresas';
+import { ServicioSucursal } from 'src/app/core/services/mantenimientos/sucursal/sucursal.service';declare var $: any;
 import Swal from 'sweetalert2';
+import { Empresas } from '../empresas-page/empresas';
+import { HttpInvokeService } from 'src/app/core/services/http-invoke.service';
 
 @Component({
   selector: 'Usuario',
@@ -20,9 +24,16 @@ export class Usuario implements OnInit {
   txtcodigo: string = '';
   idUsuario: string = '';
   descripcion: string = '';
+  mensagePantalla: boolean = false;
   private idBuscar = new BehaviorSubject<string>('');
   private descripcionBuscar = new BehaviorSubject<string>('');
 
+  buscarEmpresa = new FormControl
+  resultadoEmpresa: EmpresaModelData[] = [];
+
+  selectedIndex = 1;
+  nativeElement = new FormControl();
+  selectedIndexEmpresa = 1;
 
 
  habilitarFormulario: boolean = false;
@@ -34,7 +45,13 @@ export class Usuario implements OnInit {
   modoconsultaUsuario:boolean = false;
   usuarioList:ModeloUsuarioData[] = [];
   selectedUsuario: any = null;
-  constructor(private fb:FormBuilder, private servicioUsuario:ServicioUsuario)
+  constructor(
+   private fb:FormBuilder,
+   private servicioUsuario:ServicioUsuario,
+   private servicioEmpresa:ServicioEmpresa,
+   private http: HttpInvokeService,
+   private servicioSucursal:ServicioSucursal
+  )
     {this.crearFormularioUsuario();
   this.descripcionBuscar.pipe(
     debounceTime(1000),
@@ -68,7 +85,27 @@ export class Usuario implements OnInit {
    { this.selectedUsuario = Usuario; }
 
    ngOnInit(): void
-  {this.buscarTodosUsuario(1);  }
+  {this.buscarTodosUsuario(1);
+
+    this.buscarEmpresa.valueChanges.pipe(
+      debounceTime(500),
+      distinctUntilChanged(),
+      tap(() => {
+        this.resultadoEmpresa = [];
+      }),
+      filter((query: string) => query !== ''),
+      switchMap((query: string) => this.http.GetRequest<EmpresaModelData>(`/empresa-nombre/${query}`))
+    ).subscribe((results: EmpresaModelData) => {
+      if (results) {
+        if (Array.isArray(results)) {
+          this.resultadoEmpresa = results;
+        }
+      } else {
+        this.resultadoEmpresa = [];
+      }
+
+    });
+   }
 
 
   crearFormularioUsuario(){
@@ -96,6 +133,8 @@ export class Usuario implements OnInit {
         vendedor: [false],
         correo: [''],
         despacho: [false],
+        empresa:['',Validators.required],
+        sucursal:['',Validators.required],
 
       });
   }
@@ -268,5 +307,67 @@ limpiaBusqueda(){
   this.txtcodigo = '';
 this.buscarTodosUsuario(1);
 }
+
+cargarDatosEmpresa(empresa: EmpresaModelData) {
+  this.resultadoEmpresa = [];
+  this.buscarEmpresa.reset();
+  this.formularioUsuario.patchValue({
+    empresa: Empresas.cod_empre,
+
+  });
+}
+
+moveFocusEmpresa(event: Event, nextInput: HTMLInputElement) {
+  event.preventDefault();
+  console.log(nextInput);
+  if (event.target instanceof HTMLInputElement) {
+    if (!event.target.value) {
+      this.mensagePantalla = true;
+      Swal.fire({
+        icon: "error",
+        title: "A V I S O",
+        text: 'Por favor complete el campo Nombre del Cliente Para Poder continual.',
+      }).then(() => { this.mensagePantalla = false });
+
+    }
+    else {
+      nextInput.focus(); // Si es válido, mueve el foco al siguiente input
+    }
+  }
+}
+
+handleKeydown(event: KeyboardEvent): void {
+  const key = event.key;
+  const maxIndex = this.resultadoEmpresa.length - 1;  // Ajustamos el límite máximo
+
+  if (key === 'ArrowDown') {
+    console.log("paso 56");
+
+    // Mueve la selección hacia abajo
+    if (this.selectedIndex < maxIndex) {
+      this.selectedIndex++;
+    } else {
+      this.selectedIndex = 0;  // Vuelve al primer ítem
+    }
+    event.preventDefault();
+  } else if (key === 'ArrowUp') {
+    console.log("paso 677");
+
+    // Mueve la selección hacia arriba
+    if (this.selectedIndex > 0) {
+      this.selectedIndex--;
+    } else {
+      this.selectedIndex = maxIndex;  // Vuelve al último ítem
+    }
+    event.preventDefault();
+  } else if (key === 'Enter') {
+    // Selecciona el ítem actual
+    if (this.selectedIndex >= 0 && this.selectedIndex <= maxIndex) {
+      this.cargarDatosEmpresa(this.resultadoEmpresa[this.selectedIndex]);
+    }
+    event.preventDefault();
+  }
+}
+
 }
 

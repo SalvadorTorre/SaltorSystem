@@ -34,6 +34,17 @@ console.log(url);
     return this.http.GetRequest<any>(`/empresa/${cod_empre}`);
   }
 
+  buscarEmpresa(pageIndex: number, pageSize: number, codigo?: string, nomempresa?: string,): Observable<any> {
+    let url = `/empresa-nombre?page=${pageIndex}&limit=${pageSize}`;
 
+    if (codigo) {
+      url += `&codigo=${codigo}`;
+    }
+    if (nomempresa) {
+      url += `&nomempresa=${nomempresa}`;
+    }
+
+    return this.http.GetRequest<any>(url);
+  }
 
 }

@@ -72,6 +72,8 @@ export class Cotizacion implements OnInit {
   mensagePantalla: boolean = false;
   codmerVacio: boolean = false;
   desmerVacio: boolean = false;
+  private codigoSubject = new BehaviorSubject<string>('');
+  private nomclienteSubject = new BehaviorSubject<string>('');
 
   isDisabled: boolean = true;
   form: FormGroup;
@@ -93,32 +95,22 @@ export class Cotizacion implements OnInit {
 
     this.crearFormularioCotizacion();
     console.log(this.formularioCotizacion.value);
-    // this.descripcionBuscar.pipe(
-    //   debounceTime(500),
-    //   distinctUntilChanged(),
-    //   switchMap(nombre => {
-    //     this.descripcion = nombre;
-    //     return this.servicioCotizacion.buscarTodasCotizacion(this.currentPage, this.pageSize, this.descripcion);
-    //   })
-    // )
-    //   .subscribe(response => {
-    //     this.cotizacionList = response.data;
-    //     this.totalItems = response.pagination.total;
-    //     this.currentPage = response.pagination.page;
-    //   });
-    // this.codigoBuscar.pipe(
-    //   debounceTime(500),
-    //   distinctUntilChanged(),
-    //   switchMap(rnc => {
-    //     this.codigo = rnc;
-    //     return this.servicioCotizacion.buscarTodasCotizacion(this.currentPage, this.pageSize, this.descripcion);
-    //   })
-    // )
-    //   .subscribe(response => {
-    //     this.cotizacionList = response.data;
-    //     this.totalItems = response.pagination.total;
-    //     this.currentPage = response.pagination.page;
-    //   });
+
+    this.nomclienteSubject.pipe(
+      debounceTime(500),
+      distinctUntilChanged(),
+      switchMap(nomcliente => {
+        this.txtdescripcion = nomcliente;
+        return this.servicioCotizacion.buscarCotizacion(this.currentPage, this.pageSize, this.codigo, this.txtdescripcion);
+      })
+    ).subscribe(response => {
+      this.cotizacionList = response.data;
+      this.totalItems = response.pagination.total;
+      this.currentPage = response.pagination.page;
+    });
+
+
+
 
   }
 
@@ -436,7 +428,7 @@ export class Cotizacion implements OnInit {
 
   descripcionEntra(event: Event) {
     const inputElement = event.target as HTMLInputElement;
-    this.descripcionBuscar.next(inputElement.value.toUpperCase());
+    this.nomclienteSubject.next(inputElement.value.toUpperCase());
   }
 
   codigoEntra(event: Event) {
@@ -470,7 +462,7 @@ export class Cotizacion implements OnInit {
           title: "Excelente!",
           text: "Cotizacion creada correctamente.",
           icon: "success",
-          timer: 5000,
+          timer: 1000,
           showConfirmButton: false,
         });
         this.buscarTodasCotizacion(1);
