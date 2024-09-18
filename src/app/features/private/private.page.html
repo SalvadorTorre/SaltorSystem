@@ -87,14 +87,15 @@
         </button>
       </div>
       <div class="d-flex">
-        <div class="custom-avatar">SA</div>
+        <div class="custom-avatar">{{this.initials}}</div>
         <div class="name-charge">
-          <span class="name-person">Salvador Torres</span>
-          <span class="local-trabajo">Centrar Hierro</span>
+          <span class="name-person">{{this.personName}}</span>
+          <span class="local-trabajo">{{this.sucursalName}}</span>
         </div>
         <i
+          (click)="logout()"
           class="bi bi-box-arrow-left"
-          style="font-size: 38px; color: #af372c"
+          style="font-size: 20px; color: #af372c"
         ></i>
       </div>
     </div>

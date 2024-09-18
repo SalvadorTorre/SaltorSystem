@@ -23,14 +23,14 @@
 }
 
 .custom-avatar {
-  height: 60px;
-  width: 60px;
+  height: 40px;
+  width: 40px;
   background-color: #F0F0F0;
   border-radius: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
-  font-size: 24px;
+  font-size: 18px;
   margin-right: 10px;
   color: #AF372C;
 }
@@ -40,17 +40,17 @@
   flex-flow: column;
   justify-content: center;
   align-items: flex-start;
-  margin-right: 20px;
+  margin-right: 14px;
 }
 
 .name-person {
   color: #F0F0F0;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: bold;
 }
 
 .local-trabajo {
-  color: #AF372C;
-  font-size: 20px;
+  color: #FFF;
+  font-size: 10px;
   font-weight: 500;
 }
