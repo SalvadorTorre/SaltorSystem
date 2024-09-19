@@ -72,6 +72,12 @@ export class Cotizacion implements OnInit {
   mensagePantalla: boolean = false;
   codmerVacio: boolean = false;
   desmerVacio: boolean = false;
+
+  sucursales = [];
+  sucursalSeleccionada: any = null;
+
+
+
   private codigoSubject = new BehaviorSubject<string>('');
   private nomclienteSubject = new BehaviorSubject<string>('');
 

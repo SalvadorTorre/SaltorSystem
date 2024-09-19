@@ -183,6 +183,12 @@
                     <div class="col-4">
                       <h6>ID del Usuario</h6>
                     </div>
+                    <div class="col-4">
+                      <h6>Clave Usuario</h6>
+                    </div>
+                    <div class="col-4">
+                      <h6>Nivel de Usuario</h6>
+                    </div>
                     <div class="row">
                       <div class="col-4">
                         <input
@@ -195,13 +201,6 @@
                           formControlName="idUsuario"
                         />
                       </div>
-                    </div>
-                    <div class="row">
-                      <div class="col-4">
-                        <h6>Clave Usuario</h6>
-                      </div>
-                    </div>
-                    <div class="row">
                       <div class="col-4">
                         <input
                           type="text"
@@ -213,14 +212,7 @@
                           formControlName="claveUsuario"
                         />
                       </div>
-                    </div>
-                    <div class="row">
-                      <div class="col-4">
-                        <h6>Nivel de Usuario</h6>
-                      </div>
-                    </div>
-                    <div class="row">
-                      <div class="col-2 d-flex justify-content-end">
+                      <div class="col-2">
                         <input
                           type="number"
                           (keydown)="moveFocus($event, input4)"
@@ -266,88 +258,68 @@
                     </div>
 
                     <div class="row">
-                      <div class="col">
-                        <h6>Empresa</h6>
-                      </div>
-                    </div>
-                    <!-- <div class="row">
-                      <div class="col">
-                        <input
-                          type="text"
-                          (keydown)="moveFocus($event,input7)"
-                          #input6
-                          class="form-control form-control-sm"
-                          formControlName="empresa"
-                        />
-                      </div>
-                    </div> -->
-
-                    <div class="row">
-                      <div class="col-10">
-                        <div class="input-group show">
-                          <input
-                            class="form-control dropdown-toggle searchInput"
-                            data-id="agent"
-                            type="text"
-                            autocomplete="off"
-                            (input)="convertToUpperCase($event)"
-                            (keydown.enter)="moveFocusEmpresa($event, input7)"
-                            (keydown)="handleKeydown($event)"
-                            #input6
-                            id="input2"
-                            [formControl]="buscarEmpresa"
-                            formControlName="empresa"
-                          />
-                          <div
-                            [ngClass]="{ 'show': resultadoEmpresa.length > 0 }"
-                            class="dropdown-menu"
-                            style="
-                              margin-right: 30px;
-                              margin-top: 45px;
-                              z-index: 300;
-                              width: 350px;
-                              position: absolute;
-                              will-change: transform;
-                            "
-                          >
-                            <div
-                              class="searchReturnItem name-find"
-                              *ngFor="let result of resultadoEmpresa; let i = index"
-                              [class.active]="i === selectedIndex"
-                            >
-                              <a
-                                (click)="cargarDatosEmpresa(result)"
-                                style="
-                                  color: #222222 !important;
-                                  font-size: 10pt;
-                                  padding: 20px 0px;
-                                  text-decoration: none !important;
-                                  cursor: pointer;
-                                "
-                                class="px-3 cp"
-                              >
-                                <i class="far fa-user-circle mr-5"></i
-                                >&nbsp;&nbsp;{{ result.nom_empre }}
-                              </a>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="row">
-                      <div class="col">
+                      <div class="col-8">
                         <h6>Sucursal</h6>
                       </div>
+                      <div class="col-4">
+                        <h6>ID Sucursal</h6>
+                      </div>
                     </div>
                     <div class="row">
-                      <div class="col">
+                      <div class="col-8">
                         <input
                           type="text"
-                          (keydown)="moveFocus($event,input7)"
-                          #input7
+                          (input)="buscarSucursal($event)"
+                          #inputSucursal
+                          #input6
                           class="form-control form-control-sm"
                           formControlName="sucursal"
+                        />
+                        <ul *ngIf="sucursales.length > 0" class="list-group">
+                          <li
+                            *ngFor="let sucursal of sucursales"
+                            (click)="seleccionarSucursal(sucursal)"
+                            class="list-group-item list-group-item-action"
+                          >
+                            {{ sucursal.descripcion }}
+                          </li>
+                        </ul>
+                      </div>
+                      <div class="col-4">
+                        <input
+                          type="text"
+                          class="form-control form-control-sm"
+                          placeholder="Código Sucursal"
+                          disabled
+                        />
+                      </div>
+                    </div>
+
+                    <div class="row">
+                      <div class="col-8">
+                        <h6>Empresa</h6>
+                      </div>
+                      <div class="col-4">
+                        <h6>ID Empresa</h6>
+                      </div>
+                    </div>
+                    <div class="row">
+                      <div class="col-8">
+                        <!-- <input type="text" class="form-control form-control-sm" [value]="sucursalSeleccionada?.descripcion" placeholder="Descripción Sucursal" disabled /> -->
+                        <input
+                          type="text"
+                          class="form-control form-control-sm"
+                          placeholder="Descripción Sucursal"
+                          disabled
+                        />
+                      </div>
+                      <div class="col-4">
+                        <!-- <input type="text" class="form-control form-control-sm" [value]="sucursalSeleccionada?.codigo" placeholder="Descripcion Empresa" disabled /> -->
+                        <input
+                          type="text"
+                          class="form-control form-control-sm"
+                          placeholder="Código Empresa"
+                          disabled
                         />
                       </div>
                     </div>

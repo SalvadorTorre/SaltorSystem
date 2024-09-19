@@ -15,6 +15,8 @@ import { HttpInvokeService } from 'src/app/core/services/http-invoke.service';
   templateUrl: './usuario.html',
   styleUrls: ['./usuario.css']
 })
+
+
 export class Usuario implements OnInit {
   totalItems = 0;
   pageSize = 8
@@ -34,8 +36,19 @@ export class Usuario implements OnInit {
   selectedIndex = 1;
   nativeElement = new FormControl();
   selectedIndexEmpresa = 1;
+// *******************
+  // sucursales = [];
+  // sucursalSeleccionada: any = null;
+  sucursales: Sucursal[] = [];  // Define correctamente el tipo como Sucursal[]
+  sucursalSeleccionada: Sucursal | null = null;  // Puede ser null si no se ha seleccionado nada
 
 
+  listaSucursales = [
+    { codigo: '001', descripcion: 'Sucursal 1', codigoEmpresa: 'E001', descripcionEmpresa: 'Empresa 1' },
+    { codigo: '002', descripcion: 'Sucursal 2', codigoEmpresa: 'E002', descripcionEmpresa: 'Empresa 2' },
+    // Agrega más sucursales según sea necesario
+  ];
+//********************** */
  habilitarFormulario: boolean = false;
   tituloModalUsuario!: string;
   formularioUsuario!:FormGroup;
@@ -369,5 +382,19 @@ handleKeydown(event: KeyboardEvent): void {
   }
 }
 
+buscarSucursal(event: any) {
+  const query = event.target.value.toLowerCase();
+  if (query) {
+    this.sucursales = this.listaSucursales.filter(sucursal =>
+      sucursal.descripcion.toLowerCase().includes(query)
+    );
+  } else {
+    this.sucursales = [];
+  }
+}
+seleccionarSucursal(sucursal: any) {
+  this.sucursalSeleccionada = sucursal;
+  this.sucursales = []; // Limpia el listbox después de seleccionar
+}
 }
 
