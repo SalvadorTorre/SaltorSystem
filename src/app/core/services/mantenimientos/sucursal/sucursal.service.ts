@@ -17,7 +17,7 @@ export class ServicioSucursal {
     return this.http.PutRequest<any,any>(`/sucursales/${cod_sucursal}`,sucursal);
   }
 
-  buscarTodasSucursal(): Observable<any> {
+  buscarTodasSucursal(query: any): Observable<any> {
     let url = `/sucursales`;
 
 console.log(url);

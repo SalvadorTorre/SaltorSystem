@@ -39,15 +39,14 @@ export class Usuario implements OnInit {
 // *******************
   // sucursales = [];
   // sucursalSeleccionada: any = null;
-  sucursales: Sucursal[] = [];  // Define correctamente el tipo como Sucursal[]
-  sucursalSeleccionada: Sucursal | null = null;  // Puede ser null si no se ha seleccionado nada
+  sucursales: any[] = [];
+  sucursalSeleccionada: any;
 
-
-  listaSucursales = [
-    { codigo: '001', descripcion: 'Sucursal 1', codigoEmpresa: 'E001', descripcionEmpresa: 'Empresa 1' },
-    { codigo: '002', descripcion: 'Sucursal 2', codigoEmpresa: 'E002', descripcionEmpresa: 'Empresa 2' },
-    // Agrega más sucursales según sea necesario
-  ];
+  // listaSucursales = [
+  //   { codigo: '001', descripcion: 'Sucursal 1', codigoEmpresa: 'E001', descripcionEmpresa: 'Empresa 1' },
+  //   { codigo: '002', descripcion: 'Sucursal 2', codigoEmpresa: 'E002', descripcionEmpresa: 'Empresa 2' },
+  //   // Agrega más sucursales según sea necesario
+  // ];
 //********************** */
  habilitarFormulario: boolean = false;
   tituloModalUsuario!: string;
@@ -383,18 +382,24 @@ handleKeydown(event: KeyboardEvent): void {
 }
 
 buscarSucursal(event: any) {
-  const query = event.target.value.toLowerCase();
-  if (query) {
-    this.sucursales = this.listaSucursales.filter(sucursal =>
-      sucursal.descripcion.toLowerCase().includes(query)
+  const query = event.target.value;
+  if (query.length > 1) { // Empieza la búsqueda después de escribir 3 caracteres
+    this.servicioSucursal.buscarTodasSucursal(query).subscribe(
+      (data) => {
+        this.sucursales = data;
+      },
+      (error) => {
+        console.error('Error al buscar sucursales', error);
+      }
     );
   } else {
     this.sucursales = [];
   }
 }
+
 seleccionarSucursal(sucursal: any) {
   this.sucursalSeleccionada = sucursal;
-  this.sucursales = []; // Limpia el listbox después de seleccionar
+  this.sucursales = [];
 }
 }
 
