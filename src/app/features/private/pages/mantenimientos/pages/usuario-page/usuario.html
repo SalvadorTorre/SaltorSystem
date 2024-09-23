@@ -280,7 +280,14 @@
                         <ul
                           *ngIf="sucursales.length > 0"
                           class="list-group mt-1"
-                          style="max-height: 150px; overflow-y: auto"
+                          style="
+                            max-height: 150px;
+                            overflow-y: auto;
+                            z-index: 10;
+                            position: relative;
+                            background: white;
+                            border: 1px solid #ccc;
+                          "
                         >
                           <li
                             *ngFor="let sucursal of sucursales"
@@ -315,8 +322,8 @@
                         <input
                           type="text"
                           class="form-control form-control-sm"
-                          [value]="sucursalSeleccionada?.descripcion"
-                          placeholder="Descripción Sucursal"
+                          [value]="sucursalSeleccionada?.empresa"
+                          placeholder="Descripción Empresa"
                           disabled
                         />
                         <!-- <input
@@ -330,7 +337,7 @@
                         <input
                           type="text"
                           class="form-control form-control-sm"
-                          [value]="sucursalSeleccionada?.codigo"
+                          [value]="sucursalSeleccionada?.codigoempresa"
                           placeholder="Descripcion Empresa"
                           disabled
                         />

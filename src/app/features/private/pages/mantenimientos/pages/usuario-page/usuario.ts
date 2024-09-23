@@ -381,19 +381,32 @@ handleKeydown(event: KeyboardEvent): void {
   }
 }
 
-buscarSucursal(event: any) {
-  const query = event.target.value;
-  if (query.length > 1) { // Empieza la búsqueda después de escribir 3 caracteres
+
+// buscarSucursal3(event: Event) {
+//   const inputValue = (event.target as HTMLInputElement).value;
+//   this.servicioSucursal.buscarTodasSucursal(inputValue).subscribe((response: any[]) => {
+//     this.sucursales = response;
+//     console.log('Sucursales desde API:', this.sucursales);
+//   });
+// }
+buscarSucursal(event: Event) {
+  const query = (event.target as HTMLInputElement).value;
+  //const query = event.target.value;
+  if (query.length > 2) { // Empieza la búsqueda después de escribir 2 caracteres
     this.servicioSucursal.buscarTodasSucursal(query).subscribe(
       (data) => {
         this.sucursales = data;
+        console.log(this.sucursales)
       },
+
       (error) => {
         console.error('Error al buscar sucursales', error);
       }
     );
   } else {
     this.sucursales = [];
+    console.log("No")
+    console.log(query.length)
   }
 }
 
