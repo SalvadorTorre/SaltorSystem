@@ -118,6 +118,9 @@ export class Usuario implements OnInit {
       }
 
     });
+    this.formularioUsuario.get('empresa')!.disable();
+    this.formularioUsuario.get('idEmpresa')!.disable();
+    this.formularioUsuario.get('idSucursal')!.disable();
   }
 
 
@@ -148,6 +151,8 @@ export class Usuario implements OnInit {
       despacho: [false],
       empresa: ['', Validators.required],
       sucursal: ['', Validators.required],
+      idEmpresa: [''],
+      idSucursal: [''],
 
     });
   }
@@ -414,10 +419,16 @@ export class Usuario implements OnInit {
   // }
 
   seleccionarSucursal(sucursal: any) {
-    this.sucursalSeleccionada = this.sucursalesList.filter(s => s.cod_sucursal === parseInt(sucursal.value));
-    console.log('Sucursal seleccionada:', this.sucursalSeleccionada[0].cod_empr
+    const sucur = this.formularioUsuario.get('sucursal')!.value;
+    this.sucursalSeleccionada = this.sucursalesList.filter(s => s.cod_sucursal === parseInt(sucur));
+    console.log('Sucursal seleccionada:', this.sucursalSeleccionada);
+    // console.log('Sucursal seleccionada:', this.sucursalSeleccionada[0].cod_empre
 
-    );
+    // );
+    this.formularioUsuario.patchValue({
+      idSucursal: this.sucursalSeleccionada[0].cod_sucursal,
+      idEmpresa: this.sucursalSeleccionada[0].cod_empre
+    });
     this.sucursales = [];
   }
 

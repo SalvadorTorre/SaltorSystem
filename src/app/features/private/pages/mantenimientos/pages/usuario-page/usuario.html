@@ -272,6 +272,7 @@
                           id=""
                           class="form-select"
                           (change)="seleccionarSucursal($event.target)"
+                          formControlName="sucursal"
                         >
                           <option value="" selected disabled>
                             Seleciona una sucursal
@@ -289,8 +290,7 @@
                           type="text"
                           class="form-control form-control-sm"
                           placeholder="Código Sucursal"
-                          [value]="sucursalSeleccionada?.cod_sucursal || ''"
-                          disabled
+                          formControlName="idSucursal"
                         />
                       </div>
                     </div>
@@ -308,9 +308,8 @@
                         <input
                           type="text"
                           class="form-control form-control-sm"
-                          [value]="sucursalSeleccionada?.empresa"
+                          formControlName="empresa"
                           placeholder="Descripción Empresa"
-                          disabled
                         />
                         <!-- <input
                           type="text"
@@ -323,9 +322,8 @@
                         <input
                           type="text"
                           class="form-control form-control-sm"
-                          [value]="sucursalSeleccionada?.cod_empre"
+                          formControlName="idEmpresa"
                           placeholder="Descripcion Empresa"
-                          disabled
                         />
                         <!-- <input
                           type="text"
