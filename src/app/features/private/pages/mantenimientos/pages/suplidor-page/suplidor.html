@@ -8,18 +8,21 @@
       <div class="col-2">
         <label for="">Buscar Codigo</label>
         <input
+          [(ngModel)]="txtcodigo"
           type="text"
-          placeholder="Digite codigo"
+          placeholder="Digite el Codigo"
           class="form-control"
-          [disabled]="habilitarFormiarioSuplidor"
+          (input)="codigoEntra($event)"
         />
       </div>
       <div class="col-3">
         <label for="">Buscar Nombre</label>
         <input
+          [(ngModel)]="txtdescripcion"
           type="text"
           placeholder="Digite el Nombre..."
           class="form-control"
+          (input)="descripcionEntra($event)"
         />
       </div>
       <div class="col-2">

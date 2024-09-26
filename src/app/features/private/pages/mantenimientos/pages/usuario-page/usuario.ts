@@ -43,12 +43,6 @@ export class Usuario implements OnInit {
   sucursalSeleccionada: any;
   sucursalesList: SucursalesData[] = [];
 
-  // listaSucursales = [
-  //   { codigo: '001', descripcion: 'Sucursal 1', codigoEmpresa: 'E001', descripcionEmpresa: 'Empresa 1' },
-  //   { codigo: '002', descripcion: 'Sucursal 2', codigoEmpresa: 'E002', descripcionEmpresa: 'Empresa 2' },
-  //   // Agrega más sucursales según sea necesario
-  // ];
-  //********************** */
   habilitarFormulario: boolean = false;
   tituloModalUsuario!: string;
   formularioUsuario!: FormGroup;

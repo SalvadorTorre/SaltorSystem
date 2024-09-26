@@ -69,7 +69,14 @@ export class Suplidor implements OnInit {
 
   }
 
-
+  descripcionEntra(event: Event) {
+    const inputElement = event.target as HTMLInputElement;
+    this.descripcionBuscar.next(inputElement.value.toUpperCase());
+  }
+  codigoEntra(event: Event) {
+    const inputElement = event.target as HTMLInputElement;
+    this.codigoBuscar.next(inputElement.value.toUpperCase());
+  }
 
 
   seleccionarSuplidor(suplidor: any) {

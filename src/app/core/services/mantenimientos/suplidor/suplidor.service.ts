@@ -14,7 +14,7 @@ export class ServicioSuplidor {
   // }
 
   buscarTodosSuplidor(pageIndex: number, pageSize: number, codigo?: string, descripcion?: string): Observable<any> {
-    let url = `/usuario?page=${pageIndex}&limit=${pageSize}`;
+    let url = `/suplidor?page=${pageIndex}&limit=${pageSize}`;
     if (codigo) {
       url += `&codigo=${codigo}`;
     }
