@@ -58,6 +58,7 @@ export class Usuario implements OnInit {
   modoconsultaUsuario: boolean = false;
   usuarioList: ModeloUsuarioData[] = [];
   selectedUsuario: any = null;
+  empresaData: EmpresaModelData[] = [];
   constructor(
     private fb: FormBuilder,
     private servicioUsuario: ServicioUsuario,
@@ -194,6 +195,13 @@ export class Usuario implements OnInit {
   consultarUsuario(Usuario: ModeloUsuarioData) {
     this.tituloModalUsuario = 'Consulta Usuario';
     this.formularioUsuario.patchValue(Usuario);
+    this.formularioUsuario.patchValue({
+      sucursal: Usuario.sucursal,
+      idSucursal: Usuario.sucursal,
+      empresa: Usuario.empresaInfo.nom_empre,
+      idEmpresa: Usuario.empresa,
+
+    });
     $('#modalusuario').modal('show');
     this.habilitarFormulario = true;
     this.modoconsultaUsuario = true;
@@ -429,6 +437,12 @@ export class Usuario implements OnInit {
       idSucursal: this.sucursalSeleccionada[0].cod_sucursal,
       idEmpresa: this.sucursalSeleccionada[0].cod_empre
     });
+    this.servicioEmpresa.buscarEmpres(this.sucursalSeleccionada[0].cod_empre).subscribe((response) => {
+      console.log('Empresa:', response);
+      this.formularioUsuario.patchValue({
+        empresa: response.data[0].nom_empre
+      });
+    })
     this.sucursales = [];
   }
 
