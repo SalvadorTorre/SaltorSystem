@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { BehaviorSubject,debounceTime, distinctUntilChanged, filter, switchMap, tap} from 'rxjs';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { ModeloSuplidorData } from 'src/app/core/services/mantenimientos/suplidor';
 import { ServicioSuplidor } from 'src/app/core/services/mantenimientos/suplidor/suplidor.service';
@@ -20,16 +21,70 @@ export class Suplidor implements OnInit {
   modoconsultaSuplidor:boolean = false;
   suplidorList:ModeloSuplidorData[] = [];
   selectedSuplidor: any = null;
+
+  totalItems = 0;
+  pageSize = 8
+  currentPage = 1;
+  maxPagesToShow = 5;
+  txtdescripcion: string = '';
+  txtcodigo: string = '';
+  codSuplidor: string = '';
+  descripcion: string = '';
+  mensagePantalla: boolean = false;
+  private codigoBuscar = new BehaviorSubject<string>('');
+  private descripcionBuscar = new BehaviorSubject<string>('');
+
+
+
   constructor(private fb:FormBuilder, private servicioSuplidor:ServicioSuplidor)
   {
-    this.crearFormularioSuplidor();
+   this.crearFormularioSuplidor();
+   this.descripcionBuscar.pipe(
+    debounceTime(1000),
+    distinctUntilChanged(),
+    switchMap(descripcion => {
+    this.descripcion = descripcion;
+    return this.servicioSuplidor.buscarTodosSuplidor(this.currentPage, this.pageSize, this.descripcion);
+    })
+   )
+   .subscribe(response => {
+    this.suplidorList = response.data;
+    this.totalItems = response.pagination.total;
+    this.currentPage = response.pagination.page;
+   });
+
+   this.codigoBuscar.pipe(
+    debounceTime(500),
+    distinctUntilChanged(),
+    switchMap(codSuplidor => {
+      this.codSuplidor = codSuplidor;
+      return this.servicioSuplidor.buscarTodosSuplidor(this.currentPage, this.pageSize, this.codSuplidor,this.descripcion);
+    })
+  )
+  .subscribe(response => {
+    this.suplidorList = response.data;
+    this.totalItems = response.pagination.total;
+    this.currentPage = response.pagination.page;
+  });
+
   }
+
+
+
 
   seleccionarSuplidor(suplidor: any) {
     this.selectedSuplidor = suplidor;
   }
   ngOnInit(): void {
-    this.buscarTodosSuplidor();
+    this.buscarTodosSuplidor(1);
+    this.formularioSuplidor.get('su_nomsupl')!.valueChanges.subscribe(value => {
+      this.updateCharCount();
+    });
+  }
+  updateCharCount() {
+    throw new Error('Method not implemented.');
+    // const currentLength = this.formularioInventario.get('in_desmerc')!.value.length;
+    // this.remainingChars = this.maxChars - currentLength;
   }
 
   crearFormularioSuplidor(){
@@ -71,12 +126,13 @@ habilitarFormularioSuplidor(){
   this.habilitarFormiarioSuplidor = true;
 }
 
-buscarTodosSuplidor(){
-  this.servicioSuplidor.buscarTodosSuplidor().subscribe(response => {
+buscarTodosSuplidor(page:number){
+  this.servicioSuplidor.buscarTodosSuplidor(page,this.pageSize).subscribe(response => {
     console.log(response);
     this.suplidorList = response.data;
   });
 }
+
 consultarSuplidor(Suplidor:ModeloSuplidorData){
   this.tituloModalSuplidor = 'Consulta Suplidor';
  this.formularioSuplidor.patchValue(Suplidor);
@@ -88,7 +144,7 @@ this.modoconsultaSuplidor = true;
 eliminarSuplidor(suplidor:ModeloSuplidorData){
   this.servicioSuplidor.eliminarSuplidor(suplidor.su_codSupl).subscribe(response => {
     alert("Suplidor Eliminado");
-    this.buscarTodosSuplidor();
+    this.buscarTodosSuplidor(this.currentPage);
   });
 }
 
@@ -105,7 +161,7 @@ guardarSuplidor(){
           timer: 3000,
           showConfirmButton: false,
         });
-      this.buscarTodosSuplidor();
+      this.buscarTodosSuplidor(1);
       this.formularioSuplidor.reset();
       this.crearFormularioSuplidor();
       $('#modalsuplidor').modal('hide');
@@ -119,7 +175,7 @@ guardarSuplidor(){
           timer: 3000,
           showConfirmButton: false,
         });
-      this.buscarTodosSuplidor();
+      this.buscarTodosSuplidor(1);
       this.formularioSuplidor.reset();
       this.crearFormularioSuplidor();
       $('#modalcliente').modal('hide');
@@ -129,4 +185,9 @@ guardarSuplidor(){
        alert("Este Suplidor no fue Guardado");
     }
 }
+
+// onDescripcionInput(event: Event) {
+//   const inputElement = event.target as HTMLInputElement;
+//   this.descripcionSubject.next(inputElement.value.toUpperCase());
+// }
 }

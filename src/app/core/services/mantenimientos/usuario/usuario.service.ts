@@ -6,6 +6,7 @@ import { HttpInvokeService } from "../../http-invoke.service";
 @Injectable({
   providedIn: "root"
 })
+
 export class ServicioUsuario {
   constructor(private http: HttpInvokeService) { }
 

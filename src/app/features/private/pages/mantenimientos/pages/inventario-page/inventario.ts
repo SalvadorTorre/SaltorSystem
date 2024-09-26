@@ -91,6 +91,7 @@ export class Inventario implements OnInit {
     this.remainingChars = this.maxChars - currentLength;
   }
 
+
   crearFormularioInventario(){
     this.formularioInventario = this.fb.group({
       in_codmerc: [""],
