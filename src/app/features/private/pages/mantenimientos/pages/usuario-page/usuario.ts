@@ -181,6 +181,13 @@ export class Usuario implements OnInit {
     this.usuarioid = usuario.codUsuario;
     this.modoedicionUsuario = true;
     this.formularioUsuario.patchValue(usuario);
+    this.formularioUsuario.patchValue({
+      sucursal: usuario.sucursal,
+      idSucursal: usuario.sucursal,
+      empresa: usuario.empresaInfo.nom_empre,
+      idEmpresa: usuario.empresa,
+
+    });
     this.tituloModalUsuario = 'Editando Usuario';
     $('#modalusuario').modal('show');
     this.habilitarFormulario = true;
@@ -247,6 +254,9 @@ export class Usuario implements OnInit {
     console.log(this.formularioUsuario.value);
     if (this.formularioUsuario.valid) {
       if (this.modoedicionUsuario) {
+        this.formularioUsuario.patchValue({
+          empresa: this.formularioUsuario.get('idEmpresa')!.value,
+        });
         this.servicioUsuario.editarUsuario(this.usuarioid, this.formularioUsuario.value).subscribe(response => {
           Swal.fire({
             title: "Excelente!",
@@ -262,6 +272,10 @@ export class Usuario implements OnInit {
         });
       }
       else {
+        this.formularioUsuario.patchValue({
+          empresa: this.formularioUsuario.get('idEmpresa')!.value,
+        });
+        this.formularioUsuario.get('empresa')!.enable();
         this.servicioUsuario.guardarUsuario(this.formularioUsuario.value).subscribe(response => {
           Swal.fire({
             title: "Excelente!",
