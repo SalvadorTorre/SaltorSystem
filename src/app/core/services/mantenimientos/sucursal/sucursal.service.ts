@@ -7,28 +7,28 @@ import { SucursalModel } from ".";
   providedIn: "root"
 })
 export class ServicioSucursal {
-  constructor(private http:HttpInvokeService) {}
+  constructor(private http: HttpInvokeService) { }
 
-  guardarSucursal(sucursal:any): Observable<any>{
-    return this.http.PostRequest<any,any>("/sucursales",sucursal);
+  guardarSucursal(sucursal: any): Observable<any> {
+    return this.http.PostRequest<any, any>("/sucursales", sucursal);
   }
 
-  editaSucursal(cod_sucursal:string,sucursal:SucursalModel): Observable<any>{
-    return this.http.PutRequest<any,any>(`/sucursales/${cod_sucursal}`,sucursal);
+  editaSucursal(cod_sucursal: string, sucursal: SucursalModel): Observable<any> {
+    return this.http.PutRequest<any, any>(`/sucursales/${cod_sucursal}`, sucursal);
   }
 
-  buscarTodasSucursal(query: any): Observable<any> {
+  buscarTodasSucursal(): Observable<any> {
     let url = `/sucursales`;
 
-console.log(url);
+    console.log(url);
     return this.http.GetRequest<any>(url);
   }
 
-  eliminarSucursal(cod_sucursal:string): Observable<any>{
+  eliminarSucursal(cod_sucursal: string): Observable<any> {
     return this.http.DeleteRequest(`/sucursal/${cod_sucursal}`, "");
   }
 
-  buscarsucursal(cod_sucursal:string): Observable<any>{
+  buscarsucursal(cod_sucursal: string): Observable<any> {
     return this.http.GetRequest<any>(`/sucursal/${cod_sucursal}`);
   }
 

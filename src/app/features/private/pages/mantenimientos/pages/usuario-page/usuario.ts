@@ -1,11 +1,11 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
-import { BehaviorSubject,debounceTime, distinctUntilChanged, filter, switchMap, tap} from 'rxjs';
+import { BehaviorSubject, debounceTime, distinctUntilChanged, filter, switchMap, tap } from 'rxjs';
 import { ModeloUsuarioData } from 'src/app/core/services/mantenimientos/usuario';
 import { ServicioUsuario } from 'src/app/core/services/mantenimientos/usuario/usuario.service';
 import { ServicioEmpresa } from 'src/app/core/services/mantenimientos/empresas/empresas.service';
 import { EmpresaModelData, SucursalesData } from 'src/app/core/services/mantenimientos/empresas';
-import { ServicioSucursal } from 'src/app/core/services/mantenimientos/sucursal/sucursal.service';declare var $: any;
+import { ServicioSucursal } from 'src/app/core/services/mantenimientos/sucursal/sucursal.service'; declare var $: any;
 import Swal from 'sweetalert2';
 import { Empresas } from '../empresas-page/empresas';
 import { HttpInvokeService } from 'src/app/core/services/http-invoke.service';
@@ -36,68 +36,69 @@ export class Usuario implements OnInit {
   selectedIndex = 1;
   nativeElement = new FormControl();
   selectedIndexEmpresa = 1;
-// *******************
+  // *******************
   // sucursales = [];
   // sucursalSeleccionada: any = null;
   sucursales: any[] = [];
   sucursalSeleccionada: any;
+  sucursalesList: SucursalesData[] = [];
 
   // listaSucursales = [
   //   { codigo: '001', descripcion: 'Sucursal 1', codigoEmpresa: 'E001', descripcionEmpresa: 'Empresa 1' },
   //   { codigo: '002', descripcion: 'Sucursal 2', codigoEmpresa: 'E002', descripcionEmpresa: 'Empresa 2' },
   //   // Agrega más sucursales según sea necesario
   // ];
-//********************** */
- habilitarFormulario: boolean = false;
+  //********************** */
+  habilitarFormulario: boolean = false;
   tituloModalUsuario!: string;
-  formularioUsuario!:FormGroup;
-  clienteList:ModeloUsuarioData[] = [];
-  modoedicionUsuario:boolean = false;
-  usuarioid!:number
-  modoconsultaUsuario:boolean = false;
-  usuarioList:ModeloUsuarioData[] = [];
+  formularioUsuario!: FormGroup;
+  clienteList: ModeloUsuarioData[] = [];
+  modoedicionUsuario: boolean = false;
+  usuarioid!: number
+  modoconsultaUsuario: boolean = false;
+  usuarioList: ModeloUsuarioData[] = [];
   selectedUsuario: any = null;
   constructor(
-   private fb:FormBuilder,
-   private servicioUsuario:ServicioUsuario,
-   private servicioEmpresa:ServicioEmpresa,
-   private http: HttpInvokeService,
-   private servicioSucursal:ServicioSucursal
-  )
-    {this.crearFormularioUsuario();
-  this.descripcionBuscar.pipe(
-    debounceTime(1000),
-    distinctUntilChanged(),
-    switchMap(descripcion => {
-      this.descripcion = descripcion;
-      return this.servicioUsuario.buscarTodosUsuario(this.currentPage, this.pageSize, this.descripcion);
-    })
-  )
-  .subscribe(response => {
-    this.usuarioList = response.data;
-    this.totalItems = response.pagination.total;
-    this.currentPage = response.pagination.page;
-  });
+    private fb: FormBuilder,
+    private servicioUsuario: ServicioUsuario,
+    private servicioEmpresa: ServicioEmpresa,
+    private http: HttpInvokeService,
+    private servicioSucursal: ServicioSucursal
+  ) {
+    this.crearFormularioUsuario();
+    this.descripcionBuscar.pipe(
+      debounceTime(1000),
+      distinctUntilChanged(),
+      switchMap(descripcion => {
+        this.descripcion = descripcion;
+        return this.servicioUsuario.buscarTodosUsuario(this.currentPage, this.pageSize, this.descripcion);
+      })
+    )
+      .subscribe(response => {
+        this.usuarioList = response.data;
+        this.totalItems = response.pagination.total;
+        this.currentPage = response.pagination.page;
+      });
 
-  this.idBuscar.pipe(
-    debounceTime(500),
-    distinctUntilChanged(),
-    switchMap(idusuario => {
-      this.idUsuario = idusuario;
-      return this.servicioUsuario.buscarTodosUsuario(this.currentPage, this.pageSize, this.idUsuario,this.descripcion);
-    })
-  )
-  .subscribe(response => {
-    this.usuarioList = response.data;
-    this.totalItems = response.pagination.total;
-    this.currentPage = response.pagination.page;
-  });
-}
-  seleccionarUsuario(usuario: any)
-   { this.selectedUsuario = Usuario; }
+    this.idBuscar.pipe(
+      debounceTime(500),
+      distinctUntilChanged(),
+      switchMap(idusuario => {
+        this.idUsuario = idusuario;
+        return this.servicioUsuario.buscarTodosUsuario(this.currentPage, this.pageSize, this.idUsuario, this.descripcion);
+      })
+    )
+      .subscribe(response => {
+        this.usuarioList = response.data;
+        this.totalItems = response.pagination.total;
+        this.currentPage = response.pagination.page;
+      });
+  }
+  seleccionarUsuario(usuario: any) { this.selectedUsuario = Usuario; }
 
-   ngOnInit(): void
-  {this.buscarTodosUsuario(1);
+  ngOnInit(): void {
+    this.buscarTodosUsuario(1);
+    this.obtenerSucursales();
 
     this.buscarEmpresa.valueChanges.pipe(
       debounceTime(500),
@@ -117,302 +118,316 @@ export class Usuario implements OnInit {
       }
 
     });
-   }
-
-
-  crearFormularioUsuario(){
-    this.formularioUsuario = this.fb.group({
-         idUsuario: ['', Validators.required],
-        claveUsuario: ['1234',Validators.required],
-        nombreUsuario: ['',Validators.required],
-        nivel: [''],
-        facturacion: [false],
-        factLectura: [false],
-        compra:[false],
-        compLectura:  [false],
-        reporte: [false],
-        repLectura:[false],
-        mantenimiento: [false],
-        mantLectura: [false],
-        caja: [false],
-        caja_Lectura: [false],
-        almacen:  [false],
-        almLectura: [false],
-        contabilidad: [false],
-        contLectura: [false],
-        mercadeo: [false],
-        usuario: [false],
-        vendedor: [false],
-        correo: [''],
-        despacho: [false],
-        empresa:['',Validators.required],
-        sucursal:['',Validators.required],
-
-      });
   }
-habilitarFormularioUsuario(){
+
+
+  crearFormularioUsuario() {
+    this.formularioUsuario = this.fb.group({
+      idUsuario: ['', Validators.required],
+      claveUsuario: ['1234', Validators.required],
+      nombreUsuario: ['', Validators.required],
+      nivel: [''],
+      facturacion: [false],
+      factLectura: [false],
+      compra: [false],
+      compLectura: [false],
+      reporte: [false],
+      repLectura: [false],
+      mantenimiento: [false],
+      mantLectura: [false],
+      caja: [false],
+      caja_Lectura: [false],
+      almacen: [false],
+      almLectura: [false],
+      contabilidad: [false],
+      contLectura: [false],
+      mercadeo: [false],
+      usuario: [false],
+      vendedor: [false],
+      correo: [''],
+      despacho: [false],
+      empresa: ['', Validators.required],
+      sucursal: ['', Validators.required],
+
+    });
+  }
+  habilitarFormularioUsuario() {
     this.habilitarFormulario = false;
   }
 
- nuevoUsuario(){
-  this.modoedicionUsuario = false;
-   this.tituloModalUsuario = 'Agregando Usuario';
-   $('#modalusuario').modal('show');
-   this.habilitarFormulario = true;
- }
-
- cerrarModalUsuario(){
-  this.habilitarFormulario = false;
-  this.formularioUsuario.reset();
-  this.modoedicionUsuario = false;
-  this.modoconsultaUsuario = false;
-  $('#modalusuario').modal('hide');
-  this.crearFormularioUsuario();
- }
-
- editarUsuario(usuario:ModeloUsuarioData){
-  this.usuarioid = usuario.codUsuario;
-  this.modoedicionUsuario = true;
-  this.formularioUsuario.patchValue(usuario);
-  this.tituloModalUsuario = 'Editando Usuario';
-  $('#modalusuario').modal('show');
-  this.habilitarFormulario = true;
-}
-
-buscarTodosUsuario(page:number){
-  this.servicioUsuario.buscarTodosUsuario(page,this.pageSize).subscribe(response => {
-    console.log(response);
-    this.usuarioList = response.data;
-  });
-}
-consultarUsuario(Usuario:ModeloUsuarioData){
-  this.tituloModalUsuario = 'Consulta Usuario';
- this.formularioUsuario.patchValue(Usuario);
-$('#modalusuario').modal('show');
-this.habilitarFormulario = true;
-this.modoconsultaUsuario = true;
-};
-
-
-eliminarUsuario(Usuario:ModeloUsuarioData){
-  Swal.fire({
-  title: '¿Está seguro de eliminar este Usuario?',
-  text: "¡No podrá revertir esto!",
-  icon: 'warning',
-  showCancelButton: true,
-  confirmButtonColor: '#3085d6',
-  cancelButtonColor: '#d33',
-  confirmButtonText: 'Si, eliminar!'
-  }).then((result) => {
-  if (result.isConfirmed) {
-    this.servicioUsuario.eliminarUsuario(Usuario.codUsuario).subscribe(response => {
-    Swal.fire(
-    {
-     title: "Excelente!",
-     text: "Usuario eliminado correctamente.",
-     icon: "success",
-     timer: 3000,
-     showConfirmButton: false,
-    }
-    )
-    this.buscarTodosUsuario(this.currentPage);
-    });
+  nuevoUsuario() {
+    this.modoedicionUsuario = false;
+    this.tituloModalUsuario = 'Agregando Usuario';
+    $('#modalusuario').modal('show');
+    this.habilitarFormulario = true;
   }
-  })
-}
 
-descripcionEntra(event: Event) {
-  const inputElement = event.target as HTMLInputElement;
-  this.descripcionBuscar.next(inputElement.value.toUpperCase());
-}
-idEntra(event: Event) {
-  const inputElement = event.target as HTMLInputElement;
-  this.idBuscar.next(inputElement.value.toUpperCase());
-}
-guardarUsuario(){
-console.log(this.formularioUsuario.value);
-if(this.formularioUsuario.valid){
-  if(this.modoedicionUsuario){
-    this.servicioUsuario.editarUsuario(this.usuarioid, this.formularioUsuario.value).subscribe(response => {
-    Swal.fire({
-    title: "Excelente!",
-    text: "Usuario Editado correctamente.",
-    icon: "success",
-    timer: 5000,
-    showConfirmButton: false,
-    });
-    this.buscarTodosUsuario(1);
+  cerrarModalUsuario() {
+    this.habilitarFormulario = false;
     this.formularioUsuario.reset();
-    this.crearFormularioUsuario();
+    this.modoedicionUsuario = false;
+    this.modoconsultaUsuario = false;
     $('#modalusuario').modal('hide');
-    });
-  }
-  else{
-    this.servicioUsuario.guardarUsuario(this.formularioUsuario.value).subscribe(response => {
-    Swal.fire({
-    title: "Excelente!",
-    text: "Usuario Guardado correctamente.",
-    icon: "success",
-    timer: 3000,
-    showConfirmButton: false,
-    });
-
-    this.buscarTodosUsuario(1);
-    this.formularioUsuario.reset();
     this.crearFormularioUsuario();
-    $('#modalusuario').modal('hide');
-    });
   }
-  }
-  else{
-    alert("Este Usuario no fue Guardado");
-  }
-}
 
-convertToUpperCase(event: Event): void {
-  const input = event.target as HTMLInputElement;
-  input.value = input.value.toUpperCase();
-}
-moveFocus(event: KeyboardEvent, nextElement: HTMLInputElement | null): void {
-  if (event.key === 'Enter' && nextElement) {
-   event.preventDefault(); // Evita el comportamiento predeterminado del Enter
-   nextElement.focus(); // Enfoca el siguiente campo
- }
- }
+  editarUsuario(usuario: ModeloUsuarioData) {
+    this.usuarioid = usuario.codUsuario;
+    this.modoedicionUsuario = true;
+    this.formularioUsuario.patchValue(usuario);
+    this.tituloModalUsuario = 'Editando Usuario';
+    $('#modalusuario').modal('show');
+    this.habilitarFormulario = true;
+  }
 
-changePage(page: number) {
-  this.currentPage = page;
-  // Trigger a new search with the current codigo and descripcion
-  const codigo = this.idBuscar.getValue();
-  const descripcion = this.descripcionBuscar.getValue();
-  this.servicioUsuario.buscarTodosUsuario(this.currentPage, this.pageSize, codigo, descripcion)
-    .subscribe(response => {
+  buscarTodosUsuario(page: number) {
+    this.servicioUsuario.buscarTodosUsuario(page, this.pageSize).subscribe(response => {
+      console.log(response);
       this.usuarioList = response.data;
-    this.totalItems = response.pagination.total;
-    this.currentPage = page;
     });
-}
+  }
+  consultarUsuario(Usuario: ModeloUsuarioData) {
+    this.tituloModalUsuario = 'Consulta Usuario';
+    this.formularioUsuario.patchValue(Usuario);
+    $('#modalusuario').modal('show');
+    this.habilitarFormulario = true;
+    this.modoconsultaUsuario = true;
+  };
 
 
-get totalPages() {
-  // Asegúrate de que totalItems sea un número antes de calcular el total de páginas
-  return Math.ceil(this.totalItems / this.pageSize);
-}
-
-get pages(): number[] {
-  const totalPages = this.totalPages;
-  const currentPage = this.currentPage;
-  const maxPagesToShow = this.maxPagesToShow;
-
-  if (totalPages <= maxPagesToShow) {
-    return Array.from({ length: totalPages }, (_, i) => i + 1);
+  eliminarUsuario(Usuario: ModeloUsuarioData) {
+    Swal.fire({
+      title: '¿Está seguro de eliminar este Usuario?',
+      text: "¡No podrá revertir esto!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Si, eliminar!'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.servicioUsuario.eliminarUsuario(Usuario.codUsuario).subscribe(response => {
+          Swal.fire(
+            {
+              title: "Excelente!",
+              text: "Usuario eliminado correctamente.",
+              icon: "success",
+              timer: 3000,
+              showConfirmButton: false,
+            }
+          )
+          this.buscarTodosUsuario(this.currentPage);
+        });
+      }
+    })
   }
 
-  const startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
-  const endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+  descripcionEntra(event: Event) {
+    const inputElement = event.target as HTMLInputElement;
+    this.descripcionBuscar.next(inputElement.value.toUpperCase());
+  }
+  idEntra(event: Event) {
+    const inputElement = event.target as HTMLInputElement;
+    this.idBuscar.next(inputElement.value.toUpperCase());
+  }
+  guardarUsuario() {
+    console.log(this.formularioUsuario.value);
+    if (this.formularioUsuario.valid) {
+      if (this.modoedicionUsuario) {
+        this.servicioUsuario.editarUsuario(this.usuarioid, this.formularioUsuario.value).subscribe(response => {
+          Swal.fire({
+            title: "Excelente!",
+            text: "Usuario Editado correctamente.",
+            icon: "success",
+            timer: 5000,
+            showConfirmButton: false,
+          });
+          this.buscarTodosUsuario(1);
+          this.formularioUsuario.reset();
+          this.crearFormularioUsuario();
+          $('#modalusuario').modal('hide');
+        });
+      }
+      else {
+        this.servicioUsuario.guardarUsuario(this.formularioUsuario.value).subscribe(response => {
+          Swal.fire({
+            title: "Excelente!",
+            text: "Usuario Guardado correctamente.",
+            icon: "success",
+            timer: 3000,
+            showConfirmButton: false,
+          });
 
-  return Array.from({ length: endPage - startPage + 1 }, (_, i) => startPage + i);
-}
-
-limpiaBusqueda(){
-  this.txtdescripcion = '';
-  this.txtcodigo = '';
-this.buscarTodosUsuario(1);
-}
-
-cargarDatosEmpresa(empresa: EmpresaModelData) {
-  this.resultadoEmpresa = [];
-  this.buscarEmpresa.reset();
-  this.formularioUsuario.patchValue({
-    empresa: Empresas.cod_empre,
-
-  });
-}
-
-moveFocusEmpresa(event: Event, nextInput: HTMLInputElement) {
-  event.preventDefault();
-  console.log(nextInput);
-  if (event.target instanceof HTMLInputElement) {
-    if (!event.target.value) {
-      this.mensagePantalla = true;
-      Swal.fire({
-        icon: "error",
-        title: "A V I S O",
-        text: 'Por favor complete el campo Nombre del Cliente Para Poder continual.',
-      }).then(() => { this.mensagePantalla = false });
-
+          this.buscarTodosUsuario(1);
+          this.formularioUsuario.reset();
+          this.crearFormularioUsuario();
+          $('#modalusuario').modal('hide');
+        });
+      }
     }
     else {
-      nextInput.focus(); // Si es válido, mueve el foco al siguiente input
+      alert("Este Usuario no fue Guardado");
     }
   }
-}
 
-handleKeydown(event: KeyboardEvent): void {
-  const key = event.key;
-  const maxIndex = this.resultadoEmpresa.length - 1;  // Ajustamos el límite máximo
-
-  if (key === 'ArrowDown') {
-    console.log("paso 56");
-
-    // Mueve la selección hacia abajo
-    if (this.selectedIndex < maxIndex) {
-      this.selectedIndex++;
-    } else {
-      this.selectedIndex = 0;  // Vuelve al primer ítem
-    }
-    event.preventDefault();
-  } else if (key === 'ArrowUp') {
-    console.log("paso 677");
-
-    // Mueve la selección hacia arriba
-    if (this.selectedIndex > 0) {
-      this.selectedIndex--;
-    } else {
-      this.selectedIndex = maxIndex;  // Vuelve al último ítem
-    }
-    event.preventDefault();
-  } else if (key === 'Enter') {
-    // Selecciona el ítem actual
-    if (this.selectedIndex >= 0 && this.selectedIndex <= maxIndex) {
-      this.cargarDatosEmpresa(this.resultadoEmpresa[this.selectedIndex]);
-    }
-    event.preventDefault();
+  convertToUpperCase(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    input.value = input.value.toUpperCase();
   }
-}
+  moveFocus(event: KeyboardEvent, nextElement: HTMLInputElement | null): void {
+    if (event.key === 'Enter' && nextElement) {
+      event.preventDefault(); // Evita el comportamiento predeterminado del Enter
+      nextElement.focus(); // Enfoca el siguiente campo
+    }
+  }
+
+  changePage(page: number) {
+    this.currentPage = page;
+    // Trigger a new search with the current codigo and descripcion
+    const codigo = this.idBuscar.getValue();
+    const descripcion = this.descripcionBuscar.getValue();
+    this.servicioUsuario.buscarTodosUsuario(this.currentPage, this.pageSize, codigo, descripcion)
+      .subscribe(response => {
+        this.usuarioList = response.data;
+        this.totalItems = response.pagination.total;
+        this.currentPage = page;
+      });
+  }
 
 
-// buscarSucursal3(event: Event) {
-//   const inputValue = (event.target as HTMLInputElement).value;
-//   this.servicioSucursal.buscarTodasSucursal(inputValue).subscribe((response: any[]) => {
-//     this.sucursales = response;
-//     console.log('Sucursales desde API:', this.sucursales);
-//   });
-// }
-buscarSucursal(event: Event) {
-  const query = (event.target as HTMLInputElement).value;
-  //const query = event.target.value;
-  if (query.length > 2) { // Empieza la búsqueda después de escribir 2 caracteres
-    this.servicioSucursal.buscarTodasSucursal(query).subscribe(
-      (data) => {
-        this.sucursales = data;
-        console.log(this.sucursales)
-      },
+  get totalPages() {
+    // Asegúrate de que totalItems sea un número antes de calcular el total de páginas
+    return Math.ceil(this.totalItems / this.pageSize);
+  }
 
-      (error) => {
-        console.error('Error al buscar sucursales', error);
+  get pages(): number[] {
+    const totalPages = this.totalPages;
+    const currentPage = this.currentPage;
+    const maxPagesToShow = this.maxPagesToShow;
+
+    if (totalPages <= maxPagesToShow) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+
+    const startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
+    const endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+
+    return Array.from({ length: endPage - startPage + 1 }, (_, i) => startPage + i);
+  }
+
+  limpiaBusqueda() {
+    this.txtdescripcion = '';
+    this.txtcodigo = '';
+    this.buscarTodosUsuario(1);
+  }
+
+  cargarDatosEmpresa(empresa: EmpresaModelData) {
+    this.resultadoEmpresa = [];
+    this.buscarEmpresa.reset();
+    this.formularioUsuario.patchValue({
+      empresa: Empresas.cod_empre,
+
+    });
+  }
+
+  moveFocusEmpresa(event: Event, nextInput: HTMLInputElement) {
+    event.preventDefault();
+    console.log(nextInput);
+    if (event.target instanceof HTMLInputElement) {
+      if (!event.target.value) {
+        this.mensagePantalla = true;
+        Swal.fire({
+          icon: "error",
+          title: "A V I S O",
+          text: 'Por favor complete el campo Nombre del Cliente Para Poder continual.',
+        }).then(() => { this.mensagePantalla = false });
+
       }
-    );
-  } else {
-    this.sucursales = [];
-    console.log("No")
-    console.log(query.length)
+      else {
+        nextInput.focus(); // Si es válido, mueve el foco al siguiente input
+      }
+    }
   }
-}
 
-seleccionarSucursal(sucursal: any) {
-  this.sucursalSeleccionada = sucursal;
-  this.sucursales = [];
-}
+  handleKeydown(event: KeyboardEvent): void {
+    const key = event.key;
+    const maxIndex = this.resultadoEmpresa.length - 1;  // Ajustamos el límite máximo
+
+    if (key === 'ArrowDown') {
+      console.log("paso 56");
+
+      // Mueve la selección hacia abajo
+      if (this.selectedIndex < maxIndex) {
+        this.selectedIndex++;
+      } else {
+        this.selectedIndex = 0;  // Vuelve al primer ítem
+      }
+      event.preventDefault();
+    } else if (key === 'ArrowUp') {
+      console.log("paso 677");
+
+      // Mueve la selección hacia arriba
+      if (this.selectedIndex > 0) {
+        this.selectedIndex--;
+      } else {
+        this.selectedIndex = maxIndex;  // Vuelve al último ítem
+      }
+      event.preventDefault();
+    } else if (key === 'Enter') {
+      // Selecciona el ítem actual
+      if (this.selectedIndex >= 0 && this.selectedIndex <= maxIndex) {
+        this.cargarDatosEmpresa(this.resultadoEmpresa[this.selectedIndex]);
+      }
+      event.preventDefault();
+    }
+  }
+
+
+  // buscarSucursal3(event: Event) {
+  //   const inputValue = (event.target as HTMLInputElement).value;
+  //   this.servicioSucursal.buscarTodasSucursal(inputValue).subscribe((response: any[]) => {
+  //     this.sucursales = response;
+  //     console.log('Sucursales desde API:', this.sucursales);
+  //   });
+  // }
+
+
+  // buscarSucursal(event: Event) {
+  //   const query = (event.target as HTMLInputElement).value;
+  //   //const query = event.target.value;
+  //   if (query.length > 2) { // Empieza la búsqueda después de escribir 2 caracteres
+  //     this.servicioSucursal.buscarTodasSucursal(query).subscribe(
+  //       (data) => {
+  //         this.sucursales = data;
+  //         console.log(this.sucursales)
+  //       },
+
+  //       (error) => {
+  //         console.error('Error al buscar sucursales', error);
+  //       }
+  //     );
+  //   } else {
+  //     this.sucursales = [];
+  //     console.log("No")
+  //     console.log(query.length)
+  //   }
+  // }
+
+  seleccionarSucursal(sucursal: any) {
+    this.sucursalSeleccionada = this.sucursalesList.filter(s => s.cod_sucursal === parseInt(sucursal.value));
+    console.log('Sucursal seleccionada:', this.sucursalSeleccionada[0].cod_empr
+
+    );
+    this.sucursales = [];
+  }
+
+
+  obtenerSucursales() {
+    this.servicioSucursal.buscarTodasSucursal().subscribe(response => {
+      this.sucursalesList = response.data;
+      console.log(this.sucursalesList);
+
+    });
+  }
 }
 

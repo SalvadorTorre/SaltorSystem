@@ -249,7 +249,7 @@
                       <div class="col">
                         <input
                           type="text"
-                          (keydown)="moveFocus($event,input6)"
+                          (keydown)="moveFocus($event, input5)"
                           #input5
                           class="form-control form-control-sm"
                           formControlName="correo"
@@ -267,43 +267,29 @@
                     </div>
                     <div class="row">
                       <div class="col-8">
-                        <input
-                          type="text"
-                          (input)="buscarSucursal($event)"
-                          #inputSucursal
-                          #input6
-                          class="form-control form-control-sm"
-                          formControlName="sucursal"
-                          placeholder="Escribe para buscar sucursal"
-                        />
-
-                        <ul
-                          *ngIf="sucursales.length > 0"
-                          class="list-group mt-1"
-                          style="
-                            max-height: 150px;
-                            overflow-y: auto;
-                            z-index: 10;
-                            position: relative;
-                            background: white;
-                            border: 1px solid #ccc;
-                          "
+                        <select
+                          name=""
+                          id=""
+                          class="form-select"
+                          (change)="seleccionarSucursal($event.target)"
                         >
-                          <li
-                            *ngFor="let sucursal of sucursales"
-                            (click)="seleccionarSucursal(sucursal)"
-                            class="list-group-item list-group-item-action"
+                          <option value="" selected disabled>
+                            Seleciona una sucursal
+                          </option>
+                          <option
+                            *ngFor="let sucursal of sucursalesList"
+                            [value]="sucursal.cod_sucursal"
                           >
-                            {{ sucursal.descripcion }}
-                          </li>
-                        </ul>
+                            {{sucursal.nom_sucursal}}
+                          </option>
+                        </select>
                       </div>
                       <div class="col-4">
                         <input
                           type="text"
                           class="form-control form-control-sm"
                           placeholder="Código Sucursal"
-                          [value]="sucursalSeleccionada?.codigo || ''"
+                          [value]="sucursalSeleccionada?.cod_sucursal || ''"
                           disabled
                         />
                       </div>
@@ -337,7 +323,7 @@
                         <input
                           type="text"
                           class="form-control form-control-sm"
-                          [value]="sucursalSeleccionada?.codigoempresa"
+                          [value]="sucursalSeleccionada?.cod_empre"
                           placeholder="Descripcion Empresa"
                           disabled
                         />
