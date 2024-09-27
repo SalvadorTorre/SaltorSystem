@@ -1,18 +1,18 @@
 .custon-link {
   text-decoration: none;
   color: white;
-  font-size: 18px;
+  font-size: 16px;
   margin-left: 5px;
 }
 
 .custon-link.active {
   text-decoration: none;
   color: #af3d2c;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: bold;
-  padding: 2px 5px;
+  padding: 1px 5px;
   border-radius: 8px;
-  background-color: #F0F0F0;
+  background-color: #f0f0f0;
 }
 
 .custon-link:hover {
@@ -23,16 +23,16 @@
 }
 
 .custom-avatar {
-  height: 40px;
-  width: 40px;
-  background-color: #F0F0F0;
+  height: 32px;
+  width: 32px;
+  background-color: #f0f0f0;
   border-radius: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
-  font-size: 18px;
+  font-size: 14px;
   margin-right: 10px;
-  color: #AF372C;
+  color: #af372c;
 }
 
 .name-charge {
@@ -44,13 +44,13 @@
 }
 
 .name-person {
-  color: #F0F0F0;
+  color: #f0f0f0;
   font-size: 14px;
   font-weight: bold;
 }
 
 .local-trabajo {
-  color: #FFF;
+  color: #fff;
   font-size: 10px;
   font-weight: 500;
 }

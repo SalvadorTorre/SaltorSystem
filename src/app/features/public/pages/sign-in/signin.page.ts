@@ -35,6 +35,16 @@ export class SignInPage implements OnInit {
     });
   }
 
+  convertToUpperCase(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const start = input.selectionStart;
+    const end = input.selectionEnd;
+    input.value = input.value.toUpperCase();
+    if (start !== null && end !== null) {
+      input.setSelectionRange(start, end);
+    }
+  }
+
   onSubmit() {
     if (this.myFormCreate.valid) {
       this.isLoading = true;

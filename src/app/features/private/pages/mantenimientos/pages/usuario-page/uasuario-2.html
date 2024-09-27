@@ -1,92 +1,131 @@
-<div class="card " style="height: 80vh;">
+<div class="card" style="height: 87vh">
   <div class="card-header">
     <h1>Usuario</h1>
   </div>
   <div class="card-body">
-
     <!-- buscador -->
 
-    <div class="row ">
+    <div class="row">
       <div class="col-2">
         <label for="">Buscar Codigo</label>
-        <input type="text" placeholder="Digite codigo" class="form-control" [disabled]="habilitarFormulario">
+        <input
+          type="text"
+          placeholder="Digite codigo"
+          class="form-control"
+          [disabled]="habilitarFormulario"
+        />
       </div>
       <div class="col-3">
         <label for="">Buscar Nombre</label>
-        <input type="text" placeholder="Digite el Nombre..." class="form-control" [disabled]="habilitarFormulario">
+        <input
+          type="text"
+          placeholder="Digite el Nombre..."
+          class="form-control"
+          [disabled]="habilitarFormulario"
+        />
       </div>
-      <div class=" col-2">
-        <button class="btn btn-primary" (click)="nuevoUsuario()">Nuevo Usuario</button>
+      <div class="col-2">
+        <button class="btn btn-primary" (click)="nuevoUsuario()">
+          Nuevo Usuario
+        </button>
       </div>
     </div>
     <!-- fin buscador -->
 
     <!-- Grid -->
-    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+    <div class="table-responsive" style="max-height: 400px; overflow-y: auto">
       <table class="table table-bordered table-hover table-striped table-sm">
         <thead class="table-dark">
           <tr>
-            <th style="width: 5%; ">Codigo</th>
-            <th style="width: 25%;">Nombre</th>
-            <th class="text-center" style="width: 10%;">Nivel</th>
-            <th class="text-center" style="width: 10%; ">Vendedor</th>
-            <th class="text-center" style="width: 12%; ">Mantenimiento</th>
-            <th class="text-center" style="width: 5%; ">Caja</th>
-            <th class="text-center" style="width: 10%; ">Despacho</th>
-            <th class="text-center" style="width: 5%;">Almacen</th>
+            <th style="width: 5%">Codigo</th>
+            <th style="width: 25%">Nombre</th>
+            <th class="text-center" style="width: 10%">Nivel</th>
+            <th class="text-center" style="width: 10%">Vendedor</th>
+            <th class="text-center" style="width: 12%">Mantenimiento</th>
+            <th class="text-center" style="width: 5%">Caja</th>
+            <th class="text-center" style="width: 10%">Despacho</th>
+            <th class="text-center" style="width: 5%">Almacen</th>
             <th></th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let usuario of usuarioList" >
+          <tr *ngFor="let usuario of usuarioList">
             <td class="text-center">{{usuario.codUsuario}}</td>
             <td>{{usuario.nombreUsuario}}</td>
             <td class="text-center">{{usuario.nivel}}</td>
-            <td class="text-center"><input type="checkbox" disabled [checked]="usuario.vendedor"></td>
-            <td class="text-center"><input type="checkbox" disabled [checked]="usuario.mantenimiento"></td>
-            <td class="text-center"><input type="checkbox" disabled [checked]="usuario.caja"></td>
-            <td class="text-center"><input type="checkbox" disabled [checked]="usuario.despacho"></td>
-            <td class="text-center"><input type="checkbox" disabled [checked]="usuario.almacen"></td>
+            <td class="text-center">
+              <input type="checkbox" disabled [checked]="usuario.vendedor" />
+            </td>
+            <td class="text-center">
+              <input
+                type="checkbox"
+                disabled
+                [checked]="usuario.mantenimiento"
+              />
+            </td>
+            <td class="text-center">
+              <input type="checkbox" disabled [checked]="usuario.caja" />
+            </td>
+            <td class="text-center">
+              <input type="checkbox" disabled [checked]="usuario.despacho" />
+            </td>
+            <td class="text-center">
+              <input type="checkbox" disabled [checked]="usuario.almacen" />
+            </td>
             <td>
-              <button class="btn btn-link" (click)="editarUsuario(usuario)"><i class="bi bi-pencil text-primary"></i></button>
+              <button class="btn btn-link" (click)="editarUsuario(usuario)">
+                <i class="bi bi-pencil text-primary"></i>
+              </button>
               &nbsp;
-              <button class="btn btn-link" (click)="eliminarUsuario(usuario)" ><i class="bi bi-trash text-danger"></i></button>
+              <button class="btn btn-link" (click)="eliminarUsuario(usuario)">
+                <i class="bi bi-trash text-danger"></i>
+              </button>
               &nbsp;
-              <button class="btn btn-link" (click)="consultarUsuario(usuario)"><i class="bi bi-card-list text-success"></i></button>
+              <button class="btn btn-link" (click)="consultarUsuario(usuario)">
+                <i class="bi bi-card-list text-success"></i>
+              </button>
             </td>
           </tr>
         </tbody>
       </table>
     </div>
-    <br>
+    <br />
     <!-- Fin grid -->
   </div>
 </div>
 
 <!-- Formulario de cliente -->
 
-
-<div class="modal fade"    id="modalusuario"  tabindex="-1" aria-labelledby="modalUsuarioLabel" aria-hidden="true">
-  <div class="modal-dialog  modal-xl">
+<div
+  class="modal fade"
+  id="modalusuario"
+  tabindex="-1"
+  aria-labelledby="modalUsuarioLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-xl">
     <div class="modal-content">
-      <div class="modal-header" style="height: 30px;">
-        <h4 class="modal-title fs-5" style= "height: 30px" id="modalSuplidorLabel">
+      <div class="modal-header" style="height: 30px">
+        <h4
+          class="modal-title fs-5"
+          style="height: 30px"
+          id="modalSuplidorLabel"
+        >
           {{tituloModalUsuario}}
         </h4>
         <button
           type="button"
-          class="btn-close" (click)="cerrarModalUsuario()"
-          aria-label="Close">
-        </button>
+          class="btn-close"
+          (click)="cerrarModalUsuario()"
+          aria-label="Close"
+        ></button>
       </div>
       <div class="modal-body">
-        <form
-          [formGroup]="formularioUsuario"
-          (ngSubmit)="guardarUsuario()">
+        <form [formGroup]="formularioUsuario" (ngSubmit)="guardarUsuario()">
           <div class="form-row">
             <div class="col-30">
               <div class="card">
-                <div class="card-header ">
+                <div class="card-header">
                   <h6>Datos del Usuario</h6>
                 </div>
                 <div class="card-body">
@@ -94,207 +133,331 @@
                     <div class="col-3">
                       <label for="input1">ID:</label>
                       <!--<label for="">Id Usuario</label>-->
-                      <input type="text"  (keydown)="moveFocus($event, input2)" #input1 class="form-control form-control-sm " formControlName="idUsuario" />
+                      <input
+                        type="text"
+                        (keydown)="moveFocus($event, input2)"
+                        #input1
+                        class="form-control form-control-sm"
+                        formControlName="idUsuario"
+                      />
                     </div>
                     <div class="col-2">
-                     <!-- <label for="">Clave</label>-->
+                      <!-- <label for="">Clave</label>-->
                       <label for="input2">Clave</label>
-                      <input type="text" (keydown)="moveFocus($event, input3)" #input2 class="form-control form-control-sm" formControlName="claveUsuario"/>
+                      <input
+                        type="text"
+                        (keydown)="moveFocus($event, input3)"
+                        #input2
+                        class="form-control form-control-sm"
+                        formControlName="claveUsuario"
+                      />
                     </div>
                     <div class="col-7">
                       <!--<label for="">Nombre</label>-->
                       <label for="input3">Nombre</label>
-                      <input type="text" (keydown)="moveFocus($event, input4)" #input3 class="form-control form-control-sm" formControlName="nombreUsuario"/>
+                      <input
+                        type="text"
+                        (keydown)="moveFocus($event, input4)"
+                        #input3
+                        class="form-control form-control-sm"
+                        formControlName="nombreUsuario"
+                      />
                     </div>
                   </div>
                   <div class="row">
-
                     <div class="col-2">
                       <!--<label for="">Nivel</label>-->
                       <label for="input4">Nivel</label>
-                      <input type="number"(keydown)="moveFocus($event, input5)"#input4 class="form-control form-control-sm" formControlName="nivel"/>
+                      <input
+                        type="number"
+                        (keydown)="moveFocus($event, input5)"
+                        #input4
+                        class="form-control form-control-sm"
+                        formControlName="nivel"
+                      />
                     </div>
-                      <div class="col-8">
+                    <div class="col-8">
                       <!--<label for="">Email</label>-->
                       <label for="input5">Email</label>
-                      <input type="text" (keydown)="moveFocus($event,input5)" #input5 class="form-control form-control-sm" formControlName="correo"/>
+                      <input
+                        type="text"
+                        (keydown)="moveFocus($event,input5)"
+                        #input5
+                        class="form-control form-control-sm"
+                        formControlName="correo"
+                      />
                     </div>
                   </div>
-
                 </div>
               </div>
             </div>
           </div>
 
-        <div class="col">
-          <div class="card">
-            <div class="card-header" style="height: 30px;">
-              <div class="row ">
-                <div class="col-8 text-end">
-                  <h6 class="text-danger">Acceso</h6>
-                </div>
-                <div class="col-4 d-flex justify-content-center">
-                  <h6 class="text-danger">Lectura</h6>
-                </div>
-              </div>
-               <!--<h6>Permiso</h6>-->
-            </div>
-            <div class="card-body">
-              <div class="row">
-                <div class="col-6">
-                <h6>Mantenimiento</h6>
-              </div>
-              <div class="col-3">
-                <div class="form-check">
-                  <label class="form-check-label" for="mantenimiento"></label>
-                  <input type="checkbox" class="form-check-input custom-checkbox" formControlName="mantenimiento" id="mantenimiento">
-                </div>
-              </div>
-              <div class="col-3">
-                <div class="form-check">
-                  <label class="form-check-label" for="mantlectura"></label>
-                  <input type="checkbox" class="form-check-input custom-checkbox" formControlName="mantLectura" id="mantlectura">
-                </div>
-              </div>
-            </div>
-            <div class="row">
-              <div class="col-6">
-                <h6>Facturacion</h6>
-              </div>
-              <div class="col-3">
-                <div class="form-check">
-                  <label class="form-check-label" for="facturacion"></label>
-                  <input type="checkbox" class="form-check-input custom-checkbox" formControlName="facturacion" id="facturacion">
-                </div>
-              </div>
-                <div class="col-3">
-                  <div class="form-check">
-                    <label class="form-check-label" for="factlectura"></label>
-                    <input type="checkbox" class="form-check-input custom-checkbox" formControlName="factLectura" id="factlectura">
+          <div class="col">
+            <div class="card">
+              <div class="card-header" style="height: 30px">
+                <div class="row">
+                  <div class="col-8 text-end">
+                    <h6 class="text-danger">Acceso</h6>
+                  </div>
+                  <div class="col-4 d-flex justify-content-center">
+                    <h6 class="text-danger">Lectura</h6>
                   </div>
                 </div>
+                <!--<h6>Permiso</h6>-->
               </div>
-              <div class="row">
-                <div class="col-6">
-                  <h6>Caja</h6>
-                </div>
-                <div class="col-3">
-                  <div class="form-check">
-                    <label class="form-check-label" for="caja"></label>
-                     <input type="checkbox" class="form-check-input custom-checkbox" formControlName="caja" id="caja">
+              <div class="card-body">
+                <div class="row">
+                  <div class="col-6">
+                    <h6>Mantenimiento</h6>
+                  </div>
+                  <div class="col-3">
+                    <div class="form-check">
+                      <label
+                        class="form-check-label"
+                        for="mantenimiento"
+                      ></label>
+                      <input
+                        type="checkbox"
+                        class="form-check-input custom-checkbox"
+                        formControlName="mantenimiento"
+                        id="mantenimiento"
+                      />
+                    </div>
+                  </div>
+                  <div class="col-3">
+                    <div class="form-check">
+                      <label class="form-check-label" for="mantlectura"></label>
+                      <input
+                        type="checkbox"
+                        class="form-check-input custom-checkbox"
+                        formControlName="mantLectura"
+                        id="mantlectura"
+                      />
+                    </div>
                   </div>
                 </div>
-                <div class="col-3">
-                  <div class="form-check">
-                    <label class="form-check-label" for="caja_lectura"></label>
-                    <input type="checkbox" class="form-check-input custom-checkbox" formControlName="caja_Lectura" id="caja_lectura">
+                <div class="row">
+                  <div class="col-6">
+                    <h6>Facturacion</h6>
+                  </div>
+                  <div class="col-3">
+                    <div class="form-check">
+                      <label class="form-check-label" for="facturacion"></label>
+                      <input
+                        type="checkbox"
+                        class="form-check-input custom-checkbox"
+                        formControlName="facturacion"
+                        id="facturacion"
+                      />
+                    </div>
+                  </div>
+                  <div class="col-3">
+                    <div class="form-check">
+                      <label class="form-check-label" for="factlectura"></label>
+                      <input
+                        type="checkbox"
+                        class="form-check-input custom-checkbox"
+                        formControlName="factLectura"
+                        id="factlectura"
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div class="row">
-                <div class="col-6">
-                  <h6>Compra</h6>
-                </div>
-                <div class="col-3">
-                  <div class="form-check">
-                    <label class="form-check-label" for="compra"></label>
-                    <input type="checkbox" class="form-check-input custom-checkbox" formControlName="compra" id="compra">
+                <div class="row">
+                  <div class="col-6">
+                    <h6>Caja</h6>
+                  </div>
+                  <div class="col-3">
+                    <div class="form-check">
+                      <label class="form-check-label" for="caja"></label>
+                      <input
+                        type="checkbox"
+                        class="form-check-input custom-checkbox"
+                        formControlName="caja"
+                        id="caja"
+                      />
+                    </div>
+                  </div>
+                  <div class="col-3">
+                    <div class="form-check">
+                      <label
+                        class="form-check-label"
+                        for="caja_lectura"
+                      ></label>
+                      <input
+                        type="checkbox"
+                        class="form-check-input custom-checkbox"
+                        formControlName="caja_Lectura"
+                        id="caja_lectura"
+                      />
+                    </div>
                   </div>
                 </div>
-                <div class="col-3">
-                  <div class="form-check">
-                    <label class="form-check-label" for="caja_lectura"></label>
-                    <input type="checkbox" class="form-check-input custom-checkbox" formControlName="compLectura" id="complectura">
+                <div class="row">
+                  <div class="col-6">
+                    <h6>Compra</h6>
+                  </div>
+                  <div class="col-3">
+                    <div class="form-check">
+                      <label class="form-check-label" for="compra"></label>
+                      <input
+                        type="checkbox"
+                        class="form-check-input custom-checkbox"
+                        formControlName="compra"
+                        id="compra"
+                      />
+                    </div>
+                  </div>
+                  <div class="col-3">
+                    <div class="form-check">
+                      <label
+                        class="form-check-label"
+                        for="caja_lectura"
+                      ></label>
+                      <input
+                        type="checkbox"
+                        class="form-check-input custom-checkbox"
+                        formControlName="compLectura"
+                        id="complectura"
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div class="row">
-                <div class="col-6">
-                  <h6>Reporte</h6>
-                </div>
-                <div class="col-3">
-                  <div class="form-check">
-                    <label class="form-check-label" for="reporte"></label>
-                    <input type="checkbox" class="form-check-input custom-checkbox" formControlName="reporte" id="reporte">
+                <div class="row">
+                  <div class="col-6">
+                    <h6>Reporte</h6>
+                  </div>
+                  <div class="col-3">
+                    <div class="form-check">
+                      <label class="form-check-label" for="reporte"></label>
+                      <input
+                        type="checkbox"
+                        class="form-check-input custom-checkbox"
+                        formControlName="reporte"
+                        id="reporte"
+                      />
+                    </div>
+                  </div>
+                  <div class="col-3">
+                    <div class="form-check">
+                      <label class="form-check-label" for="replectura"></label>
+                      <input
+                        type="checkbox"
+                        class="form-check-input custom-checkbox"
+                        formControlName="repLectura"
+                        id="replectura"
+                      />
+                    </div>
                   </div>
                 </div>
-                <div class="col-3">
-                  <div class="form-check">
-                    <label class="form-check-label" for="replectura"></label>
-                    <input type="checkbox" class="form-check-input custom-checkbox" formControlName="repLectura" id="replectura">
+                <div class="row">
+                  <div class="col-6">
+                    <h6>Almacen</h6>
+                  </div>
+                  <div class="col-3">
+                    <div class="form-check">
+                      <label class="form-check-label" for="almacen"></label>
+                      <input
+                        type="checkbox"
+                        class="form-check-input custom-checkbox"
+                        formControlName="almacen"
+                        id="almacen"
+                      />
+                    </div>
+                  </div>
+                  <div class="col-3">
+                    <div class="form-check">
+                      <label class="form-check-label" for="almlectura"></label>
+                      <input
+                        type="checkbox"
+                        class="form-check-input custom-checkbox"
+                        formControlName="almLectura"
+                        id="almlectura"
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div class="row">
-                <div class="col-6">
-                  <h6>Almacen</h6>
-                </div>
-                <div class="col-3">
-                  <div class="form-check">
-                    <label class="form-check-label" for="almacen"></label>
-                    <input type="checkbox" class="form-check-input custom-checkbox" formControlName="almacen" id="almacen">
+                <div class="row">
+                  <div class="col-6">
+                    <h6>Mercadeo</h6>
+                  </div>
+                  <div class="col-3">
+                    <div class="form-check">
+                      <label class="form-check-label" for="mercadeo"></label>
+                      <input
+                        type="checkbox"
+                        class="form-check-input custom-checkbox"
+                        formControlName="mercadeo"
+                        id="mercadeo"
+                      />
+                    </div>
                   </div>
                 </div>
-                <div class="col-3">
-                  <div class="form-check">
-                    <label class="form-check-label" for="almlectura"></label>
-                    <input type="checkbox" class="form-check-input  custom-checkbox" formControlName="almLectura" id="almlectura">
+                <div class="row">
+                  <div class="col-6">
+                    <h6>Usuaario</h6>
+                  </div>
+                  <div class="col-3">
+                    <div class="form-check">
+                      <label class="form-check-label" for="usuario"></label>
+                      <input
+                        type="checkbox"
+                        class="form-check-input custom-checkbox"
+                        formControlName="usuario"
+                        id="usuario"
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div class="row">
-                <div class="col-6 ">
-                  <h6>Mercadeo</h6>
-                </div>
-                <div class="col-3">
-                  <div class="form-check">
-                    <label class="form-check-label" for="mercadeo"></label>
-                    <input type="checkbox" class="form-check-input custom-checkbox" formControlName="mercadeo" id="mercadeo">
+                <div class="row">
+                  <div class="col-6">
+                    <h6>Vendedor</h6>
+                  </div>
+                  <div class="col-3">
+                    <div class="form-check">
+                      <label class="form-check-label" for="vendedor"></label>
+                      <input
+                        type="checkbox"
+                        class="form-check-input custom-checkbox"
+                        formControlName="vendedor"
+                        id="vendedor"
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div class="row">
-                <div class="col-6">
-                  <h6>Usuaario</h6>
-                </div>
-                <div class="col-3 ">
-                  <div class="form-check">
-                    <label class="form-check-label" for="usuario"></label>
-                    <input type="checkbox" class="form-check-input custom-checkbox" formControlName="usuario" id="usuario">
+                <div class="row">
+                  <div class="col-6">
+                    <h6>Despacho</h6>
                   </div>
-                </div>
-              </div>
-              <div class="row">
-                <div class="col-6 ">
-                  <h6>Vendedor</h6>
-                </div>
-                <div class="col-3 ">
-                  <div class="form-check">
-                    <label class="form-check-label" for="vendedor"></label>
-                    <input type="checkbox" class="form-check-input custom-checkbox" formControlName="vendedor" id="vendedor">
-                  </div>
-                </div>
-              </div>
-              <div class="row">
-                <div class="col-6">
-                  <h6>Despacho</h6>
-                </div>
-                  <div class="col-3 ">
+                  <div class="col-3">
                     <div class="form-check">
                       <label class="form-check-label" for="despacho"></label>
-                      <input type="checkbox" class="form-check-input custom-checkbox" formControlName="despacho" id="despacho">
+                      <input
+                        type="checkbox"
+                        class="form-check-input custom-checkbox"
+                        formControlName="despacho"
+                        id="despacho"
+                      />
                     </div>
                   </div>
                 </div>
                 <div class="row">
                   <div class="col d-flex justify-content-end">
-                    <button type="submit" *ngIf="!modoconsultaUsuario" class="btn btn-success">{{modoedicionUsuario ? "Editar" : "Guardar"}}</button>
+                    <button
+                      type="submit"
+                      *ngIf="!modoconsultaUsuario"
+                      class="btn btn-success"
+                    >
+                      {{modoedicionUsuario ? "Editar" : "Guardar"}}
+                    </button>
                   </div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </form>
+        </form>
       </div>
+    </div>
   </div>
 </div>

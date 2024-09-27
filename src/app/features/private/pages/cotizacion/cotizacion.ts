@@ -522,7 +522,12 @@ export class Cotizacion implements OnInit {
 
   convertToUpperCase(event: Event): void {
     const input = event.target as HTMLInputElement;
+    const start = input.selectionStart;
+    const end = input.selectionEnd;
     input.value = input.value.toUpperCase();
+    if (start !== null && end !== null) {
+      input.setSelectionRange(start, end);
+    }
   }
   moveFocus(event: KeyboardEvent, nextElement: HTMLInputElement | null): void {
     if (event.key === 'Enter' && nextElement) {
