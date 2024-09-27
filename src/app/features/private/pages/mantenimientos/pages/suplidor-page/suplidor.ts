@@ -198,4 +198,38 @@ export class Suplidor implements OnInit {
   //   const inputElement = event.target as HTMLInputElement;
   //   this.descripcionSubject.next(inputElement.value.toUpperCase());
   // }
+
+
+  get totalPages() {
+    // Asegúrate de que totalItems sea un número antes de calcular el total de páginas
+    return Math.ceil(this.totalItems / this.pageSize);
+  }
+
+  get pages(): number[] {
+    const totalPages = this.totalPages;
+    const currentPage = this.currentPage;
+    const maxPagesToShow = this.maxPagesToShow;
+
+    if (totalPages <= maxPagesToShow) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+
+    const startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
+    const endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+
+    return Array.from({ length: endPage - startPage + 1 }, (_, i) => startPage + i);
+  }
+
+  changePage(page: number) {
+    this.currentPage = page;
+    // Trigger a new search with the current codigo and descripcion
+    const codigo = this.codigoBuscar.getValue();
+    const descripcion = this.descripcionBuscar.getValue();
+    this.servicioSuplidor.buscarTodosSuplidor(this.currentPage, this.pageSize, descripcion)
+      .subscribe(response => {
+        this.suplidorList = response.data;
+        this.totalItems = response.pagination.total;
+        this.currentPage = page;
+      });
+  }
 }
