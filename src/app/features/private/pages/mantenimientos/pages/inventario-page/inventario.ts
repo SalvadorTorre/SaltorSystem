@@ -17,9 +17,9 @@ import Swal from 'sweetalert2';
 export class Inventario implements OnInit {
   habilitarBusqueda: boolean = false;
   tituloModalProducto!: string;
-  formularioInventario!:FormGroup;
-  invenarioList:ModeloInventarioData[] = [];
-  grupomercList:ModeloGrupoMercanciasData[] = [];
+  formularioInventario!: FormGroup;
+  invenarioList: ModeloInventarioData[] = [];
+  grupomercList: ModeloGrupoMercanciasData[] = [];
   maxChars: number = 30;
   remainingChars: number = this.maxChars;
 
@@ -30,12 +30,12 @@ export class Inventario implements OnInit {
 
   codigo: string = '';
   descripcion: string = '';
-  codigoInput:string = '';
+  codigoInput: string = '';
 
   private codigoSubject = new BehaviorSubject<string>('');
   private descripcionSubject = new BehaviorSubject<string>('');
 
-  constructor(private fb:FormBuilder, private servicioInventario:ServicioInventario, private servicioGrupmerc: ServicioGrupoMercancias) {
+  constructor(private fb: FormBuilder, private servicioInventario: ServicioInventario, private servicioGrupmerc: ServicioGrupoMercancias) {
     this.crearFormularioInventario();
     this.codigoSubject.pipe(
       debounceTime(500),
@@ -92,7 +92,7 @@ export class Inventario implements OnInit {
   }
 
 
-  crearFormularioInventario(){
+  crearFormularioInventario() {
     this.formularioInventario = this.fb.group({
       in_codmerc: [""],
       in_desmerc: [""],
@@ -120,26 +120,30 @@ export class Inventario implements OnInit {
     });
   }
 
-  habilitarBuscador(){
+  habilitarBuscador() {
     this.habilitarBusqueda = false;
   }
 
- nuevoProducto(){
-   this.tituloModalProducto = 'Agregar Producto';
-   $('#modalProducto').modal('show');
- }
+  nuevoProducto() {
+    this.tituloModalProducto = 'Agregar Producto';
+    $('#modalProducto').modal('show');
+  }
 
- editarProducto(invetario:ModeloInventarioData){
-  console.log(invetario);
-  this.tituloModalProducto = 'Editar Producto';
-  this.formularioInventario.patchValue(invetario);
-  $('#modalProducto').modal('show');
-}
-
-  onSubmitInventario(){
-    if(this.formularioInventario.valid){
+  editarProducto(invetario: ModeloInventarioData) {
+    console.log(invetario);
+    this.tituloModalProducto = 'Editar Producto';
+    this.formularioInventario.patchValue(invetario);
+    $('#modalProducto').modal('show');
+  }
+  consultarProducto(Inventario: ModeloInventarioData) {
+    this.tituloModalProducto = 'Consulta Inventario';
+    this.formularioInventario.patchValue(Inventario);
+    $('#modalproducto').modal('show');
+  };
+  onSubmitInventario() {
+    if (this.formularioInventario.valid) {
       console.log(this.formularioInventario.value);
-      this.servicioInventario.guardarInventario(this.formularioInventario.value).subscribe(response =>{
+      this.servicioInventario.guardarInventario(this.formularioInventario.value).subscribe(response => {
         Swal.fire({
           title: "Excelente!",
           text: "Producto guardado correctamente.",
@@ -152,13 +156,13 @@ export class Inventario implements OnInit {
         $('#modalProducto').modal('hide');
         this.crearFormularioInventario();
       });
-    }else{
+    } else {
       alert("Formulario invalido");
     }
   }
 
-  obtenerTodosInventario(page: number){
-    this.servicioInventario.obtenerTodosInventario(page, this.pageSize).subscribe(response =>{
+  obtenerTodosInventario(page: number) {
+    this.servicioInventario.obtenerTodosInventario(page, this.pageSize).subscribe(response => {
       this.invenarioList = response.data;
       this.totalItems = response.pagination.total;
       this.currentPage = page;
@@ -166,13 +170,13 @@ export class Inventario implements OnInit {
     );
   }
 
-  obtenerTodosGrupoMercancias(){
-    this.servicioGrupmerc.obtenerTodosGrupoMercancias().subscribe(response =>{
+  obtenerTodosGrupoMercancias() {
+    this.servicioGrupmerc.obtenerTodosGrupoMercancias().subscribe(response => {
       this.grupomercList = response.data;
     });
   }
 
-  eliminarProducto(choferId:any){
+  eliminarProducto(choferId: any) {
     Swal.fire({
       title: '¿Está seguro de eliminar este producto?',
       text: "¡No podrá revertir esto!",
@@ -207,8 +211,8 @@ export class Inventario implements OnInit {
     this.servicioInventario.obtenerTodosInventario(this.currentPage, this.pageSize, codigo, descripcion)
       .subscribe(response => {
         this.invenarioList = response.data;
-      this.totalItems = response.pagination.total;
-      this.currentPage = page;
+        this.totalItems = response.pagination.total;
+        this.currentPage = page;
       });
   }
 

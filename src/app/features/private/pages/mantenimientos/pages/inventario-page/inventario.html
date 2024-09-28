@@ -53,20 +53,25 @@
             <td>{{inventario.in_canmerc}}</td>
             <td>{{inventario.in_premerc}}</td>
             <td>
-              <button class="btn btn-link" (click)="editarProducto(inventario)">
-                <i class="bi bi-pencil text-warning"></i>
-              </button>
-              &nbsp;
-              <button
-                class="btn btn-link"
-                (click)="eliminarProducto(inventario.in_codmerc)"
-              >
-                <i class="bi bi-trash text-danger"></i>
-              </button>
-              &nbsp;
-              <button class="btn btn-link">
-                <i class="bi bi-card-list text-success"></i>
-              </button>
+              <i
+              (click)="editarProducto(inventario)"
+              class="bi bi-pencil text-primary"
+              style="padding: 10px"
+             >
+            </i>
+            <i
+            (click)="eliminarProducto(inventario.in_codmerc)"
+            class="bi bi-trash text-danger"
+            style="padding: 10px"
+           > 
+            </i>
+            <i
+             (click)="consultarProducto(inventario)"
+             class="bi bi-card-list text-success"
+             style="padding: 10px"
+           >
+         </i>
+             
             </td>
           </tr>
         </tbody>

@@ -47,19 +47,18 @@
             <td>{{sector.se_desSect}}</td>
             <td>{{sector.se_codZona}}</td>
             <td>
-              <button
-                class="btn btn-link"
-                (click)="editarSector(sector) ; $event.stopPropagation()"
+              <i
+               (click)="editarSector(sector)"
+               class="bi bi-pencil text-primary"
+               style="padding: 10px"
               >
-                <i class="bi bi-pencil text-primary"></i>
-              </button>
-              &nbsp;
-              <button
-                class="btn btn-link"
-                (click)="eliminarSector(sector.se_codSect)"
-              >
-                <i class="bi bi-trash text-danger"></i>
-              </button>
+             </i>
+             <i
+             (click)="eliminarSector(sector.se_codSect)"
+             class="bi bi-trash text-danger"
+             style="padding: 10px"
+            > 
+             </i>    
             </td>
           </tr>
         </tbody>

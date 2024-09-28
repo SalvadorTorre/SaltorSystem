@@ -67,23 +67,73 @@
             <td>{{clientes.cl_telClie}}</td>
             <td>{{clientes.cl_rnc}}</td>
             <td>
-              <button class="btn btn-link" (click)="editarCliente(clientes)">
-                <i class="bi bi-pencil text-primary"></i>
-              </button>
-              &nbsp;
-              <button class="btn btn-link">
-                <i class="bi bi-trash text-danger"></i>
-              </button>
-              &nbsp;
-              <button class="btn btn-link" (click)="consultarCliente(clientes)">
-                <i class="bi bi-card-list text-success"></i>
-              </button>
+
+              <i
+              (click)="editarCliente(clientes)"
+              class="bi bi-pencil text-primary"
+              style="padding: 10px"
+             >
+            </i>
+            <i
+            (click)="consultarCliente(clientes)"
+            class="bi bi-trash text-danger"
+            style="padding: 10px"
+           > 
+            </i>
+            <i
+             (click)="consultarCliente(clientes)"
+             class="bi bi-card-list text-success"
+             style="padding: 10px"
+           >
+         </i>
             </td>
           </tr>
         </tbody>
       </table>
     </div>
-
+    <nav aria-label="Page navigation">
+      <ul class="pagination justify-content-center">
+        <li class="page-item" [class.disabled]="currentPage === 1">
+          <a class="page-link" (click)="changePage(1)" aria-label="First">
+            <span aria-hidden="true">&laquo;&laquo;</span>
+          </a>
+        </li>
+        <li class="page-item" [class.disabled]="currentPage === 1">
+          <a
+            class="page-link"
+            (click)="changePage(currentPage - 1)"
+            aria-label="Previous"
+          >
+            <span aria-hidden="true">&laquo;</span>
+          </a>
+        </li>
+        <li
+          *ngFor="let page of pages"
+          class="page-item"
+          [class.active]="currentPage === page"
+        >
+          <a class="page-link" (click)="changePage(page)">{{ page }}</a>
+        </li>
+        <li class="page-item" [class.disabled]="currentPage === totalPages">
+          <a
+            class="page-link"
+            (click)="changePage(currentPage + 1)"
+            aria-label="Next"
+          >
+            <span aria-hidden="true">&raquo;</span>
+          </a>
+        </li>
+        <li class="page-item" [class.disabled]="currentPage === totalPages">
+          <a
+            class="page-link"
+            (click)="changePage(totalPages)"
+            aria-label="Last"
+          >
+            <span aria-hidden="true">&raquo;&raquo;</span>
+          </a>
+        </li>
+      </ul>
+    </nav>
     <br />
 
     <!-- Formulario de cliente -->

@@ -63,20 +63,25 @@
             <td>{{empresa.tel_empre}}</td>
             <td>{{empresa.dir_empre}}</td>
             <td>
-              <button class="btn btn-link" (click)="editarEmpresa(empresa)">
-                <i class="bi bi-pencil text-primary"></i>
-              </button>
 
-              <button
-                class="btn btn-link"
-                (click)="eliminarEmpresa(empresa.cod_empre)"
-              >
-                <i class="bi bi-trash text-danger"></i>
-              </button>
-
-              <button class="btn btn-link" (click)="consultarEmpresa(empresa)">
-                <i class="bi bi-card-list text-success"></i>
-              </button>
+              <i
+              (click)="editarEmpresa(empresa)"
+              class="bi bi-pencil text-primary"
+              style="padding: 10px"
+             >
+            </i>
+            <i
+            (click)="eliminarEmpresa(empresa.cod_empre)"
+            class="bi bi-trash text-danger"
+            style="padding: 10px"
+           > 
+            </i>
+            <i
+             (click)="consultarEmpresa(empresa)"
+             class="bi bi-card-list text-success"
+             style="padding: 10px"
+           >
+         </i>
             </td>
           </tr>
         </tbody>

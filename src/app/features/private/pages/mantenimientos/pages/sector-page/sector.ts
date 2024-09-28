@@ -14,7 +14,7 @@ import Swal from 'sweetalert2';
 })
 export class Sector implements OnInit {
   totalItems = 0;
-  pageSize = 3
+  pageSize = 10
   currentPage = 1;
   maxPagesToShow = 5;
   txtdescripcion: string = '';

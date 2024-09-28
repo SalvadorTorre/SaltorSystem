@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { BehaviorSubject, debounceTime, distinctUntilChanged, switchMap } from 'rxjs';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { ModeloZonaData } from 'src/app/core/services/mantenimientos/zonas';
 import { ServicioZona } from 'src/app/core/services/mantenimientos/zonas/zonas.service';
@@ -19,13 +20,15 @@ export class Zona implements OnInit {
 
 
   totalItems = 0;
-  pageSize = 8
+  pageSize = 3
   currentPage = 1;
   maxPagesToShow = 5;
   txtdescripcion: string = '';
   txtcodigo: string = '';
   codSuplidor: string = '';
   descripcion: string = '';
+  private codigoBuscar = new BehaviorSubject<string>('');
+  private descripcionBuscar = new BehaviorSubject<string>('');
 
   constructor(private fb: FormBuilder, private servicioZona: ServicioZona) {
     this.crearFormularioZona();
@@ -81,16 +84,16 @@ export class Zona implements OnInit {
   }
 
   changePage(page: number) {
-    // this.currentPage = page;
-    // // Trigger a new search with the current codigo and descripcion
-    // const codigo = this.codigoBuscar.getValue();
-    // const descripcion = this.descripcionBuscar.getValue();
-    // this.servicioSuplidor.buscarTodosSuplidor(this.currentPage, this.pageSize,  descripcion)
-    //   .subscribe(response => {
-    //     this.suplidorList = response.data;
-    //   this.totalItems = response.pagination.total;
-    //   this.currentPage = page;
-    //   });
+    this.currentPage = page;
+    // Trigger a new search with the current codigo and descripcion
+    const codigo = this.codigoBuscar.getValue();
+    const descripcion = this.descripcionBuscar.getValue();
+    this.servicioZona.buscarTodasZonas(this.currentPage, this.pageSize, descripcion)
+      .subscribe(response => {
+        this.zonasList = response.data;
+        this.totalItems = response.pagination.total;
+        this.currentPage = page;
+      });
   }
 
   get totalPages() {

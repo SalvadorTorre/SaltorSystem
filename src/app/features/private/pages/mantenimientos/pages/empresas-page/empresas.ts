@@ -22,6 +22,7 @@ export class Empresas implements OnInit {
   txtcodigo = '';
   rnc: string = '';
   descripcion: string = '';
+  nomempresa: string = '';
   codigo: string = '';
   private descripcionBuscar = new BehaviorSubject<string>('');
   private codigoBuscar = new BehaviorSubject<string>('');
@@ -46,8 +47,8 @@ export class Empresas implements OnInit {
       debounceTime(500),
       distinctUntilChanged(),
       switchMap(nombre => {
-        this.descripcion = nombre;
-        return this.servicioEmpresa.buscarTodasEmpresa(this.currentPage, this.pageSize, this.descripcion);
+        this.nomempresa = nombre;
+        return this.servicioEmpresa.buscarEmpresa(this.currentPage, this.pageSize, this.nomempresa);
       })
     )
       .subscribe(response => {
@@ -60,7 +61,7 @@ export class Empresas implements OnInit {
       distinctUntilChanged(),
       switchMap(rnc => {
         this.codigo = rnc;
-        return this.servicioEmpresa.buscarTodasEmpresa(this.currentPage, this.pageSize, this.descripcion);
+        return this.servicioEmpresa.buscarEmpresa(this.currentPage, this.pageSize, this.nomempresa);
       })
     )
       .subscribe(response => {
@@ -350,8 +351,8 @@ export class Empresas implements OnInit {
   changePage(page: number) {
     this.currentPage = page;
     // Trigger a new search with the current codigo and descripcion
-    const descripcion = this.descripcionBuscar.getValue();
-    this.servicioEmpresa.buscarTodasEmpresa(this.currentPage, this.pageSize, descripcion)
+    const nomempresa = this.descripcionBuscar.getValue();
+    this.servicioEmpresa.buscarEmpresa(this.currentPage, this.pageSize, nomempresa)
       .subscribe(response => {
         this.empresaList = response.data;
         this.totalItems = response.pagination.total;

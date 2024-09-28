@@ -7,30 +7,30 @@ import { EmpresaModel, EmpresaModelData } from ".";
   providedIn: "root"
 })
 export class ServicioEmpresa {
-  constructor(private http:HttpInvokeService) {}
+  constructor(private http: HttpInvokeService) { }
 
-  guardarEmpresa(empresas:any): Observable<any>{
-    return this.http.PostRequest<any,any>("/empresa",empresas);
+  guardarEmpresa(empresas: any): Observable<any> {
+    return this.http.PostRequest<any, any>("/empresa", empresas);
   }
 
-  editarEmpresa(cod_empre:string,empresas:EmpresaModel): Observable<any>{
-    return this.http.PutRequest<any,any>(`/empresa/${cod_empre}`,empresas);
+  editarEmpresa(cod_empre: string, empresas: EmpresaModel): Observable<any> {
+    return this.http.PutRequest<any, any>(`/empresa/${cod_empre}`, empresas);
   }
 
-  buscarTodasEmpresa(pageIndex: number, pageSize: number,  descripcion?: string): Observable<any> {
+  buscarTodasEmpresa(pageIndex: number, pageSize: number, descripcion?: string): Observable<any> {
     let url = `/empresa?page=${pageIndex}&limit=${pageSize}`;
     if (descripcion) {
       url += `&descripcion=${descripcion}`;
     }
-console.log(url);
+    console.log(url);
     return this.http.GetRequest<any>(url);
   }
 
-  eliminarEmpresa(cod_empre:string): Observable<any>{
+  eliminarEmpresa(cod_empre: string): Observable<any> {
     return this.http.DeleteRequest(`/empresa/${cod_empre}`, "");
   }
 
-  buscarEmpres(cod_empre:string): Observable<any>{
+  buscarEmpres(cod_empre: string): Observable<any> {
     return this.http.GetRequest<any>(`/empresa/${cod_empre}`);
   }
 
@@ -48,3 +48,4 @@ console.log(url);
   }
 
 }
+
