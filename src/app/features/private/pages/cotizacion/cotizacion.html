@@ -424,158 +424,151 @@
             </div>
           </div>
           <br />
-          <div class="row">
-            <div class="col-2">
-              <label for="">Código</label>
-              <div class="input-group show">
-                <input
-                  class="form-control dropdown-toggle searchInput me-2"
-                  data-id="agent"
-                  type="text"
-                  #codigoInput
-                  autocomplete="off"
-                  (input)="convertToUpperCase($event)"
-                  (keydown)="handleKeydownInventario($event)"
-                  (keydown)="moveFocuscodmerc($event, input7)"
-                  #input6
-                  [formControl]="buscarcodmerc"
-                  [(ngModel)]="codmerc"
-                  name="codmerc"
-                  placeholder="Código"
-                />
+          <div class="seccion-productos">
+            <div class="row">
+              <div class="col-2">
+                <label for="">Código</label>
+                <div class="input-group show">
+                  <input
+                    class="form-control dropdown-toggle searchInput me-2"
+                    data-id="agent"
+                    type="text"
+                    [disabled]="!habilitarCampos"
+                    #codigoInput
+                    autocomplete="off"
+                    (input)="convertToUpperCase($event)"
+                    (keydown)="handleKeydownInventario($event)"
+                    (keydown)="moveFocuscodmerc($event, input7)"
+                    #input6
+                    [formControl]="buscarcodmerc"
+                    [(ngModel)]="codmerc"
+                    name="codmerc"
+                    placeholder="Código"
+                  />
 
-                <div
-                  [ngClass]="{ 'show': resultadoCodmerc.length > 0 }"
-                  class="dropdown-menu"
-                  style="
-                    margin-right: 30px;
-                    margin-top: 45px;
-                    z-index: 300;
-                    width: 350px;
-                    position: absolute;
-                    will-change: transform;
-                  "
-                >
                   <div
-                    class="searchReturnItem name-find"
-                    *ngFor="let result of resultadoCodmerc; let i = index"
-                    [class.active]="i === selectedIndexcodmerc"
+                    [ngClass]="{ 'show': resultadoCodmerc.length > 0 }"
+                    class="dropdown-menu"
+                    style="
+                      margin-right: 30px;
+                      margin-top: 45px;
+                      z-index: 300;
+                      width: 350px;
+                      position: absolute;
+                      will-change: transform;
+                    "
                   >
-                    <a
-                      (click)="cargarDatosInventario(result)"
-                      style="
-                        color: #222222 !important;
-                        font-size: 10pt;
-                        padding: 20px 0px;
-                        text-decoration: none !important;
-                        cursor: pointer;
-                      "
-                      class="px-3 cp"
+                    <div
+                      class="searchReturnItem name-find"
+                      *ngFor="let result of resultadoCodmerc; let i = index"
+                      [class.active]="i === selectedIndexcodmerc"
                     >
-                      <i class="far fa-user-circle mr-5"></i>&nbsp;&nbsp;{{
-                      result.in_codmerc }}
-                    </a>
+                      <a
+                        (click)="cargarDatosInventario(result)"
+                        style="
+                          color: #222222 !important;
+                          font-size: 10pt;
+                          padding: 20px 0px;
+                          text-decoration: none !important;
+                          cursor: pointer;
+                        "
+                        class="px-3 cp"
+                      >
+                        <i class="far fa-user-circle mr-5"></i>&nbsp;&nbsp;{{
+                        result.in_codmerc }}
+                      </a>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-            <div class="col-5">
-              <label for="">Descripción</label>
-              <div class="input-group show">
+              <div class="col-5">
+                <label for="">Descripción</label>
+                <div class="input-group show">
+                  <input
+                    class="form-control dropdown-toggle searchInput me-2"
+                    data-id="agent"
+                    type="text"
+                    [disabled]="habilitarCampos"
+                    #descripcionInput
+                    autocomplete="off"
+                    (input)="convertToUpperCase($event)"
+                    (keydown)="moveFocusdesc($event, input8)"
+                    (keydown)="handleKeydownInventariosdesc($event)"
+                    #input7
+                    [formControl]="buscardescripcionmerc"
+                    [(ngModel)]="descripcionmerc"
+                  />
+                  <div
+                    [ngClass]="{ 'show': resultadodescripcionmerc.length > 0 }"
+                    class="dropdown-menu"
+                    style="
+                      margin-right: 30px;
+                      margin-top: 45px;
+                      z-index: 300;
+                      width: 350px;
+                      position: absolute;
+                      will-change: transform;
+                    "
+                  >
+                    <div
+                      class="searchReturnItem name-find"
+                      *ngFor="let result of resultadodescripcionmerc; let i = index"
+                      [class.active]="i === selectedIndexcoddescripcionmerc"
+                    >
+                      <a
+                        (click)="cargarDatosInventario(result)"
+                        style="
+                          color: #222222 !important;
+                          font-size: 10pt;
+                          padding: 20px 0px;
+                          text-decoration: none !important;
+                          cursor: pointer;
+                        "
+                        class="px-3 cp"
+                      >
+                        <i class="far fa-user-circle mr-5"></i>&nbsp;&nbsp;{{
+                        result.in_desmerc }}
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-2">
+                <label for="">Cantidad</label>
                 <input
-                  class="form-control dropdown-toggle searchInput me-2"
-                  data-id="agent"
-                  type="text"
-                  #descripcionInput
-                  autocomplete="off"
-                  (input)="convertToUpperCase($event)"
-                  (keydown)="moveFocusdesc($event, input8)"
-                  (keydown)="handleKeydownInventariosdesc($event)"
-                  #input7
-                  [formControl]="buscardescripcionmerc"
-                  [(ngModel)]="descripcionmerc"
+                  type="number"
+                  placeholder="Cantidad"
+                  [(ngModel)]="cantidadmerc"
+                  #input8
+                  id="input8"
+                  [formControl]="cantidadform"
+                  (keydown)="moveFocusCantidad($event, input9)"
+                  class="form-control"
                 />
-                <div
-                  [ngClass]="{ 'show': resultadodescripcionmerc.length > 0 }"
-                  class="dropdown-menu"
-                  style="
-                    margin-right: 30px;
-                    margin-top: 45px;
-                    z-index: 300;
-                    width: 350px;
-                    position: absolute;
-                    will-change: transform;
-                  "
-                >
-                  <div
-                    class="searchReturnItem name-find"
-                    *ngFor="let result of resultadodescripcionmerc; let i = index"
-                    [class.active]="i === selectedIndexcoddescripcionmerc"
-                  >
-                    <a
-                      (click)="cargarDatosInventario(result)"
-                      style="
-                        color: #222222 !important;
-                        font-size: 10pt;
-                        padding: 20px 0px;
-                        text-decoration: none !important;
-                        cursor: pointer;
-                      "
-                      class="px-3 cp"
-                    >
-                      <i class="far fa-user-circle mr-5"></i>&nbsp;&nbsp;{{
-                      result.in_desmerc }}
-                    </a>
-                  </div>
-                </div>
+              </div>
+              <div class="col-2">
+                <label for="">Precio</label>
+                <input
+                  type="number"
+                  [(ngModel)]="preciomerc"
+                  [formControl]="precioform"
+                  id="input9"
+                  #input9
+                  (keydown)="moveFocus($event, input6)"
+                  class="form-control"
+                  (keydown.enter)="agregaItem($event)"
+                />
               </div>
             </div>
-            <div class="col-2">
-              <label for="">Cantidad</label>
-              <input
-                type="number"
-                placeholder="Cantidad"
-                [(ngModel)]="cantidadmerc"
-                #input8
-                id="input8"
-                [formControl]="cantidadform"
-                (keydown)="moveFocusCantidad($event, input9)"
-                class="form-control"
-              />
-            </div>
-            <div class="col-2">
-              <label for="">Precio</label>
-              <input
-                type="number"
-                [(ngModel)]="preciomerc"
-                [formControl]="precioform"
-                id="input9"
-                #input9
-                (keydown)="moveFocus($event, input6)"
-                class="form-control"
-                (keydown.enter)="agregaItem($event)"
-              />
-            </div>
-            <!-- <div class="col-1">
-              <button
-                type="button"
-                #mybutton
-                class="btn btn-primary mt-3"
-                (click)="agregaItem(
-                $event)"
-              >
-                Agregar
-              </button>
-            </div> -->
+            <br />
           </div>
-          <br />
           <div class="row">
             <div class="col">
               <div
                 class="table-responsive"
                 style="height: 370px; overflow-y: auto"
               >
-                <table class="table table-sm table-bordered">
+                <table class="table table-sm table-bordered" #Tabladetalla>
                   <thead class="table-dark">
                     <tr style="background-color: red">
                       <th style="width: 13%">Código</th>
@@ -608,12 +601,14 @@
                           (click)="editarItem(item)"
                           class="bi bi-pencil text-primary"
                           style="padding: 10px"
+                          *ngIf="habilitarIcono"
                         >
                         </i>
                         <i
                           (click)="borarItem(item)"
                           class="bi bi-trash text-danger"
                           style="padding: 10px"
+                          *ngIf="habilitarIcono"
                         >
                         </i>
                       </td>

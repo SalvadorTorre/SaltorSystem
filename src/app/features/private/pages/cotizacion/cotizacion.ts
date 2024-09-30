@@ -28,8 +28,8 @@ declare var $: any;
 export class Cotizacion implements OnInit {
   @ViewChild('inputCodmerc') inputCodmerc!: ElementRef; // Para manejar el foco
   @ViewChild('descripcionInput') descripcionInput!: ElementRef; // Para manejar el foco
-
-  totalItems = 0;
+  @ViewChild('Tabladetalle') Tabladetalle!: ElementRef;
+   totalItems = 0;
   pageSize = 8;
   currentPage = 1;
   maxPagesToShow = 5;
@@ -72,10 +72,10 @@ export class Cotizacion implements OnInit {
   mensagePantalla: boolean = false;
   codmerVacio: boolean = false;
   desmerVacio: boolean = false;
-
+  habilitarCampos: boolean = false;
   sucursales = [];
   sucursalSeleccionada: any = null;
-
+  habilitarIcono: boolean = true ;
 
 
   private codigoSubject = new BehaviorSubject<string>('');
@@ -290,6 +290,11 @@ export class Cotizacion implements OnInit {
     this.buscarTodasCotizacion(1);
     this.limpiarTabla()
     this.limpiarCampos()
+    this.habilitarIcono= true;
+    const inputs = document.querySelectorAll('.seccion-productos input');
+    inputs.forEach((input) => {
+      (input as HTMLInputElement).disabled = false;
+    });
   }
 
 
@@ -360,8 +365,13 @@ export class Cotizacion implements OnInit {
     $('#modalcotizacion').modal('show');
     this.habilitarFormulario = true;
     this.formularioCotizacion.disable();
+    this.habilitarIcono= false
+    const inputs = document.querySelectorAll('.seccion-productos input');
+    inputs.forEach((input) => {
+      (input as HTMLInputElement).disabled = true;
+    });
+
     this.servicioCotizacion.buscarCotizacionDetalle(Cotizacion.ct_codcoti).subscribe(response => {
-      // console.log(response);
       response.data.forEach((item: any) => {
         var producto: ModeloInventarioData = {
           in_codmerc: item.dc_codmerc,
@@ -398,12 +408,8 @@ export class Cotizacion implements OnInit {
         });
       });
 
-      // this.items = response.data;
-
     });
-    //this.detCotizacionList = Cotizacion.detCotizacion
   };
-
 
   eliminarCotizacion(CotizacionId: string) {
     Swal.fire({
@@ -769,8 +775,8 @@ export class Cotizacion implements OnInit {
     console.log(inventario);
     this.resultadoCodmerc = [];
     this.resultadodescripcionmerc = [];
-    //this.buscarcodmerc.reset();
     this.codmerc = inventario.in_codmerc;
+    this.preciomerc = inventario.in_premerc
     this.descripcionmerc = inventario.in_desmerc;
     this.productoselect = inventario;
     this.cancelarBusquedaDescripcion = true;
