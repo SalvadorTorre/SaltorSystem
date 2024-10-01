@@ -297,11 +297,8 @@ export class Cotizacion implements OnInit {
     });
   }
 
-
   editardetCotizacion(detcotizacion: detCotizacionData) {
     this.cotizacionid = detcotizacion.dc_codcoti;
-    // this.formularioCotizacion.patchValue(detcotizacion);
-
   }
   editarCotizacion(Cotizacion: CotizacionModelData) {
     this.cotizacionid = Cotizacion.ct_codcoti;
@@ -310,10 +307,19 @@ export class Cotizacion implements OnInit {
     this.tituloModalCotizacion = 'Editando Cotizacion';
     $('#modalcotizacion').modal('show');
     this.habilitarFormulario = true;
-    //this.detCotizacionList = Cotizacion.detCotizacion
+    const inputs = document.querySelectorAll('.seccion-productos input');
+    inputs.forEach((input) => {
+      (input as HTMLInputElement).disabled = true;
+    });
+    // Limpiar los items antes de agregar los nuevos
+    this.items = [];
     this.servicioCotizacion.buscarCotizacionDetalle(Cotizacion.ct_codcoti).subscribe(response => {
+      let subtotal = 0;
+      let itbis = 0;
+      let totalGeneral = 0;
+      const itbisRate = 0.18; // Ejemplo: 18% de ITBIS
       response.data.forEach((item: any) => {
-        var producto: ModeloInventarioData = {
+        const producto: ModeloInventarioData = {
           in_codmerc: item.dc_codmerc,
           in_desmerc: item.dc_descrip,
           in_grumerc: '',
@@ -340,18 +346,31 @@ export class Cotizacion implements OnInit {
           in_itbis: false,
           in_minvent: 0,
         };
+        const cantidad = item.dc_canmerc;
+        const precio = item.dc_premerc;
+        const totalItem = cantidad * precio;
         this.items.push({
           producto: producto,
-          cantidad: item.dc_canmerc,
-          precio: item.dc_premerc,
-          total: item.dc_valmerc
+          cantidad: cantidad,
+          precio: precio,
+          total: totalItem
         });
+        // Calcular el subtotal
+        subtotal += totalItem;
+        // Calcular ITBIS solo si el producto tiene ITBIS
+       // if (item.dc_itbis) {
+          this.totalItbis += totalItem * itbisRate;
+       // }
       });
-
+      // Calcular el total general (subtotal + ITBIS)
+      totalGeneral = subtotal + this.totalItbis;
+      // Asignar los totales a variables o mostrarlos en la interfaz
+      this.subTotal = subtotal;
+      this.totalItbis = this.totalItbis;
+      this.totalGral = totalGeneral;
     });
-    //this.detCotizacionList = Cotizacion.detCotizacion
+}
 
-  }
   buscarTodasCotizacion(page: number) {
     this.servicioCotizacion.buscarTodasCotizacion(page, this.pageSize).subscribe(response => {
       console.log(response);
@@ -365,15 +384,24 @@ export class Cotizacion implements OnInit {
     $('#modalcotizacion').modal('show');
     this.habilitarFormulario = true;
     this.formularioCotizacion.disable();
-    this.habilitarIcono= false
+    this.habilitarIcono= false;
+    
     const inputs = document.querySelectorAll('.seccion-productos input');
     inputs.forEach((input) => {
       (input as HTMLInputElement).disabled = true;
     });
 
+    // Limpiar los items antes de agregar los nuevos
+    this.items = [];
+
     this.servicioCotizacion.buscarCotizacionDetalle(Cotizacion.ct_codcoti).subscribe(response => {
+      let subtotal = 0;
+      let itbis = 0;
+      let totalGeneral = 0;
+      const itbisRate = 0.18; // Ejemplo: 18% de ITBIS
+
       response.data.forEach((item: any) => {
-        var producto: ModeloInventarioData = {
+        const producto: ModeloInventarioData = {
           in_codmerc: item.dc_codmerc,
           in_desmerc: item.dc_descrip,
           in_grumerc: '',
@@ -400,16 +428,36 @@ export class Cotizacion implements OnInit {
           in_itbis: false,
           in_minvent: 0,
         };
+
+        const cantidad = item.dc_canmerc;
+        const precio = item.dc_premerc;
+        const totalItem = cantidad * precio;
+
         this.items.push({
           producto: producto,
-          cantidad: item.dc_canmerc,
-          precio: item.dc_premerc,
-          total: item.dc_valmerc
+          cantidad: cantidad,
+          precio: precio,
+          total: totalItem
         });
+
+        // Calcular el subtotal
+        subtotal += totalItem;
+
+        // Calcular ITBIS solo si el producto tiene ITBIS
+       // if (item.dc_itbis) {
+          this.totalItbis += totalItem * itbisRate;
+       // }
       });
 
+      // Calcular el total general (subtotal + ITBIS)
+      totalGeneral = subtotal + this.totalItbis;
+
+      // Asignar los totales a variables o mostrarlos en la interfaz
+      this.subTotal = subtotal;
+      this.totalItbis = this.totalItbis;
+      this.totalGral = totalGeneral;
     });
-  };
+}
 
   eliminarCotizacion(CotizacionId: string) {
     Swal.fire({
