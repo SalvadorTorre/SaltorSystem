@@ -251,7 +251,7 @@ export class Cotizacion implements OnInit {
       ct_codclie: [''],
       ct_nomclie: [''],
       ct_rnc: [''],
-      ct_telclie: ['', Validators.pattern(/^\(\d{3}\) \d{3}-\d{4}$/)],
+      ct_telclie: [''],
       ct_dirclie: [''],
       ct_correo: [''],
       ct_codvend: ['', Validators.required],
@@ -385,7 +385,7 @@ export class Cotizacion implements OnInit {
     this.habilitarFormulario = true;
     this.formularioCotizacion.disable();
     this.habilitarIcono= false;
-    
+
     const inputs = document.querySelectorAll('.seccion-productos input');
     inputs.forEach((input) => {
       (input as HTMLInputElement).disabled = true;
@@ -502,9 +502,6 @@ export class Cotizacion implements OnInit {
 
   guardarCotizacion() {
     const date = new Date();
-    // this.buscarTodasCotizacion(1),
-    // this.cotizacionid = `${date.getFullYear()}00000${this.cotizacionList.length + 1}`;
-
     this.formularioCotizacion.get('ct_valcoti')?.patchValue(this.totalGral);
     this.formularioCotizacion.get('ct_itbis')?.patchValue(this.totalItbis);
     this.formularioCotizacion.get('ct_codcoti')!.enable();
@@ -515,24 +512,24 @@ export class Cotizacion implements OnInit {
       detalle: this.items,
       // idCotizacion: this.formularioCotizacion.get('ct_codcoti')?.value,
     };
-
-    if (this.formularioCotizacion.valid) {
-      this.servicioCotizacion.guardarCotizacion(payload).subscribe(response => {
-        Swal.fire({
-          title: "Excelente!",
-          text: "Cotizacion creada correctamente.",
-          icon: "success",
-          timer: 1000,
-          showConfirmButton: false,
-        });
-        this.buscarTodasCotizacion(1);
-        this.formularioCotizacion.reset();
-        this.crearFormularioCotizacion();
-        $('#modalcotizacion').modal('hide');
-      });
-    } else {
-      console.log(this.formularioCotizacion.value);
-    }
+console.log(payload)
+    // if (this.formularioCotizacion.valid) {
+    //   this.servicioCotizacion.guardarCotizacion(payload).subscribe(response => {
+    //     Swal.fire({
+    //       title: "Excelente!",
+    //       text: "Cotizacion creada correctamente.",
+    //       icon: "success",
+    //       timer: 1000,
+    //       showConfirmButton: false,
+    //     });
+    //     this.buscarTodasCotizacion(1);
+    //     this.formularioCotizacion.reset();
+    //     this.crearFormularioCotizacion();
+    //     $('#modalcotizacion').modal('hide');
+    //   });
+    // } else {
+    //   console.log(this.formularioCotizacion.value);
+    // }
 
     // if (this.formularioCotizacion.valid) {
     //   if (this.modoedicionCotizacion) {
@@ -748,18 +745,21 @@ export class Cotizacion implements OnInit {
   }
 
   cargarDatosCliente(cliente: ModeloClienteData) {
-    console.log(cliente);
     this.resultadoNombre = [];
     this.buscarNombre.reset();
-    this.formularioCotizacion.patchValue({
-      ct_codclie: cliente.cl_codClie,
-      ct_nomclie: cliente.cl_nomClie,
-      ct_rnc: cliente.cl_rnc,
-      ct_telclie: cliente.cl_telClie,
-      ct_dirclie: cliente.cl_dirClie,
-      ct_codzona: cliente.cl_codZona,
+    if (cliente.cl_nomClie !==""){
+      console.log("dd")
+      this.formularioCotizacion.patchValue({
+        ct_codclie: cliente.cl_codClie,
+        ct_nomclie: cliente.cl_nomClie,
+        ct_rnc: cliente.cl_rnc,
+        ct_telclie: cliente.cl_telClie,
+        ct_dirclie: cliente.cl_dirClie,
+        ct_codzona: cliente.cl_codZona,
 
-    });
+      });
+    }
+
   }
 
   handleKeydown(event: KeyboardEvent): void {
