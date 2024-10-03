@@ -30,7 +30,7 @@ export class Cotizacion implements OnInit {
   @ViewChild('descripcionInput') descripcionInput!: ElementRef; // Para manejar el foco
   @ViewChild('Tabladetalle') Tabladetalle!: ElementRef;
    totalItems = 0;
-  pageSize = 8;
+  pageSize = 12;
   currentPage = 1;
   maxPagesToShow = 5;
   txtdescripcion: string = '';
