@@ -510,9 +510,9 @@ export class Cotizacion implements OnInit {
     const payload = {
       cotizacion: this.formularioCotizacion.value,
       detalle: this.items,
-      // idCotizacion: this.formularioCotizacion.get('ct_codcoti')?.value,
+      idCotizacion: this.formularioCotizacion.get('ct_codcoti')?.value,
+
     };
-console.log(payload)
     // if (this.formularioCotizacion.valid) {
     //   this.servicioCotizacion.guardarCotizacion(payload).subscribe(response => {
     //     Swal.fire({
@@ -531,44 +531,64 @@ console.log(payload)
     //   console.log(this.formularioCotizacion.value);
     // }
 
-    // if (this.formularioCotizacion.valid) {
-    //   if (this.modoedicionCotizacion) {
-    //     this.servicioCotizacion.editarCotizacion(this.cotizacionid, this.formularioCotizacion.value).subscribe(response => {
-    //       Swal.fire({
-    //         title: "Excelente!",
-    //         text: "Cotizacion Editada correctamente.",
-    //         icon: "success",
-    //         timer: 5000,
-    //         showConfirmButton: false,
-    //       });
-    //       this.buscarTodasCotizacion(1);
-    //       this.formularioCotizacion.reset();
-    //       this.crearFormularioCotizacion();
-    //       $('#modalcotizacion').modal('hide');
-    //     });
-    //   }
-    //   else {
-    //     this.servicioCotizacion.guardarCotizacion(this.formularioCotizacion.value).subscribe(response => {
-    //       Swal.fire
-    //         ({
-    //           title: "Cotizacion Guardada correctamente",
-    //           text: "Desea Crear una Sucursal",
-    //           icon: 'warning',
-    //           timer: 5000,
-    //           showConfirmButton: false,
-    //         });
-    //       this.buscarTodasCotizacion(1);
-    //       this.formularioCotizacion.reset();
-    //       this.crearFormularioCotizacion();
-    //       this.formularioCotizacion.enable();
-    //       $('#modalcotizacion').modal('hide');
-    //     })
+    if (this.formularioCotizacion.valid) {
+      if (this.modoedicionCotizacion) {
+        this.servicioCotizacion.editarCotizacion(this.cotizacionid, this.formularioCotizacion.value).subscribe(response => {
+          Swal.fire({
+            title: "Excelente!",
+            text: "Cotizacion Editada correctamente.",
+            icon: "success",
+            timer: 5000,
+            showConfirmButton: false,
+          });
+          this.buscarTodasCotizacion(1);
+          this.formularioCotizacion.reset();
+          this.crearFormularioCotizacion();
+          $('#modalcotizacion').modal('hide');
+        });
+      }
+      else {
+        // this.servicioCotizacion.guardarCotizacion(this.formularioCotizacion.value).subscribe(response => {
+        //   Swal.fire
+        //     ({
+        //       title: "Cotizacion Guardada correctamente",
+        //       text: "Desea Crear una Sucursal SDFSSD",
+        //       icon: 'warning',
+        //       timer: 5000,
+        //       showConfirmButton: false,
+        //     });
+        //   this.buscarTodasCotizacion(1);
+        //   this.formularioCotizacion.reset();
+        //   this.crearFormularioCotizacion();
+        //   this.formularioCotizacion.enable();
+        //   $('#modalcotizacion').modal('hide');
+        // })
 
-    //   }
-    // }
-    // else {
-    //   alert("Esta Empresa no fue Guardado");
-    // }
+        if (this.formularioCotizacion.valid) {
+          this.servicioCotizacion.guardarCotizacion(payload).subscribe(response => {
+            Swal.fire({
+              title: "Excelente!",
+              text: "Cotizacion creada correctamente.",
+              icon: "success",
+              timer: 1000,
+              showConfirmButton: false,
+            });
+            this.buscarTodasCotizacion(1);
+            this.formularioCotizacion.reset();
+            this.crearFormularioCotizacion();
+          this.formularioCotizacion.enable();
+            $('#modalcotizacion').modal('hide');
+          });
+        } else {
+          console.log(this.formularioCotizacion.value);
+        }
+
+
+      }
+    }
+    else {
+      alert("Esta Empresa no fue Guardado");
+    }
   }
 
   convertToUpperCase(event: Event): void {
@@ -588,6 +608,7 @@ console.log(payload)
   }
 
   changePage(page: number) {
+
     this.currentPage = page;
     // Trigger a new search with the current codigo and descripcion
     const descripcion = this.descripcionBuscar.getValue();
@@ -596,7 +617,10 @@ console.log(payload)
         this.cotizacionList = response.data;
         this.totalItems = response.pagination.total;
         this.currentPage = page;
+        this.formularioCotizacion.reset();
+
       });
+
   }
 
 
@@ -1101,6 +1125,7 @@ console.log(payload)
     }
   }
 
+
 }
 
 
@@ -1108,5 +1133,9 @@ console.log(payload)
 
 function then(arg0: () => void) {
   throw new Error('Function not implemented.');
+
+
+
+
 }
 

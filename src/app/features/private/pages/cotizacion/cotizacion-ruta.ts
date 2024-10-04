@@ -6,6 +6,7 @@ const routes: Routes = [
     component:Cotizacion
 
   }
+  
 ];
 
 @NgModule({
