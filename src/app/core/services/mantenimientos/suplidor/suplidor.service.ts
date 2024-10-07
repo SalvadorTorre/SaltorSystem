@@ -44,4 +44,8 @@ export class ServicioSuplidor {
   buscartodoSuplidor(): Observable<ModeloSuplidor>{
     return this.http.GetRequest<ModeloSuplidor>("/suplidor");
   }
+
+  buscarporNombre(nombre:string): Observable<ModeloSuplidor>{
+    return this.http.GetRequest<ModeloSuplidor>(`/suplidor-nombre/${nombre}`);
+  }
 }

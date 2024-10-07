@@ -6,7 +6,7 @@ export interface detEntradamercModel {
 }
 
 
-}
+
 
 export interface detEntradamercModelData {
     dm_codentra: string;

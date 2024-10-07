@@ -1,4 +1,3 @@
-import { ServicioEntradamerc } from './entradamerc.service';
 import { Injectable } from "@angular/core";
 import { Observable } from "rxjs";
 import { HttpInvokeService } from "../../http-invoke.service";
@@ -10,10 +9,9 @@ import { EntradamercModel, EntradamercModelData } from ".";
 export class ServicioEntradamerc {
   constructor(private http: HttpInvokeService) { }
 
-  guardarCotizacion(entradamerc: any): Observable<any> {
+  guardarEntradamerc(entradamerc: any): Observable<any> {
     return this.http.PostRequest<any, any>("/entradamerc", entradamerc);
   }
-
   editarEntradamerc(me_codentr: string, entradamerc: EntradamercModel): Observable<any> {
     return this.http.PutRequest<any, any>(`/entradamerc/${me_codentr}`, entradamerc);
   }
@@ -37,7 +35,7 @@ export class ServicioEntradamerc {
     return this.http.GetRequest<any>(`/detalle-entradamerc/${me_codentr}`);
   }
 
- buscarCotizacion(pageIndex: number, pageSize: number, codigo?: string, nomcliente?: string, fecha?:string,): Observable<any> {
+ buscarEntradamerc(pageIndex: number, pageSize: number, codigo?: string, nomcliente?: string, fecha?:string,): Observable<any> {
     let url = `/entradamerc-numero?page=${pageIndex}&limit=${pageSize}`;
 
     if (codigo) {

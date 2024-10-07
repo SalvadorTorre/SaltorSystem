@@ -1,5 +1,3 @@
-import { Entradamerc } from './../entradamerc/entradamerc';
-import { Inventario } from './../mantenimientos/pages/inventario-page/inventario';
 import { Component, NgModule, OnInit, ViewChild, ElementRef, ɵNG_COMP_DEF } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
@@ -12,26 +10,26 @@ import { ServicioUsuario } from 'src/app/core/services/mantenimientos/usuario/us
 import { ServicioEntradamerc } from 'src/app/core/services/almacen/entradamerc/entradamerc.service';
 import { EntradamercModelData, detEntradamercData } from 'src/app/core/services/almacen/entradamerc';
 import { ServiciodetEntradamerc } from 'src/app/core/services/almacen/detentradamerc/detentradamerc.service';
-import { ServicioCliente } from 'src/app/core/services/mantenimientos/clientes/cliente.service';
+import { ServicioSuplidor } from 'src/app/core/services/mantenimientos/suplidor/suplidor.service';
 import { HttpInvokeService } from 'src/app/core/services/http-invoke.service';
-import { ModeloCliente, ModeloClienteData } from 'src/app/core/services/mantenimientos/clientes';
-import { entradamercDetalleModel, interfaceDetalleModel } from 'src/app/core/services/almacen/entradamerc/entradamerc.service';
+import { ModeloSuplidor, ModeloSuplidorData } from 'src/app/core/services/mantenimientos/suplidor';
+import { interfaceDetalleModel } from 'src/app/core/services/cotizaciones/cotizacion/cotizacion';
 import { ServicioInventario } from 'src/app/core/services/mantenimientos/inventario/inventario.service';
 import { ModeloInventario, ModeloInventarioData } from 'src/app/core/services/mantenimientos/inventario';
-import { Usuario } from '../mantenimientos/pages/usuario-page/usuario';
 declare var $: any;
+
 
 @Component({
   selector: 'Entradamerc',
   templateUrl: './entradamerc.html',
   styleUrls: ['./entradamerc.css']
 })
-export class entradamerc implements OnInit {
+export class Entradamerc implements OnInit {
   @ViewChild('inputCodmerc') inputCodmerc!: ElementRef; // Para manejar el foco
   @ViewChild('descripcionInput') descripcionInput!: ElementRef; // Para manejar el foco
-
-  totalItems = 0;
-  pageSize = 8;
+  @ViewChild('Tabladetalle') Tabladetalle!: ElementRef;
+   totalItems = 0;
+  pageSize = 12;
   currentPage = 1;
   maxPagesToShow = 5;
   txtdescripcion: string = '';
@@ -48,10 +46,10 @@ export class entradamerc implements OnInit {
   formularioEntradamerc!: FormGroup;
   formulariodetEntradamerc!: FormGroup;
   modoedicionEntradamerc: boolean = false;
-  Entradamerc!: string
+  entradamercid!: string
   modoconsultaEntradamerc: boolean = false;
   entradamercList: EntradamercModelData[] = [];
-  detentradamercList: detEntradamercData[] = [];
+  detEntradamercList: detEntradamercData[] = [];
   selectedEntradamerc: any = null;
   items: interfaceDetalleModel[] = [];
   totalGral: number = 0;
@@ -73,13 +71,21 @@ export class entradamerc implements OnInit {
   mensagePantalla: boolean = false;
   codmerVacio: boolean = false;
   desmerVacio: boolean = false;
-  entradamercId!: number = 0;
+  habilitarCampos: boolean = false;
+  sucursales = [];
+  sucursalSeleccionada: any = null;
+  habilitarIcono: boolean = true ;
+
+
+  private codigoSubject = new BehaviorSubject<string>('');
+  private nomsuplidorSubject = new BehaviorSubject<string>('');
+
   isDisabled: boolean = true;
   form: FormGroup;
   constructor(
     private fb: FormBuilder,
-    private servicioentradamerc: ServicioEntradamerc,
-    private servicioCliente: ServicioCliente,
+    private servicioEntradamerc: ServicioEntradamerc,
+    private servicioSuplidor: ServicioSuplidor,
     private serviciodetEntradamerc: ServiciodetEntradamerc,
     private http: HttpInvokeService,
     private servicioInventario: ServicioInventario,
@@ -95,6 +101,21 @@ export class entradamerc implements OnInit {
     this.crearFormularioEntradamerc();
     console.log(this.formularioEntradamerc.value);
 
+    this.nomsuplidorSubject.pipe(
+      debounceTime(500),
+      distinctUntilChanged(),
+      switchMap(nomsuplidor => {
+        this.txtdescripcion = nomsuplidor;
+        return this.servicioEntradamerc.buscarEntradamerc(this.currentPage, this.pageSize, this.codigo, this.txtdescripcion);
+      })
+    ).subscribe(response => {
+      this.entradamercList = response.data;
+      this.totalItems = response.pagination.total;
+      this.currentPage = response.pagination.page;
+    });
+
+
+
 
   }
 
@@ -106,22 +127,22 @@ export class entradamerc implements OnInit {
   crearformulariodetEntradamerc() {
     this.formulariodetEntradamerc = this.fb.group({
 
-      dc_codcoti: ['', Validators.required],
-      dc_codmerc: ['',],
-      dc_descrip: ['',],
-      dc_canmerc: ['',],
-      dc_premerc: ['',],
-      dc_valmerc: ['',],
-      dc_unidad: ['',],
-      dc_costmer: ['',],
-      dc_codclie: ['',],
-      dc_status: ['',],
+      de_codentr: ['',],
+      de_codmerc: ['',],
+      de_descrip: ['',],
+      de_canmerc: ['',],
+      de_premerc: ['',],
+      de_valmerc: ['',],
+      de_unidad: ['',],
+      de_costmer: ['',],
+      de_codclie: ['',],
+      de_status: ['',],
 
     });
   }
   @ViewChild('buscarcodmercInput') buscarcodmercElement!: ElementRef;
   buscarNombre = new FormControl();
-  resultadoNombre: ModeloClienteData[] = [];
+  resultadoNombre: ModeloSuplidorData[] = [];
   selectedIndex = 1;
   buscarcodmerc = new FormControl();
   buscardescripcionmerc = new FormControl();
@@ -131,7 +152,7 @@ export class entradamerc implements OnInit {
   selectedIndexcodmerc = 1;
   resultadodescripcionmerc: ModeloInventarioData[] = [];
   selectedIndexcoddescripcionmerc = 1;
-  seleccionarentradamerc(entradamerc: any) { this.selectedEntradamerc = entradamerc; }
+  seleccionarEntradamerc(cotizacion: any) { this.selectedEntradamerc = cotizacion; }
 
 
   ngOnInit(): void {
@@ -153,7 +174,7 @@ export class entradamerc implements OnInit {
             return a.in_codmerc.localeCompare(b.in_codmerc, undefined, { numeric: true, sensitivity: 'base' });
           });
           // Aquí seleccionamos automáticamente el primer ítem
-          this.selectedIndex = 0;
+          this.selectedIndex = -1;
 
           this.codnotfound = false;
         } else {
@@ -203,8 +224,8 @@ export class entradamerc implements OnInit {
         this.resultadoNombre = [];
       }),
       filter((query: string) => query !== ''),
-      switchMap((query: string) => this.http.GetRequest<ModeloCliente>(`/cliente-nombre/${query}`))
-    ).subscribe((results: ModeloCliente) => {
+      switchMap((query: string) => this.http.GetRequest<ModeloSuplidor>(`/suplidor-nombre/${query}`))
+    ).subscribe((results: ModeloSuplidor) => {
       console.log(results.data);
       if (results) {
         if (Array.isArray(results.data)) {
@@ -222,20 +243,19 @@ export class entradamerc implements OnInit {
     const fechaActual = new Date();
     const fechaActualStr = this.formatofecha(fechaActual);
     this.formularioEntradamerc = this.fb.group({
-      ct_codcoti: [''],
-      ct_feccoti: [fechaActualStr],
-      ct_valcoti: [''],
-      ct_itbis: [''],
-      ct_codclie: [''],
-      ct_nomclie: [''],
-      ct_rnc: [''],
-      ct_telclie: ['', Validators.pattern(/^\(\d{3}\) \d{3}-\d{4}$/)],
-      ct_dirclie: [''],
-      ct_correo: [''],
-      ct_codvend: ['', Validators.required],
-      ct_nomvend: [''],
-      ct_status: [''],
-      ct_codzona: [''],
+      me_codEntr: [''],
+      me_fecEntr: [fechaActualStr],
+      me_valentr: [''],
+      me_codSupl: [''],
+      me_nomSupl: [''],
+      me_rncSupl: [''],
+      me_codVend: ['', Validators.required],
+      me_nomVend: [''],
+      me_status: [''],
+      me_nota: [''],
+      me_chofer: [''],
+      me_vendedro: [''],
+      me_despachado: [''],
     });
 
     console.log(this.formularioEntradamerc.value);
@@ -246,7 +266,7 @@ export class entradamerc implements OnInit {
 
   nuevaEntradamerc() {
     this.modoedicionEntradamerc = false;
-    this.tituloModalEntradamerc = 'Nueva Entrada';
+    this.tituloModalEntradamerc = 'Nueva Entradamerc';
     $('#modalentradamerc').modal('show');
     this.habilitarFormulario = true;
     this.formularioEntradamerc.get('ct_codcoti')!.disable();
@@ -263,45 +283,41 @@ export class entradamerc implements OnInit {
     this.modoedicionEntradamerc = false;
     this.modoconsultaEntradamerc = false;
     this.mensagePantalla = false;
-    $('#modalentradanerc').modal('hide');
+    $('#modalentradamerc').modal('hide');
     this.crearFormularioEntradamerc();
     this.buscarTodasEntradamerc(1);
     this.limpiarTabla()
     this.limpiarCampos()
-  }
-
-
-  editardetEntradamerc(detentradamerc: detEntradamercData) {
-    this.entradamercId = detentradamerc.de_codentr;
-
-  }
-  editarEntradamerc(Entradamerc: EntradamercModelData) {
-    this.entradamercId = Entradamerc.me_codentr;
-    this.modoedicionEntradamerc = true;
-    this.formularioEntradamerc.patchValue(Entradamerc);
-    this.tituloModalEntradamerc = 'Editando Entradamerc';
-    $('#modalentradamerc').modal('show');
-    this.habilitarFormulario = true;
-    this.detentradamercList = Entradamerc.detentradamerc
-  }
-
-  buscarTodasEntradamerc(page: number) {
-    this.servicioentradamerc.buscarTodasEntradamerc(page, this.pageSize).subscribe(response => {
-      console.log(response);
-      this.entradamercList = response.data;
+    this.habilitarIcono= true;
+    const inputs = document.querySelectorAll('.seccion-productos input');
+    inputs.forEach((input) => {
+      (input as HTMLInputElement).disabled = false;
     });
   }
-  consultarEntradamerc(Entradamerc: EntradamercModelData) {
-    this.modoconsultaEntradamerc = true;
+
+  editardetEntradamerc(detentradamerc: detEntradamercData) {
+    this.entradamercid = detentradamerc.de_codentr;
+  }
+  editarEntradamerc(Entradamerc: EntradamercModelData) {
+    this.entradamercid = Entradamerc.me_codentr;
+    this.modoedicionEntradamerc = true;
     this.formularioEntradamerc.patchValue(Entradamerc);
-    this.tituloModalEntradamerc = 'Consulta Entradamerc';
+    this.tituloModalEntradamerc = 'Editando Entrada Mercancias';
     $('#modalentradamerc').modal('show');
     this.habilitarFormulario = true;
-    this.formularioEntradamerc.disable();
-    this.servicioentradamerc.buscarEmtradamerc(Entradamerc.me_codentr).subscribe(response => {
-      // console.log(response);
+    const inputs = document.querySelectorAll('.seccion-productos input');
+    inputs.forEach((input) => {
+      (input as HTMLInputElement).disabled = true;
+    });
+    // Limpiar los items antes de agregar los nuevos
+    this.items = [];
+    this.servicioEntradamerc.buscarEntradamercDetalle(Entradamerc.me_codentr).subscribe(response => {
+      let subtotal = 0;
+      let itbis = 0;
+      let totalGeneral = 0;
+      const itbisRate = 0.18; // Ejemplo: 18% de ITBIS
       response.data.forEach((item: any) => {
-        var producto: ModeloInventarioData = {
+        const producto: ModeloInventarioData = {
           in_codmerc: item.dc_codmerc,
           in_desmerc: item.dc_descrip,
           in_grumerc: '',
@@ -328,22 +344,120 @@ export class entradamerc implements OnInit {
           in_itbis: false,
           in_minvent: 0,
         };
+        const cantidad = item.dc_canmerc;
+        const precio = item.dc_premerc;
+        const totalItem = cantidad * precio;
         this.items.push({
           producto: producto,
-          cantidad: item.dc_canmerc,
-          precio: item.dc_premerc,
-          total: item.dc_valmerc
+          cantidad: cantidad,
+          precio: precio,
+          total: totalItem
         });
+        // Calcular el subtotal
+        subtotal += totalItem;
+        // Calcular ITBIS solo si el producto tiene ITBIS
+       // if (item.dc_itbis) {
+          this.totalItbis += totalItem * itbisRate;
+       // }
+      });
+      // Calcular el total general (subtotal + ITBIS)
+      totalGeneral = subtotal + this.totalItbis;
+      // Asignar los totales a variables o mostrarlos en la interfaz
+      this.subTotal = subtotal;
+      this.totalItbis = this.totalItbis;
+      this.totalGral = totalGeneral;
+    });
+}
+
+  buscarTodasEntradamerc(page: number) {
+    this.servicioEntradamerc.buscarTodasEntradamerc(page, this.pageSize).subscribe(response => {
+      console.log(response);
+      this.entradamercList = response.data;
+    });
+  }
+  consultarEntradamerc(Entradamerc: EntradamercModelData) {
+    this.modoconsultaEntradamerc = true;
+    this.formularioEntradamerc.patchValue(Entradamerc);
+    this.tituloModalEntradamerc = 'Consulta Entrada Mercancias';
+    $('#modalentradamerc').modal('show');
+    this.habilitarFormulario = true;
+    this.formularioEntradamerc.disable();
+    this.habilitarIcono= false;
+
+    const inputs = document.querySelectorAll('.seccion-productos input');
+    inputs.forEach((input) => {
+      (input as HTMLInputElement).disabled = true;
+    });
+
+    // Limpiar los items antes de agregar los nuevos
+    this.items = [];
+
+    this.servicioEntradamerc.buscarEntradamercDetalle(Entradamerc.me_codentr).subscribe(response => {
+      let subtotal = 0;
+      let itbis = 0;
+      let totalGeneral = 0;
+      const itbisRate = 0.18; // Ejemplo: 18% de ITBIS
+
+      response.data.forEach((item: any) => {
+        const producto: ModeloInventarioData = {
+          in_codmerc: item.dc_codmerc,
+          in_desmerc: item.dc_descrip,
+          in_grumerc: '',
+          in_tipoproduct: '',
+          in_canmerc: 0,
+          in_caninve: 0,
+          in_fecinve: null,
+          in_eximini: 0,
+          in_cosmerc: 0,
+          in_premerc: 0,
+          in_precmin: 0,
+          in_costpro: 0,
+          in_ucosto: 0,
+          in_porgana: 0,
+          in_peso: 0,
+          in_longitud: 0,
+          in_unidad: 0,
+          in_medida: 0,
+          in_longitu: 0,
+          in_fecmodif: null,
+          in_amacen: 0,
+          in_imagen: '',
+          in_status: '',
+          in_itbis: false,
+          in_minvent: 0,
+        };
+
+        const cantidad = item.dc_canmerc;
+        const precio = item.dc_premerc;
+        const totalItem = cantidad * precio;
+
+        this.items.push({
+          producto: producto,
+          cantidad: cantidad,
+          precio: precio,
+          total: totalItem
+        });
+
+        // Calcular el subtotal
+        subtotal += totalItem;
+
+        // Calcular ITBIS solo si el producto tiene ITBIS
+       // if (item.dc_itbis) {
+          this.totalItbis += totalItem * itbisRate;
+       // }
       });
 
-      // this.items = response.data;
+      // Calcular el total general (subtotal + ITBIS)
+      totalGeneral = subtotal + this.totalItbis;
 
+      // Asignar los totales a variables o mostrarlos en la interfaz
+      this.subTotal = subtotal;
+      this.totalItbis = this.totalItbis;
+      this.totalGral = totalGeneral;
     });
-    //this.detEntradamercList = Entradamerc.detEntradamerc
-  };
+}
 
-
-  eliminarEntradamerc(Entradamerc: string) {
+  eliminarEntradamerc(EntradamercId: string) {
     Swal.fire({
       title: '¿Está seguro de eliminar este Entradamerc?',
       text: "¡No podrá revertir esto!",
@@ -354,7 +468,7 @@ export class entradamerc implements OnInit {
       confirmButtonText: 'Si, eliminar!'
     }).then((result) => {
       if (result.isConfirmed) {
-        this.servicioEntradamerc.eliminarEntradamerc(this.entradamercid).subscribe(response => {
+        this.servicioEntradamerc.eliminarEntradamerc(EntradamercId).subscribe(response => {
           Swal.fire(
             {
               title: "Excelente!",
@@ -372,7 +486,7 @@ export class entradamerc implements OnInit {
 
   descripcionEntra(event: Event) {
     const inputElement = event.target as HTMLInputElement;
-    this.descripcionBuscar.next(inputElement.value.toUpperCase());
+    this.nomsuplidorSubject.next(inputElement.value.toUpperCase());
   }
 
   codigoEntra(event: Event) {
@@ -386,23 +500,93 @@ export class entradamerc implements OnInit {
 
   guardarEntradamerc() {
     const date = new Date();
-
-    this.formularioEntradamerc.get('ct_valcoti')?.patchValue(this.totalGral);
-    this.formularioEntradamerc.get('ct_itbis')?.patchValue(this.totalItbis);
-    this.formularioEntradamerc.get('ct_codcoti')!.enable();
-    this.formularioEntradamerc.get('ct_feccoti')!.enable();
-    this.formularioEntradamerc.get('ct_nomvend')!.enable();
+    this.formularioEntradamerc.get('me_valentr')?.patchValue(this.totalGral);
+    this.formularioEntradamerc.get('me_itbis')?.patchValue(this.totalItbis);
+    this.formularioEntradamerc.get('me_codentr')!.enable();
+    this.formularioEntradamerc.get('me_fecentr')!.enable();
+    this.formularioEntradamerc.get('me_nomvend')!.enable();
     const payload = {
-      entradamerc.formularioEntradamerc.value,
+      cotizacion: this.formularioEntradamerc.value,
       detalle: this.items,
-      // idEntradamerc: this.formularioEntradamerc.get('ct_codcoti')?.value,
+      idEntradamerc: this.formularioEntradamerc.get('me_codentr')?.value,
+
     };
+    // if (this.formularioEntradamerc.valid) {
+    //   this.servicioEntradamerc.guardarEntradamerc(payload).subscribe(response => {
+    //     Swal.fire({
+    //       title: "Excelente!",
+    //       text: "Entradamerc creada correctamente.",
+    //       icon: "success",
+    //       timer: 1000,
+    //       showConfirmButton: false,
+    //     });
+    //     this.buscarTodasEntradamerc(1);
+    //     this.formularioEntradamerc.reset();
+    //     this.crearFormularioEntradamerc();
+    //     $('#modalcotizacion').modal('hide');
+    //   });
+    // } else {
+    //   console.log(this.formularioEntradamerc.value);
+    // }
 
-    console.log(payload);
-    this.servicioEntradamerc.guardarEntradamerc(payload).subscribe(response => {
-      console.log(response);
-    });
+    if (this.formularioEntradamerc.valid) {
+      if (this.modoedicionEntradamerc) {
+        this.servicioEntradamerc.editarEntradamerc(this.entradamercid, this.formularioEntradamerc.value).subscribe(response => {
+          Swal.fire({
+            title: "Excelente!",
+            text: "Entradamerc Editada correctamente.",
+            icon: "success",
+            timer: 5000,
+            showConfirmButton: false,
+          });
+          this.buscarTodasEntradamerc(1);
+          this.formularioEntradamerc.reset();
+          this.crearFormularioEntradamerc();
+          $('#modalentradamerc').modal('hide');
+        });
+      }
+      else {
+        // this.servicioEntradamerc.guardarEntradamerc(this.formularioEntradamerc.value).subscribe(response => {
+        //   Swal.fire
+        //     ({
+        //       title: "Entradamerc Guardada correctamente",
+        //       text: "Desea Crear una Sucursal SDFSSD",
+        //       icon: 'warning',
+        //       timer: 5000,
+        //       showConfirmButton: false,
+        //     });
+        //   this.buscarTodasEntradamerc(1);
+        //   this.formularioEntradamerc.reset();
+        //   this.crearFormularioEntradamerc();
+        //   this.formularioEntradamerc.enable();
+        //   $('#modalcotizacion').modal('hide');
+        // })
 
+        if (this.formularioEntradamerc.valid) {
+          this.servicioEntradamerc.guardarEntradamerc(payload).subscribe(response => {
+            Swal.fire({
+              title: "Excelente!",
+              text: "Entrada Mercancias creada correctamente.",
+              icon: "success",
+              timer: 1000,
+              showConfirmButton: false,
+            });
+            this.buscarTodasEntradamerc(1);
+            this.formularioEntradamerc.reset();
+            this.crearFormularioEntradamerc();
+          this.formularioEntradamerc.enable();
+            $('#modalentradamerc').modal('hide');
+          });
+        } else {
+          console.log(this.formularioEntradamerc.value);
+        }
+
+
+      }
+    }
+    else {
+      alert("Entrada no fue Guardado");
+    }
   }
 
   convertToUpperCase(event: Event): void {
@@ -422,6 +606,7 @@ export class entradamerc implements OnInit {
   }
 
   changePage(page: number) {
+
     this.currentPage = page;
     // Trigger a new search with the current codigo and descripcion
     const descripcion = this.descripcionBuscar.getValue();
@@ -430,7 +615,10 @@ export class entradamerc implements OnInit {
         this.entradamercList = response.data;
         this.totalItems = response.pagination.total;
         this.currentPage = page;
+        this.formularioEntradamerc.reset();
+
       });
+
   }
 
 
@@ -565,8 +753,8 @@ export class entradamerc implements OnInit {
 
   }
 
-  buscarClienteporNombre() {
-    this.servicioCliente.buscarporNombre(this.formularioEntradamerc.get("ct_nomclie")!.value).subscribe(response => {
+  buscarSuplidorporNombre() {
+    this.servicioSuplidor.buscarporNombre(this.formularioEntradamerc.get("me_nomsupl")!.value).subscribe(response => {
       console.log(response);
     });
   }
@@ -578,19 +766,19 @@ export class entradamerc implements OnInit {
     return `${day}/${month}/${year}`;
   }
 
-  cargarDatosCliente(cliente: ModeloClienteData) {
-    console.log(cliente);
+  cargarDatosSuplidor(suplidor: ModeloSuplidorData) {
     this.resultadoNombre = [];
     this.buscarNombre.reset();
-    this.formularioEntradamerc.patchValue({
-      ct_codclie: cliente.cl_codClie,
-      ct_nomclie: cliente.cl_nomClie,
-      ct_rnc: cliente.cl_rnc,
-      ct_telclie: cliente.cl_telClie,
-      ct_dirclie: cliente.cl_dirClie,
-      ct_codzona: cliente.cl_codZona,
+    if (suplidor.su_nomSupl !==""){
+      console.log("dd")
+      this.formularioEntradamerc.patchValue({
+        me_codEntr: suplidor.su_codSupl,
+        me_nomclie: suplidor.su_nomSupl,
+        me_rncSupl: suplidor.su_rncSupl,
 
-    });
+      });
+    }
+
   }
 
   handleKeydown(event: KeyboardEvent): void {
@@ -598,6 +786,8 @@ export class entradamerc implements OnInit {
     const maxIndex = this.resultadoNombre.length - 1;  // Ajustamos el límite máximo
 
     if (key === 'ArrowDown') {
+      console.log("paso 56");
+
       // Mueve la selección hacia abajo
       if (this.selectedIndex < maxIndex) {
         this.selectedIndex++;
@@ -606,6 +796,8 @@ export class entradamerc implements OnInit {
       }
       event.preventDefault();
     } else if (key === 'ArrowUp') {
+      console.log("paso 677");
+
       // Mueve la selección hacia arriba
       if (this.selectedIndex > 0) {
         this.selectedIndex--;
@@ -616,12 +808,32 @@ export class entradamerc implements OnInit {
     } else if (key === 'Enter') {
       // Selecciona el ítem actual
       if (this.selectedIndex >= 0 && this.selectedIndex <= maxIndex) {
-        this.cargarDatosCliente(this.resultadoNombre[this.selectedIndex]);
+        this.cargarDatosSuplidor(this.resultadoNombre[this.selectedIndex]);
       }
       event.preventDefault();
     }
   }
 
+  // handleKeydown(event: KeyboardEvent): void {
+  //   const key = event.key;
+  //   const maxIndex = this.resultadoNombre.length;
+
+  //   if (key === 'ArrowDown') {
+  //     // Mueve la selección hacia abajo
+  //     this.selectedIndex = this.selectedIndex < maxIndex ? this.selectedIndex + 1 : 0;
+  //     event.preventDefault();
+  //   } else if (key === 'ArrowUp') {
+  //     // Mueve la selección hacia arriba
+  //     this.selectedIndex = this.selectedIndex > 0 ? this.selectedIndex - 1 : maxIndex;
+  //     event.preventDefault();
+  //   } else if (key === 'Enter') {
+  //     // Selecciona el ítem actual
+  //     if (this.selectedIndex >= 0 && this.selectedIndex <= maxIndex) {
+  //       this.cargarDatosCliente(this.resultadoNombre[this.selectedIndex]);
+  //     }
+  //     event.preventDefault();
+  //   }
+  // }
 
   cancelarBusquedaDescripcion: boolean = false;
   cancelarBusquedaCodigo: boolean = false;
@@ -630,19 +842,19 @@ export class entradamerc implements OnInit {
     console.log(inventario);
     this.resultadoCodmerc = [];
     this.resultadodescripcionmerc = [];
-    //this.buscarcodmerc.reset();
     this.codmerc = inventario.in_codmerc;
+    this.preciomerc = inventario.in_premerc
     this.descripcionmerc = inventario.in_desmerc;
     this.productoselect = inventario;
     this.cancelarBusquedaDescripcion = true;
     this.cancelarBusquedaCodigo = true;
     this.formularioEntradamerc.patchValue({
-      dc_codmerc: inventario.in_codmerc,
-      dc_desmerc: inventario.in_desmerc,
-      dc_canmerc: inventario.in_canmerc,
-      dc_premerc: inventario.in_premerc,
-      dc_cosmerc: inventario.in_cosmerc,
-      dc_unidad: inventario.in_unidad,
+      de_codmerc: inventario.in_codmerc,
+      de_desmerc: inventario.in_desmerc,
+      de_canmerc: inventario.in_canmerc,
+      de_premerc: inventario.in_premerc,
+      de_cosmerc: inventario.in_cosmerc,
+      de_unidad: inventario.in_unidad,
     });
     $("#input8").focus();
     $("#input8").select();
@@ -652,11 +864,13 @@ export class entradamerc implements OnInit {
     const key = event.key;
     const maxIndex = this.resultadoCodmerc.length;
     if (key === 'ArrowDown') {
+      console.log("paso");
       this.selectedIndexcodmerc = this.selectedIndexcodmerc < maxIndex ? this.selectedIndexcodmerc + 1 : 0;
       event.preventDefault();
     }
     else
       if (key === 'ArrowUp') {
+        console.log("paso2");
         this.selectedIndexcodmerc = this.selectedIndexcodmerc > 0 ? this.selectedIndexcodmerc - 1 : maxIndex;
         event.preventDefault();
       }
@@ -876,7 +1090,7 @@ export class entradamerc implements OnInit {
     }
   }
 
-  moveFocusnomclie(event: Event, nextInput: HTMLInputElement) {
+  moveFocusnomsupl(event: Event, nextInput: HTMLInputElement) {
     event.preventDefault();
     console.log(nextInput);
     if (event.target instanceof HTMLInputElement) {
@@ -906,6 +1120,7 @@ export class entradamerc implements OnInit {
     }
   }
 
+
 }
 
 
@@ -913,5 +1128,9 @@ export class entradamerc implements OnInit {
 
 function then(arg0: () => void) {
   throw new Error('Function not implemented.');
+
+
+
+
 }
 

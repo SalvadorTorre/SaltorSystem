@@ -7,7 +7,7 @@
           style="height: 50px; background-color: #ef1008"
         >
           <h4 class="card-title" style="color: white; text-align: center">
-            Entrada de Mercancias
+            Entrada de Productos
           </h4>
         </div>
         <div class="card-body" style="background-color: #fcfdfd">
@@ -23,7 +23,7 @@
               />
             </div>
             <div class="col-5">
-              <label for="">Nombre Suplidor</label>
+              <label for="">Suplidor</label>
               <input
                 [(ngModel)]="txtdescripcion"
                 type="text"
@@ -34,7 +34,7 @@
               />
             </div>
             <div class="col-2">
-              <label for="">Fecha Cot.</label>
+              <label for="">Fecha Entrad</label>
               <input
                 type="date"
                 class="form-control form-control-sm"
@@ -48,7 +48,7 @@
               </button>
             </div>
             <div class="col-2">
-              <button class="btn btn-primary mt-4" (click)="nuevaCotizacion()">
+              <button class="btn btn-primary mt-4" (click)="nuevaEntradamerc()">
                 Nueva Entrada
               </button>
             </div>
@@ -70,29 +70,29 @@
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let entradamerc of EntramaercList">
-                  <td style="width: 10%">{{cotizacion.ct_codcoti}}</td>
-                  <td style="width: 45%">{{cotizacion.ct_nomclie}}</td>
+                <tr *ngFor="let entradamerc of entradamercList">
+                  <td style="width: 10%">{{entradamerc.me_codEntr}}</td>
+                  <td style="width: 45%">{{entradamerc.me_nomSupl}}</td>
                   <td class="text-center" style="width: 10%">
-                    {{cotizacion.ct_feccoti}}
+                    {{entradamerc.me_fecEntr}}
                   </td>
                   <td class="text-end" tyle="width: 12%">
-                    {{cotizacion.ct_valcoti}}
+                    {{entradamerc.me_valEntr}}
                   </td>
                   <td>
                     <i
-                      (click)="editarCotizacion(cotizacion)"
+                      (click)="editarEntradamerc(entradamerc)"
                       class="bi bi-pencil text-primary"
                       style="padding: 10px"
-                    >
-                    </i>
+                    ></i>
+
                     <i
                       class="bi bi-trash text-danger"
                       style="padding: 10px"
-                      (click)="eliminarCotizacion(cotizacion.ct_codcoti)"
+                      (click)="eliminarEntradamerc(entradamerc.me_codEntr)"
                     ></i>
                     <i
-                      (click)="consultarCotizacion(cotizacion)"
+                      (click)="consultarEntradamerc(entradamerc)"
                       class="bi bi-card-list text-success"
                       style="padding: 10px"
                     >
@@ -173,7 +173,7 @@
   class="modal fade"
   id="modalcotizacion"
   tabindex="-1"
-  aria-labelledby="tituloModalCotizacion"
+  aria-labelledby="tituloModalEntrdamerc"
   aria-hidden="true"
   data-bs-backdrop="static"
   data-bs-keyboard="false"
@@ -184,8 +184,8 @@
   >
     <div class="modal-content">
       <div class="modal-header" style="height: 10px">
-        <h1 class="modal-title fs-5" id="tituloModalCotizacion">
-          {{tituloModalCotizacion}}
+        <h1 class="modal-title fs-5" id="tituloModalEntradamerc">
+          {{tituloModalEntradamerc}}
         </h1>
         <button
           type="button"
@@ -197,9 +197,9 @@
       </div>
       <div class="modal-body">
         <form
-          [formGroup]="formularioCotizacion"
+          [formGroup]="formularioEntradamerc"
           class="custom-form-background"
-          (ngSubmit)="guardarCotizacion()"
+          (ngSubmit)="guardarEntradamerc()"
         >
           <div class="row">
             <div class="col-8">
@@ -254,7 +254,7 @@
 
                   <div class="mb-1 row mt-1">
                     <div class="col-2">
-                      <label for=" ">Nombre</label>
+                      <label for=" ">Suplidor</label>
                     </div>
                     <div class="col-10">
                       <div class="input-group show">
@@ -264,12 +264,12 @@
                           type="text"
                           autocomplete="off"
                           (input)="convertToUpperCase($event)"
-                          (keydown.enter)="moveFocusnomclie($event, input3)"
+                          (keydown.enter)="moveFocusnomsupl($event, input3)"
                           (keydown)="handleKeydown($event)"
                           #input2
                           id="input2"
                           [formControl]="buscarNombre"
-                          formControlName="ct_nomclie"
+                          formControlName="me_nomSupl"
                         />
                         <div
                           [ngClass]="{ 'show': resultadoNombre.length > 0 }"
@@ -289,7 +289,7 @@
                             [class.active]="i === selectedIndex"
                           >
                             <a
-                              (click)="cargarDatosCliente(result)"
+                              (click)="cargarDatosSuplidor(result)"
                               style="
                                 color: #222222 !important;
                                 font-size: 10pt;
@@ -300,7 +300,7 @@
                               class="px-3 cp"
                             >
                               <i class="far fa-user-circle mr-5"></i
-                              >&nbsp;&nbsp;{{ result.cl_nomClie }}
+                              >&nbsp;&nbsp;{{ result.me_nomSupl }}
                             </a>
                           </div>
                         </div>
@@ -329,7 +329,6 @@
                     <div class="col-4">
                       <input
                         type="tel"
-                        appPhoneNumberMask
                         formControlName="ct_telclie"
                         (keydown)="moveFocus($event, input5)"
                         #input4
@@ -340,6 +339,7 @@
                 </div>
               </div>
             </div>
+
             <div class="col-4">
               <div
                 class="card"
@@ -361,12 +361,12 @@
                 >
                   <div class="mb-1 row mt-1">
                     <div class="col-5">
-                      <label for="">No. Cotizacion</label>
+                      <label for="">No. Entrada</label>
                     </div>
                     <div class="col-6">
                       <input
                         type="text"
-                        formControlName="ct_codcoti"
+                        formControlName="me_codEntr"
                         class="form-control form-control-sm"
                       />
                     </div>
@@ -377,7 +377,7 @@
                     </div>
                     <div class="col-6">
                       <input
-                        formControlName="ct_feccoti"
+                        formControlName="me_fecEntr"
                         type="text"
                         class="form-control form-control-sm"
                       />
@@ -385,7 +385,7 @@
                   </div>
                   <div class="mb-1 row">
                     <div class="col-5">
-                      <label for="">Vendedor</label>
+                      <label for="">Usuario</label>
                     </div>
                     <div class="col-6">
                       <input
@@ -393,12 +393,12 @@
                         (input)="convertToUpperCase($event)"
                         (keydown)="moveFocus($event, input6)"
                         (keydown.enter)="buscarUsuario($event, input6)"
-                        formControlName="ct_codvend"
+                        formControlName="me_codvend"
                         #input5
                         class="form-control form-control-sm"
                       />
                       <div
-                        *ngIf="formularioCotizacion.get('ct_codvend')?.touched && formularioCotizacion.get('ct_codvend')?.invalid"
+                        *ngIf="formularioEntradamerc.get('me_codvend')?.touched && formularioEntradamerc.get('me_codvend')?.invalid"
                       >
                         <small class="text-danger"
                           >Este campo es obligatorio.</small
@@ -408,12 +408,12 @@
                   </div>
                   <div class="mb-1 row">
                     <div class="col-5">
-                      <label for="">Nombre Vend.</label>
+                      <label for="">Nomb. Usuario.</label>
                     </div>
                     <div class="col-6">
                       <input
                         type="text"
-                        formControlName="ct_nomvend"
+                        formControlName="me_nomvend"
                         #input5
                         class="form-control form-control-sm"
                       />
