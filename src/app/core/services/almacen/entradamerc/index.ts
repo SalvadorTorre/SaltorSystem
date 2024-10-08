@@ -7,10 +7,10 @@ export interface EntradamercModel {
 
 export interface EntradamercModelData {
     me_codentr: string;
-    me_feccentr: string;
+    me_fecentr: string;
     me_valentr: number;
     me_codsupl: string;
-    me_nomsup: string;
+    me_nomsupl: string;
     me_rnc: number;
     me_telsupl: string;
     me_dirsupl: string;

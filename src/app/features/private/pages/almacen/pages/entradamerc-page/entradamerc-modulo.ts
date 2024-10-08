@@ -1,11 +1,10 @@
-import { RutaAlmacen } from './../../almacen-ruta';
-
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { CommonModule } from '@angular/common';
 import { Entradamerc } from './entradamerc';
-import { RutaEntradamerc } from './entradamerc-ruta.ts';
+import { RutaEntradamerc } from './entradamerc-ruta';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+
 
 @NgModule({
   declarations: [
