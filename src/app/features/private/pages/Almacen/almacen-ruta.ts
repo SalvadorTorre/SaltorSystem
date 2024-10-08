@@ -23,9 +23,8 @@ const routes: Routes = [
         //   path:"Control Factura",
         //   loadChildren: () => import('./pages/inventario-page/inventario-modulo').then(m => m.ModuloInventario)
         // },
-
         {
-          path:"Entrda Mercancias",
+          path:"entradamerc",
           loadChildren: () => import('./pages/entradamerc-page/entradamerc-modulo').then(m => m.ModuloEntradamerc)
         },
 

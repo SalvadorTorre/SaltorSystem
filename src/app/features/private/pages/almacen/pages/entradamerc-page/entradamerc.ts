@@ -266,12 +266,12 @@ export class Entradamerc implements OnInit {
 
   nuevaEntradamerc() {
     this.modoedicionEntradamerc = false;
-    this.tituloModalEntradamerc = 'Nueva Entradamerc';
+    this.tituloModalEntradamerc = 'Nueva Entrada Mercancias';
     $('#modalentradamerc').modal('show');
     this.habilitarFormulario = true;
-    this.formularioEntradamerc.get('ct_codcoti')!.disable();
-    this.formularioEntradamerc.get('ct_feccoti')!.disable();
-    this.formularioEntradamerc.get('ct_nomvend')!.disable();
+    this.formularioEntradamerc.get('me_codEntr')!.disable();
+    this.formularioEntradamerc.get('me_fecEntr')!.disable();
+    this.formularioEntradamerc.get('me_nomVend')!.disable();
     setTimeout(() => {
       $('#input1').focus();
     }, 500); // Asegúrate de que el tiempo sea suficiente para que el modal se abra completamente
@@ -772,8 +772,8 @@ export class Entradamerc implements OnInit {
     if (suplidor.su_nomSupl !==""){
       console.log("dd")
       this.formularioEntradamerc.patchValue({
-        me_codEntr: suplidor.su_codSupl,
-        me_nomclie: suplidor.su_nomSupl,
+        me_codSupl: suplidor.su_codSupl,
+        me_nomSupl: suplidor.su_nomSupl,
         me_rncSupl: suplidor.su_rncSupl,
 
       });
@@ -914,12 +914,15 @@ export class Entradamerc implements OnInit {
 
   buscarUsuario(event: Event, nextElement: HTMLInputElement | null): void {
     event.preventDefault();
-    const claveUsuario = this.formularioEntradamerc.get('ct_codvend')?.value;
-    if (claveUsuario) {
-      this.ServicioUsuario.buscarUsuarioPorClave(claveUsuario).subscribe(
+    const claveUsuario = this.formularioEntradamerc.get('me_codVend')?.value;
+    console.log(this.formularioEntradamerc.get('me_codVend')?.value)
+    console.log(claveUsuario)
+     if (claveUsuario) {
+      console.log("A1")
+        this.ServicioUsuario.buscarUsuarioPorClave(claveUsuario).subscribe(
         (usuario) => {
           if (usuario.data.length) {
-            this.formularioEntradamerc.patchValue({ ct_nomvend: usuario.data[0].idUsuario });
+            this.formularioEntradamerc.patchValue({ me_nomVend: usuario.data[0].idUsuario });
             nextElement?.focus()
             console.log(usuario.data[0].idUsuario);
           } else {

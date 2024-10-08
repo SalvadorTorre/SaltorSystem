@@ -171,7 +171,7 @@
 
 <div
   class="modal fade"
-  id="modalcotizacion"
+  id="modalentradamerc"
   tabindex="-1"
   aria-labelledby="tituloModalEntrdamerc"
   aria-hidden="true"
@@ -183,7 +183,10 @@
     style="margin: 2px auto"
   >
     <div class="modal-content">
-      <div class="modal-header" style="height: 10px">
+      <div
+        class="modal-header"
+        style="background-color: #02182f; color: white; height: 10px"
+      >
         <h1 class="modal-title fs-5" id="tituloModalEntradamerc">
           {{tituloModalEntradamerc}}
         </h1>
@@ -231,27 +234,6 @@
                     </div>
                   </div>
 
-                  <!--*****************************************************-->
-                  <div class="mb-1 row MT-1">
-                    <div class="col-2">
-                      <label for="">Rnc</label>
-                    </div>
-                    <div class="col-4">
-                      <input
-                        type="text"
-                        #input1
-                        id="input1"
-                        (keydown.enter)="buscarRnc($event,input2)"
-                        formControlName="ct_rnc"
-                        class="form-control form-control-sm"
-                      />
-                      <!--<div
-                        *ngIf="formularioCotizacion.get('ct_rnc')?.touched && formularioCotizacion.get('ct_rnc')?.invalid"
-                      ></div> -->
-                    </div>
-                  </div>
-                  <!--********************************************************-->
-
                   <div class="mb-1 row mt-1">
                     <div class="col-2">
                       <label for=" ">Suplidor</label>
@@ -259,15 +241,15 @@
                     <div class="col-10">
                       <div class="input-group show">
                         <input
-                          class="form-control dropdown-toggle searchInput"
+                          class="form-control form-control-sm dropdown-toggle searchInput"
                           data-id="agent"
                           type="text"
                           autocomplete="off"
                           (input)="convertToUpperCase($event)"
-                          (keydown.enter)="moveFocusnomsupl($event, input3)"
+                          (keydown.enter)="moveFocusnomsupl($event, input2)"
                           (keydown)="handleKeydown($event)"
-                          #input2
-                          id="input2"
+                          #input1
+                          id="input1"
                           [formControl]="buscarNombre"
                           formControlName="me_nomSupl"
                         />
@@ -309,12 +291,26 @@
                   </div>
                   <div class="mb-1 row mt-1">
                     <div class="col-2">
-                      <label for="">Dirección</label>
+                      <label for="">No. Factura</label>
                     </div>
-                    <div class="col-10">
+
+                    <div class="col-4">
                       <input
                         type="text"
                         formControlName="ct_dirclie"
+                        (input)="convertToUpperCase($event)"
+                        (keydown)="moveFocus($event, input3)"
+                        #input2
+                        class="form-control form-control-sm"
+                      />
+                    </div>
+                    <div class="col-2">
+                      <label for="">Fecha Fact.</label>
+                    </div>
+                    <div class="col-4">
+                      <input
+                        type="text"
+                        formControlName="me_facsupl"
                         (input)="convertToUpperCase($event)"
                         (keydown)="moveFocus($event, input4)"
                         #input3
@@ -324,14 +320,40 @@
                   </div>
                   <div class="mb-1 row mt-1">
                     <div class="col-2">
-                      <label for="">Telefono</label>
+                      <label for="">Recibido</label>
                     </div>
                     <div class="col-4">
                       <input
-                        type="tel"
-                        formControlName="ct_telclie"
+                        type="text"
+                        formControlName="despachado"
                         (keydown)="moveFocus($event, input5)"
                         #input4
+                        class="form-control form-control-sm"
+                      />
+                    </div>
+                    <div class="col-2">
+                      <label for="">Chofer</label>
+                    </div>
+                    <div class="col-4">
+                      <input
+                        type="text"
+                        formControlName="despachado"
+                        (keydown)="moveFocus($event, input6)"
+                        #input5
+                        class="form-control form-control-sm"
+                      />
+                    </div>
+                  </div>
+                  <div class="mb-1 row mt-1">
+                    <div class="col-2">
+                      <label for="">Vendedor</label>
+                    </div>
+                    <div class="col-4">
+                      <input
+                        type="text"
+                        formControlName="despachado"
+                        (keydown)="moveFocus($event, input7)"
+                        #input6
                         class="form-control form-control-sm"
                       />
                     </div>
@@ -391,14 +413,14 @@
                       <input
                         type="password"
                         (input)="convertToUpperCase($event)"
-                        (keydown)="moveFocus($event, input6)"
+                        (keydown)="moveFocus($event, input8)"
                         (keydown.enter)="buscarUsuario($event, input6)"
-                        formControlName="me_codvend"
-                        #input5
+                        formControlName="me_codVend"
+                        #input7
                         class="form-control form-control-sm"
                       />
                       <div
-                        *ngIf="formularioEntradamerc.get('me_codvend')?.touched && formularioEntradamerc.get('me_codvend')?.invalid"
+                        *ngIf="formularioEntradamerc.get('me_codVend')?.touched && formularioEntradamerc.get('me_codVend')?.invalid"
                       >
                         <small class="text-danger"
                           >Este campo es obligatorio.</small
@@ -413,7 +435,7 @@
                     <div class="col-6">
                       <input
                         type="text"
-                        formControlName="me_nomvend"
+                        formControlName="me_nomVend"
                         #input5
                         class="form-control form-control-sm"
                       />
@@ -430,7 +452,7 @@
                 <label for="">Código</label>
                 <div class="input-group show">
                   <input
-                    class="form-control dropdown-toggle searchInput me-2"
+                    class="form-control form-control-sm dropdown-toggle searchInput me-2"
                     data-id="agent"
                     type="text"
                     [disabled]="!habilitarCampos"
@@ -438,8 +460,8 @@
                     autocomplete="off"
                     (input)="convertToUpperCase($event)"
                     (keydown)="handleKeydownInventario($event)"
-                    (keydown)="moveFocuscodmerc($event, input7)"
-                    #input6
+                    (keydown)="moveFocuscodmerc($event, input9)"
+                    #input8
                     [formControl]="buscarcodmerc"
                     [(ngModel)]="codmerc"
                     name="codmerc"
@@ -485,18 +507,19 @@
                 <label for="">Descripción</label>
                 <div class="input-group show">
                   <input
-                    class="form-control dropdown-toggle searchInput me-2"
+                    class="form-control form-control-sm dropdown-toggle searchInput me-2"
                     data-id="agent"
                     type="text"
                     [disabled]="habilitarCampos"
                     #descripcionInput
                     autocomplete="off"
                     (input)="convertToUpperCase($event)"
-                    (keydown)="moveFocusdesc($event, input8)"
+                    (keydown)="moveFocusdesc($event, input10)"
                     (keydown)="handleKeydownInventariosdesc($event)"
-                    #input7
+                    #input9
                     [formControl]="buscardescripcionmerc"
                     [(ngModel)]="descripcionmerc"
+                    placeholder="Descripcion"
                   />
                   <div
                     [ngClass]="{ 'show': resultadodescripcionmerc.length > 0 }"
@@ -539,11 +562,11 @@
                   type="number"
                   placeholder="Cantidad"
                   [(ngModel)]="cantidadmerc"
-                  #input8
-                  id="input8"
+                  #input10
+                  id="input10"
                   [formControl]="cantidadform"
-                  (keydown)="moveFocusCantidad($event, input9)"
-                  class="form-control"
+                  (keydown)="moveFocusCantidad($event, input11)"
+                  class="form-control form-control-sm"
                 />
               </div>
               <div class="col-2">
@@ -553,9 +576,9 @@
                   [(ngModel)]="preciomerc"
                   [formControl]="precioform"
                   id="input9"
-                  #input9
-                  (keydown)="moveFocus($event, input6)"
-                  class="form-control"
+                  #input11
+                  (keydown)="moveFocus($event, input8)"
+                  class="form-control form-control-sm"
                   (keydown.enter)="agregaItem($event)"
                 />
               </div>
