@@ -28,7 +28,7 @@ export class Entradamerc implements OnInit {
   @ViewChild('inputCodmerc') inputCodmerc!: ElementRef; // Para manejar el foco
   @ViewChild('descripcionInput') descripcionInput!: ElementRef; // Para manejar el foco
   @ViewChild('Tabladetalle') Tabladetalle!: ElementRef;
-   totalItems = 0;
+  totalItems = 0;
   pageSize = 12;
   currentPage = 1;
   maxPagesToShow = 5;
@@ -74,7 +74,7 @@ export class Entradamerc implements OnInit {
   habilitarCampos: boolean = false;
   sucursales = [];
   sucursalSeleccionada: any = null;
-  habilitarIcono: boolean = true ;
+  habilitarIcono: boolean = true;
 
 
   private codigoSubject = new BehaviorSubject<string>('');
@@ -245,7 +245,7 @@ export class Entradamerc implements OnInit {
     this.formularioEntradamerc = this.fb.group({
       me_codEntr: [''],
       me_fecEntr: [fechaActualStr],
-      me_valentr: [''],
+      me_valEntr: [''],
       me_codSupl: [''],
       me_nomSupl: [''],
       me_rncSupl: [0],
@@ -254,7 +254,7 @@ export class Entradamerc implements OnInit {
       me_status: [''],
       me_nota: [''],
       me_chofer: [''],
-      me_vendedro: [''],
+      me_vendedor: [''],
       me_despachado: [''],
     });
 
@@ -288,7 +288,7 @@ export class Entradamerc implements OnInit {
     this.buscarTodasEntradamerc(1);
     this.limpiarTabla()
     this.limpiarCampos()
-    this.habilitarIcono= true;
+    this.habilitarIcono = true;
     const inputs = document.querySelectorAll('.seccion-productos input');
     inputs.forEach((input) => {
       (input as HTMLInputElement).disabled = false;
@@ -356,9 +356,9 @@ export class Entradamerc implements OnInit {
         // Calcular el subtotal
         subtotal += totalItem;
         // Calcular ITBIS solo si el producto tiene ITBIS
-       // if (item.dc_itbis) {
-          this.totalItbis += totalItem * itbisRate;
-       // }
+        // if (item.dc_itbis) {
+        this.totalItbis += totalItem * itbisRate;
+        // }
       });
       // Calcular el total general (subtotal + ITBIS)
       totalGeneral = subtotal + this.totalItbis;
@@ -367,7 +367,7 @@ export class Entradamerc implements OnInit {
       this.totalItbis = this.totalItbis;
       this.totalGral = totalGeneral;
     });
-}
+  }
 
   buscarTodasEntradamerc(page: number) {
     this.servicioEntradamerc.buscarTodasEntradamerc(page, this.pageSize).subscribe(response => {
@@ -382,7 +382,7 @@ export class Entradamerc implements OnInit {
     $('#modalentradamerc').modal('show');
     this.habilitarFormulario = true;
     this.formularioEntradamerc.disable();
-    this.habilitarIcono= false;
+    this.habilitarIcono = false;
 
     const inputs = document.querySelectorAll('.seccion-productos input');
     inputs.forEach((input) => {
@@ -442,9 +442,9 @@ export class Entradamerc implements OnInit {
         subtotal += totalItem;
 
         // Calcular ITBIS solo si el producto tiene ITBIS
-       // if (item.dc_itbis) {
-          this.totalItbis += totalItem * itbisRate;
-       // }
+        // if (item.dc_itbis) {
+        this.totalItbis += totalItem * itbisRate;
+        // }
       });
 
       // Calcular el total general (subtotal + ITBIS)
@@ -455,7 +455,7 @@ export class Entradamerc implements OnInit {
       this.totalItbis = this.totalItbis;
       this.totalGral = totalGeneral;
     });
-}
+  }
 
   eliminarEntradamerc(EntradamercId: string) {
     Swal.fire({
@@ -512,6 +512,8 @@ export class Entradamerc implements OnInit {
 
     };
 
+    console.log(payload);
+
     if (this.formularioEntradamerc.valid) {
       if (this.modoedicionEntradamerc) {
         this.servicioEntradamerc.editarEntradamerc(this.entradamercid, this.formularioEntradamerc.value).subscribe(response => {
@@ -542,7 +544,7 @@ export class Entradamerc implements OnInit {
             this.buscarTodasEntradamerc(1);
             this.formularioEntradamerc.reset();
             this.crearFormularioEntradamerc();
-          this.formularioEntradamerc.enable();
+            this.formularioEntradamerc.enable();
             $('#modalentradamerc').modal('hide');
           });
         } else {
@@ -558,7 +560,7 @@ export class Entradamerc implements OnInit {
   }
 
   convertToUpperCase(event: Event): void {
-     const input = event.target as HTMLInputElement;
+    const input = event.target as HTMLInputElement;
     const start = input.selectionStart;
     const end = input.selectionEnd;
     input.value = input.value.toUpperCase();
@@ -737,7 +739,7 @@ export class Entradamerc implements OnInit {
   cargarDatosSuplidor(suplidor: ModeloSuplidorData) {
     this.resultadoNombre = [];
     this.buscarNombre.reset();
-    if (suplidor.su_nomSupl !==""){
+    if (suplidor.su_nomSupl !== "") {
       console.log("dd")
       this.formularioEntradamerc.patchValue({
         me_codSupl: suplidor.su_codSupl,
@@ -864,9 +866,9 @@ export class Entradamerc implements OnInit {
     const claveUsuario = this.formularioEntradamerc.get('me_codVend')?.value;
     console.log(this.formularioEntradamerc.get('me_codVend')?.value)
     console.log(claveUsuario)
-     if (claveUsuario) {
+    if (claveUsuario) {
       console.log("A1")
-        this.ServicioUsuario.buscarUsuarioPorClave(claveUsuario).subscribe(
+      this.ServicioUsuario.buscarUsuarioPorClave(claveUsuario).subscribe(
         (usuario) => {
           if (usuario.data.length) {
             this.formularioEntradamerc.patchValue({ me_nomVend: usuario.data[0].idUsuario });
