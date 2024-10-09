@@ -539,12 +539,13 @@
                   type="number"
                   placeholder="Cantidad"
                   [(ngModel)]="cantidadmerc"
-                  #input8
-                  id="input8"
                   [formControl]="cantidadform"
+                  id="input8"
+                  #input8
                   (keydown)="moveFocusCantidad($event, input9)"
                   class="form-control"
                 />
+                console.log()
               </div>
               <div class="col-2">
                 <label for="">Precio</label>

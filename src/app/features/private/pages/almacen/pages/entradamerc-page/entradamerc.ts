@@ -248,7 +248,7 @@ export class Entradamerc implements OnInit {
       me_valentr: [''],
       me_codSupl: [''],
       me_nomSupl: [''],
-      me_rncSupl: [''],
+      me_rncSupl: [0],
       me_codVend: ['', Validators.required],
       me_nomVend: [''],
       me_status: [''],
@@ -506,12 +506,12 @@ export class Entradamerc implements OnInit {
     this.formularioEntradamerc.get('me_fecEntr')!.enable();
     this.formularioEntradamerc.get('me_nomVend')!.enable();
     const payload = {
-      cotizacion: this.formularioEntradamerc.value,
+      entradamercancias: this.formularioEntradamerc.value,
       detalle: this.items,
       idEntradamerc: this.formularioEntradamerc.get('me_codEntr')?.value,
 
     };
-    
+
     if (this.formularioEntradamerc.valid) {
       if (this.modoedicionEntradamerc) {
         this.servicioEntradamerc.editarEntradamerc(this.entradamercid, this.formularioEntradamerc.value).subscribe(response => {
@@ -529,7 +529,7 @@ export class Entradamerc implements OnInit {
         });
       }
       else {
-    
+
         if (this.formularioEntradamerc.valid) {
           this.servicioEntradamerc.guardarEntradamerc(payload).subscribe(response => {
             Swal.fire({
@@ -558,7 +558,7 @@ export class Entradamerc implements OnInit {
   }
 
   convertToUpperCase(event: Event): void {
-    const input = event.target as HTMLInputElement;
+     const input = event.target as HTMLInputElement;
     const start = input.selectionStart;
     const end = input.selectionEnd;
     input.value = input.value.toUpperCase();
@@ -969,9 +969,10 @@ export class Entradamerc implements OnInit {
         if (this.codmerVacio === true) {
           nextInput.focus();
           this.codmerVacio = false;
-          console.log("vedadero");
+          console.log("Vasio true");
         }
         else {
+          console.log("vacio false ");
           $("#input8").focus();
           $("#input8").select();
         }
