@@ -297,7 +297,7 @@
                     <div class="col-4">
                       <input
                         type="text"
-                        formControlName="ct_dirclie"
+                        formControlName="me_facsupl"
                         (input)="convertToUpperCase($event)"
                         (keydown)="moveFocus($event, input3)"
                         #input2
@@ -351,7 +351,7 @@
                     <div class="col-4">
                       <input
                         type="text"
-                        formControlName="despachado"
+                        formControlName="vendedor"
                         (keydown)="moveFocus($event, input7)"
                         #input6
                         class="form-control form-control-sm"
@@ -414,7 +414,7 @@
                         type="password"
                         (input)="convertToUpperCase($event)"
                         (keydown)="moveFocus($event, input8)"
-                        (keydown.enter)="buscarUsuario($event, input6)"
+                        (keydown.enter)="buscarUsuario($event, input8)"
                         formControlName="me_codVend"
                         #input7
                         class="form-control form-control-sm"

@@ -400,8 +400,8 @@ export class Entradamerc implements OnInit {
 
       response.data.forEach((item: any) => {
         const producto: ModeloInventarioData = {
-          in_codmerc: item.dc_codmerc,
-          in_desmerc: item.dc_descrip,
+          in_codmerc: item.de_codEntr,
+          in_desmerc: item.de_descrip,
           in_grumerc: '',
           in_tipoproduct: '',
           in_canmerc: 0,
@@ -427,8 +427,8 @@ export class Entradamerc implements OnInit {
           in_minvent: 0,
         };
 
-        const cantidad = item.dc_canmerc;
-        const precio = item.dc_premerc;
+        const cantidad = item.de_canmerc;
+        const precio = item.de_premerc;
         const totalItem = cantidad * precio;
 
         this.items.push({
@@ -500,35 +500,18 @@ export class Entradamerc implements OnInit {
 
   guardarEntradamerc() {
     const date = new Date();
-    this.formularioEntradamerc.get('me_valentr')?.patchValue(this.totalGral);
+    this.formularioEntradamerc.get('me_valEntr')?.patchValue(this.totalGral);
     this.formularioEntradamerc.get('me_itbis')?.patchValue(this.totalItbis);
-    this.formularioEntradamerc.get('me_codentr')!.enable();
-    this.formularioEntradamerc.get('me_fecentr')!.enable();
-    this.formularioEntradamerc.get('me_nomvend')!.enable();
+    this.formularioEntradamerc.get('me_codEntr')!.enable();
+    this.formularioEntradamerc.get('me_fecEntr')!.enable();
+    this.formularioEntradamerc.get('me_nomVend')!.enable();
     const payload = {
       cotizacion: this.formularioEntradamerc.value,
       detalle: this.items,
-      idEntradamerc: this.formularioEntradamerc.get('me_codentr')?.value,
+      idEntradamerc: this.formularioEntradamerc.get('me_codEntr')?.value,
 
     };
-    // if (this.formularioEntradamerc.valid) {
-    //   this.servicioEntradamerc.guardarEntradamerc(payload).subscribe(response => {
-    //     Swal.fire({
-    //       title: "Excelente!",
-    //       text: "Entradamerc creada correctamente.",
-    //       icon: "success",
-    //       timer: 1000,
-    //       showConfirmButton: false,
-    //     });
-    //     this.buscarTodasEntradamerc(1);
-    //     this.formularioEntradamerc.reset();
-    //     this.crearFormularioEntradamerc();
-    //     $('#modalcotizacion').modal('hide');
-    //   });
-    // } else {
-    //   console.log(this.formularioEntradamerc.value);
-    // }
-
+    
     if (this.formularioEntradamerc.valid) {
       if (this.modoedicionEntradamerc) {
         this.servicioEntradamerc.editarEntradamerc(this.entradamercid, this.formularioEntradamerc.value).subscribe(response => {
@@ -546,22 +529,7 @@ export class Entradamerc implements OnInit {
         });
       }
       else {
-        // this.servicioEntradamerc.guardarEntradamerc(this.formularioEntradamerc.value).subscribe(response => {
-        //   Swal.fire
-        //     ({
-        //       title: "Entradamerc Guardada correctamente",
-        //       text: "Desea Crear una Sucursal SDFSSD",
-        //       icon: 'warning',
-        //       timer: 5000,
-        //       showConfirmButton: false,
-        //     });
-        //   this.buscarTodasEntradamerc(1);
-        //   this.formularioEntradamerc.reset();
-        //   this.crearFormularioEntradamerc();
-        //   this.formularioEntradamerc.enable();
-        //   $('#modalcotizacion').modal('hide');
-        // })
-
+    
         if (this.formularioEntradamerc.valid) {
           this.servicioEntradamerc.guardarEntradamerc(payload).subscribe(response => {
             Swal.fire({
@@ -813,27 +781,6 @@ export class Entradamerc implements OnInit {
       event.preventDefault();
     }
   }
-
-  // handleKeydown(event: KeyboardEvent): void {
-  //   const key = event.key;
-  //   const maxIndex = this.resultadoNombre.length;
-
-  //   if (key === 'ArrowDown') {
-  //     // Mueve la selección hacia abajo
-  //     this.selectedIndex = this.selectedIndex < maxIndex ? this.selectedIndex + 1 : 0;
-  //     event.preventDefault();
-  //   } else if (key === 'ArrowUp') {
-  //     // Mueve la selección hacia arriba
-  //     this.selectedIndex = this.selectedIndex > 0 ? this.selectedIndex - 1 : maxIndex;
-  //     event.preventDefault();
-  //   } else if (key === 'Enter') {
-  //     // Selecciona el ítem actual
-  //     if (this.selectedIndex >= 0 && this.selectedIndex <= maxIndex) {
-  //       this.cargarDatosCliente(this.resultadoNombre[this.selectedIndex]);
-  //     }
-  //     event.preventDefault();
-  //   }
-  // }
 
   cancelarBusquedaDescripcion: boolean = false;
   cancelarBusquedaCodigo: boolean = false;
