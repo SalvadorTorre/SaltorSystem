@@ -71,13 +71,13 @@
               </thead>
               <tbody>
                 <tr *ngFor="let entradamerc of entradamercList">
-                  <td style="width: 10%">{{entradamerc.me_codentr}}</td>
-                  <td style="width: 45%">{{entradamerc.me_nomsupl}}</td>
+                  <td style="width: 10%">{{entradamerc.me_codEntr}}</td>
+                  <td style="width: 45%">{{entradamerc.me_nomSupl}}</td>
                   <td class="text-center" style="width: 10%">
-                    {{entradamerc.me_fecentr}}
+                    {{entradamerc.me_fecEntr}}
                   </td>
                   <td class="text-end" tyle="width: 12%">
-                    {{entradamerc.me_valentr}}
+                    {{entradamerc.me_valEntr}}
                   </td>
                   <td>
                     <i
@@ -89,7 +89,7 @@
                     <i
                       class="bi bi-trash text-danger"
                       style="padding: 10px"
-                      (click)="eliminarEntradamerc(entradamerc.me_codentr)"
+                      (click)="eliminarEntradamerc(entradamerc.me_codEntr)"
                     ></i>
                     <i
                       (click)="consultarEntradamerc(entradamerc)"
@@ -297,7 +297,7 @@
                     <div class="col-4">
                       <input
                         type="text"
-                        formControlName="me_facsupl"
+                        formControlName="me_facSupl"
                         (input)="convertToUpperCase($event)"
                         (keydown)="moveFocus($event, input3)"
                         #input2
@@ -309,8 +309,8 @@
                     </div>
                     <div class="col-4">
                       <input
-                        type="text"
-                        formControlName="me_facSupl"
+                        type="date"
+                        formControlName="me_fecSupl"
                         (input)="convertToUpperCase($event)"
                         (keydown)="moveFocus($event, input4)"
                         #input3
@@ -337,7 +337,7 @@
                     <div class="col-4">
                       <input
                         type="text"
-                        formControlName="me_despachado"
+                        formControlName="chofer"
                         (keydown)="moveFocus($event, input6)"
                         #input5
                         class="form-control form-control-sm"
@@ -351,7 +351,7 @@
                     <div class="col-4">
                       <input
                         type="text"
-                        formControlName="me_vendedor"
+                        formControlName="vendedor"
                         (keydown)="moveFocus($event, input7)"
                         #input6
                         class="form-control form-control-sm"

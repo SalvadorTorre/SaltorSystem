@@ -94,7 +94,7 @@ export class Entradamerc implements OnInit {
   ) {
 
     this.form = this.fb.group({
-      ct_codvend: ['', Validators.required], // El campo es requerido
+      me_codvend: ['', Validators.required], // El campo es requerido
       // Otros campos...
     });
 
@@ -130,13 +130,14 @@ export class Entradamerc implements OnInit {
       de_codentr: ['',],
       de_codmerc: ['',],
       de_descrip: ['',],
-      de_canmerc: ['',],
+      de_canEntr: ['',],
       de_premerc: ['',],
       de_valmerc: ['',],
       de_unidad: ['',],
       de_costmer: ['',],
       de_codclie: ['',],
       de_status: ['',],
+      de_fecEntr: [new Date()],
 
     });
   }
@@ -248,14 +249,16 @@ export class Entradamerc implements OnInit {
       me_valEntr: [''],
       me_codSupl: [''],
       me_nomSupl: [''],
+      me_facSupl: [''],
+      me_fecSupl: [''],
       me_rncSupl: [0],
       me_codVend: ['', Validators.required],
       me_nomVend: [''],
       me_status: [''],
       me_nota: [''],
-      me_chofer: [''],
-      me_vendedor: [''],
-      me_despachado: [''],
+      chofer: [''],
+      vendedor: [''],
+      despachado: [''],
     });
 
     console.log(this.formularioEntradamerc.value);
@@ -296,10 +299,10 @@ export class Entradamerc implements OnInit {
   }
 
   editardetEntradamerc(detentradamerc: detEntradamercData) {
-    this.entradamercid = detentradamerc.de_codentr;
+    this.entradamercid = detentradamerc.de_codEntr;
   }
   editarEntradamerc(Entradamerc: EntradamercModelData) {
-    this.entradamercid = Entradamerc.me_codentr;
+    this.entradamercid = Entradamerc.me_codEntr;
     this.modoedicionEntradamerc = true;
     this.formularioEntradamerc.patchValue(Entradamerc);
     this.tituloModalEntradamerc = 'Editando Entrada Mercancias';
@@ -311,7 +314,7 @@ export class Entradamerc implements OnInit {
     });
     // Limpiar los items antes de agregar los nuevos
     this.items = [];
-    this.servicioEntradamerc.buscarEntradamercDetalle(Entradamerc.me_codentr).subscribe(response => {
+    this.servicioEntradamerc.buscarEntradamercDetalle(Entradamerc.me_codEntr).subscribe(response => {
       let subtotal = 0;
       let itbis = 0;
       let totalGeneral = 0;
@@ -344,8 +347,9 @@ export class Entradamerc implements OnInit {
           in_itbis: false,
           in_minvent: 0,
         };
-        const cantidad = item.dc_canmerc;
-        const precio = item.dc_premerc;
+        const cantidad = item.de_canEntr;
+        const precio = item.de_preMerc;
+        const fechamerca= new Date()
         const totalItem = cantidad * precio;
         this.items.push({
           producto: producto,
@@ -392,7 +396,7 @@ export class Entradamerc implements OnInit {
     // Limpiar los items antes de agregar los nuevos
     this.items = [];
 
-    this.servicioEntradamerc.buscarEntradamercDetalle(Entradamerc.me_codentr).subscribe(response => {
+    this.servicioEntradamerc.buscarEntradamercDetalle(Entradamerc.me_codEntr).subscribe(response => {
       let subtotal = 0;
       let itbis = 0;
       let totalGeneral = 0;

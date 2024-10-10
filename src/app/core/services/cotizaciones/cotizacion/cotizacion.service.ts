@@ -38,6 +38,7 @@ export class ServicioCotizacion {
     return this.http.GetRequest<any>(`/detalle-cotizacion/${dc_codcoti}`);
   }
 
+
  buscarCotizacion(pageIndex: number, pageSize: number, codigo?: string, nomcliente?: string, fecha?:string,): Observable<any> {
     let url = `/cotizacion-numero?page=${pageIndex}&limit=${pageSize}`;
 
