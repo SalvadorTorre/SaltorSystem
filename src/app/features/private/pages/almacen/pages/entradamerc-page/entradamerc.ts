@@ -127,17 +127,17 @@ export class Entradamerc implements OnInit {
   crearformulariodetEntradamerc() {
     this.formulariodetEntradamerc = this.fb.group({
 
-      de_codentr: ['',],
-      de_codmerc: ['',],
-      de_descrip: ['',],
+      de_codEntr: ['',],
+      de_codMerc: ['',],
+      de_desMerc: ['',],
       de_canEntr: ['',],
-      de_premerc: ['',],
-      de_valmerc: ['',],
+      de_preMerc: ['',],
+      de_valMerc: ['',],
       de_unidad: ['',],
-      de_costmer: ['',],
-      de_codclie: ['',],
+      de_cosMerc: ['',],
+      de_codClie: ['',],
       de_status: ['',],
-      de_fecEntr: [new Date()],
+      de_fecEntr: [new Date],
 
     });
   }
@@ -554,7 +554,6 @@ export class Entradamerc implements OnInit {
         } else {
           console.log(this.formularioEntradamerc.value);
         }
-
 
       }
     }
