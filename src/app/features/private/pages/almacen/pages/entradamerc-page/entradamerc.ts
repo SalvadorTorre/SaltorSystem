@@ -29,7 +29,7 @@ export class Entradamerc implements OnInit {
   @ViewChild('descripcionInput') descripcionInput!: ElementRef; // Para manejar el foco
   @ViewChild('Tabladetalle') Tabladetalle!: ElementRef;
   totalItems = 0;
-  pageSize = 12;
+  pageSize = 8;
   currentPage = 1;
   maxPagesToShow = 5;
   txtdescripcion: string = '';
@@ -99,7 +99,6 @@ export class Entradamerc implements OnInit {
     });
 
     this.crearFormularioEntradamerc();
-    console.log(this.formularioEntradamerc.value);
 
     this.nomsuplidorSubject.pipe(
       debounceTime(500),
@@ -228,7 +227,7 @@ export class Entradamerc implements OnInit {
       filter((query: string) => query !== ''),
       switchMap((query: string) => this.http.GetRequest<ModeloSuplidor>(`/suplidor-nombre/${query}`))
     ).subscribe((results: ModeloSuplidor) => {
-      console.log(results.data);
+      console.log(results);
       if (results) {
         if (Array.isArray(results.data)) {
           this.resultadoNombre = results.data;
@@ -262,7 +261,6 @@ export class Entradamerc implements OnInit {
       despachado: [''],
     });
 
-    console.log(this.formularioEntradamerc.value);
   }
   habilitarFormularioEmpresa() {
     this.habilitarFormulario = false;
@@ -350,7 +348,7 @@ export class Entradamerc implements OnInit {
         };
         const cantidad = item.de_canEntr;
         const precio = item.de_preMerc;
-        const fechamerca= new Date()
+        const fechamerca = new Date()
         const totalItem = cantidad * precio;
         this.items.push({
           producto: producto,
@@ -510,6 +508,7 @@ export class Entradamerc implements OnInit {
     this.formularioEntradamerc.get('me_codEntr')!.enable();
     this.formularioEntradamerc.get('me_fecEntr')!.enable();
     this.formularioEntradamerc.get('me_nomVend')!.enable();
+    // this.formularioEntradamerc.patchValue({ me_nomSupl: this.formularioEntradamerc.get('me_nomSupl')?.value })
     const payload = {
       entradamercancias: this.formularioEntradamerc.value,
       detalle: this.items,
@@ -580,16 +579,15 @@ export class Entradamerc implements OnInit {
   }
 
   changePage(page: number) {
-
     this.currentPage = page;
-    // Trigger a new search with the current codigo and descripcion
-    const descripcion = this.descripcionBuscar.getValue();
+
     this.servicioEntradamerc.buscarTodasEntradamerc(this.currentPage, this.pageSize)
       .subscribe(response => {
         this.entradamercList = response.data;
         this.totalItems = response.pagination.total;
         this.currentPage = page;
         this.formularioEntradamerc.reset();
+        console.log(this.currentPage);
 
       });
 
@@ -615,6 +613,8 @@ export class Entradamerc implements OnInit {
 
     return Array.from({ length: endPage - startPage + 1 }, (_, i) => startPage + i);
   }
+
+
   limpiaBusqueda() {
     this.txtdescripcion = '';
     this.txtcodigo = '';
@@ -728,7 +728,7 @@ export class Entradamerc implements OnInit {
   }
 
   buscarSuplidorporNombre() {
-    this.servicioSuplidor.buscarporNombre(this.formularioEntradamerc.get("me_nomsupl")!.value).subscribe(response => {
+    this.servicioSuplidor.buscarporNombre(this.formularioEntradamerc.get("me_nomSupl")!.value).subscribe(response => {
       console.log(response);
     });
   }
@@ -741,6 +741,7 @@ export class Entradamerc implements OnInit {
   }
 
   cargarDatosSuplidor(suplidor: ModeloSuplidorData) {
+    console.log('Entro aquiiiii=--------------')
     this.resultadoNombre = [];
     this.buscarNombre.reset();
     if (suplidor.su_nomSupl !== "") {
@@ -749,7 +750,6 @@ export class Entradamerc implements OnInit {
         me_codSupl: suplidor.su_codSupl,
         me_nomSupl: suplidor.su_nomSupl,
         me_rncSupl: suplidor.su_rncSupl,
-
       });
     }
 
@@ -807,7 +807,7 @@ export class Entradamerc implements OnInit {
       de_canmerc: inventario.in_canmerc,
       de_premerc: inventario.in_premerc,
       de_cosmerc: inventario.in_cosmerc,
-      de_unidad:  inventario.in_unidad,
+      de_unidad: inventario.in_unidad,
     });
     console.log("si")
     $("#input10").focus();
@@ -902,48 +902,7 @@ export class Entradamerc implements OnInit {
       return;
     }
   }
-  buscarRnc(event: Event, nextElement: HTMLInputElement | null): void {
-    event.preventDefault();
-    const rnc = this.formularioEntradamerc.get('ct_rnc')?.value;
-    if (rnc) {
-      if (rnc.length === 9 || rnc.length === 11) {
-        this.ServicioRnc.buscarRncPorId(rnc).subscribe(
-          (rnc) => {
-            console.log(rnc.data);
-            if (rnc.data.length) {
-              this.formularioEntradamerc.patchValue({ ct_nomclie: rnc.data[0].rason });
-              nextElement?.focus()
-              console.log(rnc.data[0].rason);
-            } else {
-              this.mensagePantalla = true;
 
-              Swal.fire({
-                icon: "error",
-                title: "A V I S O",
-                text: 'Rnc invalido.',
-              }).then(() => { this.mensagePantalla = false });
-              return;
-            }
-          }
-        );
-      }
-      else {
-        this.mensagePantalla = true;
-        Swal.fire({
-          icon: "error",
-          title: "A V I S O",
-          text: 'Rnc invalido.',
-
-        }).then(() => { this.mensagePantalla = false });
-        return;
-      }
-      this.mensagePantalla = false;
-    }
-    else {
-      nextElement?.focus()
-    }
-    this.mensagePantalla = false;
-  }
 
   moveFocuscodmerc(event: KeyboardEvent, nextInput: HTMLInputElement) {
     if (event.key === 'Enter' || event.key === 'Tab') {
@@ -1078,16 +1037,14 @@ export class Entradamerc implements OnInit {
     }
   }
 
+  onBlur(event: any): void {
+    const value = event.target.value;
 
-}
-
-
-
-
-function then(arg0: () => void) {
-  throw new Error('Function not implemented.');
-
-
+    // Si el valor no está vacío, lo asignamos al formControl
+    if (value && value.trim() !== '') {
+      this.formularioEntradamerc.get('me_nomSupl')!.setValue(value.trim());
+    }
+  }
 
 
 }
