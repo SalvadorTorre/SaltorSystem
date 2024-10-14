@@ -47,6 +47,7 @@ export class Suplidor implements OnInit {
         this.descripcion = descripcion;
         return this.servicioSuplidor.buscarTodosSuplidor(this.currentPage, this.pageSize, this.codSuplidor, this.descripcion);
       })
+
     )
       .subscribe(response => {
         this.suplidorList = response.data;

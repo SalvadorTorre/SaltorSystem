@@ -217,7 +217,6 @@ export class Cotizacion implements OnInit {
       }
 
     });
-
     this.buscarNombre.valueChanges.pipe(
       debounceTime(500),
       distinctUntilChanged(),

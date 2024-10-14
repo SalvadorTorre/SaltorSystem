@@ -218,6 +218,7 @@ export class Entradamerc implements OnInit {
 
     });
 
+
     this.buscarNombre.valueChanges.pipe(
       debounceTime(500),
       distinctUntilChanged(),
@@ -806,10 +807,11 @@ export class Entradamerc implements OnInit {
       de_canmerc: inventario.in_canmerc,
       de_premerc: inventario.in_premerc,
       de_cosmerc: inventario.in_cosmerc,
-      de_unidad: inventario.in_unidad,
+      de_unidad:  inventario.in_unidad,
     });
-    $("#input8").focus();
-    $("#input8").select();
+    console.log("si")
+    $("#input10").focus();
+    $("#input10").select();
   }
 
   handleKeydownInventario(event: KeyboardEvent): void {
