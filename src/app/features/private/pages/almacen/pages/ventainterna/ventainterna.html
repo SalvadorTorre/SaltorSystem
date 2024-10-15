@@ -1,0 +1,661 @@
+<div class="container">
+  <div class="row">
+    <div class="col">
+      <div class="card">
+        <div
+          class="card-header"
+          style="height: 50px; background-color: #ef1008"
+        >
+          <h4 class="card-title" style="color: white; text-align: center">
+            Ventas Interna
+          </h4>
+        </div>
+        <div class="card-body" style="background-color: #fcfdfd">
+          <!-- buscador -->
+          <div class="row">
+            <div class="col-2">
+              <label for="">No.</label>
+              <input
+                type="text"
+                class="form-control form-control-sm"
+                placeholder="No. Cotización"
+                class="form-control"
+              />
+            </div>
+            <div class="col-5">
+              <label for="">Cliente</label>
+              <input
+                [(ngModel)]="txtdescripcion"
+                type="text"
+                class="form-control form-control-sm"
+                placeholder="Nombre Cliente"
+                class="form-control uppercase"
+                (input)="descripcionEntra($event)"
+              />
+            </div>
+            <div class="col-2">
+              <label for="">Fecha</label>
+              <input
+                type="date"
+                class="form-control form-control-sm"
+                placeholder="Fecha..."
+              />
+            </div>
+
+            <div class="col-1">
+              <button class="btn btn-danger mt-3" (click)="limpiaBusqueda()">
+                <i class="bi bi-arrow-counterclockwise"></i>
+              </button>
+            </div>
+            <div class="col-2">
+              <button
+                class="btn btn-primary mt-4"
+                (click)="nuevaVentainterna()"
+              >
+                Nueva Venta Interna
+              </button>
+            </div>
+          </div>
+          <!-- fin buscador -->
+          <br />
+          <!-- Grid -->
+          <div class="table-responsive" style="height: 400px; overflow-y: auto">
+            <table
+              class="table table-bordered table-hover table-striped table-sm table-class"
+            >
+              <thead class="table-dark">
+                <tr>
+                  <th style="width: 10%">Numero</th>
+                  <th style="width: 45%">Nombre</th>
+                  <th class="text-center" style="width: 10%">Fecha</th>
+                  <th style="width: 12%">Valor</th>
+                  <th class="text-center">Opciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let ventainterna of ventainternaList">
+                  <td style="width: 10%">{{ventainterna.fa_codFact}}</td>
+                  <td style="width: 45%">{{ventainterna.fa_nomClie}}</td>
+                  <td class="text-center" style="width: 10%">
+                    {{ventainterna.fa_fecFact}}
+                  </td>
+                  <td class="text-end" tyle="width: 12%">
+                    {{ventainterna.fa_valFact}}
+                  </td>
+                  <td>
+                    <i
+                      (click)="editarVentainterna(ventainterna)"
+                      class="bi bi-pencil text-primary"
+                      style="padding: 10px"
+                    >
+                    </i>
+                    <i
+                      class="bi bi-trash text-danger"
+                      style="padding: 10px"
+                      (click)="eliminarVentainterna(ventainterna.fa_codFact)"
+                    ></i>
+                    <i
+                      (click)="consultarVentainterna(ventainterna)"
+                      class="bi bi-card-list text-success"
+                      style="padding: 10px"
+                    >
+                    </i>
+                    <a class="btn-link" style="padding: 10px">
+                      <i class="bi bi-file-earmark-pdf text-danger"></i>
+                    </a>
+                    <a class="btn-link" style="padding: 10px">
+                      <i class="bi bi-printer"></i>
+
+                      <!-- <i class="bi bi-file-earmark-pdf text-info"></i>-->
+                    </a>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <br />
+          <nav aria-label="Page navigation">
+            <ul class="pagination justify-content-center">
+              <li class="page-item" [class.disabled]="currentPage === 1">
+                <a class="page-link" (click)="changePage(1)" aria-label="First">
+                  <span aria-hidden="true">««</span>
+                </a>
+              </li>
+              <li class="page-item" [class.disabled]="currentPage === 1">
+                <a
+                  class="page-link"
+                  (click)="changePage(currentPage - 1)"
+                  aria-label="Previous"
+                >
+                  <span aria-hidden="true">«</span>
+                </a>
+              </li>
+              <li
+                *ngFor="let page of pages"
+                class="page-item"
+                [class.active]="currentPage === page"
+              >
+                <a class="page-link" (click)="changePage(page)">{{ page }}</a>
+              </li>
+              <li
+                class="page-item"
+                [class.disabled]="currentPage === totalPages"
+              >
+                <a
+                  class="page-link"
+                  (click)="changePage(currentPage + 1)"
+                  aria-label="Next"
+                >
+                  <span aria-hidden="true">»</span>
+                </a>
+              </li>
+              <li
+                class="page-item"
+                [class.disabled]="currentPage === totalPages"
+              >
+                <a
+                  class="page-link"
+                  (click)="changePage(totalPages)"
+                  aria-label="Last"
+                >
+                  <span aria-hidden="true">»»</span>
+                </a>
+              </li>
+            </ul>
+          </nav>
+          <!-- Fin grid -->
+        </div>
+      </div>
+      <!--***************Fin**********************-->
+    </div>
+  </div>
+</div>
+<!--formulario-->
+
+<div
+  class="modal fade"
+  id="modalventainterna"
+  tabindex="-1"
+  aria-labelledby="tituloModalVentainterna"
+  aria-hidden="true"
+  data-bs-backdrop="static"
+  data-bs-keyboard="false"
+>
+  <div
+    class="modal-dialog modal-dialog-centered modal-xl"
+    style="margin: 2px auto"
+  >
+    <div class="modal-content">
+      <div class="modal-header" style="height: 10px">
+        <h1 class="modal-title fs-5" id="tituloModalVentainterna">
+          {{tituloModalVentainterna}}
+        </h1>
+        <button
+          type="button"
+          class="btn-close"
+          (click)="submitForm()"
+          aria-label="Close"
+          aria-label="Close"
+        ></button>
+      </div>
+      <div class="modal-body">
+        <form
+          [formGroup]="formularioVentainterna"
+          class="custom-form-background"
+          (ngSubmit)="guardarVentainterna()"
+        >
+          <div class="row">
+            <div class="col-8">
+              <div
+                class="card"
+                style="
+                  margin-top: 0;
+                  margin-bottom: 0px;
+                  padding-top: 0px;
+                  padding-bottom: 0px;
+                "
+              >
+                <div
+                  class="card-body"
+                  style="
+                    background-color: #e6e4e4;
+                    margin-top: 0;
+                    padding-top: 0;
+                    padding-bottom: 0;
+                  "
+                >
+                  <div class="row">
+                    <div class="col d-flex justify-content-center">
+                      <div
+                        class="btn-group"
+                        role="group"
+                        aria-label="Basic radio toggle button group"
+                      ></div>
+                    </div>
+                  </div>
+
+                  <div class="mb-1 row mt-1">
+                    <div class="col-2">
+                      <label for=" ">Nombre</label>
+                    </div>
+                    <div class="col-10">
+                      <div class="input-group show">
+                        <input
+                          class="form-control dropdown-toggle searchInput"
+                          data-id="agent"
+                          type="text"
+                          autocomplete="off"
+                          (input)="convertToUpperCase($event)"
+                          (keydown.enter)="moveFocusnomclie($event, input2)"
+                          (keydown)="handleKeydown($event)"
+                          #input1
+                          id="input2"
+                          [formControl]="buscarNombre"
+                          formControlName="fa_nomClie"
+                        />
+                        <div
+                          [ngClass]="{ 'show': resultadoNombre.length > 0 }"
+                          class="dropdown-menu"
+                          style="
+                            margin-right: 30px;
+                            margin-top: 45px;
+                            z-index: 300;
+                            width: 350px;
+                            position: absolute;
+                            will-change: transform;
+                          "
+                        >
+                          <div
+                            class="searchReturnItem name-find"
+                            *ngFor="let result of resultadoNombre; let i = index"
+                            [class.active]="i === selectedIndex"
+                          >
+                            <a
+                              (click)="cargarDatosCliente(result)"
+                              style="
+                                color: #222222 !important;
+                                font-size: 10pt;
+                                padding: 20px 0px;
+                                text-decoration: none !important;
+                                cursor: pointer;
+                              "
+                              class="px-3 cp"
+                            >
+                              <i class="far fa-user-circle mr-5"></i
+                              >&nbsp;&nbsp;{{ result.cl_nomClie }}
+                            </a>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="mb-1 row mt-1">
+                    <div class="col-2">
+                      <label for="">No. Soñicitud</label>
+                    </div>
+                    <div class="col-10">
+                      <input
+                        type="text"
+                        formControlName="fa_solicitud"
+                        (input)="convertToUpperCase($event)"
+                        (keydown)="moveFocus($event, input3)"
+                        #input2
+                        class="form-control form-control-sm"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-4">
+              <div
+                class="card"
+                style="
+                  margin-top: 0;
+                  margin-bottom: 0px;
+                  padding-top: 0px;
+                  padding-bottom: 0px;
+                "
+              >
+                <div
+                  class="card-body"
+                  style="
+                    background-color: #e6e4e4;
+                    margin-top: 0;
+                    padding-top: 0;
+                    padding-bottom: 0;
+                  "
+                >
+                  <div class="mb-1 row mt-1">
+                    <div class="col-5">
+                      <label for="">No. </label>
+                    </div>
+                    <div class="col-6">
+                      <input
+                        type="text"
+                        formControlName="fa_codFact"
+                        class="form-control form-control-sm"
+                      />
+                    </div>
+                  </div>
+                  <div class="mb-1 row">
+                    <div class="col-5">
+                      <label for="">Fecha</label>
+                    </div>
+                    <div class="col-6">
+                      <input
+                        formControlName="fa_fecFact"
+                        type="text"
+                        class="form-control form-control-sm"
+                      />
+                    </div>
+                  </div>
+                  <div class="mb-1 row">
+                    <div class="col-5">
+                      <label for="">Vendedor</label>
+                    </div>
+                    <div class="col-6">
+                      <input
+                        type="password"
+                        (input)="convertToUpperCase($event)"
+                        (keydown)="moveFocus($event, input4)"
+                        (keydown.enter)="buscarUsuario($event, input4)"
+                        formControlName="fa_codVend"
+                        #input3
+                        class="form-control form-control-sm"
+                      />
+                      <div
+                        *ngIf="formularioVentainterna.get('fa_codVend')?.touched && formularioVentainterna.get('fa_codVend')?.invalid"
+                      >
+                        <small class="text-danger"
+                          >Este campo es obligatorio.</small
+                        >
+                      </div>
+                    </div>
+                  </div>
+                  <div class="mb-1 row">
+                    <div class="col-5">
+                      <label for="">Nombre Vend.</label>
+                    </div>
+                    <div class="col-6">
+                      <input
+                        type="text"
+                        formControlName="fa_nomVend"
+                        #input5
+                        class="form-control form-control-sm"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <br />
+          <div class="seccion-productos">
+            <div class="row">
+              <div class="col-2">
+                <label for="">Código</label>
+                <div class="input-group show">
+                  <input
+                    class="form-control dropdown-toggle searchInput me-2"
+                    data-id="agent"
+                    type="text"
+                    [disabled]="!habilitarCampos"
+                    #codigoInput
+                    autocomplete="off"
+                    (input)="convertToUpperCase($event)"
+                    (keydown)="handleKeydownInventario($event)"
+                    (keydown)="moveFocuscodmerc($event, input5)"
+                    #input4
+                    [formControl]="buscarcodmerc"
+                    [(ngModel)]="codmerc"
+                    name="codmerc"
+                    placeholder="Código"
+                  />
+
+                  <div
+                    [ngClass]="{ 'show': resultadoCodmerc.length > 0 }"
+                    class="dropdown-menu"
+                    style="
+                      margin-right: 30px;
+                      margin-top: 45px;
+                      z-index: 300;
+                      width: 350px;
+                      position: absolute;
+                      will-change: transform;
+                    "
+                  >
+                    <div
+                      class="searchReturnItem name-find"
+                      *ngFor="let result of resultadoCodmerc; let i = index"
+                      [class.active]="i === selectedIndexcodmerc"
+                    >
+                      <a
+                        (click)="cargarDatosInventario(result)"
+                        style="
+                          color: #222222 !important;
+                          font-size: 10pt;
+                          padding: 20px 0px;
+                          text-decoration: none !important;
+                          cursor: pointer;
+                        "
+                        class="px-3 cp"
+                      >
+                        <i class="far fa-user-circle mr-5"></i>&nbsp;&nbsp;{{
+                        result.in_codmerc }}
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-5">
+                <label for="">Descripción</label>
+                <div class="input-group show">
+                  <input
+                    class="form-control dropdown-toggle searchInput me-2"
+                    data-id="agent"
+                    type="text"
+                    [disabled]="habilitarCampos"
+                    #descripcionInput
+                    autocomplete="off"
+                    (input)="convertToUpperCase($event)"
+                    (keydown)="moveFocusdesc($event, input6)"
+                    (keydown)="handleKeydownInventariosdesc($event)"
+                    #input5
+                    [formControl]="buscardescripcionmerc"
+                    [(ngModel)]="descripcionmerc"
+                  />
+                  <div
+                    [ngClass]="{ 'show': resultadodescripcionmerc.length > 0 }"
+                    class="dropdown-menu"
+                    style="
+                      margin-right: 30px;
+                      margin-top: 45px;
+                      z-index: 300;
+                      width: 350px;
+                      position: absolute;
+                      will-change: transform;
+                    "
+                  >
+                    <div
+                      class="searchReturnItem name-find"
+                      *ngFor="let result of resultadodescripcionmerc; let i = index"
+                      [class.active]="i === selectedIndexcoddescripcionmerc"
+                    >
+                      <a
+                        (click)="cargarDatosInventario(result)"
+                        style="
+                          color: #222222 !important;
+                          font-size: 10pt;
+                          padding: 20px 0px;
+                          text-decoration: none !important;
+                          cursor: pointer;
+                        "
+                        class="px-3 cp"
+                      >
+                        <i class="far fa-user-circle mr-5"></i>&nbsp;&nbsp;{{
+                        result.in_desmerc }}
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-2">
+                <label for="">Cantidad</label>
+                <input
+                  type="number"
+                  placeholder="Cantidad"
+                  [(ngModel)]="cantidadmerc"
+                  [formControl]="cantidadform"
+                  id="input6"
+                  #input6
+                  (keydown)="moveFocusCantidad($event, input7)"
+                  class="form-control"
+                />
+                console.log()
+              </div>
+              <div class="col-2">
+                <label for="">Precio</label>
+                <input
+                  type="number"
+                  [(ngModel)]="preciomerc"
+                  [formControl]="precioform"
+                  id="input7"
+                  #input7
+                  (keydown)="moveFocus($event, input4)"
+                  class="form-control"
+                  (keydown.enter)="agregaItem($event)"
+                />
+              </div>
+            </div>
+            <br />
+          </div>
+          <div class="row">
+            <div class="col">
+              <div
+                class="table-responsive"
+                style="height: 370px; overflow-y: auto"
+              >
+                <table class="table table-sm table-bordered" #Tabladetalla>
+                  <thead class="table-dark">
+                    <tr style="background-color: red">
+                      <th style="width: 13%">Código</th>
+                      <th style="width: 37%">Descripción</th>
+                      <th class="text-center" style="width: 13%">Cantidad.</th>
+                      <th class="text-center" style="width: 13%">Precio ud</th>
+                      <th class="text-center" style="width: 15%">Total</th>
+                      <th>Opciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let item of items">
+                      <td style="width: 13%">
+                        {{ item.producto?.in_codmerc }}
+                      </td>
+                      <td style="width: 37%">
+                        {{ item.producto?.in_desmerc }}
+                      </td>
+                      <td class="text-center" style="width: 13%">
+                        {{ item.cantidad }}
+                      </td>
+                      <td class="text-center" style="width: 13%">
+                        {{ item.precio }}
+                      </td>
+                      <td class="text-end" style="width: 15%">
+                        {{ item.total | currency }}
+                      </td>
+                      <td>
+                        <i
+                          (click)="editarItem(item)"
+                          class="bi bi-pencil text-primary"
+                          style="padding: 10px"
+                          *ngIf="habilitarIcono"
+                        >
+                        </i>
+                        <i
+                          (click)="borarItem(item)"
+                          class="bi bi-trash text-danger"
+                          style="padding: 10px"
+                          *ngIf="habilitarIcono"
+                        >
+                        </i>
+                      </td>
+                    </tr>
+                  </tbody>
+                  <tfoot>
+                    <tr>
+                      <td></td>
+                      <td></td>
+                      <td></td>
+                      <td
+                        class="text-end"
+                        style="font-size: 18px; font-weight: bold"
+                      >
+                        Sub-Total
+                      </td>
+                      <td
+                        class="text-end"
+                        style="font-size: 18px; font-weight: bold"
+                        colspan="1"
+                      >
+                        {{this.subTotal | currency}}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td></td>
+                      <td></td>
+                      <td></td>
+                      <td
+                        class="text-end"
+                        style="font-size: 18px; font-weight: bold"
+                      >
+                        Itbis
+                      </td>
+                      <td
+                        class="text-end"
+                        style="font-size: 18px; font-weight: bold"
+                        colspan="1"
+                      >
+                        {{totalItbis | currency}}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td></td>
+                      <td></td>
+                      <td></td>
+                      <td
+                        class="text-end"
+                        style="font-size: 18px; font-weight: bold"
+                      >
+                        Total Gral
+                      </td>
+                      <td
+                        class="text-end"
+                        style="font-size: 18px; font-weight: bold"
+                        colspan="1"
+                      >
+                        {{totalGral | currency}}
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+          </div>
+          <div class="row mt-2">
+            <div class="col d-flex justify-content-end">
+              <button
+                class="btn btn-primary btn-xs"
+                type="submit"
+                [disabled]="items.length === 0"
+              >
+                Guardar
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

@@ -7,7 +7,7 @@ import { ModeloUsuarioData } from 'src/app/core/services/mantenimientos/usuario'
 import { ServicioUsuario } from 'src/app/core/services/mantenimientos/usuario/usuario.service';
 import { ServicioVentainterna } from 'src/app/core/services/almacen/ventainterna/ventainterna.service';
 import { VentainternaModelData, detVentainternaData } from 'src/app/core/services/almacen/ventainterna';
-import { ServiciodetVentainterna } from 'src/app/core/services/almacen/detventainterna/detventainterna.service';
+//import { ServiciodetVentainterna } from 'src/app/core/services/almacen/detventainterna/detventainterna.service';
 import { ServicioCliente } from 'src/app/core/services/mantenimientos/clientes/cliente.service';
 import { HttpInvokeService } from 'src/app/core/services/http-invoke.service';
 import { ModeloCliente, ModeloClienteData } from 'src/app/core/services/mantenimientos/clientes';
@@ -15,9 +15,8 @@ import { VentainternaDetalleModel, interfaceDetalleModel } from 'src/app/core/se
 import { ServicioInventario } from 'src/app/core/services/mantenimientos/inventario/inventario.service';
 import { ModeloInventario, ModeloInventarioData } from 'src/app/core/services/mantenimientos/inventario';
 import { Usuario } from './../../../mantenimientos/pages/usuario-page/usuario';
-import { Inventario } from './../mantenimientos/pages/inventario-page/inventario';
+import { Inventario } from './../../../mantenimientos/pages/inventario-page/inventario';
 declare var $: any;
-
 @Component({
   selector: 'Ventainterna',
   templateUrl: './ventainterna.html',
@@ -85,7 +84,6 @@ export class Ventainterna implements OnInit {
     private fb: FormBuilder,
     private servicioVentainterna: ServicioVentainterna,
     private servicioCliente: ServicioCliente,
-    private serviciodetVentainterna: ServiciodetVentainterna,
     private http: HttpInvokeService,
     private servicioInventario: ServicioInventario,
     private ServicioUsuario: ServicioUsuario,
@@ -111,15 +109,10 @@ export class Ventainterna implements OnInit {
       this.totalItems = response.pagination.total;
       this.currentPage = response.pagination.page;
     });
-
-
-
-
   }
 
   agregarVentainterna() {
     this.formularioVentainterna.disable();
-
   }
 
   crearformulariodetVentainterna() {
@@ -247,6 +240,7 @@ export class Ventainterna implements OnInit {
       fa_nomClie: [''],
       fa_codVend: ['', Validators.required],
       fa_nomVend: [''],
+      fa_solicitud: [''],
     });
 
     console.log(this.formularioVentainterna.value);
@@ -287,10 +281,10 @@ export class Ventainterna implements OnInit {
   }
 
   editardetVentainterna(detventainterna: detVentainternaData) {
-    this.ventainternaid = detventainterna.dc_codcoti;
+    this.ventainternaid = detventainterna.df_codFact;
   }
   editarVentainterna(Ventainterna: VentainternaModelData) {
-    this.ventainternaid = Ventainterna.ct_codcoti;
+    this.ventainternaid = Ventainterna.fa_codFact;
     this.modoedicionVentainterna = true;
     this.formularioVentainterna.patchValue(Ventainterna);
     this.tituloModalVentainterna = 'Editando Ventainterna';
@@ -350,7 +344,7 @@ export class Ventainterna implements OnInit {
       totalGeneral = subtotal ;
       // Asignar los totales a variables o mostrarlos en la interfaz
       this.subTotal = subtotal;
-      this.totalItbis = this.totalItbis;
+      //this.totalItbis = this.totalItbis;
       this.totalGral = totalGeneral;
     });
 }
@@ -378,7 +372,7 @@ export class Ventainterna implements OnInit {
     // Limpiar los items antes de agregar los nuevos
     this.items = [];
 
-    this.servicioVentainterna.buscarVentainternaDetalle(Ventainterna.ct_codcoti).subscribe(response => {
+    this.servicioVentainterna.buscarVentainternaDetalle(Ventainterna.fa_codFact).subscribe(response => {
       let subtotal = 0;
       let itbis = 0;
       let totalGeneral = 0;
@@ -634,7 +628,7 @@ export class Ventainterna implements OnInit {
       this.totalGral += total;
       const itbis = total * 0.18;
       this.totalItbis += itbis;
-      this.subTotal += total - itbis;
+      this.subTotal += total;
       this.items.push({
         producto: this.productoselect, cantidad: this.cantidadmerc, precio: this.preciomerc, total
       })
@@ -689,7 +683,8 @@ export class Ventainterna implements OnInit {
   }
   actualizarTotales() {
     this.totalGral = this.items.reduce((sum, item) => sum + item.total, 0);
-    this.subTotal = this.items.reduce((sum, item) => sum + (item.total)), 0);
+    this.subTotal = this.items.reduce((sum, item) => sum + (item.total ), 0);
+
   }
 
   buscarPorCodigo(codigo: string) {
@@ -776,8 +771,8 @@ export class Ventainterna implements OnInit {
       df_cosMerc: inventario.in_cosmerc,
       df_unidad: inventario.in_unidad,
     });
-    $("#input8").focus();
-    $("#input8").select();
+    $("#input6").focus();
+    $("#input6").select();
   }
 
   handleKeydownInventario(event: KeyboardEvent): void {
@@ -899,8 +894,8 @@ export class Ventainterna implements OnInit {
           console.log("vedadero");
         }
         else {
-          $("#input8").focus();
-          $("#input8").select();
+          $("#input6").focus();
+          $("#input6").select();
         }
         this.codmerVacio = false;
       }
@@ -939,8 +934,8 @@ export class Ventainterna implements OnInit {
           // this.desmerVacio = false;
         }
         else {
-          $("#input8").focus();
-          $("#input8").select();
+          $("#input6").focus();
+          $("#input6").select();
         }
         this.desmerVacio = false;
       }
@@ -961,8 +956,8 @@ export class Ventainterna implements OnInit {
       }
       else {
         // nextInput.focus();
-        $("#input9").focus();
-        $("#input9").select();
+        $("#input7").focus();
+        $("#input7").select();
       }
     }
   }

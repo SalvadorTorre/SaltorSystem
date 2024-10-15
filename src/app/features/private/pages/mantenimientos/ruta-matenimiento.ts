@@ -10,6 +10,7 @@ const routes: Routes = [
     redirectTo:"inventario",
     pathMatch:"full"
   },
+
     {path:"",
       component:Mantenimiento,
       children:[

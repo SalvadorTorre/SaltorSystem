@@ -10,14 +10,16 @@ import { Almacen, } from './almacen';
 // ];
 
 const routes: Routes = [
-  // {
-  //   path:"",
-  //   redirectTo:"inventario",
-  //   pathMatch:"full"
-  // },
+  {
+    path:"",
+    redirectTo:"entradamerc",
+    pathMatch:"full"
+  },
+
     {path:"",
-      component: Almacen,
+      component:Almacen,
       children:[
+
 
         //{
         //   path:"Control Factura",
@@ -28,10 +30,10 @@ const routes: Routes = [
           loadChildren: () => import('./pages/entradamerc-page/entradamerc-modulo').then(m => m.ModuloEntradamerc)
         },
 
-      //   {
-      //     path:"Venta Interna",
-      //     loadChildren: () => import('./pages/suplidor-page/suplidor-modulo').then(m => m.ModuloSuplidor)
-      //   },
+        {
+          path:"Venta Interna",
+          loadChildren: () => import('./pages/ventainterna/ventainterna-modulo').then(m => m.ModuloVentainterna)
+        },
 
       //   {
       //     path:"Fact. Pendiente Entrega",

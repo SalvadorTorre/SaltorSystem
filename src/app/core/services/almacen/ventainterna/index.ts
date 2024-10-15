@@ -13,17 +13,18 @@ export interface VentainternaModelData {
   fa_nomClie: string;
   fa_codVend: string;
   fa_nomVend: string;
+  fa_solicitud:string;
   detVentainterna: detVentainternaData[];
 }
 
 export interface detVentainternaData {
-  dc_codFact: string;
-  fa_codMerc: string;
-  fa_desMerc: string;
-  fa_canMerc: number;
-  fa_preMerc: number;
-  fa_valMerc: number;
-  fa_unidad: string;
-  fa_cosMerc: number;
-  fa_codClie: string;
+  df_codFact: string;
+  df_codMerc: string;
+  df_desMerc: string;
+  df_canMerc: number;
+  df_preMerc: number;
+  df_valMerc: number;
+  df_unidad: string;
+  df_cosMerc: number;
+  df_codClie: string;
 }
