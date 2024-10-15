@@ -31,7 +31,7 @@ const routes: Routes = [
         },
 
         {
-          path:"Venta Interna",
+          path:"ventainterna",
           loadChildren: () => import('./pages/ventainterna/ventainterna-modulo').then(m => m.ModuloVentainterna)
         },
 

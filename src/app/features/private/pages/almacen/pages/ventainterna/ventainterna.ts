@@ -233,7 +233,7 @@ export class Ventainterna implements OnInit {
     const fechaActual = new Date();
     const fechaActualStr = this.formatofecha(fechaActual);
     this.formularioVentainterna = this.fb.group({
-      FA_codFact: [''],
+      fa_codFact: [''],
       fa_fecFact: [fechaActualStr],
       fa_valFact: [''],
       fa_codClie: [''],
@@ -483,7 +483,7 @@ export class Ventainterna implements OnInit {
     const payload = {
       ventainterna: this.formularioVentainterna.value,
       detalle: this.items,
-      idVentainterna: this.formularioVentainterna.get('fa_codfact')?.value,
+      idVentainterna: this.formularioVentainterna.get('fa_codFact')?.value,
 
     };
 
