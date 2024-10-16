@@ -745,7 +745,6 @@ export class Entradamerc implements OnInit {
     this.resultadoNombre = [];
     this.buscarNombre.reset();
     if (suplidor.su_nomSupl !== "") {
-      console.log("dd")
       this.formularioEntradamerc.patchValue({
         me_codSupl: suplidor.su_codSupl,
         me_nomSupl: suplidor.su_nomSupl,
@@ -813,7 +812,6 @@ export class Entradamerc implements OnInit {
     $("#input10").focus();
     $("#input10").select();
   }
-
   handleKeydownInventario(event: KeyboardEvent): void {
     const key = event.key;
     const maxIndex = this.resultadoCodmerc.length;

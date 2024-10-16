@@ -1,206 +1,116 @@
 <div class="row">
   <div class="col-5">
     <div class="card">
-      <div class="card-header">
-        <h4 class="card-title">Datos de la facturación</h4>
+      <div class="card-header" style="height: 40px; background-color: #0101b9">
+        <h4 class="card-title" style="color: white; text-align: center">
+          Datos Factura
+        </h4>
       </div>
       <div class="card-body" style="background-color: #e6e4e4">
-        <div class="row">
-          <div class="col d-flex justify-content-center">
-            <div
-              class="btn-group"
-              role="group"
-              aria-label="Basic radio toggle button group"
-            >
-              <input
-                type="radio"
-                class="btn-check"
-                name="btnradioType"
-                id="btnradio1"
-                autocomplete="off"
-                checked
-              />
-              <label class="btn btn-outline-primary" for="btnradio1"
-                >Facturación</label
-              >
-
-              <input
-                type="radio"
-                class="btn-check"
-                name="btnradioType"
-                id="btnradio2"
-                autocomplete="off"
-              />
-              <label class="btn btn-outline-dark" for="btnradio2"
-                >Cotización</label
-              >
-
-              <input
-                type="radio"
-                class="btn-check"
-                name="btnradioType"
-                id="btnradio3"
-                autocomplete="off"
-              />
-              <label class="btn btn-outline-danger" for="btnradio3"
-                >Pedido</label
-              >
-            </div>
-          </div>
-        </div>
-        <br />
-
         <form>
           <div class="row">
-            <div class="col-6">
+            <div class="col-8"></div>
+            <div class="col-1">
+              <label for="" class="label">No.</label>
+            </div>
+            <div class="col-3">
+              <input
+                type="text"
+                class="textbox"
+                class="form-control form-control-sm"
+              />
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-8"></div>
+            <div class="col-1">
+              <label for="">Fecha</label>
+            </div>
+            <div class="col-3">
+              <input type="text" class="form-control form-control-sm" />
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-2">
               <label for="">RNC</label>
+            </div>
+            <div class="col-3">
+              <input type="text" class="form-control form-control-sm" />
+            </div>
+            <div class="col-1">
+              <label for="">Ncf</label>
+            </div>
+            <div class="col-3">
               <input type="text" class="form-control form-control-sm" />
             </div>
           </div>
           <div class="row">
-            <div class="col">
-              <label for="">Nombre del cliente</label>
+            <div class="col-2">
+              <label for="">Cliente</label>
+            </div>
+            <div class="col-10">
               <input type="text" class="form-control form-control-sm" />
             </div>
           </div>
           <div class="row">
-            <div class="col">
+            <div class="col-2">
               <label for="">Dirección</label>
+            </div>
+            <div class="col-10">
               <input type="text" class="form-control form-control-sm" />
             </div>
           </div>
           <div class="row">
-            <div class="col">
+            <div class="col-2">
               <label for="">Telefono</label>
+            </div>
+            <div class="col-4">
               <input type="text" class="form-control form-control-sm" />
             </div>
-            <div class="col">
-              <label for="">Telefono</label>
+            <div class="col-4">
               <input type="text" class="form-control form-control-sm" />
             </div>
           </div>
           <div class="row">
-            <div class="col">
+            <div class="col-2">
               <label for="">Sector</label>
+            </div>
+            <div class="col-5">
               <input type="text" class="form-control form-control-sm" />
             </div>
-            <div class="col">
+            <div class="col-1">
               <label for="">Zona</label>
+            </div>
+            <div class="col-4">
               <input type="text" class="form-control form-control-sm" />
             </div>
           </div>
           <div class="row">
-            <div class="col">
+            <div class="col-2">
               <label for="">Contacto</label>
+            </div>
+            <div class="col-4">
               <input type="text" class="form-control form-control-sm" />
             </div>
-            <div class="col">
+            <div class="col-1">
               <label for="">Correo</label>
-              <input type="text" class="form-control form-control-sm" />
             </div>
-            <div class="col">
-              <label for="">Referencia</label>
+            <div class="col-5">
               <input type="text" class="form-control form-control-sm" />
             </div>
           </div>
           <div class="row">
-            <div class="col">
-              <label for="">Forma de pago</label>
-              <div
-                class="btn-group"
-                role="group"
-                aria-label="Basic radio toggle button group"
-              >
-                <input
-                  type="radio"
-                  class="btn-check"
-                  name="btnradio"
-                  id="btnradio1"
-                  autocomplete="off"
-                  checked
-                />
-                <label class="btn btn-outline-primary" for="btnradio1"
-                  >Efectivo</label
-                >
-
-                <input
-                  type="radio"
-                  class="btn-check"
-                  name="btnradio"
-                  id="btnradio2"
-                  autocomplete="off"
-                />
-                <label class="btn btn-outline-primary" for="btnradio2"
-                  >Cheque</label
-                >
-
-                <input
-                  type="radio"
-                  class="btn-check"
-                  name="btnradio"
-                  id="btnradio3"
-                  autocomplete="off"
-                />
-                <label class="btn btn-outline-primary" for="btnradio3"
-                  >T Credito</label
-                >
-
-                <input
-                  type="radio"
-                  class="btn-check"
-                  name="btnradio"
-                  id="btnradio4"
-                  autocomplete="off"
-                />
-                <label class="btn btn-outline-primary" for="btnradio4"
-                  >Credito</label
-                >
-
-                <input
-                  type="radio"
-                  class="btn-check"
-                  name="btnradio"
-                  id="btnradio5"
-                  autocomplete="off"
-                />
-                <label class="btn btn-outline-primary" for="btnradio5"
-                  >Deposito o Transferencia</label
-                >
-              </div>
+            <div class="col-3">
+              <label for="" class="label">Forma de pago</label>
             </div>
-          </div>
-          <div class="row">
-            <div class="col">
-              <label for="">Para</label>
-              <br />
-              <div
-                class="btn-group"
-                role="group"
-                aria-label="Basic radio toggle button group"
-              >
-                <input
-                  type="radio"
-                  class="btn-check"
-                  name="btnradio"
-                  id="btnradio1"
-                  autocomplete="off"
-                  checked
-                />
-                <label class="btn btn-outline-primary" for="btnradio1"
-                  >Enviar</label
-                >
-
-                <input
-                  type="radio"
-                  class="btn-check"
-                  name="btnradio"
-                  id="btnradio2"
-                  autocomplete="off"
-                />
-                <label class="btn btn-outline-primary" for="btnradio2"
-                  >Retirar cliente</label
-                >
-              </div>
+            <div class="col-3">
+              <input type="text" class="form-control form-control-sm" />
+            </div>
+            <div class="col-3">
+              <label for="" class="label">Tipo de Despacho</label>
+            </div>
+            <div class="col-3">
+              <input type="text" class="form-control form-control-sm" />
             </div>
           </div>
         </form>

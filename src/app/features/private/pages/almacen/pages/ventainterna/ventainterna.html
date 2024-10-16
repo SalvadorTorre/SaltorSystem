@@ -4,7 +4,7 @@
       <div class="card">
         <div
           class="card-header"
-          style="height: 50px; background-color: #ef1008"
+          style="height: 60px; background-color: #ef1008"
         >
           <h4 class="card-title" style="color: white; text-align: center">
             Ventas Interna
@@ -244,10 +244,12 @@
                           class="form-control dropdown-toggle searchInput"
                           data-id="agent"
                           type="text"
+                          style="height: 30px"
                           autocomplete="off"
                           (input)="convertToUpperCase($event)"
                           (keydown.enter)="moveFocusnomclie($event, input2)"
                           (keydown)="handleKeydown($event)"
+                          (blur)="onBlur($event)"
                           #input1
                           id="input2"
                           [formControl]="buscarNombre"
@@ -260,7 +262,7 @@
                             margin-right: 30px;
                             margin-top: 45px;
                             z-index: 300;
-                            width: 350px;
+                            width: 340px;
                             position: absolute;
                             will-change: transform;
                           "
@@ -293,7 +295,7 @@
                     <div class="col-2">
                       <label for="">No. Solicitud</label>
                     </div>
-                    <div class="col-10">
+                    <div class="col-4">
                       <input
                         type="text"
                         formControlName="fa_solicitud"
@@ -328,22 +330,20 @@
                   "
                 >
                   <div class="mb-1 row mt-1">
-                    <div class="col-5">
+                    <div class="col-1">
                       <label for="">No. </label>
                     </div>
-                    <div class="col-6">
+                    <div class="col-4">
                       <input
                         type="text"
                         formControlName="fa_codFact"
                         class="form-control form-control-sm"
                       />
                     </div>
-                  </div>
-                  <div class="mb-1 row">
-                    <div class="col-5">
+                    <div class="col-2">
                       <label for="">Fecha</label>
                     </div>
-                    <div class="col-6">
+                    <div class="col-4">
                       <input
                         formControlName="fa_fecFact"
                         type="text"
@@ -352,10 +352,10 @@
                     </div>
                   </div>
                   <div class="mb-1 row">
-                    <div class="col-5">
-                      <label for="">Vendedor</label>
+                    <div class="col-4">
+                      <label for="">Cod. Vend.</label>
                     </div>
-                    <div class="col-6">
+                    <div class="col-3">
                       <input
                         type="password"
                         (input)="convertToUpperCase($event)"
@@ -373,12 +373,7 @@
                         >
                       </div>
                     </div>
-                  </div>
-                  <div class="mb-1 row">
                     <div class="col-5">
-                      <label for="">Nombre Vend.</label>
-                    </div>
-                    <div class="col-6">
                       <input
                         type="text"
                         formControlName="fa_nomVend"
@@ -401,6 +396,7 @@
                     class="form-control dropdown-toggle searchInput me-2"
                     data-id="agent"
                     type="text"
+                    style="height: 30px"
                     [disabled]="!habilitarCampos"
                     #codigoInput
                     autocomplete="off"
@@ -456,6 +452,7 @@
                     class="form-control dropdown-toggle searchInput me-2"
                     data-id="agent"
                     type="text"
+                    style="height: 30px"
                     [disabled]="habilitarCampos"
                     #descripcionInput
                     autocomplete="off"
@@ -505,6 +502,7 @@
                 <label for="">Cantidad</label>
                 <input
                   type="number"
+                  style="height: 30px"
                   placeholder="Cantidad"
                   [(ngModel)]="cantidadmerc"
                   [formControl]="cantidadform"
@@ -513,12 +511,12 @@
                   (keydown)="moveFocusCantidad($event, input7)"
                   class="form-control"
                 />
-                console.log()
               </div>
               <div class="col-2">
                 <label for="">Precio</label>
                 <input
                   type="number"
+                  style="height: 30px"
                   [(ngModel)]="preciomerc"
                   [formControl]="precioform"
                   id="input7"

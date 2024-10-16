@@ -376,7 +376,7 @@ export class Ventainterna implements OnInit {
       let subtotal = 0;
       let itbis = 0;
       let totalGeneral = 0;
-      const itbisRate = 0.18; // Ejemplo: 18% de ITBIS
+     // const itbisRate = 0.18; // Ejemplo: 18% de ITBIS
 
       response.data.forEach((item: any) => {
         const producto: ModeloInventarioData = {
@@ -708,7 +708,6 @@ export class Ventainterna implements OnInit {
     this.resultadoNombre = [];
     this.buscarNombre.reset();
     if (cliente.cl_nomClie !==""){
-      console.log("dd")
       this.formularioVentainterna.patchValue({
         fa_codClie: cliente.cl_codClie,
         fa_nomClie: cliente.cl_nomClie,
@@ -992,7 +991,14 @@ export class Ventainterna implements OnInit {
     }
   }
 
+  onBlur(event: any): void {
+    const value = event.target.value;
 
+    // Si el valor no está vacío, lo asignamos al formControl
+    if (value && value.trim() !== '') {
+      this.formularioVentainterna.get('fae_nomClie')!.setValue(value.trim());
+    }
+  }
 }
 
 
