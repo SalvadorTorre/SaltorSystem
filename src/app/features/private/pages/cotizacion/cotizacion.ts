@@ -20,6 +20,7 @@ import { ModeloInventario, ModeloInventarioData } from 'src/app/core/services/ma
 import { Usuario } from '../mantenimientos/pages/usuario-page/usuario';
 declare var $: any;
 
+
 @Component({
   selector: 'Cotizacion',
   templateUrl: './cotizacion.html',
