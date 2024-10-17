@@ -1,0 +1,15 @@
+.nav-link {
+  color: rgb(250, 247, 247);
+}
+
+.nav-link.active {
+  text-decoration: none;
+  color: #af3d2c;
+  font-size: 18px;
+  font-weight: bold;
+  padding: 2px 5px;
+  border-radius: 8px;
+  margin: 0px 10px;
+
+  background-color: #f0f0f0;
+}

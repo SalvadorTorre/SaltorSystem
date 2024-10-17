@@ -158,7 +158,6 @@ export class Empresas implements OnInit {
 
   buscarTodasEmpresa(page: number) {
     this.servicioEmpresa.buscarTodasEmpresa(page, this.pageSize).subscribe(response => {
-      console.log(response);
       this.empresaList = response.data;
     });
   }
