@@ -30,7 +30,7 @@ export class Cotizacion implements OnInit {
   @ViewChild('inputCodmerc') inputCodmerc!: ElementRef; // Para manejar el foco
   @ViewChild('descripcionInput') descripcionInput!: ElementRef; // Para manejar el foco
   @ViewChild('Tabladetalle') Tabladetalle!: ElementRef;
-   totalItems = 0;
+  totalItems = 0;
   pageSize = 12;
   currentPage = 1;
   maxPagesToShow = 5;
@@ -76,7 +76,7 @@ export class Cotizacion implements OnInit {
   habilitarCampos: boolean = false;
   sucursales = [];
   sucursalSeleccionada: any = null;
-  habilitarIcono: boolean = true ;
+  habilitarIcono: boolean = true;
 
 
   private codigoSubject = new BehaviorSubject<string>('');
@@ -287,10 +287,10 @@ export class Cotizacion implements OnInit {
     this.mensagePantalla = false;
     $('#modalcotizacion').modal('hide');
     this.crearFormularioCotizacion();
-    this.buscarTodasCotizacion(1);
+    // this.buscarTodasCotizacion(1);
     this.limpiarTabla()
     this.limpiarCampos()
-    this.habilitarIcono= true;
+    this.habilitarIcono = true;
     const inputs = document.querySelectorAll('.seccion-productos input');
     inputs.forEach((input) => {
       (input as HTMLInputElement).disabled = false;
@@ -358,9 +358,9 @@ export class Cotizacion implements OnInit {
         // Calcular el subtotal
         subtotal += totalItem;
         // Calcular ITBIS solo si el producto tiene ITBIS
-       // if (item.dc_itbis) {
-          this.totalItbis += totalItem * itbisRate;
-       // }
+        // if (item.dc_itbis) {
+        this.totalItbis += totalItem * itbisRate;
+        // }
       });
       // Calcular el total general (subtotal + ITBIS)
       totalGeneral = subtotal + this.totalItbis;
@@ -369,7 +369,7 @@ export class Cotizacion implements OnInit {
       this.totalItbis = this.totalItbis;
       this.totalGral = totalGeneral;
     });
-}
+  }
 
   buscarTodasCotizacion(page: number) {
     this.servicioCotizacion.buscarTodasCotizacion(page, this.pageSize).subscribe(response => {
@@ -384,7 +384,7 @@ export class Cotizacion implements OnInit {
     $('#modalcotizacion').modal('show');
     this.habilitarFormulario = true;
     this.formularioCotizacion.disable();
-    this.habilitarIcono= false;
+    this.habilitarIcono = false;
 
     const inputs = document.querySelectorAll('.seccion-productos input');
     inputs.forEach((input) => {
@@ -444,9 +444,9 @@ export class Cotizacion implements OnInit {
         subtotal += totalItem;
 
         // Calcular ITBIS solo si el producto tiene ITBIS
-       // if (item.dc_itbis) {
-          this.totalItbis += totalItem * itbisRate;
-       // }
+        // if (item.dc_itbis) {
+        this.totalItbis += totalItem * itbisRate;
+        // }
       });
 
       // Calcular el total general (subtotal + ITBIS)
@@ -457,7 +457,7 @@ export class Cotizacion implements OnInit {
       this.totalItbis = this.totalItbis;
       this.totalGral = totalGeneral;
     });
-}
+  }
 
   eliminarCotizacion(CotizacionId: string) {
     Swal.fire({
@@ -576,7 +576,7 @@ export class Cotizacion implements OnInit {
             this.buscarTodasCotizacion(1);
             this.formularioCotizacion.reset();
             this.crearFormularioCotizacion();
-          this.formularioCotizacion.enable();
+            this.formularioCotizacion.enable();
             $('#modalcotizacion').modal('hide');
           });
         } else {
@@ -771,7 +771,7 @@ export class Cotizacion implements OnInit {
   cargarDatosCliente(cliente: ModeloClienteData) {
     this.resultadoNombre = [];
     this.buscarNombre.reset();
-    if (cliente.cl_nomClie !==""){
+    if (cliente.cl_nomClie !== "") {
       console.log("dd")
       this.formularioCotizacion.patchValue({
         ct_codclie: cliente.cl_codClie,

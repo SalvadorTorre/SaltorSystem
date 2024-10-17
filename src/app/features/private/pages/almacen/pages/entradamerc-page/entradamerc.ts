@@ -285,11 +285,11 @@ export class Entradamerc implements OnInit {
     this.modoedicionEntradamerc = false;
     this.modoconsultaEntradamerc = false;
     this.mensagePantalla = false;
-    $('#modalentradamerc').modal('hide');
-    this.crearFormularioEntradamerc();
-    this.buscarTodasEntradamerc(1);
+    // this.buscarTodasEntradamerc(1);
     this.limpiarTabla()
     this.limpiarCampos()
+    this.crearFormularioEntradamerc();
+    $('#modalentradamerc').modal('hide');
     this.habilitarIcono = true;
     const inputs = document.querySelectorAll('.seccion-productos input');
     inputs.forEach((input) => {
@@ -374,13 +374,12 @@ export class Entradamerc implements OnInit {
 
   buscarTodasEntradamerc(page: number) {
     this.servicioEntradamerc.buscarTodasEntradamerc(page, this.pageSize).subscribe(response => {
-      console.log(response);
       this.entradamercList = response.data;
     });
   }
-  consultarEntradamerc(Entradamerc: EntradamercModelData) {
+  consultarEntradamerc(entradamerc: EntradamercModelData) {
     this.modoconsultaEntradamerc = true;
-    this.formularioEntradamerc.patchValue(Entradamerc);
+    this.formularioEntradamerc.patchValue(entradamerc);
     this.tituloModalEntradamerc = 'Consulta Entrada Mercancias';
     $('#modalentradamerc').modal('show');
     this.habilitarFormulario = true;
@@ -395,16 +394,18 @@ export class Entradamerc implements OnInit {
     // Limpiar los items antes de agregar los nuevos
     this.items = [];
 
-    this.servicioEntradamerc.buscarEntradamercDetalle(Entradamerc.me_codEntr).subscribe(response => {
+    this.servicioEntradamerc.buscarEntradamercDetalle(entradamerc.me_codEntr).subscribe(response => {
       let subtotal = 0;
       let itbis = 0;
       let totalGeneral = 0;
       const itbisRate = 0.18; // Ejemplo: 18% de ITBIS
 
+      console.log(response);
+
       response.data.forEach((item: any) => {
         const producto: ModeloInventarioData = {
-          in_codmerc: item.de_codEntr,
-          in_desmerc: item.de_descrip,
+          in_codmerc: item.de_codMerc,
+          in_desmerc: item.de_desMerc,
           in_grumerc: '',
           in_tipoproduct: '',
           in_canmerc: 0,
@@ -412,14 +413,14 @@ export class Entradamerc implements OnInit {
           in_fecinve: null,
           in_eximini: 0,
           in_cosmerc: 0,
-          in_premerc: 0,
+          in_premerc: item.de_preMerc,
           in_precmin: 0,
           in_costpro: 0,
           in_ucosto: 0,
           in_porgana: 0,
           in_peso: 0,
           in_longitud: 0,
-          in_unidad: 0,
+          in_unidad: item.de_canEntr,
           in_medida: 0,
           in_longitu: 0,
           in_fecmodif: null,
@@ -430,8 +431,8 @@ export class Entradamerc implements OnInit {
           in_minvent: 0,
         };
 
-        const cantidad = item.de_canmerc;
-        const precio = item.de_premerc;
+        const cantidad = item.de_canEntr;
+        const precio = item.de_preMerc;
         const totalItem = cantidad * precio;
 
         this.items.push({
