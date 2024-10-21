@@ -27,7 +27,11 @@
               <label for="">Fecha</label>
             </div>
             <div class="col-3">
-              <input type="text" class="form-control form-control-sm" />
+              <input
+                formControlName="fa_fecFact"
+                type="text"
+                class="form-control form-control-sm"
+              />
             </div>
           </div>
 
@@ -70,8 +74,9 @@
                     #input2
                     id="input2"
                     [formControl]="buscarNombre"
-                    formControlName="ct_nomclie"
+                    formControlName="fa_nomclie"
                   />
+
                   <div
                     [ngClass]="{ 'show': resultadoNombre.length > 0 }"
                     class="dropdown-menu"
@@ -115,7 +120,14 @@
               <label for="">Dirección</label>
             </div>
             <div class="col-10">
-              <input type="text" class="form-control form-control-sm" #input3 />
+              <input
+                type="text"
+                formControlName="fa_dirclie"
+                (input)="convertToUpperCase($event)"
+                (keydown)="moveFocus($event, input4)"
+                #input3
+                class="form-control form-control-sm"
+              />
             </div>
           </div>
           <div class="row">
@@ -123,10 +135,22 @@
               <label for="">Telefono</label>
             </div>
             <div class="col-4">
-              <input type="text" class="form-control form-control-sm" />
+              <input
+                type="text"
+                formControlName="fa_telclie"
+                (keydown)="moveFocus($event, input5)"
+                #input4
+                class="form-control form-control-sm"
+              />
             </div>
             <div class="col-4">
-              <input type="text" class="form-control form-control-sm" />
+              <input
+                type="text"
+                formControlName="fa_telclie2"
+                (keydown)="moveFocus($event, input6)"
+                #input5
+                class="form-control form-control-sm"
+              />
             </div>
           </div>
           <div class="row">
@@ -134,13 +158,25 @@
               <label for="">Sector</label>
             </div>
             <div class="col-5">
-              <input type="text" class="form-control form-control-sm" />
+              <input
+                type="text"
+                formControlName="fa_sector"
+                (keydown)="moveFocus($event, input7)"
+                #input6
+                class="form-control form-control-sm"
+              />
             </div>
             <div class="col-1">
               <label for="">Zona</label>
             </div>
             <div class="col-4">
-              <input type="text" class="form-control form-control-sm" />
+              <input
+                type="text"
+                formControlName="fa_desZona"
+                (keydown)="moveFocus($event, input8)"
+                #input7
+                class="form-control form-control-sm"
+              />
             </div>
           </div>
           <div class="row">
@@ -148,27 +184,75 @@
               <label for="">Contacto</label>
             </div>
             <div class="col-4">
-              <input type="text" class="form-control form-control-sm" />
+              <input
+                type="text"
+                formControlName="fa_contacto"
+                (keydown)="moveFocus($event, input9)"
+                #input8
+                class="form-control form-control-sm"
+              />
             </div>
             <div class="col-1">
               <label for="">Correo</label>
             </div>
             <div class="col-5">
-              <input type="text" class="form-control form-control-sm" />
+              <input
+                type="text"
+                formControlName="fa_correo"
+                (keydown)="moveFocus($event, input10)"
+                #input9
+                class="form-control form-control-sm"
+              />
             </div>
           </div>
           <div class="row">
-            <div class="col-3">
+            <div class="col-4">
               <label for="" class="label">Forma de pago</label>
-            </div>
-            <div class="col-3">
-              <input type="text" class="form-control form-control-sm" />
             </div>
             <div class="col-3">
               <label for="" class="label">Tipo de Despacho</label>
             </div>
+            <div class="col-5">
+              <label for="" class="label">Vendedor</label>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-4">
+              <input
+                type="text"
+                formControlName="fa_fpago"
+                (keydown)="moveFocus($event, input11)"
+                #input10
+                class="form-control form-control-sm"
+              />
+            </div>
+
             <div class="col-3">
-              <input type="text" class="form-control form-control-sm" />
+              <input
+                type="text"
+                formControlName="fa_envio"
+                (keydown)="moveFocus($event, input12)"
+                #input11
+                class="form-control form-control-sm"
+              />
+            </div>
+
+            <div class="col-2">
+              <input
+                type="text"
+                formControlName="fa_codVend"
+                (keydown)="moveFocus($event, input13)"
+                #input12
+                class="form-control form-control-sm"
+              />
+            </div>
+            <div class="col-2">
+              <input
+                type="text"
+                formControlName="fa_nomVend"
+                #input13
+                class="form-control form-control-sm"
+              />
             </div>
           </div>
         </form>
@@ -184,15 +268,123 @@
         <div class="row">
           <div class="col-2">
             <label for=""> Código </label>
-            <input type="text" class="form-control form-control-sm" />
+            <div class="input-group show">
+              <input
+                class="form-control dropdown-toggle searchInput me-2"
+                data-id="agent"
+                type="text"
+                [disabled]="!habilitarCampos"
+                #codigoInput
+                autocomplete="off"
+                (input)="convertToUpperCase($event)"
+                (keydown)="handleKeydownInventario($event)"
+                (keydown)="moveFocuscodmerc($event, input14)"
+                #input13
+                [formControl]="buscarcodmerc"
+                [(ngModel)]="codmerc"
+                name="codmerc"
+                placeholder="Código"
+              />
+
+              <div
+                [ngClass]="{ 'show': resultadoCodmerc.length > 0 }"
+                class="dropdown-menu"
+                style="
+                  margin-right: 30px;
+                  margin-top: 45px;
+                  z-index: 300;
+                  width: 350px;
+                  position: absolute;
+                  will-change: transform;
+                "
+              >
+                <div
+                  class="searchReturnItem name-find"
+                  *ngFor="let result of resultadoCodmerc; let i = index"
+                  [class.active]="i === selectedIndexcodmerc"
+                >
+                  <a
+                    (click)="cargarDatosInventario(result)"
+                    style="
+                      color: #222222 !important;
+                      font-size: 10pt;
+                      padding: 20px 0px;
+                      text-decoration: none !important;
+                      cursor: pointer;
+                    "
+                    class="px-3 cp"
+                  >
+                    <i class="far fa-user-circle mr-5"></i>&nbsp;&nbsp;{{
+                    result.in_codmerc }}
+                  </a>
+                </div>
+              </div>
+            </div>
           </div>
           <div class="col-4">
             <label for=""> Descripción </label>
-            <input type="text" class="form-control form-control-sm" />
+            <div class="input-group show">
+              <input
+                class="form-control dropdown-toggle searchInput me-2"
+                data-id="agent"
+                type="text"
+                [disabled]="habilitarCampos"
+                #descripcionInput
+                autocomplete="off"
+                (input)="convertToUpperCase($event)"
+                (keydown)="moveFocusdesc($event, input15)"
+                (keydown)="handleKeydownInventariosdesc($event)"
+                #input14
+                [formControl]="buscardescripcionmerc"
+                [(ngModel)]="descripcionmerc"
+              />
+              <div
+                [ngClass]="{ 'show': resultadodescripcionmerc.length > 0 }"
+                class="dropdown-menu"
+                style="
+                  margin-right: 30px;
+                  margin-top: 45px;
+                  z-index: 300;
+                  width: 350px;
+                  position: absolute;
+                  will-change: transform;
+                "
+              >
+                <div
+                  class="searchReturnItem name-find"
+                  *ngFor="let result of resultadodescripcionmerc; let i = index"
+                  [class.active]="i === selectedIndexcoddescripcionmerc"
+                >
+                  <a
+                    (click)="cargarDatosInventario(result)"
+                    style="
+                      color: #222222 !important;
+                      font-size: 10pt;
+                      padding: 20px 0px;
+                      text-decoration: none !important;
+                      cursor: pointer;
+                    "
+                    class="px-3 cp"
+                  >
+                    <i class="far fa-user-circle mr-5"></i>&nbsp;&nbsp;{{
+                    result.in_desmerc }}
+                  </a>
+                </div>
+              </div>
+            </div>
           </div>
           <div class="col-2">
             <label for=""> Cant. </label>
-            <input type="text" class="form-control form-control-sm" />
+            <input
+              type="number"
+              placeholder="Cantidad"
+              [(ngModel)]="cantidadmerc"
+              [formControl]="cantidadform"
+              id="input8"
+              #input15
+              (keydown)="moveFocusCantidad($event, input16)"
+              class="form-control"
+            />
           </div>
           <div class="col-2">
             <label for=""> Precio </label>
@@ -203,10 +395,18 @@
               <i class="bi bi-plus"></i>
             </button>
             &nbsp;&nbsp;
-            <button class="btn btn-danger mt-3"><i class="bi bi-x"></i></button>
+            <input
+              type="number"
+              [(ngModel)]="preciomerc"
+              [formControl]="precioform"
+              id="input9"
+              #input16
+              (keydown)="moveFocus($event, input13)"
+              class="form-control"
+              (keydown.enter)="agregaItem($event)"
+            />
           </div>
         </div>
-        <br />
         <div class="row">
           <div class="col">
             <div

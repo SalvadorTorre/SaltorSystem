@@ -78,7 +78,8 @@ export class Facturacion implements OnInit {
   sucursalSeleccionada: any = null;
   habilitarIcono: boolean = true;
   rncValue: string = '';
-
+  cancelarBusquedaDescripcion: boolean = false;
+  cancelarBusquedaCodigo: boolean = false;
   private codigoSubject = new BehaviorSubject<string>('');
   private nomclienteSubject = new BehaviorSubject<string>('');
 
@@ -132,63 +133,65 @@ export class Facturacion implements OnInit {
 
   ngOnInit(): void {
     this.buscarTodasFacturacion(1);
-    // this.buscarcodmerc.valueChanges.pipe(
-    //   debounceTime(50),
-    //   distinctUntilChanged(),
-    //   tap(() => {
-    //     this.resultadoCodmerc = [];
-    //   }),
-    //   filter((query: string) => query.trim() !== '' && !this.cancelarBusquedaCodigo && !this.isEditing),
-    //   switchMap((query: string) => this.http.GetRequest<ModeloInventario>(`/productos-buscador/${query}`))
-    // ).subscribe((results: ModeloInventario) => {
-    //   console.log(results.data);
-    //   if (results) {
-    //     if (Array.isArray(results.data) && results.data.length) {
-    //       // Aquí ordenamos los resultados por el campo 'nombre' (puedes cambiar el campo según tus necesidades)
-    //       this.resultadoCodmerc = results.data.sort((a, b) => {
-    //         return a.in_codmerc.localeCompare(b.in_codmerc, undefined, { numeric: true, sensitivity: 'base' });
-    //       });
-    //       // Aquí seleccionamos automáticamente el primer ítem
-    //       this.selectedIndex = -1;
+    this.buscarcodmerc.valueChanges.pipe(
+      debounceTime(50),
+      distinctUntilChanged(),
+      tap(() => {
+        this.resultadoCodmerc = [];
+      }),
+      filter((query: string) => query.trim() !== '' && !this.cancelarBusquedaCodigo && !this.isEditing),
+      switchMap((query: string) => this.http.GetRequest<ModeloInventario>(`/productos-buscador/${query}`))
+    ).subscribe((results: ModeloInventario) => {
+      console.log(results.data);
+      if (results) {
+        if (Array.isArray(results.data) && results.data.length) {
+          // Aquí ordenamos los resultados por el campo 'nombre' (puedes cambiar el campo según tus necesidades)
+          this.resultadoCodmerc = results.data.sort((a, b) => {
+            return a.in_codmerc.localeCompare(b.in_codmerc, undefined, { numeric: true, sensitivity: 'base' });
+          });
+          // Aquí seleccionamos automáticamente el primer ítem
+          this.selectedIndex = -1;
 
-    //       this.codnotfound = false;
-    //     } else {
-    //       this.codnotfound = true;
-    //       return;
-    //     }
-    //   } else {
-    //     this.resultadoCodmerc = [];
-    //     this.codnotfound = false;
+          this.codnotfound = false;
+        } else {
+          this.codnotfound = true;
+          return;
+        }
+      } else {
+        this.resultadoCodmerc = [];
+        this.codnotfound = false;
 
-    //     return;
-    //   }
+        return;
+      }
 
-    // });
+    });
 
-    // this.buscardescripcionmerc.valueChanges.pipe(
-    //   debounceTime(50),
-    //   distinctUntilChanged(),
-    //   tap(() => {
-    //     this.resultadodescripcionmerc = [];
-    //   }),
-    //   filter((query: string) => query !== '' && !this.cancelarBusquedaDescripcion && !this.isEditing),
-    //   switchMap((query: string) => this.http.GetRequest<ModeloInventario>(`/productos-buscador-desc/${query}`))
-    // ).subscribe((results: ModeloInventario) => {
-    //   console.log(results.data);
-    //   if (results) {
-    //     if (Array.isArray(results.data) && results.data.length) {
-    //       this.resultadodescripcionmerc = results.data;
-    //       this.desnotfound = false;
-    //     }
-    //     else {
-    //       this.desnotfound = true;
-    //     }
-    //   } else {
-    //     this.resultadodescripcionmerc = [];
-    //     this.desnotfound = false;
-    //   }
 
-    // });
+    this.buscardescripcionmerc.valueChanges.pipe(
+      debounceTime(50),
+      distinctUntilChanged(),
+      tap(() => {
+        this.resultadodescripcionmerc = [];
+      }),
+      filter((query: string) => query !== '' && !this.cancelarBusquedaDescripcion && !this.isEditing),
+      switchMap((query: string) => this.http.GetRequest<ModeloInventario>(`/productos-buscador-desc/${query}`))
+    ).subscribe((results: ModeloInventario) => {
+      console.log(results.data);
+      if (results) {
+        if (Array.isArray(results.data) && results.data.length) {
+          this.resultadodescripcionmerc = results.data;
+          this.desnotfound = false;
+        }
+        else {
+          this.desnotfound = true;
+        }
+      } else {
+        this.resultadodescripcionmerc = [];
+        this.desnotfound = false;
+      }
+
+    });
+
     this.buscarNombre.valueChanges.pipe(
       debounceTime(500),
       distinctUntilChanged(),
@@ -230,8 +233,10 @@ export class Facturacion implements OnInit {
         fa_codVend: ['', Validators.required],
         fa_nomVend: [''],
         fa_status: [''],
+        fa_sector:[''],
         fa_codZona: [''],
         fa_fpago:[''],
+        fa_envio:[''],
       });
 
     }
@@ -281,48 +286,98 @@ export class Facturacion implements OnInit {
         input.setSelectionRange(start, end);
       }
     }
-//     buscarRnc(event: Event, nextElement: HTMLInputElement | null): void {
-//       event.preventDefault();
-//       const rnc = this.formularioFacturacion.get('fa_rncFact')?.value;
-//       if (rnc) {
-//         if (rnc.length === 9 || rnc.length === 11) {
-//           this.ServicioRnc.buscarRncPorId(rnc).subscribe(
-//             (rnc) => {
-//               console.log(rnc.data);
-//               if (rnc.data.length) {
-//                 this.formularioFacturacion.patchValue({ fa_nomClie: rnc.data[0].rason });
-//                 nextElement?.focus()
-//               } else {
-//                 this.mensagePantalla = true;
 
-//                 Swal.fire({
-//                   icon: "error",
-//                   title: "A V I S O",
-//                   text: 'Rnc invalido.',
-//                 }).then(() => { this.mensagePantalla = false });
-//                 return;
-//               }
-//             }
-//           );
-//         }
-//         else {
-//           this.mensagePantalla = true;
-//           Swal.fire({
-//             icon: "error",
-//             title: "A V I S O",
-//             text: 'Rnc invalido.',
+    moveFocus(event: KeyboardEvent, nextElement: HTMLInputElement | null): void {
+      if (event.key === 'Enter' && nextElement) {
+        event.preventDefault(); // Evita el comportamiento predeterminado del Enter
+        nextElement.focus(); // Enfoca el siguiente campo
+      }
+    }
 
-//           }).then(() => { this.mensagePantalla = false });
-//           return;
-//         }
-//         this.mensagePantalla = false;
-//       }
-//       else {
-//         nextElement?.focus()
-//       }
-//       this.mensagePantalla = false;
-//     }
-//
+moveFocuscodmerc(event: KeyboardEvent, nextInput: HTMLInputElement) {
+  if (event.key === 'Enter' || event.key === 'Tab') {
+    event.preventDefault(); // Previene el comportamiento predeterminado de Enter
+    // const currentControl = this.formularioCotizacion.get('ct_codvend');
+    const currentInputValue = (event.target as HTMLInputElement).value.trim();
+    if (currentInputValue === '') {
+      this.codmerVacio = true;
+    }
+    else {
+      this.codmerVacio = false;
+    }
+    if (!this.codnotfound === false) {
+      console.log(this.codnotfound);
+      this.mensagePantalla = true;
+      Swal.fire({
+        icon: "error",
+        title: "A V I S O",
+        text: 'Codigo invalido.',
+        focusConfirm: true,
+        allowEnterKey: true,
+      }).then(() => { this.mensagePantalla = false });
+      this.codmerVacio = false;
+      this.codnotfound = false;
+      this.codmerc = ""
+      this.descripcionmerc = ""
+      return;
+    }
+    else {
+      if (this.codmerVacio === true) {
+        nextInput.focus();
+        this.codmerVacio = false;
+        console.log("vedadero");
+      }
+      else {
+        $("#input8").focus();
+        $("#input8").select();
+      }
+      this.codmerVacio = false;
+    }
+  }
+}
+handleKeydownInventario(event: KeyboardEvent): void {
+  const key = event.key;
+  const maxIndex = this.resultadoCodmerc.length;
+  if (key === 'ArrowDown') {
+    console.log("paso");
+    this.selectedIndexcodmerc = this.selectedIndexcodmerc < maxIndex ? this.selectedIndexcodmerc + 1 : 0;
+    event.preventDefault();
+  }
+  else
+    if (key === 'ArrowUp') {
+      console.log("paso2");
+      this.selectedIndexcodmerc = this.selectedIndexcodmerc > 0 ? this.selectedIndexcodmerc - 1 : maxIndex;
+      event.preventDefault();
+    }
+    else if (key === 'Enter') {
+      if (this.selectedIndexcodmerc >= 0 && this.selectedIndexcodmerc <= maxIndex) {
+        this.cargarDatosInventario(this.resultadoCodmerc[this.selectedIndexcodmerc]);
+      }
+      event.preventDefault();
+    }
+}
+cargarDatosInventario(inventario: ModeloInventarioData) {
+  console.log(inventario);
+  this.resultadoCodmerc = [];
+  this.resultadodescripcionmerc = [];
+  this.codmerc = inventario.in_codmerc;
+  this.preciomerc = inventario.in_premerc
+  this.descripcionmerc = inventario.in_desmerc;
+  this.productoselect = inventario;
+  this.cancelarBusquedaDescripcion = true;
+  this.cancelarBusquedaCodigo = true;
+  this.formularioFacturacion.patchValue({
+    dc_codmerc: inventario.in_codmerc,
+    dc_desmerc: inventario.in_desmerc,
+    dc_canmerc: inventario.in_canmerc,
+    dc_premerc: inventario.in_premerc,
+    dc_cosmerc: inventario.in_cosmerc,
+    dc_unidad: inventario.in_unidad,
+  });
+  $("#input8").focus();
+  $("#input8").select();
+}
+
 buscarRnc(event: Event, nextElement: HTMLInputElement | null): void {
   event.preventDefault();
 
@@ -406,7 +461,84 @@ handleKeydown(event: KeyboardEvent): void {
     event.preventDefault();
   }
 }
+handleKeydownInventariosdesc(event: KeyboardEvent): void {
+  const key = event.key;
+  const maxIndex = this.resultadodescripcionmerc.length;
+  if (key === 'ArrowDown') {
+    // Mueve la selección hacia abajo
+    this.selectedIndexcoddescripcionmerc = this.selectedIndexcoddescripcionmerc < maxIndex ? this.selectedIndexcoddescripcionmerc + 1 : 0;
+    event.preventDefault();
+  } else if (key === 'ArrowUp') {
+    // Mueve la selección hacia arriba
+    this.selectedIndexcoddescripcionmerc = this.selectedIndexcoddescripcionmerc > 0 ? this.selectedIndexcoddescripcionmerc - 1 : maxIndex;
+    event.preventDefault();
+  } else if (key === 'Enter') {
+    // Selecciona el ítem actual
+    if (this.selectedIndexcoddescripcionmerc >= 0 && this.selectedIndexcoddescripcionmerc <= maxIndex) {
+      this.cargarDatosInventario(this.resultadodescripcionmerc[this.selectedIndexcoddescripcionmerc]);
+    }
+    event.preventDefault();
+  }
+}
+moveFocusdesc(event: KeyboardEvent, nextInput: HTMLInputElement) {
+  if (event.key === 'Enter' || event.key === 'Tab') {
+    event.preventDefault(); // Previene el comportamiento predeterminado de Enter
+    const currentInputValue = (event.target as HTMLInputElement).value.trim();
+    if (currentInputValue === '') {
+      this.desmerVacio = true;
+      console.log("vedadero");
+    };
 
+    if (!this.desnotfound === false) {
+      this.mensagePantalla = true;
+      Swal.fire({
+        icon: "error",
+        title: "A V I S O",
+        text: 'Codigo invalido.',
+      }).then(() => { this.mensagePantalla = false });
+      this.desnotfound = true
+      return;
+    }
+    else {
+      if (this.desmerVacio === true) {
+        this.mensagePantalla = true;
+        Swal.fire({
+          icon: "error",
+          title: "A V I S O",
+          text: 'Codigo invalido.',
+        }).then(() => { this.mensagePantalla = false });
+        this.desnotfound = true
+        return;
+        // nextInput.focus();
+        // this.desmerVacio = false;
+      }
+      else {
+        $("#input8").focus();
+        $("#input8").select();
+      }
+      this.desmerVacio = false;
+    }
+  }
+}
+moveFocusCantidad(event: KeyboardEvent, nextInput: HTMLInputElement) {
+  if (event.key === 'Enter' || event.key === 'Tab') {
+    event.preventDefault();
+    if (!this.productoselect || this.cantidadmerc <= 0) {
+      this.mensagePantalla = true;
+      Swal.fire({
+        icon: "error",
+        title: "A V I S O",
+        text: 'Por favor complete todos los campos requeridos antes de agregar el ítem.',
+      }).then(() => { this.mensagePantalla = false });
+      return;
+    }
+    else {
+      // nextInput.focus();
+      $("#input9").focus();
+      $("#input9").select();
+    }
+  }
+}
 moveFocusnomclie(event: Event, nextInput: HTMLInputElement) {
   event.preventDefault();
   console.log(nextInput);
@@ -440,5 +572,102 @@ cargarDatosCliente(cliente: ModeloClienteData) {
 
     });
   }
+}
+
+agregaItem(event: Event) {
+  event.preventDefault();
+  if (this.isEditing) {
+    console.log("editando")
+    // Actualizar el ítem existente
+    this.itemToEdit.producto = this.productoselect;
+    this.itemToEdit.codmerc = this.codmerc;
+    this.itemToEdit.descripcionmerc = this.descripcionmerc;
+    this.itemToEdit.precio = this.preciomerc;
+    this.itemToEdit.cantidad = this.cantidadmerc;
+    this.itemToEdit.total = this.cantidadmerc * this.preciomerc;
+
+    // Actualizar los totales
+    this.actualizarTotales();
+
+    // Restablecer el estado de edición
+    this.isEditing = false;
+    this.itemToEdit = null;
+  } else {
+
+    if (!this.productoselect || this.cantidadmerc <= 0 || this.preciomerc <= 0) {
+      this.mensagePantalla = true;
+      Swal.fire({
+        icon: "error",
+        title: "A V I S O",
+        text: 'Por favor complete todos los campos requeridos antes de agregar el ítem.',
+      }).then(() => { this.mensagePantalla = false });
+      return;
+    }
+    const total = this.cantidadmerc * this.preciomerc;
+    this.totalGral += total;
+    const itbis = total * 0.18;
+    this.totalItbis += itbis;
+    this.subTotal += total - itbis;
+    this.items.push({
+      producto: this.productoselect, cantidad: this.cantidadmerc, precio: this.preciomerc, total
+    })
+
+    this.cancelarBusquedaDescripcion = false;
+    this.cancelarBusquedaCodigo = false;
+  }
+  this.limpiarCampos();
+}
+
+limpiarCampos() {
+  this.productoselect;
+  this.codmerc = ""
+  this.descripcionmerc = ""
+  this.preciomerc = 0;
+  this.cantidadmerc = 0;
+  this.isEditing = false;
+}
+
+limpiarTabla() {
+  this.items = [];          // Limpiar el array de items
+  this.totalGral = 0;       // Reiniciar el total general
+  this.totalItbis = 0;      // Reiniciar el total del ITBIS
+  this.subTotal = 0;        // Reiniciar el subtotal
+}
+// (Opcional) Función para eliminar un ítem de la tabla
+borarItem(item: any) {
+  const index = this.items.indexOf(item);
+  if (index > -1) {
+    this.totalGral -= item.total;
+
+    // Calcular el itbis del ítem eliminado y restarlo del total itbis
+    const itbis = item.total * 0.18;
+    this.totalItbis -= itbis;
+
+    // Restar el subtotal del ítem eliminado
+    this.subTotal -= (item.total - itbis);
+
+    // Eliminar el ítem de la lista
+    this.items.splice(index, 1);
+  }
+}
+
+editarItem(item: any) {
+  this.index_item = this.items.indexOf(item);
+
+
+  this.isEditing = true;
+  this.itemToEdit = item;
+
+  this.productoselect = item.producto;
+  this.codmerc = item.producto.in_codmerc;
+  this.descripcionmerc = item.producto.in_desmerc;
+  this.preciomerc = item.precio
+  this.cantidadmerc = item.cantidad
+
+}
+actualizarTotales() {
+  this.totalGral = this.items.reduce((sum, item) => sum + item.total, 0);
+  this.totalItbis = this.items.reduce((sum, item) => sum + (item.total * 0.18), 0);
+  this.subTotal = this.items.reduce((sum, item) => sum + (item.total - (item.total * 0.18)), 0);
 }
 }

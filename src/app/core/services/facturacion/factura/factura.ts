@@ -1,4 +1,5 @@
-import { FacturacionModelData } from ".";
+
+import { FacturacionModelData } from '.';
 import { ModeloInventarioData } from "../../mantenimientos/inventario";
 
 export interface FacturaDetalleModel {

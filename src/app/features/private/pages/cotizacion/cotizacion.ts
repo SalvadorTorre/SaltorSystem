@@ -512,23 +512,7 @@ export class Cotizacion implements OnInit {
       idCotizacion: this.formularioCotizacion.get('ct_codcoti')?.value,
 
     };
-    // if (this.formularioCotizacion.valid) {
-    //   this.servicioCotizacion.guardarCotizacion(payload).subscribe(response => {
-    //     Swal.fire({
-    //       title: "Excelente!",
-    //       text: "Cotizacion creada correctamente.",
-    //       icon: "success",
-    //       timer: 1000,
-    //       showConfirmButton: false,
-    //     });
-    //     this.buscarTodasCotizacion(1);
-    //     this.formularioCotizacion.reset();
-    //     this.crearFormularioCotizacion();
-    //     $('#modalcotizacion').modal('hide');
-    //   });
-    // } else {
-    //   console.log(this.formularioCotizacion.value);
-    // }
+
 
     if (this.formularioCotizacion.valid) {
       if (this.modoedicionCotizacion) {
