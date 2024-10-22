@@ -82,7 +82,7 @@
                   #input2
                   id="input2"
                   [formControl]="buscarNombre"
-                  formControlName="fa_nomclie"
+                  formControlName="fa_nomClie"
                 />
 
                 <div
@@ -410,7 +410,7 @@
           <div class="col">
             <div
               class="table-responsive"
-              style="height: 250px; overflow-y: auto"
+              style="height: 300px; overflow-y: auto"
             >
               <table class="table table-sm table-bordered">
                 <thead class="table-dark">
@@ -514,65 +514,65 @@
             </div>
           </div>
         </div>
-        <div class="row mt-2">
+        <div class="row">
           <div class="col-8"></div>
           <div class="col-4">
             <div class="row">
               <div
-                class="col"
                 style="
                   background-color: #a24533;
-                  padding: 15px;
-                  border-radius: 8px;
+                  padding: 5px;
+                  border-radius: 5px;
                 "
               >
-                <div class="mb-1 row">
-                  <h6 class="col-sm-5 col-form-label text-white">Sub Total</h6>
-                  <div class="col-sm-7">
+                <div class="row">
+                  <h6 class="col-4 col-form-label text-white">Sub Total</h6>
+                  <div class="col-5">
                     <input
                       type="text"
+                      class="texbox"
                       disabled
-                      class="form-control"
+                      class="texbox"
                       id="inputPassword"
                     />
                   </div>
                 </div>
-                <div class="mb-1 row">
-                  <h6 class="col-sm-5 col-form-label text-white">Descuento</h6>
-                  <div class="col-sm-7">
+                <div class="row">
+                  <h6 class="col-sm-4 col-form-label text-white">Desc.</h6>
+                  <div class="col-7">
                     <input
                       type="text"
+                      class="texbox"
                       disabled
-                      class="form-control"
                       id="inputPassword"
                     />
                   </div>
                 </div>
-                <div class="mb-1 row">
-                  <h6 class="col-sm-5 col-form-label text-white">ITBI</h6>
-                  <div class="col-sm-7">
+                <div class="row">
+                  <h6 class="col-sm-4 col-form-label text-white">ITBI</h6>
+                  <div class="col-6">
                     <input
                       type="text"
+                      class="texbox"
                       disabled
-                      class="form-control"
                       id="inputPassword"
                     />
                   </div>
                 </div>
-                <div class="mb-1 row">
-                  <h6 class="col-sm-5 col-form-label text-white">Total</h6>
-                  <div class="col-sm-7">
+                <div class="row">
+                  <h6 class="col-4 col-form-label text-white">Total</h6>
+                  <div class="col-5">
                     <input
                       type="text"
                       disabled
-                      class="form-control"
+                      class="texbox"
                       id="inputPassword"
                     />
                   </div>
                 </div>
               </div>
             </div>
-            <div class="row mt-2">
+            <div class="row">
               <div class="col">
                 <button class="btn btn-primary btn-block btn-lg w-100">
                   Facturar
