@@ -224,10 +224,11 @@ export class Facturacion implements OnInit {
         fa_valFact: [''],
         fa_itbiFact: [''],
         fa_codClie: [''],
-        fa_cosfact:[''],
+        fa_cosFact:[''],
         fa_nomClie: [''],
         fa_rncFact: [''],
         fa_telClie: [''],
+        fa_telClie2: [''],
         fa_dirClie: [''],
         fa_correo: [''],
         fa_codVend: ['', Validators.required],
@@ -367,12 +368,12 @@ cargarDatosInventario(inventario: ModeloInventarioData) {
   this.cancelarBusquedaDescripcion = true;
   this.cancelarBusquedaCodigo = true;
   this.formularioFacturacion.patchValue({
-    dc_codmerc: inventario.in_codmerc,
-    dc_desmerc: inventario.in_desmerc,
-    dc_canmerc: inventario.in_canmerc,
-    dc_premerc: inventario.in_premerc,
-    dc_cosmerc: inventario.in_cosmerc,
-    dc_unidad: inventario.in_unidad,
+    df_codMerc: inventario.in_codmerc,
+    df_desMerc: inventario.in_desmerc,
+    df_canMerc: inventario.in_canmerc,
+    df_preMerc: inventario.in_premerc,
+    df_cosMerc: inventario.in_cosmerc,
+    df_unidad: inventario.in_unidad,
   });
   $("#input8").focus();
   $("#input8").select();
@@ -561,16 +562,18 @@ cargarDatosCliente(cliente: ModeloClienteData) {
   this.resultadoNombre = [];
   this.buscarNombre.reset();
   if (cliente.cl_nomClie !== "") {
-    console.log("dd")
+    console.log(this.resultadoNombre)
     this.formularioFacturacion.patchValue({
-      ct_codclie: cliente.cl_codClie,
-      ct_nomclie: cliente.cl_nomClie,
-      ct_rnc: cliente.cl_rnc,
-      ct_telclie: cliente.cl_telClie,
-      ct_dirclie: cliente.cl_dirClie,
-      ct_codzona: cliente.cl_codZona,
-
+      fa_codClie: cliente.cl_codClie,
+      fa_nomClie: cliente.cl_nomClie,
+      fa_rncFact: cliente.cl_rnc,
+      fa_telClie: cliente.cl_telClie,
+      fa_dirClie: cliente.cl_dirClie,
+      fa_codZona: cliente.cl_codZona,
+      fa_sector: cliente.cl_codSect,
     });
+    console.log(cliente)
+    console.log('Formulario actualizado:', this.formularioFacturacion.value);
   }
 }
 

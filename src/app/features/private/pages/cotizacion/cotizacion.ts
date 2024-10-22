@@ -1254,7 +1254,12 @@ export class Cotizacion implements OnInit {
       doc.text('*** Gracias por Preferirnos ***', 105, finalY + 55, { align: 'center' });
 
       // Guardar PDF
-      doc.save(`${cotizacion.ct_codcoti}.pdf`);
+     // doc.save(`${cotizacion.ct_codcoti}.pdf`);
+      const pdfBlob = doc.output('blob');
+
+  // Crear un objeto URL para el Blob y abrirlo en una nueva pestaña
+  const pdfUrl = URL.createObjectURL(pdfBlob);
+  window.open(pdfUrl, '_blank');
     });
 
   }
