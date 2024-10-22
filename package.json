@@ -25,6 +25,7 @@
     "inputmask": "^5.0.9",
     "jquery": "^3.7.1",
     "jspdf": "^2.5.2",
+    "jspdf-autotable": "^3.8.4",
     "ngx-mask": "^18.0.0",
     "rxjs": "~7.8.0",
     "sweetalert2": "^11.6.13",

@@ -18,6 +18,8 @@ import { CotizacionDetalleModel, interfaceDetalleModel } from 'src/app/core/serv
 import { ServicioInventario } from 'src/app/core/services/mantenimientos/inventario/inventario.service';
 import { ModeloInventario, ModeloInventarioData } from 'src/app/core/services/mantenimientos/inventario';
 import { Usuario } from '../mantenimientos/pages/usuario-page/usuario';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 declare var $: any;
 
 @Component({
@@ -1107,6 +1109,156 @@ export class Cotizacion implements OnInit {
       this.cerrarModalCotizacion()
     }
   }
+
+  generatePDF(cotizacion: CotizacionModelData) {
+    console.log(cotizacion);
+    this.servicioCotizacion.buscarCotizacionDetalle(cotizacion.ct_codcoti).subscribe(response => {
+      let subtotal = 0;
+      let itbis = 0;
+      let totalGeneral = 0;
+      const itbisRate = 0.18; // Ejemplo: 18% de ITBIS
+      response.data.forEach((item: any) => {
+        const producto: ModeloInventarioData = {
+          in_codmerc: item.dc_codmerc,
+          in_desmerc: item.dc_descrip,
+          in_grumerc: '',
+          in_tipoproduct: '',
+          in_canmerc: 0,
+          in_caninve: 0,
+          in_fecinve: null,
+          in_eximini: 0,
+          in_cosmerc: 0,
+          in_premerc: 0,
+          in_precmin: 0,
+          in_costpro: 0,
+          in_ucosto: 0,
+          in_porgana: 0,
+          in_peso: 0,
+          in_longitud: 0,
+          in_unidad: 0,
+          in_medida: 0,
+          in_longitu: 0,
+          in_fecmodif: null,
+          in_amacen: 0,
+          in_imagen: '',
+          in_status: '',
+          in_itbis: false,
+          in_minvent: 0,
+        };
+        const cantidad = item.dc_canmerc;
+        const precio = item.dc_premerc;
+        const totalItem = cantidad * precio;
+        this.items.push({
+          producto: producto,
+          cantidad: cantidad,
+          precio: precio,
+          total: totalItem
+        });
+        // Calcular el subtotal
+        subtotal += totalItem;
+        // Calcular ITBIS solo si el producto tiene ITBIS
+        // if (item.dc_itbis) {
+        this.totalItbis += totalItem * itbisRate;
+        // }
+      });
+      // Calcular el total general (subtotal + ITBIS)
+      totalGeneral = subtotal + this.totalItbis;
+      // Asignar los totales a variables o mostrarlos en la interfaz
+      this.subTotal = subtotal;
+      this.totalItbis = this.totalItbis;
+      this.totalGral = totalGeneral;
+
+      const formatCurrency = (value: number) => value.toLocaleString('es-DO', {
+        style: 'currency',
+        currency: 'DOP',
+      });
+
+
+      const doc = new jsPDF();
+
+      const imgData = 'assets/logo2.png';  // Asegúrate de usar una ruta válida o base64
+
+      const imgWidth = 20;  // Ancho de la imagen
+      const imgHeight = 20;  // Alto de la imagen
+
+      // Cálculo para centrar la imagen
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const imgX = (pageWidth - imgWidth) / 2;  // Posición X centrada
+
+      // Agregar el logo centrado
+      doc.addImage(imgData, 'PNG', imgX, 10, imgWidth, imgHeight);  // (x, y, ancho, alto)
+
+
+      // Título y detalles del negocio
+      doc.setFontSize(16);
+      doc.text('CENTRAL HIERRO, SRL', 105, 40, { align: 'center' });
+      doc.setFontSize(10);
+      doc.text('#172 Esq. Albert Thomas', 105, 47, { align: 'center' });
+      doc.text('809-384-2000, 809-384-200', 105, 52, { align: 'center' });
+      doc.text('1-30-29922-6', 105, 57, { align: 'center' });
+
+      // Cotización
+      doc.setFontSize(14);
+      doc.text('COTIZACION', 105, 70, { align: 'center' });
+
+      // Detalles de la cotización
+      doc.setFontSize(10);
+      doc.text(`No. ${cotizacion.ct_codcoti}`, 14, 80);
+      doc.text(`Fecha: ${cotizacion.ct_feccoti}`, 14, 85);
+      doc.text(`Vendedido por: ${cotizacion.ct_nomvend}`, 14, 90);
+
+      // Cliente
+      doc.setFontSize(12);
+      doc.text('CLIENTE', 14, 100);
+      doc.setFontSize(10);
+      doc.text(cotizacion.ct_nomclie, 14, 106);
+
+      // Tabla de descripción de productos
+      autoTable(doc, {
+        head: [['Cantidad', 'Descripción', 'Precio Unitario', 'Total']],
+        body: response.data.map((item: any) => [
+          parseInt(item.dc_canmerc),
+          item.dc_descrip,
+          formatCurrency(parseFloat(item.dc_premerc)),
+          formatCurrency(item.dc_premerc * item.dc_canmerc)
+        ]),
+        startY: 115,
+      });
+
+
+
+
+      // Obtener la posición final de la tabla
+      const finalY = (doc as any).lastAutoTable.finalY;
+
+      // Agregar el subtotal, ITBIS y Total a Pagar como pie de página
+      doc.setFontSize(12);
+      doc.text(`Subtotal:`, 118, finalY + 10);
+      doc.setFontSize(10);
+      doc.text(`${formatCurrency(subtotal)} `, 160, finalY + 10);
+      doc.setFontSize(12);
+      doc.text(`ITBIS:`, 118, finalY + 16);
+      doc.setFontSize(10);
+      doc.text(`${formatCurrency(this.totalItbis)} `, 160, finalY + 16);
+      doc.setFontSize(12);
+      doc.text(`TOTAL A PAGAR: `, 118, finalY + 22);
+      doc.setFontSize(14);
+      doc.text(`${formatCurrency(totalGeneral)} `, 160, finalY + 22);
+
+      doc.setFontSize(12);
+      // Nota final
+      doc.text('Estos Precios Estan Sujetos a Cambio Sin Previo Aviso', 105, finalY + 40, { align: 'center' });
+      doc.setFontSize(14);
+      doc.text('WWW.GRUPOHIERRO.COM', 105, finalY + 47, { align: 'center' });
+      doc.setFontSize(12);
+      doc.text('*** Gracias por Preferirnos ***', 105, finalY + 55, { align: 'center' });
+
+      // Guardar PDF
+      doc.save(`${cotizacion.ct_codcoti}.pdf`);
+    });
+
+  }
+
 
 
 }

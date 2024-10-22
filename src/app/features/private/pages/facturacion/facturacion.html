@@ -9,11 +9,11 @@
       <div class="card-body" style="background-color: #e6e4e4">
         <form>
           <div class="row">
-            <div class="col-8"></div>
-            <div class="col-1">
+            <div class="col-6"></div>
+            <div class="col-2">
               <label for="" class="label">No.</label>
             </div>
-            <div class="col-3">
+            <div class="col-4">
               <input
                 type="text"
                 class="textbox"
@@ -21,12 +21,12 @@
               />
             </div>
           </div>
-          <div class="row">
-            <div class="col-8"></div>
-            <div class="col-1">
+          <div class="row mt-2">
+            <div class="col-6"></div>
+            <div class="col-2">
               <label for="">Fecha</label>
             </div>
-            <div class="col-3">
+            <div class="col-4">
               <input
                 formControlName="fa_fecFact"
                 type="text"
@@ -35,11 +35,11 @@
             </div>
           </div>
 
-          <div class="row">
+          <div class="row mt-2">
             <div class="col-2">
-              <label for="">Rnc</label>
+              <label for="">RNC</label>
             </div>
-            <div class="col-3">
+            <div class="col-4">
               <input
                 type="text"
                 #input1
@@ -49,73 +49,70 @@
                 class="form-control form-control-sm"
               />
             </div>
-            <div class="col-1">
-              <label for="">Ncf</label>
+            <div class="col-2">
+              <label for="">NCF</label>
             </div>
-            <div class="col-3">
+            <div class="col-4">
               <input type="text" class="form-control form-control-sm" />
             </div>
           </div>
-          <div class="row">
+          <div class="row mt-2">
             <div class="col-2">
               <label for="">Cliente</label>
             </div>
             <div class="col-10">
-              <div class="col-10">
-                <div class="input-group show">
-                  <input
-                    class="form-control dropdown-toggle searchInput"
-                    data-id="agent"
-                    type="text"
-                    autocomplete="off"
-                    (input)="convertToUpperCase($event)"
-                    (keydown.enter)="moveFocusnomclie($event, input3)"
-                    (keydown)="handleKeydown($event)"
-                    #input2
-                    id="input2"
-                    [formControl]="buscarNombre"
-                    formControlName="fa_nomclie"
-                  />
+              <div class="input-group show">
+                <input
+                  class="form-control form-control-sm dropdown-toggle searchInput"
+                  data-id="agent"
+                  type="text"
+                  autocomplete="off"
+                  (input)="convertToUpperCase($event)"
+                  (keydown.enter)="moveFocusnomclie($event, input3)"
+                  (keydown)="handleKeydown($event)"
+                  #input2
+                  id="input2"
+                  [formControl]="buscarNombre"
+                  formControlName="fa_nomclie"
+                />
 
+                <div
+                  [ngClass]="{ 'show': resultadoNombre.length > 0 }"
+                  class="dropdown-menu"
+                  style="
+                    margin-right: 30px;
+                    margin-top: 45px;
+                    z-index: 300;
+                    width: 350px;
+                    position: absolute;
+                    will-change: transform;
+                  "
+                >
                   <div
-                    [ngClass]="{ 'show': resultadoNombre.length > 0 }"
-                    class="dropdown-menu"
-                    style="
-                      margin-right: 30px;
-                      margin-top: 45px;
-                      z-index: 300;
-                      width: 350px;
-                      position: absolute;
-                      will-change: transform;
-                    "
+                    class="searchReturnItem name-find"
+                    *ngFor="let result of resultadoNombre; let i = index"
+                    [class.active]="i === selectedIndex"
                   >
-                    <div
-                      class="searchReturnItem name-find"
-                      *ngFor="let result of resultadoNombre; let i = index"
-                      [class.active]="i === selectedIndex"
+                    <a
+                      (click)="cargarDatosCliente(result)"
+                      style="
+                        color: #222222 !important;
+                        font-size: 10pt;
+                        padding: 20px 0px;
+                        text-decoration: none !important;
+                        cursor: pointer;
+                      "
+                      class="px-3 cp"
                     >
-                      <a
-                        (click)="cargarDatosCliente(result)"
-                        style="
-                          color: #222222 !important;
-                          font-size: 10pt;
-                          padding: 20px 0px;
-                          text-decoration: none !important;
-                          cursor: pointer;
-                        "
-                        class="px-3 cp"
-                      >
-                        <i class="far fa-user-circle mr-5"></i>&nbsp;&nbsp;{{
-                        result.cl_nomClie }}
-                      </a>
-                    </div>
+                      <i class="far fa-user-circle mr-5"></i>&nbsp;&nbsp;{{
+                      result.cl_nomClie }}
+                    </a>
                   </div>
                 </div>
               </div>
-              <!-- <input type="text" class="form-control form-control-sm" #input2 /> -->
             </div>
           </div>
-          <div class="row">
+          <div class="row mt-2">
             <div class="col-2">
               <label for="">Dirección</label>
             </div>
@@ -130,11 +127,11 @@
               />
             </div>
           </div>
-          <div class="row">
+          <div class="row mt-2">
             <div class="col-2">
               <label for="">Telefono</label>
             </div>
-            <div class="col-4">
+            <div class="col-5">
               <input
                 type="text"
                 formControlName="fa_telclie"
@@ -143,7 +140,7 @@
                 class="form-control form-control-sm"
               />
             </div>
-            <div class="col-4">
+            <div class="col-5">
               <input
                 type="text"
                 formControlName="fa_telclie2"
@@ -153,7 +150,7 @@
               />
             </div>
           </div>
-          <div class="row">
+          <div class="row mt-2">
             <div class="col-2">
               <label for="">Sector</label>
             </div>
@@ -179,7 +176,7 @@
               />
             </div>
           </div>
-          <div class="row">
+          <div class="row mt-2">
             <div class="col-2">
               <label for="">Contacto</label>
             </div>
@@ -192,10 +189,10 @@
                 class="form-control form-control-sm"
               />
             </div>
-            <div class="col-1">
+            <div class="col-2">
               <label for="">Correo</label>
             </div>
-            <div class="col-5">
+            <div class="col-4">
               <input
                 type="text"
                 formControlName="fa_correo"
