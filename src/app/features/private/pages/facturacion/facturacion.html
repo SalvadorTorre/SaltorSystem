@@ -213,12 +213,12 @@
           </div>
           <div class="row">
             <div class="col-4">
-              <label for="" class="label">Forma de pago</label>
+              <label for="" class="label">Forma pago</label>
             </div>
             <div class="col-3">
-              <label for="" class="label">Tipo de Despacho</label>
+              <label for="" class="label">Tipo Desp.</label>
             </div>
-            <div class="col-5">
+            <div class="col-4">
               <label for="" class="label">Vendedor</label>
             </div>
           </div>
@@ -252,16 +252,72 @@
                 class="form-control form-control-sm"
               />
             </div>
-            <div class="col-2">
+            <div class="col-3">
               <input
                 type="text"
                 formControlName="fa_nomVend"
-                #input13
                 class="form-control form-control-sm"
               />
             </div>
           </div>
         </form>
+        <div class="table-responsive" style="height: 400px; overflow-y: auto">
+          <table
+            class="table table-bordered table-hover table-striped table-sm table-class"
+          >
+            <thead class="table-dark">
+              <tr>
+                <th style="width: 10%">Numero</th>
+                <th style="width: 45%">Nombre</th>
+                <th class="text-center" style="width: 10%">Fecha</th>
+                <th style="width: 12%">Valor</th>
+                <th class="text-center">Opciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let factura of facturacionList">
+                <td style="width: 10%">{{factura.fa_codFact}}</td>
+                <td style="width: 45%">{{factura.fa_nomClie}}</td>
+                <td class="text-center" style="width: 10%">
+                  {{factura.fa_fecFact}}
+                </td>
+                <td class="text-end" tyle="width: 12%">
+                  {{factura.fa_valFact}}
+                </td>
+                <td>
+                  <i
+                    (click)="editarFacturacion(factura)"
+                    class="bi bi-pencil text-primary"
+                    style="padding: 10px"
+                  >
+                  </i>
+                  <i
+                    class="bi bi-trash text-danger"
+                    style="padding: 10px"
+                    (click)="eliminarFacturaciob(factura.fa_codFact)"
+                  ></i>
+                  <i
+                    (click)="consultarFacturacion(factura)"
+                    class="bi bi-card-list text-success"
+                    style="padding: 10px"
+                  >
+                  </i>
+                  <i
+                    class="bi bi-file-earmark-pdf text-danger"
+                    (click)="generatePDF(factura)"
+                    style="padding: 10px"
+                  ></i>
+
+                  <a class="btn-link" style="padding: 10px">
+                    <i class="bi bi-printer"></i>
+
+                    <!-- <i class="bi bi-file-earmark-pdf text-info"></i>-->
+                  </a>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>
@@ -515,24 +571,21 @@
           </div>
         </div>
         <div class="row">
-          <div class="col-8"></div>
-          <div class="col-4">
+          <div class="col-7"></div>
+          <div class="col-5">
             <div class="row">
               <div
                 style="
                   background-color: #a24533;
                   padding: 5px;
-                  border-radius: 5px;
-                "
-              >
+                  border-radius: 5px;"  >
                 <div class="row">
                   <h6 class="col-4 col-form-label text-white">Sub Total</h6>
-                  <div class="col-5">
+                  <div class="col-7">
                     <input
                       type="text"
-                      class="texbox"
+                      class="form-control"
                       disabled
-                      class="texbox"
                       id="inputPassword"
                     />
                   </div>
@@ -542,7 +595,7 @@
                   <div class="col-7">
                     <input
                       type="text"
-                      class="texbox"
+                      class="form-control"
                       disabled
                       id="inputPassword"
                     />
@@ -550,22 +603,23 @@
                 </div>
                 <div class="row">
                   <h6 class="col-sm-4 col-form-label text-white">ITBI</h6>
-                  <div class="col-6">
+                  <div class="col-7">
                     <input
                       type="text"
-                      class="texbox"
+                      class="form-control"
                       disabled
                       id="inputPassword"
                     />
                   </div>
                 </div>
                 <div class="row">
-                  <h6 class="col-4 col-form-label text-white">Total</h6>
-                  <div class="col-5">
+                  <h5 class="col-4 col-form-label text-white" >Total</h5>
+                  <div class="col-7">
                     <input
                       type="text"
+                      
                       disabled
-                      class="texbox"
+                      class="form-control"
                       id="inputPassword"
                     />
                   </div>

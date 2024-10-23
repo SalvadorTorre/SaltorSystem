@@ -242,6 +242,195 @@ export class Facturacion implements OnInit {
 
   }
 
+  editardetFacturacion(detFacturacion: detFacturacionData) {
+    this.Facturacionid = detFacturacion.dc_codcoti;
+  }
+  editarFacturacion(Facturacion: FacturacionModelData) {
+    this.Facturacionid = Facturacion.ct_codcoti;
+    this.modoedicionFacturacion = true;
+    this.formularioFacturacion.patchValue(Facturacion);
+    this.tituloModalFacturacion = 'Editando Facturacion';
+    $('#modalFacturacion').modal('show');
+    this.habilitarFormulario = true;
+    const inputs = document.querySelectorAll('.seccion-productos input');
+    inputs.forEach((input) => {
+      (input as HTMLInputElement).disabled = true;
+    });
+    // Limpiar los items antes de agregar los nuevos
+    this.items = [];
+    this.servicioFacturacion.buscarFacturacionDetalle(Facturacion.ct_codcoti).subscribe(response => {
+      let subtotal = 0;
+      let itbis = 0;
+      let totalGeneral = 0;
+      const itbisRate = 0.18; // Ejemplo: 18% de ITBIS
+      response.data.forEach((item: any) => {
+        const producto: ModeloInventarioData = {
+          in_codmerc: item.dc_codmerc,
+          in_desmerc: item.dc_descrip,
+          in_grumerc: '',
+          in_tipoproduct: '',
+          in_canmerc: 0,
+          in_caninve: 0,
+          in_fecinve: null,
+          in_eximini: 0,
+          in_cosmerc: 0,
+          in_premerc: 0,
+          in_precmin: 0,
+          in_costpro: 0,
+          in_ucosto: 0,
+          in_porgana: 0,
+          in_peso: 0,
+          in_longitud: 0,
+          in_unidad: 0,
+          in_medida: 0,
+          in_longitu: 0,
+          in_fecmodif: null,
+          in_amacen: 0,
+          in_imagen: '',
+          in_status: '',
+          in_itbis: false,
+          in_minvent: 0,
+        };
+        const cantidad = item.dc_canmerc;
+        const precio = item.dc_premerc;
+        const totalItem = cantidad * precio;
+        this.items.push({
+          producto: producto,
+          cantidad: cantidad,
+          precio: precio,
+          total: totalItem
+        });
+        // Calcular el subtotal
+        subtotal += totalItem;
+        // Calcular ITBIS solo si el producto tiene ITBIS
+        // if (item.dc_itbis) {
+        this.totalItbis += totalItem * itbisRate;
+        // }
+      });
+      // Calcular el total general (subtotal + ITBIS)
+      totalGeneral = subtotal + this.totalItbis;
+      // Asignar los totales a variables o mostrarlos en la interfaz
+      this.subTotal = subtotal;
+      this.totalItbis = this.totalItbis;
+      this.totalGral = totalGeneral;
+    });
+  }
+
+  buscarTodasFacturacion(page: number) {
+    this.servicioFacturacion.buscarTodasFacturacion(page, this.pageSize).subscribe(response => {
+      console.log(response);
+      this.FacturacionList = response.data;
+    });
+  }
+  consultarFacturacion(Facturacion: FacturacionModelData) {
+    this.modoconsultaFacturacion = true;
+    this.formularioFacturacion.patchValue(Facturacion);
+    this.tituloModalFacturacion = 'Consulta Facturacion';
+    $('#modalFacturacion').modal('show');
+    this.habilitarFormulario = true;
+    this.formularioFacturacion.disable();
+    this.habilitarIcono = false;
+
+    const inputs = document.querySelectorAll('.seccion-productos input');
+    inputs.forEach((input) => {
+      (input as HTMLInputElement).disabled = true;
+    });
+
+    // Limpiar los items antes de agregar los nuevos
+    this.items = [];
+
+    this.servicioFacturacion.buscarFacturacionDetalle(Facturacion.fa_codFact).subscribe(response => {
+      let subtotal = 0;
+      let itbis = 0;
+      let totalGeneral = 0;
+      const itbisRate = 0.18; // Ejemplo: 18% de ITBIS
+
+      response.data.forEach((item: any) => {
+        const producto: ModeloInventarioData = {
+          in_codmerc: item.dc_codmerc,
+          in_desmerc: item.dc_descrip,
+          in_grumerc: '',
+          in_tipoproduct: '',
+          in_canmerc: 0,
+          in_caninve: 0,
+          in_fecinve: null,
+          in_eximini: 0,
+          in_cosmerc: 0,
+          in_premerc: 0,
+          in_precmin: 0,
+          in_costpro: 0,
+          in_ucosto: 0,
+          in_porgana: 0,
+          in_peso: 0,
+          in_longitud: 0,
+          in_unidad: 0,
+          in_medida: 0,
+          in_longitu: 0,
+          in_fecmodif: null,
+          in_amacen: 0,
+          in_imagen: '',
+          in_status: '',
+          in_itbis: false,
+          in_minvent: 0,
+        };
+
+        const cantidad = item.dc_canmerc;
+        const precio = item.dc_premerc;
+        const totalItem = cantidad * precio;
+
+        this.items.push({
+          producto: producto,
+          cantidad: cantidad,
+          precio: precio,
+          total: totalItem
+        });
+
+        // Calcular el subtotal
+        subtotal += totalItem;
+
+        // Calcular ITBIS solo si el producto tiene ITBIS
+        // if (item.dc_itbis) {
+        this.totalItbis += totalItem * itbisRate;
+        // }
+      });
+
+      // Calcular el total general (subtotal + ITBIS)
+      totalGeneral = subtotal + this.totalItbis;
+
+      // Asignar los totales a variables o mostrarlos en la interfaz
+      this.subTotal = subtotal;
+      this.totalItbis = this.totalItbis;
+      this.totalGral = totalGeneral;
+    });
+  }
+
+  eliminarFacturacion(FacturacionId: string) {
+    Swal.fire({
+      title: '¿Está seguro de eliminar este Facturacion?',
+      text: "¡No podrá revertir esto!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Si, eliminar!'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.servicioFacturacion.eliminarFacturacion(FacturacionId).subscribe(response => {
+          Swal.fire(
+            {
+              title: "Excelente!",
+              text: "Empresa eliminado correctamente.",
+              icon: "success",
+              timer: 2000,
+              showConfirmButton: false,
+            }
+          )
+          this.buscarTodasFacturacion(this.currentPage);
+        });
+      }
+    })
+  }
+
   formatofecha(date: Date): string {
     const year = date.getFullYear();
     const month = (date.getMonth() + 1).toString().padStart(2, '0'); // Los meses son 0-indexados, se agrega 1 y se llena con ceros
@@ -297,7 +486,7 @@ export class Facturacion implements OnInit {
   moveFocuscodmerc(event: KeyboardEvent, nextInput: HTMLInputElement) {
     if (event.key === 'Enter' || event.key === 'Tab') {
       event.preventDefault(); // Previene el comportamiento predeterminado de Enter
-      // const currentControl = this.formularioCotizacion.get('ct_codvend');
+      // const currentControl = this.formularioFacturacion.get('ct_codvend');
       const currentInputValue = (event.target as HTMLInputElement).value.trim();
       if (currentInputValue === '') {
         this.codmerVacio = true;
