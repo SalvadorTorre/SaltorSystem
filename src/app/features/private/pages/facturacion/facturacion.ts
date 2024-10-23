@@ -337,7 +337,7 @@ selectedRow: number = -1; // Para rastrear la fila seleccionada
     this.modoconsultaFacturacion = true;
     this.formularioFacturacion.patchValue(Factura);
     this.tituloModalFacturacion = 'Consulta Factura';
-    $('#modalfacturacion').modal('show');
+   // $('#modalfacturacion').modal('show');
     this.habilitarFormulario = true;
     this.formularioFacturacion.disable();
     this.habilitarIcono = false;
