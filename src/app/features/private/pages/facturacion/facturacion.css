@@ -1,6 +1,6 @@
 /* Estilo para los textbox normales */
 .textbox {
-  width: 300px;
+  /* width: 300px;*/
   /* Define el ancho del textbox */
   height: 30px;
   padding: 10px;
@@ -167,4 +167,8 @@ tfoot {
 
 i {
   cursor: pointer;
+}
+
+.table-active {
+  background-color: #f0f0f0 !important;
 }
