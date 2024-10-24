@@ -15,6 +15,8 @@ import { HttpInvokeService } from 'src/app/core/services/http-invoke.service';
 import { ModeloCliente, ModeloClienteData } from 'src/app/core/services/mantenimientos/clientes';
 import { FacturaDetalleModel, interfaceDetalleModel } from 'src/app/core/services/facturacion/factura/factura';
 import { ServicioInventario } from 'src/app/core/services/mantenimientos/inventario/inventario.service';
+import { ServicioSector } from 'src/app/core/services/mantenimientos/sector/sector.service';
+import { ModeloSector, ModeloSectorData } from 'src/app/core/services/mantenimientos/sector';
 import { ModeloInventario, ModeloInventarioData } from 'src/app/core/services/mantenimientos/inventario';
 import { Usuario } from '../mantenimientos/pages/usuario-page/usuario';
 import jsPDF from 'jspdf';
@@ -127,6 +129,7 @@ selectedRow: number = -1; // Para rastrear la fila seleccionada
   @ViewChild('buscarcodmercInput') buscarcodmercElement!: ElementRef;
   buscarNombre = new FormControl();
   resultadoNombre: ModeloClienteData[] = [];
+  resultadoSector: ModeloSectorData[] = [];
   buscarSector = new FormControl();
   selectedIndex = 1;
   buscarcodmerc = new FormControl();
@@ -228,15 +231,15 @@ selectedRow: number = -1; // Para rastrear la fila seleccionada
         this.resultadoSector = [];
       }),
       filter((query: string) => query !== ''),
-      switchMap((query: string) => this.http.GetRequest<ModelSector>(`/cliente-nombre/${query}`))
-    ).subscribe((results: ModeloCliente) => {
+      switchMap((query: string) => this.http.GetRequest<ModeloSector>(`/sector-nombre/${query}`))
+    ).subscribe((results: ModeloSector) => {
       console.log(results.data);
       if (results) {
         if (Array.isArray(results.data)) {
-          this.resultadoNombre = results.data;
+          this.resultadoSector = results.data;
         }
       } else {
-        this.resultadoNombre = [];
+        this.resultadoSector = [];
       }
 
     });
