@@ -277,8 +277,8 @@ selectedRow: number = -1; // Para rastrear la fila seleccionada
       const itbisRate = 0.18; // Ejemplo: 18% de ITBIS
       response.data.forEach((item: any) => {
         const producto: ModeloInventarioData = {
-          in_codmerc: item.dc_codmerc,
-          in_desmerc: item.dc_descrip,
+          in_codmerc: item.df_codMerc,
+          in_desmerc: item.df_desMerc,
           in_grumerc: '',
           in_tipoproduct: '',
           in_canmerc: 0,
@@ -360,8 +360,8 @@ selectedRow: number = -1; // Para rastrear la fila seleccionada
 
       response.data.forEach((item: any) => {
         const producto: ModeloInventarioData = {
-          in_codmerc: item.dc_codmerc,
-          in_desmerc: item.dc_descrip,
+          in_codmerc: item.df_codMerc,
+          in_desmerc: item.df_desMerc,
           in_grumerc: '',
           in_tipoproduct: '',
           in_canmerc: 0,
