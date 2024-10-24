@@ -248,6 +248,7 @@ selectedRow: number = -1; // Para rastrear la fila seleccionada
       fa_envio: [''],
       fa_ncfFact: [''],
       fa_tipoNcf: [''],
+      fa_contacto:[''],
 
     });
 
