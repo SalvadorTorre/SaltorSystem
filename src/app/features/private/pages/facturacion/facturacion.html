@@ -169,9 +169,11 @@
               <input
                 type="text"
                 formControlName="fa_sector"
+                (input)="convertToUpperCase($event)"
                 (keydown)="moveFocus($event, input7)"
                 #input6
                 class="form-control form-control-sm"
+                [formControl]="buscarSector"
               />
             </div>
             <div class="col-2">

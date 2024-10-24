@@ -127,6 +127,7 @@ selectedRow: number = -1; // Para rastrear la fila seleccionada
   @ViewChild('buscarcodmercInput') buscarcodmercElement!: ElementRef;
   buscarNombre = new FormControl();
   resultadoNombre: ModeloClienteData[] = [];
+  buscarSector = new FormControl();
   selectedIndex = 1;
   buscarcodmerc = new FormControl();
   buscardescripcionmerc = new FormControl();
@@ -219,6 +220,26 @@ selectedRow: number = -1; // Para rastrear la fila seleccionada
       }
 
     });
+
+    this.buscarSector.valueChanges.pipe(
+      debounceTime(500),
+      distinctUntilChanged(),
+      tap(() => {
+        this.resultadoSector = [];
+      }),
+      filter((query: string) => query !== ''),
+      switchMap((query: string) => this.http.GetRequest<ModelSector>(`/cliente-nombre/${query}`))
+    ).subscribe((results: ModeloCliente) => {
+      console.log(results.data);
+      if (results) {
+        if (Array.isArray(results.data)) {
+          this.resultadoNombre = results.data;
+        }
+      } else {
+        this.resultadoNombre = [];
+      }
+
+    });
   }
 
 
@@ -244,6 +265,7 @@ selectedRow: number = -1; // Para rastrear la fila seleccionada
       fa_status: [''],
       fa_sector: [''],
       fa_codZona: [''],
+      fa_desZona: [''],
       fa_fpago: [''],
       fa_envio: [''],
       fa_ncfFact: [''],
@@ -414,6 +436,7 @@ selectedRow: number = -1; // Para rastrear la fila seleccionada
       this.subTotal = subtotal;
       this.totalItbis = this.totalItbis;
       this.totalGral = totalGeneral;
+      this.actualizarTotales();
     });
   }
 
@@ -745,6 +768,26 @@ selectedRow: number = -1; // Para rastrear la fila seleccionada
       }
     }
   }
+  moveFocusPrecio(event: KeyboardEvent, nextInput: HTMLInputElement) {
+    if (event.key === 'Enter' || event.key === 'Tab') {
+      event.preventDefault();
+      if (!this.productoselect || this.preciomerc <= 0 || this.preciomerc <= this.productoselect.in_cosmerc){
+        this.mensagePantalla = true;
+        Swal.fire({
+          icon: "error",
+          title: "A V I S O",
+          text: 'Por favor complete todos los campos requeridos antes de agregar el ítem.',
+        }).then(() => { this.mensagePantalla = false });
+        return;
+      }
+      else {
+        // nextInput.focus();
+        $("#input13").focus();
+        $("#input13").select();
+      }
+    }
+  }
+
   moveFocusnomclie(event: Event, nextInput: HTMLInputElement) {
     event.preventDefault();
     console.log(nextInput);
@@ -801,7 +844,7 @@ selectedRow: number = -1; // Para rastrear la fila seleccionada
       this.itemToEdit = null;
     } else {
 
-      if (!this.productoselect || this.cantidadmerc <= 0 || this.preciomerc <= 0) {
+      if (!this.productoselect || this.cantidadmerc <= 0 || this.preciomerc <= 0 || this.preciomerc <= this.productoselect.in_cosmerc) {
         this.mensagePantalla = true;
         Swal.fire({
           icon: "error",
