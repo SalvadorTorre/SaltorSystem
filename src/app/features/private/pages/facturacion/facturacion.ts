@@ -828,6 +828,19 @@ selectedRow: number = -1; // Para rastrear la fila seleccionada
     }
   }
 
+  cargarDatosSector(sector: ModeloSectorData) {
+    this.resultadoNombre = [];
+    this.buscarSector.reset();
+    if (sector.se_desSect !== "") {
+      console.log(this.resultadoSector)
+      this.formularioFacturacion.patchValue({
+        fa_codSect: sector.se_codSect,
+        fa_sector: sector.se_desSect,
+        fa_codZona: sector.se_codZona,
+      });
+      console.log(sector)
+    }
+  }
   agregaItem(event: Event) {
     event.preventDefault();
     if (this.isEditing) {

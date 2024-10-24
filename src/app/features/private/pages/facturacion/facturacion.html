@@ -175,6 +175,39 @@
                 class="form-control form-control-sm"
                 [formControl]="buscarSector"
               />
+              <div
+              [ngClass]="{ 'show': resultadoSector.length > 0 }"
+              class="dropdown-menu"
+              style="
+                margin-right: 30px;
+                margin-top: 45px;
+                z-index: 300;
+                width: 350px;
+                position: absolute;
+                will-change: transform;
+              "
+            >
+              <div
+                class="searchReturnItem name-find"
+                *ngFor="let result of resultadoSector; let i = index"
+                [class.active]="i === selectedIndex"
+              >
+                <a
+                  (click)="cargarDatosSector(result)"
+                  style="
+                    color: #222222 !important;
+                    font-size: 10pt;
+                    padding: 20px 0px;
+                    text-decoration: none !important;
+                    cursor: pointer;
+                  "
+                  class="px-3 cp"
+                >
+                  <i class="far fa-user-circle mr-5"></i>&nbsp;&nbsp;{{
+                  result.se_desSect }}
+                </a>
+              </div>
+            </div>
             </div>
             <div class="col-2">
               <label for="" class="label">Zona</label>
