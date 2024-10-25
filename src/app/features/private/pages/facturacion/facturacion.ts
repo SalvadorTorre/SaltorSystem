@@ -17,6 +17,8 @@ import { FacturaDetalleModel, interfaceDetalleModel } from 'src/app/core/service
 import { ServicioInventario } from 'src/app/core/services/mantenimientos/inventario/inventario.service';
 import { ServicioSector } from 'src/app/core/services/mantenimientos/sector/sector.service';
 import { ModeloSector, ModeloSectorData } from 'src/app/core/services/mantenimientos/sector';
+import { ModeloFpago, ModeloFpagoData } from 'src/app/core/services/fpago/fpago';
+import { ServicioFpago } from 'src/app/core/services/fpago/fpago/fpago.service';
 import { ModeloInventario, ModeloInventarioData } from 'src/app/core/services/mantenimientos/inventario';
 import { Usuario } from '../mantenimientos/pages/usuario-page/usuario';
 import jsPDF from 'jspdf';
@@ -102,7 +104,9 @@ selectedRow: number = -1; // Para rastrear la fila seleccionada
     private http: HttpInvokeService,
     private servicioInventario: ServicioInventario,
     private ServicioUsuario: ServicioUsuario,
-    private ServicioRnc: ServicioRnc
+    private ServicioRnc: ServicioRnc,
+    private ServicioSector: ServicioSector,
+    private ServicioFpago: ServicioFpago,
   ) {
     this.form = this.fb.group({
       fa_codVend: ['', Validators.required], // El campo es requerido
@@ -130,7 +134,9 @@ selectedRow: number = -1; // Para rastrear la fila seleccionada
   buscarNombre = new FormControl();
   resultadoNombre: ModeloClienteData[] = [];
   resultadoSector: ModeloSectorData[] = [];
+  resultadoFpago: ModeloFpagoData[] = [];
   buscarSector = new FormControl();
+  buscarFpago = new FormControl();
   selectedIndex = 1;
   buscarcodmerc = new FormControl();
   buscardescripcionmerc = new FormControl();
@@ -243,7 +249,27 @@ selectedRow: number = -1; // Para rastrear la fila seleccionada
       }
 
     });
-  }
+
+  this.buscarFpago.valueChanges.pipe(
+    debounceTime(500),
+    distinctUntilChanged(),
+    tap(() => {
+      this.resultadoFpago = [];
+    }),
+    filter((query: string) => query !== ''),
+    switchMap((query: string) => this.http.GetRequest<ModeloSector>(`/fpago-nombre/${query}`))
+  ).subscribe((results: ModeloFpago) => {
+    console.log(results.data);
+    if (results) {
+      if (Array.isArray(results.data)) {
+        this.resultadoFpago = results.data;
+      }
+    } else {
+      this.resultadoFpago = [];
+    }
+
+  });
+}
 
 
 
@@ -666,7 +692,6 @@ selectedRow: number = -1; // Para rastrear la fila seleccionada
     const maxIndex = this.resultadoNombre.length - 1;  // Ajustamos el límite máximo
 
     if (key === 'ArrowDown') {
-      console.log("paso 56");
 
       // Mueve la selección hacia abajo
       if (this.selectedIndex < maxIndex) {
@@ -689,6 +714,67 @@ selectedRow: number = -1; // Para rastrear la fila seleccionada
       // Selecciona el ítem actual
       if (this.selectedIndex >= 0 && this.selectedIndex <= maxIndex) {
         this.cargarDatosCliente(this.resultadoNombre[this.selectedIndex]);
+      }
+      event.preventDefault();
+    }
+  }
+  handleKeydownSector(event: KeyboardEvent): void {
+    const key = event.key;
+    const maxIndex = this.resultadoSector.length - 1;  // Ajustamos el límite máximo
+
+    if (key === 'ArrowDown') {
+
+      // Mueve la selección hacia abajo
+      if (this.selectedIndex < maxIndex) {
+        this.selectedIndex++;
+      } else {
+        this.selectedIndex = 0;  // Vuelve al primer ítem
+      }
+      event.preventDefault();
+    } else if (key === 'ArrowUp') {
+      console.log("paso 677");
+
+      // Mueve la selección hacia arriba
+      if (this.selectedIndex > 0) {
+        this.selectedIndex--;
+      } else {
+        this.selectedIndex = maxIndex;  // Vuelve al último ítem
+      }
+      event.preventDefault();
+    } else if (key === 'Enter') {
+      // Selecciona el ítem actual
+      if (this.selectedIndex >= 0 && this.selectedIndex <= maxIndex) {
+        this.cargarDatosSector(this.resultadoSector[this.selectedIndex]);
+      }
+      event.preventDefault();
+    }
+  }
+  handleKeydownFpago(event: KeyboardEvent): void {
+    const key = event.key;
+    const maxIndex = this.resultadoFpago.length - 1;  // Ajustamos el límite máximo
+
+    if (key === 'ArrowDown') {
+
+      // Mueve la selección hacia abajo
+      if (this.selectedIndex < maxIndex) {
+        this.selectedIndex++;
+      } else {
+        this.selectedIndex = 0;  // Vuelve al primer ítem
+      }
+      event.preventDefault();
+    } else if (key === 'ArrowUp') {
+
+      // Mueve la selección hacia arriba
+      if (this.selectedIndex > 0) {
+        this.selectedIndex--;
+      } else {
+        this.selectedIndex = maxIndex;  // Vuelve al último ítem
+      }
+      event.preventDefault();
+    } else if (key === 'Enter') {
+      // Selecciona el ítem actual
+      if (this.selectedIndex >= 0 && this.selectedIndex <= maxIndex) {
+        this.cargarDatosFpago(this.resultadoSector[this.selectedIndex]);
       }
       event.preventDefault();
     }
@@ -839,6 +925,17 @@ selectedRow: number = -1; // Para rastrear la fila seleccionada
         fa_codZona: sector.se_codZona,
       });
       console.log(sector)
+    }
+  }
+  cargarDatosFpago(fpago: ModeloFpagoData) {
+    this.resultadoFpago = [];
+    this.buscarFpago.reset();
+    if (fpago.fp_descfpago !== "") {
+      console.log(this.resultadoFpago)
+      this.formularioFacturacion.patchValue({
+        fa_fpago: fpago.fp_codfpago,
+        fa_sector: sector.se_desSect,
+      });
     }
   }
   agregaItem(event: Event) {
