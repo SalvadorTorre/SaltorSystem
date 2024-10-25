@@ -17,8 +17,8 @@ import { FacturaDetalleModel, interfaceDetalleModel } from 'src/app/core/service
 import { ServicioInventario } from 'src/app/core/services/mantenimientos/inventario/inventario.service';
 import { ServicioSector } from 'src/app/core/services/mantenimientos/sector/sector.service';
 import { ModeloSector, ModeloSectorData } from 'src/app/core/services/mantenimientos/sector';
-import { ModeloFpago, ModeloFpagoData } from 'src/app/core/services/fpago/fpago';
-import { ServicioFpago } from 'src/app/core/services/fpago/fpago/fpago.service';
+import { ModeloFpago, ModeloFpagoData } from 'src/app/core/services/mantenimientos/fpago';
+import {ServicioFpago} from 'src/app/core/services/mantenimientos/fpago/fpago.service';
 import { ModeloInventario, ModeloInventarioData } from 'src/app/core/services/mantenimientos/inventario';
 import { Usuario } from '../mantenimientos/pages/usuario-page/usuario';
 import jsPDF from 'jspdf';
@@ -257,7 +257,7 @@ selectedRow: number = -1; // Para rastrear la fila seleccionada
       this.resultadoFpago = [];
     }),
     filter((query: string) => query !== ''),
-    switchMap((query: string) => this.http.GetRequest<ModeloSector>(`/fpago-nombre/${query}`))
+    switchMap((query: string) => this.http.GetRequest<ModeloFpago>(`/fpago-nombre/${query}`))
   ).subscribe((results: ModeloFpago) => {
     console.log(results.data);
     if (results) {
@@ -774,7 +774,7 @@ selectedRow: number = -1; // Para rastrear la fila seleccionada
     } else if (key === 'Enter') {
       // Selecciona el ítem actual
       if (this.selectedIndex >= 0 && this.selectedIndex <= maxIndex) {
-        this.cargarDatosFpago(this.resultadoSector[this.selectedIndex]);
+        this.cargarDatosFpago(this.resultadoFpago[this.selectedIndex]);
       }
       event.preventDefault();
     }
@@ -876,7 +876,6 @@ selectedRow: number = -1; // Para rastrear la fila seleccionada
       }
     }
   }
-
   moveFocusnomclie(event: Event, nextInput: HTMLInputElement) {
     event.preventDefault();
     console.log(nextInput);
@@ -934,7 +933,7 @@ selectedRow: number = -1; // Para rastrear la fila seleccionada
       console.log(this.resultadoFpago)
       this.formularioFacturacion.patchValue({
         fa_fpago: fpago.fp_codfpago,
-        fa_sector: sector.se_desSect,
+        fa_sector: fpago.fp_descfpago,
       });
     }
   }
@@ -981,7 +980,6 @@ selectedRow: number = -1; // Para rastrear la fila seleccionada
     }
     this.limpiarCampos();
   }
-
   limpiarCampos() {
     this.productoselect;
     this.codmerc = ""
