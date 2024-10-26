@@ -5,8 +5,3 @@ import { ModeloFpago, ModeloFpagoData } from 'src/app/core/services/mantenimient
 import { ServicioFpago } from 'src/app/core/services/mantenimientos/fpago/fpago.service';
 declare var $: any; declare var $: any;
 import Swal from 'sweetalert2';
-@Component({
-  selector: 'Fpago',
-  templateUrl: './fpago.html',
-  styleUrls: ['./fpago.css']
-})

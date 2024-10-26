@@ -18,7 +18,7 @@ import { ServicioInventario } from 'src/app/core/services/mantenimientos/inventa
 import { ServicioSector } from 'src/app/core/services/mantenimientos/sector/sector.service';
 import { ModeloSector, ModeloSectorData } from 'src/app/core/services/mantenimientos/sector';
 import { ModeloFpago, ModeloFpagoData } from 'src/app/core/services/mantenimientos/fpago';
-import {ServicioFpago} from 'src/app/core/services/mantenimientos/fpago/fpago.service';
+import { ServicioFpago } from 'src/app/core/services/mantenimientos/fpago/fpago.service';
 import { ModeloInventario, ModeloInventarioData } from 'src/app/core/services/mantenimientos/inventario';
 import { Usuario } from '../mantenimientos/pages/usuario-page/usuario';
 import jsPDF from 'jspdf';
@@ -93,7 +93,7 @@ export class Facturacion implements OnInit {
   cancelarBusquedaCodigo: boolean = false;
   private codigoSubject = new BehaviorSubject<string>('');
   private nomclienteSubject = new BehaviorSubject<string>('');
-selectedRow: number = -1; // Para rastrear la fila seleccionada
+  selectedRow: number = -1; // Para rastrear la fila seleccionada
 
   isDisabled: boolean = true;
   form: FormGroup;
@@ -102,7 +102,7 @@ selectedRow: number = -1; // Para rastrear la fila seleccionada
     private servicioFacturacion: ServicioFacturacion,
     private servicioCliente: ServicioCliente,
     private http: HttpInvokeService,
-    private servicioInventario: ServicioInventario,
+    private ServicioInventario: ServicioInventario,
     private ServicioUsuario: ServicioUsuario,
     private ServicioRnc: ServicioRnc,
     private ServicioSector: ServicioSector,
@@ -184,7 +184,6 @@ selectedRow: number = -1; // Para rastrear la fila seleccionada
 
     });
 
-
     this.buscardescripcionmerc.valueChanges.pipe(
       debounceTime(50),
       distinctUntilChanged(),
@@ -250,26 +249,26 @@ selectedRow: number = -1; // Para rastrear la fila seleccionada
 
     });
 
-  this.buscarFpago.valueChanges.pipe(
-    debounceTime(500),
-    distinctUntilChanged(),
-    tap(() => {
-      this.resultadoFpago = [];
-    }),
-    filter((query: string) => query !== ''),
-    switchMap((query: string) => this.http.GetRequest<ModeloFpago>(`/fpago-nombre/${query}`))
-  ).subscribe((results: ModeloFpago) => {
-    console.log(results.data);
-    if (results) {
-      if (Array.isArray(results.data)) {
-        this.resultadoFpago = results.data;
+    this.buscarFpago.valueChanges.pipe(
+      debounceTime(500),
+      distinctUntilChanged(),
+      tap(() => {
+        this.resultadoFpago = [];
+      }),
+      filter((query: string) => query !== ''),
+      switchMap((query: string) => this.http.GetRequest<ModeloFpago>(`/fpago-nombre/${query}`))
+    ).subscribe((results: ModeloFpago) => {
+      console.log(results.data);
+      if (results) {
+        if (Array.isArray(results.data)) {
+          this.resultadoFpago = results.data;
+        }
+      } else {
+        this.resultadoFpago = [];
       }
-    } else {
-      this.resultadoFpago = [];
-    }
 
-  });
-}
+    });
+  }
 
 
 
@@ -299,7 +298,7 @@ selectedRow: number = -1; // Para rastrear la fila seleccionada
       fa_envio: [''],
       fa_ncfFact: [''],
       fa_tipoNcf: [''],
-      fa_contacto:[''],
+      fa_contacto: [''],
 
     });
 
@@ -354,8 +353,8 @@ selectedRow: number = -1; // Para rastrear la fila seleccionada
           in_itbis: false,
           in_minvent: 0,
         };
-        const cantidad  = item.df_canMerc;
-        const precio    = item.df_preMerc;
+        const cantidad = item.df_canMerc;
+        const precio = item.df_preMerc;
         const totalItem = cantidad * precio;
         this.items.push({
           producto: producto,
@@ -389,7 +388,7 @@ selectedRow: number = -1; // Para rastrear la fila seleccionada
     this.modoconsultaFacturacion = true;
     this.formularioFacturacion.patchValue(Factura);
     this.tituloModalFacturacion = 'Consulta Factura';
-   // $('#modalfacturacion').modal('show');
+    // $('#modalfacturacion').modal('show');
     this.habilitarFormulario = true;
     this.formularioFacturacion.disable();
     this.habilitarIcono = false;
@@ -591,15 +590,13 @@ selectedRow: number = -1; // Para rastrear la fila seleccionada
   }
   handleKeydownInventario(event: KeyboardEvent): void {
     const key = event.key;
-    const maxIndex = this.resultadoCodmerc.length;
+    const maxIndex = this.resultadoCodmerc.length - 1;
     if (key === 'ArrowDown') {
-      console.log("paso");
       this.selectedIndexcodmerc = this.selectedIndexcodmerc < maxIndex ? this.selectedIndexcodmerc + 1 : 0;
       event.preventDefault();
     }
     else
       if (key === 'ArrowUp') {
-        console.log("paso2");
         this.selectedIndexcodmerc = this.selectedIndexcodmerc > 0 ? this.selectedIndexcodmerc - 1 : maxIndex;
         event.preventDefault();
       }
@@ -640,7 +637,7 @@ selectedRow: number = -1; // Para rastrear la fila seleccionada
     console.log("VALOR", rnc);
     if (!rnc) {
       console.log('RNC no Ingresado');
-      this.formularioFacturacion.patchValue({ fa_tipoNcf: "Consumidor Fina"});
+      this.formularioFacturacion.patchValue({ fa_tipoNcf: "Consumidor Fina" });
 
       // Si no se ha ingresado un RNC, pasamos el foco al siguiente elemento
       nextElement?.focus();
@@ -662,8 +659,8 @@ selectedRow: number = -1; // Para rastrear la fila seleccionada
           // Si se encuentra el RNC, asignar el nombre del cliente
           const nombreEmpresa = response.data[0]?.rason;
           this.formularioFacturacion.patchValue({ fa_nomClie: nombreEmpresa });
-          this.formularioFacturacion.patchValue({ fa_tipoNcf: "Factura con Valor Fiscal"});
-         //nextElement?.focus();  // Pasar el foco al siguiente campo
+          this.formularioFacturacion.patchValue({ fa_tipoNcf: "Factura con Valor Fiscal" });
+          //nextElement?.focus();  // Pasar el foco al siguiente campo
           $("#input3").focus();
           $("#input3").select();
         } else {
@@ -677,6 +674,8 @@ selectedRow: number = -1; // Para rastrear la fila seleccionada
       }
     );
   }
+
+
 
   mostrarMensajeError(mensaje: string): void {
     this.mensagePantalla = true;
@@ -860,7 +859,7 @@ selectedRow: number = -1; // Para rastrear la fila seleccionada
   moveFocusPrecio(event: KeyboardEvent, nextInput: HTMLInputElement) {
     if (event.key === 'Enter' || event.key === 'Tab') {
       event.preventDefault();
-      if (!this.productoselect || this.preciomerc <= 0 || this.preciomerc <= this.productoselect.in_cosmerc){
+      if (!this.productoselect || this.preciomerc <= 0 || this.preciomerc <= this.productoselect.in_cosmerc) {
         this.mensagePantalla = true;
         Swal.fire({
           icon: "error",
@@ -1036,9 +1035,9 @@ selectedRow: number = -1; // Para rastrear la fila seleccionada
       style: 'currency',
       currency: 'DOP',
     });
-    this.subtotaltxt=formatCurrency(this.subTotal);
-    this.itbitxt=formatCurrency(this.totalItbis);
-    this.totalgraltxt=formatCurrency(this.totalGral);
+    this.subtotaltxt = formatCurrency(this.subTotal);
+    this.itbitxt = formatCurrency(this.totalItbis);
+    this.totalgraltxt = formatCurrency(this.totalGral);
 
   }
 
@@ -1064,10 +1063,10 @@ selectedRow: number = -1; // Para rastrear la fila seleccionada
   selectRow(index: number) {
     this.selectedRow = index; // Selecciona la fila cuando se hace clic
   }
-    ngAfterViewInit() {
-      // Establece el foco en la tabla cuando se cargue la vista
-      this.Tabladetalle.nativeElement.focus();
-    }
+  ngAfterViewInit() {
+    // Establece el foco en la tabla cuando se cargue la vista
+    this.Tabladetalle.nativeElement.focus();
+  }
 
 
 
@@ -1177,13 +1176,13 @@ selectedRow: number = -1; // Para rastrear la fila seleccionada
 
       // Tabla de descripción de productos
       autoTable(doc, {
-        head: [['Codigo', 'Descripción','Cantidad', 'Precio','Itbis', 'Total']],
+        head: [['Codigo', 'Descripción', 'Cantidad', 'Precio', 'Itbis', 'Total']],
         body: response.data.map((item: any) => [
           item.df_codMerc,
           item.df_desMerc,
           parseInt(item.df_canMerc),
           formatCurrency(parseFloat(item.df_preMerc)),
-          formatCurrency((item.df_preMerc * item.df_canMerc)*18/100),
+          formatCurrency((item.df_preMerc * item.df_canMerc) * 18 / 100),
           formatCurrency(item.df_preMerc * item.df_canMerc)
         ]),
         startY: 115,
@@ -1211,19 +1210,19 @@ selectedRow: number = -1; // Para rastrear la fila seleccionada
 
       doc.setFontSize(12);
       // Nota final
-     // doc.text('Estos Precios Estan Sujetos a Cambio Sin Previo Aviso', 105, finalY + 40, { align: 'center' });
+      // doc.text('Estos Precios Estan Sujetos a Cambio Sin Previo Aviso', 105, finalY + 40, { align: 'center' });
       doc.setFontSize(14);
       doc.text('WWW.GRUPOHIERRO.COM', 105, finalY + 47, { align: 'center' });
       doc.setFontSize(12);
       doc.text('*** Gracias por Preferirnos ***', 105, finalY + 55, { align: 'center' });
 
       // Guardar PDF
-     // doc.save(`${cotizacion.ct_codcoti}.pdf`);
+      // doc.save(`${cotizacion.ct_codcoti}.pdf`);
       const pdfBlob = doc.output('blob');
 
-  // Crear un objeto URL para el Blob y abrirlo en una nueva pestaña
-  const pdfUrl = URL.createObjectURL(pdfBlob);
-  window.open(pdfUrl, '_blank');
+      // Crear un objeto URL para el Blob y abrirlo en una nueva pestaña
+      const pdfUrl = URL.createObjectURL(pdfBlob);
+      window.open(pdfUrl, '_blank');
     });
 
   }

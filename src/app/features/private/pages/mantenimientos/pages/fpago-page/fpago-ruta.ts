@@ -3,8 +3,9 @@ import { RouterModule, Routes } from '@angular/router';
 import { Fpago } from './fpago';
 
 const routes: Routes = [
-  {path:"",
-    component:Fpago
+  {
+    path: "",
+    component: Fpago
 
   }
 ];
