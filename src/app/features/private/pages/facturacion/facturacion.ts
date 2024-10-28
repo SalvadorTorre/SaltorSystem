@@ -607,27 +607,6 @@ export class Facturacion implements OnInit {
         event.preventDefault();
       }
   }
-  cargarDatosInventario(inventario: ModeloInventarioData) {
-    console.log(inventario);
-    this.resultadoCodmerc = [];
-    this.resultadodescripcionmerc = [];
-    this.codmerc = inventario.in_codmerc;
-    this.preciomerc = inventario.in_premerc
-    this.descripcionmerc = inventario.in_desmerc;
-    this.productoselect = inventario;
-    this.cancelarBusquedaDescripcion = true;
-    this.cancelarBusquedaCodigo = true;
-    this.formularioFacturacion.patchValue({
-      df_codMerc: inventario.in_codmerc,
-      df_desMerc: inventario.in_desmerc,
-      df_canMerc: inventario.in_canmerc,
-      df_preMerc: inventario.in_premerc,
-      df_cosMerc: inventario.in_cosmerc,
-      df_unidad: inventario.in_unidad,
-    });
-    $("#input8").focus();
-    $("#input8").select();
-  }
 
   buscarRnc(event: Event, nextElement: HTMLInputElement | null): void {
     event.preventDefault();
@@ -636,7 +615,6 @@ export class Facturacion implements OnInit {
     // const rnc = this.rncValue;
     console.log("VALOR", rnc);
     if (!rnc) {
-      console.log('RNC no Ingresado');
       this.formularioFacturacion.patchValue({ fa_tipoNcf: "Consumidor Fina" });
 
       // Si no se ha ingresado un RNC, pasamos el foco al siguiente elemento
@@ -675,7 +653,79 @@ export class Facturacion implements OnInit {
     );
   }
 
+  buscarCodigo(event: Event, nextElement: HTMLInputElement | null): void {
+    console.log("VALOR", this.codmerc);
+    event.preventDefault();
 
+    const codmerc = this.formularioFacturacion.get('fa_codMerc')?.value;
+    // const rnc = this.rncValue;
+    if (!codmerc) {
+      nextElement?.focus();
+
+      return;
+    }
+
+    this.ServicioInventario.buscarporCodigoMerc(codmerc).subscribe(
+      (response) => {
+        console.log(response);
+        if (response?.data?.length) {
+          this.cargarDatosInventario(this.resultadodescripcionmerc[this.selectedIndexcoddescripcionmerc]);
+
+console.log(this.resultadodescripcionmerc);
+console.log(this.selectedIndexcoddescripcionmerc);
+          //nextElement?.focus();  // Pasar el foco al siguiente campo
+          $("#input3").focus();
+          $("#input3").select();
+        } else {
+          this.mensagePantalla = true;
+          Swal.fire({
+            icon: "error",
+            title: "A V I S O",
+            text: 'Codigo de usuario invalido.',
+          }).then(() => { this.mensagePantalla = false });
+          return;
+            // Si no se encuentra el RNC, mostrar error
+        }
+      },
+      (error) => {
+        // Manejar errores de la llamada al servicio
+        this.mostrarMensajeError('Error al buscar el Codmerc');
+      }
+    );
+  }
+  buscarUsuario(event: Event, nextElement: HTMLInputElement | null): void {
+    event.preventDefault();
+    const claveUsuario = this.formularioFacturacion.get('fa_codVend')?.value;
+    if (claveUsuario) {
+      this.ServicioUsuario.buscarUsuarioPorClave(claveUsuario).subscribe(
+        (usuario) => {
+          if (usuario.data.length) {
+            this.formularioFacturacion.patchValue({ fa_nomVend: usuario.data[0].idUsuario });
+            nextElement?.focus()
+            console.log(usuario.data[0].idUsuario);
+          } else {
+            this.mensagePantalla = true;
+            Swal.fire({
+              icon: "error",
+              title: "A V I S O",
+              text: 'Codigo de usuario invalido.',
+            }).then(() => { this.mensagePantalla = false });
+            return;
+            console.log('Vendedor no encontrado');
+          }
+        },
+      );
+    }
+    else {
+      this.mensagePantalla = true;
+      Swal.fire({
+        icon: "error",
+        title: "A V I S O",
+        text: 'Codigo de usuario invalido.',
+      }).then(() => { this.mensagePantalla = false });
+      return;
+    }
+  }
 
   mostrarMensajeError(mensaje: string): void {
     this.mensagePantalla = true;
@@ -893,6 +943,27 @@ export class Facturacion implements OnInit {
       }
     }
   }
+  cargarDatosInventario(inventario: ModeloInventarioData) {
+    console.log(inventario);
+    this.resultadoCodmerc = [];
+    this.resultadodescripcionmerc = [];
+    this.codmerc = inventario.in_codmerc;
+    this.preciomerc = inventario.in_premerc
+    this.descripcionmerc = inventario.in_desmerc;
+    this.productoselect = inventario;
+    this.cancelarBusquedaDescripcion = true;
+    this.cancelarBusquedaCodigo = true;
+    this.formularioFacturacion.patchValue({
+      df_codMerc: inventario.in_codmerc,
+      df_desMerc: inventario.in_desmerc,
+      df_canMerc: inventario.in_canmerc,
+      df_preMerc: inventario.in_premerc,
+      df_cosMerc: inventario.in_cosmerc,
+      df_unidad: inventario.in_unidad,
+    });
+    $("#input8").focus();
+    $("#input8").select();
+  }
   cargarDatosCliente(cliente: ModeloClienteData) {
     this.resultadoNombre = [];
     this.buscarNombre.reset();
@@ -931,8 +1002,8 @@ export class Facturacion implements OnInit {
     if (fpago.fp_descfpago !== "") {
       console.log(this.resultadoFpago)
       this.formularioFacturacion.patchValue({
-        fa_fpago: fpago.fp_codfpago,
-        fa_sector: fpago.fp_descfpago,
+      //  fa_fpago: fpago.fp_codfpago,
+        fa_fpago: fpago.fp_descfpago,
       });
     }
   }
