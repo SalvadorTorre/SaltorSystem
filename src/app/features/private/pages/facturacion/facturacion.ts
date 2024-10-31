@@ -144,6 +144,7 @@ export class Facturacion implements OnInit {
   nativeElement = new FormControl();
   resultadoCodmerc: ModeloInventarioData[] = [];
   selectedIndexcodmerc = 1;
+  selectedIndexfpago=1;
   resultadodescripcionmerc: ModeloInventarioData[] = [];
   selectedIndexcoddescripcionmerc = 1;
   seleccionarFacturacion(facturacion: any) { this.selectedFacturacion = facturacion; }
@@ -168,7 +169,7 @@ export class Facturacion implements OnInit {
             return a.in_codmerc.localeCompare(b.in_codmerc, undefined, { numeric: true, sensitivity: 'base' });
           });
           // Aquí seleccionamos automáticamente el primer ítem
-          this.selectedIndex = -1;
+          this.selectedIndex = 0;
 
           this.codnotfound = false;
         } else {
@@ -591,6 +592,12 @@ export class Facturacion implements OnInit {
   handleKeydownInventario(event: KeyboardEvent): void {
     const key = event.key;
     const maxIndex = this.resultadoCodmerc.length - 1;
+
+    if (this.resultadoCodmerc.length === 1) {
+      this.selectedIndexcodmerc = 0;
+      console.log("prueba")
+    }
+
     if (key === 'ArrowDown') {
       this.selectedIndexcodmerc = this.selectedIndexcodmerc < maxIndex ? this.selectedIndexcodmerc + 1 : 0;
       event.preventDefault();
@@ -628,7 +635,73 @@ export class Facturacion implements OnInit {
     $("#input8").focus();
     $("#input8").select();
   }
-
+  
+  // buscarCodigo(event: Event, nextElement: HTMLInputElement | null): void {
+  //   event.preventDefault();
+  //   const in_codMerc = this.formularioFacturacion.get('codmerc')?.value;
+  //   if (in_codMerc) {
+  //     this.ServicioUsuario.buscarUsuarioPorClave(in_codMerc).subscribe(
+  //       (usuario) => {
+  //         if (Inventario.data.length) {
+  //           this.formularioFacturacion.patchValue({ fa_nomVend: usuario.data[0].idUsuario });
+  //           nextElement?.focus()
+  //           console.log(usuario.data[0].idUsuario);
+  //         } else {
+  //           this.mensagePantalla = true;
+  //           Swal.fire({
+  //             icon: "error",
+  //             title: "A V I S O",
+  //             text: 'Codigo de usuario invalido.',
+  //           }).then(() => { this.mensagePantalla = false });
+  //           return;
+  //           console.log('Vendedor no encontrado');
+  //         }
+  //       },
+  //     );
+  //   }
+  //   else {
+  //     this.mensagePantalla = true;
+  //     Swal.fire({
+  //       icon: "error",
+  //       title: "A V I S O",
+  //       text: 'Codigo de usuario invalido.',
+  //     }).then(() => { this.mensagePantalla = false });
+  //     return;
+  //   }
+  // }
+  buscarUsuario(event: Event, nextElement: HTMLInputElement | null): void {
+    event.preventDefault();
+    const claveUsuario = this.formularioFacturacion.get('ct_codvend')?.value;
+    if (claveUsuario) {
+      this.ServicioUsuario.buscarUsuarioPorClave(claveUsuario).subscribe(
+        (usuario) => {
+          if (usuario.data.length) {
+            this.formularioFacturacion.patchValue({ fa_nomVend: usuario.data[0].idUsuario });
+            nextElement?.focus()
+            console.log(usuario.data[0].idUsuario);
+          } else {
+            this.mensagePantalla = true;
+            Swal.fire({
+              icon: "error",
+              title: "A V I S O",
+              text: 'Codigo de usuario invalido.',
+            }).then(() => { this.mensagePantalla = false });
+            return;
+            console.log('Vendedor no encontrado');
+          }
+        },
+      );
+    }
+    else {
+      this.mensagePantalla = true;
+      Swal.fire({
+        icon: "error",
+        title: "A V I S O",
+        text: 'Codigo de usuario invalido.',
+      }).then(() => { this.mensagePantalla = false });
+      return;
+    }
+  }
   buscarRnc(event: Event, nextElement: HTMLInputElement | null): void {
     event.preventDefault();
 
@@ -751,29 +824,33 @@ export class Facturacion implements OnInit {
   handleKeydownFpago(event: KeyboardEvent): void {
     const key = event.key;
     const maxIndex = this.resultadoFpago.length - 1;  // Ajustamos el límite máximo
+    if (this.resultadoFpago.length === 1) {
+      this.selectedIndexfpago = 0;
+      console.log("prueba")
+    }
 
     if (key === 'ArrowDown') {
 
       // Mueve la selección hacia abajo
-      if (this.selectedIndex < maxIndex) {
-        this.selectedIndex++;
+      if (this.selectedIndexfpago < maxIndex) {
+        this.selectedIndexfpago++;
       } else {
-        this.selectedIndex = 0;  // Vuelve al primer ítem
+        this.selectedIndexfpago = 0;  // Vuelve al primer ítem
       }
       event.preventDefault();
     } else if (key === 'ArrowUp') {
 
       // Mueve la selección hacia arriba
-      if (this.selectedIndex > 0) {
-        this.selectedIndex--;
+      if (this.selectedIndexfpago > 0) {
+        this.selectedIndexfpago--;
       } else {
-        this.selectedIndex = maxIndex;  // Vuelve al último ítem
+        this.selectedIndexfpago = maxIndex;  // Vuelve al último ítem
       }
       event.preventDefault();
     } else if (key === 'Enter') {
       // Selecciona el ítem actual
-      if (this.selectedIndex >= 0 && this.selectedIndex <= maxIndex) {
-        this.cargarDatosFpago(this.resultadoFpago[this.selectedIndex]);
+      if (this.selectedIndex >= 0 && this.selectedIndexfpago <= maxIndex) {
+        this.cargarDatosFpago(this.resultadoFpago[this.selectedIndexfpago]);
       }
       event.preventDefault();
     }
