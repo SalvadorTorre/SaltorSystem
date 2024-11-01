@@ -533,23 +533,7 @@ export class Cotizacion implements OnInit {
         });
       }
       else {
-        // this.servicioCotizacion.guardarCotizacion(this.formularioCotizacion.value).subscribe(response => {
-        //   Swal.fire
-        //     ({
-        //       title: "Cotizacion Guardada correctamente",
-        //       text: "Desea Crear una Sucursal SDFSSD",
-        //       icon: 'warning',
-        //       timer: 5000,
-        //       showConfirmButton: false,
-        //     });
-        //   this.buscarTodasCotizacion(1);
-        //   this.formularioCotizacion.reset();
-        //   this.crearFormularioCotizacion();
-        //   this.formularioCotizacion.enable();
-        //   $('#modalcotizacion').modal('hide');
-        // })
-
-        if (this.formularioCotizacion.valid) {
+         if (this.formularioCotizacion.valid) {
           this.servicioCotizacion.guardarCotizacion(payload).subscribe(response => {
             Swal.fire({
               title: "Excelente!",

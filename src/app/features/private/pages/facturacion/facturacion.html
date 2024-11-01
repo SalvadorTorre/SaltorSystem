@@ -254,7 +254,7 @@
               <label for="" class="label">Forma. pago</label>
             </div>
             <div class="col-3">
-              <label for="" class="label">Forma Desp.</label>
+              <label for="" class="label">Forma Despacho.</label>
             </div>
             <div class="col-4">
               <label for="" class="label">Vendedor</label>
@@ -397,6 +397,7 @@
                 #codigoInput
                 autocomplete="off"
                 (input)="convertToUpperCase($event)"
+                (keydown.enter)="buscarCodigo($event,input4)"
                 (keydown)="handleKeydownInventario($event)"
                 (keydown)="moveFocuscodmerc($event, input14)"
                 #input13
