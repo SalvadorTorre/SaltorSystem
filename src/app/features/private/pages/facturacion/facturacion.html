@@ -191,7 +191,7 @@
                 <div
                   class="searchReturnItem name-find"
                   *ngFor="let result of resultadoSector; let i = index"
-                  [class.active]="i === selectedIndex"
+                  [class.active]="i === selectedIndexsector"
                 >
                   <a
                     (click)="cargarDatosSector(result)"
@@ -266,7 +266,7 @@
                 type="text"
                 formControlName="fa_fpago"
                 (input)="convertToUpperCase($event)"
-                (keydown)="moveFocus($event, input11)"
+                (keydown)="moveFocus($event, input12)"
                 (keydown)=" handleKeydownFpago($event)"
                 #input10
                 class="form-control form-control-sm"
@@ -287,7 +287,7 @@
                 <div
                   class="searchReturnItem name-find"
                   *ngFor="let result of resultadoFpago; let i = index"
-                  [class.active]="i === selectedIndex"
+                  [class.active]="i === selectedIndexfpago"
                 >
                   <a
                     (click)="cargarDatosFpago(result)"
@@ -307,20 +307,29 @@
               </div>
             </div>
             <div class="col-3">
-              <input
+              <!-- <input
                 type="text"
                 formControlName="fa_envio"
                 (keydown)="moveFocus($event, input12)"
                 #input11
                 class="form-control form-control-sm"
-              />
+              /> -->
+            <label for="listaenvio"></label>
+            <select name="listaenvio" 
+              id="listaenvio"
+              #input11>
+              <option value="envio">Envio</option>
+              <option value="retiral">Reiro por el Cliente</option>
+              [(ngModel)]="fa_envio"
+            </select>
             </div>
-
             <div class="col-2">
               <input
-                type="text"
+                type="password"
+                (input)="convertToUpperCase($event)"
+                (keydown)="moveFocus($event, input6)"
+                (keydown.enter)="buscarUsuario($event, input13)"
                 formControlName="fa_codVend"
-                (keydown)="moveFocus($event, input13)"
                 #input12
                 class="form-control form-control-sm"
               />
@@ -397,7 +406,6 @@
                 #codigoInput
                 autocomplete="off"
                 (input)="convertToUpperCase($event)"
-                (keydown.enter)="buscarCodigo($event,input4)"
                 (keydown)="handleKeydownInventario($event)"
                 (keydown)="moveFocuscodmerc($event, input14)"
                 #input13
@@ -474,7 +482,7 @@
                 <div
                   class="searchReturnItem name-find"
                   *ngFor="let result of resultadodescripcionmerc; let i = index"
-                  [class.active]="i === selectedIndexcoddescripcionmerc"
+                  [class.active]="i === selectedIndexdescripcionmerc"
                 >
                   <a
                     (click)="cargarDatosInventario(result)"

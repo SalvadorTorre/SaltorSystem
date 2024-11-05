@@ -138,6 +138,7 @@ export class Facturacion implements OnInit {
   buscarSector = new FormControl();
   buscarFpago = new FormControl();
   selectedIndex = 1;
+  selectedIndexsector=1;
   buscarcodmerc = new FormControl();
   buscardescripcionmerc = new FormControl();
   // buscarcodmercElement = new FormControl();
@@ -146,7 +147,7 @@ export class Facturacion implements OnInit {
   selectedIndexcodmerc = 1;
   selectedIndexfpago=1;
   resultadodescripcionmerc: ModeloInventarioData[] = [];
-  selectedIndexcoddescripcionmerc = 1;
+  selectedIndexdescripcionmerc = 1;
   seleccionarFacturacion(facturacion: any) { this.selectedFacturacion = facturacion; }
 
 
@@ -296,6 +297,7 @@ export class Facturacion implements OnInit {
       fa_codZona: [''],
       fa_desZona: [''],
       fa_fpago: [''],
+      fa_codfpago:[''],
       fa_envio: [''],
       fa_ncfFact: [''],
       fa_tipoNcf: [''],
@@ -547,6 +549,7 @@ export class Facturacion implements OnInit {
       nextElement.focus(); // Enfoca el siguiente campo
     }
   }
+ 
 
   moveFocuscodmerc(event: KeyboardEvent, nextInput: HTMLInputElement) {
     if (event.key === 'Enter' || event.key === 'Tab') {
@@ -636,49 +639,15 @@ export class Facturacion implements OnInit {
     $("#input8").select();
   }
   
-  // buscarCodigo(event: Event, nextElement: HTMLInputElement | null): void {
-  //   event.preventDefault();
-  //   const in_codMerc = this.formularioFacturacion.get('codmerc')?.value;
-  //   if (in_codMerc) {
-  //     this.ServicioUsuario.buscarUsuarioPorClave(in_codMerc).subscribe(
-  //       (usuario) => {
-  //         if (Inventario.data.length) {
-  //           this.formularioFacturacion.patchValue({ fa_nomVend: usuario.data[0].idUsuario });
-  //           nextElement?.focus()
-  //           console.log(usuario.data[0].idUsuario);
-  //         } else {
-  //           this.mensagePantalla = true;
-  //           Swal.fire({
-  //             icon: "error",
-  //             title: "A V I S O",
-  //             text: 'Codigo de usuario invalido.',
-  //           }).then(() => { this.mensagePantalla = false });
-  //           return;
-  //           console.log('Vendedor no encontrado');
-  //         }
-  //       },
-  //     );
-  //   }
-  //   else {
-  //     this.mensagePantalla = true;
-  //     Swal.fire({
-  //       icon: "error",
-  //       title: "A V I S O",
-  //       text: 'Codigo de usuario invalido.',
-  //     }).then(() => { this.mensagePantalla = false });
-  //     return;
-  //   }
-  // }
   buscarUsuario(event: Event, nextElement: HTMLInputElement | null): void {
     event.preventDefault();
-    const claveUsuario = this.formularioFacturacion.get('ct_codvend')?.value;
+    const claveUsuario = this.formularioFacturacion.get('fa_codVend')?.value;
     if (claveUsuario) {
       this.ServicioUsuario.buscarUsuarioPorClave(claveUsuario).subscribe(
         (usuario) => {
           if (usuario.data.length) {
             this.formularioFacturacion.patchValue({ fa_nomVend: usuario.data[0].idUsuario });
             nextElement?.focus()
-            console.log(usuario.data[0].idUsuario);
           } else {
             this.mensagePantalla = true;
             Swal.fire({
@@ -687,7 +656,6 @@ export class Facturacion implements OnInit {
               text: 'Codigo de usuario invalido.',
             }).then(() => { this.mensagePantalla = false });
             return;
-            console.log('Vendedor no encontrado');
           }
         },
       );
@@ -759,9 +727,14 @@ export class Facturacion implements OnInit {
       text: mensaje,
     }).then(() => { this.mensagePantalla = false });
   }
+
   handleKeydown(event: KeyboardEvent): void {
     const key = event.key;
     const maxIndex = this.resultadoNombre.length - 1;  // Ajustamos el límite máximo
+  if (this.resultadoNombre.length === 1) {
+       this.selectedIndex = 0;
+      console.log("prueba")
+    }
 
     if (key === 'ArrowDown') {
 
@@ -793,30 +766,33 @@ export class Facturacion implements OnInit {
   handleKeydownSector(event: KeyboardEvent): void {
     const key = event.key;
     const maxIndex = this.resultadoSector.length - 1;  // Ajustamos el límite máximo
-
+    if (this.resultadoSector.length === 1) {
+      this.selectedIndexsector = 0;
+     console.log("prueba")
+   }
     if (key === 'ArrowDown') {
 
       // Mueve la selección hacia abajo
-      if (this.selectedIndex < maxIndex) {
+      if (this.selectedIndexsector < maxIndex) {
         this.selectedIndex++;
       } else {
-        this.selectedIndex = 0;  // Vuelve al primer ítem
+        this.selectedIndexsector = 0;  // Vuelve al primer ítem
       }
       event.preventDefault();
     } else if (key === 'ArrowUp') {
       console.log("paso 677");
 
       // Mueve la selección hacia arriba
-      if (this.selectedIndex > 0) {
+      if (this.selectedIndexsector > 0) {
         this.selectedIndex--;
       } else {
-        this.selectedIndex = maxIndex;  // Vuelve al último ítem
+        this.selectedIndexsector = maxIndex;  // Vuelve al último ítem
       }
       event.preventDefault();
     } else if (key === 'Enter') {
       // Selecciona el ítem actual
-      if (this.selectedIndex >= 0 && this.selectedIndex <= maxIndex) {
-        this.cargarDatosSector(this.resultadoSector[this.selectedIndex]);
+      if (this.selectedIndexsector >= 0 && this.selectedIndexsector <= maxIndex) {
+        this.cargarDatosSector(this.resultadoSector[this.selectedIndexsector]);
       }
       event.preventDefault();
     }
@@ -824,8 +800,9 @@ export class Facturacion implements OnInit {
   handleKeydownFpago(event: KeyboardEvent): void {
     const key = event.key;
     const maxIndex = this.resultadoFpago.length - 1;  // Ajustamos el límite máximo
+   
     if (this.resultadoFpago.length === 1) {
-      this.selectedIndexfpago = 0;
+       this.selectedIndexfpago = 0;
       console.log("prueba")
     }
 
@@ -858,18 +835,22 @@ export class Facturacion implements OnInit {
   handleKeydownInventariosdesc(event: KeyboardEvent): void {
     const key = event.key;
     const maxIndex = this.resultadodescripcionmerc.length;
+    if (this.resultadodescripcionmerc.length === 1) {
+      this.selectedIndexdescripcionmerc = 0;
+      console.log("prueba")
+    }
     if (key === 'ArrowDown') {
       // Mueve la selección hacia abajo
-      this.selectedIndexcoddescripcionmerc = this.selectedIndexcoddescripcionmerc < maxIndex ? this.selectedIndexcoddescripcionmerc + 1 : 0;
+      this.selectedIndexdescripcionmerc = this.selectedIndexdescripcionmerc < maxIndex ? this.selectedIndexdescripcionmerc + 1 : 0;
       event.preventDefault();
     } else if (key === 'ArrowUp') {
       // Mueve la selección hacia arriba
-      this.selectedIndexcoddescripcionmerc = this.selectedIndexcoddescripcionmerc > 0 ? this.selectedIndexcoddescripcionmerc - 1 : maxIndex;
+      this.selectedIndexdescripcionmerc = this.selectedIndexdescripcionmerc > 0 ? this.selectedIndexdescripcionmerc - 1 : maxIndex;
       event.preventDefault();
     } else if (key === 'Enter') {
       // Selecciona el ítem actual
-      if (this.selectedIndexcoddescripcionmerc >= 0 && this.selectedIndexcoddescripcionmerc <= maxIndex) {
-        this.cargarDatosInventario(this.resultadodescripcionmerc[this.selectedIndexcoddescripcionmerc]);
+      if (this.selectedIndexdescripcionmerc >= 0 && this.selectedIndexdescripcionmerc <= maxIndex) {
+        this.cargarDatosInventario(this.resultadodescripcionmerc[this.selectedIndexdescripcionmerc]);
       }
       event.preventDefault();
     }
@@ -880,7 +861,6 @@ export class Facturacion implements OnInit {
       const currentInputValue = (event.target as HTMLInputElement).value.trim();
       if (currentInputValue === '') {
         this.desmerVacio = true;
-        console.log("vedadero");
       };
 
       if (!this.desnotfound === false) {
@@ -903,8 +883,6 @@ export class Facturacion implements OnInit {
           }).then(() => { this.mensagePantalla = false });
           this.desnotfound = true
           return;
-          // nextInput.focus();
-          // this.desmerVacio = false;
         }
         else {
           $("#input8").focus();
@@ -1008,8 +986,8 @@ export class Facturacion implements OnInit {
     if (fpago.fp_descfpago !== "") {
       console.log(this.resultadoFpago)
       this.formularioFacturacion.patchValue({
-        fa_fpago: fpago.fp_codfpago,
-        fa_sector: fpago.fp_descfpago,
+        fa_fpago: fpago.fp_descfpago,
+        fa_codfpago: fpago.fp_codfpago ,
       });
     }
   }
