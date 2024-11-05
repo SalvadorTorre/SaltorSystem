@@ -42,7 +42,7 @@ export class Facturacion implements OnInit {
   maxPagesToShow = 5;
   txtdescripcion: string = '';
   txtcodigo = '';
-  txtfecha: string = '';
+ // txtFecha: string = '';
   descripcion: string = '';
   codigo: string = '';
   fecha: string = '';
@@ -66,6 +66,9 @@ export class Facturacion implements OnInit {
   subtotaltxt: string = '';
   itbitxt: string = '';
   totalgraltxt: string = '';
+  txtFactura: string = '';
+  txtFecha: string = '';
+  txtNombre: string = '';
   descuentotxt: string = '';
   static detFactura: detFacturaData[];
   codmerc: string = '';
@@ -91,7 +94,7 @@ export class Facturacion implements OnInit {
   rncValue: string = '';
   cancelarBusquedaDescripcion: boolean = false;
   cancelarBusquedaCodigo: boolean = false;
-  private codigoSubject = new BehaviorSubject<string>('');
+  private numfacturaSubject = new BehaviorSubject<string>('');
   private nomclienteSubject = new BehaviorSubject<string>('');
   selectedRow: number = -1; // Para rastrear la fila seleccionada
 
@@ -128,6 +131,21 @@ export class Facturacion implements OnInit {
       this.totalItems = response.pagination.total;
       this.currentPage = response.pagination.page;
     });
+
+    this.numfacturaSubject.pipe(
+      debounceTime(500),
+      distinctUntilChanged(),
+      switchMap(codigo => {
+        this.txtFactura = codigo;
+        return this.servicioFacturacion.buscarFacturacion(this.currentPage, this.pageSize, this.codigo, this.txtdescripcion, this.txtFactura);
+      })
+    ).subscribe(response => {
+      this.facturacionList = response.data;
+      this.totalItems = response.pagination.total;
+      this.currentPage = response.pagination.page;
+    });
+
+
   }
 
   @ViewChild('buscarcodmercInput') buscarcodmercElement!: ElementRef;
@@ -529,10 +547,17 @@ export class Facturacion implements OnInit {
   }
 
 
-  descripcionEntra(event: Event) {
+  buscaNombre(event: Event) {
     const inputElement = event.target as HTMLInputElement;
     this.nomclienteSubject.next(inputElement.value.toUpperCase());
   }
+
+
+  buscaFactura(event: Event) {
+    const inputElement = event.target as HTMLInputElement;
+    this.numfacturaSubject.next(inputElement.value.toUpperCase());
+  }
+
   convertToUpperCase(event: Event): void {
     const input = event.target as HTMLInputElement;
     const start = input.selectionStart;
@@ -549,7 +574,7 @@ export class Facturacion implements OnInit {
       nextElement.focus(); // Enfoca el siguiente campo
     }
   }
- 
+
 
   moveFocuscodmerc(event: KeyboardEvent, nextInput: HTMLInputElement) {
     if (event.key === 'Enter' || event.key === 'Tab') {
@@ -638,7 +663,7 @@ export class Facturacion implements OnInit {
     $("#input8").focus();
     $("#input8").select();
   }
-  
+
   buscarUsuario(event: Event, nextElement: HTMLInputElement | null): void {
     event.preventDefault();
     const claveUsuario = this.formularioFacturacion.get('fa_codVend')?.value;
@@ -800,7 +825,7 @@ export class Facturacion implements OnInit {
   handleKeydownFpago(event: KeyboardEvent): void {
     const key = event.key;
     const maxIndex = this.resultadoFpago.length - 1;  // Ajustamos el límite máximo
-   
+
     if (this.resultadoFpago.length === 1) {
        this.selectedIndexfpago = 0;
       console.log("prueba")

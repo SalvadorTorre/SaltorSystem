@@ -142,37 +142,35 @@
             <div class="col-2">
               <label for="" class="label">Telefono</label>
             </div>
-            <div class="col-5">
+            <div class="col-3">
               <input
                 type="text"
                 formControlName="fa_telClie"
                 (keydown)="moveFocus($event, input5)"
                 #input4
+                placeholder="Tel. 1"
                 class="form-control form-control-sm"
               />
             </div>
-            <div class="col-5">
+            <div class="col-3">
               <input
                 type="text"
                 formControlName="fa_telClie2"
                 (keydown)="moveFocus($event, input6)"
                 #input5
+                placeholder="Tel. 2"
                 class="form-control form-control-sm"
               />
             </div>
-          </div>
-          <div class="row mt-.5">
-            <div class="col-2">
-              <label for="" class="label">Sector</label>
-            </div>
-            <div class="col-5">
+            <div class="col-4">
               <input
                 type="text"
                 formControlName="fa_sector"
                 (input)="convertToUpperCase($event)"
-                (keydown)="moveFocus($event, input7)"
+                (keydown)="moveFocus($event, input8)"
                 (keydown)="handleKeydownSector($event)"
                 #input6
+                placeholder="Sector"
                 class="form-control form-control-sm"
                 [formControl]="buscarSector"
               />
@@ -210,36 +208,12 @@
                 </div>
               </div>
             </div>
-            <div class="col-2">
-              <label for="" class="label">Zona</label>
-            </div>
-            <div class="col-3">
-              <input
-                type="text"
-                formControlName="fa_desZona"
-                (keydown)="moveFocus($event, input8)"
-                #input7
-                class="form-control form-control-sm"
-              />
-            </div>
           </div>
           <div class="row mt-.5">
             <div class="col-2">
-              <label for="" class="label">Contacto</label>
-            </div>
-            <div class="col-4">
-              <input
-                type="text"
-                formControlName="fa_contacto"
-                (keydown)="moveFocus($event, input9)"
-                #input8
-                class="form-control form-control-sm"
-              />
-            </div>
-            <div class="col-2">
               <label for="" class="label">Correo</label>
             </div>
-            <div class="col-4">
+            <div class="col-6">
               <input
                 type="text"
                 formControlName="fa_correo"
@@ -248,8 +222,19 @@
                 class="form-control form-control-sm"
               />
             </div>
+            <div class="col-4">
+              <input
+                type="text"
+                formControlName="fa_contacto"
+                (keydown)="moveFocus($event, input9)"
+                placeholder="Contacto"
+                #input8
+                class="form-control form-control-sm"
+              />
+            </div>
           </div>
-          <div class="row mt-.5">
+
+          <!-- <div class="row mt-.5">
             <div class="col-3">
               <label for="" class="label">Forma. pago</label>
             </div>
@@ -259,8 +244,11 @@
             <div class="col-4">
               <label for="" class="label">Vendedor</label>
             </div>
-          </div>
-          <div class="row">
+          </div> -->
+          <div class="row mt-1">
+            <div class="col-2">
+              <label for="" class="label">Tipo pago</label>
+            </div>
             <div class="col-3">
               <input
                 type="text"
@@ -269,6 +257,7 @@
                 (keydown)="moveFocus($event, input12)"
                 (keydown)=" handleKeydownFpago($event)"
                 #input10
+                placeholder="Forma de pago"
                 class="form-control form-control-sm"
                 [formControl]="buscarFpago"
               />
@@ -277,7 +266,7 @@
                 class="dropdown-menu"
                 style="
                   margin-right: 30px;
-                  margin-top:5px;
+                  margin-top: 5px;
                   z-index: 300;
                   width: 350px;
                   position: absolute;
@@ -307,21 +296,10 @@
               </div>
             </div>
             <div class="col-3">
-              <!-- <input
-                type="text"
-                formControlName="fa_envio"
-                (keydown)="moveFocus($event, input12)"
-                #input11
-                class="form-control form-control-sm"
-              /> -->
-            <label for="listaenvio"></label>
-            <select name="listaenvio" 
-              id="listaenvio"
-              #input11>
-              <option value="envio">Envio</option>
-              <option value="retiral">Reiro por el Cliente</option>
-              [(ngModel)]="fa_envio"
-            </select>
+              <select name="listaenvio" id="listaenvio" #input11>
+                <option value="envio">Envio</option>
+                <option value="retiral">Reira el Cliente</option>
+              </select>
             </div>
             <div class="col-2">
               <input
@@ -331,10 +309,11 @@
                 (keydown.enter)="buscarUsuario($event, input13)"
                 formControlName="fa_codVend"
                 #input12
+                placeholder="Vendedor"
                 class="form-control form-control-sm"
               />
             </div>
-            <div class="col-4">
+            <div class="col-2">
               <input
                 type="text"
                 formControlName="fa_nomVend"
@@ -344,6 +323,37 @@
           </div>
         </form>
         <br />
+        <div class="row">
+          <div class="col-2">
+            <label for="" class="label">Buscar Por</label>
+          </div>
+          <div class="col-3">
+            <input
+              type="text"
+              [(ngModel)]="txtFactura"
+              placeholder="No. de Factura"
+              class="form-control form-control-sm"
+              (input)="buscaFactura($event)"
+            />
+          </div>
+          <div class="col-4">
+            <input
+              type="text"
+              [(ngModel)]="txtdescripcion"
+              placeholder="Nombre del Cliente"
+              class="form-control form-control-sm"
+              (input)="buscaNombre($event)"
+            />
+          </div>
+          <div class="col-3">
+            <input
+              type="date"
+              [(ngModel)]="txtFecha"
+              placeholder="Fecha Factura"
+              class="form-control form-control-sm"
+            />
+          </div>
+        </div>
         <div class="row mt-0">
           <div class="table-responsive" style="height: 250px; overflow-y: auto">
             <table
@@ -589,12 +599,11 @@
                     </td>
                   </tr>
                 </tbody>
-               </table>
+              </table>
             </div>
           </div>
         </div>
         <div class="row">
-          
           <div class="col-7"></div>
           <div class="col-5">
             <div class="row mt-1">
