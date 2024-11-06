@@ -296,7 +296,9 @@
               </div>
             </div>
             <div class="col-3">
-              <select name="listaenvio" id="listaenvio" #input11>
+              <select name="listaenvio" id="listaenvio" 
+              class="form-control listbox"
+              #input11 >
                 <option value="envio">Envio</option>
                 <option value="retiral">Reira el Cliente</option>
               </select>
@@ -354,8 +356,17 @@
             />
           </div>
         </div>
-        <div class="row mt-0">
-          <div class="table-responsive" style="height: 250px; overflow-y: auto">
+        <div class="row mt-1">
+
+       
+           <div class="table-responsive" style="
+          height: 225px;
+          overflow-y: auto;
+
+          border: 2px solid rgb(4, 10, 185);
+        "
+          >
+
             <table
               class="table table-bordered table-hover table-striped table-sm table-class"
             >
@@ -393,9 +404,34 @@
             </table>
           </div>
         </div>
+     
+  </div>
+   <!-- ***************** -->
+   <div class="row mt-0">
+    <div class="col">
+      <div class="card">
+       
+        <div class="card-body"   style="height: 60px; background-color: #f7eeeebd">
+          <div class="row mt-0">
+          <div class="col-4">
+            <button class="btn btn-primary btn-block btn-lx w-75">
+              Deshacer
+            </button>
+          </div>
+          <div class="col-4"> </div>
+          <div class="col-4">
+            <button class="btn btn-primary btn-block btn-lx w-75">
+              Facturar
+            </button>
+          </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
+  <!--**********************  -->
+</div>
+</div>
   <div class="col-7">
     <div class="card">
       <div class="card-header" style="height: 35px; background-color: #f40b0b">

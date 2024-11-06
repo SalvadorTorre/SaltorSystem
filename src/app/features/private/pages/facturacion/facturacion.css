@@ -39,6 +39,22 @@
   /* Reduce la opacidad para indicar desactivado */
 }
 
+.listbox {
+  /* width: 300px;*/
+  /* Define el ancho del textbox */
+  height: 30px;
+  padding: 5px;
+  /* Espaciado interno */
+  border: 1px solid #ccc;
+  /* Borde de color gris claro */
+  border-radius: 5px;
+  /* Bordes redondeados */
+  font-size: 16px;
+  /* Tamaño de la fuente */
+  outline: none;
+  /* Elimina el borde azul predeterminado al hacer foco */
+}
+
 /* Estilo básico para el label */
 .label {
   font-size: 15px;
