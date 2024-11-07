@@ -324,6 +324,10 @@ export class Facturacion implements OnInit {
     });
 
   }
+limpia(): void{
+  this.formularioFacturacion.reset();
+}
+
 
   editardetFacturacion(detFactura: detFacturaData) {
     this.facturacionid = detFactura.df_codFact;

@@ -167,7 +167,7 @@
                 type="text"
                 formControlName="fa_sector"
                 (input)="convertToUpperCase($event)"
-                (keydown)="moveFocus($event, input8)"
+                (keydown)="moveFocus($event, input7)"
                 (keydown)="handleKeydownSector($event)"
                 #input6
                 placeholder="Sector"
@@ -217,8 +217,8 @@
               <input
                 type="text"
                 formControlName="fa_correo"
-                (keydown)="moveFocus($event, input10)"
-                #input9
+                (keydown)="moveFocus($event, input8)"
+                #input7
                 class="form-control form-control-sm"
               />
             </div>
@@ -256,7 +256,7 @@
                 (input)="convertToUpperCase($event)"
                 (keydown)="moveFocus($event, input12)"
                 (keydown)=" handleKeydownFpago($event)"
-                #input10
+                #input9
                 placeholder="Forma de pago"
                 class="form-control form-control-sm"
                 [formControl]="buscarFpago"
