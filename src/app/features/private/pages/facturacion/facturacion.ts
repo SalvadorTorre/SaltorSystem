@@ -42,7 +42,7 @@ export class Facturacion implements OnInit {
   maxPagesToShow = 5;
   txtdescripcion: string = '';
   txtcodigo = '';
- // txtFecha: string = '';
+  // txtFecha: string = '';
   descripcion: string = '';
   codigo: string = '';
   fecha: string = '';
@@ -156,14 +156,14 @@ export class Facturacion implements OnInit {
   buscarSector = new FormControl();
   buscarFpago = new FormControl();
   selectedIndex = 1;
-  selectedIndexsector=1;
+  selectedIndexsector = 1;
   buscarcodmerc = new FormControl();
   buscardescripcionmerc = new FormControl();
   // buscarcodmercElement = new FormControl();
   nativeElement = new FormControl();
   resultadoCodmerc: ModeloInventarioData[] = [];
   selectedIndexcodmerc = 1;
-  selectedIndexfpago=1;
+  selectedIndexfpago = 1;
   resultadodescripcionmerc: ModeloInventarioData[] = [];
   selectedIndexdescripcionmerc = 1;
   seleccionarFacturacion(facturacion: any) { this.selectedFacturacion = facturacion; }
@@ -315,7 +315,7 @@ export class Facturacion implements OnInit {
       fa_codZona: [''],
       fa_desZona: [''],
       fa_fpago: [''],
-      fa_codfpago:[''],
+      fa_codfpago: [''],
       fa_envio: [''],
       fa_ncfFact: [''],
       fa_tipoNcf: [''],
@@ -324,9 +324,10 @@ export class Facturacion implements OnInit {
     });
 
   }
-limpia(): void{
-  this.formularioFacturacion.reset();
-}
+  limpia(): void {
+    //this.formularioFacturacion.reset();
+    this.crearFormularioFacturacion();
+  }
 
 
   editardetFacturacion(detFactura: detFacturaData) {
@@ -760,8 +761,8 @@ limpia(): void{
   handleKeydown(event: KeyboardEvent): void {
     const key = event.key;
     const maxIndex = this.resultadoNombre.length - 1;  // Ajustamos el límite máximo
-  if (this.resultadoNombre.length === 1) {
-       this.selectedIndex = 0;
+    if (this.resultadoNombre.length === 1) {
+      this.selectedIndex = 0;
       console.log("prueba")
     }
 
@@ -797,8 +798,8 @@ limpia(): void{
     const maxIndex = this.resultadoSector.length - 1;  // Ajustamos el límite máximo
     if (this.resultadoSector.length === 1) {
       this.selectedIndexsector = 0;
-     console.log("prueba")
-   }
+      console.log("prueba")
+    }
     if (key === 'ArrowDown') {
 
       // Mueve la selección hacia abajo
@@ -831,7 +832,7 @@ limpia(): void{
     const maxIndex = this.resultadoFpago.length - 1;  // Ajustamos el límite máximo
 
     if (this.resultadoFpago.length === 1) {
-       this.selectedIndexfpago = 0;
+      this.selectedIndexfpago = 0;
       console.log("prueba")
     }
 
@@ -1016,7 +1017,7 @@ limpia(): void{
       console.log(this.resultadoFpago)
       this.formularioFacturacion.patchValue({
         fa_fpago: fpago.fp_descfpago,
-        fa_codfpago: fpago.fp_codfpago ,
+        fa_codfpago: fpago.fp_codfpago,
       });
     }
   }
