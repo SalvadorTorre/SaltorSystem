@@ -338,11 +338,10 @@ export class Facturacion implements OnInit {
    this.cantidadmerc = 0;
    this.isEditing = false;
    this.items = [];          // Limpiar el array de items
-    this.totalgraltxt = 0;       // Reiniciar el total general
+    this.totalGral = 0;       // Reiniciar el total general
     this.totalItbis = 0;      // Reiniciar el total del ITBIS
     this.subTotal = 0;        // Reiniciar el subtotal
-
-    
+    this.actualizarTotales()
   
   }
 
