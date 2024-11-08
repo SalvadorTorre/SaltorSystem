@@ -319,7 +319,7 @@ export class Facturacion implements OnInit {
       fa_envio: [''],
       fa_ncfFact: [''],
       fa_tipoNcf: [''],
-      fa_contacto: [''],
+      fa_contact0o: [''],
 
     });
 
@@ -327,6 +327,23 @@ export class Facturacion implements OnInit {
   limpia(): void {
     //this.formularioFacturacion.reset();
     this.crearFormularioFacturacion();
+      this.txtdescripcion = '';
+      this.txtFactura = '';
+      this.txtFecha = '';
+   //   this.buscarTodasFacturaciomtimbresobre tim0
+   this.productoselect;
+   this.codmerc = ""
+   this.descripcionmerc = ""
+   this.preciomerc = 0;
+   this.cantidadmerc = 0;
+   this.isEditing = false;
+   this.items = [];          // Limpiar el array de items
+    this.totalgraltxt = 0;       // Reiniciar el total general
+    this.totalItbis = 0;      // Reiniciar el total del ITBIS
+    this.subTotal = 0;        // Reiniciar el subtotal
+
+    
+  
   }
 
 
