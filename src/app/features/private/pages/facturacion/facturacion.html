@@ -413,16 +413,21 @@
        
         <div class="card-body"   style="height: 60px; background-color: #f7eeeebd">
           <div class="row mt-0">
-          <div class="col-4">
-            <button class="btn btn-primary btn-block btn-lx w-75"
+            <div class="col-2"> </div>
+            <div class="col-4">
+            <button class="btn btn-success btn-block btn-lx w-50"
             (click)="limpia()">
+            <i class="bi bi-arrow-clockwise"></i>
               Deshacer
             </button>
           </div>
-          <div class="col-4"> </div>
+          <div class="col-2"> </div>
           <div class="col-4">
-            <button class="btn btn-primary btn-block btn-lx w-75">
-              Facturar
+       
+
+            <button class="btn btn-success btn-lx w-50"
+            (click)="guardarFacturacion()">
+              <i class="bi bi-check"></i> Guardar
             </button>
           </div>
           </div>

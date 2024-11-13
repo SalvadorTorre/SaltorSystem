@@ -1142,8 +1142,53 @@ export class Facturacion implements OnInit {
 
   }
 
+  guardarFacturacion() {
 
-  guardarFacturacion() { }
+    const date = new Date();
+    this.formularioFacturacion.get('fa_valFact')?.patchValue(this.totalGral);
+    this.formularioFacturacion.get('fa_itbiFact')?.patchValue(this.totalItbis);
+    this.formularioFacturacion.get('fa_codFact')!.enable();
+    this.formularioFacturacion.get('fa_fecFact')!.enable();
+    this.formularioFacturacion.get('fa_nomVend')!.enable();
+    const payload = {
+      cotizacion: this.formularioFacturacion.value,
+      detalle: this.items,
+      idFacturacion: this.formularioFacturacion.get('fa_codFact')?.value,
+
+    };
+
+
+    if (this.formularioFacturacion.valid) {
+     
+         if (this.formularioFacturacion.valid) {
+          this.servicioFacturacion.guardarFacturacion(payload).subscribe(response => {
+            Swal.fire({
+              title: "Excelente!",
+              text: "Facturacion creada correctamente.",
+              icon: "success",
+              timer: 1000,
+              showConfirmButton: false,
+            });
+            this.buscarTodasFacturacion(1);
+            this.formularioFacturacion.reset();
+            this.crearFormularioFacturacion();
+            this.formularioFacturacion.enable();
+            $('#modalcotizacion').modal('hide');
+          });
+        } else {
+          console.log(this.formularioFacturacion.value);
+        }
+
+
+      
+    }
+    else {
+      alert("Esta Empresa no fue Guardado");
+    }
+
+
+
+  }
 
   navigateTable(event: KeyboardEvent) {
     const key = event.key;
