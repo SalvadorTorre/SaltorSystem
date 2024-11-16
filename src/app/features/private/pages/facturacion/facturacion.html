@@ -20,9 +20,8 @@
             <div class="col-3">
               <input
                 type="text"
-                class="textbox"
-                class="form-control form-control-sm"
-                formControName="fa_codFact"
+                class="form-control form-control-sm textbox"
+                formControlName="fa_codFact"
               />
             </div>
             <div class="col-3">
@@ -257,6 +256,7 @@
                 (keydown)="moveFocus($event, input12)"
                 (keydown)=" handleKeydownFpago($event)"
                 #input9
+                id="fpago"
                 placeholder="Forma de pago"
                 class="form-control form-control-sm"
                 [formControl]="buscarFpago"
@@ -297,10 +297,12 @@
             </div>
             <div class="col-3">
               <select name="listaenvio" id="listaenvio" 
+              (keydown)="moveFocus($event, input12)"
               class="form-control listbox"
-              #input11 >
+              >
+              
                 <option value="envio">Envio</option>
-                <option value="retiral">Reira el Cliente</option>
+                <option value="retiral">Retirar por el Cliente</option>
               </select>
             </div>
             <div class="col-2">

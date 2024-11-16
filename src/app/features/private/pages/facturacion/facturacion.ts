@@ -453,7 +453,7 @@ export class Facturacion implements OnInit {
       response.data.forEach((item: any) => {
         const producto: ModeloInventarioData = {
           in_codmerc: item.df_codMerc,
-          in_desmerc: item.df_desMerc,
+          in_desmerc: item.df_desmerc,
           in_grumerc: '',
           in_tipoproduct: '',
           in_canmerc: 0,
@@ -591,7 +591,18 @@ export class Facturacion implements OnInit {
 
   moveFocus(event: KeyboardEvent, nextElement: HTMLInputElement | null): void {
     if (event.key === 'Enter' && nextElement) {
-      event.preventDefault(); // Evita el comportamiento predeterminado del Enter
+      if ($("#fpago").focus()){
+        $("#listaenvio").focus()
+        return
+
+      }  
+      if ($("#listaenvio").focus()){
+        event.preventDefault(); // Evita el comportamiento predeterminado del Enter
+        nextElement.focus(); // Enfoca el siguiente campo
+        return
+
+      }  
+         event.preventDefault(); // Evita el comportamiento predeterminado del Enter
       nextElement.focus(); // Enfoca el siguiente campo
     }
   }
@@ -1039,7 +1050,16 @@ export class Facturacion implements OnInit {
   }
   agregaItem(event: Event) {
     event.preventDefault();
-    if (this.isEditing) {
+    if (!this.productoselect || this.cantidadmerc <= 0 || this.preciomerc <= 0 || this.preciomerc <= this.productoselect.in_cosmerc) {
+      this.mensagePantalla = true;
+      Swal.fire({
+        icon: "error",
+        title: "A V I S O",
+        text: 'Por favor complete todos los campos requeridos antes de agregar el ítem.',
+      }).then(() => { this.mensagePantalla = false });
+      return;
+    }
+     if (this.isEditing) {
       // Actualizar el ítem existente
       this.itemToEdit.producto = this.productoselect;
       this.itemToEdit.codmerc = this.codmerc;
@@ -1056,15 +1076,7 @@ export class Facturacion implements OnInit {
       this.itemToEdit = null;
     } else {
 
-      if (!this.productoselect || this.cantidadmerc <= 0 || this.preciomerc <= 0 || this.preciomerc <= this.productoselect.in_cosmerc) {
-        this.mensagePantalla = true;
-        Swal.fire({
-          icon: "error",
-          title: "A V I S O",
-          text: 'Por favor complete todos los campos requeridos antes de agregar el ítem.',
-        }).then(() => { this.mensagePantalla = false });
-        return;
-      }
+
       const total = this.cantidadmerc * this.preciomerc;
       this.totalGral += total;
       const itbis = total * 0.18;
