@@ -609,12 +609,14 @@ export class Facturacion implements OnInit {
 
 
   moveFocuscodmerc(event: KeyboardEvent, nextInput: HTMLInputElement) {
+    console.log("move focus")
     if (event.key === 'Enter' || event.key === 'Tab') {
       event.preventDefault(); // Previene el comportamiento predeterminado de Enter
       // const currentControl = this.formularioFacturacion.get('ct_codvend');
       const currentInputValue = (event.target as HTMLInputElement).value.trim();
       if (currentInputValue === '') {
         this.codmerVacio = true;
+        console.log("vacio")
       }
       else {
         this.codmerVacio = false;
@@ -650,6 +652,7 @@ export class Facturacion implements OnInit {
     }
   }
   handleKeydownInventario(event: KeyboardEvent): void {
+    console.log("handle")
     const key = event.key;
     const maxIndex = this.resultadoCodmerc.length - 1;
 
