@@ -48,14 +48,11 @@
               />
             </div>
             <div class="col-4">
-              <input
-                type="text"
-                class="form-control form-control-sm"
-                formControlName="fa_tipoNcf"
-                placeholder="Tipo Comprovante"
-              />
+              <select formControlName="fa_tipoNcf"
+                 class="form-select form-control-sm">
+                <option [value]="ncf.codNcf"  *ngFor="let ncf of ncflist">{{ncf.desNcf}}</option>
+              </select>
             </div>
-
             <div class="col-3">
               <input
                 type="text"
@@ -76,7 +73,7 @@
                   data-id="agent"
                   type="text"
                   autocomplete="off"
-                  (input)="convertToUpperCase($event)"
+                  (blur)="convertToUpperCase($event)"
                   (keydown.enter)="moveFocusnomclie($event, input3)"
                   (keydown)="handleKeydown($event)"
                   #input2
@@ -144,6 +141,8 @@
             <div class="col-3">
               <input
                 type="text"
+                id="input4"
+
                 formControlName="fa_telClie"
                 (keydown)="moveFocus($event, input5)"
                 #input4
@@ -225,82 +224,37 @@
               <input
                 type="text"
                 formControlName="fa_contacto"
-                (keydown)="moveFocus($event, input9)"
                 placeholder="Contacto"
+                (keydown)="moveFocus($event, input9)"
                 #input8
                 class="form-control form-control-sm"
               />
             </div>
           </div>
 
-          <!-- <div class="row mt-.5">
-            <div class="col-3">
-              <label for="" class="label">Forma. pago</label>
-            </div>
-            <div class="col-3">
-              <label for="" class="label">Forma Despacho.</label>
-            </div>
-            <div class="col-4">
-              <label for="" class="label">Vendedor</label>
-            </div>
-          </div> -->
+  
           <div class="row mt-1">
             <div class="col-2">
               <label for="" class="label">Tipo pago</label>
             </div>
             <div class="col-3">
-              <input
-                type="text"
-                formControlName="fa_fpago"
-                (input)="convertToUpperCase($event)"
-                (keydown)="moveFocus($event, input12)"
-                (keydown)=" handleKeydownFpago($event)"
-                #input9
-                id="fpago"
-                placeholder="Forma de pago"
-                class="form-control form-control-sm"
-                [formControl]="buscarFpago"
-              />
-              <div
-                [ngClass]="{ 'show': resultadoFpago.length > 0 }"
-                class="dropdown-menu"
-                style="
-                  margin-right: 30px;
-                  margin-top: 5px;
-                  z-index: 300;
-                  width: 350px;
-                  position: absolute;
-                  will-change: transform;
-                "
-              >
-                <div
-                  class="searchReturnItem name-find"
-                  *ngFor="let result of resultadoFpago; let i = index"
-                  [class.active]="i === selectedIndexfpago"
-                >
-                  <a
-                    (click)="cargarDatosFpago(result)"
-                    style="
-                      color: #222222 !important;
-                      font-size: 10pt;
-                      padding: 20px 0px;
-                      text-decoration: none !important;
-                      cursor: pointer;
-                    "
-                    class="px-3 cp"
-                  >
-                    <i class="far fa-user-circle mr-5"></i>&nbsp;&nbsp;{{
-                    result.fp_descfpago }}
-                  </a>
-                </div>
-              </div>
-            </div>
-            <div class="col-3">
-              <select name="listaenvio" id="listaenvio" 
-              (keydown)="moveFocus($event, input12)"
-              class="form-control listbox"
-              >
+              <select #input9 name="formapago" 
+              formControlName="fa_fpago"
+              (keydown)="moveFocus($event, input11)"
               
+              class="form-control listbox">
+                <option [value]="fpago.fp_codfpago"  *ngFor="let fpago of resultadoFpago">{{fpago.fp_descfpago}}</option>
+
+              ></select>
+
+
+            </div>
+            
+            
+            <div class="col-3">
+              <select  #input11 name="listaenvio" id="listaenvio" 
+              (keydown)="moveFocus($event, input12)"
+              class="form-control listbox">
                 <option value="envio">Envio</option>
                 <option value="retiral">Retirar por el Cliente</option>
               </select>
@@ -309,7 +263,6 @@
               <input
                 type="password"
                 (input)="convertToUpperCase($event)"
-                (keydown)="moveFocus($event, input6)"
                 (keydown.enter)="buscarUsuario($event, input13)"
                 formControlName="fa_codVend"
                 #input12
@@ -415,18 +368,16 @@
        
         <div class="card-body"   style="height: 60px; background-color: #f7eeeebd">
           <div class="row mt-0">
-            <div class="col-2"> </div>
-            <div class="col-4">
+            <div class="col-1"> </div>
+            <div class="col-5">
             <button class="btn btn-success btn-block btn-lx w-50"
             (click)="limpia()">
             <i class="bi bi-arrow-clockwise"></i>
               Deshacer
             </button>
           </div>
-          <div class="col-2"> </div>
-          <div class="col-4">
-       
-
+          <div class="col-1"> </div>
+          <div class="col-5">
             <button class="btn btn-success btn-lx w-50"
             (click)="guardarFacturacion()">
               <i class="bi bi-check"></i> Guardar

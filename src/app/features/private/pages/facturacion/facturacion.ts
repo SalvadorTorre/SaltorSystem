@@ -23,6 +23,9 @@ import { ModeloInventario, ModeloInventarioData } from 'src/app/core/services/ma
 import { Usuario } from '../mantenimientos/pages/usuario-page/usuario';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { disableDebugTools } from '@angular/platform-browser';
+import { ServicioNcf } from 'src/app/core/services/ncf/ncf.service';
+import { ModeloNcfData } from 'src/app/core/services/ncf';
 declare var $: any;
 
 @Component({
@@ -60,6 +63,7 @@ export class Facturacion implements OnInit {
   detFacturaList: detFacturaData[] = [];
   selectedFacturacion: any = null;
   items: interfaceDetalleModel[] = [];
+  ncflist: ModeloNcfData[] = [];
   totalGral: number = 0;
   totalItbis: number = 0;
   subTotal: number = 0;
@@ -70,6 +74,7 @@ export class Facturacion implements OnInit {
   txtFecha: string = '';
   txtNombre: string = '';
   descuentotxt: string = '';
+  tiponcf: string = 'Consumidor Final';
   static detFactura: detFacturaData[];
   codmerc: string = '';
   descripcionmerc: string = '';
@@ -109,7 +114,8 @@ export class Facturacion implements OnInit {
     private ServicioUsuario: ServicioUsuario,
     private ServicioRnc: ServicioRnc,
     private ServicioSector: ServicioSector,
-    private ServicioFpago: ServicioFpago,
+    private servicioFpago: ServicioFpago,
+    private servicioNcf: ServicioNcf,
   ) {
     this.form = this.fb.group({
       fa_codVend: ['', Validators.required], // El campo es requerido
@@ -204,6 +210,8 @@ export class Facturacion implements OnInit {
 
     });
 
+    this.obtenerNcf();
+    this.obtenerfpago();
     this.buscardescripcionmerc.valueChanges.pipe(
       debounceTime(50),
       distinctUntilChanged(),
@@ -269,41 +277,31 @@ export class Facturacion implements OnInit {
 
     });
 
-    this.buscarFpago.valueChanges.pipe(
-      debounceTime(500),
-      distinctUntilChanged(),
-      tap(() => {
-        this.resultadoFpago = [];
-      }),
-      filter((query: string) => query !== ''),
-      switchMap((query: string) => this.http.GetRequest<ModeloFpago>(`/fpago-nombre/${query}`))
-    ).subscribe((results: ModeloFpago) => {
-      console.log(results.data);
-      if (results) {
-        if (Array.isArray(results.data)) {
-          this.resultadoFpago = results.data;
-        }
-      } else {
-        this.resultadoFpago = [];
-      }
-
+  
+  }
+obtenerfpago() {
+    this.servicioFpago.obtenerTodosFpago().subscribe(response => {
+      this.resultadoFpago = response.data;
     });
   }
-
-
+obtenerNcf() {
+    this.servicioNcf.buscarTodosNcf().subscribe(response => {
+      this.ncflist = response.data;
+    });
+  }
 
   crearFormularioFacturacion() {
     const fechaActual = new Date();
     const fechaActualStr = this.formatofecha(fechaActual);
     this.formularioFacturacion = this.fb.group({
-      fa_codFact: [''],
-      fa_fecFact: [fechaActualStr],
+      fa_codFact: [{ value: '', disabled: true }],
+      fa_fecFact: [{value: fechaActualStr, disabled: true}],
       fa_valFact: [''],
       fa_itbiFact: [''],
       fa_codClie: [''],
       fa_cosFact: [''],
       fa_nomClie: [''],
-      fa_rncFact: [''],
+      fa_rncFact: [null],
       fa_telClie: [''],
       fa_telClie2: [''],
       fa_dirClie: [''],
@@ -312,15 +310,14 @@ export class Facturacion implements OnInit {
       fa_nomVend: [''],
       fa_status: [''],
       fa_sector: [''],
-      fa_codZona: [''],
+      fa_codZona: [null],
       fa_desZona: [''],
       fa_fpago: [''],
-      fa_codfpago: [''],
+      fa_codfpago: ['1'],
       fa_envio: [''],
-      fa_ncfFact: [''],
-      fa_tipoNcf: [''],
+      fa_ncfFact: [{value:'', disabled: true }],
+      fa_tipoNcf: ['1'],
       fa_contact0o: [''],
-
     });
 
   }
@@ -581,31 +578,45 @@ export class Facturacion implements OnInit {
 
   convertToUpperCase(event: Event): void {
     const input = event.target as HTMLInputElement;
-    const start = input.selectionStart;
+   // const start = input.selectionStart;
     const end = input.selectionEnd;
     input.value = input.value.toUpperCase();
-    if (start !== null && end !== null) {
-      input.setSelectionRange(start, end);
-    }
+    // if (start !== null && end !== null) {
+    //   input.setSelectionRange(start, end);
+    // }
   }
 
-  moveFocus(event: KeyboardEvent, nextElement: HTMLInputElement | null): void {
+ 
+
+  moveFocus(event: KeyboardEvent, nextElement: HTMLInputElement | HTMLSelectElement) {
     if (event.key === 'Enter' && nextElement) {
-      if ($("#fpago").focus()){
-        $("#listaenvio").focus()
-        return
-
-      }  
-      if ($("#listaenvio").focus()){
-        event.preventDefault(); // Evita el comportamiento predeterminado del Enter
-        nextElement.focus(); // Enfoca el siguiente campo
-        return
-
-      }  
-         event.preventDefault(); // Evita el comportamiento predeterminado del Enter
+      event.preventDefault(); // Evita el comportamiento predeterminado del Enter
       nextElement.focus(); // Enfoca el siguiente campo
     }
   }
+  // moveFocus(event: KeyboardEvent, nextElement: HTMLInputElement | null): void {
+  //   if (event.key === 'Enter' && nextElement) {
+  //     event.preventDefault(); // Evita el comportamiento predeterminado del Enter
+  //     nextElement.focus(); // Enfoca el siguiente campo
+  //   }
+  // }
+  // moveFocus(event: KeyboardEvent, nextElement: HTMLInputElement | null): void {
+  //   if (event.key === 'Enter' && nextElement) {
+  //     if ($("#fpago").focus()){
+  //       $("#listaenvio").focus()
+  //       return
+
+  //     }  
+  //     if ($("#listaenvio").focus()){
+  //       event.preventDefault(); // Evita el comportamiento predeterminado del Enter
+  //       nextElement.focus(); // Enfoca el siguiente campo
+  //       return
+
+  //     }  
+  //        event.preventDefault(); // Evita el comportamiento predeterminado del Enter
+  //     nextElement.focus(); // Enfoca el siguiente campo
+  //   }
+  // }
 
 
   moveFocuscodmerc(event: KeyboardEvent, nextInput: HTMLInputElement) {
@@ -732,17 +743,13 @@ export class Facturacion implements OnInit {
   }
   buscarRnc(event: Event, nextElement: HTMLInputElement | null): void {
     event.preventDefault();
-
     const rnc = this.formularioFacturacion.get('fa_rncFact')?.value;
-    // const rnc = this.rncValue;
-    console.log("VALOR", rnc);
     if (!rnc) {
-      console.log('RNC no Ingresado');
-      this.formularioFacturacion.patchValue({ fa_tipoNcf: "Consumidor Fina" });
-
+      this.obtenerNcf();
+      this.formularioFacturacion.patchValue({ fa_tipoNcf: 1 });
+      this.formularioFacturacion.get("fa_tipoNcf")?.disable(); 
       // Si no se ha ingresado un RNC, pasamos el foco al siguiente elemento
       nextElement?.focus();
-
       return;
     }
 
@@ -752,28 +759,31 @@ export class Facturacion implements OnInit {
       console.log(rnc.length);
       return;
     }
-
     // Buscar RNC en el servicio
     this.ServicioRnc.buscarRncPorId(rnc).subscribe(
-      (response) => {
-        if (response?.data?.length) {
-          // Si se encuentra el RNC, asignar el nombre del cliente
-          const nombreEmpresa = response.data[0]?.rason;
-          this.formularioFacturacion.patchValue({ fa_nomClie: nombreEmpresa });
-          this.formularioFacturacion.patchValue({ fa_tipoNcf: "Factura con Valor Fiscal" });
-          //nextElement?.focus();  // Pasar el foco al siguiente campo
-          $("#input3").focus();
-          $("#input3").select();
-        } else {
-          // Si no se encuentra el RNC, mostrar error
-          console.log('RNC no encontrado.');
-        }
-      },
-      (error) => {
-        // Manejar errores de la llamada al servicio
-        this.mostrarMensajeError('Error al buscar el RNC.');
-      }
-    );
+    (response) => {
+    if (response?.data?.length) {
+      // Si se encuentra el RNC, asignar el nombre del cliente
+      const nombreEmpresa = response.data[0]?.rason;
+      this.formularioFacturacion.patchValue({ fa_nomClie: nombreEmpresa });
+      this.formularioFacturacion.patchValue({ fa_tipoNcf: 2 });
+      this.formularioFacturacion.get("fa_tipoNcf")?.enable();
+      this.ncflist = this.ncflist.filter(ncf => ncf.codNcf !== 1);
+      //nextElement?.focus();  // Pasar el foco al siguiente campo
+      $("#input3").focus();
+      $("#input3").select();
+    } 
+    else {
+      // Si no se encuentra el RNC, mostrar error
+      this.mostrarMensajeError('RNC inválido.');
+      console.log('RNC no encontrado.');
+    }
+    },
+    (error) => {
+    // Manejar errores de la llamada al servicio
+    this.mostrarMensajeError('Error al buscar el RNC.');
+    }
+  );
   }
 
 
@@ -1165,14 +1175,14 @@ export class Facturacion implements OnInit {
     this.formularioFacturacion.get('fa_codFact')!.enable();
     this.formularioFacturacion.get('fa_fecFact')!.enable();
     this.formularioFacturacion.get('fa_nomVend')!.enable();
+    this.formularioFacturacion.get('fa_ncfFact')!.enable();
     const payload = {
-      cotizacion: this.formularioFacturacion.value,
+      factura: this.formularioFacturacion.value,
       detalle: this.items,
-      idFacturacion: this.formularioFacturacion.get('fa_codFact')?.value,
 
     };
 
-
+console.log(payload);
     if (this.formularioFacturacion.valid) {
      
          if (this.formularioFacturacion.valid) {
