@@ -17,8 +17,8 @@ export class ServicioFacturacion {
     return this.http.PutRequest<any, any>(`/facturacion/${fa_codFact}`, facturacion);
   }
 
-  buscarTodasFacturacion(pageIndex: number, pageSize: number, ): Observable<any> {
-    let url = `/facturacion?page=${pageIndex}&limit=${pageSize}`;
+  buscarTodasFacturacion( ): Observable<any> {
+    let url = `/facturacion`;
 
     console.log(url);
     return this.http.GetRequest<any>(url);

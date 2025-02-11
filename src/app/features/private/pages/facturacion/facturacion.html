@@ -48,8 +48,9 @@
               />
             </div>
             <div class="col-4">
-              <select formControlName="fa_tipoNcf"
-                 class="form-select form-control-sm">
+              <select name="tipoNcf" formControlName="fa_tipoNcf"
+              (keydown)="moveFocus($event, input3)"  
+              class="form-select form-control-sm">
                 <option [value]="ncf.codNcf"  *ngFor="let ncf of ncflist">{{ncf.desNcf}}</option>
               </select>
             </div>
@@ -62,6 +63,11 @@
               />
             </div>
           </div>
+
+
+
+
+
           <div class="row mt-.5">
             <div class="col-2">
               <label for="" class="label">Cliente</label>
@@ -73,7 +79,7 @@
                   data-id="agent"
                   type="text"
                   autocomplete="off"
-                  (blur)="convertToUpperCase($event)"
+                  (input)="convertToUpperCase($event)"
                   (keydown.enter)="moveFocusnomclie($event, input3)"
                   (keydown)="handleKeydown($event)"
                   #input2
@@ -240,8 +246,7 @@
             <div class="col-3">
               <select #input9 name="formapago" 
               formControlName="fa_fpago"
-              (keydown)="moveFocus($event, input11)"
-              
+              (keydown.enter)="moveFocusFpago($event, input11)"
               class="form-control listbox">
                 <option [value]="fpago.fp_codfpago"  *ngFor="let fpago of resultadoFpago">{{fpago.fp_descfpago}}</option>
 
@@ -599,18 +604,184 @@
           </div>
         </div>
         <div class="row">
-          <div class="col-7"></div>
-          <div class="col-5">
+          <div class="col-7">
+            <div class="row mt-1">
+              <div style="padding: 5px; border: 2px solid rgb(4, 10, 185)">
+                <div class="row">
+                  <div class="col-5">
+                    <div class="row">
+                    <h6
+                      class="col-4 col-form-label text-black"
+                      style="font-size: 12px; font-weight: bold">
+                      Exitencia       
+                    </h6>
+                    <div class="col-8">
+                      <input
+                        type="text"
+                        style="font-size: 12px; font-weight: bold"
+                        class="form-control form-control-sm text-end"
+                        disabled
+                        [(ngModel)]="existenciatxt"
+                        id="inputPassword"
+                      /> 
+                    </div>
+                    </div>
+                    <div class="row">
+                    <h6
+                      class="col-4 col-form-label text-black"
+                      style="font-size: 12px; font-weight: bold">
+                      Medida         
+                    </h6>
+                    <div class="col-8">
+                      <input
+                      type="text"
+                        style="font-size: 12px; font-weight: bold"
+                        class="form-control form-control-sm text-end"
+                        disabled
+                        [(ngModel)]="medidatxt"
+                        id="inputPassword"
+                      /> 
+                    </div>
+                    </div>
+                    <div class="row">
+                    <h6
+                      class="col-4 col-form-label text-black"
+                      style="font-size: 12px; font-weight: bold">
+                      Actualiz         
+                    </h6>
+                    <div class="col-8">
+                      <input
+                      type="text"
+                        style="font-size: 12px; font-weight: bold"
+                        class="form-control form-control-sm text-end"
+                        disabled
+                        [(ngModel)]="fecacttxt"
+                        id="inputPassword"
+                      /> 
+                    </div>
+                    </div>
+                    <div class="row">
+                    <h6
+                      class="col-4 col-form-label text-black"
+                      style="font-size: 12px; font-weight: bold">
+                      Costo         
+                    </h6>
+                    <div class="col-8">
+                      <input
+                      type="text"
+                        style="font-size: 12px; font-weight: bold"
+                        class="form-control form-control-sm text-end"
+                        disabled
+                        [(ngModel)]="costotxt"
+                        id="inputPassword"
+                      /> 
+                    </div>
+                    </div>
+                  </div>
+                  <div class="col-7">
+                    <div class="row">
+                      <h6
+                        class="col-2 col-form-label text-black"
+                        style="font-size: 12px; font-weight: bold">
+                        7%
+                      </h6>
+                      <div class="col-8">
+                        <input
+                          type="text"
+                          style="font-size: 12px; font-weight: bold"
+                          class="form-control form-control-sm text-end"
+                          disabled
+                          [(ngModel)]="atxt"
+                          id="inputPassword"
+                        /> 
+                      </div>
+                    </div>
+                    <div class="row">
+                      <h6
+                        class="col-2 col-form-label text-black"
+                        style="font-size: 12px; font-weight: bold">
+                        10%
+                      </h6>
+                      <div class="col-8">
+                        <input
+                          type="text"
+                          style="font-size: 12px; font-weight: bold"
+                          class="form-control form-control-sm text-end"
+                          disabled
+                          [(ngModel)]="btxt"
+                          id="inputPassword"
+                        /> 
+                      </div>
+                    </div>
+                    <div class="row">
+                      <h6
+                        class="col-2 col-form-label text-black"
+                        style="font-size: 12px; font-weight: bold">
+                        12%
+                      </h6>
+                      <div class="col-8">
+                        <input
+                          type="text"
+                          style="font-size: 12px; font-weight: bold"
+                          class="form-control form-control-sm text-end"
+                          disabled
+                          [(ngModel)]="ctxt"
+                          id="inputPassword"
+                        /> 
+                      </div>
+                    </div>
+                    <div class="row">
+                      <h6
+                        class="col-2 col-form-label text-black"
+                        style="font-size: 12px; font-weight: bold">
+                        14%
+                      </h6>
+                      <div class="col-8">
+                        <input
+                          type="text"
+                          style="font-size: 12px; font-weight: bold"
+                          class="form-control form-control-sm text-end"
+                          disabled
+                          [(ngModel)]="dtxt"
+                          id="inputPassword"
+                        /> 
+                      </div>
+                    </div>
+                    <div class="row">
+                      <h6
+                        class="col-2 col-form-label text-black"
+                        style="font-size: 12px; font-weight: bold">
+                        16%
+                      </h6>
+                      <div class="col-8">
+                        <input
+                          type="text"
+                          style="font-size: 12px; font-weight: bold"
+                          class="form-control form-control-sm text-end"
+                          disabled
+                          [(ngModel)]="etxt"
+                          id="inputPassword"
+                        /> 
+                      </div>
+                    </div>
+                  </div>  
+  
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-1"></div>
+          <div class="col-4">
             <div class="row mt-1">
               <div style="padding: 5px; border: 2px solid rgb(4, 10, 185)">
                 <div class="row">
                   <h6
-                    class="col-5 col-form-label text-black"
+                    class="col-4 col-form-label text-black"
                     style="font-size: 18px; font-weight: bold"
                   >
                     Sub Total
                   </h6>
-                  <div class="col-7">
+                  <div class="col-8">
                     <input
                       type="text"
                       style="font-size: 18px; font-weight: bold"
@@ -623,12 +794,12 @@
                 </div>
                 <div class="row mt-.5">
                   <h6
-                    class="col-sm-5 col-form-label text-black"
+                    class="col-4 col-form-label text-black"
                     style="font-size: 18px; font-weight: bold"
                   >
                     Desc.
                   </h6>
-                  <div class="col-7">
+                  <div class="col-8">
                     <input
                       type="text"
                       style="font-size: 18px; font-weight: bold"
@@ -641,12 +812,12 @@
                 </div>
                 <div class="row mt-.5">
                   <h6
-                    class="col-sm-5 col-form-label text-black"
+                    class="col-4 col-form-label text-black"
                     style="font-size: 18px; font-weight: bold"
                   >
                     ITBI
                   </h6>
-                  <div class="col-7">
+                  <div class="col-8">
                     <input
                       type="text"
                       disabled
@@ -658,8 +829,8 @@
                   </div>
                 </div>
                 <div class="row mt-.5">
-                  <h4 class="col-5 text-black">Total</h4>
-                  <div class="col-7">
+                  <h4 class="col-4 text-black">Total</h4>
+                  <div class="col-8">
                     <input
                       type="text"
                       style="font-size: 18px; font-weight: bold"

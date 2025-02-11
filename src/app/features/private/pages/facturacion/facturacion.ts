@@ -68,11 +68,21 @@ export class Facturacion implements OnInit {
   totalItbis: number = 0;
   subTotal: number = 0;
   subtotaltxt: string = '';
+  existenciatxt: string='';
+  existtxt: string='';
+  medidatxt: string='';
+  costotxt: any;
+  fecacttxt: string='';
   itbitxt: string = '';
   totalgraltxt: string = '';
   txtFactura: string = '';
   txtFecha: string = '';
   txtNombre: string = '';
+  atxt: string= '';
+  btxt: string= '';
+  ctxt: string='';
+  dtxt: string='';
+  etxt: string='';
   descuentotxt: string = '';
   tiponcf: string = 'Consumidor Final';
   static detFactura: detFacturaData[];
@@ -80,6 +90,7 @@ export class Facturacion implements OnInit {
   descripcionmerc: string = '';
   cantidadmerc: number = 0;
   preciomerc: number = 0;
+  //fecfactActual: Date; // Agregar este campo para la fecha
   productoselect!: ModeloInventarioData;
   precioform = new FormControl();
   cantidadform = new FormControl();
@@ -176,7 +187,7 @@ export class Facturacion implements OnInit {
 
 
   ngOnInit(): void {
-    this.buscarTodasFacturacion(1);
+    this.buscarTodasFacturacion();
     this.buscarcodmerc.valueChanges.pipe(
       debounceTime(50),
       distinctUntilChanged(),
@@ -399,8 +410,11 @@ obtenerNcf() {
           producto: producto,
           cantidad: cantidad,
           precio: precio,
-          total: totalItem
+          total: totalItem,
+          fecfactActual: new Date(),
+          
         });
+        //fecfactActual: new Date(),
         // Calcular el subtotal
         subtotal += totalItem;
         // Calcular ITBIS solo si el producto tiene ITBIS
@@ -418,20 +432,23 @@ obtenerNcf() {
   }
 
   buscarTodasFactura(page: number) {
-    this.servicioFacturacion.buscarTodasFacturacion(page, this.pageSize).subscribe(response => {
+    this.servicioFacturacion.buscarTodasFacturacion().subscribe(response => {
       console.log(response);
       this.facturacionList = response.data;
+      console.log(this.facturacionList.length)
     });
   }
-  consultarFacturacion(Factura: FacturacionModelData) {
+  consultarFacturacion(factura: FacturacionModelData) {
     this.modoconsultaFacturacion = true;
-    this.formularioFacturacion.patchValue(Factura);
+    this.formularioFacturacion.reset()
+    this.crearFormularioFacturacion()
+    this.formularioFacturacion.patchValue(factura);
     this.tituloModalFacturacion = 'Consulta Factura';
     // $('#modalfacturacion').modal('show');
     this.habilitarFormulario = true;
-    this.formularioFacturacion.disable();
-    this.habilitarIcono = false;
-
+   this.formularioFacturacion.disable();
+   console.log(factura)
+   this.habilitarIcono = false;
     const inputs = document.querySelectorAll('.seccion-productos input');
     inputs.forEach((input) => {
       (input as HTMLInputElement).disabled = true;
@@ -441,16 +458,16 @@ obtenerNcf() {
     this.items = [];
 
 
-    this.servicioFacturacion.buscarFacturaDetalle(Factura.fa_codFact).subscribe(response => {
+    this.servicioFacturacion.buscarFacturaDetalle(factura.fa_codFact).subscribe(response => {
       let subtotal = 0;
       let itbis = 0;
       let totalGeneral = 0;
       const itbisRate = 0.18; // Ejemplo: 18% de ITBIS
-
+console.log(response.data)
       response.data.forEach((item: any) => {
         const producto: ModeloInventarioData = {
           in_codmerc: item.df_codMerc,
-          in_desmerc: item.df_desmerc,
+          in_desmerc: item.df_desMerc,
           in_grumerc: '',
           in_tipoproduct: '',
           in_canmerc: 0,
@@ -484,7 +501,8 @@ obtenerNcf() {
           producto: producto,
           cantidad: cantidad,
           precio: precio,
-          total: totalItem
+          total: totalItem,
+          fecfactActual: new Date(),
         });
 
         // Calcular el subtotal
@@ -528,7 +546,7 @@ obtenerNcf() {
               showConfirmButton: false,
             }
           )
-          this.buscarTodasFacturacion(this.currentPage);
+          this.buscarTodasFacturacion();
         });
       }
     })
@@ -545,21 +563,22 @@ obtenerNcf() {
     this.formulariodetFactura = this.fb.group({
 
       df_codFact: ['',],
+      df_fecFact: ['',],
       df_codMerc: ['',],
       df_desMerc: ['',],
       df_canMerc: ['',],
       df_preMerc: ['',],
       df_valMerc: ['',],
       df_unidad: ['',],
-      df_costMer: ['',],
+      df_cosMer: ['',],
       df_codClie: ['',],
       df_status: ['',],
 
     });
   }
 
-  buscarTodasFacturacion(page: number) {
-    this.servicioFacturacion.buscarTodasFacturacion(page, this.pageSize).subscribe(response => {
+  buscarTodasFacturacion() {
+    this.servicioFacturacion.buscarTodasFacturacion().subscribe(response => {
       this.facturacionList = response.data;
     });
   }
@@ -578,17 +597,15 @@ obtenerNcf() {
 
   convertToUpperCase(event: Event): void {
     const input = event.target as HTMLInputElement;
-   // const start = input.selectionStart;
+    const start = input.selectionStart;
     const end = input.selectionEnd;
     input.value = input.value.toUpperCase();
-    // if (start !== null && end !== null) {
-    //   input.setSelectionRange(start, end);
-    // }
+    if (start !== null && end !== null) {
+      input.setSelectionRange(start, end);
+    }
   }
 
- 
-
-  moveFocus(event: KeyboardEvent, nextElement: HTMLInputElement | HTMLSelectElement) {
+   moveFocus(event: KeyboardEvent, nextElement: HTMLInputElement | HTMLSelectElement) {
     if (event.key === 'Enter' && nextElement) {
       event.preventDefault(); // Evita el comportamiento predeterminado del Enter
       nextElement.focus(); // Enfoca el siguiente campo
@@ -666,7 +683,6 @@ obtenerNcf() {
     console.log("handle")
     const key = event.key;
     const maxIndex = this.resultadoCodmerc.length - 1;
-
     if (this.resultadoCodmerc.length === 1) {
       this.selectedIndexcodmerc = 0;
       console.log("prueba")
@@ -695,6 +711,7 @@ obtenerNcf() {
     this.codmerc = inventario.in_codmerc;
     this.preciomerc = inventario.in_premerc
     this.descripcionmerc = inventario.in_desmerc;
+    this.costotxt = inventario.in_cosmerc;
     this.productoselect = inventario;
     this.cancelarBusquedaDescripcion = true;
     this.cancelarBusquedaCodigo = true;
@@ -778,11 +795,8 @@ obtenerNcf() {
       this.mostrarMensajeError('RNC inválido.');
       console.log('RNC no encontrado.');
     }
-    },
-    (error) => {
-    // Manejar errores de la llamada al servicio
-    this.mostrarMensajeError('Error al buscar el RNC.');
     }
+ 
   );
   }
 
@@ -1060,7 +1074,35 @@ obtenerNcf() {
         fa_codfpago: fpago.fp_codfpago,
       });
     }
+    // else {
+    //   this.mensagePantalla = true;
+    //   Swal.fire({
+    //     icon: "error",
+    //     title: "A V I S O",
+    //     text: 'Codigo de usuario invalido.',
+    //   }).then(() => { this.mensagePantalla = false });
+    //   return;
+    // }
   }
+  moveFocusFpago(event: Event, nextInput: HTMLInputElement | HTMLSelectElement) {
+   // KeyboardEvent, element: HTMLInputElement | HTMLSelectElement
+    event.preventDefault();
+    if (event.target instanceof  HTMLSelectElement) {
+      if (!event.target.value) {
+        this.mensagePantalla = true;
+        Swal.fire({
+          icon: "error",
+          title: "A V I S O",
+          text: 'Por favor complete el campo Tipo de Pago.',
+        }).then(() => { this.mensagePantalla = false });
+
+      }
+      else {
+        nextInput.focus(); // Si es válido, mueve el foco al siguiente input
+      }
+    }
+  }
+
   agregaItem(event: Event) {
     event.preventDefault();
     if (!this.productoselect || this.cantidadmerc <= 0 || this.preciomerc <= 0 || this.preciomerc <= this.productoselect.in_cosmerc) {
@@ -1072,6 +1114,9 @@ obtenerNcf() {
       }).then(() => { this.mensagePantalla = false });
       return;
     }
+
+    const fechaActual = new Date(); // Obtiene la fecha actual
+
      if (this.isEditing) {
       // Actualizar el ítem existente
       this.itemToEdit.producto = this.productoselect;
@@ -1080,7 +1125,8 @@ obtenerNcf() {
       this.itemToEdit.precio = this.preciomerc;
       this.itemToEdit.cantidad = this.cantidadmerc;
       this.itemToEdit.total = this.cantidadmerc * this.preciomerc;
-
+      this.itemToEdit.fecfactActual = fechaActual; // Actualiza la fecha del ítem existente
+ 
       // Actualizar los totales
       this.actualizarTotales();
 
@@ -1089,14 +1135,14 @@ obtenerNcf() {
       this.itemToEdit = null;
     } else {
 
-
       const total = this.cantidadmerc * this.preciomerc;
       this.totalGral += total;
       const itbis = total * 0.18;
       this.totalItbis += itbis;
       this.subTotal += total - itbis;
       this.items.push({
-        producto: this.productoselect, cantidad: this.cantidadmerc, precio: this.preciomerc, total
+        producto: this.productoselect, cantidad: this.cantidadmerc, precio: this.preciomerc, total,
+        fecfactActual: fechaActual, // Agrega la fecha actual al nuevo ítem
 
       })
       this.actualizarTotales();
@@ -1153,9 +1199,9 @@ obtenerNcf() {
 
   }
   actualizarTotales() {
-    this.totalGral = this.items.reduce((sum, item) => sum + item.total, 0);
+    this.totalGral  = this.items.reduce((sum, item) => sum + item.total, 0);
     this.totalItbis = this.items.reduce((sum, item) => sum + (item.total * 0.18), 0);
-    this.subTotal = this.items.reduce((sum, item) => sum + (item.total - (item.total * 0.18)), 0);
+    this.subTotal   = this.items.reduce((sum, item) => sum + (item.total - (item.total * 0.18)), 0);
 
     const formatCurrency = (value: number) => value.toLocaleString('es-DO', {
       style: 'currency',
@@ -1166,10 +1212,8 @@ obtenerNcf() {
     this.totalgraltxt = formatCurrency(this.totalGral);
 
   }
-
   guardarFacturacion() {
-
-    const date = new Date();
+      const date = new Date();
     this.formularioFacturacion.get('fa_valFact')?.patchValue(this.totalGral);
     this.formularioFacturacion.get('fa_itbiFact')?.patchValue(this.totalItbis);
     this.formularioFacturacion.get('fa_codFact')!.enable();
@@ -1179,12 +1223,10 @@ obtenerNcf() {
     const payload = {
       factura: this.formularioFacturacion.value,
       detalle: this.items,
-
     };
-
-console.log(payload);
+    console.log('Formulario antes de enviar:', payload);
+    
     if (this.formularioFacturacion.valid) {
-     
          if (this.formularioFacturacion.valid) {
           this.servicioFacturacion.guardarFacturacion(payload).subscribe(response => {
             Swal.fire({
@@ -1194,24 +1236,21 @@ console.log(payload);
               timer: 1000,
               showConfirmButton: false,
             });
-            this.buscarTodasFacturacion(1);
+            console.log('Total general:', this.totalGral);
+            console.log('Total ITBIS:', this.totalItbis);
+            this.buscarTodasFacturacion();
             this.formularioFacturacion.reset();
             this.crearFormularioFacturacion();
             this.formularioFacturacion.enable();
-            $('#modalcotizacion').modal('hide');
+            this.limpia();
+           //           $('#modalcotizacion').modal('hide');
           });
         } else {
           console.log(this.formularioFacturacion.value);
         }
-
-
-      
-    }
-    else {
+    }else {
       alert("Esta Empresa no fue Guardado");
     }
-
-
 
   }
 
@@ -1284,7 +1323,9 @@ console.log(payload);
           producto: producto,
           cantidad: cantidad,
           precio: precio,
-          total: totalItem
+          total: totalItem,
+          fecfactActual: new Date(),
+
         });
         // Calcular el subtotal
         subtotal += totalItem;

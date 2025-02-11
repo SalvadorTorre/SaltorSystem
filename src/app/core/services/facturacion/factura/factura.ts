@@ -14,4 +14,5 @@ export interface interfaceDetalleModel {
  cantidad:number;
  precio:number;
  producto?: ModeloInventarioData;
+ fecfactActual:Date;
 }
