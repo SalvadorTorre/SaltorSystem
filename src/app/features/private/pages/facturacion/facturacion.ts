@@ -316,6 +316,7 @@ obtenerNcf() {
       fa_codFact: [{ value: '', disabled: true }],
       fa_fecFact: [{value: fechaActualStr, disabled: true}],
       fa_valFact: [''],
+      fa_subFact: [''],
       fa_itbiFact: [''],
       fa_codClie: [''],
       fa_cosFact: [''],
@@ -585,7 +586,7 @@ console.log(response.data)
       df_preMerc: ['',],
       df_valMerc: ['',],
       df_unidad: ['',],
-      df_cosMer: ['',],
+      df_cosMerc: ['',],
       df_codClie: ['',],
       df_status: ['',],
     });
@@ -765,6 +766,8 @@ console.log(response.data)
       this.formularioFacturacion.patchValue({ fa_tipoNcf: 1 });
       this.formularioFacturacion.get("fa_tipoNcf")?.disable(); 
       // Si no se ha ingresado un RNC, pasamos el foco al siguiente elemento
+      console.log('RNC vacío.');
+      console.log(this.formularioFacturacion.value);
       nextElement?.focus();
       return;
     }
@@ -785,7 +788,6 @@ console.log(response.data)
       this.formularioFacturacion.patchValue({ fa_tipoNcf: 2 });
       this.formularioFacturacion.get("fa_tipoNcf")?.enable();
       this.ncflist = this.ncflist.filter(ncf => ncf.codNcf !== 1);
-      //nextElement?.focus();  // Pasar el foco al siguiente campo
       $("#input3").focus();
       $("#input3").select();
     } 
@@ -1127,11 +1129,12 @@ console.log(response.data)
       const itbis = total * 0.18;
       this.totalItbis += itbis;
       this.subTotal += total - itbis;
+      const tcosto = this.costotxt * this.cantidadmerc;
       this.totalcosto += this.costotxt * this.cantidadmerc;
       this.factxt = (this.totalGral - this.totalcosto) * 100/ this.totalcosto;
       this.protxt = ( this.preciomerc - this.costotxt) * 100/ this.costotxt;
       this.items.push({
-      producto: this.productoselect, cantidad: this.cantidadmerc, precio: this.preciomerc, total,costo: this.costotxt, fecfactActual: fechaActual, // Agrega la fecha actual al nuevo ítem
+      producto: this.productoselect, cantidad: this.cantidadmerc, precio: this.preciomerc, total, costo: tcosto , fecfactActual: fechaActual, // Agrega la fecha actual al nuevo ítem
       })
       this.actualizarTotales();
       this.cancelarBusquedaDescripcion = false;
@@ -1221,6 +1224,8 @@ console.log(response.data)
     this.formularioFacturacion.get('fa_valFact')?.patchValue(this.totalGral);
     this.formularioFacturacion.get('fa_itbiFact')?.patchValue(this.totalItbis);
     this.formularioFacturacion.get('fa_cosFact')?.patchValue(this.totalcosto);
+    this.formularioFacturacion.get('fa_subFact')?.patchValue(this.subTotal);
+    this.formularioFacturacion.get("fa_tipoNcf")!.enable();
     this.formularioFacturacion.get('fa_codFact')!.enable();
     this.formularioFacturacion.get('fa_fecFact')!.enable();
     this.formularioFacturacion.get('fa_nomVend')!.enable();
@@ -1229,32 +1234,24 @@ console.log(response.data)
       factura: this.formularioFacturacion.value,
       detalle: this.items,
     };
-    console.log(this.formularioFacturacion.value);
-    console.log('Formulario antes de enviar:', payload);
-    
-    console.log('Total costo:', this.totalcosto);
     if (this.formularioFacturacion.valid) {
-         if (this.formularioFacturacion.valid) {
-          this.servicioFacturacion.guardarFacturacion(payload).subscribe(response => {
-            Swal.fire({
-              title: "Excelente!",
-              text: "Facturacion creada correctamente.",
-              icon: "success",
-              timer: 1000,
-              showConfirmButton: false,
-            });
-            console.log('Total general:', this.totalGral);
-            console.log('Total ITBIS:', this.totalItbis);
-            this.buscarTodasFacturacion();
-            this.formularioFacturacion.reset();
-            this.crearFormularioFacturacion();
-            this.formularioFacturacion.enable();
-            this.limpia();
-           //           $('#modalcotizacion').modal('hide');
+      if (this.formularioFacturacion.valid) {
+        this.servicioFacturacion.guardarFacturacion(payload).subscribe(response => {
+          Swal.fire({
+            title: "Excelente!",
+            text: "Facturacion creada correctamente.",
+            icon: "success",
+            timer: 1000,
+            showConfirmButton: false,
           });
-        } else {
-          console.log(this.formularioFacturacion.value);
-        }
+          this.buscarTodasFacturacion();
+          this.formularioFacturacion.reset();
+          this.crearFormularioFacturacion();
+          this.formularioFacturacion.enable();
+          this.limpia();
+        });
+      } else {
+    }
     }else {
       alert("Esta Empresa no fue Guardado");
     }
