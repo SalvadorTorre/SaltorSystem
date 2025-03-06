@@ -17,7 +17,7 @@ export interface ModeloInventarioData {
   in_cosmerc:  number;
   in_premerc:  number;
   in_precmin:  number;
-  in_costpro:  number;
+  in_costpro?:  number;
   in_ucosto:   number;
   in_porgana:  number;
   in_peso:     number;

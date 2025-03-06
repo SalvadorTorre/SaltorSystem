@@ -533,6 +533,7 @@
               [formControl]="precioform"
               id="input9"
               #input16
+              (input)="actualizarCalculo()"
               (keydown)="moveFocus($event, input13)"
               class="form-control"
               (keydown.enter)="agregaItem($event)"
@@ -607,165 +608,220 @@
           <div class="col-7">
             <div class="row mt-1">
               <div style="padding: 5px; border: 2px solid rgb(4, 10, 185)">
-                <div class="row">
-                  <div class="col-5">
-                    <div class="row">
-                    <h6
-                      class="col-4 col-form-label text-black"
-                      style="font-size: 12px; font-weight: bold">
-                      Exitencia       
-                    </h6>
-                    <div class="col-8">
-                      <input
-                        type="text"
-                        style="font-size: 12px; font-weight: bold"
-                        class="form-control form-control-sm text-end"
-                        disabled
-                        [(ngModel)]="existenciatxt"
-                        id="inputPassword"
-                      /> 
-                    </div>
-                    </div>
-                    <div class="row">
-                    <h6
-                      class="col-4 col-form-label text-black"
-                      style="font-size: 12px; font-weight: bold">
-                      Medida         
-                    </h6>
-                    <div class="col-8">
-                      <input
+                <div class="row mt-1">
+                  <h6
+                    class="col-2 col-form-label text-black text-center"
+                    style="font-size: 12px; font-weight: bold">
+                    Exitencia       
+                  </h6>
+                  <h6
+                    class="col-4 col-form-label text-black text-center"
+                    style="font-size: 12px; font-weight: bold">
+                    Medida        
+                  </h6>
+                  <h6
+                    class="col-4 col-form-label text-black text-center"
+                    style="font-size: 12px; font-weight: bold; margin-right: 0px;">
+                    Actualizacion         
+                  </h6>
+                  <h6
+                    class="col-2 col-form-label text-black text-center"
+                    style="font-size: 12px; font-weight: bold">
+                    Costo         
+                  </h6>
+                </div>  
+                <div class="row g-1">
+                  <div class="col-2">
+                    <input
                       type="text"
-                        style="font-size: 12px; font-weight: bold"
-                        class="form-control form-control-sm text-end"
-                        disabled
-                        [(ngModel)]="medidatxt"
-                        id="inputPassword"
-                      /> 
-                    </div>
-                    </div>
-                    <div class="row">
-                    <h6
-                      class="col-4 col-form-label text-black"
-                      style="font-size: 12px; font-weight: bold">
-                      Actualiz         
-                    </h6>
-                    <div class="col-8">
-                      <input
-                      type="text"
-                        style="font-size: 12px; font-weight: bold"
-                        class="form-control form-control-sm text-end"
-                        disabled
-                        [(ngModel)]="fecacttxt"
-                        id="inputPassword"
-                      /> 
-                    </div>
-                    </div>
-                    <div class="row">
-                    <h6
-                      class="col-4 col-form-label text-black"
-                      style="font-size: 12px; font-weight: bold">
-                      Costo         
-                    </h6>
-                    <div class="col-8">
-                      <input
-                      type="text"
-                        style="font-size: 12px; font-weight: bold"
-                        class="form-control form-control-sm text-end"
-                        disabled
-                        [(ngModel)]="costotxt"
-                        id="inputPassword"
-                      /> 
-                    </div>
-                    </div>
+                      style="font-size: 12px; font-weight: bold"
+                      class="form-control form-control-sm text-end"
+                      readonly
+                      [value]="formatNumber(existenciatxt)"
+                      id="inputPassword"
+                    /> 
                   </div>
-                  <div class="col-7">
-                    <div class="row">
-                      <h6
-                        class="col-2 col-form-label text-black"
-                        style="font-size: 12px; font-weight: bold">
-                        7%
-                      </h6>
-                      <div class="col-8">
-                        <input
-                          type="text"
-                          style="font-size: 12px; font-weight: bold"
-                          class="form-control form-control-sm text-end"
-                          disabled
-                          [(ngModel)]="atxt"
-                          id="inputPassword"
-                        /> 
-                      </div>
-                    </div>
-                    <div class="row">
-                      <h6
-                        class="col-2 col-form-label text-black"
-                        style="font-size: 12px; font-weight: bold">
-                        10%
-                      </h6>
-                      <div class="col-8">
-                        <input
-                          type="text"
-                          style="font-size: 12px; font-weight: bold"
-                          class="form-control form-control-sm text-end"
-                          disabled
-                          [(ngModel)]="btxt"
-                          id="inputPassword"
-                        /> 
-                      </div>
-                    </div>
-                    <div class="row">
-                      <h6
-                        class="col-2 col-form-label text-black"
-                        style="font-size: 12px; font-weight: bold">
-                        12%
-                      </h6>
-                      <div class="col-8">
-                        <input
-                          type="text"
-                          style="font-size: 12px; font-weight: bold"
-                          class="form-control form-control-sm text-end"
-                          disabled
-                          [(ngModel)]="ctxt"
-                          id="inputPassword"
-                        /> 
-                      </div>
-                    </div>
-                    <div class="row">
-                      <h6
-                        class="col-2 col-form-label text-black"
-                        style="font-size: 12px; font-weight: bold">
-                        14%
-                      </h6>
-                      <div class="col-8">
-                        <input
-                          type="text"
-                          style="font-size: 12px; font-weight: bold"
-                          class="form-control form-control-sm text-end"
-                          disabled
-                          [(ngModel)]="dtxt"
-                          id="inputPassword"
-                        /> 
-                      </div>
-                    </div>
-                    <div class="row">
-                      <h6
-                        class="col-2 col-form-label text-black"
-                        style="font-size: 12px; font-weight: bold">
-                        16%
-                      </h6>
-                      <div class="col-8">
-                        <input
-                          type="text"
-                          style="font-size: 12px; font-weight: bold"
-                          class="form-control form-control-sm text-end"
-                          disabled
-                          [(ngModel)]="etxt"
-                          id="inputPassword"
-                        /> 
-                      </div>
-                    </div>
-                  </div>  
-  
+                  <div class="col-5">
+                    <input
+                      type="text"
+                      style="font-size: 12px; font-weight: bold"
+                    class="form-control form-control-sm text-end"
+                    readonly
+                      [(ngModel)]="medidatxt"
+                      id="inputPassword"
+                    /> 
+                  </div>
+                  <div class="col-3">
+                    <input
+                      type="text"
+                      style="font-size: 12px; font-weight: bold"
+                      class="form-control form-control-sm text-end"
+                      readonly
+                      [(ngModel)]="fecacttxt"
+                      id="inputPassword"
+                    /> 
+                  </div>
+                  <div class="col-2">
+                    <input
+                      type="text"
+                      style="font-size: 12px; font-weight: bold"
+                      class="form-control form-control-sm text-end"
+                      readonly
+                      [value]="formatNumber(costotxt)"
+                      id="inputPassword"
+                    /> 
+                  </div>
+                </div>
+                <div class="row">
+                  <h6
+                    class="col-2 col-form-label text-black text-center"
+                    style="font-size: 11px; font-weight: bold">
+                    5%
+                  </h6>
+                  <h6
+                     class="col-2 col-form-label text-black text-center"
+                    style="font-size: 11px; font-weight: bold">
+                    7%
+                  </h6>
+                  <h6
+                    class="col-2 col-form-label text-black text-center"
+                    style="font-size: 11px; font-weight: bold">
+                    10%
+                  </h6>    
+                  <h6
+                    class="col-2 col-form-label text-black text-center"
+                    style="font-size: 11px; font-weight: bold">
+                    12%
+                  </h6>
+                  <h6
+                    class="col-2 col-form-label text-black text-center"
+                    style="font-size: 11px; font-weight: bold">
+                    14%
+                  </h6>
+                  <h6
+                    class="col-2 col-form-label text-black text-center"
+                    style="font-size: 11px; font-weight: bold">
+                    16%
+                  </h6>
+                  <!-- <h6
+                    class="col-2 col-form-label text-black text-center"
+                    style="font-size: 11px; font-weight: bold">
+                    18%
+                  </h6> -->
+                </div>  
+                <div class="row">
+                  <div class="col-2">
+                    <input
+                      type="text"
+                      style="font-size: 12px; font-weight: bold"
+                      class="form-control form-control-sm text-end"
+                      readonly
+                      [value]="formatNumber(atxt)"
+                      id="inputPassword"
+                    /> 
+                  </div>
+               
+                  <div class="col-2">
+                    <input
+                      type="text"
+                      style="font-size: 12px; font-weight: bold"
+                      class="form-control form-control-sm text-end"
+                      readonly
+                      [value]="formatNumber(btxt)"
+                      id="inputPassword"
+                    /> 
+                  </div>
+                  
+                  <div class="col-2">
+                    <input
+                      type="text"
+                      style="font-size: 12px; font-weight: bold"
+                      class="form-control form-control-sm text-end"
+                      readonly
+                      [value]="formatNumber(ctxt)"
+                      id="inputPassword"
+                    /> 
+                  </div>
+                  <div class="col-2">
+                    <input
+                      type="text"
+                      style="font-size: 12px; font-weight: bold"
+                      class="form-control form-control-sm text-end"
+                      readonly
+                      [value]="formatNumber(dtxt)"
+                      id="inputPassword"
+                    /> 
+                  </div>
+                  <div class="col-2">
+                    <input
+                    type="text"
+                      style="font-size: 12px; font-weight: bold"
+                      class="form-control form-control-sm text-end"
+                      readonly
+                      [value]="formatNumber(etxt)"
+                      id="inputPassword"
+                    /> 
+                  </div>
+                  <div class="col-2">
+                    <input
+                    type="text"
+                      style="font-size: 12px; font-weight: bold"
+                      class="form-control form-control-sm text-end"
+                      readonly
+                      [value]="formatNumber(ftxt)"
+                      id="inputPassword"
+                    /> 
+                  </div>
+                </div>
+                <div class="row mt-1">
+                  <h6
+                    class="col-1 col-form-label text-black"
+                    style="font-size: 11px; font-weight: bold">
+                    18%
+                  </h6>
+                  <div class="col-2">
+                    <input
+                      type="text"
+                      style="font-size: 11px; font-weight: bold"
+                      class="form-control form-control-sm text-end"
+                      readonly
+                      [value]="formatNumber(gtxt)"
+                      id="inputPassword"
+                    /> 
+                  </div>
+                  <h6
+                    class="col-2 col-form-label text-black text-end"
+                    style="font-size: 12px; font-weight: bold">
+                    % Producto         
+                  </h6>
+                  <div class="col-2">
+                    <input
+                      type="text"
+                      style="font-size: 12px; font-weight: bold"
+                      class="form-control form-control-sm text-end "
+                      readonly
+                      
+                      [value]="formatNumber(protxt)"
+                      id="inputPassword"
+                      [ngStyle]="{'color': protxt < 10 ? 'red' : 'green'}"
+                    /> 
+                  </div>
+                  <h6
+                    class="col-2 col-form-label text-black text-end"
+                    style="font-size: 12px; font-weight: bold">
+                    % Factura         
+                  </h6>
+                  <div class="col-2">
+                    <input
+                      type="text"
+                      style="font-size: 12px; font-weight: bold"
+                      class="form-control form-control-sm text-end"
+                      readonly
+                      [value]="formatNumber(factxt)"
+                      id="inputPassword"
+                      [ngStyle]="{'color': factxt < 10 ? 'red' : 'green'}"
+                    /> 
+                  </div>
                 </div>
               </div>
             </div>
@@ -791,6 +847,7 @@
                       id="inputPassword"
                     />
                   </div>
+                  
                 </div>
                 <div class="row mt-.5">
                   <h6
@@ -843,14 +900,8 @@
                 </div>
               </div>
             </div>
-            <!-- <div class="row">
-              <div class="col">
-                <button class="btn btn-primary btn-block btn-lg w-100">
-                  Facturar
-                </button>
-              </div>
-            </div>-->
-          </div>
+             
+          </div> 
         </div>
       </div>
     </div>

@@ -66,23 +66,30 @@ export class Facturacion implements OnInit {
   ncflist: ModeloNcfData[] = [];
   totalGral: number = 0;
   totalItbis: number = 0;
+  totalcosto: number = 0;
+  costoGral: number = 0;
   subTotal: number = 0;
   subtotaltxt: string = '';
-  existenciatxt: string='';
-  existtxt: string='';
-  medidatxt: string='';
+  existenciatxt: any;
+  existtxt: any;
+  medidatxt: any;
   costotxt: any;
-  fecacttxt: string='';
+  totalcostotxt: any;
+  fecacttxt:any;
   itbitxt: string = '';
   totalgraltxt: string = '';
   txtFactura: string = '';
   txtFecha: string = '';
   txtNombre: string = '';
-  atxt: string= '';
-  btxt: string= '';
-  ctxt: string='';
-  dtxt: string='';
-  etxt: string='';
+  atxt: any;
+  btxt: any;
+  ctxt: any;
+  dtxt: any;
+  etxt: any;
+  ftxt: any;
+  gtxt: any;
+  factxt: any;
+  protxt: any;
   descuentotxt: string = '';
   tiponcf: string = 'Consumidor Final';
   static detFactura: detFacturaData[];
@@ -220,7 +227,8 @@ export class Facturacion implements OnInit {
       }
 
     });
-
+    $("#input1").focus();
+    $("#input1").select()
     this.obtenerNcf();
     this.obtenerfpago();
     this.buscardescripcionmerc.valueChanges.pipe(
@@ -349,7 +357,12 @@ obtenerNcf() {
     this.totalGral = 0;       // Reiniciar el total general
     this.totalItbis = 0;      // Reiniciar el total del ITBIS
     this.subTotal = 0;        // Reiniciar el subtotal
+    this.totalcosto = 0;
+    this.costoGral = 0;
+    this.factxt = 0;
     this.actualizarTotales()
+    $("#input1").focus();
+    $("#input1").select();
   
   }
 
@@ -388,7 +401,7 @@ obtenerNcf() {
           in_cosmerc: 0,
           in_premerc: 0,
           in_precmin: 0,
-          in_costpro: 0,
+       //   in_costpro: 0,
           in_ucosto: 0,
           in_porgana: 0,
           in_peso: 0,
@@ -412,6 +425,7 @@ obtenerNcf() {
           precio: precio,
           total: totalItem,
           fecfactActual: new Date(),
+          costo:this.costotxt
           
         });
         //fecfactActual: new Date(),
@@ -477,7 +491,7 @@ console.log(response.data)
           in_cosmerc: 0,
           in_premerc: 0,
           in_precmin: 0,
-          in_costpro: 0,
+        //  in_costpro: 0,
           in_ucosto: 0,
           in_porgana: 0,
           in_peso: 0,
@@ -503,6 +517,7 @@ console.log(response.data)
           precio: precio,
           total: totalItem,
           fecfactActual: new Date(),
+          costo:0
         });
 
         // Calcular el subtotal
@@ -573,7 +588,6 @@ console.log(response.data)
       df_cosMer: ['',],
       df_codClie: ['',],
       df_status: ['',],
-
     });
   }
 
@@ -583,12 +597,10 @@ console.log(response.data)
     });
   }
 
-
   buscaNombre(event: Event) {
     const inputElement = event.target as HTMLInputElement;
     this.nomclienteSubject.next(inputElement.value.toUpperCase());
   }
-
 
   buscaFactura(event: Event) {
     const inputElement = event.target as HTMLInputElement;
@@ -611,30 +623,6 @@ console.log(response.data)
       nextElement.focus(); // Enfoca el siguiente campo
     }
   }
-  // moveFocus(event: KeyboardEvent, nextElement: HTMLInputElement | null): void {
-  //   if (event.key === 'Enter' && nextElement) {
-  //     event.preventDefault(); // Evita el comportamiento predeterminado del Enter
-  //     nextElement.focus(); // Enfoca el siguiente campo
-  //   }
-  // }
-  // moveFocus(event: KeyboardEvent, nextElement: HTMLInputElement | null): void {
-  //   if (event.key === 'Enter' && nextElement) {
-  //     if ($("#fpago").focus()){
-  //       $("#listaenvio").focus()
-  //       return
-
-  //     }  
-  //     if ($("#listaenvio").focus()){
-  //       event.preventDefault(); // Evita el comportamiento predeterminado del Enter
-  //       nextElement.focus(); // Enfoca el siguiente campo
-  //       return
-
-  //     }  
-  //        event.preventDefault(); // Evita el comportamiento predeterminado del Enter
-  //     nextElement.focus(); // Enfoca el siguiente campo
-  //   }
-  // }
-
 
   moveFocuscodmerc(event: KeyboardEvent, nextInput: HTMLInputElement) {
     console.log("move focus")
@@ -711,7 +699,18 @@ console.log(response.data)
     this.codmerc = inventario.in_codmerc;
     this.preciomerc = inventario.in_premerc
     this.descripcionmerc = inventario.in_desmerc;
+    this.existenciatxt = inventario.in_canmerc
     this.costotxt = inventario.in_cosmerc;
+    this.medidatxt= inventario.in_medida;
+    this.fecacttxt= inventario.in_fecmodif;
+    this.atxt = Number(inventario.in_cosmerc) + (Number(inventario.in_cosmerc)  * 5)/ 100;
+    this.btxt = Number(inventario.in_cosmerc) + (Number(inventario.in_cosmerc)  * 7)/100;
+    this.ctxt = Number(inventario.in_cosmerc) + (Number(inventario.in_cosmerc)  * 10)/100;
+    this.dtxt = Number(inventario.in_cosmerc) + (Number(inventario.in_cosmerc)  * 12)/100;
+    this.etxt = Number(inventario.in_cosmerc) + (Number(inventario.in_cosmerc)  * 14)/100;
+    this.ftxt = Number(inventario.in_cosmerc) + (Number(inventario.in_cosmerc)  * 16)/100;
+    this.gtxt = Number(inventario.in_cosmerc) + (Number(inventario.in_cosmerc)  * 18)/100;
+    
     this.productoselect = inventario;
     this.cancelarBusquedaDescripcion = true;
     this.cancelarBusquedaCodigo = true;
@@ -1074,16 +1073,8 @@ console.log(response.data)
         fa_codfpago: fpago.fp_codfpago,
       });
     }
-    // else {
-    //   this.mensagePantalla = true;
-    //   Swal.fire({
-    //     icon: "error",
-    //     title: "A V I S O",
-    //     text: 'Codigo de usuario invalido.',
-    //   }).then(() => { this.mensagePantalla = false });
-    //   return;
-    // }
   }
+
   moveFocusFpago(event: Event, nextInput: HTMLInputElement | HTMLSelectElement) {
    // KeyboardEvent, element: HTMLInputElement | HTMLSelectElement
     event.preventDefault();
@@ -1095,7 +1086,6 @@ console.log(response.data)
           title: "A V I S O",
           text: 'Por favor complete el campo Tipo de Pago.',
         }).then(() => { this.mensagePantalla = false });
-
       }
       else {
         nextInput.focus(); // Si es válido, mueve el foco al siguiente input
@@ -1114,10 +1104,8 @@ console.log(response.data)
       }).then(() => { this.mensagePantalla = false });
       return;
     }
-
     const fechaActual = new Date(); // Obtiene la fecha actual
-
-     if (this.isEditing) {
+    if (this.isEditing) {
       // Actualizar el ítem existente
       this.itemToEdit.producto = this.productoselect;
       this.itemToEdit.codmerc = this.codmerc;
@@ -1125,31 +1113,34 @@ console.log(response.data)
       this.itemToEdit.precio = this.preciomerc;
       this.itemToEdit.cantidad = this.cantidadmerc;
       this.itemToEdit.total = this.cantidadmerc * this.preciomerc;
+      this.itemToEdit.totalcosto += this.costotxt * this.cantidadmerc;
       this.itemToEdit.fecfactActual = fechaActual; // Actualiza la fecha del ítem existente
- 
       // Actualizar los totales
       this.actualizarTotales();
-
       // Restablecer el estado de edición
       this.isEditing = false;
       this.itemToEdit = null;
-    } else {
-
+    } 
+    else {
       const total = this.cantidadmerc * this.preciomerc;
       this.totalGral += total;
       const itbis = total * 0.18;
       this.totalItbis += itbis;
       this.subTotal += total - itbis;
+      this.totalcosto += this.costotxt * this.cantidadmerc;
+      this.factxt = (this.totalGral - this.totalcosto) * 100/ this.totalcosto;
+      this.protxt = ( this.preciomerc - this.costotxt) * 100/ this.costotxt;
       this.items.push({
-        producto: this.productoselect, cantidad: this.cantidadmerc, precio: this.preciomerc, total,
-        fecfactActual: fechaActual, // Agrega la fecha actual al nuevo ítem
-
+      producto: this.productoselect, cantidad: this.cantidadmerc, precio: this.preciomerc, total,costo: this.costotxt, fecfactActual: fechaActual, // Agrega la fecha actual al nuevo ítem
       })
       this.actualizarTotales();
       this.cancelarBusquedaDescripcion = false;
       this.cancelarBusquedaCodigo = false;
     }
     this.limpiarCampos();
+  }
+  actualizarCalculo() {
+    this.protxt = (this.preciomerc - this.costotxt) * 100/ this.costotxt; // Aquí puedes hacer cualquier cálculo
   }
   limpiarCampos() {
     this.productoselect;
@@ -1158,6 +1149,18 @@ console.log(response.data)
     this.preciomerc = 0;
     this.cantidadmerc = 0;
     this.isEditing = false;
+    this.existenciatxt= 0;
+    this.costotxt= 0;
+    this.medidatxt= 0;
+    this.fecacttxt= " ";
+    this.atxt =0;
+    this.btxt =0;
+    this.ctxt =0;
+    this.dtxt =0;
+    this.etxt =0;
+    this.ftxt =0;
+    this.gtxt =0;
+    this.protxt =0;
   }
 
   limpiarTabla() {
@@ -1166,7 +1169,7 @@ console.log(response.data)
     this.totalItbis = 0;      // Reiniciar el total del ITBIS
     this.subTotal = 0;        // Reiniciar el subtotal
   }
-  // (Opcional) Función para eliminar un ítem de la tabla
+
   borarItem(item: any) {
     const index = this.items.indexOf(item);
     if (index > -1) {
@@ -1196,13 +1199,14 @@ console.log(response.data)
     this.descripcionmerc = item.producto.in_desmerc;
     this.preciomerc = item.precio
     this.cantidadmerc = item.cantidad
-
+    this.existenciatxt = item.producto.in_canmerc;
+    this.costotxt = item.producto.in_cosmerc;
   }
   actualizarTotales() {
     this.totalGral  = this.items.reduce((sum, item) => sum + item.total, 0);
     this.totalItbis = this.items.reduce((sum, item) => sum + (item.total * 0.18), 0);
     this.subTotal   = this.items.reduce((sum, item) => sum + (item.total - (item.total * 0.18)), 0);
-
+    this.totalcosto = this.items.reduce((sum, item) => sum + (this.costotxt * item.cantidad), 0);
     const formatCurrency = (value: number) => value.toLocaleString('es-DO', {
       style: 'currency',
       currency: 'DOP',
@@ -1213,9 +1217,10 @@ console.log(response.data)
 
   }
   guardarFacturacion() {
-      const date = new Date();
+    const date = new Date();
     this.formularioFacturacion.get('fa_valFact')?.patchValue(this.totalGral);
     this.formularioFacturacion.get('fa_itbiFact')?.patchValue(this.totalItbis);
+    this.formularioFacturacion.get('fa_cosFact')?.patchValue(this.totalcosto);
     this.formularioFacturacion.get('fa_codFact')!.enable();
     this.formularioFacturacion.get('fa_fecFact')!.enable();
     this.formularioFacturacion.get('fa_nomVend')!.enable();
@@ -1224,8 +1229,10 @@ console.log(response.data)
       factura: this.formularioFacturacion.value,
       detalle: this.items,
     };
+    console.log(this.formularioFacturacion.value);
     console.log('Formulario antes de enviar:', payload);
     
+    console.log('Total costo:', this.totalcosto);
     if (this.formularioFacturacion.valid) {
          if (this.formularioFacturacion.valid) {
           this.servicioFacturacion.guardarFacturacion(payload).subscribe(response => {
@@ -1278,7 +1285,13 @@ console.log(response.data)
     this.Tabladetalle.nativeElement.focus();
   }
 
-
+  formatNumber(value: any): string {
+    let num = Number(value);
+    if (isNaN(num)) {
+      return ' ';
+    }
+    return num.toLocaleString('en-US', { minimumFractionDigits: 2 });
+  }
 
 
   generatePDF(factura: FacturacionModelData) {
@@ -1301,7 +1314,7 @@ console.log(response.data)
           in_cosmerc: 0,
           in_premerc: 0,
           in_precmin: 0,
-          in_costpro: 0,
+         // in_costpro: 0,
           in_ucosto: 0,
           in_porgana: 0,
           in_peso: 0,
@@ -1325,7 +1338,9 @@ console.log(response.data)
           precio: precio,
           total: totalItem,
           fecfactActual: new Date(),
-
+          costo: 0,
+          
+         
         });
         // Calcular el subtotal
         subtotal += totalItem;
@@ -1333,6 +1348,7 @@ console.log(response.data)
         // if (item.dc_itbis) {
         this.totalItbis += totalItem * itbisRate;
         // }
+
       });
       // Calcular el total general (subtotal + ITBIS)
       totalGeneral = subtotal + this.totalItbis;
@@ -1340,6 +1356,7 @@ console.log(response.data)
       this.subTotal = subtotal;
       this.totalItbis = this.totalItbis;
       this.totalGral = totalGeneral;
+
 
       const formatCurrency = (value: number) => value.toLocaleString('es-DO', {
         style: 'currency',

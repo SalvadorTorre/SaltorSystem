@@ -13,6 +13,7 @@ export interface interfaceDetalleModel {
  total:number;
  cantidad:number;
  precio:number;
+ costo: number; // <-- Agregar esta línea
  producto?: ModeloInventarioData;
  fecfactActual:Date;
 }

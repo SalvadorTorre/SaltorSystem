@@ -11,5 +11,6 @@ export interface interfaceDetalleModel {
  total:number;
  cantidad:number;
  precio:number;
+ costo?:number;
  producto?: ModeloInventarioData;
 }
