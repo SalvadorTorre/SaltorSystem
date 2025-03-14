@@ -64,6 +64,7 @@ export class Facturacion implements OnInit {
   selectedFacturacion: any = null;
   items: interfaceDetalleModel[] = [];
   ncflist: ModeloNcfData[] = [];
+  selectedItem: any = null;
   totalGral: number = 0;
   totalItbis: number = 0;
   totalcosto: number = 0;
@@ -461,24 +462,22 @@ obtenerNcf() {
     this.tituloModalFacturacion = 'Consulta Factura';
     // $('#modalfacturacion').modal('show');
     this.habilitarFormulario = true;
-   this.formularioFacturacion.disable();
-   console.log(factura)
-   this.habilitarIcono = false;
+    this.formularioFacturacion.disable();
+    console.log("ff",factura)
+    this.habilitarIcono = false;
     const inputs = document.querySelectorAll('.seccion-productos input');
     inputs.forEach((input) => {
       (input as HTMLInputElement).disabled = true;
     });
-
     // Limpiar los items antes de agregar los nuevos
     this.items = [];
-
-
     this.servicioFacturacion.buscarFacturaDetalle(factura.fa_codFact).subscribe(response => {
       let subtotal = 0;
       let itbis = 0;
       let totalGeneral = 0;
+      let totalcosto = 0;
       const itbisRate = 0.18; // Ejemplo: 18% de ITBIS
-console.log(response.data)
+      console.log("faa",response.data)
       response.data.forEach((item: any) => {
         const producto: ModeloInventarioData = {
           in_codmerc: item.df_codMerc,
@@ -492,7 +491,7 @@ console.log(response.data)
           in_cosmerc: 0,
           in_premerc: 0,
           in_precmin: 0,
-        //  in_costpro: 0,
+          //  in_costpro: 0,
           in_ucosto: 0,
           in_porgana: 0,
           in_peso: 0,
@@ -507,36 +506,34 @@ console.log(response.data)
           in_itbis: false,
           in_minvent: 0,
         };
-
         const cantidad = item.df_canMerc;
         const precio = item.df_preMerc;
         const totalItem = cantidad * precio;
-
+        const costoItem = item.df_cosMerc;
         this.items.push({
           producto: producto,
           cantidad: cantidad,
           precio: precio,
           total: totalItem,
+          costo: costoItem,
           fecfactActual: new Date(),
-          costo:0
+          
+          //costo:0
         });
-
         // Calcular el subtotal
-        subtotal += totalItem;
-
+        subtotal += costoItem;
         // Calcular ITBIS solo si el producto tiene ITBIS
         // if (item.dc_itbis) {
         this.totalItbis += totalItem * itbisRate;
-        // }
       });
-
       // Calcular el total general (subtotal + ITBIS)
       totalGeneral = subtotal + this.totalItbis;
-
+     // totalcosto += costoItem;
       // Asignar los totales a variables o mostrarlos en la interfaz
       this.subTotal = subtotal;
       this.totalItbis = this.totalItbis;
       this.totalGral = totalGeneral;
+      this.factxt = (factura.fa_valFact - factura.fa_cosFact) * 100/ factura.fa_cosFact;
       this.actualizarTotales();
     });
   }
@@ -1253,7 +1250,7 @@ console.log(response.data)
       } else {
     }
     }else {
-      alert("Esta Empresa no fue Guardado");
+      alert("Esta Factura no fue Guardado");
     }
 
   }
@@ -1265,18 +1262,28 @@ console.log(response.data)
       // Mueve hacia abajo en la tabla
       if (this.selectedRow < this.items.length - 1) {
         this.selectedRow++;
+        this.selectRow(this.selectedRow);
       }
     } else if (key === 'ArrowUp') {
       // Mueve hacia arriba en la tabla
       if (this.selectedRow > 0) {
         this.selectedRow--;
+        this.selectRow(this.selectedRow);
       }
     }
   }
 
   selectRow(index: number) {
     this.selectedRow = index; // Selecciona la fila cuando se hace clic
+    this.selectedItem = this.items[index]; 
+    console.log(this.selectedItem);
+    this.calcularPorcentaje();
   }
+  
+  calcularPorcentaje(): void {
+      this.protxt  = (this.selectedItem.total - this.selectedItem.costo)*100/this.selectedItem.costo;
+  }
+  
   ngAfterViewInit() {
     // Establece el foco en la tabla cuando se cargue la vista
     this.Tabladetalle.nativeElement.focus();

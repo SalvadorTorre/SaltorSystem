@@ -8,7 +8,8 @@ export interface FacturacionModel {
 export interface FacturacionModelData {
   fa_codFact: string;
   fa_fecFact: string;
-  fa_valfact: number;
+  fa_valFact: number;
+  fa_cosFact: number;
   fa_itbiFact: number;
   fa_codClie: string;
   fa_nomClie: string;
