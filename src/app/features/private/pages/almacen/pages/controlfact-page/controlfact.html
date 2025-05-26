@@ -1,0 +1,909 @@
+<div class="row">
+  <div class="col-5">
+    <div class="card">
+      <div class="card-header" style="height: 35px; background-color: #0101b9">
+        <h4 class="card-title" style="color: white; text-align: left">
+          Datos Factura
+        </h4>
+      </div>
+      <div class="card-body" style="background-color: #e6e4e4">
+        <form
+          [formGroup]="formularioFacturacion"
+          class="custom-form-background"
+          (ngSubmit)="guardarFacturacion()"
+        >
+          <div class="row mt-0">
+            <div class="col-5"></div>
+            <div class="col-1">
+              <label for="" class="label">No.</label>
+            </div>
+            <div class="col-3">
+              <input
+                type="text"
+                class="form-control form-control-sm textbox"
+                formControlName="fa_codFact"
+              />
+            </div>
+            <div class="col-3">
+              <input
+                formControlName="fa_fecFact"
+                type="text"
+                class="form-control form-control-sm"
+              />
+            </div>
+          </div>
+
+          <div class="row mt-1">
+            <div class="col-2">
+              <label for="" class="label">RNC</label>
+            </div>
+            <div class="col-3">
+              <input
+                type="text"
+                #input1
+                id="input1"
+                (keydown.enter)="buscarRnc($event,input2)"
+                formControlName="fa_rncFact"
+                class="form-control form-control-sm"
+              />
+            </div>
+            <div class="col-4">
+              <select name="tipoNcf" formControlName="fa_tipoNcf"
+              (keydown)="moveFocus($event, input3)"  
+              class="form-select form-control-sm">
+                <option [value]="ncf.codNcf"  *ngFor="let ncf of ncflist">{{ncf.desNcf}}</option>
+              </select>
+            </div>
+            <div class="col-3">
+              <input
+                type="text"
+                class="form-control form-control-sm"
+                formControlName="fa_ncfFact"
+                placeholder="NCF"
+              />
+            </div>
+          </div>
+
+
+
+
+
+          <div class="row mt-.5">
+            <div class="col-2">
+              <label for="" class="label">Cliente</label>
+            </div>
+            <div class="col-10">
+              <div class="input-group show">
+                <input
+                  class="form-control form-control-sm dropdown-toggle searchInput"
+                  data-id="agent"
+                  type="text"
+                  autocomplete="off"
+                  (input)="convertToUpperCase($event)"
+                  (keydown.enter)="moveFocusnomclie($event, input3)"
+                  (keydown)="handleKeydown($event)"
+                  #input2
+                  id="input2"
+                  [formControl]="buscarNombre"
+                  formControlName="fa_nomClie"
+                />
+
+                <div
+                  [ngClass]="{ 'show': resultadoNombre.length > 0 }"
+                  class="dropdown-menu"
+                  style="
+                    margin-right: 30px;
+                    margin-top: 45px;
+                    z-index: 300;
+                    width: 350px;
+                    position: absolute;
+                    will-change: transform;
+                  "
+                >
+                  <div
+                    class="searchReturnItem name-find"
+                    *ngFor="let result of resultadoNombre; let i = index"
+                    [class.active]="i === selectedIndex"
+                  >
+                    <a
+                      (click)="cargarDatosCliente(result)"
+                      style="
+                        color: #222222 !important;
+                        font-size: 10pt;
+                        padding: 20px 0px;
+                        text-decoration: none !important;
+                        cursor: pointer;
+                      "
+                      class="px-3 cp"
+                    >
+                      <i class="far fa-user-circle mr-5"></i>&nbsp;&nbsp;{{
+                      result.cl_nomClie }}
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="row mt-.5">
+            <div class="col-2">
+              <label for="" class="label">Dirección</label>
+            </div>
+            <div class="col-10">
+              <input
+                type="text"
+                id="input3"
+                formControlName="fa_dirClie"
+                (input)="convertToUpperCase($event)"
+                (keydown)="moveFocus($event, input4)"
+                #input3
+                class="form-control form-control-sm"
+              />
+            </div>
+          </div>
+          <div class="row mt-.5">
+            <div class="col-2">
+              <label for="" class="label">Telefono</label>
+            </div>
+            <div class="col-3">
+              <input
+                type="text"
+                id="input4"
+
+                formControlName="fa_telClie"
+                (keydown)="moveFocus($event, input5)"
+                #input4
+                placeholder="Tel. 1"
+                class="form-control form-control-sm"
+              />
+            </div>
+            <div class="col-3">
+              <input
+                type="text"
+                formControlName="fa_telClie2"
+                (keydown)="moveFocus($event, input6)"
+                #input5
+                placeholder="Tel. 2"
+                class="form-control form-control-sm"
+              />
+            </div>
+            <div class="col-4">
+              <input
+                type="text"
+                formControlName="fa_sector"
+                (input)="convertToUpperCase($event)"
+                (keydown)="moveFocus($event, input7)"
+                (keydown)="handleKeydownSector($event)"
+                #input6
+                placeholder="Sector"
+                class="form-control form-control-sm"
+                [formControl]="buscarSector"
+              />
+              <div
+                [ngClass]="{ 'show': resultadoSector.length > 0 }"
+                class="dropdown-menu"
+                style="
+                  margin-right: 30px;
+                  margin-top: 45px;
+                  z-index: 300;
+                  width: 350px;
+                  position: absolute;
+                  will-change: transform;
+                "
+              >
+                <div
+                  class="searchReturnItem name-find"
+                  *ngFor="let result of resultadoSector; let i = index"
+                  [class.active]="i === selectedIndexsector"
+                >
+                  <a
+                    (click)="cargarDatosSector(result)"
+                    style="
+                      color: #222222 !important;
+                      font-size: 10pt;
+                      padding: 20px 0px;
+                      text-decoration: none !important;
+                      cursor: pointer;
+                    "
+                    class="px-3 cp"
+                  >
+                    <i class="far fa-user-circle mr-5"></i>&nbsp;&nbsp;{{
+                    result.se_desSect }}
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="row mt-.5">
+            <div class="col-2">
+              <label for="" class="label">Correo</label>
+            </div>
+            <div class="col-6">
+              <input
+                type="text"
+                formControlName="fa_correo"
+                (keydown)="moveFocus($event, input8)"
+                #input7
+                class="form-control form-control-sm"
+              />
+            </div>
+            <div class="col-4">
+              <input
+                type="text"
+                formControlName="fa_contacto"
+                placeholder="Contacto"
+                (keydown)="moveFocus($event, input9)"
+                #input8
+                class="form-control form-control-sm"
+              />
+            </div>
+          </div>
+
+  
+          <div class="row mt-1">
+            <div class="col-2">
+              <label for="" class="label">Tipo pago</label>
+            </div>
+            <div class="col-3">
+              <select #input9 name="formapago" 
+              formControlName="fa_fpago"
+              (keydown.enter)="moveFocusFpago($event, input11)"
+              class="form-control listbox">
+                <option [value]="fpago.fp_codfpago"  *ngFor="let fpago of resultadoFpago">{{fpago.fp_descfpago}}</option>
+
+              ></select>
+
+
+            </div>
+            
+            
+            <div class="col-3">
+              <select  #input11 name="listaenvio" id="listaenvio" 
+              (keydown)="moveFocus($event, input12)"
+              class="form-control listbox">
+                <option value="envio">Envio</option>
+                <option value="retiral">Retirar por el Cliente</option>
+              </select>
+            </div>
+            <div class="col-2">
+              <input
+                type="password"
+                (input)="convertToUpperCase($event)"
+                (keydown.enter)="buscarUsuario($event, input13)"
+                formControlName="fa_codVend"
+                #input12
+                placeholder="Vendedor"
+                class="form-control form-control-sm"
+              />
+            </div>
+            <div class="col-2">
+              <input
+                type="text"
+                formControlName="fa_nomVend"
+                class="form-control form-control-sm"
+              />
+            </div>
+          </div>
+        </form>
+        <br />
+        <div class="row">
+          <div class="col-2">
+            <label for="" class="label">Buscar Por</label>
+          </div>
+          <div class="col-3">
+            <input
+              type="text"
+              [(ngModel)]="txtFactura"
+              placeholder="No. de Factura"
+              class="form-control form-control-sm"
+              (input)="buscaFactura($event)"
+            />
+          </div>
+          <div class="col-4">
+            <input
+              type="text"
+              [(ngModel)]="txtdescripcion"
+              placeholder="Nombre del Cliente"
+              class="form-control form-control-sm"
+              (input)="buscaNombre($event)"
+            />
+          </div>
+          <div class="col-3">
+            <input
+              type="date"
+              [(ngModel)]="txtFecha"
+              placeholder="Fecha Factura"
+              class="form-control form-control-sm"
+            />
+          </div>
+        </div>
+        <div class="row mt-1">
+
+       
+           <div class="table-responsive" style="
+          height: 225px;
+          overflow-y: auto;
+
+          border: 2px solid rgb(4, 10, 185);
+        "
+          >
+
+            <table
+              class="table table-bordered table-hover table-striped table-sm table-class"
+            >
+              <thead class="table-dark">
+                <tr>
+                  <th style="width: 10%">Numero</th>
+                  <th style="width: 40%">Nombre</th>
+                  <th class="text-center" style="width: 15%">Fecha</th>
+                  <th style="width: 16%">Valor</th>
+                  <th class="text-center">Opciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let factura of facturacionList">
+                  <td style="width: 10%">{{factura.fa_codFact}}</td>
+                  <td style="width: 40%">{{factura.fa_nomClie}}</td>
+                  <td class="text-center" style="width: 15%">
+                    {{factura.fa_fecFact}}
+                  </td>
+                  <td class="text-end" tyle="width: 16%">
+                    {{factura.fa_valFact}}
+                  </td>
+                  <td>
+                    <i
+                      (click)="consultarFacturacion(factura)"
+                      class="bi bi-card-list text-success"
+                      style="padding: 10px"
+                    >
+                    </i>
+
+                    <!-- <i class="bi bi-file-earmark-pdf text-info"></i>-->
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+     
+  </div>
+   <!-- ***************** -->
+   <div class="row mt-0">
+    <div class="col">
+      <div class="card">
+       
+        <div class="card-body"   style="height: 60px; background-color: #f7eeeebd">
+          <div class="row mt-0">
+            <div class="col-1"> </div>
+            <div class="col-5">
+            <button class="btn btn-success btn-block btn-lx w-50"
+            (click)="limpia()">
+            <i class="bi bi-arrow-clockwise"></i>
+              Deshacer
+            </button>
+          </div>
+          <div class="col-1"> </div>
+          <div class="col-5">
+            <button class="btn btn-success btn-lx w-50"
+            (click)="guardarFacturacion()">
+              <i class="bi bi-check"></i> Guardar
+            </button>
+          </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!--**********************  -->
+</div>
+</div>
+  <div class="col-7">
+    <div class="card">
+      <div class="card-header" style="height: 35px; background-color: #f40b0b">
+        <h4 class="card-title" style="color: white; text-align: left">
+          Detalles de la factura
+        </h4>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-2">
+            <label for=""> Código </label>
+            <div class="input-group show">
+              <input
+                class="form-control dropdown-toggle searchInput me-2"
+                data-id="agent"
+                type="text"
+                [disabled]="!habilitarCampos"
+                #codigoInput
+                autocomplete="off"
+                (input)="convertToUpperCase($event)"
+                (keydown)="handleKeydownInventario($event)"
+                (keydown)="moveFocuscodmerc($event, input14)"
+                #input13
+                [formControl]="buscarcodmerc"
+                [(ngModel)]="codmerc"
+                name="codmerc"
+                placeholder="Código"
+              />
+
+              <div
+                [ngClass]="{ 'show': resultadoCodmerc.length > 0 }"
+                class="dropdown-menu"
+                style="
+                  margin-right: 30px;
+                  margin-top: 45px;
+                  z-index: 300;
+                  width: 350px;
+                  position: absolute;
+                  will-change: transform;
+                "
+              >
+                <div
+                  class="searchReturnItem name-find"
+                  *ngFor="let result of resultadoCodmerc; let i = index"
+                  [class.active]="i === selectedIndexcodmerc"
+                >
+                  <a
+                    (click)="cargarDatosInventario(result)"
+                    style="
+                      color: #222222 !important;
+                      font-size: 10pt;
+                      padding: 20px 0px;
+                      text-decoration: none !important;
+                      cursor: pointer;
+                    "
+                    class="px-3 cp"
+                  >
+                    <i class="far fa-user-circle mr-5"></i>  {{
+                    result.in_codmerc }}
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-4">
+            <label for=""> Descripción </label>
+            <div class="input-group show">
+              <input
+                class="form-control dropdown-toggle searchInput me-2"
+                data-id="agent"
+                type="text"
+                [disabled]="habilitarCampos"
+                #descripcionInput
+                autocomplete="off"
+                (input)="convertToUpperCase($event)"
+                (keydown)="moveFocusdesc($event, input15)"
+                (keydown)="handleKeydownInventariosdesc($event)"
+                #input14
+                [formControl]="buscardescripcionmerc"
+                [(ngModel)]="descripcionmerc"
+              />
+              <div
+                [ngClass]="{ 'show': resultadodescripcionmerc.length > 0 }"
+                class="dropdown-menu"
+                style="
+                  margin-right: 30px;
+                  margin-top: 45px;
+                  z-index: 300;
+                  width: 350px;
+                  position: absolute;
+                  will-change: transform;
+                "
+              >
+                <div
+                  class="searchReturnItem name-find"
+                  *ngFor="let result of resultadodescripcionmerc; let i = index"
+                  [class.active]="i === selectedIndexdescripcionmerc"
+                >
+                  <a
+                    (click)="cargarDatosInventario(result)"
+                    style="
+                      color: #222222 !important;
+                      font-size: 10pt;
+                      padding: 20px 0px;
+                      text-decoration: none !important;
+                      cursor: pointer;
+                    "
+                    class="px-3 cp"
+                  >
+                    <i class="far fa-user-circle mr-5"></i>  {{
+                    result.in_desmerc }}
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-2">
+            <label for=""> Cant. </label>
+            <input
+              type="number"
+              placeholder="Cantidad"
+              [(ngModel)]="cantidadmerc"
+              [formControl]="cantidadform"
+              id="input8"
+              #input15
+              (keydown)="moveFocusCantidad($event, input16)"
+              class="form-control"
+            />
+          </div>
+          <div class="col-2">
+            <label for=""> Precio </label>
+            <input
+              type="number"
+              [(ngModel)]="preciomerc"
+              [formControl]="precioform"
+              id="input9"
+              #input16
+              (input)="actualizarCalculo()"
+              (keydown)="moveFocus($event, input13)"
+              class="form-control"
+              (keydown.enter)="agregaItem($event)"
+            />
+          </div>
+        </div>
+        <div class="row">
+          <div class="col">
+            <div
+              class="table-responsive"
+              style="
+                height: 350px;
+                overflow-y: auto;
+
+                border: 2px solid rgb(4, 10, 185);
+              "
+              tabindex="0"
+              (keydown)="navigateTable($event)"
+              #Tabledetalle
+            >
+              <table class="table table-sm table-bordered">
+                <thead class="table-dark">
+                  <tr style="background-color: rgb(55, 0, 255)">
+                    <th style="width: 13%">Código</th>
+                    <th style="width: 37%">Descripción</th>
+                    <th style="width: 10%">Cant.</th>
+                    <th style="width: 13%">Precio</th>
+                    <th style="width: 15%">Total</th>
+                    <th>Opciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr
+                    *ngFor="let item of items;let i = index"
+                    [class.table-active]="i === selectedRow"
+                    (click)="selectRow(i)"
+                  >
+                    <td style="width: 13%">{{ item.producto?.in_codmerc }}</td>
+                    <td style="width: 37%">{{ item.producto?.in_desmerc }}</td>
+                    <td class="text-center" style="width: 10%">
+                      {{ item.cantidad }}
+                    </td>
+                    <td class="text-center" style="width: 11%">
+                      {{ item.precio }}
+                    </td>
+                    <td class="text-end" style="width: 13%">
+                      {{ item.total | currency }}
+                    </td>
+                    <td>
+                      <i
+                        (click)="editarItem(item)"
+                        class="bi bi-pencil text-primary"
+                        style="padding: 10px"
+                        *ngIf="habilitarIcono"
+                      >
+                      </i>
+                      <i
+                        (click)="borarItem(item)"
+                        class="bi bi-trash text-danger"
+                        style="padding: 10px"
+                        *ngIf="habilitarIcono"
+                      >
+                      </i>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-7">
+            <div class="row mt-1">
+              <div style="padding: 5px; border: 2px solid rgb(4, 10, 185)">
+                <div class="row mt-1">
+                  <h6
+                    class="col-2 col-form-label text-black text-center"
+                    style="font-size: 12px; font-weight: bold">
+                    Exitencia       
+                  </h6>
+                  <h6
+                    class="col-4 col-form-label text-black text-center"
+                    style="font-size: 12px; font-weight: bold">
+                    Medida        
+                  </h6>
+                  <h6
+                    class="col-4 col-form-label text-black text-center"
+                    style="font-size: 12px; font-weight: bold; margin-right: 0px;">
+                    Actualizacion         
+                  </h6>
+                  <h6
+                    class="col-2 col-form-label text-black text-center"
+                    style="font-size: 12px; font-weight: bold">
+                    Costo         
+                  </h6>
+                </div>  
+                <div class="row g-1">
+                  <div class="col-2">
+                    <input
+                      type="text"
+                      style="font-size: 12px; font-weight: bold"
+                      class="form-control form-control-sm text-end"
+                      readonly
+                      [value]="formatNumber(existenciatxt)"
+                      id="inputPassword"
+                    /> 
+                  </div>
+                  <div class="col-5">
+                    <input
+                      type="text"
+                      style="font-size: 12px; font-weight: bold"
+                    class="form-control form-control-sm text-end"
+                    readonly
+                      [(ngModel)]="medidatxt"
+                      id="inputPassword"
+                    /> 
+                  </div>
+                  <div class="col-3">
+                    <input
+                      type="text"
+                      style="font-size: 12px; font-weight: bold"
+                      class="form-control form-control-sm text-end"
+                      readonly
+                      [(ngModel)]="fecacttxt"
+                      id="inputPassword"
+                    /> 
+                  </div>
+                  <div class="col-2">
+                    <input
+                      type="text"
+                      style="font-size: 12px; font-weight: bold"
+                      class="form-control form-control-sm text-end"
+                      readonly
+                      [value]="formatNumber(costotxt)"
+                      id="inputPassword"
+                    /> 
+                  </div>
+                </div>
+                <div class="row">
+                  <h6
+                    class="col-2 col-form-label text-black text-center"
+                    style="font-size: 11px; font-weight: bold">
+                    5%
+                  </h6>
+                  <h6
+                     class="col-2 col-form-label text-black text-center"
+                    style="font-size: 11px; font-weight: bold">
+                    7%
+                  </h6>
+                  <h6
+                    class="col-2 col-form-label text-black text-center"
+                    style="font-size: 11px; font-weight: bold">
+                    10%
+                  </h6>    
+                  <h6
+                    class="col-2 col-form-label text-black text-center"
+                    style="font-size: 11px; font-weight: bold">
+                    12%
+                  </h6>
+                  <h6
+                    class="col-2 col-form-label text-black text-center"
+                    style="font-size: 11px; font-weight: bold">
+                    14%
+                  </h6>
+                  <h6
+                    class="col-2 col-form-label text-black text-center"
+                    style="font-size: 11px; font-weight: bold">
+                    16%
+                  </h6>
+                  <!-- <h6
+                    class="col-2 col-form-label text-black text-center"
+                    style="font-size: 11px; font-weight: bold">
+                    18%
+                  </h6> -->
+                </div>  
+                <div class="row">
+                  <div class="col-2">
+                    <input
+                      type="text"
+                      style="font-size: 12px; font-weight: bold"
+                      class="form-control form-control-sm text-end"
+                      readonly
+                      [value]="formatNumber(atxt)"
+                      id="inputPassword"
+                    /> 
+                  </div>
+               
+                  <div class="col-2">
+                    <input
+                      type="text"
+                      style="font-size: 12px; font-weight: bold"
+                      class="form-control form-control-sm text-end"
+                      readonly
+                      [value]="formatNumber(btxt)"
+                      id="inputPassword"
+                    /> 
+                  </div>
+                  
+                  <div class="col-2">
+                    <input
+                      type="text"
+                      style="font-size: 12px; font-weight: bold"
+                      class="form-control form-control-sm text-end"
+                      readonly
+                      [value]="formatNumber(ctxt)"
+                      id="inputPassword"
+                    /> 
+                  </div>
+                  <div class="col-2">
+                    <input
+                      type="text"
+                      style="font-size: 12px; font-weight: bold"
+                      class="form-control form-control-sm text-end"
+                      readonly
+                      [value]="formatNumber(dtxt)"
+                      id="inputPassword"
+                    /> 
+                  </div>
+                  <div class="col-2">
+                    <input
+                    type="text"
+                      style="font-size: 12px; font-weight: bold"
+                      class="form-control form-control-sm text-end"
+                      readonly
+                      [value]="formatNumber(etxt)"
+                      id="inputPassword"
+                    /> 
+                  </div>
+                  <div class="col-2">
+                    <input
+                    type="text"
+                      style="font-size: 12px; font-weight: bold"
+                      class="form-control form-control-sm text-end"
+                      readonly
+                      [value]="formatNumber(ftxt)"
+                      id="inputPassword"
+                    /> 
+                  </div>
+                </div>
+                <div class="row mt-1">
+                  <h6
+                    class="col-1 col-form-label text-black"
+                    style="font-size: 11px; font-weight: bold">
+                    18%
+                  </h6>
+                  <div class="col-2">
+                    <input
+                      type="text"
+                      style="font-size: 11px; font-weight: bold"
+                      class="form-control form-control-sm text-end"
+                      readonly
+                      [value]="formatNumber(gtxt)"
+                      id="inputPassword"
+                    /> 
+                  </div>
+                  <h6
+                    class="col-2 col-form-label text-black text-end"
+                    style="font-size: 12px; font-weight: bold">
+                    % Producto         
+                  </h6>
+                  <div class="col-2">
+                    <input
+                      type="text"
+                      style="font-size: 12px; font-weight: bold"
+                      class="form-control form-control-sm text-end "
+                      readonly
+                      
+                      [value]="formatNumber(protxt)"
+                      id="inputPassword"
+                      [ngStyle]="{'color': protxt < 10 ? 'red' : 'green'}"
+                    /> 
+                  </div>
+                  <h6
+                    class="col-2 col-form-label text-black text-end"
+                    style="font-size: 12px; font-weight: bold">
+                    % Factura         
+                  </h6>
+                  <div class="col-2">
+                    <input
+                      type="text"
+                      style="font-size: 12px; font-weight: bold"
+                      class="form-control form-control-sm text-end"
+                      readonly
+                      [value]="formatNumber(factxt)"
+                      id="inputPassword"
+                      [ngStyle]="{'color': factxt < 10 ? 'red' : 'green'}"
+                    /> 
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-1"></div>
+          <div class="col-4">
+            <div class="row mt-1">
+              <div style="padding: 5px; border: 2px solid rgb(4, 10, 185)">
+                <div class="row">
+                  <h6
+                    class="col-4 col-form-label text-black"
+                    style="font-size: 18px; font-weight: bold"
+                  >
+                    Sub Total
+                  </h6>
+                  <div class="col-8">
+                    <input
+                      type="text"
+                      style="font-size: 18px; font-weight: bold"
+                      class="form-control form-control-sm text-end"
+                      disabled
+                      [(ngModel)]="subtotaltxt"
+                      id="inputPassword"
+                    />
+                  </div>
+                  
+                </div>
+                <div class="row mt-.5">
+                  <h6
+                    class="col-4 col-form-label text-black"
+                    style="font-size: 18px; font-weight: bold"
+                  >
+                    Desc.
+                  </h6>
+                  <div class="col-8">
+                    <input
+                      type="text"
+                      style="font-size: 18px; font-weight: bold"
+                      class="form-control form-control-sm text-end"
+                      disabled
+                      [(ngModel)]="descuentotxt"
+                      id="inputPassword"
+                    />
+                  </div>
+                </div>
+                <div class="row mt-.5">
+                  <h6
+                    class="col-4 col-form-label text-black"
+                    style="font-size: 18px; font-weight: bold"
+                  >
+                    ITBI
+                  </h6>
+                  <div class="col-8">
+                    <input
+                      type="text"
+                      disabled
+                      style="font-size: 18px; font-weight: bold"
+                      class="form-control form-control-sm text-end"
+                      [(ngModel)]="itbitxt"
+                      id="Itbis"
+                    />
+                  </div>
+                </div>
+                <div class="row mt-.5">
+                  <h4 class="col-4 text-black">Total</h4>
+                  <div class="col-8">
+                    <input
+                      type="text"
+                      style="font-size: 18px; font-weight: bold"
+                      disabled
+                      class="form-control form-control-sm text-end"
+                      [(ngModel)]="totalgraltxt"
+                      id="inputPassword"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+             
+          </div> 
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

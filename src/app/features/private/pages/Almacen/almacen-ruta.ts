@@ -21,10 +21,10 @@ const routes: Routes = [
       children:[
 
 
-        //{
-        //   path:"Control Factura",
-        //   loadChildren: () => import('./pages/inventario-page/inventario-modulo').then(m => m.ModuloInventario)
-        // },
+        {
+           path:"controlfact",
+           loadChildren: () => import('./pages/controlfact-page/controlfact-modulo').then(m => m.ModuloControlFact)
+         },
         {
           path:"entradamerc",
           loadChildren: () => import('./pages/entradamerc-page/entradamerc-modulo').then(m => m.ModuloEntradamerc)
