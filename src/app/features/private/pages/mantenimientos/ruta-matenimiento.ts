@@ -3,7 +3,6 @@ import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { Mantenimiento, } from './mantenimiento';
 
-
 const routes: Routes = [
   {
     path:"",
@@ -42,7 +41,7 @@ const routes: Routes = [
           path:"usuario",
           loadChildren: () => import('./pages/usuario-page/usuario-modulo').then(m => m.ModuloUsuario)
         },
-      {
+        {
           path:"choferes",
           loadChildren: () => import('./pages/choferes-page/choferes-modulo').then(m => m.ModuloChoferes)
         },

@@ -24,10 +24,11 @@ import autoTable from 'jspdf-autotable';
 import { disableDebugTools } from '@angular/platform-browser';
 import { ServicioNcf } from 'src/app/core/services/ncf/ncf.service';
 import { ModeloNcfData } from 'src/app/core/services/ncf';
+//import { CobroFact } from './cobrofact-page.component';
 declare var $: any;
 
 @Component({
-  selector: 'cobrofact',
+  selector: 'CobroFact',
   templateUrl: './cobrofact.html',
   styleUrls: ['./cobrofact.css']
 })
@@ -35,7 +36,7 @@ declare var $: any;
 
 
 
-export class Cobrofactura implements OnInit {
+export class CobroFact implements OnInit {
     @ViewChild('inputCodmerc') inputCodmerc!: ElementRef; // Para manejar el foco
     @ViewChild('descripcionInput') descripcionInput!: ElementRef; // Para manejar el foco
     @ViewChild('Tabladetalle') Tabladetalle!: ElementRef;
@@ -54,7 +55,7 @@ export class Cobrofactura implements OnInit {
     private fechaBuscar = new BehaviorSubject<string>('');
     habilitarFormulario: boolean = false;
     tituloModalFacturacion!: string;
-    formularioFacturacion!: FormGroup;
+    FormularioCobroFactura!: FormGroup;
     formulariodetFactura!: FormGroup;
     modoedicionFacturacion: boolean = false;
     facturacionid!: string
@@ -140,7 +141,7 @@ export class Cobrofactura implements OnInit {
         // Otros campos...
       });
   
-      this.crearFormularioCobroeFactura();
+      this.crearFormularioCobroFactura();
   
   
       this.nomclienteSubject.pipe(
@@ -227,8 +228,8 @@ export class Cobrofactura implements OnInit {
         }
   
       });
-      $("#input1").focus();
-      $("#input1").select()
+      // $("#input1").focus();
+      // $("#input1").select()
       this.obtenerNcf();
       this.obtenerfpago();
       this.buscardescripcionmerc.valueChanges.pipe(
@@ -309,10 +310,10 @@ export class Cobrofactura implements OnInit {
       });
     }
   
-    crearFormularioFacturacion() {
+    crearFormularioCobroFactura() {
       const fechaActual = new Date();
       const fechaActualStr = this.formatofecha(fechaActual);
-      this.formularioFacturacion = this.fb.group({
+      this.FormularioCobroFactura = this.fb.group({
         fa_codFact: [{ value: '', disabled: true }],
         fa_fecFact: [{value: fechaActualStr, disabled: true}],
         fa_valFact: [''],
@@ -320,30 +321,30 @@ export class Cobrofactura implements OnInit {
         fa_itbiFact: [''],
         fa_codClie: [''],
         fa_cosFact: [''],
-        fa_nomClie: [''],
-        fa_rncFact: [null],
-        fa_telClie: [''],
-        fa_telClie2: [''],
-        fa_dirClie: [''],
-        fa_correo: [''],
-        fa_codVend: ['', Validators.required],
-        fa_nomVend: [''],
+        fa_nomClie: [{ value: '', disabled: true }],
+        fa_rncFact: [{ value: '', disabled: true }],
+        fa_telClie: [{ value: '', disabled: true }],
+        fa_telClie2: [{ value: '', disabled: true }],
+        fa_dirClie: [{ value: '', disabled: true }],
+        fa_correo: [{ value: '', disabled: true }],
+        fa_codVend: [{ value: '', disabled: true }],
+        fa_nomVend: [{ value: '', disabled: true }],
         fa_status: [''],
-        fa_sector: [''],
+        fa_sector: [{ value: '', disabled: true }],
         fa_codZona: [null],
         fa_desZona: [''],
-        fa_fpago: [''],
+        fa_fpago: [{ value: '', disabled: true }],
         fa_codfpago: ['1'],
-        fa_envio: [''],
+        fa_envio: [{ value: '', disabled: true }],
         fa_ncfFact: [{value:'', disabled: true }],
-        fa_tipoNcf: ['1'],
-        fa_contact0o: [''],
+        fa_tipoNcf: [{ value: '', disabled: true }],
+        fa_contacto: [{ value: '', disabled: true }],
       });
   
     }
     limpia(): void {
-      //this.formularioFacturacion.reset();
-      this.crearFormularioFacturacion();
+      //this.FormularioCobroFactura.reset();
+      this.crearFormularioCobroFactura();
         this.txtdescripcion = '';
         this.txtFactura = '';
         this.txtFecha = '';
@@ -374,7 +375,7 @@ export class Cobrofactura implements OnInit {
     editarFacturacion(Factura: FacturacionModelData) {
       this.facturacionid = Factura.fa_codFact;
       this.modoedicionFacturacion = true;
-      this.formularioFacturacion.patchValue(Factura);
+      this.FormularioCobroFactura.patchValue(Factura);
       this.tituloModalFacturacion = 'Editando Facturacion';
       $('#modalfacturacion').modal('show');
       this.habilitarFormulario = true;
@@ -455,13 +456,13 @@ export class Cobrofactura implements OnInit {
     }
     consultarFacturacion(factura: FacturacionModelData) {
       this.modoconsultaFacturacion = true;
-      this.formularioFacturacion.reset()
-      this.crearFormularioFacturacion()
-      this.formularioFacturacion.patchValue(factura);
+      this.FormularioCobroFactura.reset()
+      this.crearFormularioCobroFactura()
+      this.FormularioCobroFactura.patchValue(factura);
       this.tituloModalFacturacion = 'Consulta Factura';
       // $('#modalfacturacion').modal('show');
       this.habilitarFormulario = true;
-      this.formularioFacturacion.disable();
+      this.FormularioCobroFactura.disable();
       console.log("ff",factura)
       this.habilitarIcono = false;
       const inputs = document.querySelectorAll('.seccion-productos input');
@@ -625,7 +626,7 @@ export class Cobrofactura implements OnInit {
       console.log("move focus")
       if (event.key === 'Enter' || event.key === 'Tab') {
         event.preventDefault(); // Previene el comportamiento predeterminado de Enter
-        // const currentControl = this.formularioFacturacion.get('ct_codvend');
+        // const currentControl = this.FormularioCobroFactura.get('ct_codvend');
         const currentInputValue = (event.target as HTMLInputElement).value.trim();
         if (currentInputValue === '') {
           this.codmerVacio = true;
@@ -711,7 +712,7 @@ export class Cobrofactura implements OnInit {
       this.productoselect = inventario;
       this.cancelarBusquedaDescripcion = true;
       this.cancelarBusquedaCodigo = true;
-      this.formularioFacturacion.patchValue({
+      this.FormularioCobroFactura.patchValue({
         df_codMerc: inventario.in_codmerc,
         df_desMerc: inventario.in_desmerc,
         df_canMerc: inventario.in_canmerc,
@@ -725,12 +726,12 @@ export class Cobrofactura implements OnInit {
   
     buscarUsuario(event: Event, nextElement: HTMLInputElement | null): void {
       event.preventDefault();
-      const claveUsuario = this.formularioFacturacion.get('fa_codVend')?.value;
+      const claveUsuario = this.FormularioCobroFactura.get('fa_codVend')?.value;
       if (claveUsuario) {
         this.ServicioUsuario.buscarUsuarioPorClave(claveUsuario).subscribe(
           (usuario) => {
             if (usuario.data.length) {
-              this.formularioFacturacion.patchValue({ fa_nomVend: usuario.data[0].idUsuario });
+              this.FormularioCobroFactura.patchValue({ fa_nomVend: usuario.data[0].idUsuario });
               nextElement?.focus()
             } else {
               this.mensagePantalla = true;
@@ -756,14 +757,14 @@ export class Cobrofactura implements OnInit {
     }
     buscarRnc(event: Event, nextElement: HTMLInputElement | null): void {
       event.preventDefault();
-      const rnc = this.formularioFacturacion.get('fa_rncFact')?.value;
+      const rnc = this.FormularioCobroFactura.get('fa_rncFact')?.value;
       if (!rnc) {
         this.obtenerNcf();
-        this.formularioFacturacion.patchValue({ fa_tipoNcf: 1 });
-        this.formularioFacturacion.get("fa_tipoNcf")?.disable(); 
+        this.FormularioCobroFactura.patchValue({ fa_tipoNcf: 1 });
+        this.FormularioCobroFactura.get("fa_tipoNcf")?.disable(); 
         // Si no se ha ingresado un RNC, pasamos el foco al siguiente elemento
         console.log('RNC vacío.');
-        console.log(this.formularioFacturacion.value);
+        console.log(this.FormularioCobroFactura.value);
         nextElement?.focus();
         return;
       }
@@ -780,9 +781,9 @@ export class Cobrofactura implements OnInit {
       if (response?.data?.length) {
         // Si se encuentra el RNC, asignar el nombre del cliente
         const nombreEmpresa = response.data[0]?.rason;
-        this.formularioFacturacion.patchValue({ fa_nomClie: nombreEmpresa });
-        this.formularioFacturacion.patchValue({ fa_tipoNcf: 2 });
-        this.formularioFacturacion.get("fa_tipoNcf")?.enable();
+        this.FormularioCobroFactura.patchValue({ fa_nomClie: nombreEmpresa });
+        this.FormularioCobroFactura.patchValue({ fa_tipoNcf: 2 });
+        this.FormularioCobroFactura.get("fa_tipoNcf")?.enable();
         this.ncflist = this.ncflist.filter(ncf => ncf.codNcf !== 1);
         $("#input3").focus();
         $("#input3").select();
@@ -1034,7 +1035,7 @@ export class Cobrofactura implements OnInit {
       this.buscarNombre.reset();
       if (cliente.cl_nomClie !== "") {
         console.log(this.resultadoNombre)
-        this.formularioFacturacion.patchValue({
+        this.FormularioCobroFactura.patchValue({
           fa_codClie: cliente.cl_codClie,
           fa_nomClie: cliente.cl_nomClie,
           fa_rncFact: cliente.cl_rnc,
@@ -1044,7 +1045,7 @@ export class Cobrofactura implements OnInit {
           fa_sector: cliente.cl_codSect,
         });
         console.log(cliente)
-        console.log('Formulario actualizado:', this.formularioFacturacion.value);
+        console.log('Formulario actualizado:', this.FormularioCobroFactura.value);
       }
     }
   
@@ -1053,7 +1054,7 @@ export class Cobrofactura implements OnInit {
       this.buscarSector.reset();
       if (sector.se_desSect !== "") {
         console.log(this.resultadoSector)
-        this.formularioFacturacion.patchValue({
+        this.FormularioCobroFactura.patchValue({
           fa_codSect: sector.se_codSect,
           fa_sector: sector.se_desSect,
           fa_codZona: sector.se_codZona,
@@ -1066,7 +1067,7 @@ export class Cobrofactura implements OnInit {
       this.buscarFpago.reset();
       if (fpago.fp_descfpago !== "") {
         console.log(this.resultadoFpago)
-        this.formularioFacturacion.patchValue({
+        this.FormularioCobroFactura.patchValue({
           fa_fpago: fpago.fp_descfpago,
           fa_codfpago: fpago.fp_codfpago,
         });
@@ -1217,21 +1218,21 @@ export class Cobrofactura implements OnInit {
     }
     guardarFacturacion() {
       const date = new Date();
-      this.formularioFacturacion.get('fa_valFact')?.patchValue(this.totalGral);
-      this.formularioFacturacion.get('fa_itbiFact')?.patchValue(this.totalItbis);
-      this.formularioFacturacion.get('fa_cosFact')?.patchValue(this.totalcosto);
-      this.formularioFacturacion.get('fa_subFact')?.patchValue(this.subTotal);
-      this.formularioFacturacion.get("fa_tipoNcf")!.enable();
-      this.formularioFacturacion.get('fa_codFact')!.enable();
-      this.formularioFacturacion.get('fa_fecFact')!.enable();
-      this.formularioFacturacion.get('fa_nomVend')!.enable();
-      this.formularioFacturacion.get('fa_ncfFact')!.enable();
+      this.FormularioCobroFactura.get('fa_valFact')?.patchValue(this.totalGral);
+      this.FormularioCobroFactura.get('fa_itbiFact')?.patchValue(this.totalItbis);
+      this.FormularioCobroFactura.get('fa_cosFact')?.patchValue(this.totalcosto);
+      this.FormularioCobroFactura.get('fa_subFact')?.patchValue(this.subTotal);
+      this.FormularioCobroFactura.get("fa_tipoNcf")!.enable();
+      this.FormularioCobroFactura.get('fa_codFact')!.enable();
+      this.FormularioCobroFactura.get('fa_fecFact')!.enable();
+      this.FormularioCobroFactura.get('fa_nomVend')!.enable();
+      this.FormularioCobroFactura.get('fa_ncfFact')!.enable();
       const payload = {
-        factura: this.formularioFacturacion.value,
+        factura: this.FormularioCobroFactura.value,
         detalle: this.items,
       };
-      if (this.formularioFacturacion.valid) {
-        if (this.formularioFacturacion.valid) {
+      if (this.FormularioCobroFactura.valid) {
+        if (this.FormularioCobroFactura.valid) {
           this.servicioFacturacion.guardarFacturacion(payload).subscribe(response => {
             Swal.fire({
               title: "Excelente!",
@@ -1241,9 +1242,9 @@ export class Cobrofactura implements OnInit {
               showConfirmButton: false,
             });
             this.buscarTodasFacturacion();
-            this.formularioFacturacion.reset();
-            this.crearFormularioFacturacion();
-            this.formularioFacturacion.enable();
+            this.FormularioCobroFactura.reset();
+            this.crearFormularioCobroFactura();
+            this.FormularioCobroFactura.enable();
             this.limpia();
           });
         } else {

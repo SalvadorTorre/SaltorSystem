@@ -1,0 +1,7 @@
+.sticky-header th {
+    position: sticky;
+    top: 0;
+    background-color: #343a40; /* color de fondo oscuro como table-dark */
+    color: white;
+    z-index: 1;
+  }
