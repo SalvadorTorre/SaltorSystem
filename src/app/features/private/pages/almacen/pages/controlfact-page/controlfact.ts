@@ -312,36 +312,36 @@ obtenerNcf() {
     const fechaActual = new Date();
     const fechaActualStr = this.formatofecha(fechaActual);
     this.formularioFacturacion = this.fb.group({
-      fa_codFact: [{ value: '', disabled: true }],
-      fa_fecFact: [{value: fechaActualStr, disabled: true}],
-      fa_valFact: [''],
-      fa_subFact: [''],
-      fa_itbiFact: [''],
-      fa_codClie: [''],
-      fa_cosFact: [''],
-      fa_nomClie: [''],
-      fa_rncFact: [null],
-      fa_telClie: [''],
-      fa_telClie2: [''],
-      fa_dirClie: [''],
-      fa_correo: [''],
-      fa_codVend: ['', Validators.required],
-      fa_nomVend: [''],
-      fa_status: [''],
-      fa_sector: [''],
-      fa_codZona: [null],
-      fa_desZona: [''],
-      fa_fpago: [''],
-      fa_codfpago: ['1'],
-      fa_envio: [''],
-      fa_ncfFact: [{value:'', disabled: true }],
-      fa_tipoNcf: ['1'],
-      fa_contacto: [''],
-      fa_despacho: [''],
-      fa_reimpresa: [''],
-      fa_entrega: [''],
-      fa_impresa: [''],
-    });
+        fa_codFact: [{ value: '', disabled: true }],
+        fa_fecFact: [{value: fechaActualStr, disabled: true}],
+        fa_valFact: [''],
+        fa_subFact: [''],
+        fa_itbiFact: [''],
+        fa_codClie: [''],
+        fa_cosFact: [''],
+        fa_nomClie: [{ value: '', disabled: true }],
+        fa_rncFact: [{ value: '', disabled: true }],
+        fa_telClie: [{ value: '', disabled: true }],
+        fa_telClie2: [{ value: '', disabled: true }],
+        fa_dirClie: [{ value: '', disabled: true }],
+        fa_correo: [{ value: '', disabled: true }],
+        fa_codVend: [{ value: '', disabled: true }],
+        fa_nomVend: [{ value: '', disabled: true }],
+        fa_status: [''],
+        fa_sector: [{ value: '', disabled: true }],
+        fa_codZona: [null],
+        fa_desZona: [''],
+        fa_fpago: [{ value: '', disabled: true }],
+        fa_codfpago: ['1'],
+        fa_envio: [{ value: '', disabled: true }],
+        fa_ncfFact: [{value:'', disabled: true }],
+        fa_tipoNcf: [{ value: '', disabled: true }],
+        fa_contacto: [{ value: '', disabled: true }],
+        fa_despacho: [{ value: '', disabled: true }],
+        fa_reimpresa: [{ value: '', disabled: true }],
+        fa_entrega: [{ value: '', disabled: true }],
+        fa_impresa: [{ value: '', disabled: true }],
+      });
 
   }
   limpia(): void {
@@ -468,8 +468,7 @@ obtenerNcf() {
     console.log("ff",factura)
     this.habilitarIcono = false;
     const inputs = document.querySelectorAll('.seccion-productos input');
-    inputs.forEach((input) => {
-      (input as HTMLInputElement).disabled = true;
+    inputs.forEach((input) => {(input as HTMLInputElement).disabled = true;
     });
     // Limpiar los items antes de agregar los nuevos
     this.items = [];
@@ -555,7 +554,7 @@ obtenerNcf() {
           Swal.fire(
             {
               title: "Excelente!",
-              text: "Empresa eliminado correctamente.",
+              text: "Factura eliminada correctamente.",
               icon: "success",
               timer: 2000,
               showConfirmButton: false,

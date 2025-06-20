@@ -44,7 +44,9 @@ export interface FacturacionModelData {
   fa_reimpresa: string;
   fa_fecha: string;
   fa_codEmpr: string;
-  fa_codSucu: string;
+  fa_despacho: string;
+  fa_entrega: string;
+  fa_impresa: string;
 
   detFactura: detFacturaData[];
 }

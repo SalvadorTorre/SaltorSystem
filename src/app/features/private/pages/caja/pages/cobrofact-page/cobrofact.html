@@ -169,182 +169,180 @@
             [formGroup]="FormularioCobroFactura"
             class="custom-form-background"
             (ngSubmit)="guardarFacturacion()">
-          <div class="row mt-0">
-            <div class="col-5"></div>
-            <div class="col-1">
-              <label for="" class="label">No.</label>
-            </div>
-            <div class="col-3">
-              <input
-                type="text"
-                class="form-control form-control-sm textbox"
-                formControlName="fa_codFact"
-              />
-            </div>
-            <div class="col-3">
-              <input
-                formControlName="fa_fecFact"
-                type="text"
-                class="form-control form-control-sm"
-              />
-            </div>
-          </div>
-          <div class="row mt-1">
-            <div class="col-2">
-              <label for="" class="label">RNC</label>
-            </div>
-            <div class="col-3">
-              <input
-                type="text"
-                #input1
-                id="input1"
-                formControlName="fa_rncFact"
-                class="form-control form-control-sm"
-              />
-            </div>
-            <div class="col-4">
-              <select name="tipoNcf" formControlName="fa_tipoNcf"
-              (keydown)="moveFocus($event, input3)"  
-              class="form-select form-control-sm">
-                <option [value]="ncf.codNcf"  *ngFor="let ncf of ncflist">{{ncf.desNcf}}</option>
-              </select>
-            </div>
-            <div class="col-3">
-              <input
-                type="text"
-                class="form-control form-control-sm"
-                formControlName="fa_ncfFact"
-                placeholder="NCF"
-              />
-            </div>
-          </div>
-
-          <div class="row mt-.5">
-            <div class="col-2">
-              <label for="" class="label">Cliente</label>
-            </div>
-            <div class="col-10">
-              <div class="input-group show">
+            <div class="row mt-0">
+              <div class="col-5"></div>
+                <div class="col-1">
+                  <label for="" class="label">No.</label>
+              </div>
+              <div class="col-3">
                 <input
-                  class="form-control form-control-sm dropdown-toggle searchInput"
-                  data-id="agent"
                   type="text"
-                  #input2
-                  id="input2"
-                  formControlName="fa_nomClie"
+                  class="form-control form-control-sm textbox"
+                  formControlName="fa_codFact"
                 />
-
+              </div>
+              <div class="col-3">
+                <input
+                  formControlName="fa_fecFact"
+                  type="text"
+                  class="form-control form-control-sm"
+                />
               </div>
             </div>
-          </div>
-          <div class="row mt-.5">
-            <div class="col-2">
-              <label for="" class="label">Dirección</label>
-            </div>
-            <div class="col-10">
-              <input
-                type="text"
-                id="input3"
-                formControlName="fa_dirClie"
-                #input3
-                class="form-control form-control-sm"
-              />
-            </div>
-          </div>
-          <div class="row mt-.5">
-            <div class="col-2">
-               <label for="" class="label">Telefono</label>
-            </div>
-            <div class="col-3">
-               <input
+            <div class="row mt-1">
+              <div class="col-2">
+                <label for="" class="label">RNC</label>
+              </div>
+              <div class="col-3">
+                <input
                   type="text"
-               id="input4"
-               formControlName="fa_telClie"
-               placeholder="Tel. 1"
-               class="form-control form-control-sm"
-              />
+                  id="input1"
+                  formControlName="fa_rncFact"
+                  class="form-control form-control-sm"
+                />
+              </div>
+              <div class="col-4">
+                <select name="tipoNcf" formControlName="fa_tipoNcf"
+                  (keydown)="moveFocus($event, input3)"  
+                  class="form-select form-control-sm">
+                  <option [value]="ncf.codNcf"  *ngFor="let ncf of ncflist">{{ncf.desNcf}}</option>
+                </select>
+              </div>
+              <div class="col-3">
+                <input
+                  type="text"
+                  class="form-control form-control-sm"
+                  formControlName="fa_ncfFact"
+                  placeholder="NCF"
+                />
+              </div>
             </div>
-            <div class="col-3">
-               <input
-                   type="text"
-                   formControlName="fa_telClie2"
-                   #input5
-                   placeholder="Tel. 2"
-                   class="form-control form-control-sm"
-               />
+            <div class="row mt-.5">
+              <div class="col-2">
+                <label for="" class="label">Cliente</label>
+              </div>
+              <div class="col-10">
+                <div class="input-group show">
+                  <input
+                    class="form-control form-control-sm dropdown-toggle searchInput"
+                    data-id="agent"
+                    type="text"
+                    #input2
+                    id="input2"
+                    formControlName="fa_nomClie"
+                  />
+
+                </div>
+              </div>
             </div>
-            <div class="col-4">
-              <input
-                type="text"
-                formControlName="fa_sector"
-                #input6
-                placeholder="Sector"
+            <div class="row mt-.5">
+              <div class="col-2">
+                <label for="" class="label">Dirección</label>
+              </div>
+              <div class="col-10">
+                <input
+                  type="text"
+                  id="input3"
+                  formControlName="fa_dirClie"
+                  #input3
+                  class="form-control form-control-sm"
+                />
+              </div>
+            </div>
+            <div class="row mt-.5">
+              <div class="col-2">
+                <label for="" class="label">Telefono</label>
+              </div>
+              <div class="col-3">
+                <input
+                    type="text"
+                id="input4"
+                formControlName="fa_telClie"
+                placeholder="Tel. 1"
                 class="form-control form-control-sm"
-              />
-           </div>
-          </div>
-          <div class="row mt-.5">
-            <div class="col-2">
-              <label for="" class="label">Correo</label>
+                />
+              </div>
+              <div class="col-3">
+                <input
+                  type="text"
+                  formControlName="fa_telClie2"
+                  #input5
+                  placeholder="Tel. 2"
+                  class="form-control form-control-sm"
+                />
+              </div>
+              <div class="col-4">
+                <input
+                  type="text"
+                  formControlName="fa_sector"
+                  #input6
+                  placeholder="Sector"
+                  class="form-control form-control-sm"
+                />
+              </div>
             </div>
-            <div class="col-6">
-              <input
-                type="text"
-                formControlName="fa_correo"
-                #input7
-                class="form-control form-control-sm"
-              />
+            <div class="row mt-.5">
+              <div class="col-2">
+                <label for="" class="label">Correo</label>
+              </div>
+              <div class="col-6">
+                <input
+                  type="text"
+                  formControlName="fa_correo"
+                  #input7
+                  class="form-control form-control-sm"
+                />
+              </div>
+              <div class="col-4">
+                <input
+                  type="text"
+                  formControlName="fa_contacto"
+                  placeholder="Contacto"
+                  #input8
+                  class="form-control form-control-sm"
+                />
+              </div>
             </div>
-            <div class="col-4">
-              <input
-                type="text"
-                formControlName="fa_contacto"
-                placeholder="Contacto"
-                #input8
-                class="form-control form-control-sm"
-              />
+            <div class="row mt-1">
+              <div class="col-2">
+                <label for="" class="label">Tipo pago</label>
+              </div>
+              <div class="col-3">
+                <input
+                  type="text"
+                  formControlName="fa_fpago"
+                  #input9
+                  class="form-control form-control-sm"
+                />
+              </div>
+              <div class="col-3">
+                <input
+                  type="text"
+                  formControlName="fa_envio"
+                  #input9
+                  class="form-control form-control-sm"
+                />
+              </div>
+              <div class="col-2">
+                <input
+                  type="password"
+                  (input)="convertToUpperCase($event)"
+                  (keydown.enter)="buscarUsuario($event, input12)"
+                  formControlName="fa_codVend"
+                  #input12
+                  placeholder="Vendedor"
+                  class="form-control form-control-sm"
+                />
+              </div>
+              <div class="col-2">
+                <input
+                  type="text"
+                  formControlName="fa_nomVend"
+                  class="form-control form-control-sm"
+                />
+              </div>
             </div>
-          </div>
-          <div class="row mt-1">
-            <div class="col-2">
-              <label for="" class="label">Tipo pago</label>
-            </div>
-            <div class="col-3">
-              <input
-                type="text"
-                formControlName="fa_fpago"
-                #input9
-                class="form-control form-control-sm"
-              />
-            </div>
-            <div class="col-3">
-              <input
-                type="text"
-                formControlName="fa_envio"
-                #input9
-                class="form-control form-control-sm"
-              />
-            </div>
-            <div class="col-2">
-               <input
-                type="password"
-                (input)="convertToUpperCase($event)"
-                (keydown.enter)="buscarUsuario($event, input12)"
-                formControlName="fa_codVend"
-                #input12
-                placeholder="Vendedor"
-                class="form-control form-control-sm"
-              />
-            </div>
-            <div class="col-2">
-              <input
-                type="text"
-                formControlName="fa_nomVend"
-                class="form-control form-control-sm"
-              />
-            </div>
-          </div>
-     </form>
+          </form>
           <div class="row">
             <div class="col">
               <div
