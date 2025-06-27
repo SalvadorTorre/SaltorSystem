@@ -38,7 +38,7 @@ export class ControlFact implements OnInit {
   @ViewChild('descripcionInput') descripcionInput!: ElementRef; // Para manejar el foco
   @ViewChild('Tabladetalle') Tabladetalle!: ElementRef;
   totalItems = 0;
-  pageSize = 12;
+  pageSize = 6;
   currentPage = 1;
   maxPagesToShow = 5;
   txtdescripcion: string = '';
@@ -57,7 +57,7 @@ export class ControlFact implements OnInit {
   modoedicionFacturacion: boolean = false;
   facturacionid!: string
   modoconsultaFacturacion: boolean = false;
-  facturacionList: FacturacionModelData[] = [];
+ facturacionList: FacturacionModelData[] = [];
   detFacturaList: detFacturaData[] = [];
   selectedFacturacion: any = null;
   items: interfaceDetalleModel[] = [];
@@ -118,10 +118,20 @@ export class ControlFact implements OnInit {
   cancelarBusquedaCodigo: boolean = false;
   private numfacturaSubject = new BehaviorSubject<string>('');
   private nomclienteSubject = new BehaviorSubject<string>('');
-  selectedRow: number = -1; // Para rastrear la fila seleccionada
+  selectedRow: number = 0; // Para rastrear la fila seleccionada
 
   isDisabled: boolean = true;
   form: FormGroup;
+  
+get totalPages() {
+  return Math.ceil(this.facturacionList.length / this.pageSize);
+}
+
+get paginatedData() {
+  const startIndex = (this.currentPage - 1) * this.pageSize;
+  return this.facturacionList.slice(startIndex, startIndex + this.pageSize);
+}
+
   constructor(
     private fb: FormBuilder,
     private servicioFacturacion: ServicioFacturacion,
@@ -147,7 +157,7 @@ export class ControlFact implements OnInit {
       distinctUntilChanged(),
       switchMap(nomcliente => {
         this.txtdescripcion = nomcliente;
-        return this.servicioFacturacion.buscarFacturacion(this.currentPage, this.pageSize, this.codigo, this.txtdescripcion);
+        return this.servicioFacturacion.buscarFacturacion(this.currentPage, this.facturacionList.length, this.codigo, this.txtdescripcion);
       })
     ).subscribe(response => {
       this.facturacionList = response.data;
@@ -160,14 +170,13 @@ export class ControlFact implements OnInit {
       distinctUntilChanged(),
       switchMap(codigo => {
         this.txtFactura = codigo;
-        return this.servicioFacturacion.buscarFacturacion(this.currentPage, this.pageSize, this.codigo, this.txtdescripcion, this.txtFactura);
+        return this.servicioFacturacion.buscarFacturacion(this.currentPage, this.facturacionList.length, this.codigo, this.txtdescripcion, this.txtFactura);
       })
     ).subscribe(response => {
       this.facturacionList = response.data;
       this.totalItems = response.pagination.total;
       this.currentPage = response.pagination.page;
     });
-
 
   }
 
@@ -194,6 +203,15 @@ export class ControlFact implements OnInit {
 
   ngOnInit(): void {
     this.buscarTodasFacturacion();
+    this.servicioFacturacion.buscarTodasFacturacion().subscribe(response => {
+      console.log('DATOS EN RESPONSE.DATA', response.data);
+      this.facturacionList = response.data;
+      console.log('DATOS EN FACTURACIONLIST', this.facturacionList)
+      console.log(this.facturacionList.length)
+      
+    }, error => {
+    console.error('Error al obtener facturas:', error);
+    });
     this.buscarcodmerc.valueChanges.pipe(
       debounceTime(50),
       distinctUntilChanged(),
@@ -595,6 +613,16 @@ obtenerNcf() {
       this.facturacionList = response.data;
     });
   }
+// buscarTodasFacturacion() {
+//   this.servicioFacturacion.buscarTodasFacturacion().subscribe(data => {
+//     this.facturacionList = data;
+//     console.log(data);
+//   });
+// }
+
+
+
+
 
   buscaNombre(event: Event) {
     const inputElement = event.target as HTMLInputElement;
@@ -1461,7 +1489,71 @@ obtenerNcf() {
 
   }
 
-
-
-
+  
+// Métodos para cambiar de página
+goToFirstPage() {
+  this.currentPage = 1;
 }
+
+goToLastPage() {
+  this.currentPage = this.totalPages;
+}
+
+nextPage() {
+  if (this.currentPage < this.totalPages) {
+    this.currentPage++;
+  }
+}
+
+prevPage() {
+  if (this.currentPage > 1) {
+    this.currentPage--;
+  }
+}
+
+onTableKeydown(event: KeyboardEvent) {
+    const max = this.paginatedData.length - 1;
+
+    switch (event.key) {
+      case 'ArrowDown':
+        if (this.selectedRow < max) {
+          this.selectedRow++;
+          this.scrollToRow(this.selectedRow);
+          this.consultarFacturacion(this.paginatedData[this.selectedRow]);
+        }
+        event.preventDefault();
+        break;
+
+      case 'ArrowUp':
+        if (this.selectedRow > 0) {
+          this.selectedRow--;
+          this.scrollToRow(this.selectedRow);
+          this.consultarFacturacion(this.paginatedData[this.selectedRow]);
+        }
+        event.preventDefault();
+        break;
+
+      case 'Enter':
+        this.consultarFacturacion(this.paginatedData[this.selectedRow]);
+        event.preventDefault();
+        break;
+    }
+  }
+
+  private scrollToRow(index: number) {
+    // Opcional: centra la fila seleccionada en el scroll
+    const tableBody: HTMLElement | null = document.querySelector('.table-responsive tbody');
+    const rows = tableBody?.querySelectorAll('tr');
+    if (rows && rows[index]) {
+      (rows[index] as HTMLElement).scrollIntoView({
+        block: 'nearest',
+        behavior: 'smooth'
+      });
+    }
+  }
+
+ 
+}
+
+
+

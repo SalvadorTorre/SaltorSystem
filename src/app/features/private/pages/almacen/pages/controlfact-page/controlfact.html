@@ -1,8 +1,3 @@
- <!-- <form 
-     [formGroup]="formularioFacturacion"
-    class="custom-form-background"
-    (ngSubmit)="guardarFacturacion()"> -->
-
     <div class="row">
         <div class="col-6">
             <div class="card">
@@ -251,38 +246,97 @@
                         </div>
                     </div>
                     <div class="row mt-1">
-                        <div class="table-responsive" style="
-                            height: 225px;
-                            overflow-y: auto;
-                            border: 2px solid rgb(4, 10, 185);">
-                            <table
-                                class="table table-bordered table-hover table-striped table-sm table-class">
-                                <thead class="table-dark">
-                                    <tr>
+                        <div class="table-container" style="position: relative; height: 300px;">
+                            <div class="table-responsive" tabindex="0" (keydown)="onTableKeydown($event)"
+                                style=" height: 250px; overflow-y: auto; border: 2px solid #040ab9; border-radius: 4px;">
+                                <table class="table table-bordered table-hover table-striped table-sm">
+                                    <thead class="table-dark sticky-header">
+                                        <tr>
                                         <th style="width: 10%">Numero</th>
                                         <th style="width: 40%">Nombre</th>
                                         <th class="text-center" style="width: 15%">Fecha</th>
                                         <th style="width: 16%">Valor</th>
-                                        <th class="text-center">Opciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr *ngFor="let factura of facturacionList">
-                                        <td style="width: 10%">{{factura.fa_codFact}}</td>
-                                        <td style="width: 40%">{{factura.fa_nomClie}}</td>
-                                        <td class="text-center" style="width: 15%">{{factura.fa_fecFact}}</td>
-                                        <td class="text-end" tyle="width: 16%">{{factura.fa_valFact}}</td>
+                                        <th style="width: 10%">Cobro</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr *ngFor="let factura of paginatedData">
+                                        <td>{{ factura.fa_codFact }}</td>
+                                        <td>{{ factura.fa_nomClie }}</td>
+                                        <td class="text-center">{{ factura.fa_fecFact }}</td>
+                                        <td class="text-end">{{ factura.fa_valFact }}</td>
                                         <td>
-                                            <i (click)="consultarFacturacion(factura)"
-                                               class="bi bi-card-list text-success"
-                                                style="padding: 10px">
+                                            
+                                            <i
+                                            (click)="consultarFacturacion(factura)"
+                                            class="bi bi-card-list text-success"
+                                            style="padding: 10px"
+                                            >
                                             </i>
                                         </td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!--  🌟 CONTROLES DE PAGINACIÓN FIJOS EN EL FONDO DE LA TABLA 🌟 -->
+                            <div
+                                class="pagination-controls"
+                                style="
+                                position: absolute;
+                                bottom: 0;
+                                left: 0;
+                                right: 0;
+                                background: linear-gradient(90deg, #fafafa, #f1f1f1);
+                                padding: 8px 12px;
+                                display: flex;
+                                justify-content: space-between;
+                                align-items: center;
+                                border-top: 1px solid #ccc;">
+  
+
+                                <div>
+                                <button
+                                    class="btn btn-sm btn-primary"
+                                    (click)="goToFirstPage()"
+                                    [disabled]="currentPage === 1"
+                                >
+                                    ⏮️ Inicio
+                                </button>
+                                <button
+                                    class="btn btn-sm btn-primary"
+                                    (click)="prevPage()"
+                                    [disabled]="currentPage <= 1"
+                                >
+                                    ⏪ Anterior
+                                </button>
+                                </div>
+
+                                <span style="font-weight: bold; font-size: 14px">
+                                Página {{ currentPage }} de {{ totalPages }}
+                                </span>
+
+                                <div>
+                                <button
+                                    class="btn btn-sm btn-primary"
+                                    (click)="nextPage()"
+                                    [disabled]="currentPage >= totalPages"
+                                >
+                                    Siguiente ⏩
+                                </button>
+                                <button
+                                    class="btn btn-sm btn-primary"
+                                    (click)="goToLastPage()"
+                                    [disabled]="currentPage >= totalPages"
+                                >
+                                    Fin ⏭️
+                                </button>
+                            </div>
                         </div>
+                     
+     
                     </div>
+                </div>
             </div>
             <!-- ***************** -->
             <div class="row mt-0">
@@ -309,6 +363,9 @@
                         </div>
                     </div>
                 </div>
+
+
+
                 <!--**********************  -->
             </div>
         </div>
@@ -479,4 +536,3 @@
             </div>
         </div>
     </div>
-<!-- </form> -->

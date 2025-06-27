@@ -1,4 +1,4 @@
-<div class="row">
+ <!-- <div class="row">
     <div class="col-7">
       <div class="card">
         <div class="card-header" style="height: 35px; background-color: #0101b9">
@@ -10,6 +10,7 @@
          
           <div class="row mt-1">
              <div class="table-responsive" style="  height: 225px;  overflow-y: auto; border: 2px solid rgb(4, 10, 185);" >
+            <pre>{{ facturacionList | json }}</pre>
               <table
                 class="table table-bordered table-hover table-striped table-sm table-class"     >
                  <thead class="table-dark sticky-header">
@@ -26,7 +27,7 @@
                     <td style="width: 10%">{{factura.fa_codFact}}</td>
                     <td style="width: 40%">{{factura.fa_nomClie}}</td>
                     <td class="text-center" style="width: 15%">{{factura.fa_fecFact}}</td>
-                    <td class="text-end" tyle="width: 10%">{{factura.fa_valFact}}</td>
+                    <td class="text-end" style="width: 10%">{{factura.fa_valFact}}</td>
                     <td>
                       <i
                         (click)="consultarFacturacion(factura)"
@@ -49,7 +50,7 @@
                   Cobro
                 </h4>
               </div>
-              <!-- <div class="col-6"> -->
+              <!-- <div class="col-6"> 
               <div class="row mt-1">
                 <div class="col">
 
@@ -121,7 +122,7 @@
                   </div>
                 </div>
               </div>
-              <!-- </div> -->
+             </div>
                  
               </div>
             
@@ -129,7 +130,7 @@
           </div>
         </div>
       </div>  
-     <!-- ***************** -->
+     
       <div class="row mt-0">
         <div class="col">
           <div class="card">
@@ -156,6 +157,7 @@
         </div>
       </div>
   </div>
+
     <div class="col-5">
       <div class="card">
         <div class="card-header" style="height: 35px; background-color: #f40b0b">
@@ -357,7 +359,8 @@
                 (keydown)="navigateTable($event)"
                 #Tabledetalle
               >
-                <table class="table table-sm table-bordered">
+   
+              <table class="table table-sm table-bordered">
                   <thead class="table-dark">
                     <tr style="background-color: rgb(55, 0, 255)">
                       <th style="width: 15%">Código</th>
@@ -389,6 +392,8 @@
                     </tr>
                   </tbody>
                 </table>
+                
+
               </div>
             </div>
           </div>
@@ -476,4 +481,191 @@
         </div>
       </div>
     </div>
+  </div> -->
+
+<div class="row">
+  <div class="col-7">
+    <div class="card">
+      <div class="card-header" style="height: 35px; background-color: #0101b9">
+        <h4 class="card-title" style="color: white; text-align: left">Factura</h4>
+      </div>
+    
+      <div class="card-body" style="background-color: #e6e4e4">
+        <div class="row mt-1">
+          <div class="table-responsive"style="height: 350px; overflow-y: auto; border: 2px solid rgb(4, 10, 185);"
+            tabindex="0"
+            (keydown)="navigateTable($event)">
+            <table class = "height: 500px; overflow-y: auto; border: ">
+              <thead class="table-dark sticky-header">
+                <tr>
+                  <th style="width: 10%">Numero</th>
+                  <th style="width: 40%">Nombre</th>
+                  <th class="text-center" style="width: 15%">Fecha</th>
+                  <th style="width: 16%">Valor</th>
+                  <th style="width: 10%">Cobro</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let factura of facturacionList">
+                  <td style="width: 10%">{{ factura.fa_codFact }}</td>
+                  <td style="width: 40%">{{ factura.fa_nomClie }}</td>
+                  <td class="text-center" style="width: 15%">{{ factura.fa_fecFact }}</td>
+                  <td class="text-end" style="width: 10%">{{ factura.fa_valFact }}</td>
+                  <td>
+                    <i
+                      (click)="consultarFacturacion(factura)"
+                      class="bi bi-card-list text-success"
+                      style="padding: 10px"
+                    >
+                    </i>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col">
+          <div class="card">
+            <div class="card-header" style="height: 35px; background-color: #0101b9">
+              <h4 class="card-title" style="color: white; text-align: left">Cobro</h4>
+            </div>
+           
+            <div class="row mt-1">
+              <div class="col">
+                <div style="padding: 5px; border: 2px solid rgb(4, 10, 185)">
+                  <div class="row">
+                    <h6 class="col-4 col-form-label text-black" style="font-size: 18px; font-weight: bold">Forma de Pago</h6>
+                    <div class="col-8">
+                      <input
+                        type="text"
+                        style="font-size: 18px; font-weight: bold"
+                        class="form-control form-control-sm text-end"
+                        disabled
+                        [(ngModel)]="subtotaltxt"
+                      />
+                    </div>
+                  </div>
+                  <div class="row mt-.5">
+                    <h6 class="col-4 col-form-label text-black" style="font-size: 18px; font-weight: bold">Desc.</h6>
+                    <div class="col-8">
+                      <input
+                        type="text"
+                        style="font-size: 18px; font-weight: bold"
+                        class="form-control form-control-sm text-end"
+                        disabled
+                        [(ngModel)]="descuentotxt"
+                      />
+                    </div>
+                  </div>
+                  <div class="row mt-.5">
+                    <h6 class="col-4 col-form-label text-black" style="font-size: 18px; font-weight: bold">ITBI</h6>
+                    <div class="col-8">
+                      <input
+                        type="text"
+                        disabled
+                        style="font-size: 18px; font-weight: bold"
+                        class="form-control form-control-sm text-end"
+                        [(ngModel)]="itbitxt"
+                      />
+                    </div>
+                  </div>
+                  <div class="row mt-.5">
+                    <h4 class="col-4 text-black">Total</h4>
+                    <div class="col-8">
+                      <input
+                        type="text"
+                        style="font-size: 18px; font-weight: bold"
+                        disabled
+                        class="form-control form-control-sm text-end"
+                        [(ngModel)]="totalgraltxt"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>  
+          </div>  
+        </div> 
+      </div>
+
+      <div class="row mt-0">
+        <div class="col">
+          <div class="card">
+            <div class="card-body" style="height: 60px; background-color: #f7eeeebd">
+              <div class="row mt-0">
+                <div class="col-1"></div>
+                <div class="col-5">
+                  <button class="btn btn-success btn-block btn-lx w-50" (click)="limpia()">
+                    <i class="bi bi-arrow-clockwise"></i> Deshacer
+                  </button>
+                </div>
+                <div class="col-1"></div>
+                <div class="col-5">
+                  <button class="btn btn-success btn-lx w-50" (click)="guardarFacturacion()">
+                    <i class="bi bi-check"></i> Guardar
+                  </button>
+                </div>
+              </div>
+            </div> 
+          </div> 
+        </div> 
+      </div> 
+    </div> 
   </div>
+
+ 
+  <div class="col-5">
+    <div class="card">
+      <div class="card-header" style="height: 35px; background-color: #f40b0b">
+        <h4 class="card-title" style="color: white; text-align: left">Detalles de la factura</h4>
+      </div>
+       <br />
+     <div class="row">
+        <div class="col">
+          <div class="table-responsive"style="height: 350px; overflow-y: auto; border: 2px solid rgb(4, 10, 185);"
+              tabindex="0"
+              (keydown)="navigateTable($event)"
+              #Tabledetalle
+            >
+            <table class = "table table-sm table-bordered; height: 500px; overflow-y: auto; border: ">
+              
+                <thead class="table-dark sticky-header">
+                  <tr style="background-color: rgb(55, 0, 255)">
+                    <th style="width: 13%">Código</th>
+                    <th style="width: 37%">Descripción</th>
+                    <th style="width: 10%">Cant.</th>
+                    <th style="width: 13%">Precio</th>
+                    <th style="width: 15%">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr
+                    *ngFor="let item of items;let i = index"
+                    [class.table-active]="i === selectedRow"
+                    (click)="selectRow(i)"
+                  >
+                    <td style="width: 13%">{{ item.producto?.in_codmerc }}</td>
+                    <td style="width: 37%">{{ item.producto?.in_desmerc }}</td>
+                    <td class="text-center" style="width: 10%">
+                      {{ item.cantidad }}
+                    </td>
+                    <td class="text-center" style="width: 11%">
+                      {{ item.precio }}
+                    </td>
+                    <td class="text-end" style="width: 13%">
+                      {{ item.total | currency }}
+                    </td>
+                    
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+    </div>
+  </div>
+</div>

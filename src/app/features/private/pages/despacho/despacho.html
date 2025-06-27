@@ -1,1 +1,38 @@
-<h1>Estoy en Despacho</h1>
+ <br />
+<div class="row">
+    <div class="col-3"></div>
+    <div class="col-5">
+        <div class="card">
+            <div class="card-header" style="height: 35px; background-color: #0101b9">
+              <h4 class="card-title" style="color: white; text-align: left">
+               Impresion Factura de Despacho
+              </h4>
+            </div>
+            <div class="card-body" style="background-color: #e6e4e4">
+               
+                    <div class="form-group">
+                       <label for="CodigoDespachador">Codigo del Despachador</label>
+                       <input
+                          type="text"
+                          class="form-control"
+                          id="codigoDespachador"
+                          formControlName="codigoDespachador"
+                          placeholder="Ingrese el Codigo del Despachador"
+                        />
+                    </div>
+                    <div class="form-group">
+                        <label for="codigoFactura">Codgo de Factura</label>
+                        <input
+                           type="text"
+                           class="form-control"
+                           id="codigoFactura"
+                           formControlName="codigoFactura"
+                            placeholder="Ingrese el Codigo de la Factura"
+                        />
+                    </div>
+                    <button type="submit" class="btn btn-primary">Imprimir Factura</button>
+            
+            </div>
+        </div>    
+    </div>
+</div>

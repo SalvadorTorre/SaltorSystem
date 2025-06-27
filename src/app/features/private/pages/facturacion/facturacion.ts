@@ -40,7 +40,7 @@ export class Facturacion implements OnInit {
   @ViewChild('descripcionInput') descripcionInput!: ElementRef; // Para manejar el foco
   @ViewChild('Tabladetalle') Tabladetalle!: ElementRef;
   totalItems = 0;
-  pageSize = 12;
+  pageSize = 5;
   currentPage = 1;
   maxPagesToShow = 5;
   txtdescripcion: string = '';
@@ -149,7 +149,7 @@ export class Facturacion implements OnInit {
       distinctUntilChanged(),
       switchMap(nomcliente => {
         this.txtdescripcion = nomcliente;
-        return this.servicioFacturacion.buscarFacturacion(this.currentPage, this.pageSize, this.codigo, this.txtdescripcion);
+        return this.servicioFacturacion.buscarFacturacion(this.currentPage, this.facturacionList.length, this.codigo, this.txtdescripcion);
       })
     ).subscribe(response => {
       this.facturacionList = response.data;
@@ -162,7 +162,7 @@ export class Facturacion implements OnInit {
       distinctUntilChanged(),
       switchMap(codigo => {
         this.txtFactura = codigo;
-        return this.servicioFacturacion.buscarFacturacion(this.currentPage, this.pageSize, this.codigo, this.txtdescripcion, this.txtFactura);
+        return this.servicioFacturacion.buscarFacturacion(this.currentPage, this.facturacionList.length, this.codigo, this.txtdescripcion, this.txtFactura);
       })
     ).subscribe(response => {
       this.facturacionList = response.data;
@@ -592,6 +592,7 @@ obtenerNcf() {
   buscarTodasFacturacion() {
     this.servicioFacturacion.buscarTodasFacturacion().subscribe(response => {
       this.facturacionList = response.data;
+      console.log(this.facturacionList.length);
     });
   }
 

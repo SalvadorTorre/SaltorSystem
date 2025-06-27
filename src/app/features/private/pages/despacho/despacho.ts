@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { FormGroup } from '@angular/forms';
 
 @Component({
   selector: 'Despacho',
@@ -6,4 +7,10 @@ import { Component } from '@angular/core';
   styleUrls: ['./despacho.css']
 })
 export class Despacho {
+formularioDespacho!: FormGroup;
+
 }
+//  imprimirFactura() {
+//   // Implementación de la lógica para imprimir la factura
+//   console.log('Imprimiendo factura...');
+//   }
