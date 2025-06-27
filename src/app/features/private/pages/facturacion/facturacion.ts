@@ -297,7 +297,7 @@ export class Facturacion implements OnInit {
 
     });
 
-  
+
   }
 obtenerfpago() {
     this.servicioFpago.obtenerTodosFpago().subscribe(response => {
@@ -365,7 +365,7 @@ obtenerNcf() {
     this.actualizarTotales()
     $("#input1").focus();
     $("#input1").select();
-  
+
   }
 
 
@@ -428,7 +428,7 @@ obtenerNcf() {
           total: totalItem,
           fecfactActual: new Date(),
           costo:this.costotxt
-          
+
         });
         //fecfactActual: new Date(),
         // Calcular el subtotal
@@ -517,7 +517,7 @@ obtenerNcf() {
           total: totalItem,
           costo: costoItem,
           fecfactActual: new Date(),
-          
+
           //costo:0
         });
         // Calcular el subtotal
@@ -709,7 +709,7 @@ obtenerNcf() {
     this.etxt = Number(inventario.in_cosmerc) + (Number(inventario.in_cosmerc)  * 14)/100;
     this.ftxt = Number(inventario.in_cosmerc) + (Number(inventario.in_cosmerc)  * 16)/100;
     this.gtxt = Number(inventario.in_cosmerc) + (Number(inventario.in_cosmerc)  * 18)/100;
-    
+
     this.productoselect = inventario;
     this.cancelarBusquedaDescripcion = true;
     this.cancelarBusquedaCodigo = true;
@@ -762,7 +762,7 @@ obtenerNcf() {
     if (!rnc) {
       this.obtenerNcf();
       this.formularioFacturacion.patchValue({ fa_tipoNcf: 1 });
-      this.formularioFacturacion.get("fa_tipoNcf")?.disable(); 
+      this.formularioFacturacion.get("fa_tipoNcf")?.disable();
       // Si no se ha ingresado un RNC, pasamos el foco al siguiente elemento
       console.log('RNC vacío.');
       console.log(this.formularioFacturacion.value);
@@ -788,14 +788,14 @@ obtenerNcf() {
       this.ncflist = this.ncflist.filter(ncf => ncf.codNcf !== 1);
       $("#input3").focus();
       $("#input3").select();
-    } 
+    }
     else {
       // Si no se encuentra el RNC, mostrar error
       this.mostrarMensajeError('RNC inválido.');
       console.log('RNC no encontrado.');
     }
     }
- 
+
   );
   }
 
@@ -1120,7 +1120,7 @@ obtenerNcf() {
       // Restablecer el estado de edición
       this.isEditing = false;
       this.itemToEdit = null;
-    } 
+    }
     else {
       const total = this.cantidadmerc * this.preciomerc;
       this.totalGral += total;
@@ -1228,13 +1228,12 @@ obtenerNcf() {
     this.formularioFacturacion.get('fa_fecFact')!.enable();
     this.formularioFacturacion.get('fa_nomVend')!.enable();
     this.formularioFacturacion.get('fa_ncfFact')!.enable();
-    const payload = {
+    const datosParaGuardar = {
       factura: this.formularioFacturacion.value,
       detalle: this.items,
     };
     if (this.formularioFacturacion.valid) {
-      if (this.formularioFacturacion.valid) {
-        this.servicioFacturacion.guardarFacturacion(payload).subscribe(response => {
+        this.servicioFacturacion.guardarFacturacion(datosParaGuardar).subscribe(response => {
           Swal.fire({
             title: "Excelente!",
             text: "Facturacion creada correctamente.",
@@ -1248,9 +1247,9 @@ obtenerNcf() {
           this.formularioFacturacion.enable();
           this.limpia();
         });
-      } else {
+
     }
-    }else {
+    else {
       alert("Esta Factura no fue Guardado");
     }
 
@@ -1276,15 +1275,15 @@ obtenerNcf() {
 
   selectRow(index: number) {
     this.selectedRow = index; // Selecciona la fila cuando se hace clic
-    this.selectedItem = this.items[index]; 
+    this.selectedItem = this.items[index];
     console.log(this.selectedItem);
     this.calcularPorcentaje();
   }
-  
+
   calcularPorcentaje(): void {
       this.protxt  = (this.selectedItem.total - this.selectedItem.costo)*100/this.selectedItem.costo;
   }
-  
+
   ngAfterViewInit() {
     // Establece el foco en la tabla cuando se cargue la vista
     this.Tabladetalle.nativeElement.focus();
@@ -1344,8 +1343,8 @@ obtenerNcf() {
           total: totalItem,
           fecfactActual: new Date(),
           costo: 0,
-          
-         
+
+
         });
         // Calcular el subtotal
         subtotal += totalItem;

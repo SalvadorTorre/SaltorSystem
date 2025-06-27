@@ -1,10 +1,8 @@
 import { Component, NgModule, OnInit, ViewChild, ElementRef, ɵNG_COMP_DEF } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
-import { BehaviorSubject, debounceTime, distinctUntilChanged, filter, from, switchMap, tap } from 'rxjs';
+import { BehaviorSubject, debounceTime, distinctUntilChanged, filter, from, skip, switchMap, tap } from 'rxjs';
 import Swal from 'sweetalert2';
-import { ModeloUsuarioData } from 'src/app/core/services/mantenimientos/usuario';
-import { ModeloRncData } from 'src/app/core/services/mantenimientos/rnc';
 import { ServicioRnc } from 'src/app/core/services/mantenimientos/rnc/rnc.service';
 import { ServicioUsuario } from 'src/app/core/services/mantenimientos/usuario/usuario.service';
 import { ServicioFacturacion } from 'src/app/core/services/facturacion/factura/factura.service';
@@ -12,11 +10,11 @@ import { FacturacionModelData, detFacturaData } from 'src/app/core/services/fact
 import { ServicioCliente } from 'src/app/core/services/mantenimientos/clientes/cliente.service';
 import { HttpInvokeService } from 'src/app/core/services/http-invoke.service';
 import { ModeloCliente, ModeloClienteData } from 'src/app/core/services/mantenimientos/clientes';
-import { FacturaDetalleModel, interfaceDetalleModel } from 'src/app/core/services/facturacion/factura/factura';
+import { interfaceDetalleModel } from 'src/app/core/services/facturacion/factura/factura';
 import { ServicioInventario } from 'src/app/core/services/mantenimientos/inventario/inventario.service';
 import { ServicioSector } from 'src/app/core/services/mantenimientos/sector/sector.service';
 import { ModeloSector, ModeloSectorData } from 'src/app/core/services/mantenimientos/sector';
-import { ModeloFpago, ModeloFpagoData } from 'src/app/core/services/mantenimientos/fpago';
+import { ModeloFpagoData } from 'src/app/core/services/mantenimientos/fpago';
 import { ServicioFpago } from 'src/app/core/services/mantenimientos/fpago/fpago.service';
 import { ModeloInventario, ModeloInventarioData } from 'src/app/core/services/mantenimientos/inventario';
 import jsPDF from 'jspdf';
@@ -122,7 +120,7 @@ export class ControlFact implements OnInit {
 
   isDisabled: boolean = true;
   form: FormGroup;
-  
+
 get totalPages() {
   return Math.ceil(this.facturacionList.length / this.pageSize);
 }
@@ -203,48 +201,16 @@ get paginatedData() {
 
   ngOnInit(): void {
     this.buscarTodasFacturacion();
-    this.servicioFacturacion.buscarTodasFacturacion().subscribe(response => {
-      console.log('DATOS EN RESPONSE.DATA', response.data);
-      this.facturacionList = response.data;
-      console.log('DATOS EN FACTURACIONLIST', this.facturacionList)
-      console.log(this.facturacionList.length)
-      
-    }, error => {
-    console.error('Error al obtener facturas:', error);
-    });
-    this.buscarcodmerc.valueChanges.pipe(
-      debounceTime(50),
-      distinctUntilChanged(),
-      tap(() => {
-        this.resultadoCodmerc = [];
-      }),
-      filter((query: string) => query.trim() !== '' && !this.cancelarBusquedaCodigo && !this.isEditing),
-      switchMap((query: string) => this.http.GetRequest<ModeloInventario>(`/productos-buscador/${query}`))
-    ).subscribe((results: ModeloInventario) => {
-      console.log(results.data);
-      if (results) {
-        if (Array.isArray(results.data) && results.data.length) {
-          // Aquí ordenamos los resultados por el campo 'nombre' (puedes cambiar el campo según tus necesidades)
-          this.resultadoCodmerc = results.data.sort((a, b) => {
-            return a.in_codmerc.localeCompare(b.in_codmerc, undefined, { numeric: true, sensitivity: 'base' });
-          });
-          // Aquí seleccionamos automáticamente el primer ítem
-          this.selectedIndex = 0;
+    // this.servicioFacturacion.buscarTodasFacturacion().subscribe(response => {
+    //   console.log('DATOS EN RESPONSE.DATA', response.data);
+    //   this.facturacionList = response.data;
+    //   console.log('DATOS EN FACTURACIONLIST', this.facturacionList)
+    //   console.log(this.facturacionList.length)
 
-          this.codnotfound = false;
-        } else {
-          this.codnotfound = true;
-          return;
-        }
-      } else {
-        this.resultadoCodmerc = [];
-        this.codnotfound = false;
-
-        return;
-      }
-
-    });
-    // $("#input1").focus();
+    // }, error => {
+    // console.error('Error al obtener facturas:', error);
+    // });
+     // $("#input1").focus();
     // $("#input1").select()
     this.obtenerNcf();
     this.obtenerfpago();
@@ -273,26 +239,22 @@ get paginatedData() {
 
     });
 
-    this.buscarNombre.valueChanges.pipe(
-      debounceTime(500),
-      distinctUntilChanged(),
-      tap(() => {
-        this.resultadoNombre = [];
-      }),
-      filter((query: string) => query !== ''),
-      switchMap((query: string) => this.http.GetRequest<ModeloCliente>(`/cliente-nombre/${query}`))
-    ).subscribe((results: ModeloCliente) => {
-      console.log(results.data);
-      if (results) {
-        if (Array.isArray(results.data)) {
-          this.resultadoNombre = results.data;
-        }
-      } else {
-        this.resultadoNombre = [];
-      }
-
-    });
-
+  this.buscarNombre.valueChanges.pipe(
+  skip(1), // ignora el primer valor emitido
+  debounceTime(500),
+  distinctUntilChanged(),
+  filter((query: string) => !!query && query.trim() !== ''),
+  tap(() => {
+    this.facturacionList = [];
+    console.log("sdasdsa ")
+  }),
+  switchMap((query: string) =>
+    this.http.GetRequest<FacturacionModelData>(`/facturacion-numero?page=${0}&limit=${0}/&nomcliente=${query}`)
+  )
+).subscribe((results: FacturacionModelData) => {
+  console.log(results);
+  this.facturacionList = Array.isArray(results) ? results : [];
+});
     this.buscarSector.valueChanges.pipe(
       debounceTime(500),
       distinctUntilChanged(),
@@ -313,7 +275,7 @@ get paginatedData() {
 
     });
 
-  
+
   }
 obtenerfpago() {
     this.servicioFpago.obtenerTodosFpago().subscribe(response => {
@@ -385,7 +347,7 @@ obtenerNcf() {
     this.actualizarTotales()
     $("#input1").focus();
     $("#input1").select();
-  
+
   }
 
 
@@ -448,7 +410,7 @@ obtenerNcf() {
           total: totalItem,
           fecfactActual: new Date(),
           costo:this.costotxt
-          
+
         });
         //fecfactActual: new Date(),
         // Calcular el subtotal
@@ -536,7 +498,7 @@ obtenerNcf() {
           total: totalItem,
           costo: costoItem,
           fecfactActual: new Date(),
-          
+
           //costo:0
         });
         // Calcular el subtotal
@@ -625,15 +587,41 @@ obtenerNcf() {
 
 
   buscaNombre(event: Event) {
-    const inputElement = event.target as HTMLInputElement;
-    this.nomclienteSubject.next(inputElement.value.toUpperCase());
+    const c_nomClie = event.target as HTMLInputElement;
+    this.nomclienteSubject.next(c_nomClie.value.toUpperCase());
   }
 
   buscaFactura(event: Event) {
-    const inputElement = event.target as HTMLInputElement;
-    this.numfacturaSubject.next(inputElement.value.toUpperCase());
+    const c_codFact = event.target as HTMLInputElement;
+    this.servicioFacturacion.buscarFacturacion(0, 0,c_codFact.value).subscribe((resultado)=>{
+      this.facturacionList= resultado.data
+    })
   }
 
+
+
+  buscaFecha(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const fechaStr = input.value; // ← ya es "2025-06-27"
+
+  this.servicioFacturacion.buscarFacturacion(0, 0, "", "", fechaStr).subscribe((resultado) => {
+    this.facturacionList = resultado.data;
+  });
+}
+// buscaFecha(event: Event) {
+//   const c_fecFact = event.target as HTMLInputElement;
+//   const fechaStr = c_fecFact.value; // Ejemplo: "2025-06-27"
+
+//   const [year, month, day] = fechaStr.split('-').map(Number); // divide manualmente
+//   const fechaDate = new Date(year, month - 1, day); // Date en zona local
+
+//   const fechaFormateada = this.formatofecha(fechaDate);
+
+//   this.servicioFacturacion.buscarFacturacion(0, 0, "", "", fechaFormateada)
+//     .subscribe((resultado) => {
+//       this.facturacionList = resultado.data;
+//     });
+//}
   convertToUpperCase(event: Event): void {
     const input = event.target as HTMLInputElement;
     const start = input.selectionStart;
@@ -737,7 +725,7 @@ obtenerNcf() {
     this.etxt = Number(inventario.in_cosmerc) + (Number(inventario.in_cosmerc)  * 14)/100;
     this.ftxt = Number(inventario.in_cosmerc) + (Number(inventario.in_cosmerc)  * 16)/100;
     this.gtxt = Number(inventario.in_cosmerc) + (Number(inventario.in_cosmerc)  * 18)/100;
-    
+
     this.productoselect = inventario;
     this.cancelarBusquedaDescripcion = true;
     this.cancelarBusquedaCodigo = true;
@@ -790,7 +778,7 @@ obtenerNcf() {
     if (!rnc) {
       this.obtenerNcf();
       this.formularioFacturacion.patchValue({ fa_tipoNcf: 1 });
-      this.formularioFacturacion.get("fa_tipoNcf")?.disable(); 
+      this.formularioFacturacion.get("fa_tipoNcf")?.disable();
       // Si no se ha ingresado un RNC, pasamos el foco al siguiente elemento
       console.log('RNC vacío.');
       console.log(this.formularioFacturacion.value);
@@ -816,14 +804,14 @@ obtenerNcf() {
       this.ncflist = this.ncflist.filter(ncf => ncf.codNcf !== 1);
       $("#input3").focus();
       $("#input3").select();
-    } 
+    }
     else {
       // Si no se encuentra el RNC, mostrar error
       this.mostrarMensajeError('RNC inválido.');
       console.log('RNC no encontrado.');
     }
     }
- 
+
   );
   }
 
@@ -1148,7 +1136,7 @@ obtenerNcf() {
       // Restablecer el estado de edición
       this.isEditing = false;
       this.itemToEdit = null;
-    } 
+    }
     else {
       const total = this.cantidadmerc * this.preciomerc;
       this.totalGral += total;
@@ -1304,15 +1292,15 @@ obtenerNcf() {
 
   selectRow(index: number) {
     this.selectedRow = index; // Selecciona la fila cuando se hace clic
-    this.selectedItem = this.items[index]; 
+    this.selectedItem = this.items[index];
     console.log(this.selectedItem);
     this.calcularPorcentaje();
   }
-  
+
   calcularPorcentaje(): void {
       this.protxt  = (this.selectedItem.total - this.selectedItem.costo)*100/this.selectedItem.costo;
   }
-  
+
   ngAfterViewInit() {
     // Establece el foco en la tabla cuando se cargue la vista
     this.Tabladetalle.nativeElement.focus();
@@ -1372,8 +1360,8 @@ obtenerNcf() {
           total: totalItem,
           fecfactActual: new Date(),
           costo: 0,
-          
-         
+
+
         });
         // Calcular el subtotal
         subtotal += totalItem;
@@ -1489,7 +1477,7 @@ obtenerNcf() {
 
   }
 
-  
+
 // Métodos para cambiar de página
 goToFirstPage() {
   this.currentPage = 1;
@@ -1552,7 +1540,7 @@ onTableKeydown(event: KeyboardEvent) {
     }
   }
 
- 
+
 }
 
 

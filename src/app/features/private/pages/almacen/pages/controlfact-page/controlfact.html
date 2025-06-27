@@ -1,538 +1,595 @@
-    <div class="row">
-        <div class="col-6">
-            <div class="card">
-                <div class="card-header" style="height: 35px; background-color: #0101b9">
-                    <h4 class="card-title" style="color: white; text-align: left">
-                        Datos Factura
-                    </h4>
-                </div>
-                <div class="card-body" style="background-color: #e6e4e4">
-                <form
-            [formGroup]="formularioFacturacion"
-            class="custom-form-background"
-            (ngSubmit)="guardarFacturacion()">
-                        <div class="row mt-0">
-                            <div class="col-5"></div>
-                                <div class="col-1">
-                                    <label for="" class="label">No.</label>
-                                </div>
-                                <div class="col-3">
-                                    <input
-                                        type="text"
-                                        class="form-control form-control-sm textbox"
-                                        formControlName="fa_codFact"
-                                    />
-                                </div>
-                                <div class="col-3">
-                                    <input
-                                        formControlName="fa_fecFact"
-                                        type="text"
-                                        class="form-control form-control-sm"
-                                    />
-                                </div>
-                            </div>
-                            <div class="row mt-1">
-                                <div class="col-2">
-                                    <label for="" class="label">RNC</label>
-                                </div>
-                                <div class="col-3">
-                                    <input
-                                        type="text"
-                                        #input1
-                                        id="input1"
-                                        formControlName="fa_rncFact"
-                                        class="form-control form-control-sm"
-                                    />
-                                </div>
-                                <div class="col-4">
-                                    <select name="tipoNcf" formControlName="fa_tipoNcf"
-                                        (keydown)="moveFocus($event, input3)"  
-                                        class="form-select form-control-sm">
-                                        <option [value]="ncf.codNcf"  *ngFor="let ncf of ncflist">{{ncf.desNcf}}</option>
-                                    </select>
-                                </div>
-                                <div class="col-3">
-                                    <input
-                                        type="text"
-                                        class="form-control form-control-sm"
-                                        formControlName="fa_ncfFact"
-                                        placeholder="NCF"
-                                    />
-                                </div>
-                            </div>
-                            <div class="row mt-.5">
-                            <div class="col-2">
-                                <label for="" class="label">Cliente</label>
-                                </div>
-                                <div class="col-10">
-                                <div class="input-group show">
-                                    <input
-                                        class="form-control form-control-sm dropdown-toggle searchInput"
-                                        data-id="agent"
-                                        type="text"
-                                        autocomplete="off"
-                                        #input2
-                                        id="input2"
-                                        formControlName="fa_nomClie" 
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row mt-.5">
-                                <div class="col-2">
-                                <label for="" class="label">Dirección</label>
-                                </div>
-                            <div class="col-10">
-                                <input
-                                type="text"
-                                id="input3"
-                                formControlName="fa_dirClie"
-                                #input3
-                                class="form-control form-control-sm"
-                                />
-                            </div>
-                        </div>
-                        <div class="row mt-.5">
-                            <div class="col-2">
-                                <label for="" class="label">Telefono</label>
-                            </div>
-                            <div class="col-3">
-                            <input
-                                type="text"
-                                id="input4"
-                                formControlName="fa_telClie"
-                                #input4
-                                placeholder="Tel. 1"
-                                class="form-control form-control-sm"
-                                />
-                            </div>
-                            <div class="col-3">
-                                <input
-                                    type="text"
-                                    formControlName="fa_telClie2"
-                                    #input5
-                                    placeholder="Tel. 2"
-                                    class="form-control form-control-sm"
-                                />
-                            </div>
-                            <div class="col-4">
-                                <input
-                                type="text"
-                                formControlName="fa_sector"
-                                #input6
-                                placeholder="Sector"
-                                class="form-control form-control-sm"
-                                />
-                            </div>
-                        </div>
-                        <div class="row mt-.5">
-                            <div class="col-2">
-                                <label for="" class="label">Correo</label>
-                            </div>
-                            <div class="col-6">
-                                <input
-                                type="text"
-                                formControlName="fa_correo"
-                                #input7
-                                class="form-control form-control-sm"
-                                />
-                            </div>
-                            <div class="col-4">
-                                <input
-                                    type="text"
-                                    formControlName="fa_contacto"
-                                    placeholder="Contacto"
-                                    #input8
-                                    class="form-control form-control-sm"
-                                />
-                            </div>
-                        </div>
-                        <div class="row mt-1">
-                            <div class="col-2">
-                                <label for="" class="label">Tipo pago</label>
-                            </div>
-                            <div class="col-3">
-                                <select #input9 name="formapago" 
-                                formControlName="fa_fpago"
-                                class="form-control listbox">
-                                <option [value]="fpago.fp_codfpago"  *ngFor="let fpago of resultadoFpago">{{fpago.fp_descfpago}}</option>
-                                </select>
-                            </div>
-                            <div class="col-3">
-                                <select  #input11 name="listaenvio" 
-                                    forcontrolName="fa_envio"
-                                    class="form-control listbox">
-                                    <option value="envio">Envio</option>
-                                    <option value="retiral">Retirar por el Cliente</option>
-                                </select>
-                            </div>
-                            <div class="col-2">
-                                <input
-                                    type="password"
-                                    formControlName="fa_codVend"
-                                    #input12
-                                    placeholder="Vendedor"
-                                    class="form-control form-control-sm"
-                                />
-                            </div>
-                            <div class="col-2">
-                                <input
-                                    type="text"
-                                    formControlName="fa_nomVend"
-                                    class="form-control form-control-sm"
-                                />
-                            </div>
-                        </div>
-                        <div class="row mt-.5">
-                            <div class="col-2">
-                            <label for="fa_despacho" class="form-check-label">Despachado</label>
-                            </div>
-                            <div class="col-2">
-                                <div class="form-check">
-                                    <input
-                                        type="checkbox"
-                                        id="fa_despacho"
-                                        formControlName="fa_despacho"
-                                        class="form-check-input form-check-input-sm"
-                                    />
-                                </div>
-                            </div>
-                            <div class="col-2">
-                                <label for="" class="label">Entregada</label>
-                            </div>
-                            <div class="col-2">
-                                <input
-                                    type="checkbox"
-                                    id="fa_entrega"
-                                    formControlName="fa_entrega"
-                                    placeholder="Entregado"
-                                    #input8
-                                    class="form-check-input form-check-input-sm"
-                                />
-                            </div>
-                        </div>
-                
-                </form>
-                    <br />
-                    <div class="row">
-                        <div class="col-2">
-                            <label for="" class="label">Buscar Por</label>
-                        </div>
-                        <div class="col-3">
-                            <input
-                            type="text"
-                            [(ngModel)]="txtFactura"
-                            placeholder="No. de Factura"
-                            class="form-control form-control-sm"
-                            (input)="buscaFactura($event)"
-                            />
-                        </div>
-                        <div class="col-4">
-                            <input
-                            type="text"
-                            [(ngModel)]="txtdescripcion"
-                            placeholder="Nombre del Cliente"
-                            class="form-control form-control-sm"
-                            (input)="buscaNombre($event)"
-                            />
-                        </div>
-                        <div class="col-3">
-                            <input
-                            type="date"
-                            [(ngModel)]="txtFecha"
-                            placeholder="Fecha Factura"
-                            class="form-control form-control-sm"
-                            />
-                        </div>
-                    </div>
-                    <div class="row mt-1">
-                        <div class="table-container" style="position: relative; height: 300px;">
-                            <div class="table-responsive" tabindex="0" (keydown)="onTableKeydown($event)"
-                                style=" height: 250px; overflow-y: auto; border: 2px solid #040ab9; border-radius: 4px;">
-                                <table class="table table-bordered table-hover table-striped table-sm">
-                                    <thead class="table-dark sticky-header">
-                                        <tr>
-                                        <th style="width: 10%">Numero</th>
-                                        <th style="width: 40%">Nombre</th>
-                                        <th class="text-center" style="width: 15%">Fecha</th>
-                                        <th style="width: 16%">Valor</th>
-                                        <th style="width: 10%">Cobro</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr *ngFor="let factura of paginatedData">
-                                        <td>{{ factura.fa_codFact }}</td>
-                                        <td>{{ factura.fa_nomClie }}</td>
-                                        <td class="text-center">{{ factura.fa_fecFact }}</td>
-                                        <td class="text-end">{{ factura.fa_valFact }}</td>
-                                        <td>
-                                            
-                                            <i
-                                            (click)="consultarFacturacion(factura)"
-                                            class="bi bi-card-list text-success"
-                                            style="padding: 10px"
-                                            >
-                                            </i>
-                                        </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-
-                            <!--  🌟 CONTROLES DE PAGINACIÓN FIJOS EN EL FONDO DE LA TABLA 🌟 -->
-                            <div
-                                class="pagination-controls"
-                                style="
-                                position: absolute;
-                                bottom: 0;
-                                left: 0;
-                                right: 0;
-                                background: linear-gradient(90deg, #fafafa, #f1f1f1);
-                                padding: 8px 12px;
-                                display: flex;
-                                justify-content: space-between;
-                                align-items: center;
-                                border-top: 1px solid #ccc;">
-  
-
-                                <div>
-                                <button
-                                    class="btn btn-sm btn-primary"
-                                    (click)="goToFirstPage()"
-                                    [disabled]="currentPage === 1"
-                                >
-                                    ⏮️ Inicio
-                                </button>
-                                <button
-                                    class="btn btn-sm btn-primary"
-                                    (click)="prevPage()"
-                                    [disabled]="currentPage <= 1"
-                                >
-                                    ⏪ Anterior
-                                </button>
-                                </div>
-
-                                <span style="font-weight: bold; font-size: 14px">
-                                Página {{ currentPage }} de {{ totalPages }}
-                                </span>
-
-                                <div>
-                                <button
-                                    class="btn btn-sm btn-primary"
-                                    (click)="nextPage()"
-                                    [disabled]="currentPage >= totalPages"
-                                >
-                                    Siguiente ⏩
-                                </button>
-                                <button
-                                    class="btn btn-sm btn-primary"
-                                    (click)="goToLastPage()"
-                                    [disabled]="currentPage >= totalPages"
-                                >
-                                    Fin ⏭️
-                                </button>
-                            </div>
-                        </div>
-                     
-     
-                    </div>
-                </div>
+<div class="row">
+  <div class="col-6">
+    <div class="card">
+      <div class="card-header" style="height: 35px; background-color: #0101b9">
+        <h4 class="card-title" style="color: white; text-align: left">
+          Datos Factura
+        </h4>
+      </div>
+      <div class="card-body" style="background-color: #e6e4e4">
+        <form
+          [formGroup]="formularioFacturacion"
+          class="custom-form-background"
+          (ngSubmit)="guardarFacturacion()"
+        >
+          <div class="row mt-0">
+            <div class="col-5"></div>
+            <div class="col-1">
+              <label for="" class="label">No.</label>
             </div>
-            <!-- ***************** -->
-            <div class="row mt-0">
-                <div class="col">
-                    <div class="card">
-                        <div class="card-body"   style="height: 60px; background-color: #f7eeeebd">
-                            <div class="row mt-0">
-                                <div class="col-1"> </div>
-                                    <div class="col-5">
-                                        <button class="btn btn-success btn-block btn-lx w-50"
-                                            (click)="limpia()">
-                                            <i class="bi bi-arrow-clockwise"></i> Deshacer
-                                        </button>
-                                    </div>
-                                    <div class="col-1"> </div>
-                                        <div class="col-5">
-                                            <button class="btn btn-success btn-lx w-50"
-                                                (click)="guardarFacturacion()">
-                                                <i class="bi bi-check"></i> Guardar
-                                            </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-
-
-                <!--**********************  -->
+            <div class="col-3">
+              <input
+                type="text"
+                class="form-control form-control-sm textbox"
+                formControlName="fa_codFact"
+              />
             </div>
+            <div class="col-3">
+              <input
+                formControlName="fa_fecFact"
+                type="text"
+                class="form-control form-control-sm"
+              />
+            </div>
+          </div>
+          <div class="row mt-1">
+            <div class="col-2">
+              <label for="" class="label">RNC</label>
+            </div>
+            <div class="col-3">
+              <input
+                type="text"
+                #input1
+                id="input1"
+                formControlName="fa_rncFact"
+                class="form-control form-control-sm"
+              />
+            </div>
+            <div class="col-4">
+              <select
+                name="tipoNcf"
+                formControlName="fa_tipoNcf"
+                (keydown)="moveFocus($event, input3)"
+                class="form-select form-control-sm"
+              >
+                <option [value]="ncf.codNcf" *ngFor="let ncf of ncflist">
+                  {{ncf.desNcf}}
+                </option>
+              </select>
+            </div>
+            <div class="col-3">
+              <input
+                type="text"
+                class="form-control form-control-sm"
+                formControlName="fa_ncfFact"
+                placeholder="NCF"
+              />
+            </div>
+          </div>
+          <div class="row mt-.5">
+            <div class="col-2">
+              <label for="" class="label">Cliente</label>
+            </div>
+            <div class="col-10">
+              <div class="input-group show">
+                <input
+                  class="form-control form-control-sm dropdown-toggle searchInput"
+                  data-id="agent"
+                  type="text"
+                  autocomplete="off"
+                  #input2
+                  id="input2"
+                  formControlName="fa_nomClie"
+                />
+              </div>
+            </div>
+          </div>
+          <div class="row mt-.5">
+            <div class="col-2">
+              <label for="" class="label">Dirección</label>
+            </div>
+            <div class="col-10">
+              <input
+                type="text"
+                id="input3"
+                formControlName="fa_dirClie"
+                #input3
+                class="form-control form-control-sm"
+              />
+            </div>
+          </div>
+          <div class="row mt-.5">
+            <div class="col-2">
+              <label for="" class="label">Telefono</label>
+            </div>
+            <div class="col-3">
+              <input
+                type="text"
+                id="input4"
+                formControlName="fa_telClie"
+                #input4
+                placeholder="Tel. 1"
+                class="form-control form-control-sm"
+              />
+            </div>
+            <div class="col-3">
+              <input
+                type="text"
+                formControlName="fa_telClie2"
+                #input5
+                placeholder="Tel. 2"
+                class="form-control form-control-sm"
+              />
+            </div>
+            <div class="col-4">
+              <input
+                type="text"
+                formControlName="fa_sector"
+                #input6
+                placeholder="Sector"
+                class="form-control form-control-sm"
+              />
+            </div>
+          </div>
+          <div class="row mt-.5">
+            <div class="col-2">
+              <label for="" class="label">Correo</label>
+            </div>
+            <div class="col-6">
+              <input
+                type="text"
+                formControlName="fa_correo"
+                #input7
+                class="form-control form-control-sm"
+              />
+            </div>
+            <div class="col-4">
+              <input
+                type="text"
+                formControlName="fa_contacto"
+                placeholder="Contacto"
+                #input8
+                class="form-control form-control-sm"
+              />
+            </div>
+          </div>
+          <div class="row mt-1">
+            <div class="col-2">
+              <label for="" class="label">Tipo pago</label>
+            </div>
+            <div class="col-3">
+              <select
+                #input9
+                name="formapago"
+                formControlName="fa_fpago"
+                class="form-control listbox"
+              >
+                <option
+                  [value]="fpago.fp_codfpago"
+                  *ngFor="let fpago of resultadoFpago"
+                >
+                  {{fpago.fp_descfpago}}
+                </option>
+              </select>
+            </div>
+            <div class="col-3">
+              <select
+                #input11
+                name="listaenvio"
+                forcontrolName="fa_envio"
+                class="form-control listbox"
+              >
+                <option value="envio">Envio</option>
+                <option value="retiral">Retirar por el Cliente</option>
+              </select>
+            </div>
+            <div class="col-2">
+              <input
+                type="password"
+                formControlName="fa_codVend"
+                #input12
+                placeholder="Vendedor"
+                class="form-control form-control-sm"
+              />
+            </div>
+            <div class="col-2">
+              <input
+                type="text"
+                formControlName="fa_nomVend"
+                class="form-control form-control-sm"
+              />
+            </div>
+          </div>
+          <div class="row mt-.5">
+            <div class="col-2">
+              <label for="fa_despacho" class="form-check-label"
+                >Despachado</label
+              >
+            </div>
+            <div class="col-2">
+              <div class="form-check">
+                <input
+                  type="checkbox"
+                  id="fa_despacho"
+                  formControlName="fa_despacho"
+                  class="form-check-input form-check-input-sm"
+                />
+              </div>
+            </div>
+            <div class="col-2">
+              <label for="" class="label">Entregada</label>
+            </div>
+            <div class="col-2">
+              <input
+                type="checkbox"
+                id="fa_entrega"
+                formControlName="fa_entrega"
+                placeholder="Entregado"
+                #input8
+                class="form-check-input form-check-input-sm"
+              />
+            </div>
+          </div>
+        </form>
+        <br />
+        <div class="row">
+          <div class="col-2">
+            <label for="" class="label">Buscar Por</label>
+          </div>
+          <div class="col-3">
+            <input
+              type="text"
+              [(ngModel)]="txtFactura"
+              placeholder="No. de Factura"
+              class="form-control form-control-sm"
+              (keydown.enter)="buscaFactura($event)"
+            />
+          </div>
+          <div class="col-4">
+            <input
+              type="text"
+              [(ngModel)]="txtdescripcion"
+              placeholder="Nombre del Cliente"
+              class="form-control form-control-sm"
+              (input)="buscaNombre($event)"
+            />
+          </div>
+          <div class="col-3">
+            <input
+              type="date"
+              [(ngModel)]="txtFecha"
+              placeholder="Fecha Factura"
+              class="form-control form-control-sm"
+              (keydown.enter)="buscaFecha($event)"
+            />
+          </div>
         </div>
-        <div class="col-6">
-            <div class="card">
-                <div class="card-header" style="height: 35px; background-color: #f40b0b">
-                    <h4 class="card-title" style="color: white; text-align: left">Detalles de la factura
-                    </h4>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col">
-                            <div class="table-responsive"
-                                style="
-                                height: 350px;
-                                overflow-y: auto;
-                                border: 2px solid rgb(4, 10, 185);"
-                                tabindex="0"
-                                (keydown)="navigateTable($event)"
-                                #Tabledetalle>
-                                <table class="table table-sm table-bordered">
-                                    <thead class="table-dark">
-                                        <tr style="background-color: rgb(55, 0, 255)">
-                                            <th style="width: 13%">Código</th>
-                                            <th style="width: 37%">Descripción</th>
-                                            <th style="width: 10%">Cant.</th>
-                                            <th style="width: 13%">Precio</th>
-                                            <th style="width: 15%">Total</th>
-                                            <th>Opciones</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr
-                                            *ngFor="let item of items;let i = index"
-                                            [class.table-active]="i === selectedRow"
-                                            (click)="selectRow(i)">
-                                            <td style="width: 13%">{{ item.producto?.in_codmerc }}</td>
-                                            <td style="width: 37%">{{ item.producto?.in_desmerc }}</td>
-                                            <td class="text-center" style="width: 10%">{{ item.cantidad }}</td>
-                                            <td class="text-center" style="width: 11%">{{ item.precio }}</td>
-                                            <td class="text-end" style="width: 13%">{{ item.total | currency }}</td>
-                                            <td>
-                                                <i (click)="editarItem(item)"
-                                                    class="bi bi-pencil text-primary"
-                                                    style="padding: 10px"
-                                                    *ngIf="habilitarIcono"
-                                                ></i>
-                                                <i (click)="borarItem(item)"
-                                                    class="bi bi-trash text-danger"
-                                                    style="padding: 10px"
-                                                    *ngIf="habilitarIcono">
-                                                </i>
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-7">
-                            <div class="row mt-1">
-                                <h6
-                                    class="col-3 col-form-label text-black text-end"
-                                    style="font-size: 12px; font-weight: bold">
-                                    % Producto         
-                                </h6>
-                                <div class="col-2">
-                                    <input
-                                        type="text"
-                                        style="font-size: 12px; font-weight: bold"
-                                        class="form-control form-control-sm text-end "
-                                        readonly
-                                        [value]="formatNumber(protxt)"
-                                        id="inputPassword"
-                                        [ngStyle]="{'color': protxt < 10 ? 'red' : 'green'}"
-                                    /> 
-                                </div>
-                                <h6
-                                    class="col-2 col-form-label text-black text-end"
-                                    style="font-size: 12px; font-weight: bold">
-                                    % Factura         
-                                </h6>
-                                <div class="col-2">
-                                    <input
-                                        type="text"
-                                        style="font-size: 12px; font-weight: bold"
-                                        class="form-control form-control-sm text-end"
-                                        readonly
-                                        [value]="formatNumber(factxt)"
-                                        id="inputPassword"
-                                        [ngStyle]="{'color': factxt < 10 ? 'red' : 'green'}"
-                                    /> 
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- <div class="col-1"></div> -->
-                        <div class="col-5">
-                            <div class="row mt-1">
-                                <div style="padding: 5px; border: 2px solid rgb(4, 10, 185)">
-                                    <div class="row">
-                                        <h6
-                                                class="col-4 col-form-label text-black"
-                                                style="font-size: 18px; font-weight: bold">Sub Total
-                                        </h6>
-                                        <div class="col-8">
-                                                <input
-                                                    type="text"
-                                                    style="font-size: 18px; font-weight: bold"
-                                                    class="form-control form-control-sm text-end"
-                                                    disabled
-                                                    [(ngModel)]="subtotaltxt"
-                                                    id="inputPassword"
-                                                />
-                                        </div>
-                                    </div>
-                                    <div class="row mt-.5">
-                                        <h6
-                                            class="col-4 col-form-label text-black"
-                                            style="font-size: 18px; font-weight: bold">Desc.
-                                        </h6>
-                                        <div class="col-8">
-                                            <input
-                                                type="text"
-                                                style="font-size: 18px; font-weight: bold"
-                                                class="form-control form-control-sm text-end"
-                                                disabled
-                                                [(ngModel)]="descuentotxt"
-                                                id="inputPassword"
-                                            />
-                                        </div>
-                                    </div>
-                                    <div class="row mt-.5">
-                                        <h6
-                                            class="col-4 col-form-label text-black"
-                                            style="font-size: 18px; font-weight: bold">ITBI
-                                        </h6>
-                                        <div class="col-8">
-                                            <input
-                                                type="text"
-                                                style="font-size: 18px; font-weight: bold"
-                                                class="form-control form-control-sm text-end"
-                                                disabled
-                                                [(ngModel)]="itbitxt"
-                                                id="inputPassword"
-                                            />
-                                        </div>
-                                    </div>
-                                    <div class="row mt-.5">
-                                        <h4 class="col-4 text-black">Total</h4>
-                                        <div class="col-8">
-                                            <input
-                                                    type="text"
-                                                style="font-size: 18px; font-weight: bold"
-                                                disabled
-                                                class="form-control form-control-sm text-end"
-                                                [(ngModel)]="totalgraltxt"
-                                                id="inputPassword"
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div> 
-                    </div>
-                </div>
+        <div class="row mt-1">
+          <div
+            class="table-container"
+            style="position: relative; height: 300px"
+          >
+            <div
+              class="table-responsive"
+              tabindex="0"
+              (keydown)="onTableKeydown($event)"
+              style="
+                height: 250px;
+                overflow-y: auto;
+                border: 2px solid #040ab9;
+                border-radius: 4px;
+              "
+            >
+              <table
+                class="table table-bordered table-hover table-striped table-sm"
+              >
+                <thead class="table-dark sticky-header">
+                  <tr>
+                    <th style="width: 10%">Numero</th>
+                    <th style="width: 40%">Nombre</th>
+                    <th class="text-center" style="width: 15%">Fecha</th>
+                    <th style="width: 16%">Valor</th>
+                    <th style="width: 10%">Cobro</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let factura of paginatedData">
+                    <td>{{ factura.fa_codFact }}</td>
+                    <td>{{ factura.fa_nomClie }}</td>
+                    <td class="text-center">{{ factura.fa_fecFact }}</td>
+                    <td class="text-end">{{ factura.fa_valFact }}</td>
+                    <td>
+                      <i
+                        (click)="consultarFacturacion(factura)"
+                        class="bi bi-card-list text-success"
+                        style="padding: 10px"
+                      >
+                      </i>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
+
+            <!--  🌟 CONTROLES DE PAGINACIÓN FIJOS EN EL FONDO DE LA TABLA 🌟 -->
+            <div
+              class="pagination-controls"
+              style="
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                background: linear-gradient(90deg, #fafafa, #f1f1f1);
+                padding: 8px 12px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                border-top: 1px solid #ccc;
+              "
+            >
+              <div>
+                <button
+                  class="btn btn-sm btn-primary"
+                  (click)="goToFirstPage()"
+                  [disabled]="currentPage === 1"
+                >
+                  ⏮️ Inicio
+                </button>
+                <button
+                  class="btn btn-sm btn-primary"
+                  (click)="prevPage()"
+                  [disabled]="currentPage <= 1"
+                >
+                  ⏪ Anterior
+                </button>
+              </div>
+
+              <span style="font-weight: bold; font-size: 14px">
+                Página {{ currentPage }} de {{ totalPages }}
+              </span>
+
+              <div>
+                <button
+                  class="btn btn-sm btn-primary"
+                  (click)="nextPage()"
+                  [disabled]="currentPage >= totalPages"
+                >
+                  Siguiente ⏩
+                </button>
+                <button
+                  class="btn btn-sm btn-primary"
+                  (click)="goToLastPage()"
+                  [disabled]="currentPage >= totalPages"
+                >
+                  Fin ⏭️
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
+      </div>
+      <!-- ***************** -->
+      <div class="row mt-0">
+        <div class="col">
+          <div class="card">
+            <div
+              class="card-body"
+              style="height: 60px; background-color: #f7eeeebd"
+            >
+              <div class="row mt-0">
+                <div class="col-1"></div>
+                <div class="col-5">
+                  <button
+                    class="btn btn-success btn-block btn-lx w-50"
+                    (click)="limpia()"
+                  >
+                    <i class="bi bi-arrow-clockwise"></i> Deshacer
+                  </button>
+                </div>
+                <div class="col-1"></div>
+                <div class="col-5">
+                  <button
+                    class="btn btn-success btn-lx w-50"
+                    (click)="guardarFacturacion()"
+                  >
+                    <i class="bi bi-check"></i> Guardar
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!--**********************  -->
     </div>
+  </div>
+  <div class="col-6">
+    <div class="card">
+      <div class="card-header" style="height: 35px; background-color: #f40b0b">
+        <h4 class="card-title" style="color: white; text-align: left">
+          Detalles de la factura
+        </h4>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col">
+            <div
+              class="table-responsive"
+              style="
+                height: 350px;
+                overflow-y: auto;
+                border: 2px solid rgb(4, 10, 185);
+              "
+              tabindex="0"
+              (keydown)="navigateTable($event)"
+              #Tabledetalle
+            >
+              <table class="table table-sm table-bordered">
+                <thead class="table-dark">
+                  <tr style="background-color: rgb(55, 0, 255)">
+                    <th style="width: 13%">Código</th>
+                    <th style="width: 37%">Descripción</th>
+                    <th style="width: 10%">Cant.</th>
+                    <th style="width: 13%">Precio</th>
+                    <th style="width: 15%">Total</th>
+                    <th>Opciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr
+                    *ngFor="let item of items;let i = index"
+                    [class.table-active]="i === selectedRow"
+                    (click)="selectRow(i)"
+                  >
+                    <td style="width: 13%">{{ item.producto?.in_codmerc }}</td>
+                    <td style="width: 37%">{{ item.producto?.in_desmerc }}</td>
+                    <td class="text-center" style="width: 10%">
+                      {{ item.cantidad }}
+                    </td>
+                    <td class="text-center" style="width: 11%">
+                      {{ item.precio }}
+                    </td>
+                    <td class="text-end" style="width: 13%">
+                      {{ item.total | currency }}
+                    </td>
+                    <td>
+                      <i
+                        (click)="editarItem(item)"
+                        class="bi bi-pencil text-primary"
+                        style="padding: 10px"
+                        *ngIf="habilitarIcono"
+                      ></i>
+                      <i
+                        (click)="borarItem(item)"
+                        class="bi bi-trash text-danger"
+                        style="padding: 10px"
+                        *ngIf="habilitarIcono"
+                      >
+                      </i>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-7">
+            <div class="row mt-1">
+              <h6
+                class="col-3 col-form-label text-black text-end"
+                style="font-size: 12px; font-weight: bold"
+              >
+                % Producto
+              </h6>
+              <div class="col-2">
+                <input
+                  type="text"
+                  style="font-size: 12px; font-weight: bold"
+                  class="form-control form-control-sm text-end"
+                  readonly
+                  [value]="formatNumber(protxt)"
+                  id="inputPassword"
+                  [ngStyle]="{'color': protxt < 10 ? 'red' : 'green'}"
+                />
+              </div>
+              <h6
+                class="col-2 col-form-label text-black text-end"
+                style="font-size: 12px; font-weight: bold"
+              >
+                % Factura
+              </h6>
+              <div class="col-2">
+                <input
+                  type="text"
+                  style="font-size: 12px; font-weight: bold"
+                  class="form-control form-control-sm text-end"
+                  readonly
+                  [value]="formatNumber(factxt)"
+                  id="inputPassword"
+                  [ngStyle]="{'color': factxt < 10 ? 'red' : 'green'}"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- <div class="col-1"></div> -->
+          <div class="col-5">
+            <div class="row mt-1">
+              <div style="padding: 5px; border: 2px solid rgb(4, 10, 185)">
+                <div class="row">
+                  <h6
+                    class="col-4 col-form-label text-black"
+                    style="font-size: 18px; font-weight: bold"
+                  >
+                    Sub Total
+                  </h6>
+                  <div class="col-8">
+                    <input
+                      type="text"
+                      style="font-size: 18px; font-weight: bold"
+                      class="form-control form-control-sm text-end"
+                      disabled
+                      [(ngModel)]="subtotaltxt"
+                      id="inputPassword"
+                    />
+                  </div>
+                </div>
+                <div class="row mt-.5">
+                  <h6
+                    class="col-4 col-form-label text-black"
+                    style="font-size: 18px; font-weight: bold"
+                  >
+                    Desc.
+                  </h6>
+                  <div class="col-8">
+                    <input
+                      type="text"
+                      style="font-size: 18px; font-weight: bold"
+                      class="form-control form-control-sm text-end"
+                      disabled
+                      [(ngModel)]="descuentotxt"
+                      id="inputPassword"
+                    />
+                  </div>
+                </div>
+                <div class="row mt-.5">
+                  <h6
+                    class="col-4 col-form-label text-black"
+                    style="font-size: 18px; font-weight: bold"
+                  >
+                    ITBI
+                  </h6>
+                  <div class="col-8">
+                    <input
+                      type="text"
+                      style="font-size: 18px; font-weight: bold"
+                      class="form-control form-control-sm text-end"
+                      disabled
+                      [(ngModel)]="itbitxt"
+                      id="inputPassword"
+                    />
+                  </div>
+                </div>
+                <div class="row mt-.5">
+                  <h4 class="col-4 text-black">Total</h4>
+                  <div class="col-8">
+                    <input
+                      type="text"
+                      style="font-size: 18px; font-weight: bold"
+                      disabled
+                      class="form-control form-control-sm text-end"
+                      [(ngModel)]="totalgraltxt"
+                      id="inputPassword"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
