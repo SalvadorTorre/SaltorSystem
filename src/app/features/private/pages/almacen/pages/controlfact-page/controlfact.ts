@@ -35,6 +35,8 @@ export class ControlFact implements OnInit {
   @ViewChild('inputCodmerc') inputCodmerc!: ElementRef; // Para manejar el foco
   @ViewChild('descripcionInput') descripcionInput!: ElementRef; // Para manejar el foco
   @ViewChild('Tabladetalle') Tabladetalle!: ElementRef;
+  botonEditar = true; // Empieza deshabilitado
+  botonGuardar = true; // Empieza deshabilitado
   totalItems = 0;
   pageSize = 6;
   currentPage = 1;
@@ -331,6 +333,8 @@ obtenerNcf() {
       this.txtFactura = '';
       this.txtFecha = '';
    //   this.buscarTodasFacturaciomtimbresobre tim0
+    this.botonEditar = true; // Deshabilita de nuevo
+    this.botonGuardar = true; // Habilita el botón
    this.productoselect;
    this.codmerc = ""
    this.descripcionmerc = ""
@@ -344,6 +348,9 @@ obtenerNcf() {
     this.totalcosto = 0;
     this.costoGral = 0;
     this.factxt = 0;
+    
+  // volver a ejecutar la lógica de inicio
+  this.ngOnInit();
     this.actualizarTotales()
     $("#input1").focus();
     $("#input1").select();
@@ -442,11 +449,14 @@ obtenerNcf() {
     this.crearFormularioFacturacion()
     this.formularioFacturacion.patchValue(factura);
     this.tituloModalFacturacion = 'Consulta Factura';
-    // $('#modalfacturacion').modal('show');
+     // $('#modalfacturacion').modal('show');
     this.habilitarFormulario = true;
     this.formularioFacturacion.disable();
     console.log("ff",factura)
     this.habilitarIcono = false;
+    this.botonEditar = false; // Habilita el botón
+    this.botonGuardar = true; // Habilita el botón
+   
     const inputs = document.querySelectorAll('.seccion-productos input');
     inputs.forEach((input) => {(input as HTMLInputElement).disabled = true;
     });
@@ -545,7 +555,12 @@ obtenerNcf() {
       }
     })
   }
-
+ editarFactura() {
+    console.log("Modo edición activado");
+    this.botonEditar = true; // Deshabilita de nuevo
+    this.botonGuardar = false; // Habilita el botón
+    //  // Aquí pones más lógica si quieres
+  }
   formatofecha(date: Date): string {
     const year = date.getFullYear();
     const month = (date.getMonth() + 1).toString().padStart(2, '0'); // Los meses son 0-indexados, se agrega 1 y se llena con ceros

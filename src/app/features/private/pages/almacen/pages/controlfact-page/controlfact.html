@@ -10,8 +10,8 @@
         <form
           [formGroup]="formularioFacturacion"
           class="custom-form-background"
-          (ngSubmit)="guardarFacturacion()"
         >
+          <!-- (ngSubmit)="guardarFacturacion()" -->
           <div class="row mt-0">
             <div class="col-5"></div>
             <div class="col-1">
@@ -281,7 +281,7 @@
               "
             >
               <table
-                class="table table-bordered table-hover table-striped table-sm"
+                class="table table-bordered table-hover table-striped table-sm" id="tablaFactura"
               >
                 <thead class="table-dark sticky-header">
                   <tr>
@@ -377,8 +377,24 @@
               style="height: 60px; background-color: #f7eeeebd"
             >
               <div class="row mt-0">
-                <div class="col-1"></div>
-                <div class="col-5">
+                <!-- <div class="col-1"></div> -->
+                <div class="col-4">
+                  <button [disabled]="botonEditar"
+                    class="btn btn-success btn-block btn-lx w-50"
+                    (click)="editarFactura()">
+                    <i class="bi bi-arrow-clockwise"></i> Editar
+                  </button>
+                </div>
+                <!-- <div class="col-1"></div> -->
+                <div class="col-4">
+                  <button [disabled]="botonGuardar"
+                    class="btn btn-success btn-lx w-50"
+                    (click)="guardarFacturacion()">
+                    <i class="bi bi-check"></i> Guardar
+                  </button>
+                </div>
+                <!-- <div class="col-1"></div> -->
+                <div class="col-4">
                   <button
                     class="btn btn-success btn-block btn-lx w-50"
                     (click)="limpia()"
@@ -386,15 +402,7 @@
                     <i class="bi bi-arrow-clockwise"></i> Deshacer
                   </button>
                 </div>
-                <div class="col-1"></div>
-                <div class="col-5">
-                  <button
-                    class="btn btn-success btn-lx w-50"
-                    (click)="guardarFacturacion()"
-                  >
-                    <i class="bi bi-check"></i> Guardar
-                  </button>
-                </div>
+                
               </div>
             </div>
           </div>
@@ -454,6 +462,9 @@
                       {{ item.total | currency }}
                     </td>
                     <td>
+                
+                   
+                    
                       <i
                         (click)="editarItem(item)"
                         class="bi bi-pencil text-primary"
