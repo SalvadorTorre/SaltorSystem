@@ -39,8 +39,9 @@
             <div class="col-3">
               <input
                 type="text"
-                #input1
-                id="input1"
+                #inputrnc
+                id="inputrnc"
+                (keydown.enter)="buscarRnc($event,inputnombre)"
                 formControlName="fa_rncFact"
                 class="form-control form-control-sm"
               />
@@ -49,7 +50,7 @@
               <select
                 name="tipoNcf"
                 formControlName="fa_tipoNcf"
-                (keydown)="moveFocus($event, input3)"
+                (keydown)="moveFocus($event, inputdireccion)"
                 class="form-select form-control-sm"
               >
                 <option [value]="ncf.codNcf" *ngFor="let ncf of ncflist">
@@ -67,6 +68,22 @@
             </div>
           </div>
           <div class="row mt-.5">
+            <!-- <div class="col-2">
+              <label for="" class="label">Cliente</label>
+            </div>
+            <div class="col-10">
+              <div class="input-group show">
+                <input
+                  class="form-control form-control-sm dropdown-toggle searchInput"
+                  data-id="agent"
+                  type="text"
+                  autocomplete="off"
+                  #inputnombre
+                  id="inputnombre"
+                  formControlName="fa_nomClie"
+                />
+              </div>
+            </div> -->
             <div class="col-2">
               <label for="" class="label">Cliente</label>
             </div>
@@ -77,10 +94,45 @@
                   data-id="agent"
                   type="text"
                   autocomplete="off"
-                  #input2
-                  id="input2"
+                  (input)="convertToUpperCase($event)"
+                  (keydown.enter)="moveFocusnomclie($event, inputdireccion)"
+                  (keydown)="handleKeydown($event)"
+                  #inputnombre
+                  id="inputnombre"
+                  [formControl]="buscarNombre"
                   formControlName="fa_nomClie"
                 />
+                <div
+                  [ngClass]="{ 'show': resultadoNombre.length > 0 }"
+                  class="dropdown-menu"
+                  style="
+                    margin-right: 30px;
+                    margin-top: 45px;
+                    z-index: 300;
+                    width: 350px;
+                    position: absolute;
+                    will-change: transform;"
+                  >
+                  <div
+                    class="searchReturnItem name-find"
+                    *ngFor="let result of resultadoNombre; let i = index"
+                    [class.active]="i === selectedIndex">
+                    <a
+                      (click)="cargarDatosCliente(result)"
+                      style="
+                        color: #222222 !important;
+                        font-size: 10pt;
+                        padding: 20px 0px;
+                        text-decoration: none !important;
+                        cursor: pointer;
+                      "
+                      class="px-3 cp"
+                    >
+                      <i class="far fa-user-circle mr-5"></i>&nbsp;&nbsp;{{
+                      result.cl_nomClie }}
+                    </a>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -91,9 +143,10 @@
             <div class="col-10">
               <input
                 type="text"
-                id="input3"
-                formControlName="fa_dirClie"
-                #input3
+                id="inputdireccion"
+                  (keydown)="moveFocus($event, inputtelefono)"
+                  formControlName="fa_dirClie"
+                #inputdireccion
                 class="form-control form-control-sm"
               />
             </div>
@@ -105,9 +158,10 @@
             <div class="col-3">
               <input
                 type="text"
-                id="input4"
-                formControlName="fa_telClie"
-                #input4
+                id="inputtelefono"
+                  (keydown)="moveFocus($event, inputtelefono2)"
+                  formControlName="fa_telClie"
+                #inputtelefono
                 placeholder="Tel. 1"
                 class="form-control form-control-sm"
               />
@@ -116,7 +170,8 @@
               <input
                 type="text"
                 formControlName="fa_telClie2"
-                #input5
+                #inputtelefono2
+                (keydown)="moveFocus($event, inputsector)"
                 placeholder="Tel. 2"
                 class="form-control form-control-sm"
               />
@@ -125,8 +180,9 @@
               <input
                 type="text"
                 formControlName="fa_sector"
-                #input6
+                #inputsector
                 placeholder="Sector"
+                (keydown)="moveFocus($event, inputcorreo)"
                 class="form-control form-control-sm"
               />
             </div>
@@ -139,7 +195,9 @@
               <input
                 type="text"
                 formControlName="fa_correo"
-                #input7
+                (keydown)="moveFocus($event, inputcontacto)"
+                placeholder="Correo"
+                #inputcorreo
                 class="form-control form-control-sm"
               />
             </div>
@@ -148,7 +206,8 @@
                 type="text"
                 formControlName="fa_contacto"
                 placeholder="Contacto"
-                #input8
+                #inputcontacto
+                (keydown)="moveFocus($event, inputfpago)"
                 class="form-control form-control-sm"
               />
             </div>
@@ -159,9 +218,10 @@
             </div>
             <div class="col-3">
               <select
-                #input9
+                #inputfpago
                 name="formapago"
                 formControlName="fa_fpago"
+                (keydown)="moveFocus($event, inputenvio)"
                 class="form-control listbox"
               >
                 <option
@@ -174,7 +234,7 @@
             </div>
             <div class="col-3">
               <select
-                #input11
+                #inputenvio
                 name="listaenvio"
                 forcontrolName="fa_envio"
                 class="form-control listbox"
@@ -187,7 +247,7 @@
               <input
                 type="password"
                 formControlName="fa_codVend"
-                #input12
+                #inputvendedor
                 placeholder="Vendedor"
                 class="form-control form-control-sm"
               />
@@ -201,6 +261,21 @@
             </div>
           </div>
           <div class="row mt-.5">
+            <div class="col-2">
+              <label for="fa_despacho" class="form-check-label"
+                >Facturada</label
+              >
+            </div>
+            <div class="col-2">
+              <div class="form-check">
+                <input
+                  type="checkbox"
+                  id="fa_facturada"
+                  formControlName="fa_facturada"
+                  class="form-check-input form-check-input-sm"
+                />
+              </div>
+            </div>
             <div class="col-2">
               <label for="fa_despacho" class="form-check-label"
                 >Despachado</label

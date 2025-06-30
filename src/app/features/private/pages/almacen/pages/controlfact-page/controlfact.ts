@@ -323,6 +323,7 @@ obtenerNcf() {
         fa_reimpresa: [{ value: '', disabled: true }],
         fa_entrega: [{ value: '', disabled: true }],
         fa_impresa: [{ value: '', disabled: true }],
+        fa_facturada: [{ value: '', disabled: true }],
       });
 
   }
@@ -461,6 +462,8 @@ obtenerNcf() {
     inputs.forEach((input) => {(input as HTMLInputElement).disabled = true;
     });
     // Limpiar los items antes de agregar los nuevos
+    this.totalItbis = 0;
+
     this.items = [];
     this.servicioFacturacion.buscarFacturaDetalle(factura.fa_codFact).subscribe(response => {
       let subtotal = 0;
@@ -468,7 +471,6 @@ obtenerNcf() {
       let totalGeneral = 0;
       let totalcosto = 0;
       const itbisRate = 0.18; // Ejemplo: 18% de ITBIS
-      console.log("faa",response.data)
       response.data.forEach((item: any) => {
         const producto: ModeloInventarioData = {
           in_codmerc: item.df_codMerc,
@@ -559,7 +561,17 @@ obtenerNcf() {
     console.log("Modo edición activado");
     this.botonEditar = true; // Deshabilita de nuevo
     this.botonGuardar = false; // Habilita el botón
-    //  // Aquí pones más lógica si quieres
+   this.habilitarIcono = true;
+   this.formularioFacturacion.enable();
+   this.formularioFacturacion.get('fa_codFact')?.disable();
+   this.formularioFacturacion.get('fa_fecFact')?.disable();
+   this.formularioFacturacion.get('fa_ncfFact')?.disable();
+   this.formularioFacturacion.get('fa_codVend')?.disable();
+   this.formularioFacturacion.get('fa_nomVend')?.disable();
+    this.formularioFacturacion.get('fa_entrega')?.disable();
+    this.formularioFacturacion.get('fa_impresa')?.disable();
+   this.formularioFacturacion.get('fa_facturada')?.disable();
+   
   }
   formatofecha(date: Date): string {
     const year = date.getFullYear();
