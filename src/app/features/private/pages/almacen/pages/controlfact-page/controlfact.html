@@ -111,12 +111,14 @@
                     z-index: 300;
                     width: 350px;
                     position: absolute;
-                    will-change: transform;"
-                  >
+                    will-change: transform;
+                  "
+                >
                   <div
                     class="searchReturnItem name-find"
                     *ngFor="let result of resultadoNombre; let i = index"
-                    [class.active]="i === selectedIndex">
+                    [class.active]="i === selectedIndex"
+                  >
                     <a
                       (click)="cargarDatosCliente(result)"
                       style="
@@ -144,8 +146,8 @@
               <input
                 type="text"
                 id="inputdireccion"
-                  (keydown)="moveFocus($event, inputtelefono)"
-                  formControlName="fa_dirClie"
+                (keydown)="moveFocus($event, inputtelefono)"
+                formControlName="fa_dirClie"
                 #inputdireccion
                 class="form-control form-control-sm"
               />
@@ -159,8 +161,8 @@
               <input
                 type="text"
                 id="inputtelefono"
-                  (keydown)="moveFocus($event, inputtelefono2)"
-                  formControlName="fa_telClie"
+                (keydown)="moveFocus($event, inputtelefono2)"
+                formControlName="fa_telClie"
                 #inputtelefono
                 placeholder="Tel. 1"
                 class="form-control form-control-sm"
@@ -356,7 +358,8 @@
               "
             >
               <table
-                class="table table-bordered table-hover table-striped table-sm" id="tablaFactura"
+                class="table table-bordered table-hover table-striped table-sm"
+                id="tablaFactura"
               >
                 <thead class="table-dark sticky-header">
                   <tr>
@@ -454,17 +457,21 @@
               <div class="row mt-0">
                 <!-- <div class="col-1"></div> -->
                 <div class="col-4">
-                  <button [disabled]="botonEditar"
+                  <button
+                    [disabled]="botonEditar"
                     class="btn btn-success btn-block btn-lx w-50"
-                    (click)="editarFactura()">
+                    (click)="editarFactura()"
+                  >
                     <i class="bi bi-arrow-clockwise"></i> Editar
                   </button>
                 </div>
                 <!-- <div class="col-1"></div> -->
                 <div class="col-4">
-                  <button [disabled]="botonGuardar"
+                  <button
+                    [disabled]="botonGuardar"
                     class="btn btn-success btn-lx w-50"
-                    (click)="guardarFacturacion()">
+                    (click)="guardarFacturacion()"
+                  >
                     <i class="bi bi-check"></i> Guardar
                   </button>
                 </div>
@@ -477,7 +484,6 @@
                     <i class="bi bi-arrow-clockwise"></i> Deshacer
                   </button>
                 </div>
-                
               </div>
             </div>
           </div>
@@ -537,9 +543,6 @@
                       {{ item.total | currency }}
                     </td>
                     <td>
-                
-                   
-                    
                       <i
                         (click)="editarItem(item)"
                         class="bi bi-pencil text-primary"
@@ -617,7 +620,7 @@
                       style="font-size: 18px; font-weight: bold"
                       class="form-control form-control-sm text-end"
                       disabled
-                      [(ngModel)]="subtotaltxt"
+                      [value]="subTotal | number:'1.2-2'"
                       id="inputPassword"
                     />
                   </div>
@@ -653,7 +656,7 @@
                       style="font-size: 18px; font-weight: bold"
                       class="form-control form-control-sm text-end"
                       disabled
-                      [(ngModel)]="itbitxt"
+                      [value]="totalItbis | number:'1.2-2'"
                       id="inputPassword"
                     />
                   </div>
@@ -666,7 +669,7 @@
                       style="font-size: 18px; font-weight: bold"
                       disabled
                       class="form-control form-control-sm text-end"
-                      [(ngModel)]="totalgraltxt"
+                      [value]="totalGral | number:'1.2-2'"
                       id="inputPassword"
                     />
                   </div>

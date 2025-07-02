@@ -13,9 +13,15 @@ export class ServicioFacturacion {
     return this.http.PostRequest<any, any>("/facturacion", datosParaGuardar);
   }
 
-  editarFacturacion(fa_codFact: string, facturacion: FacturacionModel): Observable<any> {
-    return this.http.PutRequest<any, any>(`/facturacion/${fa_codFact}`, facturacion);
-  }
+
+  // editarFacturacion(fa_codFact: string, facturacion: FacturacionModel): Observable<any> {
+  //   return this.http.PutRequest<any, any>(`/facturacion/${fa_codFact}`, facturacion);
+  // }
+
+  editarFacturacion(payload: any) {
+  const cod = payload.factura.fa_codFact;
+  return this.http.PutRequest(`/facturacion/${cod}`, payload);
+}
 
   buscarTodasFacturacion( ): Observable<any> {
     let url = `/facturacion`;

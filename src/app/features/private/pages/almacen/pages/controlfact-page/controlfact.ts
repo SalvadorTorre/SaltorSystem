@@ -349,7 +349,7 @@ obtenerNcf() {
     this.totalcosto = 0;
     this.costoGral = 0;
     this.factxt = 0;
-    
+
   // volver a ejecutar la lógica de inicio
   this.ngOnInit();
     this.actualizarTotales()
@@ -457,7 +457,7 @@ obtenerNcf() {
     this.habilitarIcono = false;
     this.botonEditar = false; // Habilita el botón
     this.botonGuardar = true; // Habilita el botón
-   
+
     const inputs = document.querySelectorAll('.seccion-productos input');
     inputs.forEach((input) => {(input as HTMLInputElement).disabled = true;
     });
@@ -571,7 +571,9 @@ obtenerNcf() {
     this.formularioFacturacion.get('fa_entrega')?.disable();
     this.formularioFacturacion.get('fa_impresa')?.disable();
    this.formularioFacturacion.get('fa_facturada')?.disable();
-   
+
+
+
   }
   formatofecha(date: Date): string {
     const year = date.getFullYear();
@@ -1214,22 +1216,46 @@ obtenerNcf() {
     this.subTotal = 0;        // Reiniciar el subtotal
   }
 
+  // borarItem(item: any) {
+  //   const index = this.items.indexOf(item);
+  //   if (index > -1) {
+  //     this.totalGral -= item.total;
+
+  //     // Calcular el itbis del ítem eliminado y restarlo del total itbis
+  //     const itbis = item.total * 0.18;
+  //     this.totalItbis -= itbis;
+
+  //     // Restar el subtotal del ítem eliminado
+  //     this.subTotal -= (item.total - itbis);
+
+  //     // Eliminar el ítem de la lista
+  //     this.items.splice(index, 1);
+  //   }
+  // }
   borarItem(item: any) {
-    const index = this.items.indexOf(item);
-    if (index > -1) {
-      this.totalGral -= item.total;
-
-      // Calcular el itbis del ítem eliminado y restarlo del total itbis
-      const itbis = item.total * 0.18;
-      this.totalItbis -= itbis;
-
-      // Restar el subtotal del ítem eliminado
-      this.subTotal -= (item.total - itbis);
-
-      // Eliminar el ítem de la lista
-      this.items.splice(index, 1);
-    }
+  const index = this.items.indexOf(item);
+  if (index > -1) {
+    this.items.splice(index, 1);
+    this.items = [...this.items]; // 💡 TRUCO CLAVE
+    this.recalcularTotales();
   }
+}
+
+
+recalcularTotales() {
+  this.totalGral = 0;
+  this.totalItbis = 0;
+  this.subTotal = 0;
+
+  for (const item of this.items) {
+    const itbis = item.total * 0.18 / 1.18; // si total incluye ITBIS
+    const subtotal = item.total - itbis;
+
+    this.totalItbis += itbis;
+    this.subTotal += subtotal;
+    this.totalGral += item.total;
+  }
+}
 
   editarItem(item: any) {
     this.index_item = this.items.indexOf(item);
@@ -1260,44 +1286,107 @@ obtenerNcf() {
     this.totalgraltxt = formatCurrency(this.totalGral);
 
   }
+  // guardarFacturacion() {
+  //   const date = new Date();
+  //   this.formularioFacturacion.get('fa_valFact')?.patchValue(this.totalGral);
+  //   this.formularioFacturacion.get('fa_itbiFact')?.patchValue(this.totalItbis);
+  //   this.formularioFacturacion.get('fa_cosFact')?.patchValue(this.totalcosto);
+  //   this.formularioFacturacion.get('fa_subFact')?.patchValue(this.subTotal);
+  //   this.formularioFacturacion.get("fa_tipoNcf")!.enable();
+  //   this.formularioFacturacion.get('fa_codFact')!.enable();
+  //   this.formularioFacturacion.get('fa_fecFact')!.enable();
+  //   this.formularioFacturacion.get('fa_nomVend')!.enable();
+  //   this.formularioFacturacion.get('fa_ncfFact')!.enable();
+  //   const payload = {
+  //     factura: this.formularioFacturacion.value,
+  //     detalle: this.items,
+  //   };
+  //   if (this.formularioFacturacion.valid) {
+  //     if (this.formularioFacturacion.valid) {
+  //       this.servicioFacturacion.guardarFacturacion(payload).subscribe(response => {
+  //         Swal.fire({
+  //           title: "Excelente!",
+  //           text: "Facturacion creada correctamente.",
+  //           icon: "success",
+  //           timer: 1000,
+  //           showConfirmButton: false,
+  //         });
+  //         this.buscarTodasFacturacion();
+  //         this.formularioFacturacion.reset();
+  //         this.crearFormularioFacturacion();
+  //         this.formularioFacturacion.enable();
+  //         this.limpia();
+  //       });
+  //     } else {
+  //   }
+  //   }else {
+  //     alert("Esta Factura no fue Guardado");
+  //   }
+
+  // }
   guardarFacturacion() {
-    const date = new Date();
-    this.formularioFacturacion.get('fa_valFact')?.patchValue(this.totalGral);
-    this.formularioFacturacion.get('fa_itbiFact')?.patchValue(this.totalItbis);
-    this.formularioFacturacion.get('fa_cosFact')?.patchValue(this.totalcosto);
-    this.formularioFacturacion.get('fa_subFact')?.patchValue(this.subTotal);
-    this.formularioFacturacion.get("fa_tipoNcf")!.enable();
+  const codFact = this.formularioFacturacion.get('fa_codFact')?.value;
+
+  // Asignar totales al formulario
+  this.formularioFacturacion.patchValue({
+    fa_valFact: this.totalGral,
+    fa_itbiFact: this.totalItbis,
+    fa_cosFact: this.totalcosto,
+    fa_subFact: this.subTotal
+  });
+  this.formularioFacturacion.get('fa_valFact')?.patchValue(this.totalGral);
+     this.formularioFacturacion.get('fa_itbiFact')?.patchValue(this.totalItbis);
+     this.formularioFacturacion.get('fa_cosFact')?.patchValue(this.totalcosto);
+     this.formularioFacturacion.get('fa_subFact')?.patchValue(this.subTotal);
+
+  this.formularioFacturacion.get("fa_tipoNcf")!.enable();
     this.formularioFacturacion.get('fa_codFact')!.enable();
     this.formularioFacturacion.get('fa_fecFact')!.enable();
     this.formularioFacturacion.get('fa_nomVend')!.enable();
     this.formularioFacturacion.get('fa_ncfFact')!.enable();
-    const payload = {
-      factura: this.formularioFacturacion.value,
-      detalle: this.items,
-    };
-    if (this.formularioFacturacion.valid) {
-      if (this.formularioFacturacion.valid) {
-        this.servicioFacturacion.guardarFacturacion(payload).subscribe(response => {
-          Swal.fire({
-            title: "Excelente!",
-            text: "Facturacion creada correctamente.",
-            icon: "success",
-            timer: 1000,
-            showConfirmButton: false,
-          });
-          this.buscarTodasFacturacion();
-          this.formularioFacturacion.reset();
-          this.crearFormularioFacturacion();
-          this.formularioFacturacion.enable();
-          this.limpia();
-        });
-      } else {
-    }
-    }else {
-      alert("Esta Factura no fue Guardado");
-    }
+  const payload = {
+    factura: this.formularioFacturacion.value,
+    detalle: this.items,
+  };
 
+  if (this.formularioFacturacion.valid) {
+    if (codFact) {
+      // 🔁 Modo edición
+      this.servicioFacturacion.editarFacturacion(payload).subscribe(response => {
+        Swal.fire({
+          title: "Actualizado!",
+          text: "Factura modificada correctamente.",
+          icon: "success",
+          timer: 1000,
+          showConfirmButton: false,
+        });
+        this.refrescarFormulario();
+      });
+    } else {
+      // 🆕 Modo creación
+      this.servicioFacturacion.guardarFacturacion(payload).subscribe(response => {
+        Swal.fire({
+          title: "Excelente!",
+          text: "Factura creada correctamente.",
+          icon: "success",
+          timer: 1000,
+          showConfirmButton: false,
+        });
+        this.refrescarFormulario();
+      });
+    }
+  } else {
+    alert("Esta Factura no fue guardada");
   }
+}
+
+refrescarFormulario() {
+  this.buscarTodasFacturacion();
+  this.formularioFacturacion.reset();
+  this.crearFormularioFacturacion();
+  this.formularioFacturacion.enable();
+  this.limpia();
+}
 
   navigateTable(event: KeyboardEvent) {
     const key = event.key;
