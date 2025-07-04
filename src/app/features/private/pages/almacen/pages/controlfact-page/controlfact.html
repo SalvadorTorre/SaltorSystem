@@ -502,6 +502,141 @@
       </div>
       <div class="card-body">
         <div class="row">
+          <div class="col-2">
+            <label for=""> Código </label>
+            <div class="input-group show">
+              <input
+                class="form-control dropdown-toggle searchInput me-2"
+                data-id="agent"
+                type="text"
+                [disabled]="!habilitarCampos"
+                #codigoInput
+                autocomplete="off"
+                (input)="convertToUpperCase($event)"
+                (keydown)="handleKeydownInventario($event)"
+                (keydown)="moveFocuscodmerc($event, descripcionInput)"
+                #codigoinput
+                [formControl]="buscarcodmerc"
+                [(ngModel)]="codmerc"
+                name="codmerc"
+                placeholder="Código"
+              />
+
+              <div
+                [ngClass]="{ 'show': resultadoCodmerc.length > 0 }"
+                class="dropdown-menu"
+                style="
+                  margin-right: 30px;
+                  margin-top: 45px;
+                  z-index: 300;
+                  width: 350px;
+                  position: absolute;
+                  will-change: transform;
+                "
+              >
+                <div
+                  class="searchReturnItem name-find"
+                  *ngFor="let result of resultadoCodmerc; let i = index"
+                  [class.active]="i === selectedIndexcodmerc"
+                >
+                  <a
+                    (click)="cargarDatosInventario(result)"
+                    style="
+                      color: #222222 !important;
+                      font-size: 10pt;
+                      padding: 20px 0px;
+                      text-decoration: none !important;
+                      cursor: pointer;
+                    "
+                    class="px-3 cp"
+                  >
+                    <i class="far fa-user-circle mr-5"></i>  {{
+                    result.in_codmerc }}
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-4">
+            <label for=""> Descripción </label>
+            <div class="input-group show">
+              <input
+                class="form-control dropdown-toggle searchInput me-2"
+                data-id="agent"
+                type="text"
+                [disabled]="habilitarCampos"
+                autocomplete="off"
+                (input)="convertToUpperCase($event)"
+                (keydown)="moveFocusdesc($event, cantidadInput)"
+                (keydown)="handleKeydownInventariosdesc($event)"
+                #descripcionInput
+                [formControl]="buscardescripcionmerc"
+                [(ngModel)]="descripcionmerc"
+              />
+              <div
+                [ngClass]="{ 'show': resultadodescripcionmerc.length > 0 }"
+                class="dropdown-menu"
+                style="
+                  margin-right: 30px;
+                  margin-top: 45px;
+                  z-index: 300;
+                  width: 350px;
+                  position: absolute;
+                  will-change: transform;
+                "
+              >
+                <div
+                  class="searchReturnItem name-find"
+                  *ngFor="let result of resultadodescripcionmerc; let i = index"
+                  [class.active]="i === selectedIndexdescripcionmerc"
+                >
+                  <a
+                    (click)="cargarDatosInventario(result)"
+                    style="
+                      color: #222222 !important;
+                      font-size: 10pt;
+                      padding: 20px 0px;
+                      text-decoration: none !important;
+                      cursor: pointer;
+                    "
+                    class="px-3 cp"
+                  >
+                    <i class="far fa-user-circle mr-5"></i>  {{
+                    result.in_desmerc }}
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-2">
+            <label for=""> Cant. </label>
+            <input
+              type="number"
+              placeholder="Cantidad"
+              [(ngModel)]="cantidadmerc"
+              [formControl]="cantidadform"
+              id="input8"
+              #cantidadInput
+              (keydown)="moveFocusCantidad($event, precioInput)"
+              class="form-control"
+            />
+          </div>
+          <div class="col-2">
+            <label for=""> Precio </label>
+            <input
+              type="number"
+              [(ngModel)]="preciomerc"
+              [formControl]="precioform"
+              id="input9"
+              #precioInput
+              (input)="actualizarCalculo()"
+              (keydown)="moveFocus($event, codigoinput)"
+              class="form-control"
+              (keydown.enter)="agregaItem($event)"
+            />
+          </div>
+        </div>
+        <div class="row">
           <div class="col">
             <div
               class="table-responsive"
