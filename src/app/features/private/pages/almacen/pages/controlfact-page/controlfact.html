@@ -515,8 +515,6 @@
                 (input)="convertToUpperCase($event)"
                 (keydown)="handleKeydownInventario($event)"
                 (keydown)="moveFocuscodmerc($event, descripcionInput)"
-                #codigoinput
-                [formControl]="buscarcodmerc"
                 [(ngModel)]="codmerc"
                 name="codmerc"
                 placeholder="Código"
@@ -564,13 +562,12 @@
                 class="form-control dropdown-toggle searchInput me-2"
                 data-id="agent"
                 type="text"
-                [disabled]="habilitarCampos"
+                [disabled]="!habilitarCampos"
                 autocomplete="off"
                 (input)="convertToUpperCase($event)"
                 (keydown)="moveFocusdesc($event, cantidadInput)"
                 (keydown)="handleKeydownInventariosdesc($event)"
                 #descripcionInput
-                [formControl]="buscardescripcionmerc"
                 [(ngModel)]="descripcionmerc"
               />
               <div
@@ -612,11 +609,10 @@
             <label for=""> Cant. </label>
             <input
               type="number"
+              [disabled]="!habilitarCantidad"
               placeholder="Cantidad"
-              [(ngModel)]="cantidadmerc"
-              [formControl]="cantidadform"
-              id="input8"
               #cantidadInput
+              [(ngModel)]="cantidadmerc"
               (keydown)="moveFocusCantidad($event, precioInput)"
               class="form-control"
             />
@@ -625,15 +621,23 @@
             <label for=""> Precio </label>
             <input
               type="number"
+              [disabled]="!habilitarCantidad"
               [(ngModel)]="preciomerc"
-              [formControl]="precioform"
               id="input9"
               #precioInput
               (input)="actualizarCalculo()"
-              (keydown)="moveFocus($event, codigoinput)"
+              (keydown)="moveFocus($event, codigoInput)"
               class="form-control"
               (keydown.enter)="agregaItem($event)"
             />
+          </div>
+          <div class="col-2">
+            <button
+              class="btn btn-success btn-block btn-lx w-40"
+              (click)="agregarItem()"
+            >
+              <i class="bi bi-plus-circle"></i> Add
+            </button>
           </div>
         </div>
         <div class="row">

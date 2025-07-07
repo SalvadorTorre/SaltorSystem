@@ -109,6 +109,7 @@ export class ControlFact implements OnInit {
   codmerVacio: boolean = false;
   desmerVacio: boolean = false;
   habilitarCampos: boolean = false;
+  habilitarCantidad: boolean= false
 
   sucursales = [];
   sucursalSeleccionada: any = null;
@@ -349,7 +350,8 @@ obtenerNcf() {
     this.totalcosto = 0;
     this.costoGral = 0;
     this.factxt = 0;
-
+    this.habilitarCampos= false;
+     this.habilitarCantidad= false;
   // volver a ejecutar la lógica de inicio
   this.ngOnInit();
     this.actualizarTotales()
@@ -1258,9 +1260,9 @@ recalcularTotales() {
 }
 
   editarItem(item: any) {
+    this.habilitarCampos= false;
+     this.habilitarCantidad= true;
     this.index_item = this.items.indexOf(item);
-
-
     this.isEditing = true;
     this.itemToEdit = item;
 
@@ -1271,7 +1273,18 @@ recalcularTotales() {
     this.cantidadmerc = item.cantidad
     this.existenciatxt = item.producto.in_canmerc;
     this.costotxt = item.producto.in_cosmerc;
+     $("#cantidadInput").focus();
+    $("#cantidadInput").select();
+
   }
+agregarItem() {
+   this.habilitarCampos= true;
+   this.habilitarCantidad= true;
+    $("#codigoInput").focus();
+        $("#codigoInput").select();
+
+}
+
   actualizarTotales() {
     this.totalGral  = this.items.reduce((sum, item) => sum + item.total, 0);
     this.totalItbis = this.items.reduce((sum, item) => sum + (item.total * 0.18), 0);
