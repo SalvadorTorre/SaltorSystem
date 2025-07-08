@@ -633,6 +633,7 @@
           </div>
           <div class="col-2">
             <button
+              [disabled]="botonaddItems"
               class="btn btn-success btn-block btn-lx w-40"
               (click)="agregarItem()"
             >
@@ -726,7 +727,7 @@
                 class="col-2 col-form-label text-black text-end"
                 style="font-size: 12px; font-weight: bold"
               >
-                % Factura
+                Factura
               </h6>
               <div class="col-2">
                 <input
@@ -739,6 +740,12 @@
                   [ngStyle]="{'color': factxt < 10 ? 'red' : 'green'}"
                 />
               </div>
+              <h6
+                class="col-1 col-form-label text-black text-end"
+                style="font-size: 12px; font-weight: bold"
+              >
+                %
+              </h6>
             </div>
           </div>
 

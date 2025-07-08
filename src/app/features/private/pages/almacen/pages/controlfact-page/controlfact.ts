@@ -37,6 +37,7 @@ export class ControlFact implements OnInit {
   @ViewChild('Tabladetalle') Tabladetalle!: ElementRef;
   botonEditar = true; // Empieza deshabilitado
   botonGuardar = true; // Empieza deshabilitado
+  botonaddItems = true; // Empieza deshabilitado
   totalItems = 0;
   pageSize = 6;
   currentPage = 1;
@@ -530,6 +531,9 @@ obtenerNcf() {
       this.totalGral = totalGeneral;
       this.factxt = (factura.fa_valFact - factura.fa_cosFact) * 100/ factura.fa_cosFact;
       this.actualizarTotales();
+      console.log(factura.fa_valFact)
+      console.log(factura.fa_cosFact)
+      console.log(this.factxt)
     });
   }
 
@@ -563,7 +567,8 @@ obtenerNcf() {
     console.log("Modo edición activado");
     this.botonEditar = true; // Deshabilita de nuevo
     this.botonGuardar = false; // Habilita el botón
-   this.habilitarIcono = true;
+   this.botonaddItems = false; // Habilita el botón
+    this.habilitarIcono = true;
    this.formularioFacturacion.enable();
    this.formularioFacturacion.get('fa_codFact')?.disable();
    this.formularioFacturacion.get('fa_fecFact')?.disable();
@@ -1299,46 +1304,8 @@ agregarItem() {
     this.totalgraltxt = formatCurrency(this.totalGral);
 
   }
-  // guardarFacturacion() {
-  //   const date = new Date();
-  //   this.formularioFacturacion.get('fa_valFact')?.patchValue(this.totalGral);
-  //   this.formularioFacturacion.get('fa_itbiFact')?.patchValue(this.totalItbis);
-  //   this.formularioFacturacion.get('fa_cosFact')?.patchValue(this.totalcosto);
-  //   this.formularioFacturacion.get('fa_subFact')?.patchValue(this.subTotal);
-  //   this.formularioFacturacion.get("fa_tipoNcf")!.enable();
-  //   this.formularioFacturacion.get('fa_codFact')!.enable();
-  //   this.formularioFacturacion.get('fa_fecFact')!.enable();
-  //   this.formularioFacturacion.get('fa_nomVend')!.enable();
-  //   this.formularioFacturacion.get('fa_ncfFact')!.enable();
-  //   const payload = {
-  //     factura: this.formularioFacturacion.value,
-  //     detalle: this.items,
-  //   };
-  //   if (this.formularioFacturacion.valid) {
-  //     if (this.formularioFacturacion.valid) {
-  //       this.servicioFacturacion.guardarFacturacion(payload).subscribe(response => {
-  //         Swal.fire({
-  //           title: "Excelente!",
-  //           text: "Facturacion creada correctamente.",
-  //           icon: "success",
-  //           timer: 1000,
-  //           showConfirmButton: false,
-  //         });
-  //         this.buscarTodasFacturacion();
-  //         this.formularioFacturacion.reset();
-  //         this.crearFormularioFacturacion();
-  //         this.formularioFacturacion.enable();
-  //         this.limpia();
-  //       });
-  //     } else {
-  //   }
-  //   }else {
-  //     alert("Esta Factura no fue Guardado");
-  //   }
-
-  // }
   guardarFacturacion() {
-  const codFact = this.formularioFacturacion.get('fa_codFact')?.value;
+   const codFact = this.formularioFacturacion.get('fa_codFact')?.value;
 
   // Asignar totales al formulario
   this.formularioFacturacion.patchValue({
@@ -1425,6 +1392,8 @@ refrescarFormulario() {
     console.log(this.selectedItem);
     this.calcularPorcentaje();
   }
+
+
 
   calcularPorcentaje(): void {
       this.protxt  = (this.selectedItem.total - this.selectedItem.costo)*100/this.selectedItem.costo;

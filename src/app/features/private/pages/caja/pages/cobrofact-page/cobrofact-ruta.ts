@@ -1,6 +1,6 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
-import { CobroFact } from './cobrofact';
+import { CobroFact, } from './cobrofact';
 
 const routes: Routes = [
   {path:"",
