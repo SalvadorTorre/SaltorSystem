@@ -43,7 +43,7 @@ export class CobroFact implements OnInit {
   currentPage = 1;
   maxPagesToShow = 5;
   facturaSelecionada: any = null;
-
+  codFacturaselecte = " "
   txtdescripcion: string = '';
   txtcodigo = '';
   // txtFecha: string = '';
@@ -458,6 +458,7 @@ obtenerNcf() {
      // $('#modalfacturacion').modal('show');
     this.habilitarFormulario = true;
     this.formularioFacturacion.disable();
+    this.codFacturaselecte = factura.fa_codFact;
     console.log("ff",factura)
     this.habilitarIcono = false;
     this.botonEditar = false; // Habilita el botón
@@ -1326,6 +1327,7 @@ agregarItem() {
     this.formularioFacturacion.get('fa_fecFact')!.enable();
     this.formularioFacturacion.get('fa_nomVend')!.enable();
     this.formularioFacturacion.get('fa_ncfFact')!.enable();
+    this.formularioFacturacion.get('fa_fpago')!.enable();
   const payload = {
     factura: this.formularioFacturacion.value,
     detalle: this.items,

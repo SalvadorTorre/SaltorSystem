@@ -36,3 +36,7 @@ small {
 .btn-close {
   background-color: white !important;
 }
+
+tr:hover {
+  cursor: pointer !important
+}

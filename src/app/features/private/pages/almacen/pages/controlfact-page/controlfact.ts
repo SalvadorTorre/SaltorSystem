@@ -29,21 +29,22 @@ declare var $: any;
   templateUrl: './controlfact.html',
   styleUrls: ['./controlfact.css']
 })
-
-
 export class ControlFact implements OnInit {
-  @ViewChild('inputCodmerc') inputCodmerc!: ElementRef; // Para manejar el foco
+  @ViewChild('codigoInput') codigoInput!: ElementRef; // Para manejar el foco
   @ViewChild('descripcionInput') descripcionInput!: ElementRef; // Para manejar el foco
   @ViewChild('Tabladetalle') Tabladetalle!: ElementRef;
+  @ViewChild('cantidadInput') cantidadInput!: ElementRef;
   botonEditar = true; // Empieza deshabilitado
   botonGuardar = true; // Empieza deshabilitado
   botonaddItems = true; // Empieza deshabilitado
-  totalItems = 0;
+    totalItems = 0;
   pageSize = 6;
   currentPage = 1;
   maxPagesToShow = 5;
   txtdescripcion: string = '';
   txtcodigo = '';
+  codFacturaselecte = " "
+  codMercselecte = " ";
   // txtFecha: string = '';
   descripcion: string = '';
   codigo: string = '';
@@ -337,7 +338,8 @@ obtenerNcf() {
       this.txtFecha = '';
    //   this.buscarTodasFacturaciomtimbresobre tim0
     this.botonEditar = true; // Deshabilita de nuevo
-    this.botonGuardar = true; // Habilita el botón
+    this.botonGuardar = true; // Deshabilita el botón
+    this.botonaddItems = true;
    this.productoselect;
    this.codmerc = ""
    this.descripcionmerc = ""
@@ -456,11 +458,12 @@ obtenerNcf() {
      // $('#modalfacturacion').modal('show');
     this.habilitarFormulario = true;
     this.formularioFacturacion.disable();
+    this.codFacturaselecte = factura.fa_codFact;
     console.log("ff",factura)
     this.habilitarIcono = false;
     this.botonEditar = false; // Habilita el botón
     this.botonGuardar = true; // Habilita el botón
-
+    this.botonaddItems = true
     const inputs = document.querySelectorAll('.seccion-productos input');
     inputs.forEach((input) => {(input as HTMLInputElement).disabled = true;
     });
@@ -579,7 +582,7 @@ obtenerNcf() {
     this.formularioFacturacion.get('fa_impresa')?.disable();
    this.formularioFacturacion.get('fa_facturada')?.disable();
 
-
+  //this.codMercselecte = detactura.fa_codFact;
 
   }
   formatofecha(date: Date): string {
@@ -1278,16 +1281,19 @@ recalcularTotales() {
     this.cantidadmerc = item.cantidad
     this.existenciatxt = item.producto.in_canmerc;
     this.costotxt = item.producto.in_cosmerc;
-     $("#cantidadInput").focus();
-    $("#cantidadInput").select();
+    setTimeout(() => {
+    this.cantidadInput?.nativeElement.focus();
+    this.cantidadInput?.nativeElement.select();
+  });
 
   }
 agregarItem() {
    this.habilitarCampos= true;
    this.habilitarCantidad= true;
-    $("#codigoInput").focus();
-        $("#codigoInput").select();
-
+    setTimeout(() => {
+    this.codigoInput?.nativeElement.focus();
+    this.codigoInput?.nativeElement.select();
+  });
 }
 
   actualizarTotales() {
@@ -1328,7 +1334,6 @@ agregarItem() {
     factura: this.formularioFacturacion.value,
     detalle: this.items,
   };
-
   if (this.formularioFacturacion.valid) {
     if (codFact) {
       // 🔁 Modo edición

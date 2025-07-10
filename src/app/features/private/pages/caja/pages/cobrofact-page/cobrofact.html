@@ -35,11 +35,20 @@
               <tbody>
                 <tr
                   *ngFor="let factura of facturacionList; let i = index"
-                  [class.selected-row]="factura === facturaSelecionada"
-                  (click)="seleccionarFactura(factura, i)"
+                  [ngClass]="{'table-primary': factura.fa_codFact === codFacturaselecte}"
                 >
-                  <td style="width: 10%">{{factura.fa_codFact}}</td>
-                  <td style="width: 40%">{{factura.fa_nomClie}}</td>
+                  <td
+                    (click)="seleccionarFactura(factura, i)"
+                    style="width: 10%"
+                  >
+                    {{factura.fa_codFact}}
+                  </td>
+                  <td
+                    (click)="seleccionarFactura(factura, i)"
+                    style="width: 40%"
+                  >
+                    {{factura.fa_nomClie}}
+                  </td>
                   <td class="text-center" style="width: 15%">
                     {{factura.fa_fecFact}}
                   </td>
@@ -180,49 +189,9 @@
               <div class="input-group show">
                 <input
                   class="form-control form-control-sm dropdown-toggle searchInput"
-                  data-id="agent"
                   type="text"
-                  autocomplete="off"
-                  (input)="convertToUpperCase($event)"
-                  (keydown.enter)="moveFocusnomclie($event, inputdireccion)"
-                  (keydown)="handleKeydown($event)"
-                  #inputnombre
-                  id="inputnombre"
                   formControlName="fa_nomClie"
                 />
-                <div
-                  [ngClass]="{ 'show': resultadoNombre.length > 0 }"
-                  class="dropdown-menu"
-                  style="
-                    margin-right: 30px;
-                    margin-top: 45px;
-                    z-index: 300;
-                    width: 350px;
-                    position: absolute;
-                    will-change: transform;
-                  "
-                >
-                  <div
-                    class="searchReturnItem name-find"
-                    *ngFor="let result of resultadoNombre; let i = index"
-                    [class.active]="i === selectedIndex"
-                  >
-                    <a
-                      (click)="cargarDatosCliente(result)"
-                      style="
-                        color: #222222 !important;
-                        font-size: 10pt;
-                        padding: 20px 0px;
-                        text-decoration: none !important;
-                        cursor: pointer;
-                      "
-                      class="px-3 cp"
-                    >
-                      <i class="far fa-user-circle mr-5"></i>&nbsp;&nbsp;{{
-                      result.cl_nomClie }}
-                    </a>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
@@ -233,10 +202,7 @@
             <div class="col-10">
               <input
                 type="text"
-                id="inputdireccion"
-                (keydown)="moveFocus($event, inputtelefono)"
                 formControlName="fa_dirClie"
-                #inputdireccion
                 class="form-control form-control-sm"
               />
             </div>
@@ -248,11 +214,7 @@
             <div class="col-3">
               <input
                 type="text"
-                id="inputtelefono"
-                (keydown)="moveFocus($event, inputtelefono2)"
                 formControlName="fa_telClie"
-                #inputtelefono
-                placeholder="Tel. 1"
                 class="form-control form-control-sm"
               />
             </div>
@@ -260,9 +222,6 @@
               <input
                 type="text"
                 formControlName="fa_telClie2"
-                #inputtelefono2
-                (keydown)="moveFocus($event, inputsector)"
-                placeholder="Tel. 2"
                 class="form-control form-control-sm"
               />
             </div>
@@ -270,9 +229,6 @@
               <input
                 type="text"
                 formControlName="fa_sector"
-                #inputsector
-                placeholder="Sector"
-                (keydown)="moveFocus($event, inputcorreo)"
                 class="form-control form-control-sm"
               />
             </div>
@@ -285,9 +241,6 @@
               <input
                 type="text"
                 formControlName="fa_correo"
-                (keydown)="moveFocus($event, inputcontacto)"
-                placeholder="Correo"
-                #inputcorreo
                 class="form-control form-control-sm"
               />
             </div>
@@ -296,8 +249,6 @@
                 type="text"
                 formControlName="fa_contacto"
                 placeholder="Contacto"
-                #inputcontacto
-                (keydown)="moveFocus($event, inputfpago)"
                 class="form-control form-control-sm"
               />
             </div>
@@ -307,24 +258,16 @@
               <label for="" class="label">Tipo pago</label>
             </div>
             <div class="col-3">
-              <select
-                #inputfpago
-                name="formapago"
-                formControlName="fa_fpago"
-                (keydown)="moveFocus($event, inputenvio)"
-                class="form-control listbox"
-              >
-                <option
-                  [value]="fpago.fp_codfpago"
-                  *ngFor="let fpago of resultadoFpago"
-                >
-                  {{fpago.fp_descfpago}}
-                </option>
-              </select>
+              <input
+                type="text"
+                formControlName="fa_contacto"
+                placeholder="Contacto"
+                class="form-control form-control-sm"
+              />
             </div>
             <div class="col-3">
               <input
-                #inputenvio
+                type="password"
                 name="listaenvio"
                 forcontrolName="fa_envio"
                 class="form-control listbox"
@@ -334,8 +277,6 @@
               <input
                 type="password"
                 formControlName="fa_codVend"
-                #inputvendedor
-                placeholder="Vendedor"
                 class="form-control form-control-sm"
               />
             </div>
