@@ -36,4 +36,9 @@ export class ServicioFpago {
   obtenerTodosFpago(): Observable<ModeloFpago> {
     return this.http.GetRequest<ModeloFpago>("/fpago");
   }
+
+obtenerFpagoPorId(codigo: string): Observable<ModeloFpago> {
+  return this.http.GetRequest<ModeloFpago>(`/fpago/${codigo}`);
+}
+
 }

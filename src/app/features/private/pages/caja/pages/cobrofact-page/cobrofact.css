@@ -17,3 +17,10 @@ color: #000;
   background-color: #f0b27a !important;
   color: black;
 }
+
+.input-destacado {
+  font-weight: bold;
+  /* Negrita */
+  font-size: 1.2rem;
+  /* Tamaño más grande, puedes subirlo si quieres */
+}

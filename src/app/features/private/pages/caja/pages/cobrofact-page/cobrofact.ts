@@ -1,4 +1,4 @@
-import { Component, NgModule, OnInit, ViewChild, ElementRef, ɵNG_COMP_DEF, HostListener } from '@angular/core';
+import { Component, NgModule, OnInit, ViewChild, ElementRef, ɵNG_COMP_DEF, HostListener, ViewChildren, QueryList } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { BehaviorSubject, debounceTime, distinctUntilChanged, filter, from, skip, switchMap, tap } from 'rxjs';
@@ -18,6 +18,7 @@ import { ModeloFpagoData } from 'src/app/core/services/mantenimientos/fpago';
 import { ServicioFpago } from 'src/app/core/services/mantenimientos/fpago/fpago.service';
 import { ModeloInventario, ModeloInventarioData } from 'src/app/core/services/mantenimientos/inventario';
 import jsPDF from 'jspdf';
+import { HttpClient } from '@angular/common/http';
 import autoTable from 'jspdf-autotable';
 import { disableDebugTools } from '@angular/platform-browser';
 import { ServicioNcf } from 'src/app/core/services/ncf/ncf.service';
@@ -35,6 +36,8 @@ export class CobroFact implements OnInit {
   @ViewChild('inputCodmerc') inputCodmerc!: ElementRef; // Para manejar el foco
   @ViewChild('descripcionInput') descripcionInput!: ElementRef; // Para manejar el foco
   @ViewChild('Tabladetalle') Tabladetalle!: ElementRef;
+  @ViewChildren('filaSeleccionada') filas!: QueryList<ElementRef>;
+  @ViewChild('contenedorScroll') contenedorScroll!: ElementRef;
   botonEditar = true; // Empieza deshabilitado
   botonGuardar = true; // Empieza deshabilitado
   botonaddItems = true; // Empieza deshabilitado
@@ -45,6 +48,8 @@ export class CobroFact implements OnInit {
   facturaSelecionada: any = null;
   codFacturaselecte = " "
   txtdescripcion: string = '';
+  descripcionFormaPago: string = '';
+
   txtcodigo = '';
   // txtFecha: string = '';
   descripcion: string = '';
@@ -449,6 +454,9 @@ obtenerNcf() {
       console.log(this.facturacionList.length)
     });
   }
+
+  rftgfregwwgregrewgewrgrewgrewdescripcionFormaPago: string = '';
+
   consultarFacturacion(factura: FacturacionModelData) {
     this.modoconsultaFacturacion = true;
     this.formularioFacturacion.reset()
@@ -537,7 +545,25 @@ obtenerNcf() {
       console.log(factura.fa_valFact)
       console.log(factura.fa_cosFact)
       console.log(this.factxt)
+
+      this.formularioFacturacion.patchValue({
+      fa_fpago: factura.fa_fpago
+      });
+      // Consultar la descripción de forma de pago
+
+ this.servicioFpago.obtenerFpagoPorId(factura.fa_fpago).subscribe((response) => {
+  console.log('Forma de pago recibida:', response);
+
+  const formaPago = response.data?.[0]; // Accede al primer elemento del array
+  this.descripcionFormaPago = formaPago ? formaPago.fp_descfpago : 'Desconocido';
+});
+
+
+
+
     });
+
+
   }
 
   eliminarFacturacion(facturacionId: string) {
@@ -581,8 +607,6 @@ obtenerNcf() {
     this.formularioFacturacion.get('fa_entrega')?.disable();
     this.formularioFacturacion.get('fa_impresa')?.disable();
    this.formularioFacturacion.get('fa_facturada')?.disable();
-
-
 
   }
   formatofecha(date: Date): string {
@@ -1643,11 +1667,45 @@ onTableKeydown(event: KeyboardEvent) {
 // seleccionarFactura(factura: any) {
 //   this.facturaSelecionada = factura;
 //}
-
 seleccionarFactura(factura: any, index: number) {
-
   this.consultarFacturacion(factura); // ✅ Llamada automática
+  this.codFacturaselecte = factura.fa_codFact;
+
+  setTimeout(() => {
+    const fila = this.filas.toArray()[index];
+    const contenedor = this.contenedorScroll.nativeElement;
+
+    if (fila && contenedor) {
+      const filaOffsetTop = fila.nativeElement.offsetTop;
+      const filaHeight = fila.nativeElement.offsetHeight;
+      const contenedorScrollTop = contenedor.scrollTop;
+      const contenedorHeight = contenedor.offsetHeight;
+
+      // Si la fila está fuera del área visible, hacer scroll
+      if (
+        filaOffsetTop < contenedorScrollTop ||
+        filaOffsetTop + filaHeight > contenedorScrollTop + contenedorHeight
+      ) {
+        contenedor.scrollTop = filaOffsetTop - contenedorHeight / 2 + filaHeight / 2;
+      }
+    }
+  }, 0);
 }
+// seleccionarFactura(factura: any, index: number) {
+//   this.consultarFacturacion(factura); // ✅ Llamada automática
+//   this.codFacturaselecte = factura.fa_codFact;
+
+//   setTimeout(() => {
+//     const fila = this.filas.toArray()[index];
+//     fila?.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+//   });
+// }
+
+
+// seleccionarFactura(factura: any, index: number) {
+
+//   this.consultarFacturacion(factura); // ✅ Llamada automática
+// }
 
 @HostListener('document:keydown.arrowdown', ['$event'])
 handleArrowDown(event: KeyboardEvent) {

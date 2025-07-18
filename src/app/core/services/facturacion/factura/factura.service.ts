@@ -3,7 +3,7 @@ import { Observable } from "rxjs";
 import { HttpInvokeService } from "../../http-invoke.service";
 import { FacturacionModel, FacturacionModelData } from ".";
 
-@Injectable({
+@Injectable({ 
   providedIn: "root"
 })
 export class ServicioFacturacion {

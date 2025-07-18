@@ -6,6 +6,7 @@ import { Fpago } from './fpago';
 import { RutaFpago } from './fpago-ruta';
 
 
+
 @NgModule({
   declarations: [
     Fpago
@@ -19,4 +20,16 @@ import { RutaFpago } from './fpago-ruta';
   providers: [],
   bootstrap: [Fpago]
 })
-export class ModuloFpago { }
+
+
+export interface ModeloFpago {
+  codigo: string;
+  descripcion: string;
+}
+
+export interface RespuestaFpago {
+  status: string;
+  code: number;
+  message: string;
+  data: ModeloFpago[];
+}

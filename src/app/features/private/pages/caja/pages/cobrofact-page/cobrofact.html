@@ -1,14 +1,21 @@
+<h3 class style="color: black; text-align: left; font-weight: bold">
+  Gestion de Cobro factura
+</h3>
 <div class="row">
+  <div class="col-1"></div>
   <div class="col-6">
     <div class="card">
-      <div class="card-header" style="height: 40px; background-color: #af372c">
-        <h3 class="card-title" style="color: white; text-align: center">
-          Facturas
-        </h3>
+      <div
+        class="card-header d-flex align-items-center"
+        style="height: 80px; background-color: #0759c4"
+      >
+        <h3 class="card-title m-0" style="color: white">Lista de Facturas</h3>
       </div>
+
       <div class="card-body" style="background-color: #e6e4e4">
         <div class="row mt-1">
           <div
+            #contenedorScroll
             class="table-responsive"
             style="
               position: relative;
@@ -17,12 +24,59 @@
               border: 2px solid rgb(4, 10, 185);
             "
           >
-            <table
+            <table class="table table-hover table-sm">
+              <thead class="table-dark">
+                <tr>
+                  <th>Número</th>
+                  <th>Cliente / Fecha</th>
+                  <th class="text-end">Valor</th>
+                  <th class="text-center">Opciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  *ngFor="let factura of facturacionList; let i = index"
+                  [ngClass]="{ 'table-primary': factura.fa_codFact === codFacturaselecte }"
+                  style="vertical-align: middle"
+                >
+                  <!-- Número -->
+                  <td (click)="seleccionarFactura(factura, i)">
+                    <div class="fw-bold">{{ factura.fa_codFact }}</div>
+                  </td>
+
+                  <!-- Nombre del cliente y Fecha -->
+                  <td (click)="seleccionarFactura(factura, i)">
+                    <div class="fw-semibold">
+                      {{ factura.fa_nomClie || 'Sin nombre' }}
+                    </div>
+                    <div class="text-muted small">{{ factura.fa_fecFact }}</div>
+                  </td>
+
+                  <!-- Valor -->
+                  <td class="text-end align-middle">
+                    <div class="fw-bold fs-5 text-success">
+                      ${{ factura.fa_valFact | number: '1.2-2' }}
+                    </div>
+                  </td>
+
+                  <!-- Opciones -->
+                  <td class="text-center align-middle">
+                    <i
+                      (click)="consultarFacturacion(factura)"
+                      class="bi bi-card-list text-success"
+                      style="font-size: 1.4rem; cursor: pointer"
+                    ></i>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+
+            <!-- <table
               class="table table-bordered table-hover table-striped table-sm table-class"
             >
               <thead
                 class="table-dark"
-                style="position: sticky; top: 0; z-index: 2"
+                style="position: relative; top: 0; z-index: 2"
               >
                 <tr>
                   <th style="width: 10%">Numero</th>
@@ -36,6 +90,8 @@
                 <tr
                   *ngFor="let factura of facturacionList; let i = index"
                   [ngClass]="{'table-primary': factura.fa_codFact === codFacturaselecte}"
+                  #filaSeleccionada
+                  [attr.data-index]="i"
                 >
                   <td
                     (click)="seleccionarFactura(factura, i)"
@@ -62,15 +118,105 @@
                       style="padding: 10px"
                     >
                     </i>
-
-                    <!-- <i class="bi bi-file-earmark-pdf text-info"></i>-->
                   </td>
                 </tr>
               </tbody>
-            </table>
+            </table> -->
           </div>
         </div>
       </div>
+      <!-- ************** -->
+      <br />
+      <div class="row mt-1">
+        <div class="col-6">
+          <div class="row mt-0">
+            <div class="col-5">
+              <label for="" class="label">Forma de pago</label>
+            </div>
+            <div class="col-7">
+              <input
+                type="text"
+                class="form-control form-control-sm"
+                [value]="descripcionFormaPago"
+                placeholder="Descripción"
+                readonly
+                disabled
+              />
+            </div>
+          </div>
+          <!-- /row mt-0 -->
+
+          <div class="row mt-1">
+            <div class="col-5">
+              <label for="" class="label">Forma de entrga</label>
+            </div>
+            <div class="col-7">
+              <input
+                type="text"
+                formControlName="fa_envio"
+                class="form-control form-control-sm"
+              />
+            </div>
+          </div>
+          <div class="row mt-1">
+            <div class="col-5">
+              <label for="chk1" class="form-check-label mb-0"
+                >Factura Pagada
+              </label>
+            </div>
+            <div class="col-7">
+              <div class="form-check d-flex align-items-center">
+                <input
+                  type="checkbox"
+                  id="chk1"
+                  class="form-check-input me-2"
+                />
+              </div>
+            </div>
+          </div>
+          <!-- /row mt-1 -->
+        </div>
+        <div class="col-6">
+          <div class="row mt-0">
+            <div class="col-5">
+              <label for="" class="lable">Monto a pagar</label>
+            </div>
+            <div class="col-6">
+              <input
+                type="number"
+                formControlName="fa_valfact"
+                class="form-control form-control-sm"
+              />
+            </div>
+            <div class="row mt-0">
+              <div class="col-5">
+                <label for="" class="label"> Monto pagado</label>
+              </div>
+              <div class="col-6">
+                <input
+                  type="number"
+                  formControlName="valpagado"
+                  class="form-control form-control-sm"
+                />
+              </div>
+            </div>
+            <div class="row mt-0">
+              <div class="col-5">
+                <label for="" class="label"> Monto Cambio</label>
+              </div>
+              <div class="col-6">
+                <input
+                  type="number"
+                  formControlName="valcambio"
+                  class="form-control form-control-sm"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- /row mt-1 principal -->
+
       <!-- ***************** -->
       <div class="row mt-0">
         <div class="col">
@@ -118,7 +264,317 @@
       <!--**********************  -->
     </div>
   </div>
-  <div class="col-6">
+
+  <div class="col-4">
+    <div class="card">
+      <div
+        class="card-header d-flex align-items-center"
+        style="height: 80px; background-color: #19aa61"
+      >
+        <h3 class="card-title m-0" style="color: white">Datos de la factura</h3>
+      </div>
+
+      <div class="card-body" style="background-color: #e6e4e4">
+        <form
+          [formGroup]="formularioFacturacion"
+          class="custom-form-background"
+        >
+          <div class="row mt-0">
+            <div class="col-1">
+              <label style="font-weight: bold; font-size: 1.2rem"> No. </label>
+            </div>
+            <div class="col-5">
+              <input
+                type="text"
+                class="form-control form-control-sm"
+                style="font-weight: bold; font-size: 1.2rem"
+                formControlName="fa_codFact"
+              />
+            </div>
+            <div class="col-4">
+              <input
+                type="text"
+                class="form-control form-control-sm"
+                formControlName="fa_rncFact"
+                placeholder="RNC"
+              />
+            </div>
+            <div class="row mt-1">
+              <div class="col-4">
+                <input
+                  formControlName="fa_fecFact"
+                  type="text"
+                  class="form-control form-control-sm"
+                  style="font-weight: bold; font-size: 1.2em"
+                />
+              </div>
+              <div class="col-4">
+                <input
+                  type="number"
+                  formControlName="fa_tipoNcf"
+                  class="form-select form-control-sm"
+                />
+              </div>
+              <div class="col-4">
+                <input
+                  type="text"
+                  class="form-control form-control-sm"
+                  formControlName="fa_ncfFact"
+                  placeholder="NCF"
+                />
+              </div>
+            </div>
+          </div>
+          <!-- <div class="row mt-1">
+            <div class="col-2">
+              <label for="" class="label">RNC</label>
+            </div>
+            <div class="col-3">
+              <input
+                type="text"
+                #inputrnc
+                id="inputrnc"
+                formControlName="fa_rncFact"
+                class="form-control form-control-sm"
+              />
+            </div>
+            <div class="col-4">
+              <input
+                type="number"
+                formControlName="fa_tipoNcf"
+                class="form-select form-control-sm"
+              />
+            </div>
+            <div class="col-3">
+              <input
+                type="text"
+                class="form-control form-control-sm"
+                formControlName="fa_ncfFact"
+                placeholder="NCF"
+              />
+            </div>
+          </div> -->
+          <div class="row mt-.5">
+            <div class="col-2">
+              <label for="" class="label">Cliente</label>
+            </div>
+          </div>
+          <div class="roe mt-1">
+            <div class="col">
+              <div class="input-group show">
+                <input
+                  class="form-control form-control-sm dropdown-toggle searchInput"
+                  type="text"
+                  formControlName="fa_nomClie"
+                />
+              </div>
+            </div>
+          </div>
+          <div class="row mt-.5">
+            <div class="col-2">
+              <label for="" class="label">Dirección</label>
+            </div>
+          </div>
+          <div class="row mt-1">
+            <div class="col">
+              <input
+                type="text"
+                formControlName="fa_dirClie"
+                class="form-control form-control-sm"
+              />
+            </div>
+          </div>
+          <div class="row mt-.5">
+            <div class="col-2">
+              <label for="" class="label">Telefono</label>
+            </div>
+          </div>
+          <div class="row mt-1">
+            <div class="col-7">
+              <input
+                type="text"
+                formControlName="fa_telClie"
+                class="form-control form-control-sm"
+              />
+            </div>
+            <div class="col-5">
+              <input
+                type="text"
+                formControlName="fa_sector"
+                class="form-control form-control-sm"
+              />
+            </div>
+          </div>
+          <div class="row mt-1">
+            <div class="col-4">
+              <input
+                type="text"
+                class="form-control form-control-sm"
+                [value]="descripcionFormaPago"
+                placeholder="forma Pago"
+                readonly
+                disabled
+              />
+            </div>
+            <div class="col-3">
+              <input
+                type="text"
+                formControlName="fa_envio"
+                class="form-control form-control-sm"
+              />
+            </div>
+            <div class="col-5">
+              <input
+                type="text"
+                formControlName="fa_nomVend"
+                class="form-control form-control-sm"
+                placeholder="Vendedor"
+              />
+            </div>
+          </div>
+        </form>
+        <div class="row">
+          <div class="col">
+            <div
+              class="table-responsive"
+              style="
+                height: 350px;
+                overflow-y: auto;
+                border: 2px solid rgb(4, 10, 185);
+              "
+              tabindex="0"
+              (keydown)="navigateTable($event)"
+              #Tabledetalle
+            >
+              <table class="table table-sm table-bordered">
+                <thead class="table-dark">
+                  <tr style="background-color: rgb(55, 0, 255)">
+                    <th style="width: 13%">Código</th>
+                    <th style="width: 37%">Descripción</th>
+                    <th style="width: 10%">Cant.</th>
+                    <th style="width: 13%">Precio</th>
+                    <th style="width: 15%">Total</th>
+                    <th>Opciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr
+                    *ngFor="let item of items;let i = index"
+                    [class.table-active]="i === selectedRow"
+                    (click)="selectRow(i)"
+                  >
+                    <td style="width: 13%">{{ item.producto?.in_codmerc }}</td>
+                    <td style="width: 37%">{{ item.producto?.in_desmerc }}</td>
+                    <td class="text-center" style="width: 10%">
+                      {{ item.cantidad }}
+                    </td>
+                    <td class="text-center" style="width: 11%">
+                      {{ item.precio }}
+                    </td>
+                    <td class="text-end" style="width: 13%">
+                      {{ item.total | currency }}
+                    </td>
+                    <td>
+                      <i
+                        (click)="editarItem(item)"
+                        class="bi bi-pencil text-primary"
+                        style="padding: 10px"
+                        *ngIf="habilitarIcono"
+                      ></i>
+                      <i
+                        (click)="borarItem(item)"
+                        class="bi bi-trash text-danger"
+                        style="padding: 10px"
+                        *ngIf="habilitarIcono"
+                      >
+                      </i>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-7"></div>
+          <div class="col-5">
+            <div class="row mt-1">
+              <div style="padding: 5px; border: 2px solid rgb(4, 10, 185)">
+                <div class="row">
+                  <h6
+                    class="col-4 col-form-label text-black"
+                    style="font-size: 18px; font-weight: bold"
+                  >
+                    Sub Total
+                  </h6>
+                  <div class="col-8">
+                    <input
+                      type="text"
+                      style="font-size: 18px; font-weight: bold"
+                      class="form-control form-control-sm text-end"
+                      disabled
+                      [value]="subTotal | number:'1.2-2'"
+                      id="inputPassword"
+                    />
+                  </div>
+                </div>
+                <div class="row mt-.5">
+                  <h6
+                    class="col-4 col-form-label text-black"
+                    style="font-size: 18px; font-weight: bold"
+                  >
+                    Desc.
+                  </h6>
+                  <div class="col-8">
+                    <input
+                      type="text"
+                      style="font-size: 18px; font-weight: bold"
+                      class="form-control form-control-sm text-end"
+                      disabled
+                      [(ngModel)]="descuentotxt"
+                      id="inputPassword"
+                    />
+                  </div>
+                </div>
+                <div class="row mt-.5">
+                  <h6
+                    class="col-4 col-form-label text-black"
+                    style="font-size: 18px; font-weight: bold"
+                  >
+                    ITBI
+                  </h6>
+                  <div class="col-8">
+                    <input
+                      type="text"
+                      style="font-size: 18px; font-weight: bold"
+                      class="form-control form-control-sm text-end"
+                      disabled
+                      [value]="totalItbis | number:'1.2-2'"
+                      id="inputPassword"
+                    />
+                  </div>
+                </div>
+                <div class="row mt-.5">
+                  <h4 class="col-4 text-black">Total</h4>
+                  <div class="col-8">
+                    <input
+                      type="text"
+                      style="font-size: 18px; font-weight: bold"
+                      disabled
+                      class="form-control form-control-sm text-end"
+                      [value]="totalGral | number:'1.2-2'"
+                      id="inputPassword"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- <div class="col-6">
     <div class="card">
       <div class="card-header" style="height: 40px; background-color: #0101b9">
         <h4 class="card-title" style="color: white; text-align: left">
@@ -131,7 +587,6 @@
           [formGroup]="formularioFacturacion"
           class="custom-form-background"
         >
-          <!-- (ngSubmit)="guardarFacturacion()" -->
           <div class="row mt-0">
             <div class="col-5"></div>
             <div class="col-1">
@@ -260,20 +715,21 @@
             <div class="col-3">
               <input
                 type="text"
-                formControlName="fa_contacto"
-                placeholder="Contacto"
+                class="form-control form-control-sm"
+                [value]="descripcionFormaPago"
+                placeholder="Descripción"
+                readonly
+                disabled
+              />
+            </div>
+                <div class="col-3">
+              <input
+                type="text"
+                formControlName="fa_envio"
                 class="form-control form-control-sm"
               />
             </div>
-            <div class="col-3">
-              <input
-                type="password"
-                name="listaenvio"
-                forcontrolName="fa_envio"
-                class="form-control listbox"
-              />
-            </div>
-            <div class="col-2">
+                <div class="col-2">
               <input
                 type="password"
                 formControlName="fa_codVend"
@@ -475,5 +931,5 @@
         </div>
       </div>
     </div>
-  </div>
+  </div> -->
 </div>

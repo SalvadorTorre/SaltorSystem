@@ -1,4 +1,5 @@
 export interface ModeloFpago{
+  fp_descfpago: string;
   status: string;
   code: number;
   message: string;
