@@ -7,12 +7,23 @@
     <div class="card">
       <div
         class="card-header d-flex align-items-center"
-        style="height: 80px; background-color: #0759c4"
+        style="
+          height: 60px;
+          background-color: #0759c4;
+          margin-bottom: 0;
+          padding-bottom: 0;
+          padding-top: 0;
+          margin-top: 0;
+          padding-bottom: 0;
+          margin-bottom: 0;
+        "
       >
-        <h3 class="card-title m-0" style="color: white">Lista de Facturas</h3>
+        <h5 class="card-title m-0" style="color: white">Lista de Facturas</h5>
       </div>
-
-      <div class="card-body" style="background-color: #e6e4e4">
+      <div
+        class="card-body"
+        style="background-color: #e6e4e4; padding-top: 0; margin-top: 0"
+      >
         <div class="row mt-1">
           <div
             #contenedorScroll
@@ -124,92 +135,146 @@
             </table> -->
           </div>
         </div>
-      </div>
-      <!-- ************** -->
-      <br />
-      <div class="row mt-1">
-        <div class="col-6">
-          <div class="row mt-0">
-            <div class="col-5">
-              <label for="" class="label">Forma de pago</label>
-            </div>
-            <div class="col-7">
-              <input
-                type="text"
-                class="form-control form-control-sm"
-                [value]="descripcionFormaPago"
-                placeholder="Descripción"
-                readonly
-                disabled
-              />
-            </div>
-          </div>
-          <!-- /row mt-0 -->
 
-          <div class="row mt-1">
-            <div class="col-5">
-              <label for="" class="label">Forma de entrga</label>
-            </div>
-            <div class="col-7">
-              <input
-                type="text"
-                formControlName="fa_envio"
-                class="form-control form-control-sm"
-              />
-            </div>
+        <!-- ************** -->
+        <br />
+        <div class="row mt-1">
+          <div
+            class="card-header d-flex align-items-center"
+            style="
+              height: 60px;
+              background-color: #d16319;
+              margin-bottom: 0;
+              padding-bottom: 0;
+              padding-top: 0;
+              margin-top: 0;
+              padding-bottom: 0;
+              margin-bottom: 0;
+            "
+          >
+            <h5 class="card-title m-0" style="color: white">P A G O</h5>
           </div>
-          <div class="row mt-1">
-            <div class="col-5">
-              <label for="chk1" class="form-check-label mb-0"
-                >Factura Pagada
-              </label>
-            </div>
-            <div class="col-7">
-              <div class="form-check d-flex align-items-center">
-                <input
-                  type="checkbox"
-                  id="chk1"
-                  class="form-check-input me-2"
-                />
-              </div>
-            </div>
-          </div>
-          <!-- /row mt-1 -->
-        </div>
-        <div class="col-6">
-          <div class="row mt-0">
-            <div class="col-5">
-              <label for="" class="lable">Monto a pagar</label>
-            </div>
-            <div class="col-6">
-              <input
-                type="number"
-                formControlName="fa_valfact"
-                class="form-control form-control-sm"
-              />
-            </div>
-            <div class="row mt-0">
+          <div class="col-6">
+            <div class="row mt-1">
               <div class="col-5">
-                <label for="" class="label"> Monto pagado</label>
+                <label for="chk1" class="form-check-label mb-0"
+                  >Factura Pagada
+                </label>
               </div>
-              <div class="col-6">
-                <input
-                  type="number"
-                  formControlName="valpagado"
-                  class="form-control form-control-sm"
-                />
+
+              <div class="col-7">
+                <div class="form-check d-flex align-items-center">
+                  <input
+                    [disabled]="chekpagada"
+                    type="checkbox"
+                    id="chk1"
+                    class="form-check-input me-2"
+                    [checked]="chekPagado"
+                    (click)="toggleCheckPagado()"
+                  />
+                  <label for="chk1" class="form-check-label">Pagada</label>
+                </div>
               </div>
             </div>
             <div class="row mt-0">
               <div class="col-5">
-                <label for="" class="label"> Monto Cambio</label>
+                <label for="" class="label">Forma de pago</label>
+              </div>
+              <div class="col-7">
+                <input
+                  type="text"
+                  [disabled]="chekpagada"
+                  class="form-control form-control-sm"
+                  [value]="descripcionFormaPago"
+                />
+              </div>
+            </div>
+            <!-- /row mt-0 -->
+
+            <div class="row mt-1">
+              <div class="col-5">
+                <label for="" class="label">Forma de entrga</label>
+              </div>
+              <div class="col-7">
+                <strong
+                  >{{ formularioFacturacion.get('fa_envio')?.value }}</strong
+                >
+
+                <select
+                  class="form-control form-control-sm"
+                  formControlName="fa_envio"
+                >
+                  <optgroup label="Tipo de envío">
+                    <option value="envio">Envío</option>
+                    <option value="retiro">Retira Cliente</option>
+                  </optgroup>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-6">
+            <div class="row mt-0">
+              <div class="col-5">
+                <label for="" class="lable">Valor a pagar</label>
               </div>
               <div class="col-6">
-                <input
-                  type="number"
-                  formControlName="valcambio"
-                  class="form-control form-control-sm"
-                />
+                <div class="mt-0">
+                  <p
+                    style="
+                      font-size: 1.5pc;
+                      margin-bottom: 0;
+                      margin-top: 0;
+                      padding-bottom: 0;
+                      color: #3a9769;
+                    "
+                  >
+                    <strong>
+                      {{ formularioFacturacion.get('fa_valFact')?.value |
+                      number:'1.2-2'}}</strong
+                    >
+                  </p>
+                </div>
+              </div>
+              <div class="row mt-0">
+                <div class="col-5">
+                  <label for="" class="label"> Valor pagado</label>
+                </div>
+                <div class="col-6">
+                  <!-- <input
+                    type="number"
+                    formControlName="valpagado"
+                    class="form-control form-control-sm"
+                  /> -->
+                  <input
+                    type="number"
+                    class="form-control form-control-sm"
+                    style="font-size: 1.5pc; font-weight: bold"
+                    [value]="formularioFacturacion.get('valpagado')?.value"
+                    [disabled]="txtvalPagado"
+                    (input)="onInputPagado($event)"
+                  />
+                </div>
+              </div>
+              <div class="row mt-0">
+                <div class="col-5">
+                  <label for="" class="label"> Cambio</label>
+                </div>
+                <div class="col-6">
+                  <!-- <input
+                    type="number"
+                    [disabled]="txtcambio"
+                    formControlName="valcambio"
+                    class="form-control form-control-sm"
+                  /> -->
+                  <input
+                    type="number"
+                    class="form-control form-control-sm"
+                    [value]="formularioFacturacion.get('valcambio')?.value |
+                      number:'1.2-2'"
+                    disabled
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -223,34 +288,35 @@
           <div class="card">
             <div
               class="card-body"
-              style="height: 60px; background-color: #f7eeeebd"
+              style="
+                height: 60px;
+                background-color: #f7eeeebd;
+                margin-bottom: 0;
+                padding-bottom: 0;
+              "
             >
               <div class="row mt-0">
-                <!-- <div class="col-1"></div> -->
                 <div class="col-4">
                   <button
-                    [disabled]="botonEditar"
-                    class="btn btn-success btn-block btn-lx w-50"
-                    (click)="editarFactura()"
-                  >
-                    <i class="bi bi-arrow-clockwise"></i> Editar
-                  </button>
-                </div>
-                <!-- <div class="col-1"></div> -->
-                <div class="col-4">
-                  <button
-                    [disabled]="botonGuardar"
-                    class="btn btn-success btn-lx w-50"
+                    [disabled]="botonImprimir"
+                    class="btn btn-primary btn-lx w-50"
                     (click)="guardarFacturacion()"
                   >
-                    <i class="bi bi-check"></i> Guardar
+                    <i class="bi bi-printer" style="font-weight: bold"></i>
+                    Imprimir
                   </button>
                 </div>
+
                 <!-- <div class="col-1"></div> -->
                 <div class="col-4">
                   <button
-                    class="btn btn-success btn-block btn-lx w-50"
+                    class="btn w-50"
                     (click)="limpia()"
+                    style="
+                      background-color: white;
+                      color: red;
+                      border: 2px solid orange;
+                    "
                   >
                     <i class="bi bi-arrow-clockwise"></i> Deshacer
                   </button>
@@ -266,15 +332,23 @@
   </div>
 
   <div class="col-4">
-    <div class="card">
+    <div class="card" style="margin-bottom: 0; padding-bottom: 0">
       <div
         class="card-header d-flex align-items-center"
-        style="height: 80px; background-color: #19aa61"
+        style="height: 60px; background-color: #19aa61"
       >
-        <h3 class="card-title m-0" style="color: white">Datos de la factura</h3>
+        <h5
+          class="card-title m-0"
+          style="color: white; margin-bottom: 0; padding-bottom: 0"
+        >
+          Datos de la factura
+        </h5>
       </div>
 
-      <div class="card-body" style="background-color: #e6e4e4">
+      <div
+        class="card-body"
+        style="background-color: #e6e4e4; margin-top: 0; padding-top: 0"
+      >
         <form
           [formGroup]="formularioFacturacion"
           class="custom-form-background"
@@ -434,137 +508,206 @@
           </div>
         </form>
         <div class="row">
-          <div class="col">
-            <div
-              class="table-responsive"
-              style="
-                height: 350px;
-                overflow-y: auto;
-                border: 2px solid rgb(4, 10, 185);
-              "
-              tabindex="0"
-              (keydown)="navigateTable($event)"
-              #Tabledetalle
-            >
-              <table class="table table-sm table-bordered">
-                <thead class="table-dark">
-                  <tr style="background-color: rgb(55, 0, 255)">
-                    <th style="width: 13%">Código</th>
-                    <th style="width: 37%">Descripción</th>
-                    <th style="width: 10%">Cant.</th>
-                    <th style="width: 13%">Precio</th>
-                    <th style="width: 15%">Total</th>
-                    <th>Opciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr
-                    *ngFor="let item of items;let i = index"
-                    [class.table-active]="i === selectedRow"
-                    (click)="selectRow(i)"
-                  >
-                    <td style="width: 13%">{{ item.producto?.in_codmerc }}</td>
-                    <td style="width: 37%">{{ item.producto?.in_desmerc }}</td>
-                    <td class="text-center" style="width: 10%">
-                      {{ item.cantidad }}
-                    </td>
-                    <td class="text-center" style="width: 11%">
-                      {{ item.precio }}
-                    </td>
-                    <td class="text-end" style="width: 13%">
-                      {{ item.total | currency }}
-                    </td>
-                    <td>
-                      <i
-                        (click)="editarItem(item)"
-                        class="bi bi-pencil text-primary"
-                        style="padding: 10px"
-                        *ngIf="habilitarIcono"
-                      ></i>
-                      <i
-                        (click)="borarItem(item)"
-                        class="bi bi-trash text-danger"
-                        style="padding: 10px"
-                        *ngIf="habilitarIcono"
-                      >
-                      </i>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+          <div
+            class="card-header d-flex align-items-center"
+            style="
+              height: 60px;
+              background-color: #8711e9;
+              margin-bottom: 0;
+              padding-bottom: 0;
+            "
+          >
+            <h5 class="card-title m-0" style="color: white">
+              Detalles de Productos
+            </h5>
           </div>
-        </div>
-        <div class="row">
-          <div class="col-7"></div>
-          <div class="col-5">
+          <div
+            class="card-body"
+            style="background-color: #e6e4e4; padding-top: 0; margin-top: 0"
+          >
             <div class="row mt-1">
-              <div style="padding: 5px; border: 2px solid rgb(4, 10, 185)">
-                <div class="row">
-                  <h6
-                    class="col-4 col-form-label text-black"
-                    style="font-size: 18px; font-weight: bold"
+              <div
+                #contenedorScroll
+                class="table-responsive"
+                style="
+                  position: relative;
+                  height: 250px;
+                  overflow-y: auto;
+                  border: 2px solid rgb(4, 10, 185);
+                  padding-top: 0;
+                  margin-top: 0;
+                "
+              >
+                <table class="table table-hover table-sm">
+                  <thead class="table-dark">
+                    <tr>
+                      <th style="width: 50%">Código/Descripción</th>
+                      <th style="width: 10%" class="text-center">Cant.</th>
+                      <th style="width: 13%" class="text-center">Precio</th>
+                      <th style="width: 15%" class="text-end">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr
+                      *ngFor="let item of items; let i = index"
+                      [class.table-primary]="i === selectedRow"
+                      style="vertical-align: middle"
+                      (click)="selectRow(i)"
+                    >
+                      <!-- Descripción -->
+                      <td style="width: 50%">
+                        <div class="fw-bold">
+                          {{ item.producto?.in_codmerc }}
+                        </div>
+                        <div class="text-muted small">
+                          {{ item.producto?.in_desmerc }}
+                        </div>
+                      </td>
+
+                      <!-- Cantidad -->
+                      <td class="text-center align-middle" style="width: 10%">
+                        <div class="fw-bold">{{ item.cantidad }}</div>
+                      </td>
+
+                      <!-- Precio -->
+                      <td class="text-center align-middle" style="width: 10%">
+                        <div class="fw-bold text-info">
+                          ${{ item.precio | number: '1.2-2' }}
+                        </div>
+                      </td>
+
+                      <!-- Total -->
+                      <td class="text-end align-middle" style="width: 10%">
+                        <div class="fw-bold fs-5 text-success">
+                          {{ item.total | currency }}
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-4"></div>
+              <div class="col-8">
+                <div class="row mt-0">
+                  <div
+                    style="
+                      margin-bottom: 0;
+                      margin-top: 0;
+                      padding: 5px;
+                      border: 2px solid rgb(4, 10, 185);
+                    "
                   >
-                    Sub Total
-                  </h6>
-                  <div class="col-8">
-                    <input
-                      type="text"
-                      style="font-size: 18px; font-weight: bold"
-                      class="form-control form-control-sm text-end"
-                      disabled
-                      [value]="subTotal | number:'1.2-2'"
-                      id="inputPassword"
-                    />
-                  </div>
-                </div>
-                <div class="row mt-.5">
-                  <h6
-                    class="col-4 col-form-label text-black"
-                    style="font-size: 18px; font-weight: bold"
-                  >
-                    Desc.
-                  </h6>
-                  <div class="col-8">
-                    <input
-                      type="text"
-                      style="font-size: 18px; font-weight: bold"
-                      class="form-control form-control-sm text-end"
-                      disabled
-                      [(ngModel)]="descuentotxt"
-                      id="inputPassword"
-                    />
-                  </div>
-                </div>
-                <div class="row mt-.5">
-                  <h6
-                    class="col-4 col-form-label text-black"
-                    style="font-size: 18px; font-weight: bold"
-                  >
-                    ITBI
-                  </h6>
-                  <div class="col-8">
-                    <input
-                      type="text"
-                      style="font-size: 18px; font-weight: bold"
-                      class="form-control form-control-sm text-end"
-                      disabled
-                      [value]="totalItbis | number:'1.2-2'"
-                      id="inputPassword"
-                    />
-                  </div>
-                </div>
-                <div class="row mt-.5">
-                  <h4 class="col-4 text-black">Total</h4>
-                  <div class="col-8">
-                    <input
-                      type="text"
-                      style="font-size: 18px; font-weight: bold"
-                      disabled
-                      class="form-control form-control-sm text-end"
-                      [value]="totalGral | number:'1.2-2'"
-                      id="inputPassword"
-                    />
+                    <div class="row MT-0">
+                      <h6
+                        class="col-4 col-form-label text-black"
+                        style="font-size: 18px; font-weight: bold"
+                      >
+                        Sub Total
+                      </h6>
+                      <div class="col-8">
+                        <input
+                          type="text"
+                          style="font-size: 18px; font-weight: bold"
+                          class="form-control form-control-sm text-end"
+                          disabled
+                          [value]="subTotal | number:'1.2-2'"
+                          id="inputPassword"
+                        />
+                      </div>
+                    </div>
+                    <div
+                      class="row mt-0"
+                      style="
+                        padding-top: 0;
+                        margin-bottom: 0;
+                        padding-bottom: 0;
+                      "
+                    >
+                      <h6
+                        class="col-4 col-form-label text-black"
+                        style="
+                          font-size: 18px;
+                          font-weight: bold;
+                          padding-top: 0;
+                          margin-bottom: 0;
+                          padding-bottom: 0;
+                        "
+                      >
+                        Desc.
+                      </h6>
+                      <div class="col-8">
+                        <input
+                          type="text"
+                          style="
+                            font-size: 18px;
+                            font-weight: bold;
+                            padding-top: 0;
+                            margin-bottom: 0;
+                            padding-bottom: 0;
+                          "
+                          class="form-control form-control-sm text-end"
+                          disabled
+                          [(ngModel)]="descuentotxt"
+                          id="inputPassword"
+                        />
+                      </div>
+                    </div>
+                    <div
+                      class="row mt-0"
+                      style="
+                        padding-top: 0;
+                        margin-bottom: 0;
+                        padding-bottom: 0;
+                      "
+                    >
+                      <h6
+                        class="col-4 col-form-label text-black"
+                        style="font-size: 18px; font-weight: bold"
+                      >
+                        ITBI
+                      </h6>
+                      <div class="col-8">
+                        <input
+                          type="text"
+                          style="font-size: 18px; font-weight: bold"
+                          class="form-control form-control-sm text-end"
+                          disabled
+                          [value]="totalItbis | number:'1.2-2'"
+                          id="inputPassword"
+                        />
+                      </div>
+                    </div>
+                    <div class="row mt-0">
+                      <h4
+                        class="col-4 text-black"
+                        style="
+                          padding-top: 0;
+                          margin-bottom: 0;
+                          padding-bottom: 0;
+                        "
+                      >
+                        Total
+                      </h4>
+                      <div class="col-8">
+                        <input
+                          type="text"
+                          style="
+                            font-size: 18px;
+                            font-weight: bold;
+                            margin-top: 0;
+                            padding-top: 0;
+                            margin-bottom: 0;
+                            padding-bottom: 0;
+                          "
+                          disabled
+                          class="form-control form-control-sm text-end"
+                          [value]="totalGral | number:'1.2-2'"
+                          id="inputPassword"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -574,362 +717,4 @@
       </div>
     </div>
   </div>
-  <!-- <div class="col-6">
-    <div class="card">
-      <div class="card-header" style="height: 40px; background-color: #0101b9">
-        <h4 class="card-title" style="color: white; text-align: left">
-          Datos de la factura
-        </h4>
-      </div>
-
-      <div class="card-body" style="background-color: #e6e4e4">
-        <form
-          [formGroup]="formularioFacturacion"
-          class="custom-form-background"
-        >
-          <div class="row mt-0">
-            <div class="col-5"></div>
-            <div class="col-1">
-              <label for="" class="label">No.</label>
-            </div>
-            <div class="col-3">
-              <input
-                type="text"
-                class="form-control form-control-sm textbox"
-                formControlName="fa_codFact"
-              />
-            </div>
-            <div class="col-3">
-              <input
-                formControlName="fa_fecFact"
-                type="text"
-                class="form-control form-control-sm"
-              />
-            </div>
-          </div>
-          <div class="row mt-1">
-            <div class="col-2">
-              <label for="" class="label">RNC</label>
-            </div>
-            <div class="col-3">
-              <input
-                type="text"
-                #inputrnc
-                id="inputrnc"
-                formControlName="fa_rncFact"
-                class="form-control form-control-sm"
-              />
-            </div>
-            <div class="col-4">
-              <input
-                type="number"
-                formControlName="fa_tipoNcf"
-                class="form-select form-control-sm"
-              />
-            </div>
-            <div class="col-3">
-              <input
-                type="text"
-                class="form-control form-control-sm"
-                formControlName="fa_ncfFact"
-                placeholder="NCF"
-              />
-            </div>
-          </div>
-          <div class="row mt-.5">
-            <div class="col-2">
-              <label for="" class="label">Cliente</label>
-            </div>
-            <div class="col-10">
-              <div class="input-group show">
-                <input
-                  class="form-control form-control-sm dropdown-toggle searchInput"
-                  type="text"
-                  formControlName="fa_nomClie"
-                />
-              </div>
-            </div>
-          </div>
-          <div class="row mt-.5">
-            <div class="col-2">
-              <label for="" class="label">Dirección</label>
-            </div>
-            <div class="col-10">
-              <input
-                type="text"
-                formControlName="fa_dirClie"
-                class="form-control form-control-sm"
-              />
-            </div>
-          </div>
-          <div class="row mt-.5">
-            <div class="col-2">
-              <label for="" class="label">Telefono</label>
-            </div>
-            <div class="col-3">
-              <input
-                type="text"
-                formControlName="fa_telClie"
-                class="form-control form-control-sm"
-              />
-            </div>
-            <div class="col-3">
-              <input
-                type="text"
-                formControlName="fa_telClie2"
-                class="form-control form-control-sm"
-              />
-            </div>
-            <div class="col-4">
-              <input
-                type="text"
-                formControlName="fa_sector"
-                class="form-control form-control-sm"
-              />
-            </div>
-          </div>
-          <div class="row mt-.5">
-            <div class="col-2">
-              <label for="" class="label">Correo</label>
-            </div>
-            <div class="col-6">
-              <input
-                type="text"
-                formControlName="fa_correo"
-                class="form-control form-control-sm"
-              />
-            </div>
-            <div class="col-4">
-              <input
-                type="text"
-                formControlName="fa_contacto"
-                placeholder="Contacto"
-                class="form-control form-control-sm"
-              />
-            </div>
-          </div>
-          <div class="row mt-1">
-            <div class="col-2">
-              <label for="" class="label">Tipo pago</label>
-            </div>
-            <div class="col-3">
-              <input
-                type="text"
-                class="form-control form-control-sm"
-                [value]="descripcionFormaPago"
-                placeholder="Descripción"
-                readonly
-                disabled
-              />
-            </div>
-                <div class="col-3">
-              <input
-                type="text"
-                formControlName="fa_envio"
-                class="form-control form-control-sm"
-              />
-            </div>
-                <div class="col-2">
-              <input
-                type="password"
-                formControlName="fa_codVend"
-                class="form-control form-control-sm"
-              />
-            </div>
-            <div class="col-2">
-              <input
-                type="text"
-                formControlName="fa_nomVend"
-                class="form-control form-control-sm"
-              />
-            </div>
-          </div>
-          <div class="row mt-.5">
-            <div class="col-2">
-              <label for="fa_despacho" class="form-check-label"
-                >Facturada</label
-              >
-            </div>
-            <div class="col-2">
-              <div class="form-check">
-                <input
-                  type="checkbox"
-                  id="fa_facturada"
-                  formControlName="fa_facturada"
-                  class="form-check-input form-check-input-sm"
-                />
-              </div>
-            </div>
-            <div class="col-2">
-              <label for="fa_despacho" class="form-check-label"
-                >Despachado</label
-              >
-            </div>
-            <div class="col-2">
-              <div class="form-check">
-                <input
-                  type="checkbox"
-                  id="fa_despacho"
-                  formControlName="fa_despacho"
-                  class="form-check-input form-check-input-sm"
-                />
-              </div>
-            </div>
-            <div class="col-2">
-              <label for="" class="label">Entregada</label>
-            </div>
-            <div class="col-2">
-              <input
-                type="checkbox"
-                id="fa_entrega"
-                formControlName="fa_entrega"
-                placeholder="Entregado"
-                #input8
-                class="form-check-input form-check-input-sm"
-              />
-            </div>
-          </div>
-        </form>
-        <br />
-        <div class="row">
-          <div class="col">
-            <div
-              class="table-responsive"
-              style="
-                height: 350px;
-                overflow-y: auto;
-                border: 2px solid rgb(4, 10, 185);
-              "
-              tabindex="0"
-              (keydown)="navigateTable($event)"
-              #Tabledetalle
-            >
-              <table class="table table-sm table-bordered">
-                <thead class="table-dark">
-                  <tr style="background-color: rgb(55, 0, 255)">
-                    <th style="width: 13%">Código</th>
-                    <th style="width: 37%">Descripción</th>
-                    <th style="width: 10%">Cant.</th>
-                    <th style="width: 13%">Precio</th>
-                    <th style="width: 15%">Total</th>
-                    <th>Opciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr
-                    *ngFor="let item of items;let i = index"
-                    [class.table-active]="i === selectedRow"
-                    (click)="selectRow(i)"
-                  >
-                    <td style="width: 13%">{{ item.producto?.in_codmerc }}</td>
-                    <td style="width: 37%">{{ item.producto?.in_desmerc }}</td>
-                    <td class="text-center" style="width: 10%">
-                      {{ item.cantidad }}
-                    </td>
-                    <td class="text-center" style="width: 11%">
-                      {{ item.precio }}
-                    </td>
-                    <td class="text-end" style="width: 13%">
-                      {{ item.total | currency }}
-                    </td>
-                    <td>
-                      <i
-                        (click)="editarItem(item)"
-                        class="bi bi-pencil text-primary"
-                        style="padding: 10px"
-                        *ngIf="habilitarIcono"
-                      ></i>
-                      <i
-                        (click)="borarItem(item)"
-                        class="bi bi-trash text-danger"
-                        style="padding: 10px"
-                        *ngIf="habilitarIcono"
-                      >
-                      </i>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-        <div class="row">
-          <div class="col-7"></div>
-          <div class="col-5">
-            <div class="row mt-1">
-              <div style="padding: 5px; border: 2px solid rgb(4, 10, 185)">
-                <div class="row">
-                  <h6
-                    class="col-4 col-form-label text-black"
-                    style="font-size: 18px; font-weight: bold"
-                  >
-                    Sub Total
-                  </h6>
-                  <div class="col-8">
-                    <input
-                      type="text"
-                      style="font-size: 18px; font-weight: bold"
-                      class="form-control form-control-sm text-end"
-                      disabled
-                      [value]="subTotal | number:'1.2-2'"
-                      id="inputPassword"
-                    />
-                  </div>
-                </div>
-                <div class="row mt-.5">
-                  <h6
-                    class="col-4 col-form-label text-black"
-                    style="font-size: 18px; font-weight: bold"
-                  >
-                    Desc.
-                  </h6>
-                  <div class="col-8">
-                    <input
-                      type="text"
-                      style="font-size: 18px; font-weight: bold"
-                      class="form-control form-control-sm text-end"
-                      disabled
-                      [(ngModel)]="descuentotxt"
-                      id="inputPassword"
-                    />
-                  </div>
-                </div>
-                <div class="row mt-.5">
-                  <h6
-                    class="col-4 col-form-label text-black"
-                    style="font-size: 18px; font-weight: bold"
-                  >
-                    ITBI
-                  </h6>
-                  <div class="col-8">
-                    <input
-                      type="text"
-                      style="font-size: 18px; font-weight: bold"
-                      class="form-control form-control-sm text-end"
-                      disabled
-                      [value]="totalItbis | number:'1.2-2'"
-                      id="inputPassword"
-                    />
-                  </div>
-                </div>
-                <div class="row mt-.5">
-                  <h4 class="col-4 text-black">Total</h4>
-                  <div class="col-8">
-                    <input
-                      type="text"
-                      style="font-size: 18px; font-weight: bold"
-                      disabled
-                      class="form-control form-control-sm text-end"
-                      [value]="totalGral | number:'1.2-2'"
-                      id="inputPassword"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div> -->
 </div>

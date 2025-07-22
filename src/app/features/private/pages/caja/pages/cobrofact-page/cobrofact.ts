@@ -39,8 +39,12 @@ export class CobroFact implements OnInit {
   @ViewChildren('filaSeleccionada') filas!: QueryList<ElementRef>;
   @ViewChild('contenedorScroll') contenedorScroll!: ElementRef;
   botonEditar = true; // Empieza deshabilitado
-  botonGuardar = true; // Empieza deshabilitado
+  botonImprimir = true; // Empieza deshabilitado
   botonaddItems = true; // Empieza deshabilitado
+  chekpagada = true;  // Empieza deshabilitado
+  chekPagado = false;
+  txtcambio = true;
+  txtvalPagado = true;
   totalItems =1000;
   pageSize = 6;
   currentPage = 1;
@@ -49,7 +53,6 @@ export class CobroFact implements OnInit {
   codFacturaselecte = " "
   txtdescripcion: string = '';
   descripcionFormaPago: string = '';
-
   txtcodigo = '';
   // txtFecha: string = '';
   descripcion: string = '';
@@ -344,7 +347,7 @@ obtenerNcf() {
       this.txtFecha = '';
    //   this.buscarTodasFacturaciomtimbresobre tim0
     this.botonEditar = true; // Deshabilita de nuevo
-    this.botonGuardar = true; // Habilita el botón
+    this.botonImprimir = true; // Deshabilita el botón
    this.productoselect;
    this.codmerc = ""
    this.descripcionmerc = ""
@@ -470,7 +473,9 @@ obtenerNcf() {
     console.log("ff",factura)
     this.habilitarIcono = false;
     this.botonEditar = false; // Habilita el botón
-    this.botonGuardar = true; // Habilita el botón
+    this.chekpagada = false; // Habilita el botón
+
+    // this.botonImprimir = true; // Deshabilita el botón
 
     const inputs = document.querySelectorAll('.seccion-productos input');
     inputs.forEach((input) => {(input as HTMLInputElement).disabled = true;
@@ -595,7 +600,6 @@ obtenerNcf() {
  editarFactura() {
     console.log("Modo edición activado");
     this.botonEditar = true; // Deshabilita de nuevo
-    this.botonGuardar = false; // Habilita el botón
    this.botonaddItems = false; // Habilita el botón
     this.habilitarIcono = true;
    this.formularioFacturacion.enable();
@@ -1726,6 +1730,28 @@ handleArrowUp(event: KeyboardEvent) {
     event.preventDefault();
   }
 }
+onInputPagado(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const valor = input.value;
+  const control = this.formularioFacturacion.get('valpagado');
+
+  if (control) {
+    control.setValue(valor);
+  }
+}
+
+toggleCheckPagado() {
+  // si está marcado y hacen clic => lo desmarco, pero NO habilito input
+  if (this.chekPagado) {
+    this.chekPagado = false;
+    this.txtvalPagado = true; // sigue deshabilitado
+  } else {
+    // si no está marcado, lo marco y habilito input
+    this.chekPagado = true;
+    this.txtvalPagado = false;
+  }
+}
+
 }
 
 
