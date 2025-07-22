@@ -250,7 +250,7 @@
                     type="number"
                     class="form-control form-control-sm"
                     style="font-size: 1.5pc; font-weight: bold"
-                    [value]="formularioFacturacion.get('valpagado')?.value"
+                    [value]="formularioFacturacion.get('valpagado')?.value | number:'1.2-2'"
                     [disabled]="txtvalPagado"
                     (input)="onInputPagado($event)"
                   />

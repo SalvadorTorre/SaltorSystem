@@ -23,6 +23,9 @@ import autoTable from 'jspdf-autotable';
 import { disableDebugTools } from '@angular/platform-browser';
 import { ServicioNcf } from 'src/app/core/services/ncf/ncf.service';
 import { ModeloNcfData } from 'src/app/core/services/ncf';
+import { registerLocaleData } from '@angular/common';
+import localeEs from '@angular/common/locales/es';
+
 declare var $: any;
 
 @Component({
@@ -30,7 +33,6 @@ declare var $: any;
   templateUrl: './cobrofact.html',
   styleUrls: ['./cobrofact.css']
 })
-
 
 export class CobroFact implements OnInit {
   @ViewChild('inputCodmerc') inputCodmerc!: ElementRef; // Para manejar el foco
