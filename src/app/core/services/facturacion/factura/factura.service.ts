@@ -1,5 +1,6 @@
 import { Injectable } from "@angular/core";
 import { Observable } from "rxjs";
+import { HttpClient } from '@angular/common/http';
 import { HttpInvokeService } from "../../http-invoke.service";
 import { FacturacionModel, FacturacionModelData } from ".";
 import { HttpParams } from '@angular/common/http';
@@ -8,6 +9,7 @@ import { HttpParams } from '@angular/common/http';
   providedIn: "root"
 })
 export class ServicioFacturacion {
+    private baseUrl = '/api'; // Ajusta la URL base según sea necesario
   constructor(private http: HttpInvokeService) { }
 
 
@@ -19,14 +21,14 @@ export class ServicioFacturacion {
 
 
 obtenerFacturasNoImpresas(): Observable<any> {
-  const endpoint = 'facturas-no-impresas';
+  const endpoint = '/facturas-no-impresas';
   const params = new HttpParams(); // Si no vas a enviar parámetros, pon uno vacío
   return this.http.get(endpoint, params);
 }
 
-
-
-
+marcarFacturaComoImpresa(payload: { numeroFactura: string, fpago: number }) {
+    return this.http.post(`${this.baseUrl}/factura-impresa`, payload);
+  }
 
   editarFacturacion(payload: any) {
   const cod = payload.factura.fa_codFact;

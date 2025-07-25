@@ -9,14 +9,14 @@ import { ServicioFacturacion } from 'src/app/core/services/facturacion/factura/f
 import { FacturacionModelData, detFacturaData } from 'src/app/core/services/facturacion/factura';
 import { ServicioCliente } from 'src/app/core/services/mantenimientos/clientes/cliente.service';
 import { HttpInvokeService } from 'src/app/core/services/http-invoke.service';
-import { ModeloCliente, ModeloClienteData } from 'src/app/core/services/mantenimientos/clientes';
+import { ModeloClienteData } from 'src/app/core/services/mantenimientos/clientes';
 import { interfaceDetalleModel } from 'src/app/core/services/facturacion/factura/factura';
 import { ServicioInventario } from 'src/app/core/services/mantenimientos/inventario/inventario.service';
 import { ServicioSector } from 'src/app/core/services/mantenimientos/sector/sector.service';
-import { ModeloSector, ModeloSectorData } from 'src/app/core/services/mantenimientos/sector';
+import { ModeloSectorData } from 'src/app/core/services/mantenimientos/sector';
 import { ModeloFpagoData } from 'src/app/core/services/mantenimientos/fpago';
 import { ServicioFpago } from 'src/app/core/services/mantenimientos/fpago/fpago.service';
-import { ModeloInventario, ModeloInventarioData } from 'src/app/core/services/mantenimientos/inventario';
+import { ModeloInventarioData } from 'src/app/core/services/mantenimientos/inventario';
 import jsPDF from 'jspdf';
 import { HttpClient } from '@angular/common/http';
 import autoTable from 'jspdf-autotable';
@@ -44,6 +44,7 @@ export class CobroFact implements OnInit {
   @ViewChild('contenedorScroll') contenedorScroll!: ElementRef;
  @ViewChild('valorPagadoInput') valorPagadoInput!: ElementRef;
  @ViewChild('facturaRef', { static: false }) facturaRef!: ElementRef;
+  facturas: any[] = []; // ✅ Declaración de la propiedad
   botonEditar = true; // Empieza deshabilitado
   botonImprimir = true; // Empieza deshabilitado
   botonaddItems = true; // Empieza deshabilitado
@@ -161,13 +162,13 @@ get paginatedData() {
     private fb: FormBuilder,
     private servicioFacturacion: ServicioFacturacion,
     private servicioCliente: ServicioCliente,
-    private http: HttpInvokeService,
     private ServicioInventario: ServicioInventario,
     private ServicioUsuario: ServicioUsuario,
     private ServicioRnc: ServicioRnc,
     private ServicioSector: ServicioSector,
     private servicioFpago: ServicioFpago,
     private servicioNcf: ServicioNcf,
+    private http: HttpClient,
   ) {
     this.form = this.fb.group({
       fa_codVend: ['', Validators.required], // El campo es requerido
@@ -175,33 +176,6 @@ get paginatedData() {
     });
 
     this.crearFormularioFacturacion();
-
-
-    this.nomclienteSubject.pipe(
-      debounceTime(500),
-      distinctUntilChanged(),
-      switchMap(nomcliente => {
-        this.txtdescripcion = nomcliente;
-        return this.servicioFacturacion.buscarFacturacion(this.currentPage, this.facturacionList.length, this.codigo, this.txtdescripcion);
-      })
-    ).subscribe(response => {
-      this.facturacionList = response.data;
-      this.totalItems = response.pagination.total;
-      this.currentPage = response.pagination.page;
-    });
-
-    this.numfacturaSubject.pipe(
-      debounceTime(500),
-      distinctUntilChanged(),
-      switchMap(codigo => {
-        this.txtFactura = codigo;
-        return this.servicioFacturacion.buscarFacturacion(this.currentPage, this.facturacionList.length, this.codigo, this.txtdescripcion, this.txtFactura);
-      })
-    ).subscribe(response => {
-      this.facturacionList = response.data;
-      this.totalItems = response.pagination.total;
-      this.currentPage = response.pagination.page;
-    });
 
   }
 
@@ -227,72 +201,11 @@ get paginatedData() {
 
 
   ngOnInit(): void {
-    this.buscarTodasFacturacion();
+    this.buscarFacturasNoImpresas();
     this.obtenerNcf();
     this.obtenerfpago();
-    this.buscardescripcionmerc.valueChanges.pipe(
-      debounceTime(50),
-      distinctUntilChanged(),
-      tap(() => {
-        this.resultadodescripcionmerc = [];
-      }),
-      filter((query: string) => query !== '' && !this.cancelarBusquedaDescripcion && !this.isEditing),
-      switchMap((query: string) => this.http.GetRequest<ModeloInventario>(`/productos-buscador-desc/${query}`))
-    ).subscribe((results: ModeloInventario) => {
-      console.log(results.data);
-      if (results) {
-        if (Array.isArray(results.data) && results.data.length) {
-          this.resultadodescripcionmerc = results.data;
-          this.desnotfound = false;
-        }
-        else {
-          this.desnotfound = true;
-        }
-      } else {
-        this.resultadodescripcionmerc = [];
-        this.desnotfound = false;
-      }
 
-    });
-
-  this.buscarNombre.valueChanges.pipe(
-  skip(1), // ignora el primer valor emitido
-  debounceTime(500),
-  distinctUntilChanged(),
-  filter((query: string) => !!query && query.trim() !== ''),
-  tap(() => {
-    this.facturacionList = [];
-    console.log("sdasdsa ")
-  }),
-  switchMap((query: string) =>
-    this.http.GetRequest<FacturacionModelData>(`/facturacion-numero?page=${0}&limit=${0}/&nomcliente=${query}`)
-  )
-).subscribe((results: FacturacionModelData) => {
-  console.log(results);
-  this.facturacionList = Array.isArray(results) ? results : [];
-});
-    this.buscarSector.valueChanges.pipe(
-      debounceTime(500),
-      distinctUntilChanged(),
-      tap(() => {
-        this.resultadoSector = [];
-      }),
-      filter((query: string) => query !== ''),
-      switchMap((query: string) => this.http.GetRequest<ModeloSector>(`/sector-nombre/${query}`))
-    ).subscribe((results: ModeloSector) => {
-      console.log(results.data);
-      if (results) {
-        if (Array.isArray(results.data)) {
-          this.resultadoSector = results.data;
-        }
-      } else {
-        this.resultadoSector = [];
-      }
-
-    });
-
-
-  }
+   }
 obtenerfpago() {
     this.servicioFpago.obtenerTodosFpago().subscribe(response => {
       this.resultadoFpago = response.data;
@@ -455,16 +368,12 @@ obtenerNcf() {
       this.totalGral = totalGeneral;
     });
   }
-
-  buscarTodasFactura(page: number) {
-    this.servicioFacturacion.buscarTodasFacturacion().subscribe(response => {
-      console.log(response);
-      this.facturacionList = response.data;
-      console.log(this.facturacionList.length)
+  buscarFacturasNoImpresas() {
+    this.servicioFacturacion.obtenerFacturasNoImpresas().subscribe((resp) => {
+      console.log('Facturas recibidas:', resp.data);
+      this.facturacionList = resp.data;
     });
   }
-
-  rftgfregwwgregrewgewrgrewgrewdescripcionFormaPago: string = '';
 
   consultarFacturacion(factura: FacturacionModelData) {
     this.modoconsultaFacturacion = true;
@@ -562,63 +471,16 @@ obtenerNcf() {
       });
       // Consultar la descripción de forma de pago
 
- this.servicioFpago.obtenerFpagoPorId(factura.fa_fpago).subscribe((response) => {
-  console.log('Forma de pago recibida:', response);
-
-  const formaPago = response.data?.[0]; // Accede al primer elemento del array
-  this.descripcionFormaPago = formaPago ? formaPago.fp_descfpago : 'Desconocido';
+      this.servicioFpago.obtenerFpagoPorId(factura.fa_fpago).subscribe((response) => {
+     const formaPago = response.data?.[0]; // Accede al primer elemento del array
+     this.descripcionFormaPago = formaPago ? formaPago.fp_descfpago : 'Desconocido';
 });
-
-
-
 
     });
 
-
   }
 
-  eliminarFacturacion(facturacionId: string) {
-    Swal.fire({
-      title: '¿Está seguro de eliminar este Facturacion?',
-      text: "¡No podrá revertir esto!",
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#3085d6',
-      cancelButtonColor: '#d33',
-      confirmButtonText: 'Si, eliminar!'
-    }).then((result) => {
-      if (result.isConfirmed) {
-        this.servicioFacturacion.eliminarFacturacion(facturacionId).subscribe(response => {
-          Swal.fire(
-            {
-              title: "Excelente!",
-              text: "Factura eliminada correctamente.",
-              icon: "success",
-              timer: 2000,
-              showConfirmButton: false,
-            }
-          )
-          this.buscarTodasFacturacion();
-        });
-      }
-    })
-  }
- editarFactura() {
-    console.log("Modo edición activado");
-    this.botonEditar = true; // Deshabilita de nuevo
-   this.botonaddItems = false; // Habilita el botón
-    this.habilitarIcono = true;
-   this.formularioFacturacion.enable();
-   this.formularioFacturacion.get('fa_codFact')?.disable();
-   this.formularioFacturacion.get('fa_fecFact')?.disable();
-   this.formularioFacturacion.get('fa_ncfFact')?.disable();
-   this.formularioFacturacion.get('fa_codVend')?.disable();
-   this.formularioFacturacion.get('fa_nomVend')?.disable();
-    this.formularioFacturacion.get('fa_entrega')?.disable();
-    this.formularioFacturacion.get('fa_impresa')?.disable();
-   this.formularioFacturacion.get('fa_facturada')?.disable();
 
-  }
   formatofecha(date: Date): string {
     const year = date.getFullYear();
     const month = (date.getMonth() + 1).toString().padStart(2, '0'); // Los meses son 0-indexados, se agrega 1 y se llena con ceros
@@ -643,58 +505,11 @@ obtenerNcf() {
     });
   }
 
-  buscarTodasFacturacion() {
-    this.servicioFacturacion.buscarTodasFacturacion().subscribe(response => {
-      this.facturacionList = response.data;
-    });
-  }
-// buscarTodasFacturacion() {
-//   this.servicioFacturacion.buscarTodasFacturacion().subscribe(data => {
-//     this.facturacionList = data;
-//     console.log(data);
-//   });
-// }
 
 
 
 
 
-  buscaNombre(event: Event) {
-    const c_nomClie = event.target as HTMLInputElement;
-    this.nomclienteSubject.next(c_nomClie.value.toUpperCase());
-  }
-
-  buscaFactura(event: Event) {
-    const c_codFact = event.target as HTMLInputElement;
-    this.servicioFacturacion.buscarFacturacion(0, 0,c_codFact.value).subscribe((resultado)=>{
-      this.facturacionList= resultado.data
-    })
-  }
-
-
-
-  buscaFecha(event: Event) {
-  const input = event.target as HTMLInputElement;
-  const fechaStr = input.value; // ← ya es "2025-06-27"
-
-  this.servicioFacturacion.buscarFacturacion(0, 0, "", "", fechaStr).subscribe((resultado) => {
-    this.facturacionList = resultado.data;
-  });
-}
-// buscaFecha(event: Event) {
-//   const c_fecFact = event.target as HTMLInputElement;
-//   const fechaStr = c_fecFact.value; // Ejemplo: "2025-06-27"
-
-//   const [year, month, day] = fechaStr.split('-').map(Number); // divide manualmente
-//   const fechaDate = new Date(year, month - 1, day); // Date en zona local
-
-//   const fechaFormateada = this.formatofecha(fechaDate);
-
-//   this.servicioFacturacion.buscarFacturacion(0, 0, "", "", fechaFormateada)
-//     .subscribe((resultado) => {
-//       this.facturacionList = resultado.data;
-//     });
-//}
   convertToUpperCase(event: Event): void {
     const input = event.target as HTMLInputElement;
     const start = input.selectionStart;
@@ -712,185 +527,8 @@ obtenerNcf() {
     }
   }
 
-  moveFocuscodmerc(event: KeyboardEvent, nextInput: HTMLInputElement) {
-    console.log("move focus")
-    if (event.key === 'Enter' || event.key === 'Tab') {
-      event.preventDefault(); // Previene el comportamiento predeterminado de Enter
-      // const currentControl = this.formularioFacturacion.get('ct_codvend');
-      const currentInputValue = (event.target as HTMLInputElement).value.trim();
-      if (currentInputValue === '') {
-        this.codmerVacio = true;
-        console.log("vacio")
-      }
-      else {
-        this.codmerVacio = false;
-      }
-      if (!this.codnotfound === false) {
-        console.log(this.codnotfound);
-        this.mensagePantalla = true;
-        Swal.fire({
-          icon: "error",
-          title: "A V I S O",
-          text: 'Codigo invalido.',
-          focusConfirm: true,
-          allowEnterKey: true,
-        }).then(() => { this.mensagePantalla = false });
-        this.codmerVacio = false;
-        this.codnotfound = false;
-        this.codmerc = ""
-        this.descripcionmerc = ""
-        return;
-      }
-      else {
-        if (this.codmerVacio === true) {
-          nextInput.focus();
-          this.codmerVacio = false;
-          console.log("vedadero");
-        }
-        else {
-          $("#input8").focus();
-          $("#input8").select();
-        }
-        this.codmerVacio = false;
-      }
-    }
-  }
-  handleKeydownInventario(event: KeyboardEvent): void {
-    console.log("handle")
-    const key = event.key;
-    const maxIndex = this.resultadoCodmerc.length - 1;
-    if (this.resultadoCodmerc.length === 1) {
-      this.selectedIndexcodmerc = 0;
-      console.log("prueba")
-    }
 
-    if (key === 'ArrowDown') {
-      this.selectedIndexcodmerc = this.selectedIndexcodmerc < maxIndex ? this.selectedIndexcodmerc + 1 : 0;
-      event.preventDefault();
-    }
-    else
-      if (key === 'ArrowUp') {
-        this.selectedIndexcodmerc = this.selectedIndexcodmerc > 0 ? this.selectedIndexcodmerc - 1 : maxIndex;
-        event.preventDefault();
-      }
-      else if (key === 'Enter') {
-        if (this.selectedIndexcodmerc >= 0 && this.selectedIndexcodmerc <= maxIndex) {
-          this.cargarDatosInventario(this.resultadoCodmerc[this.selectedIndexcodmerc]);
-        }
-        event.preventDefault();
-      }
-  }
-  cargarDatosInventario(inventario: ModeloInventarioData) {
-    console.log(inventario);
-    this.resultadoCodmerc = [];
-    this.resultadodescripcionmerc = [];
-    this.codmerc = inventario.in_codmerc;
-    this.preciomerc = inventario.in_premerc
-    this.descripcionmerc = inventario.in_desmerc;
-    this.existenciatxt = inventario.in_canmerc
-    this.costotxt = inventario.in_cosmerc;
-    this.medidatxt= inventario.in_medida;
-    this.fecacttxt= inventario.in_fecmodif;
-    this.atxt = Number(inventario.in_cosmerc) + (Number(inventario.in_cosmerc)  * 5)/ 100;
-    this.btxt = Number(inventario.in_cosmerc) + (Number(inventario.in_cosmerc)  * 7)/100;
-    this.ctxt = Number(inventario.in_cosmerc) + (Number(inventario.in_cosmerc)  * 10)/100;
-    this.dtxt = Number(inventario.in_cosmerc) + (Number(inventario.in_cosmerc)  * 12)/100;
-    this.etxt = Number(inventario.in_cosmerc) + (Number(inventario.in_cosmerc)  * 14)/100;
-    this.ftxt = Number(inventario.in_cosmerc) + (Number(inventario.in_cosmerc)  * 16)/100;
-    this.gtxt = Number(inventario.in_cosmerc) + (Number(inventario.in_cosmerc)  * 18)/100;
-
-    this.productoselect = inventario;
-    this.cancelarBusquedaDescripcion = true;
-    this.cancelarBusquedaCodigo = true;
-    this.formularioFacturacion.patchValue({
-      df_codMerc: inventario.in_codmerc,
-      df_desMerc: inventario.in_desmerc,
-      df_canMerc: inventario.in_canmerc,
-      df_preMerc: inventario.in_premerc,
-      df_cosMerc: inventario.in_cosmerc,
-      df_unidad: inventario.in_unidad,
-    });
-    $("#input8").focus();
-    $("#input8").select();
-  }
-
-  buscarUsuario(event: Event, nextElement: HTMLInputElement | null): void {
-    event.preventDefault();
-    const claveUsuario = this.formularioFacturacion.get('fa_codVend')?.value;
-    if (claveUsuario) {
-      this.ServicioUsuario.buscarUsuarioPorClave(claveUsuario).subscribe(
-        (usuario) => {
-          if (usuario.data.length) {
-            this.formularioFacturacion.patchValue({ fa_nomVend: usuario.data[0].idUsuario });
-            nextElement?.focus()
-          } else {
-            this.mensagePantalla = true;
-            Swal.fire({
-              icon: "error",
-              title: "A V I S O",
-              text: 'Codigo de usuario invalido.',
-            }).then(() => { this.mensagePantalla = false });
-            return;
-          }
-        },
-      );
-    }
-    else {
-      this.mensagePantalla = true;
-      Swal.fire({
-        icon: "error",
-        title: "A V I S O",
-        text: 'Codigo de usuario invalido.',
-      }).then(() => { this.mensagePantalla = false });
-      return;
-    }
-  }
-  buscarRnc(event: Event, nextElement: HTMLInputElement | null): void {
-    event.preventDefault();
-    const rnc = this.formularioFacturacion.get('fa_rncFact')?.value;
-    if (!rnc) {
-      this.obtenerNcf();
-      this.formularioFacturacion.patchValue({ fa_tipoNcf: 1 });
-      this.formularioFacturacion.get("fa_tipoNcf")?.disable();
-      // Si no se ha ingresado un RNC, pasamos el foco al siguiente elemento
-      console.log('RNC vacío.');
-      console.log(this.formularioFacturacion.value);
-      nextElement?.focus();
-      return;
-    }
-
-    // Validar longitud del RNC
-    if (rnc.length !== 9 && rnc.length !== 11) {
-      this.mostrarMensajeError('RNC inválido.');
-      console.log(rnc.length);
-      return;
-    }
-    // Buscar RNC en el servicio
-    this.ServicioRnc.buscarRncPorId(rnc).subscribe(
-    (response) => {
-    if (response?.data?.length) {
-      // Si se encuentra el RNC, asignar el nombre del cliente
-      const nombreEmpresa = response.data[0]?.rason;
-      this.formularioFacturacion.patchValue({ fa_nomClie: nombreEmpresa });
-      this.formularioFacturacion.patchValue({ fa_tipoNcf: 2 });
-      this.formularioFacturacion.get("fa_tipoNcf")?.enable();
-      this.ncflist = this.ncflist.filter(ncf => ncf.codNcf !== 1);
-      $("#input3").focus();
-      $("#input3").select();
-    }
-    else {
-      // Si no se encuentra el RNC, mostrar error
-      this.mostrarMensajeError('RNC inválido.');
-      console.log('RNC no encontrado.');
-    }
-    }
-
-  );
-  }
-
-
-
-  mostrarMensajeError(mensaje: string): void {
+    mostrarMensajeError(mensaje: string): void {
     this.mensagePantalla = true;
 
     Swal.fire({
@@ -898,270 +536,6 @@ obtenerNcf() {
       title: "A V I S O",
       text: mensaje,
     }).then(() => { this.mensagePantalla = false });
-  }
-
-  handleKeydown(event: KeyboardEvent): void {
-    const key = event.key;
-    const maxIndex = this.resultadoNombre.length - 1;  // Ajustamos el límite máximo
-    if (this.resultadoNombre.length === 1) {
-      this.selectedIndex = 0;
-      console.log("prueba")
-    }
-
-    if (key === 'ArrowDown') {
-
-      // Mueve la selección hacia abajo
-      if (this.selectedIndex < maxIndex) {
-        this.selectedIndex++;
-      } else {
-        this.selectedIndex = 0;  // Vuelve al primer ítem
-      }
-      event.preventDefault();
-    } else if (key === 'ArrowUp') {
-      console.log("paso 677");
-
-      // Mueve la selección hacia arriba
-      if (this.selectedIndex > 0) {
-        this.selectedIndex--;
-      } else {
-        this.selectedIndex = maxIndex;  // Vuelve al último ítem
-      }
-      event.preventDefault();
-    } else if (key === 'Enter') {
-      // Selecciona el ítem actual
-      if (this.selectedIndex >= 0 && this.selectedIndex <= maxIndex) {
-        this.cargarDatosCliente(this.resultadoNombre[this.selectedIndex]);
-      }
-      event.preventDefault();
-    }
-  }
-  handleKeydownSector(event: KeyboardEvent): void {
-    const key = event.key;
-    const maxIndex = this.resultadoSector.length - 1;  // Ajustamos el límite máximo
-    if (this.resultadoSector.length === 1) {
-      this.selectedIndexsector = 0;
-      console.log("prueba")
-    }
-    if (key === 'ArrowDown') {
-
-      // Mueve la selección hacia abajo
-      if (this.selectedIndexsector < maxIndex) {
-        this.selectedIndex++;
-      } else {
-        this.selectedIndexsector = 0;  // Vuelve al primer ítem
-      }
-      event.preventDefault();
-    } else if (key === 'ArrowUp') {
-      console.log("paso 677");
-
-      // Mueve la selección hacia arriba
-      if (this.selectedIndexsector > 0) {
-        this.selectedIndex--;
-      } else {
-        this.selectedIndexsector = maxIndex;  // Vuelve al último ítem
-      }
-      event.preventDefault();
-    } else if (key === 'Enter') {
-      // Selecciona el ítem actual
-      if (this.selectedIndexsector >= 0 && this.selectedIndexsector <= maxIndex) {
-        this.cargarDatosSector(this.resultadoSector[this.selectedIndexsector]);
-      }
-      event.preventDefault();
-    }
-  }
-  handleKeydownFpago(event: KeyboardEvent): void {
-    const key = event.key;
-    const maxIndex = this.resultadoFpago.length - 1;  // Ajustamos el límite máximo
-
-    if (this.resultadoFpago.length === 1) {
-      this.selectedIndexfpago = 0;
-      console.log("prueba")
-    }
-
-    if (key === 'ArrowDown') {
-
-      // Mueve la selección hacia abajo
-      if (this.selectedIndexfpago < maxIndex) {
-        this.selectedIndexfpago++;
-      } else {
-        this.selectedIndexfpago = 0;  // Vuelve al primer ítem
-      }
-      event.preventDefault();
-    } else if (key === 'ArrowUp') {
-
-      // Mueve la selección hacia arriba
-      if (this.selectedIndexfpago > 0) {
-        this.selectedIndexfpago--;
-      } else {
-        this.selectedIndexfpago = maxIndex;  // Vuelve al último ítem
-      }
-      event.preventDefault();
-    } else if (key === 'Enter') {
-      // Selecciona el ítem actual
-      if (this.selectedIndex >= 0 && this.selectedIndexfpago <= maxIndex) {
-        this.cargarDatosFpago(this.resultadoFpago[this.selectedIndexfpago]);
-      }
-      event.preventDefault();
-    }
-  }
-  handleKeydownInventariosdesc(event: KeyboardEvent): void {
-    const key = event.key;
-    const maxIndex = this.resultadodescripcionmerc.length;
-    if (this.resultadodescripcionmerc.length === 1) {
-      this.selectedIndexdescripcionmerc = 0;
-      console.log("prueba")
-    }
-    if (key === 'ArrowDown') {
-      // Mueve la selección hacia abajo
-      this.selectedIndexdescripcionmerc = this.selectedIndexdescripcionmerc < maxIndex ? this.selectedIndexdescripcionmerc + 1 : 0;
-      event.preventDefault();
-    } else if (key === 'ArrowUp') {
-      // Mueve la selección hacia arriba
-      this.selectedIndexdescripcionmerc = this.selectedIndexdescripcionmerc > 0 ? this.selectedIndexdescripcionmerc - 1 : maxIndex;
-      event.preventDefault();
-    } else if (key === 'Enter') {
-      // Selecciona el ítem actual
-      if (this.selectedIndexdescripcionmerc >= 0 && this.selectedIndexdescripcionmerc <= maxIndex) {
-        this.cargarDatosInventario(this.resultadodescripcionmerc[this.selectedIndexdescripcionmerc]);
-      }
-      event.preventDefault();
-    }
-  }
-  moveFocusdesc(event: KeyboardEvent, nextInput: HTMLInputElement) {
-    if (event.key === 'Enter' || event.key === 'Tab') {
-      event.preventDefault(); // Previene el comportamiento predeterminado de Enter
-      const currentInputValue = (event.target as HTMLInputElement).value.trim();
-      if (currentInputValue === '') {
-        this.desmerVacio = true;
-      };
-
-      if (!this.desnotfound === false) {
-        this.mensagePantalla = true;
-        Swal.fire({
-          icon: "error",
-          title: "A V I S O",
-          text: 'Codigo invalido.',
-        }).then(() => { this.mensagePantalla = false });
-        this.desnotfound = true
-        return;
-      }
-      else {
-        if (this.desmerVacio === true) {
-          this.mensagePantalla = true;
-          Swal.fire({
-            icon: "error",
-            title: "A V I S O",
-            text: 'Codigo invalido.',
-          }).then(() => { this.mensagePantalla = false });
-          this.desnotfound = true
-          return;
-        }
-        else {
-          $("#input8").focus();
-          $("#input8").select();
-        }
-        this.desmerVacio = false;
-      }
-    }
-  }
-  moveFocusCantidad(event: KeyboardEvent, nextInput: HTMLInputElement) {
-    if (event.key === 'Enter' || event.key === 'Tab') {
-      event.preventDefault();
-      if (!this.productoselect || this.cantidadmerc <= 0) {
-        this.mensagePantalla = true;
-        Swal.fire({
-          icon: "error",
-          title: "A V I S O",
-          text: 'Por favor complete todos los campos requeridos antes de agregar el ítem.',
-        }).then(() => { this.mensagePantalla = false });
-        return;
-      }
-      else {
-        // nextInput.focus();
-        $("#input9").focus();
-        $("#input9").select();
-      }
-    }
-  }
-  moveFocusPrecio(event: KeyboardEvent, nextInput: HTMLInputElement) {
-    if (event.key === 'Enter' || event.key === 'Tab') {
-      event.preventDefault();
-      if (!this.productoselect || this.preciomerc <= 0 || this.preciomerc <= this.productoselect.in_cosmerc) {
-        this.mensagePantalla = true;
-        Swal.fire({
-          icon: "error",
-          title: "A V I S O",
-          text: 'Por favor complete todos los campos requeridos antes de agregar el ítem.',
-        }).then(() => { this.mensagePantalla = false });
-        return;
-      }
-      else {
-        // nextInput.focus();
-        $("#input13").focus();
-        $("#input13").select();
-      }
-    }
-  }
-  moveFocusnomclie(event: Event, nextInput: HTMLInputElement) {
-    event.preventDefault();
-    console.log(nextInput);
-    if (event.target instanceof HTMLInputElement) {
-      if (!event.target.value) {
-        this.mensagePantalla = true;
-        Swal.fire({
-          icon: "error",
-          title: "A V I S O",
-          text: 'Por favor complete el campo Nombre del Cliente Para Poder continual.',
-        }).then(() => { this.mensagePantalla = false });
-
-      }
-      else {
-        nextInput.focus(); // Si es válido, mueve el foco al siguiente input
-      }
-    }
-  }
-  cargarDatosCliente(cliente: ModeloClienteData) {
-    this.resultadoNombre = [];
-    this.buscarNombre.reset();
-    if (cliente.cl_nomClie !== "") {
-      console.log(this.resultadoNombre)
-      this.formularioFacturacion.patchValue({
-        fa_codClie: cliente.cl_codClie,
-        fa_nomClie: cliente.cl_nomClie,
-        fa_rncFact: cliente.cl_rnc,
-        fa_telClie: cliente.cl_telClie,
-        fa_dirClie: cliente.cl_dirClie,
-        fa_codZona: cliente.cl_codZona,
-        fa_sector: cliente.cl_codSect,
-      });
-      console.log(cliente)
-      console.log('Formulario actualizado:', this.formularioFacturacion.value);
-    }
-  }
-
-  cargarDatosSector(sector: ModeloSectorData) {
-    this.resultadoNombre = [];
-    this.buscarSector.reset();
-    if (sector.se_desSect !== "") {
-      console.log(this.resultadoSector)
-      this.formularioFacturacion.patchValue({
-        fa_codSect: sector.se_codSect,
-        fa_sector: sector.se_desSect,
-        fa_codZona: sector.se_codZona,
-      });
-      console.log(sector)
-    }
-  }
-  cargarDatosFpago(fpago: ModeloFpagoData) {
-    this.resultadoFpago = [];
-    this.buscarFpago.reset();
-    if (fpago.fp_descfpago !== "") {
-      console.log(this.resultadoFpago)
-      this.formularioFacturacion.patchValue({
-        fa_fpago: fpago.fp_descfpago,
-        fa_codfpago: fpago.fp_codfpago,
-      });
-    }
   }
 
   moveFocusFpago(event: Event, nextInput: HTMLInputElement | HTMLSelectElement) {
@@ -1182,108 +556,9 @@ obtenerNcf() {
     }
   }
 
-  agregaItem(event: Event) {
-    event.preventDefault();
-    if (!this.productoselect || this.cantidadmerc <= 0 || this.preciomerc <= 0 || this.preciomerc <= this.productoselect.in_cosmerc) {
-      this.mensagePantalla = true;
-      Swal.fire({
-        icon: "error",
-        title: "A V I S O",
-        text: 'Por favor complete todos los campos requeridos antes de agregar el ítem.',
-      }).then(() => { this.mensagePantalla = false });
-      return;
-    }
-    const fechaActual = new Date(); // Obtiene la fecha actual
-    if (this.isEditing) {
-      // Actualizar el ítem existente
-      this.itemToEdit.producto = this.productoselect;
-      this.itemToEdit.codmerc = this.codmerc;
-      this.itemToEdit.descripcionmerc = this.descripcionmerc;
-      this.itemToEdit.precio = this.preciomerc;
-      this.itemToEdit.cantidad = this.cantidadmerc;
-      this.itemToEdit.total = this.cantidadmerc * this.preciomerc;
-      this.itemToEdit.totalcosto += this.costotxt * this.cantidadmerc;
-      this.itemToEdit.fecfactActual = fechaActual; // Actualiza la fecha del ítem existente
-      // Actualizar los totales
-      this.actualizarTotales();
-      // Restablecer el estado de edición
-      this.isEditing = false;
-      this.itemToEdit = null;
-    }
-    else {
-      const total = this.cantidadmerc * this.preciomerc;
-      this.totalGral += total;
-      const itbis = total * 0.18;
-      this.totalItbis += itbis;
-      this.subTotal += total - itbis;
-      const tcosto = this.costotxt * this.cantidadmerc;
-      this.totalcosto += this.costotxt * this.cantidadmerc;
-      this.factxt = (this.totalGral - this.totalcosto) * 100/ this.totalcosto;
-      this.protxt = ( this.preciomerc - this.costotxt) * 100/ this.costotxt;
-      this.items.push({
-      producto: this.productoselect, cantidad: this.cantidadmerc, precio: this.preciomerc, total, costo: tcosto , fecfactActual: fechaActual, // Agrega la fecha actual al nuevo ítem
-      })
-      this.actualizarTotales();
-      this.cancelarBusquedaDescripcion = false;
-      this.cancelarBusquedaCodigo = false;
-    }
-    this.limpiarCampos();
-  }
   actualizarCalculo() {
     this.protxt = (this.preciomerc - this.costotxt) * 100/ this.costotxt; // Aquí puedes hacer cualquier cálculo
   }
-  limpiarCampos() {
-    this.productoselect;
-    this.codmerc = ""
-    this.descripcionmerc = ""
-    this.preciomerc = 0;
-    this.cantidadmerc = 0;
-    this.isEditing = false;
-    this.existenciatxt= 0;
-    this.costotxt= 0;
-    this.medidatxt= 0;
-    this.fecacttxt= " ";
-    this.atxt =0;
-    this.btxt =0;
-    this.ctxt =0;
-    this.dtxt =0;
-    this.etxt =0;
-    this.ftxt =0;
-    this.gtxt =0;
-    this.protxt =0;
-  }
-
-  limpiarTabla() {
-    this.items = [];          // Limpiar el array de items
-    this.totalGral = 0;       // Reiniciar el total general
-    this.totalItbis = 0;      // Reiniciar el total del ITBIS
-    this.subTotal = 0;        // Reiniciar el subtotal
-  }
-
-  // borarItem(item: any) {
-  //   const index = this.items.indexOf(item);
-  //   if (index > -1) {
-  //     this.totalGral -= item.total;
-
-  //     // Calcular el itbis del ítem eliminado y restarlo del total itbis
-  //     const itbis = item.total * 0.18;
-  //     this.totalItbis -= itbis;
-
-  //     // Restar el subtotal del ítem eliminado
-  //     this.subTotal -= (item.total - itbis);
-
-  //     // Eliminar el ítem de la lista
-  //     this.items.splice(index, 1);
-  //   }
-  // }
-  borarItem(item: any) {
-  const index = this.items.indexOf(item);
-  if (index > -1) {
-    this.items.splice(index, 1);
-    this.items = [...this.items]; // 💡 TRUCO CLAVE
-    this.recalcularTotales();
-  }
-}
 
 
 recalcularTotales() {
@@ -1301,31 +576,6 @@ recalcularTotales() {
   }
 }
 
-  editarItem(item: any) {
-    this.habilitarCampos= false;
-     this.habilitarCantidad= true;
-    this.index_item = this.items.indexOf(item);
-    this.isEditing = true;
-    this.itemToEdit = item;
-
-    this.productoselect = item.producto;
-    this.codmerc = item.producto.in_codmerc;
-    this.descripcionmerc = item.producto.in_desmerc;
-    this.preciomerc = item.precio
-    this.cantidadmerc = item.cantidad
-    this.existenciatxt = item.producto.in_canmerc;
-    this.costotxt = item.producto.in_cosmerc;
-     $("#cantidadInput").focus();
-    $("#cantidadInput").select();
-
-  }
-agregarItem() {
-   this.habilitarCampos= true;
-   this.habilitarCantidad= true;
-    $("#codigoInput").focus();
-        $("#codigoInput").select();
-
-}
 
   actualizarTotales() {
     this.totalGral  = this.items.reduce((sum, item) => sum + item.total, 0);
@@ -1399,7 +649,7 @@ agregarItem() {
 }
 
 refrescarFormulario() {
-  this.buscarTodasFacturacion();
+  this.buscarFacturasNoImpresas();
   this.formularioFacturacion.reset();
   this.crearFormularioFacturacion();
   this.formularioFacturacion.enable();
@@ -1449,167 +699,167 @@ refrescarFormulario() {
   }
 
 
-  generatePDF(factura: FacturacionModelData) {
-    console.log(factura);
-    this.servicioFacturacion.buscarFacturaDetalle(factura.fa_codFact).subscribe(response => {
-      let subtotal = 0;
-      let itbis = 0;
-      let totalGeneral = 0;
-      const itbisRate = 0.18; // Ejemplo: 18% de ITBIS
-      response.data.forEach((item: any) => {
-        const producto: ModeloInventarioData = {
-          in_codmerc: item.dc_codmerc,
-          in_desmerc: item.dc_descrip,
-          in_grumerc: '',
-          in_tipoproduct: '',
-          in_canmerc: 0,
-          in_caninve: 0,
-          in_fecinve: null,
-          in_eximini: 0,
-          in_cosmerc: 0,
-          in_premerc: 0,
-          in_precmin: 0,
-         // in_costpro: 0,
-          in_ucosto: 0,
-          in_porgana: 0,
-          in_peso: 0,
-          in_longitud: 0,
-          in_unidad: 0,
-          in_medida: 0,
-          in_longitu: 0,
-          in_fecmodif: null,
-          in_amacen: 0,
-          in_imagen: '',
-          in_status: '',
-          in_itbis: false,
-          in_minvent: 0,
-        };
-        const cantidad = item.dc_canmerc;
-        const precio = item.dc_premerc;
-        const totalItem = cantidad * precio;
-        this.items.push({
-          producto: producto,
-          cantidad: cantidad,
-          precio: precio,
-          total: totalItem,
-          fecfactActual: new Date(),
-          costo: 0,
+  // generatePDF(factura: FacturacionModelData) {
+  //   console.log(factura);
+  //   this.servicioFacturacion.buscarFacturaDetalle(factura.fa_codFact).subscribe(response => {
+  //     let subtotal = 0;
+  //     let itbis = 0;
+  //     let totalGeneral = 0;
+  //     const itbisRate = 0.18; // Ejemplo: 18% de ITBIS
+  //     response.data.forEach((item: any) => {
+  //       const producto: ModeloInventarioData = {
+  //         in_codmerc: item.dc_codmerc,
+  //         in_desmerc: item.dc_descrip,
+  //         in_grumerc: '',
+  //         in_tipoproduct: '',
+  //         in_canmerc: 0,
+  //         in_caninve: 0,
+  //         in_fecinve: null,
+  //         in_eximini: 0,
+  //         in_cosmerc: 0,
+  //         in_premerc: 0,
+  //         in_precmin: 0,
+  //        // in_costpro: 0,
+  //         in_ucosto: 0,
+  //         in_porgana: 0,
+  //         in_peso: 0,
+  //         in_longitud: 0,
+  //         in_unidad: 0,
+  //         in_medida: 0,
+  //         in_longitu: 0,
+  //         in_fecmodif: null,
+  //         in_amacen: 0,
+  //         in_imagen: '',
+  //         in_status: '',
+  //         in_itbis: false,
+  //         in_minvent: 0,
+  //       };
+  //       const cantidad = item.dc_canmerc;
+  //       const precio = item.dc_premerc;
+  //       const totalItem = cantidad * precio;
+  //       this.items.push({
+  //         producto: producto,
+  //         cantidad: cantidad,
+  //         precio: precio,
+  //         total: totalItem,
+  //         fecfactActual: new Date(),
+  //         costo: 0,
 
 
-        });
-        // Calcular el subtotal
-        subtotal += totalItem;
-        // Calcular ITBIS solo si el producto tiene ITBIS
-        // if (item.dc_itbis) {
-        this.totalItbis += totalItem * itbisRate;
-        // }
+  //       });
+  //       // Calcular el subtotal
+  //       subtotal += totalItem;
+  //       // Calcular ITBIS solo si el producto tiene ITBIS
+  //       // if (item.dc_itbis) {
+  //       this.totalItbis += totalItem * itbisRate;
+  //       // }
 
-      });
-      // Calcular el total general (subtotal + ITBIS)
-      totalGeneral = subtotal + this.totalItbis;
-      // Asignar los totales a variables o mostrarlos en la interfaz
-      this.subTotal = subtotal;
-      this.totalItbis = this.totalItbis;
-      this.totalGral = totalGeneral;
-
-
-      const formatCurrency = (value: number) => value.toLocaleString('es-DO', {
-        style: 'currency',
-        currency: 'DOP',
-      });
+  //     });
+  //     // Calcular el total general (subtotal + ITBIS)
+  //     totalGeneral = subtotal + this.totalItbis;
+  //     // Asignar los totales a variables o mostrarlos en la interfaz
+  //     this.subTotal = subtotal;
+  //     this.totalItbis = this.totalItbis;
+  //     this.totalGral = totalGeneral;
 
 
-      const doc = new jsPDF();
-
-      const imgData = 'assets/logo2.png';  // Asegúrate de usar una ruta válida o base64
-
-      const imgWidth = 20;  // Ancho de la imagen
-      const imgHeight = 20;  // Alto de la imagen
-
-      // Cálculo para centrar la imagen
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const imgX = (pageWidth - imgWidth) / 2;  // Posición X centrada
-
-      // Agregar el logo centrado
-      doc.addImage(imgData, 'PNG', imgX, 10, imgWidth, imgHeight);  // (x, y, ancho, alto)
+  //     const formatCurrency = (value: number) => value.toLocaleString('es-DO', {
+  //       style: 'currency',
+  //       currency: 'DOP',
+  //     });
 
 
-      // Título y detalles del negocio
-      doc.setFontSize(16);
-      doc.text('CENTRAL HIERRO, SRL', 105, 40, { align: 'center' });
-      doc.setFontSize(10);
-      doc.text('#172 Esq. Albert Thomas', 105, 47, { align: 'center' });
-      doc.text('809-384-2000, 809-384-200', 105, 52, { align: 'center' });
-      doc.text('1-30-29922-6', 105, 57, { align: 'center' });
+  //     const doc = new jsPDF();
 
-      // Cotización
-      doc.setFontSize(14);
-      doc.text('FACTURA', 105, 70, { align: 'center' });
+  //     const imgData = 'assets/logo2.png';  // Asegúrate de usar una ruta válida o base64
 
-      // Detalles de la cotización
-      doc.setFontSize(10);
-      doc.text(`No. ${factura.fa_codFact}`, 14, 80);
-      doc.text(`Fecha: ${factura.fa_fecFact}`, 14, 85);
-      doc.text(`Vendedido por: ${factura.fa_nomVend}`, 14, 90);
+  //     const imgWidth = 20;  // Ancho de la imagen
+  //     const imgHeight = 20;  // Alto de la imagen
 
-      // Cliente
-      doc.setFontSize(12);
-      doc.text('CLIENTE', 14, 100);
-      doc.setFontSize(10);
-      doc.text(factura.fa_nomClie, 14, 106);
+  //     // Cálculo para centrar la imagen
+  //     const pageWidth = doc.internal.pageSize.getWidth();
+  //     const imgX = (pageWidth - imgWidth) / 2;  // Posición X centrada
 
-      // Tabla de descripción de productos
-      autoTable(doc, {
-        head: [['Codigo', 'Descripción', 'Cantidad', 'Precio', 'Itbis', 'Total']],
-        body: response.data.map((item: any) => [
-          item.df_codMerc,
-          item.df_desMerc,
-          parseInt(item.df_canMerc),
-          formatCurrency(parseFloat(item.df_preMerc)),
-          formatCurrency((item.df_preMerc * item.df_canMerc) * 18 / 100),
-          formatCurrency(item.df_preMerc * item.df_canMerc)
-        ]),
-        startY: 115,
-      });
+  //     // Agregar el logo centrado
+  //     doc.addImage(imgData, 'PNG', imgX, 10, imgWidth, imgHeight);  // (x, y, ancho, alto)
 
 
+  //     // Título y detalles del negocio
+  //     doc.setFontSize(16);
+  //     doc.text('CENTRAL HIERRO, SRL', 105, 40, { align: 'center' });
+  //     doc.setFontSize(10);
+  //     doc.text('#172 Esq. Albert Thomas', 105, 47, { align: 'center' });
+  //     doc.text('809-384-2000, 809-384-200', 105, 52, { align: 'center' });
+  //     doc.text('1-30-29922-6', 105, 57, { align: 'center' });
+
+  //     // Cotización
+  //     doc.setFontSize(14);
+  //     doc.text('FACTURA', 105, 70, { align: 'center' });
+
+  //     // Detalles de la cotización
+  //     doc.setFontSize(10);
+  //     doc.text(`No. ${factura.fa_codFact}`, 14, 80);
+  //     doc.text(`Fecha: ${factura.fa_fecFact}`, 14, 85);
+  //     doc.text(`Vendedido por: ${factura.fa_nomVend}`, 14, 90);
+
+  //     // Cliente
+  //     doc.setFontSize(12);
+  //     doc.text('CLIENTE', 14, 100);
+  //     doc.setFontSize(10);
+  //     doc.text(factura.fa_nomClie, 14, 106);
+
+  //     // Tabla de descripción de productos
+  //     autoTable(doc, {
+  //       head: [['Codigo', 'Descripción', 'Cantidad', 'Precio', 'Itbis', 'Total']],
+  //       body: response.data.map((item: any) => [
+  //         item.df_codMerc,
+  //         item.df_desMerc,
+  //         parseInt(item.df_canMerc),
+  //         formatCurrency(parseFloat(item.df_preMerc)),
+  //         formatCurrency((item.df_preMerc * item.df_canMerc) * 18 / 100),
+  //         formatCurrency(item.df_preMerc * item.df_canMerc)
+  //       ]),
+  //       startY: 115,
+  //     });
 
 
-      // Obtener la posición final de la tabla
-      const finalY = (doc as any).lastAutoTable.finalY;
 
-      // Agregar el subtotal, ITBIS y Total a Pagar como pie de página
-      doc.setFontSize(12);
-      doc.text(`Subtotal:`, 118, finalY + 10);
-      doc.setFontSize(10);
-      doc.text(`${formatCurrency(subtotal)} `, 160, finalY + 10);
-      doc.setFontSize(12);
-      doc.text(`ITBIS:`, 118, finalY + 16);
-      doc.setFontSize(10);
-      doc.text(`${formatCurrency(this.totalItbis)} `, 160, finalY + 16);
-      doc.setFontSize(12);
-      doc.text(`TOTAL A PAGAR: `, 118, finalY + 22);
-      doc.setFontSize(14);
-      doc.text(`${formatCurrency(totalGeneral)} `, 160, finalY + 22);
 
-      doc.setFontSize(12);
-      // Nota final
-      // doc.text('Estos Precios Estan Sujetos a Cambio Sin Previo Aviso', 105, finalY + 40, { align: 'center' });
-      doc.setFontSize(14);
-      doc.text('WWW.GRUPOHIERRO.COM', 105, finalY + 47, { align: 'center' });
-      doc.setFontSize(12);
-      doc.text('*** Gracias por Preferirnos ***', 105, finalY + 55, { align: 'center' });
+  //     // Obtener la posición final de la tabla
+  //     const finalY = (doc as any).lastAutoTable.finalY;
 
-      // Guardar PDF
-      // doc.save(`${cotizacion.ct_codcoti}.pdf`);
-      const pdfBlob = doc.output('blob');
+  //     // Agregar el subtotal, ITBIS y Total a Pagar como pie de página
+  //     doc.setFontSize(12);
+  //     doc.text(`Subtotal:`, 118, finalY + 10);
+  //     doc.setFontSize(10);
+  //     doc.text(`${formatCurrency(subtotal)} `, 160, finalY + 10);
+  //     doc.setFontSize(12);
+  //     doc.text(`ITBIS:`, 118, finalY + 16);
+  //     doc.setFontSize(10);
+  //     doc.text(`${formatCurrency(this.totalItbis)} `, 160, finalY + 16);
+  //     doc.setFontSize(12);
+  //     doc.text(`TOTAL A PAGAR: `, 118, finalY + 22);
+  //     doc.setFontSize(14);
+  //     doc.text(`${formatCurrency(totalGeneral)} `, 160, finalY + 22);
 
-      // Crear un objeto URL para el Blob y abrirlo en una nueva pestaña
-      const pdfUrl = URL.createObjectURL(pdfBlob);
-      window.open(pdfUrl, '_blank');
-    });
+  //     doc.setFontSize(12);
+  //     // Nota final
+  //     // doc.text('Estos Precios Estan Sujetos a Cambio Sin Previo Aviso', 105, finalY + 40, { align: 'center' });
+  //     doc.setFontSize(14);
+  //     doc.text('WWW.GRUPOHIERRO.COM', 105, finalY + 47, { align: 'center' });
+  //     doc.setFontSize(12);
+  //     doc.text('*** Gracias por Preferirnos ***', 105, finalY + 55, { align: 'center' });
 
-  }
+  //     // Guardar PDF
+  //     // doc.save(`${cotizacion.ct_codcoti}.pdf`);
+  //     const pdfBlob = doc.output('blob');
+
+  //     // Crear un objeto URL para el Blob y abrirlo en una nueva pestaña
+  //     const pdfUrl = URL.createObjectURL(pdfBlob);
+  //     window.open(pdfUrl, '_blank');
+  //   });
+
+  // }
 
 
 // Métodos para cambiar de página
@@ -1674,9 +924,7 @@ onTableKeydown(event: KeyboardEvent) {
     }
   }
 
-// seleccionarFactura(factura: any) {
-//   this.facturaSelecionada = factura;
-//}
+
 seleccionarFactura(factura: any, index: number) {
   this.consultarFacturacion(factura); // ✅ Llamada automática
   this.codFacturaselecte = factura.fa_codFact;
@@ -1701,21 +949,6 @@ seleccionarFactura(factura: any, index: number) {
     }
   }, 0);
 }
-// seleccionarFactura(factura: any, index: number) {
-//   this.consultarFacturacion(factura); // ✅ Llamada automática
-//   this.codFacturaselecte = factura.fa_codFact;
-
-//   setTimeout(() => {
-//     const fila = this.filas.toArray()[index];
-//     fila?.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-//   });
-// }
-
-
-// seleccionarFactura(factura: any, index: number) {
-
-//   this.consultarFacturacion(factura); // ✅ Llamada automática
-// }
 
 @HostListener('document:keydown.arrowdown', ['$event'])
 handleArrowDown(event: KeyboardEvent) {
@@ -1828,19 +1061,7 @@ generarFacturaPDF() {
   }, 100);
 }
 
-// imprimirFactura() {
-//   const opt = {
-//     margin:       0.5,
-//     filename:     'factura.pdf',
-//     image:        { type: 'jpeg', quality: 0.98 },
-//     html2canvas:  { scale: 2 },
-//     jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
-//   };
 
-//   const element = this.facturaRef.nativeElement;
-//   html2pdf().from(element).set(opt).save();
-//   this.limpia()
-// }
   imprimirFactura() {
     const original = this.facturaRef.nativeElement;
     const numeroFactura = this.formularioFacturacion.get('fa_codFact')?.value;
@@ -1867,6 +1088,16 @@ generarFacturaPDF() {
         // ❌ Quitar el clon
         document.body.removeChild(clone);
          this.limpia()
+// actualiza
+const formaPago = this.formularioFacturacion.get('fa_fpago')?.value || 1; // Por defecto 1
+
+this.servicioFacturacion.marcarFacturaComoImpresa({
+  numeroFactura: this.formularioFacturacion.get('fa_numFact')?.value,
+  fpago: formaPago === 'efectivo' ? 1 : 2
+}).subscribe(() => {
+  console.log('Factura actualizada correctamente.');
+});
+
       });
     }, 100);
   }
