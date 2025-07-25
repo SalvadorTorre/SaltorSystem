@@ -1,0 +1,100 @@
+<!-- factura.reporte.html -->
+<div
+  #facturaRef
+  id="factura"
+  style="width: 210mm; padding: 20px; font-family: Arial; font-size: 12px"
+>
+  <!-- ENCABEZADO EMPRESA -->
+  <div
+    style="
+      text-align: center;
+      border-bottom: 1px solid #000;
+      margin-bottom: 10px;
+    "
+  >
+    <h2 style="margin: 0">Nombre de la Empresa</h2>
+    <p style="margin: 0">Dirección de la empresa</p>
+    <p style="margin: 0">Teléfono: 809-000-0000</p>
+  </div>
+
+  <!-- DATOS DE FACTURA Y CLIENTE -->
+  <div
+    style="display: flex; justify-content: space-between; margin-bottom: 10px"
+  >
+    <div>
+      <p>
+        <strong>Fecha:</strong> {{
+        formularioFacturacion.get('fa_fecFact')?.value | date:'dd/MM/yyyy' }}
+      </p>
+      <p>
+        <strong>No. Factura:</strong> {{
+        formularioFacturacion.get('fa_codFact')?.value }}
+      </p>
+    </div>
+    <div>
+      <p>
+        <strong>Cliente:</strong> {{
+        formularioFacturacion.get('fa_nomCli')?.value }}
+      </p>
+      <p>
+        <strong>Dirección:</strong> {{
+        formularioFacturacion.get('fa_dirCli')?.value }}
+      </p>
+      <p>
+        <strong>Teléfono:</strong> {{
+        formularioFacturacion.get('fa_telCli')?.value }}
+      </p>
+    </div>
+  </div>
+
+  <!-- DETALLE DE PRODUCTOS -->
+  <table style="width: 100%; border-collapse: collapse; font-size: 12px">
+    <thead>
+      <tr style="background-color: #eee; border: 1px solid #000">
+        <th style="border: 1px solid #000">Código</th>
+        <th style="border: 1px solid #000">Descripción</th>
+        <th style="border: 1px solid #000">Cantidad</th>
+        <th style="border: 1px solid #000">Precio</th>
+        <th style="border: 1px solid #000">Valor</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let item of detalleFactura">
+        <td style="border: 1px solid #000">{{ item.codigo }}</td>
+        <td style="border: 1px solid #000">{{ item.descripcion }}</td>
+        <td style="border: 1px solid #000; text-align: right">
+          {{ item.cantidad }}
+        </td>
+        <td style="border: 1px solid #000; text-align: right">
+          {{ item.precio | number:'1.2-2' }}
+        </td>
+        <td style="border: 1px solid #000; text-align: right">
+          {{ item.valor | number:'1.2-2' }}
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- TOTALES -->
+  <div style="text-align: right; margin-top: 10px">
+    <p>
+      <strong>Total Factura:</strong> {{
+      formularioFacturacion.get('fa_valFact')?.value | number:'1.2-2' }}
+    </p>
+    <p>
+      <strong>Pagado:</strong> {{ formularioFacturacion.get('valpagado')?.value
+      | number:'1.2-2' }}
+    </p>
+    <p>
+      <strong>Cambio:</strong> {{ formularioFacturacion.get('valcambio')?.value
+      | number:'1.2-2' }}
+    </p>
+  </div>
+</div>
+
+<!-- Botón -->
+<div class="text-end mt-3">
+  <button class="btn btn-primary" (click)="generarFacturaPDF()">
+    Descargar / Imprimir Factura
+  </button>
+</div>

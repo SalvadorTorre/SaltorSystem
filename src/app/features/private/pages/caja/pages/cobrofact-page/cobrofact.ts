@@ -25,6 +25,8 @@ import { ServicioNcf } from 'src/app/core/services/ncf/ncf.service';
 import { ModeloNcfData } from 'src/app/core/services/ncf';
 import { registerLocaleData } from '@angular/common';
 import localeEs from '@angular/common/locales/es';
+import * as html2pdf from 'html2pdf.js';
+import html2canvas from 'html2canvas';
 
 declare var $: any;
 
@@ -40,6 +42,8 @@ export class CobroFact implements OnInit {
   @ViewChild('Tabladetalle') Tabladetalle!: ElementRef;
   @ViewChildren('filaSeleccionada') filas!: QueryList<ElementRef>;
   @ViewChild('contenedorScroll') contenedorScroll!: ElementRef;
+ @ViewChild('valorPagadoInput') valorPagadoInput!: ElementRef;
+ @ViewChild('facturaRef', { static: false }) facturaRef!: ElementRef;
   botonEditar = true; // Empieza deshabilitado
   botonImprimir = true; // Empieza deshabilitado
   botonaddItems = true; // Empieza deshabilitado
@@ -51,6 +55,8 @@ export class CobroFact implements OnInit {
   pageSize = 6;
   currentPage = 1;
   maxPagesToShow = 5;
+  valorpagado: number = 0;
+  valCambio: number = 0;
   facturaSelecionada: any = null;
   codFacturaselecte = " "
   txtdescripcion: string = '';
@@ -76,6 +82,10 @@ export class CobroFact implements OnInit {
   items: interfaceDetalleModel[] = [];
   ncflist: ModeloNcfData[] = [];
   selectedItem: any = null;
+  valorPagado: number = 0;
+valorPagadoFormateado: string = '0,00';
+cambio: number = 0;
+
   totalGral: number = 0;
   totalItbis: number = 0;
   totalcosto: number = 0;
@@ -136,6 +146,7 @@ export class CobroFact implements OnInit {
 
   isDisabled: boolean = true;
   form: FormGroup;
+  facturaElement: any;
 
 get totalPages() {
   return Math.ceil(this.facturacionList.length / this.pageSize);
@@ -217,17 +228,6 @@ get paginatedData() {
 
   ngOnInit(): void {
     this.buscarTodasFacturacion();
-    // this.servicioFacturacion.buscarTodasFacturacion().subscribe(response => {
-    //   console.log('DATOS EN RESPONSE.DATA', response.data);
-    //   this.facturacionList = response.data;
-    //   console.log('DATOS EN FACTURACIONLIST', this.facturacionList)
-    //   console.log(this.facturacionList.length)
-
-    // }, error => {
-    // console.error('Error al obtener facturas:', error);
-    // });
-     // $("#input1").focus();
-    // $("#input1").select()
     this.obtenerNcf();
     this.obtenerfpago();
     this.buscardescripcionmerc.valueChanges.pipe(
@@ -350,6 +350,8 @@ obtenerNcf() {
    //   this.buscarTodasFacturaciomtimbresobre tim0
     this.botonEditar = true; // Deshabilita de nuevo
     this.botonImprimir = true; // Deshabilita el botón
+    this.chekPagado = false;
+    this.chekpagada = true;
    this.productoselect;
    this.codmerc = ""
    this.descripcionmerc = ""
@@ -365,6 +367,8 @@ obtenerNcf() {
     this.factxt = 0;
     this.habilitarCampos= false;
      this.habilitarCantidad= false;
+     this.valorPagado = 0;
+     this.cambio = 0;
   // volver a ejecutar la lógica de inicio
   this.ngOnInit();
     this.actualizarTotales()
@@ -1732,14 +1736,19 @@ handleArrowUp(event: KeyboardEvent) {
     event.preventDefault();
   }
 }
-onInputPagado(event: Event) {
+onInputPagado(event: Event): void {
   const input = event.target as HTMLInputElement;
-  const valor = input.value;
-  const control = this.formularioFacturacion.get('valpagado');
+  const valPagado = parseFloat(input.value) || 0;
 
-  if (control) {
-    control.setValue(valor);
-  }
+  const valFactura = parseFloat(this.formularioFacturacion.get('fa_valFact')?.value) || 0;
+
+  const cambio = valPagado - valFactura;
+
+  // Actualiza el valor en el formulario reactivo
+  this.formularioFacturacion.patchValue({
+    valpagado: valPagado,
+    valcambio: cambio > 0 ? cambio : 0 // si es negativo, pones 0 o lo que prefieras
+  });
 }
 
 toggleCheckPagado() {
@@ -1747,14 +1756,123 @@ toggleCheckPagado() {
   if (this.chekPagado) {
     this.chekPagado = false;
     this.txtvalPagado = true; // sigue deshabilitado
-  } else {
+    this.valorPagado = 0;
+    this.cambio = 0;
+    } else {
     // si no está marcado, lo marco y habilito input
     this.chekPagado = true;
     this.txtvalPagado = false;
+    setTimeout(() => {
+      if (this.valorPagadoInput) {
+        this.valorPagadoInput.nativeElement.focus();
+        this.valorPagadoInput.nativeElement.select();
+      }
+    }, 0);
+
   }
 }
 
+onValorPagadoChange(event: Event): void {
+  const input = event.target as HTMLInputElement;
+  this.valorPagado = parseFloat(input.value) || 0;
+  const valFactura = this.formularioFacturacion.get('fa_valFact')?.value || 0;
+  this.valCambio = this.valorPagado - valFactura;
+  if (this.valCambio > 0) {
+    this.botonImprimir= false
+  }else {
+    this.botonImprimir= true
+  }
 }
+
+onValorPagadoFormatted(event: Event): void {
+  const input = (event.target as HTMLInputElement).value;
+
+  // Remplaza la coma por punto para parsear
+  const valorNumerico = parseFloat(input.replace(',', '.')) || 0;
+
+  this.valorPagado = valorNumerico;
+  this.valorPagadoFormateado = this.formatearNumero(valorNumerico);
+
+  const valFactura = parseFloat(this.formularioFacturacion.get('fa_valFact')?.value) || 0;
+  const cambioCalc = valorNumerico - valFactura;
+  this.cambio = cambioCalc > 0 ? cambioCalc : 0;
+}
+
+formatearNumero(valor: number): string {
+  return valor
+    .toFixed(2)        // "1234.56"
+    .replace('.', ',') // "1234,56"
+    .replace(/\B(?=(\d{3})+(?!\d))/g, '.'); // separador de miles
+}
+
+generarFacturaPDF() {
+  const opt = {
+    margin: 5,
+    filename: `Factura_${this.formularioFacturacion.get('fa_codFact')?.value}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2 },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  };
+
+  //Mostrar temporalmente la factura para que se renderice correctamente
+  const facturaDiv = this.facturaElement.nativeElement as HTMLElement;
+  facturaDiv.style.display = 'block';
+
+    const element = this.facturaRef.nativeElement;
+  html2pdf().from(element).set(opt).save();
+
+  setTimeout(() => {
+    html2pdf().from(facturaDiv).set(opt).save().then(() => {
+      facturaDiv.style.display = 'none';
+    });
+  }, 100);
+}
+
+// imprimirFactura() {
+//   const opt = {
+//     margin:       0.5,
+//     filename:     'factura.pdf',
+//     image:        { type: 'jpeg', quality: 0.98 },
+//     html2canvas:  { scale: 2 },
+//     jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+//   };
+
+//   const element = this.facturaRef.nativeElement;
+//   html2pdf().from(element).set(opt).save();
+//   this.limpia()
+// }
+  imprimirFactura() {
+    const original = this.facturaRef.nativeElement;
+    const numeroFactura = this.formularioFacturacion.get('fa_codFact')?.value;
+    // ✅ Clonar y mostrar fuera del viewport
+    const clone = original.cloneNode(true) as HTMLElement;
+    clone.style.position = 'absolute';
+    clone.style.top = '0';
+    clone.style.left = '-9999px';
+    clone.style.display = 'block';
+    document.body.appendChild(clone);
+
+    // Esperar a que el DOM procese
+    setTimeout(() => {
+      html2canvas(clone).then(canvas => {
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const imgProps = pdf.getImageProperties(imgData);
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+        pdf.save(`${numeroFactura}.pdf`);
+
+        // ❌ Quitar el clon
+        document.body.removeChild(clone);
+         this.limpia()
+      });
+    }, 100);
+  }
+}
+
+
 
 
 

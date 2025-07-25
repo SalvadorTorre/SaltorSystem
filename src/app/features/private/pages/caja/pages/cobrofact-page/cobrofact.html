@@ -1,6 +1,12 @@
-<h3 class style="color: black; text-align: left; font-weight: bold">
-  Gestion de Cobro factura
-</h3>
+<div class="row mt-0">
+  <div class="col-1"></div>
+  <div class="col-8">
+    <h3 class style="color: black; text-align: left; font-weight: bold">
+      Gestion de Cobro factura
+    </h3>
+  </div>
+</div>
+
 <div class="row">
   <div class="col-1"></div>
   <div class="col-6">
@@ -242,17 +248,23 @@
                 </div>
                 <div class="col-6">
                   <!-- <input
-                    type="number"
-                    formControlName="valpagado"
-                    class="form-control form-control-sm"
-                  /> -->
-                  <input
+                    #valorPagadoInput
                     type="number"
                     class="form-control form-control-sm"
                     style="font-size: 1.5pc; font-weight: bold"
                     [value]="formularioFacturacion.get('valpagado')?.value | number:'1.2-2'"
                     [disabled]="txtvalPagado"
                     (input)="onInputPagado($event)"
+                  /> -->
+                  <input
+                    #valorPagadoInput
+                    type="number"
+                    class="form-control form-control-sm"
+                    [ngClass]="{ 'is-invalid': valorPagado < formularioFacturacion.get('fa_valFact')?.value }"
+                    style="font-size: 1.5pc; font-weight: bold"
+                    [value]="valorPagado"
+                    [disabled]="txtvalPagado"
+                    (input)="onValorPagadoChange($event)"
                   />
                 </div>
               </div>
@@ -263,15 +275,16 @@
                 <div class="col-6">
                   <!-- <input
                     type="number"
-                    [disabled]="txtcambio"
-                    formControlName="valcambio"
                     class="form-control form-control-sm"
+                    [value]="formularioFacturacion.get('valcambio')?.value |
+                      number:'1.2-2'"
+                    disabled
                   /> -->
                   <input
                     type="number"
                     class="form-control form-control-sm"
-                    [value]="formularioFacturacion.get('valcambio')?.value |
-                      number:'1.2-2'"
+                    style="font-size: 1.5pc; font-weight: bold; color: red"
+                    [value]="valCambio"
                     disabled
                   />
                 </div>
@@ -300,7 +313,7 @@
                   <button
                     [disabled]="botonImprimir"
                     class="btn btn-primary btn-lx w-50"
-                    (click)="guardarFacturacion()"
+                    (click)="imprimirFactura()"
                   >
                     <i class="bi bi-printer" style="font-weight: bold"></i>
                     Imprimir
@@ -716,5 +729,69 @@
         </div>
       </div>
     </div>
+  </div>
+</div>
+<!-- Plantilla de factura (oculta hasta imprimir) -->
+<div #facturaRef id="factura" style="display: none">
+  <div style="font-family: Arial; padding: 20px; font-size: 14px">
+    <h2 style="text-align: center">FACTURA</h2>
+    <hr />
+
+    <p style="text-align: center"><strong>Tu Empresa S.A.</strong></p>
+    <p style="text-align: center">Dirección Empresa</p>
+    <p style="text-align: center">809-000-0000</p>
+    <p>
+      <strong>Fecha:</strong> {{ formularioFacturacion.get('fa_fecFact')?.value
+      | date }}
+    </p>
+    <p>
+      <strong>Factura #:</strong> {{
+      formularioFacturacion.get('fa_codFact')?.value }}
+    </p>
+
+    <hr />
+    <p>
+      <strong>Cliente:</strong> {{ formularioFacturacion.get('fa_nomCli')?.value
+      }}
+    </p>
+    <p>
+      <strong>Dirección:</strong> {{
+      formularioFacturacion.get('fa_dirCli')?.value }}
+    </p>
+    <p>
+      <strong>Teléfono:</strong> {{
+      formularioFacturacion.get('fa_telCli')?.value }}
+    </p>
+
+    <hr />
+    <table width="100%" border="1" cellspacing="0" cellpadding="5">
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Descripción</th>
+          <th>Cant.</th>
+          <th>Precio</th>
+          <th>Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of items; let i = index">
+          <td>{{ item.producto?.in_codmerc }}</td>
+
+          <td>{{ item.producto?.in_desmerc }}</td>
+          <td>{{ item.cantidad }}</td>
+          <td>{{ item.precio | number: '1.2-2' }}</td>
+          <td>{{ item.total | number: '1.2-2' }}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <hr />
+    <p>
+      <strong>Total:</strong> {{ formularioFacturacion.get('fa_valFact')?.value
+      | number: '1.2-2' }}
+    </p>
+    <p><strong>Pagado:</strong> {{ valorPagado | number: '1.2-2' }}</p>
+    <p><strong>Cambio:</strong> {{ valCambio | number: '1.2-2' }}</p>
   </div>
 </div>

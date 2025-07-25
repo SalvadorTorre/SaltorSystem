@@ -2,21 +2,31 @@ import { Injectable } from "@angular/core";
 import { Observable } from "rxjs";
 import { HttpInvokeService } from "../../http-invoke.service";
 import { FacturacionModel, FacturacionModelData } from ".";
+import { HttpParams } from '@angular/common/http';
 
-@Injectable({ 
+@Injectable({
   providedIn: "root"
 })
 export class ServicioFacturacion {
   constructor(private http: HttpInvokeService) { }
+
+
+
 
   guardarFacturacion(datosParaGuardar: any): Observable<any> {
     return this.http.PostRequest<any, any>("/facturacion", datosParaGuardar);
   }
 
 
-  // editarFacturacion(fa_codFact: string, facturacion: FacturacionModel): Observable<any> {
-  //   return this.http.PutRequest<any, any>(`/facturacion/${fa_codFact}`, facturacion);
-  // }
+obtenerFacturasNoImpresas(): Observable<any> {
+  const endpoint = 'facturas-no-impresas';
+  const params = new HttpParams(); // Si no vas a enviar parámetros, pon uno vacío
+  return this.http.get(endpoint, params);
+}
+
+
+
+
 
   editarFacturacion(payload: any) {
   const cod = payload.factura.fa_codFact;
