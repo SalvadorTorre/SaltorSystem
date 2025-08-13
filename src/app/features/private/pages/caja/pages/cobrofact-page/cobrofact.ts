@@ -42,8 +42,8 @@ export class CobroFact implements OnInit {
   @ViewChild('Tabladetalle') Tabladetalle!: ElementRef;
   @ViewChildren('filaSeleccionada') filas!: QueryList<ElementRef>;
   @ViewChild('contenedorScroll') contenedorScroll!: ElementRef;
- @ViewChild('valorPagadoInput') valorPagadoInput!: ElementRef;
- @ViewChild('facturaRef', { static: false }) facturaRef!: ElementRef;
+  @ViewChild('valorPagadoInput') valorPagadoInput!: ElementRef;
+  @ViewChild('facturaRef', { static: false }) facturaRef!: ElementRef;
   facturas: any[] = []; // ✅ Declaración de la propiedad
   botonEditar = true; // Empieza deshabilitado
   botonImprimir = true; // Empieza deshabilitado
@@ -52,8 +52,11 @@ export class CobroFact implements OnInit {
   chekPagado = false;
   txtcambio = true;
   txtvalPagado = true;
-  totalItems =1000;
+  totalItems = 1000;
+  modoEdicion = false;
   pageSize = 6;
+  fentrega = '';
+  ftipoPago = '';
   currentPage = 1;
   maxPagesToShow = 5;
   valorpagado: number = 0;
@@ -77,15 +80,15 @@ export class CobroFact implements OnInit {
   modoedicionFacturacion: boolean = false;
   facturacionid!: string
   modoconsultaFacturacion: boolean = false;
- facturacionList: FacturacionModelData[] = [];
+  facturacionList: FacturacionModelData[] = [];
   detFacturaList: detFacturaData[] = [];
   selectedFacturacion: any = null;
   items: interfaceDetalleModel[] = [];
   ncflist: ModeloNcfData[] = [];
   selectedItem: any = null;
   valorPagado: number = 0;
-valorPagadoFormateado: string = '0,00';
-cambio: number = 0;
+  valorPagadoFormateado: string = '0,00';
+  cambio: number = 0;
 
   totalGral: number = 0;
   totalItbis: number = 0;
@@ -98,7 +101,7 @@ cambio: number = 0;
   medidatxt: any;
   costotxt: any;
   totalcostotxt: any;
-  fecacttxt:any;
+  fecacttxt: any;
   itbitxt: string = '';
   totalgraltxt: string = '';
   txtFactura: string = '';
@@ -133,7 +136,7 @@ cambio: number = 0;
   codmerVacio: boolean = false;
   desmerVacio: boolean = false;
   habilitarCampos: boolean = false;
-  habilitarCantidad: boolean= false
+  habilitarCantidad: boolean = false
 
   sucursales = [];
   sucursalSeleccionada: any = null;
@@ -148,15 +151,16 @@ cambio: number = 0;
   isDisabled: boolean = true;
   form: FormGroup;
   facturaElement: any;
+  formasPago: any;
 
-get totalPages() {
-  return Math.ceil(this.facturacionList.length / this.pageSize);
-}
+  get totalPages() {
+    return Math.ceil(this.facturacionList.length / this.pageSize);
+  }
 
-get paginatedData() {
-  const startIndex = (this.currentPage - 1) * this.pageSize;
-  return this.facturacionList.slice(startIndex, startIndex + this.pageSize);
-}
+  get paginatedData() {
+    const startIndex = (this.currentPage - 1) * this.pageSize;
+    return this.facturacionList.slice(startIndex, startIndex + this.pageSize);
+  }
 
   constructor(
     private fb: FormBuilder,
@@ -201,17 +205,19 @@ get paginatedData() {
 
 
   ngOnInit(): void {
+
     this.buscarFacturasNoImpresas();
     this.obtenerNcf();
     this.obtenerfpago();
 
-   }
-obtenerfpago() {
+
+  }
+  obtenerfpago() {
     this.servicioFpago.obtenerTodosFpago().subscribe(response => {
       this.resultadoFpago = response.data;
     });
   }
-obtenerNcf() {
+  obtenerNcf() {
     this.servicioNcf.buscarTodosNcf().subscribe(response => {
       this.ncflist = response.data;
     });
@@ -221,69 +227,71 @@ obtenerNcf() {
     const fechaActual = new Date();
     const fechaActualStr = this.formatofecha(fechaActual);
     this.formularioFacturacion = this.fb.group({
-        fa_codFact: [{ value: '', disabled: true }],
-        fa_fecFact: [{value: fechaActualStr, disabled: true}],
-        fa_valFact: [''],
-        fa_subFact: [''],
-        fa_itbiFact:[''],
-        fa_codClie: [''],
-        fa_cosFact: [''],
-        fa_nomClie: [{ value: '', disabled: true }],
-        fa_rncFact: [{ value: '', disabled: true }],
-        fa_telClie: [{ value: '', disabled: true }],
-        fa_telClie2:[{ value: '', disabled: true }],
-        fa_dirClie: [{ value: '', disabled: true }],
-        fa_correo:  [{ value: '', disabled: true }],
-        fa_codVend: [{ value: '', disabled: true }],
-        fa_nomVend: [{ value: '', disabled: true }],
-        fa_status:  [''],
-        fa_sector:  [{ value: '', disabled: true }],
-        fa_codZona: [null],
-        fa_desZona: [''],
-        fa_fpago:   [{ value: '', disabled: true }],
-        fa_codfpago:['1'],
-        fa_envio:   [{ value: '', disabled: true }],
-        fa_ncfFact: [{value:'', disabled: true }],
-        fa_tipoNcf: [{ value: '', disabled: true }],
-        fa_contacto:[{ value: '', disabled: true }],
-        fa_despacho:[{ value: '', disabled: true }],
-        fa_reimpresa: [{ value: '', disabled: true }],
-        fa_entrega: [{ value: '', disabled: true }],
-        fa_impresa: [{ value: '', disabled: true }],
-        fa_facturada: [{ value: '', disabled: true }],
-      });
+      fa_codFact: [{ value: '', disabled: true }],
+      fa_fecFact: [{ value: fechaActualStr, disabled: true }],
+      fa_valFact: [''],
+      fa_subFact: [''],
+      fa_itbiFact: [''],
+      fa_codClie: [''],
+      fa_cosFact: [''],
+      fa_nomClie: [{ value: '', disabled: true }],
+      fa_rncFact: [{ value: '', disabled: true }],
+      fa_telClie: [{ value: '', disabled: true }],
+      fa_telClie2: [{ value: '', disabled: true }],
+      fa_dirClie: [{ value: '', disabled: true }],
+      fa_correo: [{ value: '', disabled: true }],
+      fa_codVend: [{ value: '', disabled: true }],
+      fa_nomVend: [{ value: '', disabled: true }],
+      fa_status: [''],
+      fa_sector: [{ value: '', disabled: true }],
+      fa_codZona: [null],
+      fa_desZona: [''],
+      fa_fpago: [{ value: '', disabled: true }],
+      fa_codfpago: ['1'],
+      fa_envio: [{ value: '', disabled: true }],
+      fa_ncfFact: [{ value: '', disabled: true }],
+      fa_tipoNcf: [{ value: '', disabled: true }],
+      fa_contacto: [{ value: '', disabled: true }],
+      fa_despacho: [{ value: '', disabled: true }],
+      fa_reimpresa: [{ value: '', disabled: true }],
+      fa_entrega: [{ value: '', disabled: true }],
+      fa_impresa: [{ value: '', disabled: true }],
+      fa_facturada: [{ value: '', disabled: true }],
+    });
 
   }
   limpia(): void {
     //this.formularioFacturacion.reset();
     this.crearFormularioFacturacion();
-      this.txtdescripcion = '';
-      this.txtFactura = '';
-      this.txtFecha = '';
-   //   this.buscarTodasFacturaciomtimbresobre tim0
+    this.txtdescripcion = '';
+    this.txtFactura = '';
+    this.txtFecha = '';
+    //   this.buscarTodasFacturaciomtimbresobre tim0
     this.botonEditar = true; // Deshabilita de nuevo
     this.botonImprimir = true; // Deshabilita el botón
     this.chekPagado = false;
     this.chekpagada = true;
-   this.productoselect;
-   this.codmerc = ""
-   this.descripcionmerc = ""
-   this.preciomerc = 0;
-   this.cantidadmerc = 0;
-   this.isEditing = false;
-   this.items = [];          // Limpiar el array de items
+    this.productoselect;
+    this.codmerc = ""
+    this.descripcionmerc = ""
+    this.preciomerc = 0;
+    this.cantidadmerc = 0;
+    this.isEditing = false;
+    this.items = [];          // Limpiar el array de items
     this.totalGral = 0;       // Reiniciar el total general
     this.totalItbis = 0;      // Reiniciar el total del ITBIS
     this.subTotal = 0;        // Reiniciar el subtotal
     this.totalcosto = 0;
     this.costoGral = 0;
     this.factxt = 0;
-    this.habilitarCampos= false;
-     this.habilitarCantidad= false;
-     this.valorPagado = 0;
-     this.cambio = 0;
-  // volver a ejecutar la lógica de inicio
-  this.ngOnInit();
+    this.habilitarCampos = false;
+    this.habilitarCantidad = false;
+    this.valorPagado = 0;
+    this.cambio = 0;
+    this.fentrega = "";
+    this.ftipoPago = "";
+    // volver a ejecutar la lógica de inicio
+    this.ngOnInit();
     this.actualizarTotales()
     $("#input1").focus();
     $("#input1").select();
@@ -325,7 +333,7 @@ obtenerNcf() {
           in_cosmerc: 0,
           in_premerc: 0,
           in_precmin: 0,
-       //   in_costpro: 0,
+          //   in_costpro: 0,
           in_ucosto: 0,
           in_porgana: 0,
           in_peso: 0,
@@ -349,7 +357,14 @@ obtenerNcf() {
           precio: precio,
           total: totalItem,
           fecfactActual: new Date(),
-          costo:this.costotxt
+          costo: this.costotxt,
+          fa_codFact: Factura.fa_codFact,
+          fa_fecFact: Factura.fa_fecFact,
+          fa_nomClie: Factura.fa_nomClie,
+          fa_valFact: Factura.fa_valFact,
+          fa_impresa: Factura.fa_impresa === null ? "N" : "S",
+          fa_envio: Factura.fa_envio,
+          fa_fpago: Factura.fa_fpago,
 
         });
         //fecfactActual: new Date(),
@@ -381,19 +396,21 @@ obtenerNcf() {
     this.crearFormularioFacturacion()
     this.formularioFacturacion.patchValue(factura);
     this.tituloModalFacturacion = 'Consulta Factura';
-     // $('#modalfacturacion').modal('show');
+    // $('#modalfacturacion').modal('show');
     this.habilitarFormulario = true;
     this.formularioFacturacion.disable();
     this.codFacturaselecte = factura.fa_codFact;
-    console.log("ff",factura)
+    console.log("ff", factura)
     this.habilitarIcono = false;
     this.botonEditar = false; // Habilita el botón
     this.chekpagada = false; // Habilita el botón
-
+    this.fentrega = factura.fa_envio || '';
+    this.ftipoPago = factura.fa_fpago || '';
     // this.botonImprimir = true; // Deshabilita el botón
 
     const inputs = document.querySelectorAll('.seccion-productos input');
-    inputs.forEach((input) => {(input as HTMLInputElement).disabled = true;
+    inputs.forEach((input) => {
+      (input as HTMLInputElement).disabled = true;
     });
     // Limpiar los items antes de agregar los nuevos
     this.totalItbis = 0;
@@ -442,10 +459,15 @@ obtenerNcf() {
           cantidad: cantidad,
           precio: precio,
           total: totalItem,
-          costo: costoItem,
           fecfactActual: new Date(),
-
-          //costo:0
+          costo: this.costotxt,
+          fa_codFact: factura.fa_codFact,
+          fa_fecFact: factura.fa_fecFact,
+          fa_nomClie: factura.fa_nomClie,
+          fa_valFact: factura.fa_valFact,
+          fa_impresa: factura.fa_impresa === null ? "N" : "S",
+          fa_envio: factura.fa_envio,
+          fa_fpago: factura.fa_fpago,
         });
         // Calcular el subtotal
         subtotal += costoItem;
@@ -455,26 +477,26 @@ obtenerNcf() {
       });
       // Calcular el total general (subtotal + ITBIS)
       totalGeneral = subtotal + this.totalItbis;
-     // totalcosto += costoItem;
+      // totalcosto += costoItem;
       // Asignar los totales a variables o mostrarlos en la interfaz
       this.subTotal = subtotal;
       this.totalItbis = this.totalItbis;
       this.totalGral = totalGeneral;
-      this.factxt = (factura.fa_valFact - factura.fa_cosFact) * 100/ factura.fa_cosFact;
+      this.factxt = (factura.fa_valFact - factura.fa_cosFact) * 100 / factura.fa_cosFact;
       this.actualizarTotales();
       console.log(factura.fa_valFact)
       console.log(factura.fa_cosFact)
       console.log(this.factxt)
 
       this.formularioFacturacion.patchValue({
-      fa_fpago: factura.fa_fpago
+        fa_fpago: factura.fa_fpago
       });
       // Consultar la descripción de forma de pago
 
       this.servicioFpago.obtenerFpagoPorId(factura.fa_fpago).subscribe((response) => {
-     const formaPago = response.data?.[0]; // Accede al primer elemento del array
-     this.descripcionFormaPago = formaPago ? formaPago.fp_descfpago : 'Desconocido';
-});
+        const formaPago = response.data?.[0]; // Accede al primer elemento del array
+        this.descripcionFormaPago = formaPago ? formaPago.fp_descfpago : 'Desconocido';
+      });
 
     });
 
@@ -520,7 +542,7 @@ obtenerNcf() {
     }
   }
 
-   moveFocus(event: KeyboardEvent, nextElement: HTMLInputElement | HTMLSelectElement) {
+  moveFocus(event: KeyboardEvent, nextElement: HTMLInputElement | HTMLSelectElement) {
     if (event.key === 'Enter' && nextElement) {
       event.preventDefault(); // Evita el comportamiento predeterminado del Enter
       nextElement.focus(); // Enfoca el siguiente campo
@@ -528,7 +550,7 @@ obtenerNcf() {
   }
 
 
-    mostrarMensajeError(mensaje: string): void {
+  mostrarMensajeError(mensaje: string): void {
     this.mensagePantalla = true;
 
     Swal.fire({
@@ -539,9 +561,9 @@ obtenerNcf() {
   }
 
   moveFocusFpago(event: Event, nextInput: HTMLInputElement | HTMLSelectElement) {
-   // KeyboardEvent, element: HTMLInputElement | HTMLSelectElement
+    // KeyboardEvent, element: HTMLInputElement | HTMLSelectElement
     event.preventDefault();
-    if (event.target instanceof  HTMLSelectElement) {
+    if (event.target instanceof HTMLSelectElement) {
       if (!event.target.value) {
         this.mensagePantalla = true;
         Swal.fire({
@@ -557,30 +579,30 @@ obtenerNcf() {
   }
 
   actualizarCalculo() {
-    this.protxt = (this.preciomerc - this.costotxt) * 100/ this.costotxt; // Aquí puedes hacer cualquier cálculo
+    this.protxt = (this.preciomerc - this.costotxt) * 100 / this.costotxt; // Aquí puedes hacer cualquier cálculo
   }
 
 
-recalcularTotales() {
-  this.totalGral = 0;
-  this.totalItbis = 0;
-  this.subTotal = 0;
+  recalcularTotales() {
+    this.totalGral = 0;
+    this.totalItbis = 0;
+    this.subTotal = 0;
 
-  for (const item of this.items) {
-    const itbis = item.total * 0.18 / 1.18; // si total incluye ITBIS
-    const subtotal = item.total - itbis;
+    for (const item of this.items) {
+      const itbis = item.total * 0.18 / 1.18; // si total incluye ITBIS
+      const subtotal = item.total - itbis;
 
-    this.totalItbis += itbis;
-    this.subTotal += subtotal;
-    this.totalGral += item.total;
+      this.totalItbis += itbis;
+      this.subTotal += subtotal;
+      this.totalGral += item.total;
+    }
   }
-}
 
 
   actualizarTotales() {
-    this.totalGral  = this.items.reduce((sum, item) => sum + item.total, 0);
+    this.totalGral = this.items.reduce((sum, item) => sum + item.total, 0);
     this.totalItbis = this.items.reduce((sum, item) => sum + (item.total * 0.18), 0);
-    this.subTotal   = this.items.reduce((sum, item) => sum + (item.total - (item.total * 0.18)), 0);
+    this.subTotal = this.items.reduce((sum, item) => sum + (item.total - (item.total * 0.18)), 0);
     this.totalcosto = this.items.reduce((sum, item) => sum + (this.costotxt * item.cantidad), 0);
     const formatCurrency = (value: number) => value.toLocaleString('es-DO', {
       style: 'currency',
@@ -592,69 +614,69 @@ recalcularTotales() {
 
   }
   guardarFacturacion() {
-   const codFact = this.formularioFacturacion.get('fa_codFact')?.value;
+    const codFact = this.formularioFacturacion.get('fa_codFact')?.value;
 
-  // Asignar totales al formulario
-  this.formularioFacturacion.patchValue({
-    fa_valFact: this.totalGral,
-    fa_itbiFact: this.totalItbis,
-    fa_cosFact: this.totalcosto,
-    fa_subFact: this.subTotal
-  });
-  this.formularioFacturacion.get('fa_valFact')?.patchValue(this.totalGral);
-     this.formularioFacturacion.get('fa_itbiFact')?.patchValue(this.totalItbis);
-     this.formularioFacturacion.get('fa_cosFact')?.patchValue(this.totalcosto);
-     this.formularioFacturacion.get('fa_subFact')?.patchValue(this.subTotal);
+    // Asignar totales al formulario
+    this.formularioFacturacion.patchValue({
+      fa_valFact: this.totalGral,
+      fa_itbiFact: this.totalItbis,
+      fa_cosFact: this.totalcosto,
+      fa_subFact: this.subTotal
+    });
+    this.formularioFacturacion.get('fa_valFact')?.patchValue(this.totalGral);
+    this.formularioFacturacion.get('fa_itbiFact')?.patchValue(this.totalItbis);
+    this.formularioFacturacion.get('fa_cosFact')?.patchValue(this.totalcosto);
+    this.formularioFacturacion.get('fa_subFact')?.patchValue(this.subTotal);
 
-  this.formularioFacturacion.get("fa_tipoNcf")!.enable();
+    this.formularioFacturacion.get("fa_tipoNcf")!.enable();
     this.formularioFacturacion.get('fa_codFact')!.enable();
     this.formularioFacturacion.get('fa_fecFact')!.enable();
     this.formularioFacturacion.get('fa_nomVend')!.enable();
     this.formularioFacturacion.get('fa_ncfFact')!.enable();
     this.formularioFacturacion.get('fa_fpago')!.enable();
-  const payload = {
-    factura: this.formularioFacturacion.value,
-    detalle: this.items,
-  };
+    const payload = {
+      factura: this.formularioFacturacion.value,
+      detalle: this.items,
+    };
 
-  if (this.formularioFacturacion.valid) {
-    if (codFact) {
-      // 🔁 Modo edición
-      this.servicioFacturacion.editarFacturacion(payload).subscribe(response => {
-        Swal.fire({
-          title: "Actualizado!",
-          text: "Factura modificada correctamente.",
-          icon: "success",
-          timer: 1000,
-          showConfirmButton: false,
+    if (this.formularioFacturacion.valid) {
+      if (codFact) {
+        // 🔁 Modo edición
+        this.servicioFacturacion.editarFacturacion(payload).subscribe(response => {
+          Swal.fire({
+            title: "Actualizado!",
+            text: "Factura modificada correctamente.",
+            icon: "success",
+            timer: 1000,
+            showConfirmButton: false,
+          });
+          this.refrescarFormulario();
         });
-        this.refrescarFormulario();
-      });
+      } else {
+        // 🆕 Modo creación
+        this.servicioFacturacion.guardarFacturacion(payload).subscribe(response => {
+          Swal.fire({
+            title: "Excelente!",
+            text: "Factura creada correctamente.",
+            icon: "success",
+            timer: 1000,
+            showConfirmButton: false,
+          });
+          this.refrescarFormulario();
+        });
+      }
     } else {
-      // 🆕 Modo creación
-      this.servicioFacturacion.guardarFacturacion(payload).subscribe(response => {
-        Swal.fire({
-          title: "Excelente!",
-          text: "Factura creada correctamente.",
-          icon: "success",
-          timer: 1000,
-          showConfirmButton: false,
-        });
-        this.refrescarFormulario();
-      });
+      alert("Esta Factura no fue guardada");
     }
-  } else {
-    alert("Esta Factura no fue guardada");
   }
-}
 
-refrescarFormulario() {
-  this.buscarFacturasNoImpresas();
-  this.formularioFacturacion.reset();
-  this.crearFormularioFacturacion();
-  this.formularioFacturacion.enable();
-  this.limpia();
-}
+  refrescarFormulario() {
+    this.buscarFacturasNoImpresas();
+    this.formularioFacturacion.reset();
+    this.crearFormularioFacturacion();
+    this.formularioFacturacion.enable();
+    this.limpia();
+  }
 
   navigateTable(event: KeyboardEvent) {
     const key = event.key;
@@ -682,7 +704,7 @@ refrescarFormulario() {
   }
 
   calcularPorcentaje(): void {
-      this.protxt  = (this.selectedItem.total - this.selectedItem.costo)*100/this.selectedItem.costo;
+    this.protxt = (this.selectedItem.total - this.selectedItem.costo) * 100 / this.selectedItem.costo;
   }
 
   ngAfterViewInit() {
@@ -862,28 +884,28 @@ refrescarFormulario() {
   // }
 
 
-// Métodos para cambiar de página
-goToFirstPage() {
-  this.currentPage = 1;
-}
-
-goToLastPage() {
-  this.currentPage = this.totalPages;
-}
-
-nextPage() {
-  if (this.currentPage < this.totalPages) {
-    this.currentPage++;
+  // Métodos para cambiar de página
+  goToFirstPage() {
+    this.currentPage = 1;
   }
-}
 
-prevPage() {
-  if (this.currentPage > 1) {
-    this.currentPage--;
+  goToLastPage() {
+    this.currentPage = this.totalPages;
   }
-}
 
-onTableKeydown(event: KeyboardEvent) {
+  nextPage() {
+    if (this.currentPage < this.totalPages) {
+      this.currentPage++;
+    }
+  }
+
+  prevPage() {
+    if (this.currentPage > 1) {
+      this.currentPage--;
+    }
+  }
+
+  onTableKeydown(event: KeyboardEvent) {
     const max = this.paginatedData.length - 1;
 
     switch (event.key) {
@@ -925,144 +947,150 @@ onTableKeydown(event: KeyboardEvent) {
   }
 
 
-seleccionarFactura(factura: any, index: number) {
-  this.consultarFacturacion(factura); // ✅ Llamada automática
-  this.codFacturaselecte = factura.fa_codFact;
+  seleccionarFactura(factura: any, index: number) {
+    this.consultarFacturacion(factura); // ✅ Llamada automática
+    this.codFacturaselecte = factura.fa_codFact;
 
-  setTimeout(() => {
-    const fila = this.filas.toArray()[index];
-    const contenedor = this.contenedorScroll.nativeElement;
-
-    if (fila && contenedor) {
-      const filaOffsetTop = fila.nativeElement.offsetTop;
-      const filaHeight = fila.nativeElement.offsetHeight;
-      const contenedorScrollTop = contenedor.scrollTop;
-      const contenedorHeight = contenedor.offsetHeight;
-
-      // Si la fila está fuera del área visible, hacer scroll
-      if (
-        filaOffsetTop < contenedorScrollTop ||
-        filaOffsetTop + filaHeight > contenedorScrollTop + contenedorHeight
-      ) {
-        contenedor.scrollTop = filaOffsetTop - contenedorHeight / 2 + filaHeight / 2;
-      }
-    }
-  }, 0);
-}
-
-@HostListener('document:keydown.arrowdown', ['$event'])
-handleArrowDown(event: KeyboardEvent) {
-  if (this.selectedIndex < this.facturacionList.length - 1) {
-    this.selectedIndex++;
-    this.facturaSelecionada = this.facturacionList[this.selectedIndex];
-    this.consultarFacturacion(this.facturaSelecionada); // ✅
-    event.preventDefault();
-  }
-}
-
-@HostListener('document:keydown.arrowup', ['$event'])
-handleArrowUp(event: KeyboardEvent) {
-  if (this.selectedIndex > 0) {
-    this.selectedIndex--;
-    this.facturaSelecionada = this.facturacionList[this.selectedIndex];
-    this.consultarFacturacion(this.facturaSelecionada); // ✅
-    event.preventDefault();
-  }
-}
-onInputPagado(event: Event): void {
-  const input = event.target as HTMLInputElement;
-  const valPagado = parseFloat(input.value) || 0;
-
-  const valFactura = parseFloat(this.formularioFacturacion.get('fa_valFact')?.value) || 0;
-
-  const cambio = valPagado - valFactura;
-
-  // Actualiza el valor en el formulario reactivo
-  this.formularioFacturacion.patchValue({
-    valpagado: valPagado,
-    valcambio: cambio > 0 ? cambio : 0 // si es negativo, pones 0 o lo que prefieras
-  });
-}
-
-toggleCheckPagado() {
-  // si está marcado y hacen clic => lo desmarco, pero NO habilito input
-  if (this.chekPagado) {
-    this.chekPagado = false;
-    this.txtvalPagado = true; // sigue deshabilitado
-    this.valorPagado = 0;
-    this.cambio = 0;
-    } else {
-    // si no está marcado, lo marco y habilito input
-    this.chekPagado = true;
-    this.txtvalPagado = false;
     setTimeout(() => {
-      if (this.valorPagadoInput) {
-        this.valorPagadoInput.nativeElement.focus();
-        this.valorPagadoInput.nativeElement.select();
+      const fila = this.filas.toArray()[index];
+      const contenedor = this.contenedorScroll.nativeElement;
+
+      if (fila && contenedor) {
+        const filaOffsetTop = fila.nativeElement.offsetTop;
+        const filaHeight = fila.nativeElement.offsetHeight;
+        const contenedorScrollTop = contenedor.scrollTop;
+        const contenedorHeight = contenedor.offsetHeight;
+
+        // Si la fila está fuera del área visible, hacer scroll
+        if (
+          filaOffsetTop < contenedorScrollTop ||
+          filaOffsetTop + filaHeight > contenedorScrollTop + contenedorHeight
+        ) {
+          contenedor.scrollTop = filaOffsetTop - contenedorHeight / 2 + filaHeight / 2;
+        }
       }
     }, 0);
-
   }
-}
 
-onValorPagadoChange(event: Event): void {
-  const input = event.target as HTMLInputElement;
-  this.valorPagado = parseFloat(input.value) || 0;
-  const valFactura = this.formularioFacturacion.get('fa_valFact')?.value || 0;
-  this.valCambio = this.valorPagado - valFactura;
-  if (this.valCambio > 0) {
-    this.botonImprimir= false
-  }else {
-    this.botonImprimir= true
+  @HostListener('document:keydown.arrowdown', ['$event'])
+  handleArrowDown(event: KeyboardEvent) {
+    if (this.selectedIndex < this.facturacionList.length - 1) {
+      this.selectedIndex++;
+      this.facturaSelecionada = this.facturacionList[this.selectedIndex];
+      this.consultarFacturacion(this.facturaSelecionada); // ✅
+      event.preventDefault();
+    }
   }
-}
 
-onValorPagadoFormatted(event: Event): void {
-  const input = (event.target as HTMLInputElement).value;
+  @HostListener('document:keydown.arrowup', ['$event'])
+  handleArrowUp(event: KeyboardEvent) {
+    if (this.selectedIndex > 0) {
+      this.selectedIndex--;
+      this.facturaSelecionada = this.facturacionList[this.selectedIndex];
+      this.consultarFacturacion(this.facturaSelecionada); // ✅
+      event.preventDefault();
+    }
+  }
+  onInputPagado(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const valPagado = parseFloat(input.value) || 0;
 
-  // Remplaza la coma por punto para parsear
-  const valorNumerico = parseFloat(input.replace(',', '.')) || 0;
+    const valFactura = parseFloat(this.formularioFacturacion.get('fa_valFact')?.value) || 0;
 
-  this.valorPagado = valorNumerico;
-  this.valorPagadoFormateado = this.formatearNumero(valorNumerico);
+    const cambio = valPagado - valFactura;
 
-  const valFactura = parseFloat(this.formularioFacturacion.get('fa_valFact')?.value) || 0;
-  const cambioCalc = valorNumerico - valFactura;
-  this.cambio = cambioCalc > 0 ? cambioCalc : 0;
-}
+    // Actualiza el valor en el formulario reactivo
+    this.formularioFacturacion.patchValue({
+      valpagado: valPagado,
+      valcambio: cambio > 0 ? cambio : 0 // si es negativo, pones 0 o lo que prefieras
+    });
+  }
 
-formatearNumero(valor: number): string {
-  return valor
-    .toFixed(2)        // "1234.56"
-    .replace('.', ',') // "1234,56"
-    .replace(/\B(?=(\d{3})+(?!\d))/g, '.'); // separador de miles
-}
+  toggleCheckPagado() {
+    // si está marcado y hacen clic => lo desmarco, pero NO habilito input
+    if (this.chekPagado) {
+      this.chekPagado = false;
+      this.txtvalPagado = true; // sigue deshabilitado
+      this.valorPagado = 0;
+      this.cambio = 0;
+    } else {
+      // si no está marcado, lo marco y habilito input
+      this.chekPagado = true;
+      this.txtvalPagado = false;
+      setTimeout(() => {
+        if (this.valorPagadoInput) {
+          this.valorPagadoInput.nativeElement.focus();
+          this.valorPagadoInput.nativeElement.select();
+        }
+      }, 0);
 
-generarFacturaPDF() {
-  const opt = {
-    margin: 5,
-    filename: `Factura_${this.formularioFacturacion.get('fa_codFact')?.value}.pdf`,
-    image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { scale: 2 },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-  };
+    }
+  }
 
-  //Mostrar temporalmente la factura para que se renderice correctamente
-  const facturaDiv = this.facturaElement.nativeElement as HTMLElement;
-  facturaDiv.style.display = 'block';
+  onValorPagadoChange(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.valorPagado = parseFloat(input.value) || 0;
+    const valFactura = this.formularioFacturacion.get('fa_valFact')?.value || 0;
+    this.valCambio = this.valorPagado - valFactura;
+    if (this.valCambio > 0) {
+      this.botonImprimir = false
+    } else {
+      this.botonImprimir = true
+    }
+  }
+
+  onValorPagadoFormatted(event: Event): void {
+    const input = (event.target as HTMLInputElement).value;
+
+    // Remplaza la coma por punto para parsear
+    const valorNumerico = parseFloat(input.replace(',', '.')) || 0;
+
+    this.valorPagado = valorNumerico;
+    this.valorPagadoFormateado = this.formatearNumero(valorNumerico);
+
+    const valFactura = parseFloat(this.formularioFacturacion.get('fa_valFact')?.value) || 0;
+    const cambioCalc = valorNumerico - valFactura;
+    this.cambio = cambioCalc > 0 ? cambioCalc : 0;
+  }
+
+  formatearNumero(valor: number): string {
+    return valor
+      .toFixed(2)        // "1234.56"
+      .replace('.', ',') // "1234,56"
+      .replace(/\B(?=(\d{3})+(?!\d))/g, '.'); // separador de miles
+  }
+
+  generarFacturaPDF() {
+    const opt = {
+      margin: 5,
+      filename: `Factura_${this.formularioFacturacion.get('fa_codFact')?.value}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2 },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    //Mostrar temporalmente la factura para que se renderice correctamente
+    const facturaDiv = this.facturaElement.nativeElement as HTMLElement;
+    facturaDiv.style.display = 'block';
 
     const element = this.facturaRef.nativeElement;
-  html2pdf().from(element).set(opt).save();
+    html2pdf().from(element).set(opt).save();
 
-  setTimeout(() => {
-    html2pdf().from(facturaDiv).set(opt).save().then(() => {
-      facturaDiv.style.display = 'none';
-    });
-  }, 100);
-}
+    setTimeout(() => {
+      html2pdf().from(facturaDiv).set(opt).save().then(() => {
+        facturaDiv.style.display = 'none';
+      });
+    }, 100);
+  }
 
 
   imprimirFactura() {
+    var paylod = {
+      fa_codFact: this.formularioFacturacion.get('fa_codFact')?.value,
+      fa_impresa: "S",
+      fa_envio: this.formularioFacturacion.get('fa_envio')?.value,
+      fa_fpago: this.formularioFacturacion.get('fa_fpago')?.value
+    }
     const original = this.facturaRef.nativeElement;
     const numeroFactura = this.formularioFacturacion.get('fa_codFact')?.value;
     // ✅ Clonar y mostrar fuera del viewport
@@ -1081,26 +1109,27 @@ generarFacturaPDF() {
         const imgProps = pdf.getImageProperties(imgData);
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-
         pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
         pdf.save(`${numeroFactura}.pdf`);
 
         // ❌ Quitar el clon
         document.body.removeChild(clone);
-         this.limpia()
-// actualiza
-const formaPago = this.formularioFacturacion.get('fa_fpago')?.value || 1; // Por defecto 1
+        this.limpia()
+        console.log('Payload:', paylod);
 
-this.servicioFacturacion.marcarFacturaComoImpresa({
-  numeroFactura: this.formularioFacturacion.get('fa_numFact')?.value,
-  fpago: formaPago === 'efectivo' ? 1 : 2
-}).subscribe(() => {
-  console.log('Factura actualizada correctamente.');
-});
+        // actualiza
+        const formaPago = this.formularioFacturacion.get('fa_fpago')?.value || 1; // Por defecto 1
+        this.servicioFacturacion.marcarFacturaComoImpresa(paylod).subscribe(() => {
+          console.log('Factura actualizada correctamente.');
+        });
 
       });
     }, 100);
   }
+
+
+
+
 }
 
 

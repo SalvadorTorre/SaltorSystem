@@ -1,3 +1,4 @@
+import { Facturacion } from './../../../../features/private/pages/facturacion/facturacion';
 import { Injectable } from "@angular/core";
 import { Observable } from "rxjs";
 import { HttpClient } from '@angular/common/http';
@@ -13,6 +14,12 @@ export class ServicioFacturacion {
   constructor(private http: HttpInvokeService) { }
 
 
+  getByNumero(numero: string): Observable<any> {
+    return this.http.GetRequest<any>(`/factura-numero/${numero}`);
+  }
+  marcarImpresa(numero: string, body: { fa_envio?: string; fa_fpago?: string }) {
+    return this.http.PatchRequest(`/facturas-impresa/${numero}`, body);
+  }
 
 
   guardarFacturacion(datosParaGuardar: any): Observable<any> {
@@ -26,8 +33,11 @@ obtenerFacturasNoImpresas(): Observable<any> {
   return this.http.get(endpoint, params);
 }
 
-marcarFacturaComoImpresa(payload: { numeroFactura: string, fpago: number }) {
-    return this.http.post(`${this.baseUrl}/factura-impresa`, payload);
+marcarFacturaComoImpresa(payload:any) {
+  const cod=payload.factura.fa_codFact;
+    return this.http.PatchRequest(`/factura-impresa/${cod}`, payload);
+
+
   }
 
   editarFacturacion(payload: any) {

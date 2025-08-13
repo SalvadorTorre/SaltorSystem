@@ -64,6 +64,16 @@
                   <td (click)="seleccionarFactura(factura, i)">
                     <div class="fw-semibold">
                       {{ factura.fa_nomClie || 'Sin nombre' }}
+                      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                      <i
+                        class="bi bi-truck text-success"
+                        *ngIf="factura.fa_envio === 'Envio'"
+                      ></i>
+                      <i
+                        class="bi bi-box-arrow-down text-danger"
+                        *ngIf="factura.fa_envio === 'Retiro'"
+                      >
+                      </i>
                     </div>
                     <div class="text-muted small">{{ factura.fa_fecFact }}</div>
                   </td>
@@ -181,6 +191,30 @@
                 </div>
               </div>
             </div>
+
+            <div class="row mt-0">
+              <div class="col-5">
+                <label for="" class="label">Tipo pago</label>
+              </div>
+              <div class="col-3">
+                <select
+                  #input9
+                  name="formapago"
+                  [ngModel]="ftipoPago"
+                  class="form-control listbox"
+                  [disabled]="!chekPagado"
+                >
+                  <option
+                    [value]="fpago.fp_codfpago"
+                    *ngFor="let fpago of resultadoFpago"
+                  >
+                    {{fpago.fp_descfpago}}
+                  </option>
+                </select>
+              </div>
+            </div>
+
+            <!--
             <div class="row mt-0">
               <div class="col-5">
                 <label for="" class="label">Forma de pago</label>
@@ -193,7 +227,7 @@
                   [value]="descripcionFormaPago"
                 />
               </div>
-            </div>
+            </div> -->
             <!-- /row mt-0 -->
 
             <div class="row mt-1">
@@ -201,17 +235,14 @@
                 <label for="" class="label">Forma de entrga</label>
               </div>
               <div class="col-7">
-                <strong
-                  >{{ formularioFacturacion.get('fa_envio')?.value }}</strong
-                >
-
                 <select
                   class="form-control form-control-sm"
-                  formControlName="fa_envio"
+                  [ngModel]="fentrega"
+                  [disabled]="!chekPagado"
                 >
                   <optgroup label="Tipo de envío">
-                    <option value="envio">Envío</option>
-                    <option value="retiro">Retira Cliente</option>
+                    <option value="Envio">Envío</option>
+                    <option value="Retiro">Retira Cliente</option>
                   </optgroup>
                 </select>
               </div>
@@ -310,7 +341,7 @@
               <div class="row mt-0">
                 <div class="col-4">
                   <button
-                    [disabled]="botonImprimir"
+                    [disabled]="botonImprimir && (fentrega === 'Retiro' || fentrega === '')"
                     class="btn btn-primary btn-lx w-50"
                     (click)="imprimirFactura()"
                   >

@@ -1,38 +1,103 @@
- <br />
-<div class="row">
-    <div class="col-3"></div>
-    <div class="col-5">
-        <div class="card">
-            <div class="card-header" style="height: 35px; background-color: #0101b9">
-              <h4 class="card-title" style="color: white; text-align: left">
-               Impresion Factura de Despacho
-              </h4>
-            </div>
-            <div class="card-body" style="background-color: #e6e4e4">
-               
-                    <div class="form-group">
-                       <label for="CodigoDespachador">Codigo del Despachador</label>
-                       <input
-                          type="text"
-                          class="form-control"
-                          id="codigoDespachador"
-                          formControlName="codigoDespachador"
-                          placeholder="Ingrese el Codigo del Despachador"
-                        />
-                    </div>
-                    <div class="form-group">
-                        <label for="codigoFactura">Codgo de Factura</label>
-                        <input
-                           type="text"
-                           class="form-control"
-                           id="codigoFactura"
-                           formControlName="codigoFactura"
-                            placeholder="Ingrese el Codigo de la Factura"
-                        />
-                    </div>
-                    <button type="submit" class="btn btn-primary">Imprimir Factura</button>
-            
-            </div>
-        </div>    
+<div class="container">
+  <h5>Despachador → Factura</h5>
+
+  <!-- Despachador -->
+  <div class="row g-2">
+    <div class="col-3">
+      <label class="form-label">Código despachador</label>
+      <input
+        type="text"
+        class="form-control form-control-sm"
+        formControlName="despachadorCodigo"
+        (keydown.enter)="buscarDespachador()"
+      />
     </div>
+    <div class="col-5">
+      <label class="form-label">Nombre despachador</label>
+      <input
+        type="text"
+        class="form-control form-control-sm"
+        formControlName="despachadorNombre"
+        disabled
+      />
+    </div>
+    <div class="col-2 d-flex align-items-end">
+      <button
+        class="btn btn-sm btn-primary w-100"
+        (click)="buscarDespachador()"
+        [disabled]="loading.desp"
+      >
+        {{ loading.desp ? 'Buscando...' : 'Buscar' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Factura -->
+  <div class="row g-2 mt-2">
+    <div class="col-3">
+      <label class="form-label">No. Factura</label>
+      <input
+        #numeroFacturaInput
+        type="text"
+        class="form-control form-control-sm"
+        formControlName="numeroFactura"
+        (keydown.enter)="buscarFactura()"
+      />
+    </div>
+    <div class="col-2">
+      <label class="form-label">Envío</label>
+      <input
+        type="text"
+        class="form-control form-control-sm"
+        formControlName="fa_envio"
+      />
+    </div>
+    <div class="col-3">
+      <label class="form-label">Forma de pago (cód.)</label>
+      <input
+        type="text"
+        class="form-control form-control-sm"
+        formControlName="fa_fpago"
+      />
+      <!-- Si tienes catálogo, reemplaza por <select [formControlName]="fa_fpago"> con *ngFor -->
+    </div>
+    <div class="col-2 d-flex align-items-end">
+      <button
+        class="btn btn-sm btn-secondary w-100"
+        (click)="buscarFactura()"
+        [disabled]="loading.fac"
+      >
+        {{ loading.fac ? 'Buscando...' : 'Buscar factura' }}
+      </button>
+    </div>
+    <div class="col-2 d-flex align-items-end">
+      <button
+        class="btn btn-sm btn-success w-100"
+        (click)="generarFactura()"
+        [disabled]="!factura"
+      >
+        Generar/Imprimir
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="errorMsg" class="alert alert-danger mt-2 py-1">
+    {{ errorMsg }}
+  </div>
+
+  <!-- Vista para imprimir -->
+  <div #facturaRef class="card mt-3 p-3" *ngIf="factura">
+    <div><strong>Factura:</strong> {{ factura[0].fa_codFact }}</div>
+    <div><strong>Fecha:</strong> {{ factura[0].fa_fecFact }}</div>
+    <div><strong>Cliente:</strong> {{ factura[0].fa_nomClie }}</div>
+    <div>
+      <strong>Total:</strong> {{ factura[0].fa_valFact | number:'1.2-2' }}
+    </div>
+    <hr class="my-2" />
+    <div>
+      <strong>Despachador:</strong> {{ form.get('despachadorNombre')?.value }}
+    </div>
+    <div><strong>Envío:</strong> {{ form.get('fa_envio')?.value }}</div>
+    <div><strong>Forma de pago:</strong> {{ form.get('fa_fpago')?.value }}</div>
+  </div>
 </div>
