@@ -10,6 +10,7 @@
         class="form-control form-control-sm"
         formControlName="despachadorCodigo"
         (keydown.enter)="buscarDespachador()"
+        (input)="form.patchValue({ despachadorNombre: '' })"
       />
     </div>
     <div class="col-5">

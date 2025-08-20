@@ -6,7 +6,7 @@ import { ServicioFacturacion } from 'src/app/core/services/facturacion/factura/f
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { interfaceDetalleModel } from 'src/app/core/services/facturacion/factura/factura';
-import { Despachadores } from 'src/app/core/services/mantenimientos/despachadores/despachadores';
+import { Despachador } from 'src/app/core/services/mantenimientos/despachadores/despachadores';
 
 @Component({
   selector: 'Despacho',
@@ -23,7 +23,8 @@ export class Despacho {
     fa_fpago: ['']
   });
 
-  despachador?: Despachadores[] = [];
+  //despachador?: Despachador[] = [];
+  despachador: Despachador | null = null;
   factura: interfaceDetalleModel[] = [];
   errorMsg = '';
   loading = { desp: false, fac: false };
@@ -37,20 +38,72 @@ export class Despacho {
     private servicioFactuacion: ServicioFacturacion
   ) { }
 
+  // buscarDespachador(): void {
+  //   this.errorMsg = '';
+  //   const codigo = (this.form.get('despachadorCodigo')!.value || '').toString().trim();
+  //   if (!codigo) {
+  //     this.errorMsg = 'Digite el código de despachador.';
+  //     return;
+  //   }
+  //   this.loading.desp = true;
+  //   this.servicioDespachador.getByCodigo(codigo).subscribe((res) => {
+
+  //     if (res) {
+  //       this.despachador = res;
+  //       this.form.patchValue({ despachadorNombre: res.nomDesp });
+  //       //this.loading.desp = false;
+  //       // pasar foco al campo de factura
+  //       setTimeout(() => this.numeroFacturaInput?.nativeElement.focus(), 0);
+
+  //     } else {
+  //       this.errorMsg = 'Despachador no encontrado.';
+  //       this.form.patchValue({ despachadorNombre: '' });
+  //     }
+  //     this.loading.desp = false;
+  //   });
+
+  // }
   buscarDespachador(): void {
     this.errorMsg = '';
-    const codigo = (this.form.get('despachadorCodigo')!.value || '').toString().trim();
-    if (!codigo) { this.errorMsg = 'Digite el código de despachador.'; return; }
+    const codigo = (this.form.get('despachadorCodigo')?.value || '').toString().trim();
+    if (!codigo) {
+      this.errorMsg = 'Digite el código de despachador.';
+      return;
+    }
 
     this.loading.desp = true;
-    this.servicioDespachador.getByCodigo(codigo).subscribe((res) => {
-      this.despachador = res;
-      this.form.patchValue({ despachadorNombre: res.nomDesp });
-      this.loading.desp = false;
-      // pasar foco al campo de factura
-      setTimeout(() => this.numeroFacturaInput?.nativeElement.focus(), 0);
+
+    this.servicioDespachador.getByCodigo(codigo).subscribe({
+      next: (res: Despachador | null) => {
+        this.loading.desp = false;
+
+        if (res) {
+          // Guardar el despachador en la propiedad
+          this.despachador = res;
+
+          // Parchar el formulario con el nombre
+          this.form.patchValue({ despachadorNombre: res.nomDesp });
+
+          // Opcional: pasar foco al input de número de factura
+          setTimeout(() => this.numeroFacturaInput?.nativeElement.focus(), 0);
+
+          console.log('Despachador encontrado:', res);
+        } else {
+          this.despachador = null;
+          this.form.patchValue({ despachadorNombre: '' });
+          this.errorMsg = 'No se encontró el despachador.';
+        }
+      },
+      error: (err) => {
+        this.loading.desp = false;
+        this.despachador = null;
+        this.form.patchValue({ despachadorNombre: '' });
+        this.errorMsg = 'Error al consultar el despachador.';
+        console.error('Error en consulta despachador:', err);
+      }
     });
   }
+
 
   buscarFactura(): void {
     this.errorMsg = '';
@@ -75,6 +128,7 @@ export class Despacho {
     clone.style.left = '-9999px';
     clone.style.display = 'block';
     document.body.appendChild(clone);
+
 
     // @ts-ignore (asume html2canvas y jsPDF están disponibles)
     setTimeout(() => {

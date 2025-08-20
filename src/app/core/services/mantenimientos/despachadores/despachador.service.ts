@@ -1,9 +1,20 @@
 import { Injectable } from "@angular/core";
 import { Observable } from "rxjs";
+import { HttpClient } from '@angular/common/http';
 import { HttpInvokeService } from "../../http-invoke.service";
 import { ModeloDespachador, ModeloDespachadorData } from ".";
 import { Despachadores } from "./despachadores";
-
+import { Despachador } from "./despachadores";
+export interface Despachador {
+  codigo: string;
+  nomDesp: string;
+  // otros campos que quieras traer...
+}
+export interface Despachadores {
+  codigo: string;
+  nomDesp: string;
+  // otros campos que quieras traer...
+}
 @Injectable({
   providedIn: "root"
 })
@@ -12,7 +23,7 @@ export class ServicioDespachador {
   constructor(private http: HttpInvokeService) { }
 
   getByCodigo(codigo: string): Observable<any> {
-    return this.http.GetRequest<any>(`/despachadores/${codigo}`);
+    return this.http.GetRequest<any>(`/despachador/${codigo}`);
   }
 
   guardarDespachador(despachador: any): Observable<any> {
