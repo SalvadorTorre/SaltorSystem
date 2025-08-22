@@ -1,12 +1,12 @@
 import { Component, ElementRef, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ModeloDespachadorData } from 'src/app/core/services/mantenimientos/despachadores';
-import { ServicioDespachador } from 'src/app/core/services/mantenimientos/despachadores/despachador.service';
+import { DespachoService } from 'src/app/core/services/mantenimientos/despachadores/Despacho.service';
 import { ServicioFacturacion } from 'src/app/core/services/facturacion/factura/factura.service';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { interfaceDetalleModel } from 'src/app/core/services/facturacion/factura/factura';
-import { Despachador } from 'src/app/core/services/mantenimientos/despachadores/despachadores';
+import { Despachador } from 'src/app/core/services/mantenimientos/despachadores/Despacho.model';
 
 @Component({
   selector: 'Despacho',
@@ -22,7 +22,7 @@ export class Despacho {
     fa_envio: [''],
     fa_fpago: ['']
   });
-
+  cedula: string = "";
   //despachador?: Despachador[] = [];
   despachador: Despachador | null = null;
   factura: interfaceDetalleModel[] = [];
@@ -34,7 +34,7 @@ export class Despacho {
 
   constructor(
     private fb: FormBuilder,
-    private servicioDespachador: ServicioDespachador,
+    private DespachoService: DespachoService,
     private servicioFactuacion: ServicioFacturacion
   ) { }
 
@@ -63,47 +63,27 @@ export class Despacho {
   //   });
 
   // }
+
   buscarDespachador(): void {
-    this.errorMsg = '';
-    const codigo = (this.form.get('despachadorCodigo')?.value || '').toString().trim();
-    if (!codigo) {
-      this.errorMsg = 'Digite el código de despachador.';
-      return;
-    }
+    const cedula = (this.form.get('despachadorCodigo')?.value || '').trim();
+    if (!cedula) return;
 
-    this.loading.desp = true;
+    console.log("Buscando cédula:", cedula);
 
-    this.servicioDespachador.getByCodigo(codigo).subscribe({
-      next: (res: Despachador | null) => {
-        this.loading.desp = false;
-
+    this.DespachoService.buscarPorCedula(cedula).subscribe({
+      next: (res) => {
+        console.log("Respuesta backend:", res);
         if (res) {
-          // Guardar el despachador en la propiedad
           this.despachador = res;
-
-          // Parchar el formulario con el nombre
           this.form.patchValue({ despachadorNombre: res.nomDesp });
-
-          // Opcional: pasar foco al input de número de factura
-          setTimeout(() => this.numeroFacturaInput?.nativeElement.focus(), 0);
-
-          console.log('Despachador encontrado:', res);
         } else {
           this.despachador = null;
           this.form.patchValue({ despachadorNombre: '' });
-          this.errorMsg = 'No se encontró el despachador.';
         }
       },
-      error: (err) => {
-        this.loading.desp = false;
-        this.despachador = null;
-        this.form.patchValue({ despachadorNombre: '' });
-        this.errorMsg = 'Error al consultar el despachador.';
-        console.error('Error en consulta despachador:', err);
-      }
+      error: (err) => console.error("Error backend:", err)
     });
   }
-
 
   buscarFactura(): void {
     this.errorMsg = '';
@@ -151,4 +131,47 @@ export class Despacho {
       });
     }, 50);
   }
+
 }
+
+
+
+// import { Component, ElementRef, ViewChild } from '@angular/core';
+// import { DespachoService } from 'src/app/core/services/mantenimientos/despachadores/Despacho.service';
+// import { Despachador } from 'src/app/core/services/mantenimientos/despachadores/Despacho.model';
+
+// @Component({
+//   selector: 'Despacho',
+//   templateUrl: './despacho.html',
+//   styleUrls: ['./despacho.css']
+// })
+// export class Despacho {
+//   cedula: string = '';
+//   despachador: Despachador | null = null;
+//   mensaje: string = '';
+
+//   constructor(private despachoService: DespachoService) { }
+
+//   buscarDespachador() {
+//     if (!this.cedula) {
+//       this.mensaje = 'Debe introducir la cédula';
+//       this.despachador = null;
+//       return;
+//     }
+
+//     this.despachoService.buscarPorCedula(this.cedula).subscribe({
+//       next: (data) => {
+//         if (data) {
+//           this.despachador = data;
+//           this.mensaje = '';
+//         } else {
+//           this.despachador = null;
+//           this.mensaje = 'No se encontró ningún despachador';
+//         }
+//       },
+//       error: () => {
+//         this.mensaje = 'Error al conectar con el servidor';
+//         this.despachador = null;
+//       }
+//     });
+//   }

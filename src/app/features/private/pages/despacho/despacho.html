@@ -1,23 +1,24 @@
-<div class="container">
+<!-- <div class="container">
   <h5>Despachador → Factura</h5>
 
-  <!-- Despachador -->
+  //Despachador
   <div class="row g-2">
     <div class="col-3">
       <label class="form-label">Código despachador</label>
+
       <input
         type="text"
-        class="form-control form-control-sm"
+        placeholder="Cédula"
         formControlName="despachadorCodigo"
+        [(ngModel)]="cedula"
         (keydown.enter)="buscarDespachador()"
-        (input)="form.patchValue({ despachadorNombre: '' })"
       />
     </div>
     <div class="col-5">
       <label class="form-label">Nombre despachador</label>
       <input
         type="text"
-        class="form-control form-control-sm"
+        placeholder="Nombre"
         formControlName="despachadorNombre"
         disabled
       />
@@ -32,8 +33,7 @@
       </button>
     </div>
   </div>
-
-  <!-- Factura -->
+  // Factura
   <div class="row g-2 mt-2">
     <div class="col-3">
       <label class="form-label">No. Factura</label>
@@ -60,7 +60,7 @@
         class="form-control form-control-sm"
         formControlName="fa_fpago"
       />
-      <!-- Si tienes catálogo, reemplaza por <select [formControlName]="fa_fpago"> con *ngFor -->
+      // Si tienes catálogo, reemplaza por <select [formControlName]="fa_fpago"> con *ngFor
     </div>
     <div class="col-2 d-flex align-items-end">
       <button
@@ -86,7 +86,7 @@
     {{ errorMsg }}
   </div>
 
-  <!-- Vista para imprimir -->
+   //Vista para imprimir
   <div #facturaRef class="card mt-3 p-3" *ngIf="factura">
     <div><strong>Factura:</strong> {{ factura[0].fa_codFact }}</div>
     <div><strong>Fecha:</strong> {{ factura[0].fa_fecFact }}</div>
@@ -100,5 +100,30 @@
     </div>
     <div><strong>Envío:</strong> {{ form.get('fa_envio')?.value }}</div>
     <div><strong>Forma de pago:</strong> {{ form.get('fa_fpago')?.value }}</div>
+  </div>
+</div> -->
+<div class="card p-3">
+  <h4>Buscar Despachador</h4>
+
+  <div class="input-group mb-3">
+    <input
+      type="text"
+      class="form-control"
+      placeholder="Ingrese cédula"
+      [(ngModel)]="cedula"
+      (keyup.enter)="buscarDespachador()"
+    />
+    <button class="btn btn-primary" (click)="buscarDespachador()">
+      Buscar
+    </button>
+  </div>
+
+  <!-- <div *ngIf="mensaje" class="alert alert-warning">{{ mensaje }}</div> -->
+  <div *ngIf="despachador" class="mt-3">
+    <p><strong>Código:</strong> {{ despachador.codDesp }}</p>
+    <p><strong>Nombre:</strong> {{ despachador.nomDesp }}</p>
+    <p><strong>Tipo:</strong> {{ despachador.tipoDesp }}</p>
+    <p><strong>Cédula:</strong> {{ despachador.cedDesp }}</p>
+    <p><strong>Status:</strong> {{ despachador.status }}</p>
   </div>
 </div>

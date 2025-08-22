@@ -1,9 +1,9 @@
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
+import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { Despacho} from './despacho';
+import { Despacho } from './despacho';
 import { RutaDespacho } from './despacho-ruta';
-
 
 @NgModule({
   declarations: [
@@ -11,7 +11,9 @@ import { RutaDespacho } from './despacho-ruta';
   ],
   imports: [
     CommonModule,
-    RutaDespacho
+    RutaDespacho,
+    FormsModule,
+    BrowserModule
   ],
   providers: [],
   bootstrap: [Despacho]

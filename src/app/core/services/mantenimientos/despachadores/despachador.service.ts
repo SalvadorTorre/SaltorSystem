@@ -3,14 +3,14 @@ import { Observable } from "rxjs";
 import { HttpClient } from '@angular/common/http';
 import { HttpInvokeService } from "../../http-invoke.service";
 import { ModeloDespachador, ModeloDespachadorData } from ".";
-import { Despachadores } from "./despachadores";
-import { Despachador } from "./despachadores";
+import { Despachadores as DespachadoresModel } from "./despachadores";
+
 export interface Despachador {
   codigo: string;
   nomDesp: string;
   // otros campos que quieras traer...
 }
-export interface Despachadores {
+export interface DespachadoresLocal {
   codigo: string;
   nomDesp: string;
   // otros campos que quieras traer...
