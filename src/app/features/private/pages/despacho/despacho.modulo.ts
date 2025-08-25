@@ -1,8 +1,8 @@
+import { Despacho } from '../../../../core/services/desapacho/despacho.model';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';  // Importa ReactiveFormsModule
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
-import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { Despacho } from './despacho';
 import { RutaDespacho } from './despacho-ruta';
 
 @NgModule({
@@ -12,11 +12,12 @@ import { RutaDespacho } from './despacho-ruta';
   imports: [
     CommonModule,
     RutaDespacho,
+    //  BrowserModule,
+    // ReactiveFormsModule
+    ReactiveFormsModule,
     FormsModule,
-    BrowserModule
   ],
   providers: [],
   bootstrap: [Despacho]
 })
 export class ModuloDespacho { }
-

@@ -3,8 +3,9 @@ import { RouterModule, Routes } from '@angular/router';
 import { Despacho, } from './despacho';
 
 const routes: Routes = [
-  {path:"",
-    component:Despacho
+  {
+    path: "",
+    component: Despacho
 
   }
 ];
