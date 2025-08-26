@@ -7,7 +7,7 @@ import { Despacho } from './despacho.model';
   providedIn: 'root'
 })
 export class DespachoService {
-  private apiUrl = 'http://localhost:3000/despacho'; // ajusta tu endpoint
+  private apiUrl = 'http://localhost:3000/despachsdores'; // ajusta tu endpoint
 
   constructor(private http: HttpClient) { }
 
