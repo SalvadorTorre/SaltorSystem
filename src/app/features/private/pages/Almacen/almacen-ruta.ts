@@ -11,39 +11,41 @@ import { Almacen, } from './almacen';
 
 const routes: Routes = [
   {
-    path:"",
-    redirectTo:"entradamerc",
-    pathMatch:"full"
+    path: "",
+    redirectTo: "entradamerc",
+    pathMatch: "full"
   },
 
-    {path:"",
-      component:Almacen,
-      children:[
+  {
+    path: "",
+    component: Almacen,
+    children: [
 
 
-        {
-           path:"controlfact",
-           loadChildren: () => import('./pages/controlfact-page/controlfact-modulo').then(m => m.ModuloControlFact)
-         },
-        {
-          path:"entradamerc",
-          loadChildren: () => import('./pages/entradamerc-page/entradamerc-modulo').then(m => m.ModuloEntradamerc)
-        },
+      {
+        path: "controlfact",
+        loadChildren: () => import('./pages/controlfact-page/controlfact-modulo').then(m => m.ModuloControlFact)
+      },
+      {
+        path: "entradamerc",
+        loadChildren: () => import('./pages/entradamerc-page/entradamerc-modulo').then(m => m.ModuloEntradamerc)
+      },
 
-        {
-          path:"ventainterna",
-          loadChildren: () => import('./pages/ventainterna/ventainterna-modulo').then(m => m.ModuloVentainterna)
-        },
+      {
+        path: "ventainterna",
+        loadChildren: () => import('./pages/ventainterna/ventainterna-modulo').then(m => m.ModuloVentainterna)
+      },
 
       //   {
       //     path:"Fact. Pendiente Entrega",
       //     loadChildren: () => import('./pages/zona-page/zona-modulo').then(m => m.ModuloZona)
       //   },
 
-      //   {
-      //     path:"Control Salida Factura",
-      //     loadChildren: () => import('./pages/sector-page/sector-modulo').then(m => m.ModuloSector)
-      //   },
+
+      {
+        path: "salidafactura",
+        loadChildren: () => import('./pages/salidafactura/salidafactura-modulo').then(m => m.ModuloSalidafactura)
+      },
       //   {
       //     path:"Conduce",
       //     loadChildren: () => import('./pages/usuario-page/usuario-modulo').then(m => m.ModuloUsuario)
@@ -53,9 +55,9 @@ const routes: Routes = [
       //     loadChildren: () => import('./pages/choferes-page/choferes-modulo').then(m => m.ModuloChoferes)
       //   },
 
-      ]
-    }
-  ];
+    ]
+  }
+];
 
 
 
