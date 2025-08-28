@@ -10,6 +10,14 @@ import { HttpInvokeService } from 'src/app/core/services/http-invoke.service';
 import { SalidafacturaModelData } from 'src/app/core/services/almacen/salidafactura/index'; // <-- Add this import
 declare var $: any;
 
+// Define interfaceDetalleModel if not imported from elsewhere
+interface interfaceDetalleModel {
+  producto: any;
+  cantidad: number;
+  precio: number;
+  total: number;
+}
+
 
 @Component({
   selector: 'Salidafactua',
@@ -32,16 +40,18 @@ export class RutaSalidafactura implements OnInit {
   modoedicionSalidafactura: boolean = false;
   Salidafacturaid!: string
   modoconsultaSalidafactura: boolean = false;
-  //  SalidafacturaList: SalidafacturaModelData[] = [];
+  SalidafacturaList: SalidafacturaModelData[] = [];
   // detSalidafacturaList: detSalidafacturaData[] = [];
   selectedSalidafactura: any = null;
-  SalidafacturaList: any[] = []; // Add this line to declare the property
-  // items: interfaceDetalleModel[] = [];
+  //  SalidafacturaList: any[] = []; // Add this line to declare the property
+  Items: interfaceDetalleModel[] = [];
   // static detSalidafactura: detSalidafacturaData[];
   codFact: string = '';
+  codSalida: string = '';
   mensagePantalla: boolean = false;
   habilitarCampos: boolean = false;
-
+  selectedRow: number = -1; // Para rastrear la fila seleccionada
+  selectedItem: any = null;
   form: FormGroup;
   constructor(
     private fb: FormBuilder,
@@ -54,7 +64,10 @@ export class RutaSalidafactura implements OnInit {
       me_codvend: ['', Validators.required], // El campo es requerido
       // Otros campos...
     });
-
+    this.formularioSalidafactura = this.fb.group({
+      fecSalida: [{ value: '', disabled: true }],
+      codSalida: [{ value: '', disabled: true }], // 👈 aquí lo deshabilitas
+    });
     this.crearFormularioSalidafactura();
   }
   ngOnInit(): void {
@@ -142,6 +155,28 @@ export class RutaSalidafactura implements OnInit {
     // });
   }
 
+  navigateTable(event: KeyboardEvent) {
+    const key = event.key;
+
+    if (key === 'ArrowDown') {
+      // Mueve hacia abajo en la tabla
+      if (this.selectedRow < this.Items.length - 1) {
+        this.selectedRow++;
+        this.selectRow(this.selectedRow);
+      }
+    } else if (key === 'ArrowUp') {
+      // Mueve hacia arriba en la tabla
+      if (this.selectedRow > 0) {
+        this.selectedRow--;
+        this.selectRow(this.selectedRow);
+      }
+    }
+  }
+  selectRow(index: number) {
+    this.selectedRow = index; // Selecciona la fila cuando se hace clic
+    this.selectedItem = this.Items[index];
+    console.log(this.selectedItem);
+  }
 
 }
 

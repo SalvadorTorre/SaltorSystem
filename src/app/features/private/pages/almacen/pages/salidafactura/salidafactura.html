@@ -7,44 +7,43 @@
         </h4>
       </div>
       <div class="card-body" style="background-color: #e6e4e4">
-        <br />
-        <!-- <div class="row">
-          <div class="col-2">
+        <div class="row">
+          <div class="col">
             <label for="" class="label">Buscar Por</label>
           </div>
-          <div class="col-3">
+        </div>
+        <div class="row">
+          <div class="col-4">
             <input
               type="text"
-              [(ngModel)]="txtcodsalida"
-              placeholder="No. de Factura"
+              formControlName="txtcodsalida"
+              placeholder="No. de Control"
               class="form-control form-control-sm"
-              (input)="buscaFactura($event)"
             />
-
           </div>
           <div class="col-4">
             <input
               type="text"
-              [(ngModel)]="txtdescripcion"
-              placeholder="Nombre del Cliente"
+              formControlName="txtnomChofer"
+              placeholder="Nombre Chofer"
               class="form-control form-control-sm"
-              (input)="buscaNombre($event)"
             />
           </div>
-          <div class="col-3">
+          <div class="col-4">
             <input
-              type="date"
-              [(ngModel)]="txtFecha"
-              placeholder="Fecha Factura"
+              type="text"
+              formControlName="txtcodFact"
+              placeholder="No. Factura"
               class="form-control form-control-sm"
             />
           </div>
-        </div> -->
+        </div>
+
         <div class="row mt-1">
           <div
             class="table-responsive"
             style="
-              height: 225px;
+              height: 400px;
               overflow-y: auto;
 
               border: 2px solid rgb(4, 10, 185);
@@ -55,24 +54,24 @@
             >
               <thead class="table-dark">
                 <tr>
-                  <th style="width: 10%">No. Control</th>
-                  <th style="width: 40%">Chofer</th>
+                  <th style="width: 20%">No. Control</th>
+                  <th style="width: 30%">Chofer</th>
                   <th class="text-center" style="width: 15%">Fecha</th>
                   <th style="width: 16%">Status</th>
                   <th class="text-center">Opciones</th>
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let salida of SalidafacturaList">
-                  <td style="width: 10%">{{salida.codSalida}}</td>
-                  <td style="width: 40%">{{salida.nomChofer}}</td>
+                <tr *ngFor="let Items of SalidafacturaList">
+                  <td style="width: 15%">{{Items.codSalida}}</td>
+                  <td style="width: 35%">{{Items.nomChofer}}</td>
                   <td class="text-center" style="width: 15%">
-                    {{salida.fecsalida}}
+                    {{Items.fecSalida}}
                   </td>
-                  <td class="text-end" tyle="width: 16%">{{salida.status}}</td>
+                  <td class="text-end" tyle="width: 16%">{{Items.status}}</td>
                   <td>
                     <i
-                      (click)="consultarSalidaFactura(salida)"
+                      (click)="consultarSalidaFactura(Items)"
                       class="bi bi-card-list text-success"
                       style="padding: 10px"
                     >
@@ -122,150 +121,71 @@
       <!--**********************  -->
     </div>
   </div>
-  <!-- <div class="col-7">
+  <div class="col-7">
     <div class="card">
       <div class="card-header" style="height: 35px; background-color: #f40b0b">
         <h4 class="card-title" style="color: white; text-align: left">
-          Detalles de la factura
+          Detalles Control Salida factura
         </h4>
       </div>
       <div class="card-body">
-        <div class="row">
-          <div class="col-2">
-            <label for=""> Código </label>
-            <div class="input-group show">
+        <form
+          [formGroup]="formularioSalidafactura"
+          class="custom-form-background"
+        >
+          <div class="row mt-1">
+            <div class="col-9"></div>
+            <div class="col-3">
               <input
-                class="form-control dropdown-toggle searchInput me-2"
-                data-id="agent"
-                type="text"
-                [disabled]="!habilitarCampos"
-                #codigoInput
-                autocomplete="off"
-                (input)="convertToUpperCase($event)"
-                (keydown)="handleKeydownInventario($event)"
-                (keydown)="moveFocuscodmerc($event, input14)"
-                #input13
-                [formControl]="buscarcodmerc"
-                [(ngModel)]="codmerc"
-                name="codmerc"
-                placeholder="Código"
+                type="date"
+                formControlName="fecsalida"
+                class="form-control form-control-sm textbox"
+                readonly
               />
+            </div>
+          </div>
+          <div class="row mt-1">
+            <div class="col-8"></div>
+            <div class="col-1">
+              <label for="">No.</label>
+            </div>
+            <div class="col-3">
+              <input
+                type="text"
+                class="form-control form-control-sm textbox"
+                formControlName="codSalida"
+                readonly
+              />
+            </div>
+          </div>
+          <div class="row mt-1">
+            <div class="col-3">
+              <label for="">Cod Chofer</label>
 
-              <div
-                [ngClass]="{ 'show': resultadoCodmerc.length > 0 }"
-                class="dropdown-menu"
-                style="
-                  margin-right: 30px;
-                  margin-top: 45px;
-                  z-index: 300;
-                  width: 350px;
-                  position: absolute;
-                  will-change: transform;
-                "
-              >
-                <div
-                  class="searchReturnItem name-find"
-                  *ngFor="let result of resultadoCodmerc; let i = index"
-                  [class.active]="i === selectedIndexcodmerc"
-                >
-                  <a
-                    (click)="cargarDatosInventario(result)"
-                    style="
-                      color: #222222 !important;
-                      font-size: 10pt;
-                      padding: 20px 0px;
-                      text-decoration: none !important;
-                      cursor: pointer;
-                    "
-                    class="px-3 cp"
-                  >
-                    <i class="far fa-user-circle mr-5"></i>  {{
-                    result.in_codmerc }}
-                  </a>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="col-4">
-            <label for=""> Descripción </label>
-            <div class="input-group show">
               <input
-                class="form-control dropdown-toggle searchInput me-2"
-                data-id="agent"
                 type="text"
-                [disabled]="habilitarCampos"
-                #descripcionInput
-                autocomplete="off"
-                (input)="convertToUpperCase($event)"
-                (keydown)="moveFocusdesc($event, input15)"
-                (keydown)="handleKeydownInventariosdesc($event)"
-                #input14
-                [formControl]="buscardescripcionmerc"
-                [(ngModel)]="descripcionmerc"
+                formControlName="codChofer"
+                class="form-control form-control-sm textbox"
               />
-              <div
-                [ngClass]="{ 'show': resultadodescripcionmerc.length > 0 }"
-                class="dropdown-menu"
-                style="
-                  margin-right: 30px;
-                  margin-top: 45px;
-                  z-index: 300;
-                  width: 350px;
-                  position: absolute;
-                  will-change: transform;
-                "
-              >
-                <div
-                  class="searchReturnItem name-find"
-                  *ngFor="let result of resultadodescripcionmerc; let i = index"
-                  [class.active]="i === selectedIndexdescripcionmerc"
-                >
-                  <a
-                    (click)="cargarDatosInventario(result)"
-                    style="
-                      color: #222222 !important;
-                      font-size: 10pt;
-                      padding: 20px 0px;
-                      text-decoration: none !important;
-                      cursor: pointer;
-                    "
-                    class="px-3 cp"
-                  >
-                    <i class="far fa-user-circle mr-5"></i>  {{
-                    result.in_desmerc }}
-                  </a>
-                </div>
-              </div>
+            </div>
+            <div class="col-6">
+              <label for="">Chofer</label>
+              <input
+                type="text"
+                formControlName="nomChofer"
+                class="form-control form-control-sm textbox"
+              />
+            </div>
+            <div class="col-3">
+              <input
+                type="text"
+                formControlName="status"
+                class="form-control form-control-sm textbox"
+                readonly
+              />
             </div>
           </div>
-          <div class="col-2">
-            <label for=""> Cant. </label>
-            <input
-              type="number"
-              placeholder="Cantidad"
-              [(ngModel)]="cantidadmerc"
-              [formControl]="cantidadform"
-              id="input8"
-              #input15
-              (keydown)="moveFocusCantidad($event, input16)"
-              class="form-control"
-            />
-          </div>
-          <div class="col-2">
-            <label for=""> Precio </label>
-            <input
-              type="number"
-              [(ngModel)]="preciomerc"
-              [formControl]="precioform"
-              id="input9"
-              #input16
-              (input)="actualizarCalculo()"
-              (keydown)="moveFocus($event, input13)"
-              class="form-control"
-              (keydown.enter)="agregaItem($event)"
-            />
-          </div>
-        </div>
+        </form>
         <div class="row">
           <div class="col">
             <div
@@ -273,7 +193,6 @@
               style="
                 height: 350px;
                 overflow-y: auto;
-
                 border: 2px solid rgb(4, 10, 185);
               "
               tabindex="0"
@@ -283,32 +202,29 @@
               <table class="table table-sm table-bordered">
                 <thead class="table-dark">
                   <tr style="background-color: rgb(55, 0, 255)">
-                    <th style="width: 13%">Código</th>
-                    <th style="width: 37%">Descripción</th>
-                    <th style="width: 10%">Cant.</th>
-                    <th style="width: 13%">Precio</th>
-                    <th style="width: 15%">Total</th>
+                    <th style="width: 15%">Factura</th>
+                    <th style="width: 37%">Cliente</th>
+                    <th style="width: 13%">Fecha</th>
+                    <th style="width: 20">Valor</th>
                     <th>Opciones</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr
-                    *ngFor="let item of items;let i = index"
+                  <!-- <tr
+                    *ngFor="let item of Items;let i = index"
                     [class.table-active]="i === selectedRow"
                     (click)="selectRow(i)"
                   >
-                    <td style="width: 13%">{{ item.producto?.in_codmerc }}</td>
+                    <td style="width: 15%">{{ item.producto?.in_codmerc }}</td>
                     <td style="width: 37%">{{ item.producto?.in_desmerc }}</td>
-                    <td class="text-center" style="width: 10%">
+                    <td class="text-center" style="width: 13%">
                       {{ item.cantidad }}
                     </td>
-                    <td class="text-center" style="width: 11%">
-                      {{ item.precio }}
-                    </td>
-                    <td class="text-end" style="width: 13%">
-                      {{ item.total | currency }}
-                    </td>
-                    <td>
+                    <td class="text-center" style="width: 20%">
+                      {{ Items.precio }}
+                    </td>  -->
+
+                  <!-- <td>
                       <i
                         (click)="editarItem(item)"
                         class="bi bi-pencil text-primary"
@@ -323,328 +239,18 @@
                         *ngIf="habilitarIcono"
                       >
                       </i>
-                    </td>
-                  </tr>
+                    </td> -->
+                  <!-- </tr> -->
                 </tbody>
               </table>
             </div>
           </div>
         </div>
-        <div class="row">
-          <div class="col-7">
-            <div class="row mt-1">
-              <div style="padding: 5px; border: 2px solid rgb(4, 10, 185)">
-                <div class="row mt-1">
-                  <h6
-                    class="col-2 col-form-label text-black text-center"
-                    style="font-size: 12px; font-weight: bold"
-                  >
-                    Exitencia
-                  </h6>
-                  <h6
-                    class="col-4 col-form-label text-black text-center"
-                    style="font-size: 12px; font-weight: bold"
-                  >
-                    Medida
-                  </h6>
-                  <h6
-                    class="col-4 col-form-label text-black text-center"
-                    style="
-                      font-size: 12px;
-                      font-weight: bold;
-                      margin-right: 0px;
-                    "
-                  >
-                    Actualizacion
-                  </h6>
-                  <h6
-                    class="col-2 col-form-label text-black text-center"
-                    style="font-size: 12px; font-weight: bold"
-                  >
-                    Costo
-                  </h6>
-                </div>
-                <div class="row g-1">
-                  <div class="col-2">
-                    <input
-                      type="text"
-                      style="font-size: 12px; font-weight: bold"
-                      class="form-control form-control-sm text-end"
-                      readonly
-                      [value]="formatNumber(existenciatxt)"
-                      id="inputPassword"
-                    />
-                  </div>
-                  <div class="col-5">
-                    <input
-                      type="text"
-                      style="font-size: 12px; font-weight: bold"
-                      class="form-control form-control-sm text-end"
-                      readonly
-                      [(ngModel)]="medidatxt"
-                      id="inputPassword"
-                    />
-                  </div>
-                  <div class="col-3">
-                    <input
-                      type="text"
-                      style="font-size: 12px; font-weight: bold"
-                      class="form-control form-control-sm text-end"
-                      readonly
-                      [(ngModel)]="fecacttxt"
-                      id="inputPassword"
-                    />
-                  </div>
-                  <div class="col-2">
-                    <input
-                      type="text"
-                      style="font-size: 12px; font-weight: bold"
-                      class="form-control form-control-sm text-end"
-                      readonly
-                      [value]="formatNumber(costotxt)"
-                      id="inputPassword"
-                    />
-                  </div>
-                </div>
-                <div class="row">
-                  <h6
-                    class="col-2 col-form-label text-black text-center"
-                    style="font-size: 11px; font-weight: bold"
-                  >
-                    5%
-                  </h6>
-                  <h6
-                    class="col-2 col-form-label text-black text-center"
-                    style="font-size: 11px; font-weight: bold"
-                  >
-                    7%
-                  </h6>
-                  <h6
-                    class="col-2 col-form-label text-black text-center"
-                    style="font-size: 11px; font-weight: bold"
-                  >
-                    10%
-                  </h6>
-                  <h6
-                    class="col-2 col-form-label text-black text-center"
-                    style="font-size: 11px; font-weight: bold"
-                  >
-                    12%
-                  </h6>
-                  <h6
-                    class="col-2 col-form-label text-black text-center"
-                    style="font-size: 11px; font-weight: bold"
-                  >
-                    14%
-                  </h6>
-                  <h6
-                    class="col-2 col-form-label text-black text-center"
-                    style="font-size: 11px; font-weight: bold"
-                  >
-                    16%
-                  </h6>
-
-                </div>
-                <div class="row">
-                  <div class="col-2">
-                    <input
-                      type="text"
-                      style="font-size: 12px; font-weight: bold"
-                      class="form-control form-control-sm text-end"
-                      readonly
-                      [value]="formatNumber(atxt)"
-                      id="inputPassword"
-                    />
-                  </div>
-
-                  <div class="col-2">
-                    <input
-                      type="text"
-                      style="font-size: 12px; font-weight: bold"
-                      class="form-control form-control-sm text-end"
-                      readonly
-                      [value]="formatNumber(btxt)"
-                      id="inputPassword"
-                    />
-                  </div>
-
-                  <div class="col-2">
-                    <input
-                      type="text"
-                      style="font-size: 12px; font-weight: bold"
-                      class="form-control form-control-sm text-end"
-                      readonly
-                      [value]="formatNumber(ctxt)"
-                      id="inputPassword"
-                    />
-                  </div>
-                  <div class="col-2">
-                    <input
-                      type="text"
-                      style="font-size: 12px; font-weight: bold"
-                      class="form-control form-control-sm text-end"
-                      readonly
-                      [value]="formatNumber(dtxt)"
-                      id="inputPassword"
-                    />
-                  </div>
-                  <div class="col-2">
-                    <input
-                      type="text"
-                      style="font-size: 12px; font-weight: bold"
-                      class="form-control form-control-sm text-end"
-                      readonly
-                      [value]="formatNumber(etxt)"
-                      id="inputPassword"
-                    />
-                  </div>
-                  <div class="col-2">
-                    <input
-                      type="text"
-                      style="font-size: 12px; font-weight: bold"
-                      class="form-control form-control-sm text-end"
-                      readonly
-                      [value]="formatNumber(ftxt)"
-                      id="inputPassword"
-                    />
-                  </div>
-                </div>
-                <div class="row mt-1">
-                  <h6
-                    class="col-1 col-form-label text-black"
-                    style="font-size: 11px; font-weight: bold"
-                  >
-                    18%
-                  </h6>
-                  <div class="col-2">
-                    <input
-                      type="text"
-                      style="font-size: 11px; font-weight: bold"
-                      class="form-control form-control-sm text-end"
-                      readonly
-                      [value]="formatNumber(gtxt)"
-                      id="inputPassword"
-                    />
-                  </div>
-                  <h6
-                    class="col-2 col-form-label text-black text-end"
-                    style="font-size: 12px; font-weight: bold"
-                  >
-                    % Producto
-                  </h6>
-                  <div class="col-2">
-                    <input
-                      type="text"
-                      style="font-size: 12px; font-weight: bold"
-                      class="form-control form-control-sm text-end"
-                      readonly
-                      [value]="formatNumber(protxt)"
-                      id="inputPassword"
-                      [ngStyle]="{'color': protxt < 10 ? 'red' : 'green'}"
-                    />
-                  </div>
-                  <h6
-                    class="col-2 col-form-label text-black text-end"
-                    style="font-size: 12px; font-weight: bold"
-                  >
-                    % Factura
-                  </h6>
-                  <div class="col-2">
-                    <input
-                      type="text"
-                      style="font-size: 12px; font-weight: bold"
-                      class="form-control form-control-sm text-end"
-                      readonly
-                      [value]="formatNumber(factxt)"
-                      id="inputPassword"
-                      [ngStyle]="{'color': factxt < 10 ? 'red' : 'green'}"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="col-1"></div>
-          <div class="col-4">
-            <div class="row mt-1">
-              <div style="padding: 5px; border: 2px solid rgb(4, 10, 185)">
-                <div class="row">
-                  <h6
-                    class="col-4 col-form-label text-black"
-                    style="font-size: 18px; font-weight: bold"
-                  >
-                    Sub Total
-                  </h6>
-                  <div class="col-8">
-                    <input
-                      type="text"
-                      style="font-size: 18px; font-weight: bold"
-                      class="form-control form-control-sm text-end"
-                      disabled
-                      [(ngModel)]="subtotaltxt"
-                      id="inputPassword"
-                    />
-                  </div>
-                </div>
-                <div class="row mt-.5">
-                  <h6
-                    class="col-4 col-form-label text-black"
-                    style="font-size: 18px; font-weight: bold"
-                  >
-                    Desc.
-                  </h6>
-                  <div class="col-8">
-                    <input
-                      type="text"
-                      style="font-size: 18px; font-weight: bold"
-                      class="form-control form-control-sm text-end"
-                      disabled
-                      [(ngModel)]="descuentotxt"
-                      id="inputPassword"
-                    />
-                  </div>
-                </div>
-                <div class="row mt-.5">
-                  <h6
-                    class="col-4 col-form-label text-black"
-                    style="font-size: 18px; font-weight: bold"
-                  >
-                    ITBI
-                  </h6>
-                  <div class="col-8">
-                    <input
-                      type="text"
-                      disabled
-                      style="font-size: 18px; font-weight: bold"
-                      class="form-control form-control-sm text-end"
-                      [(ngModel)]="itbitxt"
-                      id="Itbis"
-                    />
-                  </div>
-                </div>
-                <div class="row mt-.5">
-                  <h4 class="col-4 text-black">Total</h4>
-                  <div class="col-8">
-                    <input
-                      type="text"
-                      style="font-size: 18px; font-weight: bold"
-                      disabled
-                      class="form-control form-control-sm text-end"
-                      [(ngModel)]="totalgraltxt"
-                      id="inputPassword"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
-  </div> -->
-</div>
+  </div>
 
-<!-- <div class="row">
+  <!-- <div class="row">
   <div class="col-5">
     <div class="card">
       <div class="card-header" style="height: 35px; background-color: #0101b9">
@@ -1573,4 +1179,5 @@
     </div>
   </div>
 </div> -->
-<!-- Modal -->
+  <!-- Modal -->
+</div>

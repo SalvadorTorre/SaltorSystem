@@ -17,7 +17,7 @@ export class ServicioSalidafactura {
   }
 
   buscarTodasSalidafactura(pageIndex: number, pageSize: number,): Observable<any> {
-    let url = `/saidafactura?page=${pageIndex}&limit=${pageSize}`;
+    let url = `/salidafactura?page=${pageIndex}&limit=${pageSize}`;
 
     console.log(url);
     return this.http.GetRequest<any>(url);
