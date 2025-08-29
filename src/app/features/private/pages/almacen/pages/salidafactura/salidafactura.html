@@ -1,250 +1,113 @@
-<div class="row">
-  <div class="col-5">
-    <div class="card">
-      <div class="card-header" style="height: 35px; background-color: #1a1ac0">
-        <h4 class="card-title" style="color: white; text-align: left">
-          Controles Salida Factura
-        </h4>
+<div class="row g-4">
+  <div class="col-lg-5 col-md-12 mb-4">
+    <div class="card shadow-sm rounded-2 border-0">
+      <div class="card-header py-3" style="background: #343a40; border-radius: 0.5rem 0.5rem 0 0;">
+        <h4 class="card-title m-0 text-white text-center" style="font-weight: 600; letter-spacing: 1px;">CONTROLES SALIDA FACTURA</h4>
       </div>
-      <div class="card-body" style="background-color: #e6e4e4">
-        <div class="row">
-          <div class="col">
-            <label for="" class="label">Buscar Por</label>
-          </div>
-        </div>
-        <div class="row">
-          <div class="col-4">
-            <input
-              type="text"
-              formControlName="txtcodsalida"
-              placeholder="No. de Control"
-              class="form-control form-control-sm"
-            />
-          </div>
-          <div class="col-4">
-            <input
-              type="text"
-              formControlName="txtnomChofer"
-              placeholder="Nombre Chofer"
-              class="form-control form-control-sm"
-            />
-          </div>
-          <div class="col-4">
-            <input
-              type="text"
-              formControlName="txtcodFact"
-              placeholder="No. Factura"
-              class="form-control form-control-sm"
-            />
-          </div>
-        </div>
-
-        <div class="row mt-1">
-          <div
-            class="table-responsive"
-            style="
-              height: 400px;
-              overflow-y: auto;
-
-              border: 2px solid rgb(4, 10, 185);
-            "
-          >
-            <table
-              class="table table-bordered table-hover table-striped table-sm table-class"
-            >
-              <thead class="table-dark">
-                <tr>
-                  <th style="width: 20%">No. Control</th>
-                  <th style="width: 30%">Chofer</th>
-                  <th class="text-center" style="width: 15%">Fecha</th>
-                  <th style="width: 16%">Status</th>
-                  <th class="text-center">Opciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let Items of SalidafacturaList">
-                  <td style="width: 15%">{{Items.codSalida}}</td>
-                  <td style="width: 35%">{{Items.nomChofer}}</td>
-                  <td class="text-center" style="width: 15%">
-                    {{Items.fecSalida}}
-                  </td>
-                  <td class="text-end" tyle="width: 16%">{{Items.status}}</td>
-                  <td>
-                    <i
-                      (click)="consultarSalidaFactura(Items)"
-                      class="bi bi-card-list text-success"
-                      style="padding: 10px"
-                    >
-                    </i>
-
-                    <!-- <i class="bi bi-file-earmark-pdf text-info"></i>-->
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-      <!-- ***************** -->
-      <!-- <div class="row mt-0">
-        <div class="col">
-          <div class="card">
-            <div
-              class="card-body"
-              style="height: 60px; background-color: #f7eeeebd"
-            >
-              <div class="row mt-0">
-                <div class="col-1"></div>
-                <div class="col-5">
-                  <button
-                    class="btn btn-success btn-block btn-lx w-50"
-                    (click)="limpia()"
-                  >
-                    <i class="bi bi-arrow-clockwise"></i>
-                    Deshacer
-                  </button>
-                </div>
-                <div class="col-1"></div>
-                <div class="col-5">
-                  <button
-                    class="btn btn-success btn-lx w-50"
-                    (click)="guardarFacturacion()"
-                  >
-                    <i class="bi bi-check"></i> Guardar
-                  </button>
-                </div>
-              </div>
+      <div class="card-body bg-light rounded-bottom-2">
+        <div class="mb-3">
+          <label class="form-label fw-bold">Buscar Por</label>
+          <div class="row g-2">
+            <div class="col">
+              <input type="text" formControlName="txtcodsalida" placeholder="No. de Control" class="form-control form-control-sm rounded-pill shadow-sm" />
             </div>
+            <div class="col">
+              <input type="text" formControlName="txtnomChofer" placeholder="Nombre Chofer" class="form-control form-control-sm rounded-pill shadow-sm" />
+            </div>
+            <div class="col">
+              <input type="text" formControlName="txtcodFact" placeholder="No. Factura" class="form-control form-control-sm rounded-pill shadow-sm"
+                    (input)="buscarSalidaFactura(codFact)"/>
+            </div> 
           </div>
         </div>
-      </div> -->
-      <!--**********************  -->
+        <div class="table-responsive" style="height: 400px; overflow-y: auto; border-radius: 0.5rem; border: 1px solid #343a40; background: #fff;">
+          <table class="table table-hover align-middle mb-0">
+            <thead style="background: #495057; color: #fff;">
+              <tr>
+                <th class="text-center text-white" style="width: 20%; text-transform: uppercase;">NO. CONTROL</th>
+                <th class="text-center text-white" style="width: 30%; text-transform: uppercase;">CHOFER</th>
+                <th class="text-center text-white" style="width: 15%; text-transform: uppercase;">FECHA</th>
+                <th class="text-center text-white" style="width: 16%; text-transform: uppercase;">STATUS</th>
+                <th class="text-center text-white" style="text-transform: uppercase;">OPCIONES</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let Items of SalidafacturaList" class="table-row">
+                <td class="text-center">{{Items.codSalida}}</td>
+                <td class="text-center">{{Items.nomChofer}}</td>
+                <td class="text-center">{{Items.fecSalida}}</td>
+                <td class="text-center">{{Items.status}}</td>
+                <td class="text-center">
+                  <button (click)="consultarSalidaFactura(Items)" class="btn btn-outline-primary btn-sm rounded-circle shadow-sm" title="Ver Detalles">
+                    <i class="bi bi-card-list"></i>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   </div>
-  <div class="col-7">
-    <div class="card">
-      <div class="card-header" style="height: 35px; background-color: #f40b0b">
-        <h4 class="card-title" style="color: white; text-align: left">
-          Detalles Control Salida factura
-        </h4>
+  <div class="col-lg-7 col-md-12 mb-4">
+    <div class="card shadow-sm rounded-2 border-0">
+      <div class="card-header py-3" style="background: #343a40; border-radius: 0.5rem 0.5rem 0 0;">
+        <h4 class="card-title m-0 text-white text-center" style="font-weight: 600; letter-spacing: 1px;">DETALLES CONTROL SALIDA FACTURA</h4>
       </div>
-      <div class="card-body">
-        <form
-          [formGroup]="formularioSalidafactura"
-          class="custom-form-background"
-        >
-          <div class="row mt-1">
-            <div class="col-9"></div>
-            <div class="col-3">
-              <input
-                type="date"
-                formControlName="fecsalida"
-                class="form-control form-control-sm textbox"
-                readonly
-              />
+      <div class="card-body bg-light rounded-bottom-2">
+        <form [formGroup]="formularioSalidafactura" class="mb-3">
+          <div class="row g-2 mb-2">
+            <div class="col-md-3">
+              <label class="form-label">Fecha</label>
+              <input type="date" formControlName="fecsalida" class="form-control form-control-sm rounded-pill shadow-sm" readonly />
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">No. Control</label>
+              <input type="text" class="form-control form-control-sm rounded-pill shadow-sm" formControlName="codSalida" readonly />
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Cod Chofer</label>
+              <input type="text" formControlName="codChofer" class="form-control form-control-sm rounded-pill shadow-sm" />
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Chofer</label>
+              <input type="text" formControlName="nomChofer" class="form-control form-control-sm rounded-pill shadow-sm" />
             </div>
           </div>
-          <div class="row mt-1">
-            <div class="col-8"></div>
-            <div class="col-1">
-              <label for="">No.</label>
-            </div>
-            <div class="col-3">
-              <input
-                type="text"
-                class="form-control form-control-sm textbox"
-                formControlName="codSalida"
-                readonly
-              />
-            </div>
-          </div>
-          <div class="row mt-1">
-            <div class="col-3">
-              <label for="">Cod Chofer</label>
-
-              <input
-                type="text"
-                formControlName="codChofer"
-                class="form-control form-control-sm textbox"
-              />
-            </div>
-            <div class="col-6">
-              <label for="">Chofer</label>
-              <input
-                type="text"
-                formControlName="nomChofer"
-                class="form-control form-control-sm textbox"
-              />
-            </div>
-            <div class="col-3">
-              <input
-                type="text"
-                formControlName="status"
-                class="form-control form-control-sm textbox"
-                readonly
-              />
+          <div class="row g-2 mb-2">
+            <div class="col-md-3">
+              <label class="form-label">Status</label>
+              <input type="text" formControlName="status" class="form-control form-control-sm rounded-pill shadow-sm" readonly />
             </div>
           </div>
         </form>
-        <div class="row">
-          <div class="col">
-            <div
-              class="table-responsive"
-              style="
-                height: 350px;
-                overflow-y: auto;
-                border: 2px solid rgb(4, 10, 185);
-              "
-              tabindex="0"
-              (keydown)="navigateTable($event)"
-              #Tabledetalle
-            >
-              <table class="table table-sm table-bordered">
-                <thead class="table-dark">
-                  <tr style="background-color: rgb(55, 0, 255)">
-                    <th style="width: 15%">Factura</th>
-                    <th style="width: 37%">Cliente</th>
-                    <th style="width: 13%">Fecha</th>
-                    <th style="width: 20">Valor</th>
-                    <th>Opciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <!-- <tr
-                    *ngFor="let item of Items;let i = index"
-                    [class.table-active]="i === selectedRow"
-                    (click)="selectRow(i)"
+        <div class="table-responsive" style="height: 350px; overflow-y: auto; border-radius: 0.5rem; border: 1px solid #343a40; background: #fff;">
+          <table class="table table-hover align-middle mb-0">
+            <thead style="background: #495057; color: #fff;">
+              <tr>
+                <th class="text-center text-white" style="width: 15%; text-transform: uppercase;">FACTURA</th>
+                <th class="text-center text-white" style="width: 37%; text-transform: uppercase;">CLIENTE</th>
+                <th class="text-center text-white" style="width: 13%; text-transform: uppercase;">FECHA</th>
+                <th class="text-center text-white" style="width: 20%; text-transform: uppercase;">VALOR</th>
+                <th class="text-center text-white" style="text-transform: uppercase;">OPCIONES</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let detItems of detSalidafacturaList" class="table-row">
+                <td class="text-center">{{detItems.codFact}}</td>
+                <td class="text-center">{{detItems.nomClie}}</td>
+                <td class="text-center">{{detItems.fecFact | date:'dd/MM/yyyy'}}</td>
+                <td class="text-end">{{detItems.valFact}}</td>
+                <td class="text-center">
+                  <button class="btn btn-outline-danger btn-sm rounded-circle shadow-sm" title="Eliminar" 
                   >
-                    <td style="width: 15%">{{ item.producto?.in_codmerc }}</td>
-                    <td style="width: 37%">{{ item.producto?.in_desmerc }}</td>
-                    <td class="text-center" style="width: 13%">
-                      {{ item.cantidad }}
-                    </td>
-                    <td class="text-center" style="width: 20%">
-                      {{ Items.precio }}
-                    </td>  -->
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </td>
 
-                  <!-- <td>
-                      <i
-                        (click)="editarItem(item)"
-                        class="bi bi-pencil text-primary"
-                        style="padding: 10px"
-                        *ngIf="habilitarIcono"
-                      >
-                      </i>
-                      <i
-                        (click)="borarItem(item)"
-                        class="bi bi-trash text-danger"
-                        style="padding: 10px"
-                        *ngIf="habilitarIcono"
-                      >
-                      </i>
-                    </td> -->
-                  <!-- </tr> -->
-                </tbody>
-              </table>
-            </div>
-          </div>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

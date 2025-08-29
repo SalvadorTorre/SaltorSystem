@@ -17,7 +17,7 @@ export class ServicioSalidafactura {
   }
 
   buscarTodasSalidafactura(pageIndex: number, pageSize: number,): Observable<any> {
-    let url = `/salidafactura?page=${pageIndex}&limit=${pageSize}`;
+    let url = `/salidas`;
 
     console.log(url);
     return this.http.GetRequest<any>(url);
@@ -45,4 +45,11 @@ export class ServicioSalidafactura {
     return this.http.GetRequest<any>(url);
   }
 
+    buscardetSalidafactura(codFactura: string,): Observable<any> {
+    return this.http.GetRequest<any>(`/detsalidafa/${codFactura}`);
+  }
+
+   buscardetSalidaid(codSalida: string,): Observable<any> {
+    return this.http.GetRequest<any>(`/detsalidaid/${codSalida}`);
+  }
 }

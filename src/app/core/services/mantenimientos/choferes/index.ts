@@ -11,5 +11,4 @@ export interface ModeloChoferData{
   cedChofer: string;
   statusChofer: boolean,
 
-
 }

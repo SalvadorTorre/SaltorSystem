@@ -1,13 +1,33 @@
-import { Component, NgModule, OnInit, ViewChild, ElementRef, ɵNG_COMP_DEF } from '@angular/core';
+import {
+  Component,
+  NgModule,
+  OnInit,
+  ViewChild,
+  ElementRef,
+  ɵNG_COMP_DEF,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
-import { BehaviorSubject, debounceTime, distinctUntilChanged, filter, switchMap, tap } from 'rxjs';
+import {
+  FormBuilder,
+  FormControl,
+  FormGroup,
+  Validators,
+} from '@angular/forms';
+import {
+  BehaviorSubject,
+  debounceTime,
+  distinctUntilChanged,
+  filter,
+  switchMap,
+  tap,
+} from 'rxjs';
 import Swal from 'sweetalert2';
 import { ServicioChofer } from 'src/app/core/services/mantenimientos/choferes/choferes.service';
 import { ServicioSalidafactura } from 'src/app/core/services/almacen/salidafactura/salidafactura.service';
 import { ServicioFacturacion } from 'src/app/core/services/facturacion/factura/factura.service';
 import { HttpInvokeService } from 'src/app/core/services/http-invoke.service';
 import { SalidafacturaModelData } from 'src/app/core/services/almacen/salidafactura/index'; // <-- Add this import
+import { DetalleSalidaDataModel } from 'src/app/core/services/almacen/salidafactura/detsalida';
 declare var $: any;
 
 // Define interfaceDetalleModel if not imported from elsewhere
@@ -18,13 +38,11 @@ interface interfaceDetalleModel {
   total: number;
 }
 
-
 @Component({
   selector: 'Salidafactua',
   templateUrl: './salidafactura.html',
-  styleUrls: ['./salidafactura.css']
+  styleUrls: ['./salidafactura.css'],
 })
-
 export class RutaSalidafactura implements OnInit {
   pageSize = 8;
   currentPage = 1;
@@ -38,12 +56,12 @@ export class RutaSalidafactura implements OnInit {
   formularioSalidafactura!: FormGroup;
   formulariodetSalidafactura!: FormGroup;
   modoedicionSalidafactura: boolean = false;
-  Salidafacturaid!: string
+  Salidafacturaid!: string;
   modoconsultaSalidafactura: boolean = false;
   SalidafacturaList: SalidafacturaModelData[] = [];
   // detSalidafacturaList: detSalidafacturaData[] = [];
   selectedSalidafactura: any = null;
-  //  SalidafacturaList: any[] = []; // Add this line to declare the property
+  detSalidafacturaList: DetalleSalidaDataModel[] = []; // Add this line to declare the property
   Items: interfaceDetalleModel[] = [];
   // static detSalidafactura: detSalidafacturaData[];
   codFact: string = '';
@@ -58,7 +76,7 @@ export class RutaSalidafactura implements OnInit {
     private servicioSalidafactura: ServicioSalidafactura,
     private servicioChofer: ServicioChofer,
     private servicioFacturacion: ServicioFacturacion,
-    private http: HttpInvokeService,
+    private http: HttpInvokeService
   ) {
     this.form = this.fb.group({
       me_codvend: ['', Validators.required], // El campo es requerido
@@ -76,17 +94,18 @@ export class RutaSalidafactura implements OnInit {
   }
 
   buscarTodasSalidafactura(page: number) {
-    this.servicioSalidafactura.buscarTodasSalidafactura(page, this.pageSize).subscribe(response => {
-      this.SalidafacturaList = response.data;
-      // Si hay paginación, puedes actualizar currentPage aquí si es necesario
-    });
+    this.servicioSalidafactura
+      .buscarTodasSalidafactura(page, this.pageSize)
+      .subscribe((response) => {
+        this.SalidafacturaList = response.data;
+        // Si hay paginación, puedes actualizar currentPage aquí si es necesario
+      });
   }
 
   crearFormularioSalidafactura() {
     const fechaActual = new Date();
     const fechaActualStr = this.formatofecha(fechaActual);
     this.formularioSalidafactura = this.fb.group({
-
       codSalida: [''],
       fecSalida: [''],
       valSalida: [''],
@@ -100,9 +119,7 @@ export class RutaSalidafactura implements OnInit {
       status: [''],
       envia: [''],
       preparado: [''],
-
     });
-
   }
   habilitarFormularioEmpresa() {
     this.habilitarFormulario = false;
@@ -132,28 +149,34 @@ export class RutaSalidafactura implements OnInit {
     // this.buscarTodasSalidafactura(1);
   }
   consultarSalidaFactura(Salidafactura: SalidafacturaModelData) {
+    // console.log(Salidafactura);
     this.modoconsultaSalidafactura = true;
     this.formularioSalidafactura.patchValue(Salidafactura);
     this.formularioSalidafactura.disable();
     this.tituloModalSalidafactura = 'Consultando Salida Factura';
     const inputs = document.querySelectorAll('.seccion-productos input');
-    inputs.forEach((input) => {
-      (input as HTMLInputElement).disabled = true;
-    });
-
-
-
-    // this.servicioSalidafactura.buscarSalidafacturaDetalle(Salidafactura.me_codEntr).subscribe(response => {
-    //   let subtotal = 0;
-    //   let itbis = 0;
-    //   let totalGeneral = 0;
-    //   const itbisRate = 0.18; // Ejemplo: 18% de ITBIS
-
-    //   console.log(response);
-
-
+    // inputs.forEach((input) => {
+    //   (input as HTMLInputElement).disabled = true;
     // });
+
+    this.servicioSalidafactura
+      .buscardetSalidaid(Salidafactura.codSalida)
+      .subscribe((response) => {
+        console.log(response.data);
+        this.detSalidafacturaList = response.data;
+        console.log(this.detSalidafacturaList);
+      });
   }
+
+  buscarSalidaFactura(codFact: string) {
+    this.servicioSalidafactura.buscardetSalidafactura(codFact).subscribe((response) => {
+      this.SalidafacturaList = response.data;
+        this.servicioSalidafactura.buscardetSalidaid(response.data.codSalida).subscribe((res)=>{
+          this.detSalidafacturaList = res.data;
+        });
+      });
+  }
+  
 
   navigateTable(event: KeyboardEvent) {
     const key = event.key;
@@ -177,23 +200,7 @@ export class RutaSalidafactura implements OnInit {
     this.selectedItem = this.Items[index];
     console.log(this.selectedItem);
   }
-
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 // export class RutaSalidafactura implements OnInit {
 //   @ViewChild('inputCodmerc') inputCodmerc!: ElementRef; // Para manejar el foco
@@ -247,7 +254,6 @@ export class RutaSalidafactura implements OnInit {
 //   sucursalSeleccionada: any = null;
 //   habilitarIcono: boolean = true;
 
-
 //   private codigoSubject = new BehaviorSubject<string>('');
 //   private nomsuplidorSubject = new BehaviorSubject<string>('');
 
@@ -280,9 +286,6 @@ export class RutaSalidafactura implements OnInit {
 //       this.totalItems = response.pagination.total;
 //       this.currentPage = response.pagination.page;
 //     });
-
-
-
 
 //   }
 
@@ -318,7 +321,6 @@ export class RutaSalidafactura implements OnInit {
 //   // buscarcodmercElement = new FormControl();
 //   nativeElement = new FormControl();
 //   seleccionarSalidafactura(salidafactura: any) { this.selectedSalidafactura = salidafactura; }
-
 
 //   ngOnInit(): void {
 //     this.buscarTodasSalidafactura(1);
@@ -382,7 +384,6 @@ export class RutaSalidafactura implements OnInit {
 
 //     });
 
-
 //     this.buscarNombre.valueChanges.pipe(
 //       debounceTime(500),
 //       distinctUntilChanged(),
@@ -403,7 +404,6 @@ export class RutaSalidafactura implements OnInit {
 
 //     });
 //   }
-
 
 //   crearFormularioSalidafactura() {
 //     const fechaActual = new Date();
@@ -759,7 +759,6 @@ export class RutaSalidafactura implements OnInit {
 
 //   }
 
-
 //   get totalPages() {
 //     // Asegúrate de que totalItems sea un número antes de calcular el total de páginas
 //     return Math.ceil(this.totalItems / this.pageSize);
@@ -780,7 +779,6 @@ export class RutaSalidafactura implements OnInit {
 //     return Array.from({ length: endPage - startPage + 1 }, (_, i) => startPage + i);
 //   }
 
-
 //   limpiaBusqueda() {
 //     this.txtdescripcion = '';
 //     this.txtcodigo = '';
@@ -789,7 +787,6 @@ export class RutaSalidafactura implements OnInit {
 //   }
 
 //   // Array para almacenar los datos de la tabla
-
 
 //   // Función para agregar un nuevo item a la tabla
 //   agregaItem(event: Event) {
@@ -871,7 +868,6 @@ export class RutaSalidafactura implements OnInit {
 
 //   editarItem(item: any) {
 //     this.index_item = this.items.indexOf(item);
-
 
 //     this.isEditing = true;
 //     this.itemToEdit = item;
@@ -1019,6 +1015,4 @@ export class RutaSalidafactura implements OnInit {
 //     }
 //   }
 
-
 // }
-
