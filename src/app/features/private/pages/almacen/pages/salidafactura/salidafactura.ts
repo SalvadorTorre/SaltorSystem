@@ -1,11 +1,4 @@
-import {
-  Component,
-  NgModule,
-  OnInit,
-  ViewChild,
-  ElementRef,
-  ɵNG_COMP_DEF,
-} from '@angular/core';
+import { Component, NgModule, OnInit, ViewChild, ElementRef, ɵNG_COMP_DEF,} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
   FormBuilder,
@@ -38,12 +31,15 @@ interface interfaceDetalleModel {
   total: number;
 }
 
+
 @Component({
   selector: 'Salidafactua',
   templateUrl: './salidafactura.html',
   styleUrls: ['./salidafactura.css'],
 })
 export class RutaSalidafactura implements OnInit {
+  codChofer: string = "";
+  factura: string = "";
   pageSize = 8;
   currentPage = 1;
   maxPagesToShow = 5;
@@ -70,7 +66,10 @@ export class RutaSalidafactura implements OnInit {
   habilitarCampos: boolean = false;
   selectedRow: number = -1; // Para rastrear la fila seleccionada
   selectedItem: any = null;
+//  chofer: any = null; // Add this line to declare the property
+  mensaje: string = ''; // Fix: declare mensaje property
   form: FormGroup;
+  chofer: any = { nombre: '' };
   constructor(
     private fb: FormBuilder,
     private servicioSalidafactura: ServicioSalidafactura,
@@ -177,6 +176,39 @@ export class RutaSalidafactura implements OnInit {
       });
   }
   
+buscarporCodigo() {
+  if (!this.codChofer || this.codChofer.trim() === '') {
+    alert('Debe ingresar el Código del chofer');
+    return;
+  }
+
+   // if (this.codChofer.trim() === '') {
+   //   alert('Debe ingresar el Codigo del chofer');
+   //   return;
+   // }
+ console.log('Buscando chofer codigo:', this.chofer);
+    this.servicioChofer.buscarchoferporCodigo(parseInt(this.codChofer, 10)).subscribe({
+      next: (data) => {
+        if (data) {
+          this.chofer = data;
+          this.mensaje = '';
+      
+        } else {
+          //this.chofer = null;
+           this.chofer = { nombre: '' };
+          this.mensaje = 'No se encontró un despachador con esa cédula';
+          console.log('Buscando chofer codigo:',this.chofer.nombre);
+        }
+      },
+      error: () => {
+        this.mensaje = 'Error en la búsqueda';
+      }
+
+    });
+    
+  console.log(this.chofer);
+  console.log(this.mensaje);
+  }
 
   navigateTable(event: KeyboardEvent) {
     const key = event.key;

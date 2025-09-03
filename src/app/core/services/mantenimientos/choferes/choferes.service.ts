@@ -43,7 +43,9 @@ console.log(url);
   eliminarChoferes(codChofer:number): Observable<ModeloChofer>{
     return this.http.DeleteRequest(`/chofer/${codChofer}`,'');
   }
-
+buscarchoferporCodigo(codChofer:number): Observable<any> {
+    return this.http.GetRequest(`/chofer/${codChofer}`);
+  }
 
 
 }

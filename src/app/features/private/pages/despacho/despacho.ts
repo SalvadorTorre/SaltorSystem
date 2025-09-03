@@ -1,4 +1,6 @@
 import { Despacho } from './../../../../core/services/despacho/despacho.model';
+import { Facturacion } from '../facturacion/facturacion';
+import { ServicioFacturacion } from 'src/app/core/services/facturacion/factura/factura.service';
 import { Component } from '@angular/core';
 import { DespachoService } from './../../../../core/services/despacho/despacho.service';
 import { NgForm } from '@angular/forms';
@@ -14,8 +16,9 @@ export class DespachoComponent {
   cedula: string = '';
   despacho: Despacho | null = null;
   mensaje: string = '';
-
-  constructor(private despachoService: DespachoService) { }
+  factura: string = '';
+  constructor(private despachoService: DespachoService, private serviciofacturacion: ServicioFacturacion
+  ) { }
 
   buscarDespachador() {
     if (this.cedula.trim() === '') {
@@ -42,13 +45,13 @@ export class DespachoComponent {
 
 
   buscarFactura() {
-    if (!this.cedula) {
-      this.mensaje = 'Debe ingresar una cédula';
+    if (!this.factura) {
+      this.mensaje = 'Debe ingresar una factura';
       this.despacho = null;
       return;
     }
 
-    this.despachoService.buscarPorCedula(this.cedula).subscribe({
+    this.serviciofacturacion. getByNumero(this.factura).subscribe({
       next: (data) => {
         if (data) {
           this.despacho = data;
@@ -62,6 +65,8 @@ export class DespachoComponent {
         this.mensaje = 'Error en la búsqueda';
       }
     });
+    console.log(this.despacho);
+    console.log(this.mensaje);
   }
 
 }
