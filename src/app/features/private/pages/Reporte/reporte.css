@@ -1,0 +1,5 @@
+.active-submenu {
+  background-color: #ffffff33; /* un sombreado semi-transparente */
+  border-radius: 5px;
+  font-weight: bold;
+}

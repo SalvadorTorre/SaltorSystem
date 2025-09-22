@@ -1,19 +1,7 @@
 import { Component, NgModule, OnInit, ViewChild, ElementRef, ɵNG_COMP_DEF,} from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import {
-  FormBuilder,
-  FormControl,
-  FormGroup,
-  Validators,
-} from '@angular/forms';
-import {
-  BehaviorSubject,
-  debounceTime,
-  distinctUntilChanged,
-  filter,
-  switchMap,
-  tap,
-} from 'rxjs';
+import { FormsModule, NonNullableFormBuilder } from '@angular/forms';
+import { FormBuilder, FormControl, FormGroup, Validators,} from '@angular/forms';
+import { BehaviorSubject, debounceTime, distinctUntilChanged, filter, switchMap, tap, } from 'rxjs';
 import Swal from 'sweetalert2';
 import { ServicioChofer } from 'src/app/core/services/mantenimientos/choferes/choferes.service';
 import { ServicioSalidafactura } from 'src/app/core/services/almacen/salidafactura/salidafactura.service';
@@ -43,10 +31,13 @@ export class RutaSalidafactura implements OnInit {
   pageSize = 8;
   currentPage = 1;
   maxPagesToShow = 5;
-  codigo: string = '';
+  codigo: string= '';
   fecha: string = '';
   txtnumfact: string = '';
   txtnumsalida: string = '';
+  txtcodSalida: string = '';
+  txtcodFact: string = '';
+  codnotfound: boolean = false;
   habilitarFormulario: boolean = false;
   tituloModalSalidafactura!: string;
   formularioSalidafactura!: FormGroup;
@@ -55,13 +46,24 @@ export class RutaSalidafactura implements OnInit {
   Salidafacturaid!: string;
   modoconsultaSalidafactura: boolean = false;
   SalidafacturaList: SalidafacturaModelData[] = [];
+  
+  detSalidafacturaList: { 
+  codFact: string, 
+  nomClie: string, 
+  fecFact: string, 
+  valFact: number 
+}[] = [];
+
+  @ViewChild('nomchoferInput') nomchoferInput!: ElementRef;
+  @ViewChild('facturaInput') facturaInput!: ElementRef;
   // detSalidafacturaList: detSalidafacturaData[] = [];
   selectedSalidafactura: any = null;
-  detSalidafacturaList: DetalleSalidaDataModel[] = []; // Add this line to declare the property
+  //detSalidafacturaList: DetalleSalidaDataModel[] = []; // Add this line to declare the property
   Items: interfaceDetalleModel[] = [];
   // static detSalidafactura: detSalidafacturaData[];
   codFact: string = '';
   codSalida: string = '';
+  codchoferVacio: boolean = false;
   mensagePantalla: boolean = false;
   habilitarCampos: boolean = false;
   selectedRow: number = -1; // Para rastrear la fila seleccionada
@@ -78,7 +80,7 @@ export class RutaSalidafactura implements OnInit {
     private http: HttpInvokeService
   ) {
     this.form = this.fb.group({
-      me_codvend: ['', Validators.required], // El campo es requerido
+      codChofer: ['', Validators.required], // El campo es requerido
       // Otros campos...
     });
     this.formularioSalidafactura = this.fb.group({
@@ -118,6 +120,7 @@ export class RutaSalidafactura implements OnInit {
       status: [''],
       envia: [''],
       preparado: [''],
+      txtcodFact: ['']
     });
   }
   habilitarFormularioEmpresa() {
@@ -148,67 +151,65 @@ export class RutaSalidafactura implements OnInit {
     // this.buscarTodasSalidafactura(1);
   }
   consultarSalidaFactura(Salidafactura: SalidafacturaModelData) {
-    // console.log(Salidafactura);
     this.modoconsultaSalidafactura = true;
     this.formularioSalidafactura.patchValue(Salidafactura);
     this.formularioSalidafactura.disable();
     this.tituloModalSalidafactura = 'Consultando Salida Factura';
     const inputs = document.querySelectorAll('.seccion-productos input');
-    // inputs.forEach((input) => {
-    //   (input as HTMLInputElement).disabled = true;
-    // });
-
     this.servicioSalidafactura
       .buscardetSalidaid(Salidafactura.codSalida)
       .subscribe((response) => {
-        console.log(response.data);
         this.detSalidafacturaList = response.data;
-        console.log(this.detSalidafacturaList);
       });
   }
 
   buscarSalidaFactura(codFact: string) {
+    console.log(codFact);
     this.servicioSalidafactura.buscardetSalidafactura(codFact).subscribe((response) => {
-      this.SalidafacturaList = response.data;
+      console.log("Resultado", response);
+      this.SalidafacturaList = [];
+       this.SalidafacturaList.push(response.data);
         this.servicioSalidafactura.buscardetSalidaid(response.data.codSalida).subscribe((res)=>{
           this.detSalidafacturaList = res.data;
         });
       });
   }
-  
-buscarporCodigo() {
-  if (!this.codChofer || this.codChofer.trim() === '') {
-    alert('Debe ingresar el Código del chofer');
+  buscarSalidaCodigo(codSalida: string) {
+    console.log(codSalida);
+    this.servicioSalidafactura.bucarSalidafacturaid(codSalida).subscribe((response) => {
+      console.log("Resultado", response);
+      this.SalidafacturaList = [];
+       this.SalidafacturaList.push(response.data);
+        // this.servicioSalidafactura.buscardetSalidaid(response.data.codSalida).subscribe((res)=>{
+        //   this.detSalidafacturaList = res.data;
+        // });
+        this.consultarSalidaFactura(response.data);
+      });
+  }
+
+  buscarporCodigo() {
+    const codigo = this.formularioSalidafactura.get('codChofer')?.value;
+  if (!codigo || codigo.trim() === '') {
+    //alert('Debe ingresar el Código del chofer');
+    this.nomchoferInput.nativeElement.focus();
     return;
   }
 
-   // if (this.codChofer.trim() === '') {
-   //   alert('Debe ingresar el Codigo del chofer');
-   //   return;
-   // }
- console.log('Buscando chofer codigo:', this.chofer);
-    this.servicioChofer.buscarchoferporCodigo(parseInt(this.codChofer, 10)).subscribe({
-      next: (data) => {
-        if (data) {
-          this.chofer = data;
+    this.servicioChofer.buscarchoferporCodigo(parseInt(codigo, 10)).subscribe((response)=>{
+      console.log(response.data);
+      if (response.data) {
+          this.chofer = response.data;
+          this.formularioSalidafactura.patchValue( response.data[0] );
           this.mensaje = '';
-      
+      this.facturaInput.nativeElement.focus();
         } else {
           //this.chofer = null;
            this.chofer = { nombre: '' };
           this.mensaje = 'No se encontró un despachador con esa cédula';
-          console.log('Buscando chofer codigo:',this.chofer.nombre);
         }
-      },
-      error: () => {
-        this.mensaje = 'Error en la búsqueda';
-      }
-
     });
     
-  console.log(this.chofer);
-  console.log(this.mensaje);
-  }
+    }
 
   navigateTable(event: KeyboardEvent) {
     const key = event.key;
@@ -232,6 +233,91 @@ buscarporCodigo() {
     this.selectedItem = this.Items[index];
     console.log(this.selectedItem);
   }
+   moveFocus(event: KeyboardEvent, nextElement: HTMLInputElement | HTMLSelectElement) {
+    if (event.key === 'Enter' && nextElement) {
+      event.preventDefault(); // Evita el comportamiento predeterminado del Enter
+      nextElement.focus(); // Enfoca el siguiente campo
+    }
+  }
+moveFocuscodchofer(event: KeyboardEvent, nextInput: HTMLInputElement) {
+    if (event.key === 'Enter' || event.key === 'Tab') {
+      event.preventDefault(); // Previene el comportamiento predeterminado de Enter
+      const currentInputValue = (event.target as HTMLInputElement).value.trim();
+      if (currentInputValue === '') {
+        this.codchoferVacio = true;
+      }
+      else {
+        this.codchoferVacio = false;
+      }
+      if (!this.codnotfound === false) {
+        console.log(this.codnotfound);
+        this.mensagePantalla = true;
+        Swal.fire({
+          icon: "error",
+          title: "A V I S O",
+          text: 'Codigo invalido.',
+          focusConfirm: true,
+          allowEnterKey: true,
+        }).then(() => { this.mensagePantalla = false });
+        this.codchoferVacio = false;
+      }
+      else {
+        if (this.codchoferVacio === true) {
+          nextInput.focus();
+          this.codchoferVacio = false;
+          console.log("vedadero blas");
+        }
+        else {
+          $("#facturaInput").focus();
+          $("#facturaInput").select();
+        }
+        this.codchoferVacio = false;
+      }
+    }
+  }
+buscarFactura() {
+  const codFact = this.formularioSalidafactura.get('txtcodFact')?.value;
+  console.log("Buscando Factura",codFact);
+
+  if (!codFact || codFact.trim() === '') {
+    alert('Debe ingresar un número de factura');
+    return;
+  }
+
+  this.servicioFacturacion.getByNumero(codFact).subscribe({
+    next: (response) => {
+      if (response && response.data) {
+        const factura = { 
+          codFact: response.data.codFact,
+          nomClie: response.data.nomClie,
+          fecFact: response.data.fecFact,
+          valFact: response.data.valFact,
+          valAbono: 0
+        };
+        const existe = this.detSalidafacturaList.some(item => item.codFact === factura.codFact);
+        console.log(existe);
+        if (!existe) {
+           this.detSalidafacturaList.push(factura);
+        } else {
+          alert('Esta factura ya fue agregada.');
+        }
+
+        this.txtcodFact = ''; // limpiar input
+      } else {
+        alert('No se encontró factura con ese número');
+      }
+    },
+    error: (err) => {
+      console.error(err);
+      alert('Error al buscar la factura');
+    }
+  });
+}
+eliminarFactura(codFact: string) {
+  this.detSalidafacturaList = this.detSalidafacturaList.filter(f => f.codFact !== codFact);
+}
+
+
 }
 
 // export class RutaSalidafactura implements OnInit {

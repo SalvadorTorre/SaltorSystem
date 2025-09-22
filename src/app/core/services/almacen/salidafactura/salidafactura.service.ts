@@ -45,11 +45,15 @@ export class ServicioSalidafactura {
     return this.http.GetRequest<any>(url);
   }
 
-    buscardetSalidafactura(codFactura: string,): Observable<any> {
-    return this.http.GetRequest<any>(`/detsalidafa/${codFactura}`);
+    buscardetSalidafactura(codFact: string,): Observable<any> {
+      console.log(codFact);
+    return this.http.GetRequest<any>(`/detsalidafa/${codFact}`);
   }
 
    buscardetSalidaid(codSalida: string,): Observable<any> {
     return this.http.GetRequest<any>(`/detsalidaid/${codSalida}`);
+  }
+  bucarSalidafacturaid(codSalida: string,): Observable<any> {
+    return this.http.GetRequest<any>(`/salida/${codSalida}`);
   }
 }

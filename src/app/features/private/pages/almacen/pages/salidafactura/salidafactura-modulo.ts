@@ -29,5 +29,4 @@ const routes: Routes = [
   providers: [],
   bootstrap: [] // No Salidafactura bootstrap since it does not exist
 })
-
 export class ModuloSalidafactura { }

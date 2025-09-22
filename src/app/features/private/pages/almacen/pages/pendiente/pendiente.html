@@ -1,0 +1,715 @@
+<div class="row g-4">
+  <div class="col-lg-6 col-md-6 mb-4">
+    <div class="card shadow-sm rounded-2 border-0">
+            <div class="card-header py-3" style="background: #253b33; border-radius: 0.5rem 0.5rem 0 0;">
+
+                <h4 class="card-title m-0 text-white text-center" style="font-weight: 600; letter-spacing: 1px;">PENDIENTE DE ENTREGA</h4>
+      </div>
+      <div class="card-body" style="background-color: #e6e4e4">
+        <form
+          [formGroup]="formularioFacturacion"
+          class="custom-form-background"
+        >
+          <!-- (ngSubmit)="guardarFacturacion()" -->
+          <div class="row mt-0">
+            <div class="col-5"></div>
+            <div class="col-1">
+              <label for="" class="label">No.</label>
+            </div>
+            <div class="col-3">
+              <input
+                type="text"
+                class="form-control form-control-sm textbox"
+                formControlName="fa_codFact"
+              />
+            </div>
+            <div class="col-3">
+              <input
+                formControlName="fa_fecFact"
+                type="text"
+                class="form-control form-control-sm"
+              />
+            </div>
+          </div>
+          <div class="row mt-1">
+            <div class="col-2">
+              <label for="" class="label">RNC</label>
+            </div>
+            <div class="col-3">
+              <input
+                type="text"
+                formControlName="fa_rncFact"
+                class="form-control form-control-sm"
+              />
+            </div>
+            <div class="col-4">
+               <input
+                type="text"
+                formControlName="fa_tipoNcf"
+                class="form-control form-control-sm"
+              />
+            </div>
+            <div class="col-3">
+              <input
+                type="text"
+                class="form-control form-control-sm"
+                formControlName="fa_ncfFact"
+                placeholder="NCF"
+              />
+            </div>
+          </div>
+          <div class="row mt-.5">
+            <div class="col-2">
+              <label for="" class="label">Cliente</label>
+            </div>
+            <div class="col-10">
+              <input
+                class="form-control form-control-sm dropdown-toggle searchInput"
+                type="text"
+                formControlName="fa_nomClie"
+              />
+            </div>
+          </div>
+          <div class="row mt-.5">
+            <div class="col-2">
+              <label for="" class="label">Dirección</label>
+            </div>
+            <div class="col-10">
+              <input
+                type="text"
+                formControlName="fa_dirClie"
+                class="form-control form-control-sm"
+              />
+            </div>
+          </div>
+          <div class="row mt-.5">
+            <div class="col-2">
+              <label for="" class="label">Telefono</label>
+            </div>
+            <div class="col-3">
+              <input
+                type="text"
+                formControlName="fa_telClie"
+                class="form-control form-control-sm"
+              />
+            </div>
+            <div class="col-3">
+              <input
+                type="text"
+                formControlName="fa_telClie2"
+                class="form-control form-control-sm"
+              />
+            </div>
+            <div class="col-4">
+              <input
+                type="text"
+                formControlName="fa_sector"
+                class="form-control form-control-sm"
+              />
+            </div>
+          </div>
+          <div class="row mt-.5">
+            <div class="col-2">
+              <label for="" class="label">Correo</label>
+            </div>
+            <div class="col-6">
+              <input
+                type="text"
+                formControlName="fa_correo"
+                class="form-control form-control-sm"
+              />
+            </div>
+            <div class="col-4">
+              <input
+                type="text"
+                formControlName="fa_contacto"
+                class="form-control form-control-sm"
+              />
+            </div>
+          </div>
+          <div class="row mt-1">
+            <div class="col-2">
+              <label for="" class="label">Tipo pago</label>
+            </div>
+            <div class="col-3">
+              <select
+                formControlName="fa_fpago"
+                class="form-control listbox"
+              >
+                <option
+                  [value]="fpago.fp_codfpago"
+                  *ngFor="let fpago of resultadoFpago"
+                >
+                  {{fpago.fp_descfpago}}
+                </option>
+              </select>
+            </div>
+            <div class="col-3">
+              <select
+                #inputenvio
+                name="listaenvio"
+                formControlName="fa_envio"
+                class="form-control listbox"
+              >
+                <option value="Envio">Envio</option>
+                <option value="Retiro">Retirar por el Cliente</option>
+              </select>
+            </div>
+            <div class="col-2">
+              <input
+                type="password"
+                formControlName="fa_codVend"
+                #inputvendedor
+                placeholder="Vendedor"
+                class="form-control form-control-sm"
+              />
+            </div>
+            <div class="col-2">
+              <input
+                type="text"
+                formControlName="fa_nomVend"
+                class="form-control form-control-sm"
+              />
+            </div>
+          </div>
+          <div class="row mt-.5">
+            <div class="col-2">
+              <label for="fa_despacho" class="form-check-label"
+                >Facturada</label
+              >
+            </div>
+            <div class="col-2">
+              <div class="form-check">
+                <input
+                  type="checkbox"
+                  id="fa_facturada"
+                  formControlName="fa_facturada"
+                  class="form-check-input form-check-input-sm"
+                />
+              </div>
+            </div>
+            <div class="col-2">
+              <label for="fa_despacho" class="form-check-label"
+                >Despachado</label
+              >
+            </div>
+            <div class="col-2">
+              <div class="form-check">
+                <input
+                  type="checkbox"
+                  id="fa_despacho"
+                  formControlName="fa_despacho"
+                  class="form-check-input form-check-input-sm"
+                />
+              </div>
+            </div>
+            <div class="col-2">
+              <label for="" class="label">Entregada</label>
+            </div>
+            <div class="col-2">
+              <input
+                type="checkbox"
+                id="fa_entrega"
+                formControlName="fa_entrega"
+                placeholder="Entregado"
+                #input8
+                class="form-check-input form-check-input-sm"
+              />
+            </div>
+          </div>
+        </form>
+        <br />
+  
+        <div class="row mt-1">
+          <div
+            class="table-container"
+            style="position: relative; height: 300px"
+          >
+            <div
+              class="table-responsive"
+              tabindex="0"
+              (keydown)="onTableKeydown($event)"
+              style="
+                height: 250px;
+                overflow-y: auto;
+                border: 2px solid #040ab9;
+                border-radius: 4px;
+              "
+            >
+              <table
+                class="table table-bordered table-hover table-striped table-sm"
+                id="tablaFactura"
+              >
+                <thead class="table-dark sticky-header">
+                  <tr>
+                    <th style="width: 10%">Numero</th>
+                    <th style="width: 30%">Nombre</th>
+                    <th class="text-center" style="width: 25%">Fecha</th>
+                    <th style="width: 16%">Valor</th>
+                    <th style="width: 10%">Cobro</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr
+                    *ngFor="let factura of paginatedData"
+                    [ngClass]="{'table-primary': factura.fa_codFact === codFacturaselecte}"
+                  >
+                    <td (click)="consultarFacturacion(factura)">
+                      {{ factura.fa_codFact }}
+                    </td>
+                    <td>{{ factura.fa_nomClie }}</td>
+                    <td class="text-center">{{ factura.fa_fecFact }}</td>
+                    <td class="text-end">{{ factura.fa_valFact }}</td>
+                    <td>
+                      <i
+                        (click)="consultarFacturacion(factura)"
+                        class="bi bi-card-list text-success"
+                        style="padding: 10px"
+                      >
+                      </i>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!--  🌟 CONTROLES DE PAGINACIÓN FIJOS EN EL FONDO DE LA TABLA 🌟 -->
+            <div
+              class="pagination-controls"
+              style="
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                background: linear-gradient(90deg, #fafafa, #f1f1f1);
+                padding: 8px 12px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                border-top: 1px solid #ccc;
+              "
+            >
+              <div>
+                <button
+                  class="btn btn-sm btn-primary"
+                  (click)="goToFirstPage()"
+                  [disabled]="currentPage === 1"
+                >
+                  ⏮️ Inicio
+                </button>
+                <button
+                  class="btn btn-sm btn-primary"
+                  (click)="prevPage()"
+                  [disabled]="currentPage <= 1"
+                >
+                  ⏪ Anterior
+                </button>
+              </div>
+
+              <span style="font-weight: bold; font-size: 14px">
+                Página {{ currentPage }} de {{ totalPages }}
+              </span>
+
+              <div>
+                <button
+                  class="btn btn-sm btn-primary"
+                  (click)="nextPage()"
+                  [disabled]="currentPage >= totalPages"
+                >
+                  Siguiente ⏩
+                </button>
+                <button
+                  class="btn btn-sm btn-primary"
+                  (click)="goToLastPage()"
+                  [disabled]="currentPage >= totalPages"
+                >
+                  Fin ⏭️
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- ***************** -->
+      <div class="row mt-0">
+        <div class="col">
+          <div class="card">
+            <div
+              class="card-body"
+              style="height: 60px; background-color: #f7eeeebd"
+            >
+              <div class="row mt-0">
+                <!-- <div class="col-1"></div> -->
+                <div class="col-4">
+                  <button
+                    [disabled]="botonEditar"
+                    class="btn btn-success btn-block btn-lx w-50"
+                    (click)="editarFactura()"
+                  >
+                    <i class="bi bi-arrow-clockwise"></i> Editar
+                  </button>
+                </div>
+                <!-- <div class="col-1"></div> -->
+                <div class="col-4">
+                  <button
+                    [disabled]="botonGuardar"
+                    class="btn btn-success btn-lx w-50"
+                    (click)="guardarFacturacion()"
+                  >
+                    <i class="bi bi-check"></i> Guardar
+                  </button>
+                </div>
+                <!-- <div class="col-1"></div> -->
+                <div class="col-4">
+                  <button
+                    class="btn btn-success btn-block btn-lx w-50"
+                    (click)="limpia()"
+                  >
+                    <i class="bi bi-arrow-clockwise"></i> Deshacer
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!--**********************  -->
+    </div>
+  </div>
+
+  <div class="col-lg-6 col-md-6 mb-4">
+    <div class="card shadow-sm rounded-2 border-0">
+      <div class="card-header py-3" style="background: #253b33; border-radius: 0.5rem 0.5rem 0 0;">
+       <h4 class="card-title m-0 text-white text-center" style="font-weight: 600; letter-spacing: 1px;">
+          DETALLE DEL PENDIENTE
+        </h4>
+      </div>
+      <div class="card-body">
+        <div class="row align-items-end">
+          <div class="col-2">
+            <label for=""> Código </label>
+            <div class="input-group show">
+              <input
+                class="form-control dropdown-toggle searchInput me-2"
+                data-id="agent"
+                type="text"
+                [disabled]="!habilitarCampos"
+                #codigoInput
+                autocomplete="off"
+                (input)="convertToUpperCase($event)"
+                (keydown)="handleKeydownInventario($event)"
+                (keydown)="moveFocuscodmerc($event, descripcionInput)"
+                [(ngModel)]="codmerc"
+                name="codmerc"
+                placeholder="Código"
+              />
+
+              <div
+                [ngClass]="{ 'show': resultadoCodmerc.length > 0 }"
+                class="dropdown-menu"
+                style="
+                  margin-right: 30px;
+                  margin-top: 45px;
+                  z-index: 300;
+                  width: 350px;
+                  position: absolute;
+                  will-change: transform;
+                "
+              >
+                <div
+                  class="searchReturnItem name-find"
+                  *ngFor="let result of resultadoCodmerc; let i = index"
+                  [class.active]="i === selectedIndexcodmerc"
+                >
+                  <a
+                    (click)="cargarDatosInventario(result)"
+                    style="
+                      color: #222222 !important;
+                      font-size: 10pt;
+                      padding: 20px 0px;
+                      text-decoration: none !important;
+                      cursor: pointer;
+                    "
+                    class="px-3 cp"
+                  >
+                    <i class="far fa-user-circle mr-5"></i>  {{
+                    result.in_codmerc }}
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-4">
+            <label for=""> Descripción </label>
+            <div class="input-group show">
+              <input
+                class="form-control dropdown-toggle searchInput me-2"
+                data-id="agent"
+                type="text"
+                [disabled]="!habilitarCampos"
+                autocomplete="off"
+                (input)="convertToUpperCase($event)"
+                (keydown)="moveFocusdesc($event, cantidadInput)"
+                (keydown)="handleKeydownInventariosdesc($event)"
+                #descripcionInput
+                [(ngModel)]="descripcionmerc"
+              />
+              <div
+                [ngClass]="{ 'show': resultadodescripcionmerc.length > 0 }"
+                class="dropdown-menu"
+                style="
+                  margin-right: 30px;
+                  margin-top: 45px;
+                  z-index: 300;
+                  width: 350px;
+                  position: absolute;
+                  will-change: transform;
+                "
+              >
+                <div
+                  class="searchReturnItem name-find"
+                  *ngFor="let result of resultadodescripcionmerc; let i = index"
+                  [class.active]="i === selectedIndexdescripcionmerc"
+                >
+                  <a
+                    (click)="cargarDatosInventario(result)"
+                    style="
+                      color: #222222 !important;
+                      font-size: 10pt;
+                      padding: 20px 0px;
+                      text-decoration: none !important;
+                      cursor: pointer;
+                    "
+                    class="px-3 cp"
+                  >
+                    <i class="far fa-user-circle mr-5"></i>  {{
+                    result.in_desmerc }}
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-2">
+            <label for=""> Cant. </label>
+            <input
+              type="number"
+              [disabled]="!habilitarCantidad"
+              placeholder="Cantidad"
+              #cantidadInput
+              [(ngModel)]="cantidadmerc"
+              (keydown)="moveFocusCantidad($event, precioInput)"
+              class="form-control"
+            />
+          </div>
+          <div class="col-2">
+            <label for=""> Precio </label>
+            <input
+              type="number"
+              [disabled]="!habilitarCantidad"
+              [(ngModel)]="preciomerc"
+              id="input9"
+              #precioInput
+              (input)="actualizarCalculo()"
+              (keydown)="moveFocus($event, codigoInput)"
+              class="form-control"
+              (keydown.enter)="agregaItem($event)"
+            />
+          </div>
+          <div class="col-2">
+            <button
+              [disabled]="botonaddItems"
+              class="btn btn-success btn-block btn-lx w-40"
+              (click)="agregarItem()"
+            >
+              <i class="bi bi-plus-circle"></i> Add
+            </button>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col">
+            <div
+              class="table-responsive"
+              style="
+                height: 350px;
+                overflow-y: auto;
+                border: 2px solid rgb(4, 10, 185);
+              "
+              tabindex="0"
+              (keydown)="navigateTable($event)"
+              #Tabledetalle
+            >
+              <table class="table table-sm table-bordered">
+                <thead class="table-dark">
+                  <tr style="background-color: rgb(55, 0, 255)">
+                    <th style="width: 13%">Código</th>
+                    <th style="width: 37%">Descripción</th>
+                    <th style="width: 10%">Cant.</th>
+                    <th style="width: 13%">Precio</th>
+                    <th style="width: 15%">Total</th>
+                    <th>Opciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr
+                    *ngFor="let item of items;let i = index"
+                    [class.table-active]="i === selectedRow"
+                    (click)="selectRow(i)"
+                  >
+                    <td style="width: 13%">{{ item.producto?.in_codmerc }}</td>
+                    <td style="width: 37%">{{ item.producto?.in_desmerc }}</td>
+                    <td class="text-center" style="width: 10%">
+                      {{ item.cantidad }}
+                    </td>
+                    <td class="text-center" style="width: 11%">
+                      {{ item.precio }}
+                    </td>
+                    <td class="text-end" style="width: 13%">
+                      {{ item.total | currency }}
+                    </td>
+                    <td>
+                      <i
+                        (click)="editarItem(item)"
+                        class="bi bi-pencil text-primary"
+                        style="padding: 10px"
+                        *ngIf="habilitarIcono"
+                      ></i>
+                      <i
+                        (click)="borarItem(item)"
+                        class="bi bi-trash text-danger"
+                        style="padding: 10px"
+                        *ngIf="habilitarIcono"
+                      >
+                      </i>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-7">
+            <div class="row mt-1">
+              <h6
+                class="col-3 col-form-label text-black text-end"
+                style="font-size: 12px; font-weight: bold"
+              >
+                % Producto
+              </h6>
+              <div class="col-2">
+                <input
+                  type="text"
+                  style="font-size: 12px; font-weight: bold"
+                  class="form-control form-control-sm text-end"
+                  readonly
+                  [value]="formatNumber(protxt)"
+                  id="inputPassword"
+                  [ngStyle]="{'color': protxt < 10 ? 'red' : 'green'}"
+                />
+              </div>
+              <h6
+                class="col-2 col-form-label text-black text-end"
+                style="font-size: 12px; font-weight: bold"
+              >
+                Factura
+              </h6>
+              <div class="col-2">
+                <input
+                  type="text"
+                  style="font-size: 12px; font-weight: bold"
+                  class="form-control form-control-sm text-end"
+                  readonly
+                  [value]="formatNumber(factxt)"
+                  id="inputPassword"
+                  [ngStyle]="{'color': factxt < 10 ? 'red' : 'green'}"
+                />
+              </div>
+              <h6
+                class="col-1 col-form-label text-black text-end"
+                style="font-size: 12px; font-weight: bold"
+              >
+                %
+              </h6>
+            </div>
+          </div>
+
+          <!-- <div class="col-1"></div> -->
+          <div class="col-5">
+            <div class="row mt-1">
+              <div style="padding: 5px; border: 2px solid rgb(4, 10, 185)">
+                <div class="row">
+                  <h6
+                    class="col-4 col-form-label text-black"
+                    style="font-size: 18px; font-weight: bold"
+                  >
+                    Sub Total
+                  </h6>
+                  <div class="col-8">
+                    <input
+                      type="text"
+                      style="font-size: 18px; font-weight: bold"
+                      class="form-control form-control-sm text-end"
+                      disabled
+                      [value]="subTotal | number:'1.2-2'"
+                      id="inputPassword"
+                    />
+                  </div>
+                </div>
+                <div class="row mt-.5">
+                  <h6
+                    class="col-4 col-form-label text-black"
+                    style="font-size: 18px; font-weight: bold"
+                  >
+                    Desc.
+                  </h6>
+                  <div class="col-8">
+                    <input
+                      type="text"
+                      style="font-size: 18px; font-weight: bold"
+                      class="form-control form-control-sm text-end"
+                      disabled
+                      [(ngModel)]="descuentotxt"
+                      id="inputPassword"
+                    />
+                  </div>
+                </div>
+                <div class="row mt-.5">
+                  <h6
+                    class="col-4 col-form-label text-black"
+                    style="font-size: 18px; font-weight: bold"
+                  >
+                    ITBI
+                  </h6>
+                  <div class="col-8">
+                    <input
+                      type="text"
+                      style="font-size: 18px; font-weight: bold"
+                      class="form-control form-control-sm text-end"
+                      disabled
+                      [value]="totalItbis | number:'1.2-2'"
+                      id="inputPassword"
+                    />
+                  </div>
+                </div>
+                <div class="row mt-.5">
+                  <h4 class="col-4 text-black">Total</h4>
+                  <div class="col-8">
+                    <input
+                      type="text"
+                      style="font-size: 18px; font-weight: bold"
+                      disabled
+                      class="form-control form-control-sm text-end"
+                      [value]="totalGral | number:'1.2-2'"
+                      id="inputPassword"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

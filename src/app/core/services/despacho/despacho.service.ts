@@ -18,7 +18,7 @@ export class DespachoService {
 
   constructor(private http: HttpInvokeService) {}
 
-  buscarPorCedula(cedula: string): Observable<Despacho | null> {
+  buscarPorCedula(cedula: string): Observable<any> {
     return this.http.GetRequest(`/despachadores/cedula/${cedula}`);
   }
 }

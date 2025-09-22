@@ -7,49 +7,23 @@ import {
   ɵNG_COMP_DEF,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import {
-  FormBuilder,
-  FormControl,
-  FormGroup,
-  Validators,
-} from '@angular/forms';
-import {
-  BehaviorSubject,
-  debounceTime,
-  distinctUntilChanged,
-  filter,
-  from,
-  skip,
-  switchMap,
-  tap,
-} from 'rxjs';
-import Swal from 'sweetalert2';
+import { FormBuilder,   FormControl, FormGroup,  Validators,} from '@angular/forms';
+import { BehaviorSubject, debounceTime, distinctUntilChanged, filter, from, skip, switchMap, tap,} from 'rxjs';
+import Swal from 'sweetalert2'; 
 import { ServicioRnc } from 'src/app/core/services/mantenimientos/rnc/rnc.service';
 import { ServicioUsuario } from 'src/app/core/services/mantenimientos/usuario/usuario.service';
 import { ServicioFacturacion } from 'src/app/core/services/facturacion/factura/factura.service';
-import {
-  FacturacionModelData,
-  detFacturaData,
-} from 'src/app/core/services/facturacion/factura';
+import { FacturacionModelData, detFacturaData,} from 'src/app/core/services/facturacion/factura';
 import { ServicioCliente } from 'src/app/core/services/mantenimientos/clientes/cliente.service';
 import { HttpInvokeService } from 'src/app/core/services/http-invoke.service';
-import {
-  ModeloCliente,
-  ModeloClienteData,
-} from 'src/app/core/services/mantenimientos/clientes';
+import { ModeloCliente, ModeloClienteData,} from 'src/app/core/services/mantenimientos/clientes';
 import { interfaceDetalleModel } from 'src/app/core/services/facturacion/factura/factura';
 import { ServicioInventario } from 'src/app/core/services/mantenimientos/inventario/inventario.service';
 import { ServicioSector } from 'src/app/core/services/mantenimientos/sector/sector.service';
-import {
-  ModeloSector,
-  ModeloSectorData,
-} from 'src/app/core/services/mantenimientos/sector';
+import { ModeloSector, ModeloSectorData,} from 'src/app/core/services/mantenimientos/sector';
 import { ModeloFpagoData } from 'src/app/core/services/mantenimientos/fpago';
 import { ServicioFpago } from 'src/app/core/services/mantenimientos/fpago/fpago.service';
-import {
-  ModeloInventario,
-  ModeloInventarioData,
-} from 'src/app/core/services/mantenimientos/inventario';
+import {ModeloInventario,  ModeloInventarioData,} from 'src/app/core/services/mantenimientos/inventario';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { disableDebugTools } from '@angular/platform-browser';
@@ -58,11 +32,11 @@ import { ModeloNcfData } from 'src/app/core/services/ncf';
 declare var $: any;
 
 @Component({
-  selector: 'controlfact',
-  templateUrl: './controlfact.html',
-  styleUrls: ['./controlfact.css'],
+  selector: 'pendiente',
+  templateUrl: './pendiente.html',
+  styleUrls: ['./pendiente.css'],
 })
-export class ControlFact implements OnInit {
+export class Pendiente implements OnInit {
   @ViewChild('codigoInput') codigoInput!: ElementRef; // Para manejar el foco
   @ViewChild('descripcionInput') descripcionInput!: ElementRef; // Para manejar el foco
   @ViewChild('Tabladetalle') Tabladetalle!: ElementRef;
@@ -70,6 +44,8 @@ export class ControlFact implements OnInit {
   botonEditar = true; // Empieza deshabilitado
   botonGuardar = true; // Empieza deshabilitado
   botonaddItems = true; // Empieza deshabilitado
+ facturas: any[] = [];  // 👈 aquí declaras facturas
+  total: number = 0;     // 👈 aquí declaras total
   totalItems = 0;
   pageSize = 6;
   currentPage = 1;
@@ -252,18 +228,10 @@ export class ControlFact implements OnInit {
   }
 
   ngOnInit(): void {
-    this.buscarTodasFacturacion();
-    // this.servicioFacturacion.buscarTodasFacturacion().subscribe(response => {
-    //   console.log('DATOS EN RESPONSE.DATA', response.data);
-    //   this.facturacionList = response.data;
-    //   console.log('DATOS EN FACTURACIONLIST', this.facturacionList)
-    //   console.log(this.facturacionList.length)
+   
+  this.cargarPendientes();
 
-    // }, error => {
-    // console.error('Error al obtener facturas:', error);
-    // });
-    // $("#input1").focus();
-    // $("#input1").select()
+   //this.buscarTodasFacturacion();
     this.obtenerNcf();
     this.obtenerfpago();
     this.buscardescripcionmerc.valueChanges
@@ -283,6 +251,7 @@ export class ControlFact implements OnInit {
           )
         )
       )
+
       .subscribe((results: ModeloInventario) => {
         console.log(results.data);
         if (results) {
@@ -386,6 +355,7 @@ export class ControlFact implements OnInit {
       fa_entrega: [{ value: '', disabled: true }],
       fa_impresa: [{ value: '', disabled: true }],
       fa_facturada: [{ value: '', disabled: true }],
+      fa_pendiente: [{ value: 'SI', disabled: true }],
     });
   }
   limpia(): void {
@@ -437,7 +407,7 @@ export class ControlFact implements OnInit {
     // Limpiar los items antes de agregar los nuevos
     this.items = [];
     this.servicioFacturacion
-      .buscarFacturaDetalle(Factura.fa_codFact)
+      .buscarFacturaDetallePendiente(Factura.fa_codFact)
       .subscribe((response) => {
         let subtotal = 0;
         let itbis = 0;
@@ -498,6 +468,12 @@ export class ControlFact implements OnInit {
         this.totalGral = totalGeneral;
       });
   }
+cargarPendientes() {
+  this.servicioFacturacion.buscarFacturacionPendiente(1, 10).subscribe(data => {
+    this.facturas= data.rows;
+    this.total = data.total;
+  });
+}
 
   buscarTodasFactura(page: number) {
     this.servicioFacturacion.buscarTodasFacturacion().subscribe((response) => {
@@ -530,7 +506,7 @@ export class ControlFact implements OnInit {
 
     this.items = [];
     this.servicioFacturacion
-      .buscarFacturaDetalle(factura.fa_codFact)
+      .buscarFacturaDetallePendiente(factura.fa_codFact)
       .subscribe((response) => {
         let subtotal = 0;
         let itbis = 0;
@@ -565,6 +541,7 @@ export class ControlFact implements OnInit {
             in_itbis: false,
             in_minvent: 0,
           };
+          
           const cantidad = item.df_canMerc;
           const precio = item.df_preMerc;
           const totalItem = cantidad * precio;
@@ -674,12 +651,7 @@ export class ControlFact implements OnInit {
       this.facturacionList = response.data;
     });
   }
-  // buscarTodasFacturacion() {
-  //   this.servicioFacturacion.buscarTodasFacturacion().subscribe(data => {
-  //     this.facturacionList = data;
-  //     console.log(data);
-  //   });
-  // }
+
 
   buscaNombre(event: Event) {
     const c_nomClie = event.target as HTMLInputElement;
@@ -1546,7 +1518,7 @@ export class ControlFact implements OnInit {
   generatePDF(factura: FacturacionModelData) {
     console.log(factura);
     this.servicioFacturacion
-      .buscarFacturaDetalle(factura.fa_codFact)
+      .buscarFacturaDetallePendiente(factura.fa_codFact)
       .subscribe((response) => {
         let subtotal = 0;
         let itbis = 0;

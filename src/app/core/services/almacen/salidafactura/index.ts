@@ -19,7 +19,7 @@ export interface SalidafacturaModelData {
   status: string;
   envia: string;
   preparado: string;
-
+  
 
   detSalidafactura: detSalidafacturaData[];
 }

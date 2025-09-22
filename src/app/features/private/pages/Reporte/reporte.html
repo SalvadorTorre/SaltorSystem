@@ -1,1 +1,285 @@
-<h1>Ahora Estoy en el modulo de Reportes y Consultas</h1>
+<div class="container-fluid p-0">
+  <div class="row">
+    <div class="col-2">
+      <div class="left-sidebar" style="width: 100%">
+        <ul
+          class="nav flex-column"
+          style="background-color: #af3d2c; height: 90vh"
+        >
+          <br />
+          <!-- <li class="nav-item">
+            
+            <a class="nav-link" style="color: rgb(250, 247, 247); font-size: 22px; height: 60px;" href="#"
+              class="nav-link"
+              routerLinkActive="active"
+              [routerLink]="['consultaProducto']"
+              >Movimientos Productos</a
+            >
+          </li>
+          <li class="nav-item">
+            <a style="color: rgb(250, 247, 247); font-size: 22px; height: 60px;" href="#"
+              class="nav-link"
+              routerLinkActive="active"
+              [routerLink]="['entradamerc']"
+              >Inventario</a
+            >
+          </li>
+          <li class="nav-item">
+            <a style="color: rgb(250, 247, 247); font-size: 22px; height: 60px;" href="#"
+              class="nav-link"
+              routerLinkActive="active"
+              [routerLink]="['ventainterna']"
+              >Ventas  </a>
+          </li>
+
+          <li class="nav-item">
+           <a class="nav-link" style="color: rgb(250, 247, 247); font-size: 22px; height: 60px;" href="#"
+              routerLinkActive="active"
+              [routerLink]="['pendiente']"
+              >Ventas Por Vendedor
+            </a>
+          </li>
+
+          <li class="nav-item">
+           <a class="nav-link" style="color: rgb(250, 247, 247); font-size: 22px; height: 60px; height: 60px;" href="#"
+              routerLinkActive="active"
+              [routerLink]="['salidafactura']"
+              >Factura Entregada
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" style="color: rgb(250, 247, 247); font-size: 22px; height: 60px;" href="#"
+              routerLinkActive="active"
+              [routerLink]="['salidafactura']"
+              >Reporte Clientes
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" style="color: rgb(250, 247, 247); font-size: 22px; height: 60px;" href="#"
+              routerLinkActive="active"
+              [routerLink]="['conduce']"
+              >Ventas Cliente Antiguedad</a
+            >
+          </li>
+
+          
+        </ul>
+      </div>
+    </div>
+    <div class="col">
+      <router-outlet></router-outlet>
+    </div>
+  </div>
+</div> -->
+
+<!-- <li class="nav-item">
+  <a class="nav-link d-flex justify-content-between align-items-center"
+     style="color: #faf7f7; font-size: 22px; height: 60px;"
+     data-bs-toggle="collapse" href="#submenuProductos" role="button" aria-expanded="false" aria-controls="submenuProductos">
+    Movimientos Productos
+    <span class="caret"></span>
+  </a>
+  
+  <ul class="collapse list-unstyled ps-3" id="submenuProductos" style="background-color: #913226;">
+    <li>
+      <a class="nav-link" style="color: white; font-size: 18px;" [routerLink]="['consultaProducto']">
+        Mov. por Productos
+      </a>
+    </li>
+    <li>
+      <a class="nav-link" style="color: white; font-size: 18px;" [routerLink]="['entradaProducto']">
+        Mov. por Grupo
+      </a>
+    </li>
+    <li>
+      <a class="nav-link" style="color: white; font-size: 18px;" [routerLink]="['salidaProducto']">
+        General
+      </a>
+    </li>
+  </ul>
+</li> -->
+
+<!-- <li class="nav-item">
+  <a class="nav-link d-flex justify-content-between align-items-center"
+     style="color: #faf7f7; font-size: 22px; height: 60px;"
+     data-bs-toggle="collapse" href="#submenuProductos" role="button" aria-expanded="false" aria-controls="submenuProductos">
+    Movimientos Productos
+    <span class="caret"></span>
+  </a>
+  
+  <ul class="collapse list-unstyled ps-3" id="submenuProductos" style="background-color: #913226;">
+    <li>
+      <a class="nav-link" style="color: white; font-size: 18px;" [routerLink]="['consultaProducto']">
+        Mov. por Productos
+      </a>
+    </li>
+    <li>
+      <a class="nav-link" style="color: white; font-size: 18px;" [routerLink]="['entradaProducto']">
+        Mov. por Grupo
+      </a>
+    </li>
+    <li>
+      <a class="nav-link" style="color: white; font-size: 18px;" [routerLink]="['salidaProducto']">
+        General
+      </a>
+    </li>
+  </ul>
+</li> -->
+
+<!-- <li class="nav-item">
+  <a class="nav-link d-flex justify-content-between align-items-center"
+     style="color: #faf7f7; font-size: 22px; height: 60px;"
+     data-bs-toggle="collapse" href="#submenuInventario" role="button" aria-expanded="false" aria-controls="submenuInventario">
+    Inventario
+    <span class="caret"></span>
+  </a>
+  
+  <ul class="collapse list-unstyled ps-3" id="submenuInventario" style="background-color: #913226;">
+    <li>
+      <a class="nav-link" style="color: white; font-size: 18px;" [routerLink]="['consultaProducto']">
+        Existencia
+      </a>
+    </li>
+  </ul>
+    <ul class="collapse list-unstyled ps-3" id="submenuInventario" style="background-color: #913226;">
+    <li>
+      <a class="nav-link" style="color: white; font-size: 18px;" [routerLink]="['consultaProducto']">
+        Existencia Minima
+      </a>
+    </li>
+  </ul>
+</li> -->
+
+<!-- <li class="nav-item">
+  <a class="nav-link d-flex justify-content-between align-items-center"
+     style="color: #faf7f7; font-size: 22px; height: 60px;"
+     data-bs-toggle="collapse" href="#submenuVentas" role="button" aria-expanded="false" aria-controls="submenuVentas">
+    Ventas
+    <span class="caret"></span>
+  </a>
+  
+  <ul class="collapse list-unstyled ps-3" id="submenuVentas" style="background-color: #913226;">
+    <li>
+      <a class="nav-link" style="color: white; font-size: 18px;" [routerLink]="['consultaProducto']">
+        Ventas
+      </a>
+    </li>
+  </ul>
+    <ul class="collapse list-unstyled ps-3" id="submenuVentas" style="background-color: #913226;">
+    <li>
+      <a class="nav-link" style="color: white; font-size: 18px;" [routerLink]="['consultaProducto']">
+        Ventas Por Vendedor
+      </a>
+    </li>
+  </ul>
+</li> -->
+
+
+
+
+<li class="nav-item">
+  <a class="nav-link d-flex justify-content-between align-items-center"
+     style="color: #faf7f7; font-size: 22px; height: 60px;"
+     data-bs-toggle="collapse" href="#submenuProductos" role="button" aria-expanded="false" aria-controls="submenuProductos"
+     (click)="toggleMenu('productos')">
+    Movimientos Productos
+    <span [ngClass]="{'rotate-90': openMenu === 'productos'}">▶</span>
+  </a>
+  
+  <ul *ngIf="openMenu === 'productos'" class="list-unstyled ps-3" style="background-color: #913226;">
+    <li>
+      <a class="nav-link" style="color: white; font-size: 18px;" [routerLink]="['movproducto']">
+        Mov. por Productos
+      </a>
+    </li>
+    <li>
+      <a class="nav-link" style="color: white; font-size: 18px;" [routerLink]="['entradaProducto']">
+        Mov. por Grupo
+      </a>
+    </li>
+    <li>
+      <a class="nav-link" style="color: white; font-size: 18px;" [routerLink]="['salidaProducto']">
+        General
+      </a>
+    </li>
+  </ul>
+</li>
+
+
+
+<li class="nav-item">
+  <a class="nav-link d-flex justify-content-between align-items-center"
+     style="color: #faf7f7; font-size: 22px; height: 60px;"
+     data-bs-toggle="collapse" href="#submenuInventario" role="button" aria-expanded="false" aria-controls="submenuInventario"
+     (click)="toggleMenu('inventario')">
+    Inventario
+    <span [ngClass]="{'rotate-90': openMenu === 'inventario'}">▶</span>
+  </a>
+  
+  <ul *ngIf="openMenu === 'inventario'" class="list-unstyled ps-3"  style="background-color: #913226;">
+    <li>
+      <a class="nav-link" style="color: white; font-size: 18px;" [routerLink]="['consultaProducto']">
+        Existencia
+      </a>
+    </li>
+    <li>
+      <a class="nav-link" style="color: white; font-size: 18px;" [routerLink]="['consultaProducto']">
+        Existencia Minima
+      </a>
+    </li>
+  </ul>
+</li>
+
+<li class="nav-item">
+  <a class="nav-link d-flex justify-content-between align-items-center"
+     style="color: #faf7f7; font-size: 22px; height: 60px;"
+     data-bs-toggle="collapse" href="#submenuVentas" role="button" aria-expanded="false" aria-controls="submenuVentas"
+     (click)="toggleMenu('ventas')">
+    Ventas
+    <span [ngClass]="{'rotate-90': openMenu === 'inventario'}">▶</span>
+  </a>
+    <ul *ngIf="openMenu === 'ventas'" class="list-unstyled ps-3" style="background-color: #913226;">
+
+    <li>
+      <a class="nav-link" style="color: white; font-size: 18px;" [routerLink]="['consultaProducto']">
+        Ventas
+      </a>
+    </li>
+    <li>
+      <a class="nav-link" style="color: white; font-size: 18px;" [routerLink]="['consultaProducto']">
+        Ventas Por Vendedor
+      </a>
+    </li>
+  </ul>
+</li>
+
+
+<li class="nav-item">
+   <a class="nav-link d-flex justify-content-between align-items-center"
+     style="color: #faf7f7; font-size: 22px; height: 60px;"
+     data-bs-toggle="collapse" href="#submenuClientes" role="button" aria-expanded="false" aria-controls="submenuClientes"
+     (click)="toggleMenu('cliente')">
+    Clientes
+    <span [ngClass]="{'rotate-90': openMenu === 'cliente'}">▶</span>
+  </a>
+  <ul *ngIf="openMenu === 'cliente'" class="list-unstyled ps-3" style="background-color: #913226;">
+    <li>
+      <a class="nav-link" style="color: white; font-size: 18px;" [routerLink]="['consultaProducto']"
+      (click)="toggleMenu('productos')">
+        Compra Invidual Cliente
+      </a>
+    </li>
+    <li>
+      <a class="nav-link" style="color: white; font-size: 18px;" [routerLink]="['consultaProducto']"
+      (click)="toggleMenu('productos')">
+        Rep. Cliente Sectorizado
+      </a>
+    </li>
+    <li>
+      <a class="nav-link" style="color: white; font-size: 18px;" [routerLink]="['consultaProducto']"
+      (click)="toggleMenu('productos')">
+        Por Andiguedad de Compras
+      </a>
+    </li>
+  </ul>
+</li>

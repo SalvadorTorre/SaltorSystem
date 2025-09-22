@@ -27,19 +27,15 @@ export class DespachoComponent {
     }
     console.log('Buscando despachador con cédula:', this.cedula);
 
-    this.despachoService.buscarPorCedula(this.cedula).subscribe({
-      next: (data) => {
-        if (data) {
-          this.despacho = data;
+    this.despachoService.buscarPorCedula(this.cedula).subscribe((response)=>{
+      console.log(response);
+       if (response) {
+          this.despacho = response.data[0];
           this.mensaje = '';
         } else {
           this.despacho = null;
           this.mensaje = 'No se encontró un despachador con esa cédula';
         }
-      },
-      error: () => {
-        this.mensaje = 'Error en la búsqueda';
-      }
     });
   }
 

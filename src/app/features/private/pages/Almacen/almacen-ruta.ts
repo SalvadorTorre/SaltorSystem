@@ -36,10 +36,10 @@ const routes: Routes = [
         loadChildren: () => import('./pages/ventainterna/ventainterna-modulo').then(m => m.ModuloVentainterna)
       },
 
-      //   {
-      //     path:"Fact. Pendiente Entrega",
-      //     loadChildren: () => import('./pages/zona-page/zona-modulo').then(m => m.ModuloZona)
-      //   },
+        {
+          path:"pendiente",
+          loadChildren: () => import('./pages/pendiente/pendiente-modulo').then(m => m.ModuloPendiente)
+        },
 
 
       {

@@ -5,7 +5,7 @@ import { HttpClient } from '@angular/common/http';
 import { HttpInvokeService } from "../../http-invoke.service";
 import { FacturacionModel, FacturacionModelData } from ".";
 import { HttpParams } from '@angular/common/http';
-
+import { map } from 'rxjs/operators';
 @Injectable({
   providedIn: "root"
 })
@@ -16,6 +16,7 @@ export class ServicioFacturacion {
 
   getByNumero(numero: string): Observable<any> {
     return this.http.GetRequest<any>(`/factura-numero/${numero}`);
+    console.log('ServicioFacturacion - getByNumero llamado con número:', numero);
   }
   marcarImpresa(numero: string, body: { fa_envio?: string; fa_fpago?: string }) {
     return this.http.PatchRequest(`/facturas-impresa/${numero}`, body);
@@ -63,6 +64,11 @@ marcarFacturaComoImpresa(payload:any) {
   buscarFacturaDetalle(df_codFact: string): Observable<any> {
     return this.http.GetRequest<any>(`/detalle-factura/${df_codFact}`);
   }
+buscarFacturaDetallePendiente(df_codFact: string): Observable<any> {
+  return this.http.GetRequest<any>(`/detalle-factura/${df_codFact}`).pipe(
+    map(detalles => detalles.filter((item: any) => item.df_pendiente === 'p'))
+  );
+}
 
 
  buscarFacturacion(pageIndex: number, pageSize: number, codigo?: string, nomcliente?: string, fecha?:string,): Observable<any> {
@@ -79,5 +85,10 @@ marcarFacturaComoImpresa(payload:any) {
     }
     return this.http.GetRequest<any>(url);
   }
+
+  buscarFacturacionPendiente(pageIndex: number, pageSize: number): Observable<any> {
+  let url = `/facturacion/pendientes?page=${pageIndex}&limit=${pageSize}`;
+  return this.http.GetRequest<any>(url);
+}
 
 }

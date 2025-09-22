@@ -9,16 +9,19 @@
           <label class="form-label fw-bold">Buscar Por</label>
           <div class="row g-2">
             <div class="col">
-              <input type="text" formControlName="txtcodsalida" placeholder="No. de Control" class="form-control form-control-sm rounded-pill shadow-sm" />
+              <input type="text" [(ngModel)]="txtcodSalida" placeholder="No. de Control" class="form-control form-control-sm rounded-pill shadow-sm" 
+            (keyup.enter)="buscarSalidaCodigo(txtcodSalida)"
+                 /> 
             </div>
-            <div class="col">
+            <div class="col"> 
               <input type="text" formControlName="txtnomChofer" placeholder="Nombre Chofer" class="form-control form-control-sm rounded-pill shadow-sm" />
             </div>
             <div class="col">
-              <input type="text" formControlName="txtcodFact" placeholder="No. Factura" class="form-control form-control-sm rounded-pill shadow-sm"
-                    (input)="buscarSalidaFactura(codFact)"/>
+              <input type="text" [(ngModel)]="txtcodFact" placeholder="No. Factura" class="form-control form-control-sm rounded-pill shadow-sm"
+                    (keyup.enter)="buscarSalidaFactura(txtcodFact)"/>
             </div> 
           </div>
+
         </div>
         <div class="table-responsive" style="height: 400px; overflow-y: auto; border-radius: 0.5rem; border: 1px solid #343a40; background: #fff;">
           <table class="table table-hover align-middle mb-0">
@@ -57,35 +60,54 @@
       <div class="card-body bg-light rounded-bottom-2">
         <form [formGroup]="formularioSalidafactura" class="mb-3">
           <div class="row g-2 mb-2">
-          <div class="col-md-6"> </div>
-            <div class="col-md-2">
+            <div class="col-md-2"></div>
+             <div class="col-md-2">
+              <input type="text" formControlName="status" class="form-control form-control-sm rounded-pill shadow-sm" readonly />
+            </div>
+          <div class="col-md-2"> </div>
+
+          <div class="col-md-2">
               <label class="form-label">No. Control</label>
             </div>
             <div class="col-md-2">  
               <input type="text" class="form-control form-control-sm rounded-pill shadow-sm" formControlName="codSalida" readonly />
             </div>
              <div class="col-md-2">
-              <input type="date" formControlName="fecsalida" class="form-control form-control-sm rounded-pill shadow-sm" readonly />
+              <input type="date" formControlName="fecSalida" class="form-control form-control-sm rounded-pill shadow-sm" readonly />
             </div> 
           </div>
           <div class="row g-2 mb-2">
             <div class="col-md-2">
               <label class="form-label">Cod Chofer</label>
               <input type="text" 
-               [(ngModel)]="codChofer"
-               name="codChofer" 
+               formControlName="codChofer"
+               name="codChofer"
+               #codChoferInput
                class="form-control form-control-sm rounded-pill shadow-sm" 
-               (keyup.enter)="buscarporCodigo()"/>
-            </div>
-              <div class="col-md-4">
-              <label class="form-label">Chofer</label>
-              <input type="text" [(ngModel)]="chofer.nombre" name ="nomChofer" class="form-control form-control-sm rounded-pill shadow-sm" readonly />
+               (keyup.enter)="buscarporCodigo()"
 
+              />
             </div>
-            <div class="col-md-2"> </div>
-             <div class="col-md-2">
-              <input type="text" formControlName="status" class="form-control form-control-sm rounded-pill shadow-sm" readonly />
-            </div>
+
+              <div class="col-md-4">
+                <label class="form-label">Chofer</label>
+                <input type="text"
+                class="form-control form-control-sm rounded-pill shadow-sm" 
+                formControlName="nomChofer" 
+                #nomchoferInput />
+               </div>
+               <div class="col-md-2">
+                <label class="form-label">Factura</label>
+              <input
+                type="text"
+                id="facturaInput"
+                formControlName="txtcodFact"
+                placeholder="No. de Factura"
+                class="form-control form-control-sm rounded-pill shadow-sm"
+                (keydown.enter)="buscarFactura()" />
+
+                
+              </div>
           </div>
         </form>
         <div class="table-responsive" style="height: 350px; overflow-y: auto; border-radius: 0.5rem; border: 1px solid #343a40; background: #fff;">
@@ -106,7 +128,9 @@
                 <td class="text-center">{{detItems.fecFact | date:'dd/MM/yyyy'}}</td>
                 <td class="text-end">{{detItems.valFact}}</td>
                 <td class="text-center">
-                  <button class="btn btn-outline-danger btn-sm rounded-circle shadow-sm" title="Eliminar" 
+                  <button class="btn btn-outline-danger btn-sm rounded-circle shadow-sm"
+                   (click)="eliminarFactura(detItems.codFact)"
+                   title="Eliminar" 
                   >
                     <i class="bi bi-trash"></i>
                   </button>
