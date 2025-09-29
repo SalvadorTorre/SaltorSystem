@@ -37,11 +37,9 @@ obtenerFacturasNoImpresas(): Observable<any> {
 marcarFacturaComoImpresa(payload:any) {
   const cod=payload.fa_codFact;
     return this.http.PatchRequest(`/factura-impresa/${cod}`, payload);
+}
 
-
-  }
-
-  editarFacturacion(payload: any) {
+editarFacturacion(payload: any) {
   const cod = payload.factura.fa_codFact;
   return this.http.PutRequest(`/facturacion/${cod}`, payload);
 }
@@ -73,7 +71,10 @@ actutalizarPendienteNuevo(fa_codFact: string) {
 actutalizarPendienteModficado(fa_codFact: string, accion:"poner" | "quitar") {
     return this.http.PatchRequest(`/actualiza-pendiente/${fa_codFact}`, { accion });
   }
-
+acturalizaDetPendiente(payload: any) {
+  const cod = payload.factura.df_codFact;
+  return this.http.PutRequest(`/actualiza-detpendiente/${cod}`, payload);
+}
  buscarFacturacion(pageIndex: number, pageSize: number, codigo?: string, nomcliente?: string, fecha?:string,): Observable<any> {
     let url = `/facturacion-numero?page=${pageIndex}&limit=${pageSize}`;
 
