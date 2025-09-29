@@ -23,4 +23,6 @@ export interface interfaceDetalleModel {
   fa_impresa?: 'S' | 'N';
   fa_envio?: string;
   fa_fpago?: string;
+  df_canpend?: number;
+  df_pendiente?:string
 }

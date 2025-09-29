@@ -63,5 +63,6 @@ export interface detFacturaData {
   df_codClie: string;
   df_status: string;
   df_codEmpr: string;
-  sf_codSucu: string;
+  df_codSucu: string;
+  df_canpend: number;
 }

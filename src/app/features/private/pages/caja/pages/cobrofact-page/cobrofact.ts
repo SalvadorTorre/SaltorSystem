@@ -1,16 +1,43 @@
-import { Component, NgModule, OnInit, ViewChild, ElementRef, ɵNG_COMP_DEF, HostListener, ViewChildren, QueryList } from '@angular/core';
+import {
+  Component,
+  NgModule,
+  OnInit,
+  ViewChild,
+  ElementRef,
+  ɵNG_COMP_DEF,
+  HostListener,
+  ViewChildren,
+  QueryList,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
-import { BehaviorSubject, debounceTime, distinctUntilChanged, filter, from, skip, switchMap, tap } from 'rxjs';
+import {
+  FormBuilder,
+  FormControl,
+  FormGroup,
+  Validators,
+} from '@angular/forms';
+import {
+  BehaviorSubject,
+  debounceTime,
+  distinctUntilChanged,
+  filter,
+  from,
+  skip,
+  switchMap,
+  tap,
+} from 'rxjs';
 import Swal from 'sweetalert2';
 import { ServicioRnc } from 'src/app/core/services/mantenimientos/rnc/rnc.service';
 import { ServicioUsuario } from 'src/app/core/services/mantenimientos/usuario/usuario.service';
 import { ServicioFacturacion } from 'src/app/core/services/facturacion/factura/factura.service';
-import { FacturacionModelData, detFacturaData } from 'src/app/core/services/facturacion/factura';
+import {
+  FacturacionModelData,
+  detFacturaData,
+} from 'src/app/core/services/facturacion/factura';
 import { ServicioCliente } from 'src/app/core/services/mantenimientos/clientes/cliente.service';
 import { HttpInvokeService } from 'src/app/core/services/http-invoke.service';
 import { ModeloClienteData } from 'src/app/core/services/mantenimientos/clientes';
-import { interfaceDetalleModel } from 'src/app/core/services/facturacion/factura/factura';
+import { FacturaDetalleModel, interfaceDetalleModel } from 'src/app/core/services/facturacion/factura/factura';
 import { ServicioInventario } from 'src/app/core/services/mantenimientos/inventario/inventario.service';
 import { ServicioSector } from 'src/app/core/services/mantenimientos/sector/sector.service';
 import { ModeloSectorData } from 'src/app/core/services/mantenimientos/sector';
@@ -33,9 +60,8 @@ declare var $: any;
 @Component({
   selector: 'cobrofact',
   templateUrl: './cobrofact.html',
-  styleUrls: ['./cobrofact.css']
+  styleUrls: ['./cobrofact.css'],
 })
-
 export class CobroFact implements OnInit {
   @ViewChild('inputCodmerc') inputCodmerc!: ElementRef; // Para manejar el foco
   @ViewChild('descripcionInput') descripcionInput!: ElementRef; // Para manejar el foco
@@ -48,7 +74,7 @@ export class CobroFact implements OnInit {
   botonEditar = true; // Empieza deshabilitado
   botonImprimir = true; // Empieza deshabilitado
   botonaddItems = true; // Empieza deshabilitado
-  chekpagada = true;  // Empieza deshabilitado
+  chekpagada = true; // Empieza deshabilitado
   chekPagado = false;
   txtcambio = true;
   txtvalPagado = true;
@@ -62,7 +88,7 @@ export class CobroFact implements OnInit {
   valorpagado: number = 0;
   valCambio: number = 0;
   facturaSelecionada: any = null;
-  codFacturaselecte = " "
+  codFacturaselecte = ' ';
   txtdescripcion: string = '';
   descripcionFormaPago: string = '';
   txtcodigo = '';
@@ -78,9 +104,11 @@ export class CobroFact implements OnInit {
   formularioFacturacion!: FormGroup;
   formulariodetFactura!: FormGroup;
   modoedicionFacturacion: boolean = false;
-  facturacionid!: string
+  facturacionid!: string;
   modoconsultaFacturacion: boolean = false;
   facturacionList: FacturacionModelData[] = [];
+  factura!:FacturacionModelData;
+
   detFacturaList: detFacturaData[] = [];
   selectedFacturacion: any = null;
   items: interfaceDetalleModel[] = [];
@@ -136,7 +164,7 @@ export class CobroFact implements OnInit {
   codmerVacio: boolean = false;
   desmerVacio: boolean = false;
   habilitarCampos: boolean = false;
-  habilitarCantidad: boolean = false
+  habilitarCantidad: boolean = false;
 
   sucursales = [];
   sucursalSeleccionada: any = null;
@@ -172,7 +200,7 @@ export class CobroFact implements OnInit {
     private ServicioSector: ServicioSector,
     private servicioFpago: ServicioFpago,
     private servicioNcf: ServicioNcf,
-    private http: HttpClient,
+    private http: HttpClient
   ) {
     this.form = this.fb.group({
       fa_codVend: ['', Validators.required], // El campo es requerido
@@ -180,7 +208,6 @@ export class CobroFact implements OnInit {
     });
 
     this.crearFormularioFacturacion();
-
   }
 
   @ViewChild('buscarcodmercInput') buscarcodmercElement!: ElementRef;
@@ -201,24 +228,22 @@ export class CobroFact implements OnInit {
   selectedIndexfpago = 1;
   resultadodescripcionmerc: ModeloInventarioData[] = [];
   selectedIndexdescripcionmerc = 1;
-  seleccionarFacturacion(facturacion: any) { this.selectedFacturacion = facturacion; }
-
+  seleccionarFacturacion(facturacion: any) {
+    this.selectedFacturacion = facturacion;
+  }
 
   ngOnInit(): void {
-
     this.buscarFacturasNoImpresas();
     this.obtenerNcf();
     this.obtenerfpago();
-
-
   }
   obtenerfpago() {
-    this.servicioFpago.obtenerTodosFpago().subscribe(response => {
+    this.servicioFpago.obtenerTodosFpago().subscribe((response) => {
       this.resultadoFpago = response.data;
     });
   }
   obtenerNcf() {
-    this.servicioNcf.buscarTodosNcf().subscribe(response => {
+    this.servicioNcf.buscarTodosNcf().subscribe((response) => {
       this.ncflist = response.data;
     });
   }
@@ -258,7 +283,6 @@ export class CobroFact implements OnInit {
       fa_impresa: [{ value: '', disabled: true }],
       fa_facturada: [{ value: '', disabled: true }],
     });
-
   }
   limpia(): void {
     //this.formularioFacturacion.reset();
@@ -272,15 +296,15 @@ export class CobroFact implements OnInit {
     this.chekPagado = false;
     this.chekpagada = true;
     this.productoselect;
-    this.codmerc = ""
-    this.descripcionmerc = ""
+    this.codmerc = '';
+    this.descripcionmerc = '';
     this.preciomerc = 0;
     this.cantidadmerc = 0;
     this.isEditing = false;
-    this.items = [];          // Limpiar el array de items
-    this.totalGral = 0;       // Reiniciar el total general
-    this.totalItbis = 0;      // Reiniciar el total del ITBIS
-    this.subTotal = 0;        // Reiniciar el subtotal
+    this.items = []; // Limpiar el array de items
+    this.totalGral = 0; // Reiniciar el total general
+    this.totalItbis = 0; // Reiniciar el total del ITBIS
+    this.subTotal = 0; // Reiniciar el subtotal
     this.totalcosto = 0;
     this.costoGral = 0;
     this.factxt = 0;
@@ -288,16 +312,16 @@ export class CobroFact implements OnInit {
     this.habilitarCantidad = false;
     this.valorPagado = 0;
     this.cambio = 0;
-    this.fentrega = "";
-    this.ftipoPago = "";
+    this.fentrega = '';
+    this.ftipoPago = '';
     // volver a ejecutar la lógica de inicio
-    this.ngOnInit();
-    this.actualizarTotales()
-    $("#input1").focus();
-    $("#input1").select();
-
+    this.buscarFacturasNoImpresas();
+    this.obtenerNcf();
+    this.obtenerfpago();
+    this.actualizarTotales();
+    $('#input1').focus();
+    $('#input1').select();
   }
-
 
   editardetFacturacion(detFactura: detFacturaData) {
     this.facturacionid = detFactura.df_codFact;
@@ -315,73 +339,74 @@ export class CobroFact implements OnInit {
     });
     // Limpiar los items antes de agregar los nuevos
     this.items = [];
-    this.servicioFacturacion.buscarFacturaDetalle(Factura.fa_codFact).subscribe(response => {
-      let subtotal = 0;
-      let itbis = 0;
-      let totalGeneral = 0;
-      const itbisRate = 0.18; // Ejemplo: 18% de ITBIS
-      response.data.forEach((item: any) => {
-        const producto: ModeloInventarioData = {
-          in_codmerc: item.df_codMerc,
-          in_desmerc: item.df_desMerc,
-          in_grumerc: '',
-          in_tipoproduct: '',
-          in_canmerc: 0,
-          in_caninve: 0,
-          in_fecinve: null,
-          in_eximini: 0,
-          in_cosmerc: 0,
-          in_premerc: 0,
-          in_precmin: 0,
-          //   in_costpro: 0,
-          in_ucosto: 0,
-          in_porgana: 0,
-          in_peso: 0,
-          in_longitud: 0,
-          in_unidad: 0,
-          in_medida: 0,
-          in_longitu: 0,
-          in_fecmodif: null,
-          in_amacen: 0,
-          in_imagen: '',
-          in_status: '',
-          in_itbis: false,
-          in_minvent: 0,
-        };
-        const cantidad = item.df_canMerc;
-        const precio = item.df_preMerc;
-        const totalItem = cantidad * precio;
-        this.items.push({
-          producto: producto,
-          cantidad: cantidad,
-          precio: precio,
-          total: totalItem,
-          fecfactActual: new Date(),
-          costo: this.costotxt,
-          fa_codFact: Factura.fa_codFact,
-          fa_fecFact: Factura.fa_fecFact,
-          fa_nomClie: Factura.fa_nomClie,
-          fa_valFact: Factura.fa_valFact,
-          fa_impresa: Factura.fa_impresa === null ? "N" : "S",
-          fa_envio: Factura.fa_envio,
-          fa_fpago: Factura.fa_fpago,
-
+    this.servicioFacturacion
+      .buscarFacturaDetalle(Factura.fa_codFact)
+      .subscribe((response) => {
+        let subtotal = 0;
+        let itbis = 0;
+        let totalGeneral = 0;
+        const itbisRate = 0.18; // Ejemplo: 18% de ITBIS
+        response.data.forEach((item: any) => {
+          const producto: ModeloInventarioData = {
+            in_codmerc: item.df_codMerc,
+            in_desmerc: item.df_desMerc,
+            in_grumerc: '',
+            in_tipoproduct: '',
+            in_canmerc: 0,
+            in_caninve: 0,
+            in_fecinve: null,
+            in_eximini: 0,
+            in_cosmerc: 0,
+            in_premerc: 0,
+            in_precmin: 0,
+            //   in_costpro: 0,
+            in_ucosto: 0,
+            in_porgana: 0,
+            in_peso: 0,
+            in_longitud: 0,
+            in_unidad: 0,
+            in_medida: 0,
+            in_longitu: 0,
+            in_fecmodif: null,
+            in_amacen: 0,
+            in_imagen: '',
+            in_status: '',
+            in_itbis: false,
+            in_minvent: 0,
+          };
+          const cantidad = item.df_canMerc;
+          const precio = item.df_preMerc;
+          const totalItem = cantidad * precio;
+          this.items.push({
+            producto: producto,
+            cantidad: cantidad,
+            precio: precio,
+            total: totalItem,
+            fecfactActual: new Date(),
+            costo: this.costotxt,
+            fa_codFact: Factura.fa_codFact,
+            fa_fecFact: Factura.fa_fecFact,
+            fa_nomClie: Factura.fa_nomClie,
+            fa_valFact: Factura.fa_valFact,
+            fa_impresa: Factura.fa_impresa === null ? 'N' : 'S',
+            fa_envio: Factura.fa_envio,
+            fa_fpago: Factura.fa_fpago,
+          });
+          //fecfactActual: new Date(),
+          // Calcular el subtotal
+          subtotal += totalItem;
+          // Calcular ITBIS solo si el producto tiene ITBIS
+          // if (item.dc_itbis) {
+          this.totalItbis += totalItem * itbisRate;
+          // }
         });
-        //fecfactActual: new Date(),
-        // Calcular el subtotal
-        subtotal += totalItem;
-        // Calcular ITBIS solo si el producto tiene ITBIS
-        // if (item.dc_itbis) {
-        this.totalItbis += totalItem * itbisRate;
-        // }
+        // Calcular el total general (subtotal + ITBIS)
+        totalGeneral = subtotal + this.totalItbis;
+        // Asignar los totales a variables o mostrarlos en la interfaz
+        this.subTotal = subtotal;
+        this.totalItbis = this.totalItbis;
+        this.totalGral = totalGeneral;
       });
-      // Calcular el total general (subtotal + ITBIS)
-      totalGeneral = subtotal + this.totalItbis;
-      // Asignar los totales a variables o mostrarlos en la interfaz
-      this.subTotal = subtotal;
-      this.totalItbis = this.totalItbis;
-      this.totalGral = totalGeneral;
-    });
   }
   buscarFacturasNoImpresas() {
     this.servicioFacturacion.obtenerFacturasNoImpresas().subscribe((resp) => {
@@ -392,15 +417,15 @@ export class CobroFact implements OnInit {
 
   consultarFacturacion(factura: FacturacionModelData) {
     this.modoconsultaFacturacion = true;
-    this.formularioFacturacion.reset()
-    this.crearFormularioFacturacion()
+    this.formularioFacturacion.reset();
+    this.crearFormularioFacturacion();
     this.formularioFacturacion.patchValue(factura);
     this.tituloModalFacturacion = 'Consulta Factura';
     // $('#modalfacturacion').modal('show');
     this.habilitarFormulario = true;
     this.formularioFacturacion.disable();
     this.codFacturaselecte = factura.fa_codFact;
-    console.log("ff", factura)
+    console.log('ff', factura);
     this.habilitarIcono = false;
     this.botonEditar = false; // Habilita el botón
     this.chekpagada = false; // Habilita el botón
@@ -416,92 +441,97 @@ export class CobroFact implements OnInit {
     this.totalItbis = 0;
 
     this.items = [];
-    this.servicioFacturacion.buscarFacturaDetalle(factura.fa_codFact).subscribe(response => {
-      let subtotal = 0;
-      let itbis = 0;
-      let totalGeneral = 0;
-      let totalcosto = 0;
-      const itbisRate = 0.18; // Ejemplo: 18% de ITBIS
-      response.data.forEach((item: any) => {
-        const producto: ModeloInventarioData = {
-          in_codmerc: item.df_codMerc,
-          in_desmerc: item.df_desMerc,
-          in_grumerc: '',
-          in_tipoproduct: '',
-          in_canmerc: 0,
-          in_caninve: 0,
-          in_fecinve: null,
-          in_eximini: 0,
-          in_cosmerc: 0,
-          in_premerc: 0,
-          in_precmin: 0,
-          //  in_costpro: 0,
-          in_ucosto: 0,
-          in_porgana: 0,
-          in_peso: 0,
-          in_longitud: 0,
-          in_unidad: 0,
-          in_medida: 0,
-          in_longitu: 0,
-          in_fecmodif: null,
-          in_amacen: 0,
-          in_imagen: '',
-          in_status: '',
-          in_itbis: false,
-          in_minvent: 0,
-        };
-        const cantidad = item.df_canMerc;
-        const precio = item.df_preMerc;
-        const totalItem = cantidad * precio;
-        const costoItem = item.df_cosMerc;
-        this.items.push({
-          producto: producto,
-          cantidad: cantidad,
-          precio: precio,
-          total: totalItem,
-          fecfactActual: new Date(),
-          costo: this.costotxt,
-          fa_codFact: factura.fa_codFact,
-          fa_fecFact: factura.fa_fecFact,
-          fa_nomClie: factura.fa_nomClie,
-          fa_valFact: factura.fa_valFact,
-          fa_impresa: factura.fa_impresa === null ? "N" : "S",
-          fa_envio: factura.fa_envio,
+    this.servicioFacturacion
+      .buscarFacturaDetalle(factura.fa_codFact)
+      .subscribe((response) => {
+        let subtotal = 0;
+        let itbis = 0;
+        let totalGeneral = 0;
+        let totalcosto = 0;
+        const itbisRate = 0.18; // Ejemplo: 18% de ITBIS
+        response.data.forEach((item: any) => {
+          const producto: ModeloInventarioData = {
+            in_codmerc: item.df_codMerc,
+            in_desmerc: item.df_desMerc,
+            in_grumerc: '',
+            in_tipoproduct: '',
+            in_canmerc: 0,
+            in_caninve: 0,
+            in_fecinve: null,
+            in_eximini: 0,
+            in_cosmerc: 0,
+            in_premerc: 0,
+            in_precmin: 0,
+            //  in_costpro: 0,
+            in_ucosto: 0,
+            in_porgana: 0,
+            in_peso: 0,
+            in_longitud: 0,
+            in_unidad: 0,
+            in_medida: 0,
+            in_longitu: 0,
+            in_fecmodif: null,
+            in_amacen: 0,
+            in_imagen: '',
+            in_status: '',
+            in_itbis: false,
+            in_minvent: 0,
+          };
+          const cantidad = item.df_canMerc;
+          const precio = item.df_preMerc;
+          const totalItem = cantidad * precio;
+          const costoItem = item.df_cosMerc;
+          this.items.push({
+            producto: producto,
+            cantidad: cantidad,
+            precio: precio,
+            total: totalItem,
+            fecfactActual: new Date(),
+            costo: this.costotxt,
+            fa_codFact: factura.fa_codFact,
+            fa_fecFact: factura.fa_fecFact,
+            fa_nomClie: factura.fa_nomClie,
+            fa_valFact: factura.fa_valFact,
+            fa_impresa: factura.fa_impresa === null ? 'N' : 'S',
+            fa_envio: factura.fa_envio,
+            fa_fpago: factura.fa_fpago,
+          });
+          // Calcular el subtotal
+          subtotal += costoItem;
+          // Calcular ITBIS solo si el producto tiene ITBIS
+          // if (item.dc_itbis) {
+          this.totalItbis += totalItem * itbisRate;
+        });
+        // Calcular el total general (subtotal + ITBIS)
+        totalGeneral = subtotal + this.totalItbis;
+        // totalcosto += costoItem;
+        // Asignar los totales a variables o mostrarlos en la interfaz
+        this.subTotal = subtotal;
+        this.totalItbis = this.totalItbis;
+        this.totalGral = totalGeneral;
+        this.factxt =
+          ((factura.fa_valFact - factura.fa_cosFact) * 100) /
+          factura.fa_cosFact;
+        this.actualizarTotales();
+        console.log(factura.fa_valFact);
+        console.log(factura.fa_cosFact);
+        console.log(this.factxt);
+
+        this.formularioFacturacion.patchValue({
           fa_fpago: factura.fa_fpago,
         });
-        // Calcular el subtotal
-        subtotal += costoItem;
-        // Calcular ITBIS solo si el producto tiene ITBIS
-        // if (item.dc_itbis) {
-        this.totalItbis += totalItem * itbisRate;
+        // Consultar la descripción de forma de pago
+
+        this.servicioFpago
+          .obtenerFpagoPorId(factura.fa_fpago)
+          .subscribe((response) => {
+            const formaPago = response.data?.[0]; // Accede al primer elemento del array
+            this.descripcionFormaPago = formaPago
+              ? formaPago.fp_descfpago
+              : 'Desconocido';
+          });
       });
-      // Calcular el total general (subtotal + ITBIS)
-      totalGeneral = subtotal + this.totalItbis;
-      // totalcosto += costoItem;
-      // Asignar los totales a variables o mostrarlos en la interfaz
-      this.subTotal = subtotal;
-      this.totalItbis = this.totalItbis;
-      this.totalGral = totalGeneral;
-      this.factxt = (factura.fa_valFact - factura.fa_cosFact) * 100 / factura.fa_cosFact;
-      this.actualizarTotales();
-      console.log(factura.fa_valFact)
-      console.log(factura.fa_cosFact)
-      console.log(this.factxt)
-
-      this.formularioFacturacion.patchValue({
-        fa_fpago: factura.fa_fpago
-      });
-      // Consultar la descripción de forma de pago
-
-      this.servicioFpago.obtenerFpagoPorId(factura.fa_fpago).subscribe((response) => {
-        const formaPago = response.data?.[0]; // Accede al primer elemento del array
-        this.descripcionFormaPago = formaPago ? formaPago.fp_descfpago : 'Desconocido';
-      });
-
-    });
-
   }
-
 
   formatofecha(date: Date): string {
     const year = date.getFullYear();
@@ -512,25 +542,19 @@ export class CobroFact implements OnInit {
 
   crearformulariodetFactura() {
     this.formulariodetFactura = this.fb.group({
-
-      df_codFact: ['',],
-      df_fecFact: ['',],
-      df_codMerc: ['',],
-      df_desMerc: ['',],
-      df_canMerc: ['',],
-      df_preMerc: ['',],
-      df_valMerc: ['',],
-      df_unidad: ['',],
-      df_cosMerc: ['',],
-      df_codClie: ['',],
-      df_status: ['',],
+      df_codFact: [''],
+      df_fecFact: [''],
+      df_codMerc: [''],
+      df_desMerc: [''],
+      df_canMerc: [''],
+      df_preMerc: [''],
+      df_valMerc: [''],
+      df_unidad: [''],
+      df_cosMerc: [''],
+      df_codClie: [''],
+      df_status: [''],
     });
   }
-
-
-
-
-
 
   convertToUpperCase(event: Event): void {
     const input = event.target as HTMLInputElement;
@@ -542,46 +566,53 @@ export class CobroFact implements OnInit {
     }
   }
 
-  moveFocus(event: KeyboardEvent, nextElement: HTMLInputElement | HTMLSelectElement) {
+  moveFocus(
+    event: KeyboardEvent,
+    nextElement: HTMLInputElement | HTMLSelectElement
+  ) {
     if (event.key === 'Enter' && nextElement) {
       event.preventDefault(); // Evita el comportamiento predeterminado del Enter
       nextElement.focus(); // Enfoca el siguiente campo
     }
   }
 
-
   mostrarMensajeError(mensaje: string): void {
     this.mensagePantalla = true;
 
     Swal.fire({
-      icon: "error",
-      title: "A V I S O",
+      icon: 'error',
+      title: 'A V I S O',
       text: mensaje,
-    }).then(() => { this.mensagePantalla = false });
+    }).then(() => {
+      this.mensagePantalla = false;
+    });
   }
 
-  moveFocusFpago(event: Event, nextInput: HTMLInputElement | HTMLSelectElement) {
+  moveFocusFpago(
+    event: Event,
+    nextInput: HTMLInputElement | HTMLSelectElement
+  ) {
     // KeyboardEvent, element: HTMLInputElement | HTMLSelectElement
     event.preventDefault();
     if (event.target instanceof HTMLSelectElement) {
       if (!event.target.value) {
         this.mensagePantalla = true;
         Swal.fire({
-          icon: "error",
-          title: "A V I S O",
+          icon: 'error',
+          title: 'A V I S O',
           text: 'Por favor complete el campo Tipo de Pago.',
-        }).then(() => { this.mensagePantalla = false });
-      }
-      else {
+        }).then(() => {
+          this.mensagePantalla = false;
+        });
+      } else {
         nextInput.focus(); // Si es válido, mueve el foco al siguiente input
       }
     }
   }
 
   actualizarCalculo() {
-    this.protxt = (this.preciomerc - this.costotxt) * 100 / this.costotxt; // Aquí puedes hacer cualquier cálculo
+    this.protxt = ((this.preciomerc - this.costotxt) * 100) / this.costotxt; // Aquí puedes hacer cualquier cálculo
   }
-
 
   recalcularTotales() {
     this.totalGral = 0;
@@ -589,7 +620,7 @@ export class CobroFact implements OnInit {
     this.subTotal = 0;
 
     for (const item of this.items) {
-      const itbis = item.total * 0.18 / 1.18; // si total incluye ITBIS
+      const itbis = (item.total * 0.18) / 1.18; // si total incluye ITBIS
       const subtotal = item.total - itbis;
 
       this.totalItbis += itbis;
@@ -598,20 +629,28 @@ export class CobroFact implements OnInit {
     }
   }
 
-
   actualizarTotales() {
     this.totalGral = this.items.reduce((sum, item) => sum + item.total, 0);
-    this.totalItbis = this.items.reduce((sum, item) => sum + (item.total * 0.18), 0);
-    this.subTotal = this.items.reduce((sum, item) => sum + (item.total - (item.total * 0.18)), 0);
-    this.totalcosto = this.items.reduce((sum, item) => sum + (this.costotxt * item.cantidad), 0);
-    const formatCurrency = (value: number) => value.toLocaleString('es-DO', {
-      style: 'currency',
-      currency: 'DOP',
-    });
+    this.totalItbis = this.items.reduce(
+      (sum, item) => sum + item.total * 0.18,
+      0
+    );
+    this.subTotal = this.items.reduce(
+      (sum, item) => sum + (item.total - item.total * 0.18),
+      0
+    );
+    this.totalcosto = this.items.reduce(
+      (sum, item) => sum + this.costotxt * item.cantidad,
+      0
+    );
+    const formatCurrency = (value: number) =>
+      value.toLocaleString('es-DO', {
+        style: 'currency',
+        currency: 'DOP',
+      });
     this.subtotaltxt = formatCurrency(this.subTotal);
     this.itbitxt = formatCurrency(this.totalItbis);
     this.totalgraltxt = formatCurrency(this.totalGral);
-
   }
   guardarFacturacion() {
     const codFact = this.formularioFacturacion.get('fa_codFact')?.value;
@@ -621,14 +660,14 @@ export class CobroFact implements OnInit {
       fa_valFact: this.totalGral,
       fa_itbiFact: this.totalItbis,
       fa_cosFact: this.totalcosto,
-      fa_subFact: this.subTotal
+      fa_subFact: this.subTotal,
     });
     this.formularioFacturacion.get('fa_valFact')?.patchValue(this.totalGral);
     this.formularioFacturacion.get('fa_itbiFact')?.patchValue(this.totalItbis);
     this.formularioFacturacion.get('fa_cosFact')?.patchValue(this.totalcosto);
     this.formularioFacturacion.get('fa_subFact')?.patchValue(this.subTotal);
 
-    this.formularioFacturacion.get("fa_tipoNcf")!.enable();
+    this.formularioFacturacion.get('fa_tipoNcf')!.enable();
     this.formularioFacturacion.get('fa_codFact')!.enable();
     this.formularioFacturacion.get('fa_fecFact')!.enable();
     this.formularioFacturacion.get('fa_nomVend')!.enable();
@@ -642,31 +681,35 @@ export class CobroFact implements OnInit {
     if (this.formularioFacturacion.valid) {
       if (codFact) {
         // 🔁 Modo edición
-        this.servicioFacturacion.editarFacturacion(payload).subscribe(response => {
-          Swal.fire({
-            title: "Actualizado!",
-            text: "Factura modificada correctamente.",
-            icon: "success",
-            timer: 1000,
-            showConfirmButton: false,
+        this.servicioFacturacion
+          .editarFacturacion(payload)
+          .subscribe((response) => {
+            Swal.fire({
+              title: 'Actualizado!',
+              text: 'Factura modificada correctamente.',
+              icon: 'success',
+              timer: 1000,
+              showConfirmButton: false,
+            });
+            this.refrescarFormulario();
           });
-          this.refrescarFormulario();
-        });
       } else {
         // 🆕 Modo creación
-        this.servicioFacturacion.guardarFacturacion(payload).subscribe(response => {
-          Swal.fire({
-            title: "Excelente!",
-            text: "Factura creada correctamente.",
-            icon: "success",
-            timer: 1000,
-            showConfirmButton: false,
+        this.servicioFacturacion
+          .guardarFacturacion(payload)
+          .subscribe((response) => {
+            Swal.fire({
+              title: 'Excelente!',
+              text: 'Factura creada correctamente.',
+              icon: 'success',
+              timer: 1000,
+              showConfirmButton: false,
+            });
+            this.refrescarFormulario();
           });
-          this.refrescarFormulario();
-        });
       }
     } else {
-      alert("Esta Factura no fue guardada");
+      alert('Esta Factura no fue guardada');
     }
   }
 
@@ -704,7 +747,9 @@ export class CobroFact implements OnInit {
   }
 
   calcularPorcentaje(): void {
-    this.protxt = (this.selectedItem.total - this.selectedItem.costo) * 100 / this.selectedItem.costo;
+    this.protxt =
+      ((this.selectedItem.total - this.selectedItem.costo) * 100) /
+      this.selectedItem.costo;
   }
 
   ngAfterViewInit() {
@@ -720,171 +765,6 @@ export class CobroFact implements OnInit {
     return num.toLocaleString('en-US', { minimumFractionDigits: 2 });
   }
 
-
-  // generatePDF(factura: FacturacionModelData) {
-  //   console.log(factura);
-  //   this.servicioFacturacion.buscarFacturaDetalle(factura.fa_codFact).subscribe(response => {
-  //     let subtotal = 0;
-  //     let itbis = 0;
-  //     let totalGeneral = 0;
-  //     const itbisRate = 0.18; // Ejemplo: 18% de ITBIS
-  //     response.data.forEach((item: any) => {
-  //       const producto: ModeloInventarioData = {
-  //         in_codmerc: item.dc_codmerc,
-  //         in_desmerc: item.dc_descrip,
-  //         in_grumerc: '',
-  //         in_tipoproduct: '',
-  //         in_canmerc: 0,
-  //         in_caninve: 0,
-  //         in_fecinve: null,
-  //         in_eximini: 0,
-  //         in_cosmerc: 0,
-  //         in_premerc: 0,
-  //         in_precmin: 0,
-  //        // in_costpro: 0,
-  //         in_ucosto: 0,
-  //         in_porgana: 0,
-  //         in_peso: 0,
-  //         in_longitud: 0,
-  //         in_unidad: 0,
-  //         in_medida: 0,
-  //         in_longitu: 0,
-  //         in_fecmodif: null,
-  //         in_amacen: 0,
-  //         in_imagen: '',
-  //         in_status: '',
-  //         in_itbis: false,
-  //         in_minvent: 0,
-  //       };
-  //       const cantidad = item.dc_canmerc;
-  //       const precio = item.dc_premerc;
-  //       const totalItem = cantidad * precio;
-  //       this.items.push({
-  //         producto: producto,
-  //         cantidad: cantidad,
-  //         precio: precio,
-  //         total: totalItem,
-  //         fecfactActual: new Date(),
-  //         costo: 0,
-
-
-  //       });
-  //       // Calcular el subtotal
-  //       subtotal += totalItem;
-  //       // Calcular ITBIS solo si el producto tiene ITBIS
-  //       // if (item.dc_itbis) {
-  //       this.totalItbis += totalItem * itbisRate;
-  //       // }
-
-  //     });
-  //     // Calcular el total general (subtotal + ITBIS)
-  //     totalGeneral = subtotal + this.totalItbis;
-  //     // Asignar los totales a variables o mostrarlos en la interfaz
-  //     this.subTotal = subtotal;
-  //     this.totalItbis = this.totalItbis;
-  //     this.totalGral = totalGeneral;
-
-
-  //     const formatCurrency = (value: number) => value.toLocaleString('es-DO', {
-  //       style: 'currency',
-  //       currency: 'DOP',
-  //     });
-
-
-  //     const doc = new jsPDF();
-
-  //     const imgData = 'assets/logo2.png';  // Asegúrate de usar una ruta válida o base64
-
-  //     const imgWidth = 20;  // Ancho de la imagen
-  //     const imgHeight = 20;  // Alto de la imagen
-
-  //     // Cálculo para centrar la imagen
-  //     const pageWidth = doc.internal.pageSize.getWidth();
-  //     const imgX = (pageWidth - imgWidth) / 2;  // Posición X centrada
-
-  //     // Agregar el logo centrado
-  //     doc.addImage(imgData, 'PNG', imgX, 10, imgWidth, imgHeight);  // (x, y, ancho, alto)
-
-
-  //     // Título y detalles del negocio
-  //     doc.setFontSize(16);
-  //     doc.text('CENTRAL HIERRO, SRL', 105, 40, { align: 'center' });
-  //     doc.setFontSize(10);
-  //     doc.text('#172 Esq. Albert Thomas', 105, 47, { align: 'center' });
-  //     doc.text('809-384-2000, 809-384-200', 105, 52, { align: 'center' });
-  //     doc.text('1-30-29922-6', 105, 57, { align: 'center' });
-
-  //     // Cotización
-  //     doc.setFontSize(14);
-  //     doc.text('FACTURA', 105, 70, { align: 'center' });
-
-  //     // Detalles de la cotización
-  //     doc.setFontSize(10);
-  //     doc.text(`No. ${factura.fa_codFact}`, 14, 80);
-  //     doc.text(`Fecha: ${factura.fa_fecFact}`, 14, 85);
-  //     doc.text(`Vendedido por: ${factura.fa_nomVend}`, 14, 90);
-
-  //     // Cliente
-  //     doc.setFontSize(12);
-  //     doc.text('CLIENTE', 14, 100);
-  //     doc.setFontSize(10);
-  //     doc.text(factura.fa_nomClie, 14, 106);
-
-  //     // Tabla de descripción de productos
-  //     autoTable(doc, {
-  //       head: [['Codigo', 'Descripción', 'Cantidad', 'Precio', 'Itbis', 'Total']],
-  //       body: response.data.map((item: any) => [
-  //         item.df_codMerc,
-  //         item.df_desMerc,
-  //         parseInt(item.df_canMerc),
-  //         formatCurrency(parseFloat(item.df_preMerc)),
-  //         formatCurrency((item.df_preMerc * item.df_canMerc) * 18 / 100),
-  //         formatCurrency(item.df_preMerc * item.df_canMerc)
-  //       ]),
-  //       startY: 115,
-  //     });
-
-
-
-
-  //     // Obtener la posición final de la tabla
-  //     const finalY = (doc as any).lastAutoTable.finalY;
-
-  //     // Agregar el subtotal, ITBIS y Total a Pagar como pie de página
-  //     doc.setFontSize(12);
-  //     doc.text(`Subtotal:`, 118, finalY + 10);
-  //     doc.setFontSize(10);
-  //     doc.text(`${formatCurrency(subtotal)} `, 160, finalY + 10);
-  //     doc.setFontSize(12);
-  //     doc.text(`ITBIS:`, 118, finalY + 16);
-  //     doc.setFontSize(10);
-  //     doc.text(`${formatCurrency(this.totalItbis)} `, 160, finalY + 16);
-  //     doc.setFontSize(12);
-  //     doc.text(`TOTAL A PAGAR: `, 118, finalY + 22);
-  //     doc.setFontSize(14);
-  //     doc.text(`${formatCurrency(totalGeneral)} `, 160, finalY + 22);
-
-  //     doc.setFontSize(12);
-  //     // Nota final
-  //     // doc.text('Estos Precios Estan Sujetos a Cambio Sin Previo Aviso', 105, finalY + 40, { align: 'center' });
-  //     doc.setFontSize(14);
-  //     doc.text('WWW.GRUPOHIERRO.COM', 105, finalY + 47, { align: 'center' });
-  //     doc.setFontSize(12);
-  //     doc.text('*** Gracias por Preferirnos ***', 105, finalY + 55, { align: 'center' });
-
-  //     // Guardar PDF
-  //     // doc.save(`${cotizacion.ct_codcoti}.pdf`);
-  //     const pdfBlob = doc.output('blob');
-
-  //     // Crear un objeto URL para el Blob y abrirlo en una nueva pestaña
-  //     const pdfUrl = URL.createObjectURL(pdfBlob);
-  //     window.open(pdfUrl, '_blank');
-  //   });
-
-  // }
-
-
-  // Métodos para cambiar de página
   goToFirstPage() {
     this.currentPage = 1;
   }
@@ -936,20 +816,23 @@ export class CobroFact implements OnInit {
 
   private scrollToRow(index: number) {
     // Opcional: centra la fila seleccionada en el scroll
-    const tableBody: HTMLElement | null = document.querySelector('.table-responsive tbody');
+    const tableBody: HTMLElement | null = document.querySelector(
+      '.table-responsive tbody'
+    );
     const rows = tableBody?.querySelectorAll('tr');
     if (rows && rows[index]) {
       (rows[index] as HTMLElement).scrollIntoView({
         block: 'nearest',
-        behavior: 'smooth'
+        behavior: 'smooth',
       });
     }
   }
 
-
   seleccionarFactura(factura: any, index: number) {
     this.consultarFacturacion(factura); // ✅ Llamada automática
     this.codFacturaselecte = factura.fa_codFact;
+
+    this.factura = factura;
 
     setTimeout(() => {
       const fila = this.filas.toArray()[index];
@@ -966,7 +849,8 @@ export class CobroFact implements OnInit {
           filaOffsetTop < contenedorScrollTop ||
           filaOffsetTop + filaHeight > contenedorScrollTop + contenedorHeight
         ) {
-          contenedor.scrollTop = filaOffsetTop - contenedorHeight / 2 + filaHeight / 2;
+          contenedor.scrollTop =
+            filaOffsetTop - contenedorHeight / 2 + filaHeight / 2;
         }
       }
     }, 0);
@@ -995,14 +879,15 @@ export class CobroFact implements OnInit {
     const input = event.target as HTMLInputElement;
     const valPagado = parseFloat(input.value) || 0;
 
-    const valFactura = parseFloat(this.formularioFacturacion.get('fa_valFact')?.value) || 0;
+    const valFactura =
+      parseFloat(this.formularioFacturacion.get('fa_valFact')?.value) || 0;
 
     const cambio = valPagado - valFactura;
 
     // Actualiza el valor en el formulario reactivo
     this.formularioFacturacion.patchValue({
       valpagado: valPagado,
-      valcambio: cambio > 0 ? cambio : 0 // si es negativo, pones 0 o lo que prefieras
+      valcambio: cambio > 0 ? cambio : 0, // si es negativo, pones 0 o lo que prefieras
     });
   }
 
@@ -1023,7 +908,6 @@ export class CobroFact implements OnInit {
           this.valorPagadoInput.nativeElement.select();
         }
       }, 0);
-
     }
   }
 
@@ -1033,9 +917,9 @@ export class CobroFact implements OnInit {
     const valFactura = this.formularioFacturacion.get('fa_valFact')?.value || 0;
     this.valCambio = this.valorPagado - valFactura;
     if (this.valCambio > 0) {
-      this.botonImprimir = false
+      this.botonImprimir = false;
     } else {
-      this.botonImprimir = true
+      this.botonImprimir = true;
     }
   }
 
@@ -1048,14 +932,15 @@ export class CobroFact implements OnInit {
     this.valorPagado = valorNumerico;
     this.valorPagadoFormateado = this.formatearNumero(valorNumerico);
 
-    const valFactura = parseFloat(this.formularioFacturacion.get('fa_valFact')?.value) || 0;
+    const valFactura =
+      parseFloat(this.formularioFacturacion.get('fa_valFact')?.value) || 0;
     const cambioCalc = valorNumerico - valFactura;
     this.cambio = cambioCalc > 0 ? cambioCalc : 0;
   }
 
   formatearNumero(valor: number): string {
     return valor
-      .toFixed(2)        // "1234.56"
+      .toFixed(2) // "1234.56"
       .replace('.', ',') // "1234,56"
       .replace(/\B(?=(\d{3})+(?!\d))/g, '.'); // separador de miles
   }
@@ -1063,10 +948,12 @@ export class CobroFact implements OnInit {
   generarFacturaPDF() {
     const opt = {
       margin: 5,
-      filename: `Factura_${this.formularioFacturacion.get('fa_codFact')?.value}.pdf`,
+      filename: `Factura_${
+        this.formularioFacturacion.get('fa_codFact')?.value
+      }.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: { scale: 2 },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
     };
 
     //Mostrar temporalmente la factura para que se renderice correctamente
@@ -1077,20 +964,26 @@ export class CobroFact implements OnInit {
     html2pdf().from(element).set(opt).save();
 
     setTimeout(() => {
-      html2pdf().from(facturaDiv).set(opt).save().then(() => {
-        facturaDiv.style.display = 'none';
-      });
+      html2pdf()
+        .from(facturaDiv)
+        .set(opt)
+        .save()
+        .then(() => {
+          facturaDiv.style.display = 'none';
+        });
     }, 100);
   }
 
-
   imprimirFactura() {
+    this.formularioFacturacion.get('fa_codFact')?.enable();
     var paylod = {
       fa_codFact: this.formularioFacturacion.get('fa_codFact')?.value,
-      fa_impresa: "S",
+      fa_impresa: 'S',
       fa_envio: this.formularioFacturacion.get('fa_envio')?.value,
-      fa_fpago: this.formularioFacturacion.get('fa_fpago')?.value
-    }
+      fa_fpago: this.formularioFacturacion.get('fa_fpago')?.value,
+    };
+    console.log('Imprimiendo factura con payload:', paylod);
+
     const original = this.facturaRef.nativeElement;
     const numeroFactura = this.formularioFacturacion.get('fa_codFact')?.value;
     // ✅ Clonar y mostrar fuera del viewport
@@ -1101,38 +994,31 @@ export class CobroFact implements OnInit {
     clone.style.display = 'block';
     document.body.appendChild(clone);
 
-    // Esperar a que el DOM procese
-    setTimeout(() => {
-      html2canvas(clone).then(canvas => {
-        const imgData = canvas.toDataURL('image/png');
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        const imgProps = pdf.getImageProperties(imgData);
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-        pdf.save(`${numeroFactura}.pdf`);
+    this.servicioFacturacion.marcarFacturaComoImpresa(paylod).subscribe(() => {
+      console.log('Factura actualizada correctamente.');
 
-        // ❌ Quitar el clon
-        document.body.removeChild(clone);
-        this.limpia()
-        console.log('Payload:', paylod);
+      setTimeout(() => {
+        html2canvas(clone).then((canvas) => {
+          const imgData = canvas.toDataURL('image/png');
+          const pdf = new jsPDF('p', 'mm', 'a4');
+          const imgProps = pdf.getImageProperties(imgData);
+          const pdfWidth = pdf.internal.pageSize.getWidth();
+          const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+          pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+          pdf.save(`${numeroFactura}.pdf`);
 
-        // actualiza
-        const formaPago = this.formularioFacturacion.get('fa_fpago')?.value || 1; // Por defecto 1
-        this.servicioFacturacion.marcarFacturaComoImpresa(paylod).subscribe(() => {
-          console.log('Factura actualizada correctamente.');
+          // ❌ Quitar el clonF
+          document.body.removeChild(clone);
+          this.limpia();
+          console.log('Payload:', paylod);
+
+          // actualiza
+          const formaPago =
+            this.formularioFacturacion.get('fa_fpago')?.value || 1; // Por defecto 1
         });
+      }, 100);
+    });
 
-      });
-    }, 100);
+    // Esperar a que el DOM procese
   }
-
-
-
-
 }
-
-
-
-
-

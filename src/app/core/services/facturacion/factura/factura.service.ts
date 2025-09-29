@@ -35,7 +35,7 @@ obtenerFacturasNoImpresas(): Observable<any> {
 }
 
 marcarFacturaComoImpresa(payload:any) {
-  const cod=payload.factura.fa_codFact;
+  const cod=payload.fa_codFact;
     return this.http.PatchRequest(`/factura-impresa/${cod}`, payload);
 
 
@@ -64,12 +64,15 @@ marcarFacturaComoImpresa(payload:any) {
   buscarFacturaDetalle(df_codFact: string): Observable<any> {
     return this.http.GetRequest<any>(`/detalle-factura/${df_codFact}`);
   }
-buscarFacturaDetallePendiente(df_codFact: string): Observable<any> {
-  return this.http.GetRequest<any>(`/detalle-factura/${df_codFact}`).pipe(
-    map(detalles => detalles.filter((item: any) => item.df_pendiente === 'p'))
-  );
-}
-
+  buscarFacturaDetallePendiente(df_codFact: string): Observable<any> {
+    return this.http.GetRequest<any>(`/facturacion-detpendiente/${df_codFact}`);
+  }
+actutalizarPendienteNuevo(fa_codFact: string) {
+    return this.http.PutRequest(`/crea-pendiente/${fa_codFact}`, "");
+  }
+actutalizarPendienteModficado(fa_codFact: string, accion:"poner" | "quitar") {
+    return this.http.PatchRequest(`/actualiza-pendiente/${fa_codFact}`, { accion });
+  }
 
  buscarFacturacion(pageIndex: number, pageSize: number, codigo?: string, nomcliente?: string, fecha?:string,): Observable<any> {
     let url = `/facturacion-numero?page=${pageIndex}&limit=${pageSize}`;

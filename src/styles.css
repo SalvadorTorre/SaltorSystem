@@ -40,3 +40,16 @@ small {
 tr:hover {
   cursor: pointer !important
 }
+.table .text-cell {
+  max-width: 200px;         /* ajusta el tamaño */
+  white-space: nowrap;      /* evita saltos de línea */
+  overflow: hidden;         /* oculta el exceso */
+  text-overflow: ellipsis;  /* agrega "..." */
+}
+.table thead th {
+  position: sticky;
+  top: 0;
+  background-color: #0f1f6a; /* Color de fondo */
+  color: white;              /* Color del texto */
+  z-index: 1;                /* Asegura que esté por encima de las filas */
+}

@@ -234,6 +234,7 @@
                 overflow-y: auto;
                 border: 2px solid #040ab9;
                 border-radius: 4px;
+                
               "
             >
               <table
@@ -257,7 +258,8 @@
                     <td (click)="consultarFacturacion(factura)">
                       {{ factura.fa_codFact }}
                     </td>
-                    <td>{{ factura.fa_nomClie }}</td>
+                    <!-- <td class="text-cell"  [title]="factura.fa_nomClie">{{ factura.fa_nomClie }}</td> -->
+                    <td class="text-cell" data-bs-toggle="tooltip" data-bs-placement="top" [attr.title]="factura.fa_nomClie"> {{ factura.fa_nomClie }}</td>
                     <td class="text-center">{{ factura.fa_fecFact }}</td>
                     <td class="text-end">{{ factura.fa_valFact }}</td>
                     <td>
@@ -340,29 +342,36 @@
             >
               <div class="row mt-0">
                 <!-- <div class="col-1"></div> -->
-                <div class="col-4">
+              
+                <div class="col-3">
                   <button
-                    [disabled]="botonEditar"
-                    class="btn btn-success btn-block btn-lx w-50"
-                    (click)="editarFactura()"
+                    class="btn btn-success   w-100"
+                    (click)="pendienteNuevo()"
                   >
-                    <i class="bi bi-arrow-clockwise"></i> Editar
+                    <i class="bi bi-arrow-clockwise"></i> Crear Pendiente
                   </button>
                 </div>
                 <!-- <div class="col-1"></div> -->
-                <div class="col-4">
+                <div class="col-3">
                   <button
                     [disabled]="botonGuardar"
-                    class="btn btn-success btn-lx w-50"
+                    class="btn btn-success w-100"
                     (click)="guardarFacturacion()"
                   >
                     <i class="bi bi-check"></i> Guardar
                   </button>
                 </div>
-                <!-- <div class="col-1"></div> -->
-                <div class="col-4">
+                 <div class="col-3">
+                    <button 
+                      class="btn btn-warning" (click)="deshacerPendiente(codigo)">
+                      Deshacer Pendiente
+                  </button>
+
+                 </div>
+
+                <div class="col-3">
                   <button
-                    class="btn btn-success btn-block btn-lx w-50"
+                    class="btn btn-success btn-block w-100"
                     (click)="limpia()"
                   >
                     <i class="bi bi-arrow-clockwise"></i> Deshacer
@@ -423,7 +432,6 @@
                   [class.active]="i === selectedIndexcodmerc"
                 >
                   <a
-                    (click)="cargarDatosInventario(result)"
                     style="
                       color: #222222 !important;
                       font-size: 10pt;
@@ -450,9 +458,7 @@
                 [disabled]="!habilitarCampos"
                 autocomplete="off"
                 (input)="convertToUpperCase($event)"
-                (keydown)="moveFocusdesc($event, cantidadInput)"
-                (keydown)="handleKeydownInventariosdesc($event)"
-                #descripcionInput
+                   #descripcionInput
                 [(ngModel)]="descripcionmerc"
               />
               <div
@@ -473,7 +479,7 @@
                   [class.active]="i === selectedIndexdescripcionmerc"
                 >
                   <a
-                    (click)="cargarDatosInventario(result)"
+                    
                     style="
                       color: #222222 !important;
                       font-size: 10pt;
@@ -491,14 +497,15 @@
             </div>
           </div>
           <div class="col-2">
-            <label for=""> Cant. </label>
+            <label for=""> Pendiete </label>
             <input
               type="number"
               [disabled]="!habilitarCantidad"
               placeholder="Cantidad"
               #cantidadInput
-              [(ngModel)]="cantidadmerc"
-              (keydown)="moveFocusCantidad($event, precioInput)"
+              [(ngModel)]="cantidadpen"
+              (keydown.enter)="agregaItem($event)"
+
               class="form-control"
             />
           </div>
@@ -506,24 +513,8 @@
             <label for=""> Precio </label>
             <input
               type="number"
-              [disabled]="!habilitarCantidad"
-              [(ngModel)]="preciomerc"
-              id="input9"
-              #precioInput
-              (input)="actualizarCalculo()"
-              (keydown)="moveFocus($event, codigoInput)"
               class="form-control"
-              (keydown.enter)="agregaItem($event)"
             />
-          </div>
-          <div class="col-2">
-            <button
-              [disabled]="botonaddItems"
-              class="btn btn-success btn-block btn-lx w-40"
-              (click)="agregarItem()"
-            >
-              <i class="bi bi-plus-circle"></i> Add
-            </button>
           </div>
         </div>
         <div class="row">
@@ -536,18 +527,20 @@
                 border: 2px solid rgb(4, 10, 185);
               "
               tabindex="0"
-              (keydown)="navigateTable($event)"
+         
               #Tabledetalle
             >
               <table class="table table-sm table-bordered">
                 <thead class="table-dark">
                   <tr style="background-color: rgb(55, 0, 255)">
-                    <th style="width: 13%">Código</th>
-                    <th style="width: 37%">Descripción</th>
+                    <th style="width: 10%">Código</th>
+                    <th style="width: 30%">Descripción</th>
                     <th style="width: 10%">Cant.</th>
+                    <th style="width: 17%; white-space: nowrap;" >Pend. Desp</th>
                     <th style="width: 13%">Precio</th>
-                    <th style="width: 15%">Total</th>
-                    <th>Opciones</th>
+                    <th style="width: 10%">Total</th>
+                    <td style="width: 10% ">Status</td> 
+                    <th>Opcion</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -557,30 +550,29 @@
                     (click)="selectRow(i)"
                   >
                     <td style="width: 13%">{{ item.producto?.in_codmerc }}</td>
-                    <td style="width: 37%">{{ item.producto?.in_desmerc }}</td>
+                    <!-- <td style="width: 37%">{{ item.producto?.in_desmerc }}</td> -->
+                    <td class="text-cell" data-bs-toggle="tooltip" data-bs-placement="top" [attr.title]="item.producto?.in_desmerc"> {{ item.producto?.in_desmerc }}</td>
+
                     <td class="text-center" style="width: 10%">
                       {{ item.cantidad }}
                     </td>
+                    <td class="text-center" style="width: 17%">
+                      {{ item.df_canpend }}</td>
                     <td class="text-center" style="width: 11%">
                       {{ item.precio }}
                     </td>
                     <td class="text-end" style="width: 13%">
                       {{ item.total | currency }}
                     </td>
+                    <td class="text-center"style=width:7%
+                     [style.color]="item.df_pendiente === 'P' ? 'red' : 'green'">
+                     {{item.df_pendiente === "P"?"PEND.":"DESP." }}</td>
                     <td>
                       <i
                         (click)="editarItem(item)"
                         class="bi bi-pencil text-primary"
                         style="padding: 10px"
-                        *ngIf="habilitarIcono"
                       ></i>
-                      <i
-                        (click)="borarItem(item)"
-                        class="bi bi-trash text-danger"
-                        style="padding: 10px"
-                        *ngIf="habilitarIcono"
-                      >
-                      </i>
                     </td>
                   </tr>
                 </tbody>

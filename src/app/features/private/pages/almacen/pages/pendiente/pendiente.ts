@@ -1,11 +1,6 @@
-import {
-  Component,
-  NgModule,
-  OnInit,
-  ViewChild,
-  ElementRef,
-  ɵNG_COMP_DEF,
-} from '@angular/core';
+import { Component,  NgModule, OnInit, ViewChild, ElementRef, ɵNG_COMP_DEF, } from '@angular/core';
+
+import { AfterViewInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { FormBuilder,   FormControl, FormGroup,  Validators,} from '@angular/forms';
 import { BehaviorSubject, debounceTime, distinctUntilChanged, filter, from, skip, switchMap, tap,} from 'rxjs';
@@ -30,6 +25,7 @@ import { disableDebugTools } from '@angular/platform-browser';
 import { ServicioNcf } from 'src/app/core/services/ncf/ncf.service';
 import { ModeloNcfData } from 'src/app/core/services/ncf';
 declare var $: any;
+declare var bootstrap: any;
 
 @Component({
   selector: 'pendiente',
@@ -41,6 +37,14 @@ export class Pendiente implements OnInit {
   @ViewChild('descripcionInput') descripcionInput!: ElementRef; // Para manejar el foco
   @ViewChild('Tabladetalle') Tabladetalle!: ElementRef;
   @ViewChild('cantidadInput') cantidadInput!: ElementRef;
+  // ngAfterViewInit() {
+  //   // Inicializa todos los tooltips de la tabla
+  //   const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+  //   tooltipTriggerList.map((tooltipTriggerEl: any) => {
+  //     return new bootstrap.Tooltip(tooltipTriggerEl);
+  //   });
+  // }
+   
   botonEditar = true; // Empieza deshabilitado
   botonGuardar = true; // Empieza deshabilitado
   botonaddItems = true; // Empieza deshabilitado
@@ -91,6 +95,7 @@ export class Pendiente implements OnInit {
   txtFactura: string = '';
   txtFecha: string = '';
   txtNombre: string = '';
+  codigoFactura: string | null = null;
   atxt: any;
   btxt: any;
   ctxt: any;
@@ -106,7 +111,8 @@ export class Pendiente implements OnInit {
   codmerc: string = '';
   descripcionmerc: string = '';
   cantidadmerc: number = 0;
-  preciomerc: number = 0;
+  cantidadpen: number = 0;
+   preciomerc: number = 0;
   //fecfactActual: Date; // Agregar este campo para la fecha
   productoselect!: ModeloInventarioData;
   precioform = new FormControl();
@@ -131,7 +137,7 @@ export class Pendiente implements OnInit {
   private numfacturaSubject = new BehaviorSubject<string>('');
   private nomclienteSubject = new BehaviorSubject<string>('');
   selectedRow: number = 0; // Para rastrear la fila seleccionada
-
+cantpendiente: number = 0;
   isDisabled: boolean = true;
   form: FormGroup;
 
@@ -163,46 +169,8 @@ export class Pendiente implements OnInit {
 
     this.crearFormularioFacturacion();
 
-    this.nomclienteSubject
-      .pipe(
-        debounceTime(500),
-        distinctUntilChanged(),
-        switchMap((nomcliente) => {
-          this.txtdescripcion = nomcliente;
-          return this.servicioFacturacion.buscarFacturacion(
-            this.currentPage,
-            this.facturacionList.length,
-            this.codigo,
-            this.txtdescripcion
-          );
-        })
-      )
-      .subscribe((response) => {
-        this.facturacionList = response.data;
-        this.totalItems = response.pagination.total;
-        this.currentPage = response.pagination.page;
-      });
 
-    this.numfacturaSubject
-      .pipe(
-        debounceTime(500),
-        distinctUntilChanged(),
-        switchMap((codigo) => {
-          this.txtFactura = codigo;
-          return this.servicioFacturacion.buscarFacturacion(
-            this.currentPage,
-            this.facturacionList.length,
-            this.codigo,
-            this.txtdescripcion,
-            this.txtFactura
-          );
-        })
-      )
-      .subscribe((response) => {
-        this.facturacionList = response.data;
-        this.totalItems = response.pagination.total;
-        this.currentPage = response.pagination.page;
-      });
+   
   }
 
   @ViewChild('buscarcodmercInput') buscarcodmercElement!: ElementRef;
@@ -223,103 +191,16 @@ export class Pendiente implements OnInit {
   selectedIndexfpago = 1;
   resultadodescripcionmerc: ModeloInventarioData[] = [];
   selectedIndexdescripcionmerc = 1;
-  seleccionarFacturacion(facturacion: any) {
-    this.selectedFacturacion = facturacion;
-  }
-
+ 
   ngOnInit(): void {
    
   this.cargarPendientes();
 
-   //this.buscarTodasFacturacion();
-    this.obtenerNcf();
-    this.obtenerfpago();
-    this.buscardescripcionmerc.valueChanges
-      .pipe(
-        debounceTime(50),
-        distinctUntilChanged(),
-        tap(() => {
-          this.resultadodescripcionmerc = [];
-        }),
-        filter(
-          (query: string) =>
-            query !== '' && !this.cancelarBusquedaDescripcion && !this.isEditing
-        ),
-        switchMap((query: string) =>
-          this.http.GetRequest<ModeloInventario>(
-            `/productos-buscador-desc/${query}`
-          )
-        )
-      )
 
-      .subscribe((results: ModeloInventario) => {
-        console.log(results.data);
-        if (results) {
-          if (Array.isArray(results.data) && results.data.length) {
-            this.resultadodescripcionmerc = results.data;
-            this.desnotfound = false;
-          } else {
-            this.desnotfound = true;
-          }
-        } else {
-          this.resultadodescripcionmerc = [];
-          this.desnotfound = false;
-        }
-      });
+   
 
-    this.buscarNombre.valueChanges
-      .pipe(
-        skip(1), // ignora el primer valor emitido
-        debounceTime(500),
-        distinctUntilChanged(),
-        filter((query: string) => !!query && query.trim() !== ''),
-        tap(() => {
-          this.facturacionList = [];
-          console.log('sdasdsa ');
-        }),
-        switchMap((query: string) =>
-          this.http.GetRequest<FacturacionModelData>(
-            `/facturacion-numero?page=${0}&limit=${0}/&nomcliente=${query}`
-          )
-        )
-      )
-      .subscribe((results: FacturacionModelData) => {
-        console.log(results);
-        this.facturacionList = Array.isArray(results) ? results : [];
-      });
-    this.buscarSector.valueChanges
-      .pipe(
-        debounceTime(500),
-        distinctUntilChanged(),
-        tap(() => {
-          this.resultadoSector = [];
-        }),
-        filter((query: string) => query !== ''),
-        switchMap((query: string) =>
-          this.http.GetRequest<ModeloSector>(`/sector-nombre/${query}`)
-        )
-      )
-      .subscribe((results: ModeloSector) => {
-        console.log(results.data);
-        if (results) {
-          if (Array.isArray(results.data)) {
-            this.resultadoSector = results.data;
-          }
-        } else {
-          this.resultadoSector = [];
-        }
-      });
   }
-  obtenerfpago() {
-    this.servicioFpago.obtenerTodosFpago().subscribe((response) => {
-      this.resultadoFpago = response.data;
-    });
-  }
-  obtenerNcf() {
-    this.servicioNcf.buscarTodosNcf().subscribe((response) => {
-      this.ncflist = response.data;
-    });
-  }
+
 
   crearFormularioFacturacion() {
     const fechaActual = new Date();
@@ -383,104 +264,27 @@ export class Pendiente implements OnInit {
     this.factxt = 0;
     this.habilitarCampos = false;
     this.habilitarCantidad = false;
-    // volver a ejecutar la lógica de inicio
-    this.ngOnInit();
+  this.cargarPendientes();
     this.actualizarTotales();
     $('#input1').focus();
     $('#input1').select();
   }
 
-  editardetFacturacion(detFactura: detFacturaData) {
-    this.facturacionid = detFactura.df_codFact;
-  }
-  editarFacturacion(Factura: FacturacionModelData) {
-    this.facturacionid = Factura.fa_codFact;
-    this.modoedicionFacturacion = true;
-    this.formularioFacturacion.patchValue(Factura);
-    this.tituloModalFacturacion = 'Editando Facturacion';
-    $('#modalfacturacion').modal('show');
-    this.habilitarFormulario = true;
-    const inputs = document.querySelectorAll('.seccion-productos input');
-    inputs.forEach((input) => {
-      (input as HTMLInputElement).disabled = true;
-    });
-    // Limpiar los items antes de agregar los nuevos
-    this.items = [];
-    this.servicioFacturacion
-      .buscarFacturaDetallePendiente(Factura.fa_codFact)
-      .subscribe((response) => {
-        let subtotal = 0;
-        let itbis = 0;
-        let totalGeneral = 0;
-        const itbisRate = 0.18; // Ejemplo: 18% de ITBIS
-        response.data.forEach((item: any) => {
-          const producto: ModeloInventarioData = {
-            in_codmerc: item.df_codMerc,
-            in_desmerc: item.df_desMerc,
-            in_grumerc: '',
-            in_tipoproduct: '',
-            in_canmerc: 0,
-            in_caninve: 0,
-            in_fecinve: null,
-            in_eximini: 0,
-            in_cosmerc: 0,
-            in_premerc: 0,
-            in_precmin: 0,
-            //   in_costpro: 0,
-            in_ucosto: 0,
-            in_porgana: 0,
-            in_peso: 0,
-            in_longitud: 0,
-            in_unidad: 0,
-            in_medida: 0,
-            in_longitu: 0,
-            in_fecmodif: null,
-            in_amacen: 0,
-            in_imagen: '',
-            in_status: '',
-            in_itbis: false,
-            in_minvent: 0,
-          };
-          const cantidad = item.df_canMerc;
-          const precio = item.df_preMerc;
-          const totalItem = cantidad * precio;
-          this.items.push({
-            producto: producto,
-            cantidad: cantidad,
-            precio: precio,
-            total: totalItem,
-            fecfactActual: new Date(),
-            costo: this.costotxt,
-          });
-          //fecfactActual: new Date(),
-          // Calcular el subtotal
-          subtotal += totalItem;
-          // Calcular ITBIS solo si el producto tiene ITBIS
-          // if (item.dc_itbis) {
-          this.totalItbis += totalItem * itbisRate;
-          // }
-        });
-        // Calcular el total general (subtotal + ITBIS)
-        totalGeneral = subtotal + this.totalItbis;
-        // Asignar los totales a variables o mostrarlos en la interfaz
-        this.subTotal = subtotal;
-        this.totalItbis = this.totalItbis;
-        this.totalGral = totalGeneral;
-      });
-  }
+  
 cargarPendientes() {
-  this.servicioFacturacion.buscarFacturacionPendiente(1, 10).subscribe(data => {
-    this.facturas= data.rows;
+  this.servicioFacturacion.buscarFacturacionPendiente(1, 100).subscribe(data => {
+    this.facturacionList= data.rows;
     this.total = data.total;
+    console.log(data);
   });
 }
 
   buscarTodasFactura(page: number) {
-    this.servicioFacturacion.buscarTodasFacturacion().subscribe((response) => {
-      console.log(response);
-      this.facturacionList = response.data;
-      console.log(this.facturacionList.length);
-    });
+    // this.servicioFacturacion.buscarTodasFacturacion().subscribe((response) => {
+    //   console.log(response);
+    //   this.facturacionList = response.data;
+    //   console.log(this.facturacionList.length);
+    // });
   }
   consultarFacturacion(factura: FacturacionModelData) {
     this.modoconsultaFacturacion = true;
@@ -553,6 +357,8 @@ cargarPendientes() {
             total: totalItem,
             costo: costoItem,
             fecfactActual: new Date(),
+            df_canpend:item.df_canpend ?? 0,
+            df_pendiente: item.df_pendiente ?? '',
 
             //costo:0
           });
@@ -578,33 +384,53 @@ cargarPendientes() {
         console.log(this.factxt);
       });
   }
+//  crearpendienteNuevo(){
+//  let codigo= prompt("Ingrese el numero de Factura:");
+// this.servicioFacturacion.buscarFacturacion(0,0,codigo!).subscribe((resultado)=> {
+//         this.facturacionList = resultado.data;
 
-  eliminarFacturacion(facturacionId: string) {
-    Swal.fire({
-      title: '¿Está seguro de eliminar este Facturacion?',
-      text: '¡No podrá revertir esto!',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#3085d6',
-      cancelButtonColor: '#d33',
-      confirmButtonText: 'Si, eliminar!',
-    }).then((result) => {
-      if (result.isConfirmed) {
-        this.servicioFacturacion
-          .eliminarFacturacion(facturacionId)
-          .subscribe((response) => {
-            Swal.fire({
-              title: 'Excelente!',
-              text: 'Factura eliminada correctamente.',
-              icon: 'success',
-              timer: 2000,
-              showConfirmButton: false,
-            });
-            this.buscarTodasFacturacion();
-          });
-      }
-    });
+// });
+// }
+
+pendienteNuevo(){
+const codigo= prompt("Ingrese el numero de Factura:");
+ if (!codigo) return;
+ this.codigoFactura = codigo; // 🔹 Guardas el valor en la propiedad
+
+this.servicioFacturacion.actutalizarPendienteModficado(codigo!, "poner").subscribe((response: any) => {
+  // this.cargarPendientes();
+});
+this.servicioFacturacion.buscarFacturacion(0,0,codigo!).subscribe((resultado)=> {
+        this.facturacionList = resultado.data;
+});
+//this.deshacerPendiente(codigo); // 🔹 Lo paso como argumento
+this.consultarFacturacion({ fa_codFact: codigo } as FacturacionModelData);
+
+}
+
+  buscaFactura(event: Event) {
+    const c_codFact = event.target as HTMLInputElement;
+    this.servicioFacturacion
+      .buscarFacturacion(0, 0, c_codFact.value)
+      .subscribe((resultado) => {
+        this.facturacionList = resultado.data;
+      });
   }
+deshacerPendiente(codigo: string) {
+ console.log("Codigo recibido:", this.codigoFactura); // 🔹 Verifica que el valor se recibe correctamente
+ if (! this.codigoFactura) {
+    alert("No se recibió un código válido");
+    return;
+  }
+this.servicioFacturacion.actutalizarPendienteModficado( this.codigoFactura, "quitar").subscribe((response: any) => {
+  //    this.facturacionList = resultado.data;
+
+
+      alert("Cambio descartado");
+    return;
+    });
+}
+
   editarFactura() {
     console.log('Modo edición activado');
     this.botonEditar = true; // Deshabilita de nuevo
@@ -647,36 +473,12 @@ cargarPendientes() {
   }
 
   buscarTodasFacturacion() {
-    this.servicioFacturacion.buscarTodasFacturacion().subscribe((response) => {
-      this.facturacionList = response.data;
-    });
+    // this.servicioFacturacion.buscarTodasFacturacion().subscribe((response) => {
+    //   this.facturacionList = response.data;
+    // });
   }
 
-
-  buscaNombre(event: Event) {
-    const c_nomClie = event.target as HTMLInputElement;
-    this.nomclienteSubject.next(c_nomClie.value.toUpperCase());
-  }
-
-  buscaFactura(event: Event) {
-    const c_codFact = event.target as HTMLInputElement;
-    this.servicioFacturacion
-      .buscarFacturacion(0, 0, c_codFact.value)
-      .subscribe((resultado) => {
-        this.facturacionList = resultado.data;
-      });
-  }
-
-  buscaFecha(event: Event) {
-    const input = event.target as HTMLInputElement;
-    const fechaStr = input.value; // ← ya es "2025-06-27"
-
-    this.servicioFacturacion
-      .buscarFacturacion(0, 0, '', '', fechaStr)
-      .subscribe((resultado) => {
-        this.facturacionList = resultado.data;
-      });
-  }
+  
   // buscaFecha(event: Event) {
   //   const c_fecFact = event.target as HTMLInputElement;
   //   const fechaStr = c_fecFact.value; // Ejemplo: "2025-06-27"
@@ -779,133 +581,12 @@ cargarPendientes() {
         this.selectedIndexcodmerc >= 0 &&
         this.selectedIndexcodmerc <= maxIndex
       ) {
-        this.cargarDatosInventario(
-          this.resultadoCodmerc[this.selectedIndexcodmerc]
-        );
+       
       }
       event.preventDefault();
     }
   }
-  cargarDatosInventario(inventario: ModeloInventarioData) {
-    console.log(inventario);
-    this.resultadoCodmerc = [];
-    this.resultadodescripcionmerc = [];
-    this.codmerc = inventario.in_codmerc;
-    this.preciomerc = inventario.in_premerc;
-    this.descripcionmerc = inventario.in_desmerc;
-    this.existenciatxt = inventario.in_canmerc;
-    this.costotxt = inventario.in_cosmerc;
-    this.medidatxt = inventario.in_medida;
-    this.fecacttxt = inventario.in_fecmodif;
-    this.atxt =
-      Number(inventario.in_cosmerc) + (Number(inventario.in_cosmerc) * 5) / 100;
-    this.btxt =
-      Number(inventario.in_cosmerc) + (Number(inventario.in_cosmerc) * 7) / 100;
-    this.ctxt =
-      Number(inventario.in_cosmerc) +
-      (Number(inventario.in_cosmerc) * 10) / 100;
-    this.dtxt =
-      Number(inventario.in_cosmerc) +
-      (Number(inventario.in_cosmerc) * 12) / 100;
-    this.etxt =
-      Number(inventario.in_cosmerc) +
-      (Number(inventario.in_cosmerc) * 14) / 100;
-    this.ftxt =
-      Number(inventario.in_cosmerc) +
-      (Number(inventario.in_cosmerc) * 16) / 100;
-    this.gtxt =
-      Number(inventario.in_cosmerc) +
-      (Number(inventario.in_cosmerc) * 18) / 100;
-
-    this.productoselect = inventario;
-    this.cancelarBusquedaDescripcion = true;
-    this.cancelarBusquedaCodigo = true;
-    this.formularioFacturacion.patchValue({
-      df_codMerc: inventario.in_codmerc,
-      df_desMerc: inventario.in_desmerc,
-      df_canMerc: inventario.in_canmerc,
-      df_preMerc: inventario.in_premerc,
-      df_cosMerc: inventario.in_cosmerc,
-      df_unidad: inventario.in_unidad,
-    });
-    $('#input8').focus();
-    $('#input8').select();
-  }
-
-  buscarUsuario(event: Event, nextElement: HTMLInputElement | null): void {
-    event.preventDefault();
-    const claveUsuario = this.formularioFacturacion.get('fa_codVend')?.value;
-    if (claveUsuario) {
-      this.ServicioUsuario.buscarUsuarioPorClave(claveUsuario).subscribe(
-        (usuario) => {
-          if (usuario.data.length) {
-            this.formularioFacturacion.patchValue({
-              fa_nomVend: usuario.data[0].idUsuario,
-            });
-            nextElement?.focus();
-          } else {
-            this.mensagePantalla = true;
-            Swal.fire({
-              icon: 'error',
-              title: 'A V I S O',
-              text: 'Codigo de usuario invalido.',
-            }).then(() => {
-              this.mensagePantalla = false;
-            });
-            return;
-          }
-        }
-      );
-    } else {
-      this.mensagePantalla = true;
-      Swal.fire({
-        icon: 'error',
-        title: 'A V I S O',
-        text: 'Codigo de usuario invalido.',
-      }).then(() => {
-        this.mensagePantalla = false;
-      });
-      return;
-    }
-  }
-  buscarRnc(event: Event, nextElement: HTMLInputElement | null): void {
-    event.preventDefault();
-    const rnc = this.formularioFacturacion.get('fa_rncFact')?.value;
-    if (!rnc) {
-      this.obtenerNcf();
-      this.formularioFacturacion.patchValue({ fa_tipoNcf: 1 });
-      this.formularioFacturacion.get('fa_tipoNcf')?.disable();
-      // Si no se ha ingresado un RNC, pasamos el foco al siguiente elemento
-      console.log('RNC vacío.');
-      console.log(this.formularioFacturacion.value);
-      nextElement?.focus();
-      return;
-    }
-
-    // Validar longitud del RNC
-    if (rnc.length !== 9 && rnc.length !== 11) {
-      this.mostrarMensajeError('RNC inválido.');
-      console.log(rnc.length);
-      return;
-    }
-    // Buscar RNC en el servicio
-    this.ServicioRnc.buscarRncPorId(rnc).subscribe((response) => {
-      if (response?.data?.length) {
-        // Si se encuentra el RNC, asignar el nombre del cliente
-        const nombreEmpresa = response.data[0]?.rason;
-        this.formularioFacturacion.patchValue({ fa_nomClie: nombreEmpresa });
-        this.formularioFacturacion.patchValue({ fa_tipoNcf: 2 });
-        this.formularioFacturacion.get('fa_tipoNcf')?.enable();
-        this.ncflist = this.ncflist.filter((ncf) => ncf.codNcf !== 1);
-        $('#input3').focus();
-        $('#input3').select();
-      } else {
-        // Si no se encuentra el RNC, mostrar error
-        this.mostrarMensajeError('RNC inválido.');
-        console.log('RNC no encontrado.');
-      }
-    });
-  }
+ 
 
   mostrarMensajeError(mensaje: string): void {
     this.mensagePantalla = true;
@@ -1049,9 +730,7 @@ cargarPendientes() {
         this.selectedIndexdescripcionmerc >= 0 &&
         this.selectedIndexdescripcionmerc <= maxIndex
       ) {
-        this.cargarDatosInventario(
-          this.resultadodescripcionmerc[this.selectedIndexdescripcionmerc]
-        );
+        
       }
       event.preventDefault();
     }
@@ -1227,7 +906,7 @@ cargarPendientes() {
     event.preventDefault();
     if (
       !this.productoselect ||
-      this.cantidadmerc <= 0 ||
+      this.cantidadpen > this.itemToEdit.cantidad ||
       this.preciomerc <= 0 ||
       this.preciomerc <= this.productoselect.in_cosmerc
     ) {
@@ -1235,7 +914,7 @@ cargarPendientes() {
       Swal.fire({
         icon: 'error',
         title: 'A V I S O',
-        text: 'Por favor complete todos los campos requeridos antes de agregar el ítem.',
+        text: 'Valor instrduciddo Invalido Por favor digite cantida nueva vez ',
       }).then(() => {
         this.mensagePantalla = false;
       });
@@ -1248,38 +927,22 @@ cargarPendientes() {
       this.itemToEdit.codmerc = this.codmerc;
       this.itemToEdit.descripcionmerc = this.descripcionmerc;
       this.itemToEdit.precio = this.preciomerc;
-      this.itemToEdit.cantidad = this.cantidadmerc;
+      this.itemToEdit.df_canpend = this.cantidadpen;
       this.itemToEdit.total = this.cantidadmerc * this.preciomerc;
       this.itemToEdit.totalcosto += this.costotxt * this.cantidadmerc;
       this.itemToEdit.fecfactActual = fechaActual; // Actualiza la fecha del ítem existente
-      // Actualizar los totales
-      this.actualizarTotales();
-      // Restablecer el estado de edición
+           // Restablecer el estado de edición
       this.isEditing = false;
       this.itemToEdit = null;
-    } else {
-      const total = this.cantidadmerc * this.preciomerc;
-      this.totalGral += total;
-      const itbis = total * 0.18;
-      this.totalItbis += itbis;
-      this.subTotal += total - itbis;
-      const tcosto = this.costotxt * this.cantidadmerc;
-      this.totalcosto += this.costotxt * this.cantidadmerc;
-      this.factxt =
-        ((this.totalGral - this.totalcosto) * 100) / this.totalcosto;
-      this.protxt = ((this.preciomerc - this.costotxt) * 100) / this.costotxt;
-      this.items.push({
-        producto: this.productoselect,
-        cantidad: this.cantidadmerc,
-        precio: this.preciomerc,
-        total,
-        costo: tcosto,
-        fecfactActual: fechaActual, // Agrega la fecha actual al nuevo ítem
-      });
-      this.actualizarTotales();
-      this.cancelarBusquedaDescripcion = false;
-      this.cancelarBusquedaCodigo = false;
-    }
+      this.botonGuardar=false;
+     } 
+    //  else {
+  
+  
+    //   this.actualizarTotales();
+    //   this.cancelarBusquedaDescripcion = false;
+    //   this.cancelarBusquedaCodigo = false;
+    // }
     this.limpiarCampos();
   }
   actualizarCalculo() {
@@ -1290,7 +953,7 @@ cargarPendientes() {
     this.codmerc = '';
     this.descripcionmerc = '';
     this.preciomerc = 0;
-    this.cantidadmerc = 0;
+    this.cantidadpen = 0;
     this.isEditing = false;
     this.existenciatxt = 0;
     this.costotxt = 0;
@@ -1304,6 +967,7 @@ cargarPendientes() {
     this.ftxt = 0;
     this.gtxt = 0;
     this.protxt = 0;
+    this.habilitarCantidad = false;
   }
 
   limpiarTabla() {
@@ -1313,22 +977,7 @@ cargarPendientes() {
     this.subTotal = 0; // Reiniciar el subtotal
   }
 
-  // borarItem(item: any) {
-  //   const index = this.items.indexOf(item);
-  //   if (index > -1) {
-  //     this.totalGral -= item.total;
 
-  //     // Calcular el itbis del ítem eliminado y restarlo del total itbis
-  //     const itbis = item.total * 0.18;
-  //     this.totalItbis -= itbis;
-
-  //     // Restar el subtotal del ítem eliminado
-  //     this.subTotal -= (item.total - itbis);
-
-  //     // Eliminar el ítem de la lista
-  //     this.items.splice(index, 1);
-  //   }
-  // }
   borarItem(item: any) {
     const index = this.items.indexOf(item);
     if (index > -1) {
@@ -1356,6 +1005,9 @@ cargarPendientes() {
   editarItem(item: any) {
     this.habilitarCampos = false;
     this.habilitarCantidad = true;
+
+
+    
     this.index_item = this.items.indexOf(item);
     this.isEditing = true;
     this.itemToEdit = item;
@@ -1364,7 +1016,8 @@ cargarPendientes() {
     this.codmerc = item.producto.in_codmerc;
     this.descripcionmerc = item.producto.in_desmerc;
     this.preciomerc = item.precio;
-    this.cantidadmerc = item.cantidad;
+    this.cantidadpen = item.df_canpend ?? 0;
+
     this.existenciatxt = item.producto.in_canmerc;
     this.costotxt = item.producto.in_cosmerc;
     setTimeout(() => {
@@ -1464,7 +1117,7 @@ cargarPendientes() {
   }
 
   refrescarFormulario() {
-    this.buscarTodasFacturacion();
+    this.cargarPendientes();
     this.formularioFacturacion.reset();
     this.crearFormularioFacturacion();
     this.formularioFacturacion.enable();
