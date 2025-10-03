@@ -13,31 +13,34 @@ export class ServicioFacturacion {
     private baseUrl = '/api'; // Ajusta la URL base según sea necesario
   constructor(private http: HttpInvokeService) { }
 
-
   getByNumero(numero: string): Observable<any> {
     return this.http.GetRequest<any>(`/factura-numero/${numero}`);
-    console.log('ServicioFacturacion - getByNumero llamado con número:', numero);
+     console.log('ServicioFacturacion - getByNumero llamado con número:', numero);
   }
+
+
+  //  buscarPorCedula(cedula: string): Observable<any> {
+  //   return this.http.GetRequest(`/despachadores/cedula/${cedula}`);
+  // }
   marcarImpresa(numero: string, body: { fa_envio?: string; fa_fpago?: string }) {
     return this.http.PatchRequest(`/facturas-impresa/${numero}`, body);
   }
-
 
   guardarFacturacion(datosParaGuardar: any): Observable<any> {
     return this.http.PostRequest<any, any>("/facturacion", datosParaGuardar);
   }
 
 
-obtenerFacturasNoImpresas(): Observable<any> {
-  const endpoint = '/facturas-no-impresas';
-  const params = new HttpParams(); // Si no vas a enviar parámetros, pon uno vacío
-  return this.http.get(endpoint, params);
-}
+  obtenerFacturasNoImpresas(): Observable<any> {
+    const endpoint = '/facturas-no-impresas';
+    const params = new HttpParams(); // Si no vas a enviar parámetros, pon uno vacío
+    return this.http.get(endpoint, params);
+  }
 
-marcarFacturaComoImpresa(payload:any) {
-  const cod=payload.fa_codFact;
+  marcarFacturaComoImpresa(payload:any) {
+    const cod=payload.fa_codFact;
     return this.http.PatchRequest(`/factura-impresa/${cod}`, payload);
-}
+  }
 
 editarFacturacion(payload: any) {
   const cod = payload.factura.fa_codFact;

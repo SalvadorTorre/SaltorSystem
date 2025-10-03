@@ -28,6 +28,7 @@
     "jspdf": "^2.5.2",
     "jspdf-autotable": "^3.8.4",
     "ngx-mask": "^18.0.0",
+    "pdfmake": "^0.2.20",
     "rxjs": "~7.8.0",
     "sweetalert2": "^11.6.13",
     "tslib": "^2.3.0",

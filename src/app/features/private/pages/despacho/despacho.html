@@ -5,6 +5,7 @@
       <div class="card shadow-sm p-4">
         <h4 class="mb-3">Consulta de Despachador</h4>
         <!-- Input búsqueda -->
+
         <div class="row mb-3">
           <div class="col-md-2 mb-2">
             <label for="cedula" class="form-label">Cédula</label>
@@ -29,30 +30,64 @@
           </div>
         </div>
 
-        <!-- Mensajes -->
-        <div *ngIf="mensaje" class="alert alert-warning">{{ mensaje }}</div>
-        <div class="row mb-3">
-          <div class="col-md-2 mb-2">
-            <label for="factura" class="form-label">Factura</label>
-          </div>
-          <div class="col-md-3 mb-2">
-            <input
-              type="text"
-              id="factura"
-              [(ngModel)]="factura"
-              (keyup.enter)="buscarFactura()"
-              class="form-control"
-              placeholder="Ingrese la Factura"
-            />
-          </div>
-          <div class="col-md-5 mb-2">
-            <input class="form-control" readonly />
-          </div>
-        </div>
-      </div>
-    </div>
-    <!-- Resultados -->
-    <div *ngIf="despacho" class="row">
+
+<div class="row mb-3">
+  <div class="col-md-2 mb-2">
+    <label for="factura" class="form-label">Factura</label>
+  </div>
+  <div class="col-md-3 mb-2">
+    <input
+      type="text"
+      id="factura"
+      name="facturaNumero"
+      [(ngModel)]="facturaNumero"
+      (keyup.enter)="buscarFactura()"
+      class="form-control"
+      placeholder="Ingrese la Factura"
+    />
+  </div>
+  <div class="col-md-3 mb-2 d-flex align-items-start">
+    <button
+      class="btn btn-secondary"
+      (click)="buscarFactura()"
+    >
+      Buscar Factura
+    </button>
+  </div>
+  <div class="col-md-5 mb-2">
+  <input class="form-control" [value]="facturaData?.fa_nomClie" readonly />
+</div>
+ </div>
+ <table class="table table-bordered mt-3" *ngIf="facturaData?.detalles?.length">
+  <thead>
+    <tr>
+      <th>Código</th>
+      <th>Descripción</th>
+      <th>Cantidad</th>
+      <th>Precio</th>
+      <th>Total</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr *ngFor="let item of facturaData.detalles">
+      <td>{{ item.df_codMerc }}</td>
+      <td>{{ item.df_desMerc }}</td>
+      <td>{{ item.df_canMerc }}</td>
+      <td>{{ item.df_preMerc }}</td>
+      <td>{{ item.df_valMerc }}</td>
+    </tr>
+  </tbody>
+</table>
+
+<div *ngIf="facturaData" class="mt-3">
+  <button class="btn btn-danger" (click)="generarPDF()">
+    Exportar a PDF
+  </button>
+</div>
+ 
+
+<!-- Resultados -->
+     <div *ngIf="despacho" class="row">
       <div class="col-md-6 mb-2">
         <label class="form-label">Código</label>
         <input class="form-control" [value]="despacho.codDesp" readonly />
@@ -71,4 +106,5 @@
       </div>
     </div>
   </div>
+
 </div>

@@ -258,7 +258,6 @@
                     <td (click)="consultarFacturacion(factura)">
                       {{ factura.fa_codFact }}
                     </td>
-                    <!-- <td class="text-cell"  [title]="factura.fa_nomClie">{{ factura.fa_nomClie }}</td> -->
                     <td class="text-cell" data-bs-toggle="tooltip" data-bs-placement="top" [attr.title]="factura.fa_nomClie"> {{ factura.fa_nomClie }}</td>
                     <td class="text-center">{{ factura.fa_fecFact }}</td>
                     <td class="text-end">{{ factura.fa_valFact }}</td>
@@ -275,7 +274,6 @@
               </table>
             </div>
 
-            <!--  🌟 CONTROLES DE PAGINACIÓN FIJOS EN EL FONDO DE LA TABLA 🌟 -->
             <div
               class="pagination-controls"
               style="

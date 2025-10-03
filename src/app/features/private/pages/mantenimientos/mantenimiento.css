@@ -15,3 +15,11 @@
 
   background-color: #F0F0F0;
 }
+.sidebar-nav .nav-link {
+  color: #212529; /* texto negro */
+}
+
+.sidebar-nav .nav-link.active {
+ background-color: #f7f8fa; /* azul bootstrap */
+  color: #611616; /* texto blanco en el activo */
+}

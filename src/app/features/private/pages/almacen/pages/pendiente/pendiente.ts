@@ -1067,39 +1067,30 @@ this.servicioFacturacion.actutalizarPendienteModficado( this.codigoFactura, "qui
       fa_cosFact: this.totalcosto,
       fa_subFact: this.subTotal,
     });
-    this.formularioFacturacion.get('fa_valFact')?.patchValue(this.totalGral);
-    this.formularioFacturacion.get('fa_itbiFact')?.patchValue(this.totalItbis);
-    this.formularioFacturacion.get('fa_cosFact')?.patchValue(this.totalcosto);
-    this.formularioFacturacion.get('fa_subFact')?.patchValue(this.subTotal);
 
-    this.formularioFacturacion.get('fa_tipoNcf')!.enable();
-    this.formularioFacturacion.get('fa_codFact')!.enable();
-    this.formularioFacturacion.get('fa_fecFact')!.enable();
-    this.formularioFacturacion.get('fa_nomVend')!.enable();
-    this.formularioFacturacion.get('fa_ncfFact')!.enable();
     const payload = {
       factura: this.formularioFacturacion.value,
       detalle: this.items,
     };
-    if (this.formularioFacturacion.valid) {
-      if (codFact) {
-        // 🔁 Modo edición
-        this.servicioFacturacion
-          .editarFacturacion(payload)
-          .subscribe((response) => {
-            Swal.fire({
-              title: 'Actualizado!',
-              text: 'Factura modificada correctamente.',
-              icon: 'success',
-              timer: 1000,
-              showConfirmButton: false,
-            });
-            this.refrescarFormulario();
-          });
-      } else {
+    //if (this.formularioFacturacion.valid) {
+      // if (codFact) {
+      //   // 🔁 Modo edición
+      //   this.servicioFacturacion
+      //     .editarFacturacion(payload)
+      //     .subscribe((response) => {
+      //       Swal.fire({
+      //         title: 'Actualizado!',
+      //         text: 'Factura modificada correctamente.',
+      //         icon: 'success',
+      //         timer: 1000,
+      //         showConfirmButton: false,
+      //       });
+      //       this.refrescarFormulario();
+      //     });
+      // } else {
         // 🆕 Modo creación
         this.servicioFacturacion
-          .guardarFacturacion(payload)
+          .acturalizaDetPendiente(payload)
           .subscribe((response) => {
             Swal.fire({
               title: 'Excelente!',
@@ -1110,10 +1101,10 @@ this.servicioFacturacion.actutalizarPendienteModficado( this.codigoFactura, "qui
             });
             this.refrescarFormulario();
           });
-      }
-    } else {
-      alert('Esta Factura no fue guardada');
-    }
+      // }
+    // } else {
+    //   alert('Esta Factura no fue guardada');
+    // }
   }
 
   refrescarFormulario() {

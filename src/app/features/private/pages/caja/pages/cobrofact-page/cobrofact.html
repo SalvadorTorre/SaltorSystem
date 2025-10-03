@@ -97,57 +97,6 @@
               </tbody>
             </table>
 
-            <!-- <table
-              class="table table-bordered table-hover table-striped table-sm table-class"
-            >
-              <thead
-                class="table-dark"
-                style="position: relative; top: 0; z-index: 2"
-              >
-                <tr>
-                  <th style="width: 10%">Numero</th>
-                  <th style="width: 40%">Nombre</th>
-                  <th class="text-center" style="width: 15%">Fecha</th>
-                  <th style="width: 16%">Valor</th>
-                  <th class="text-center">Opciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr
-                  *ngFor="let factura of facturacionList; let i = index"
-                  [ngClass]="{'table-primary': factura.fa_codFact === codFacturaselecte}"
-                  #filaSeleccionada
-                  [attr.data-index]="i"
-                >
-                  <td
-                    (click)="seleccionarFactura(factura, i)"
-                    style="width: 10%"
-                  >
-                    {{factura.fa_codFact}}
-                  </td>
-                  <td
-                    (click)="seleccionarFactura(factura, i)"
-                    style="width: 40%"
-                  >
-                    {{factura.fa_nomClie}}
-                  </td>
-                  <td class="text-center" style="width: 15%">
-                    {{factura.fa_fecFact}}
-                  </td>
-                  <td class="text-end" tyle="width: 16%">
-                    {{factura.fa_valFact}}
-                  </td>
-                  <td>
-                    <i
-                      (click)="consultarFacturacion(factura)"
-                      class="bi bi-card-list text-success"
-                      style="padding: 10px"
-                    >
-                    </i>
-                  </td>
-                </tr>
-              </tbody>
-            </table> -->
           </div>
         </div>
 
@@ -214,21 +163,6 @@
               </div>
             </div>
 
-            <!--
-            <div class="row mt-0">
-              <div class="col-5">
-                <label for="" class="label">Forma de pago</label>
-              </div>
-              <div class="col-7">
-                <input
-                  type="text"
-                  [disabled]="chekpagada"
-                  class="form-control form-control-sm"
-                  [value]="descripcionFormaPago"
-                />
-              </div>
-            </div> -->
-            <!-- /row mt-0 -->
 
             <div class="row mt-1">
               <div class="col-5">
@@ -277,16 +211,7 @@
                   <label for="" class="label"> Valor pagado</label>
                 </div>
                 <div class="col-6">
-                  <!-- <input
-                    #valorPagadoInput
-                    type="number"
-                    class="form-control form-control-sm"
-                    style="font-size: 1.5pc; font-weight: bold"
-                    [value]="formularioFacturacion.get('valpagado')?.value | number:'1.2-2'"
-                    [disabled]="txtvalPagado"
-                    (input)="onInputPagado($event)"
-                  /> -->
-                  <input
+                                <input
                     #valorPagadoInput
                     type="number"
                     class="form-control form-control-sm"
@@ -303,13 +228,7 @@
                   <label for="" class="label"> Cambio</label>
                 </div>
                 <div class="col-6">
-                  <!-- <input
-                    type="number"
-                    class="form-control form-control-sm"
-                    [value]="formularioFacturacion.get('valcambio')?.value |
-                      number:'1.2-2'"
-                    disabled
-                  /> -->
+
                   <input
                     type="number"
                     class="form-control form-control-sm"
