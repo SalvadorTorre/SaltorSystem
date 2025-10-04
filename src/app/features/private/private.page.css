@@ -1,56 +1,265 @@
-.custon-link {
-  text-decoration: none;
-  color: white;
-  font-size: 16px;
-  margin-left: 5px;
+/* Navbar principal */
+.navbar {
+  background: linear-gradient(135deg, #0f1f6a 0%, #1a2f8a 100%);
+  padding: 0.75rem 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  position: sticky;
+  top: 0;
+  z-index: 1030;
 }
 
-.custon-link.active {
-  text-decoration: none;
-  color: #af3d2c;
-  font-size: 16px;
-  font-weight: bold;
-  padding: 1px 5px;
+/* Logo */
+.navbar-logo {
+  height: 42px;
+  transition: transform 0.3s ease;
+}
+
+.navbar-logo:hover {
+  transform: scale(1.05);
+}
+
+/* Botones de navegación */
+.nav-item {
+  margin: 0 0.25rem;
+}
+
+.nav-link-btn {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.9);
+  padding: 0.5rem 1rem;
   border-radius: 8px;
-  background-color: #f0f0f0;
-}
-
-.custon-link:hover {
-  text-decoration: none;
-  color: #af372c;
-  font-size: 18px;
-  font-weight: bold;
-}
-
-.custom-avatar {
-  height: 32px;
-  width: 32px;
-  background-color: #f0f0f0;
-  border-radius: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-size: 14px;
-  margin-right: 10px;
-  color: #af372c;
-}
-
-.name-charge {
-  display: flex;
-  flex-flow: column;
-  justify-content: center;
-  align-items: flex-start;
-  margin-right: 14px;
-}
-
-.name-person {
-  color: #f0f0f0;
-  font-size: 14px;
-  font-weight: bold;
-}
-
-.local-trabajo {
-  color: #fff;
-  font-size: 10px;
+  font-size: 0.9rem;
   font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.nav-link-btn i {
+  font-size: 1.1rem;
+}
+
+.nav-link-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  transform: translateY(-2px);
+}
+
+.nav-link-btn.active {
+  background-color: #ffffff;
+  color: #0f1f6a;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.nav-link-btn.active i {
+  color: #af372c;
+}
+
+/* Sección de usuario */
+.user-section {
+  gap: 0.75rem;
+  padding: 0.5rem;
+  border-radius: 8px;
+  transition: background-color 0.3s ease;
+}
+
+.user-section:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.user-avatar {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #f0f0f0 0%, #e0e0e0 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #af372c;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  flex-shrink: 0;
+}
+
+.user-info {
+  margin: 0 0.5rem;
+}
+
+.user-name {
+  color: #ffffff;
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.user-location {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1.2;
+}
+
+/* Botón de logout */
+.btn-logout {
+  background: none;
+  border: none;
+  color: #ffffff;
+  font-size: 1.3rem;
+  padding: 0.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-logout:hover {
+  background-color: rgba(175, 55, 44, 0.2);
+  color: #ff6b6b;
+  transform: scale(1.1);
+}
+
+/* Toggler personalizado */
+.navbar-toggler {
+  padding: 0.5rem;
+  border: none;
+}
+
+.navbar-toggler:focus {
+  box-shadow: none;
+  outline: none;
+}
+
+/* Main content */
+.main-content {
+  min-height: calc(100vh - 70px);
+  background-color: #f8f9fa;
+}
+
+/* Responsive */
+@media (max-width: 991px) {
+  .navbar-collapse {
+    background-color: rgba(15, 31, 106, 0.98);
+    padding: 1rem;
+    margin-top: 1rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  }
+
+  .navbar-nav {
+    gap: 0.5rem;
+  }
+
+  .nav-link-btn {
+    width: 100%;
+    justify-content: flex-start;
+    padding: 0.75rem 1rem;
+  }
+
+  .user-section {
+    margin-top: 1rem;
+    padding: 1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    justify-content: space-between;
+  }
+
+  .user-info {
+    display: flex !important;
+    flex-direction: column;
+    flex: 1;
+  }
+}
+
+@media (max-width: 576px) {
+  .navbar-logo {
+    height: 36px;
+  }
+
+  .nav-link-btn {
+    font-size: 0.85rem;
+    padding: 0.6rem 0.75rem;
+  }
+
+  .nav-link-btn i {
+    font-size: 1rem;
+  }
+
+  .user-avatar {
+    width: 36px;
+    height: 36px;
+    font-size: 0.8rem;
+  }
+
+  .user-name {
+    font-size: 0.85rem;
+  }
+
+  .user-location {
+    font-size: 0.7rem;
+  }
+
+  .btn-logout {
+    font-size: 1.1rem;
+  }
+
+  /* Ocultar texto en móvil, solo mostrar iconos */
+  .nav-text {
+    display: inline;
+  }
+}
+
+/* Animaciones */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.navbar-collapse.show {
+  animation: slideIn 0.3s ease;
+}
+
+/* Mejoras de accesibilidad */
+.nav-link-btn:focus,
+.btn-logout:focus {
+  outline: 2px solid rgba(255, 255, 255, 0.5);
+  outline-offset: 2px;
+}
+
+/* Scrollbar para el navbar en móvil si es muy largo */
+@media (max-width: 991px) {
+  .navbar-nav {
+    max-height: 60vh;
+    overflow-y: auto;
+  }
+
+  .navbar-nav::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .navbar-nav::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+  }
+
+  .navbar-nav::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 10px;
+  }
+
+  .navbar-nav::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.5);
+  }
 }

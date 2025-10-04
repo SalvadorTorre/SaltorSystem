@@ -6,7 +6,7 @@ import Swal from 'sweetalert2';
 @Component({
   selector: 'private-root',
   templateUrl: './private.page.html',
-  styleUrls: ['./private.page.css']
+  styleUrls: ['./private.page.css'],
 })
 export class PrivatePage implements OnInit {
   initials: string = '';
@@ -15,14 +15,11 @@ export class PrivatePage implements OnInit {
 
   constructor(
     private readonly router: Router,
-    private authService: AuthService,
-  ) {
-
-  }
+    private authService: AuthService
+  ) {}
 
   ngOnInit() {
     this.initials = this.getInitialsFromName();
-
   }
 
   getInitialsFromName(): string {
@@ -47,18 +44,27 @@ export class PrivatePage implements OnInit {
   async logout() {
     Swal.fire({
       title: '¿Está seguro que quieres cerrar sesion?',
-      text: "¡No podrá revertir esto!",
+      text: '¡No podrá revertir esto!',
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#3085d6',
       cancelButtonColor: '#d33',
-      confirmButtonText: 'Si, Cerrar sesion!'
+      confirmButtonText: 'Si, Cerrar sesion!',
     }).then((result) => {
       if (result.isConfirmed) {
         this.authService.logout();
         this.router.navigate(['/public/sign-in']);
       }
-    })
+    });
+  }
 
+  // Método para cerrar el menú en modo responsive
+  closeNavbar() {
+    const navbarCollapse = document.getElementById('navbarContent');
+    const navbarToggler = document.querySelector('.navbar-toggler');
+
+    if (navbarCollapse?.classList.contains('show')) {
+      navbarToggler?.dispatchEvent(new Event('click'));
+    }
   }
 }
