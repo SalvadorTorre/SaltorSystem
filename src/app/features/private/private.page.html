@@ -124,16 +124,32 @@
         </li>
       </ul>
 
-      <!-- Sección de usuario -->
-      <div class="user-section d-flex align-items-center">
-        <div class="user-avatar">{{this.initials}}</div>
-        <div class="user-info d-none d-lg-flex flex-column">
-          <span class="user-name">{{this.personName}}</span>
-          <span class="user-location">{{this.sucursalName}}</span>
-        </div>
-        <button class="btn-logout" (click)="logout()" title="Cerrar sesión">
-          <i class="bi bi-box-arrow-right"></i>
+      <!-- Sección de usuario con dropdown -->
+      <div class="dropdown">
+        <button
+          class="user-avatar-btn dropdown-toggle"
+          type="button"
+          id="userDropdown"
+          data-bs-toggle="dropdown"
+          aria-expanded="false"
+          [title]="this.personName"
+        >
+          {{this.initials}}
         </button>
+        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+          <li class="dropdown-header">
+            <div class="d-flex flex-column">
+              <span class="fw-bold">{{this.personName}}</span>
+              <small class="text-muted">{{this.sucursalName}}</small>
+            </div>
+          </li>
+          <li><hr class="dropdown-divider" /></li>
+          <li>
+            <a class="dropdown-item" href="#" (click)="logout(); $event.preventDefault()">
+              <i class="bi bi-box-arrow-right me-2"></i>Cerrar Sesión
+            </a>
+          </li>
+        </ul>
       </div>
     </div>
   </div>
