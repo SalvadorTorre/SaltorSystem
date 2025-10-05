@@ -1,54 +1,89 @@
-<div class="container-fluid">
-  <div class="row">
-    <div class="col-2">
-      <div class="left-sidebar" style="width: 100%">
-        <ul
-          class="nav flex-column"
-          style="background-color: #af3d2c; height: 87vh"
-        >
-          <br />
+<div class="container-fluid p-0">
+  <div class="row g-0">
+    <!-- Botón para mostrar/ocultar sidebar en dispositivos móviles -->
+    <div class="d-block d-lg-none position-fixed start-0 top-0 p-2 z-index-1000">
+      <button class="btn btn-danger" type="button" data-bs-toggle="offcanvas" data-bs-target="#cajaSidebar" aria-controls="cajaSidebar">
+        <i class="bi bi-list"></i> Menú Caja
+      </button>
+    </div>
+
+    <!-- Sidebar para pantallas grandes (lg y superiores) -->
+    <div class="col-lg-3 col-xl-2 d-none d-lg-block">
+      <div class="sidebar h-100 shadow-sm">
+        <div class="sidebar-header bg-danger text-white p-3 d-flex align-items-center">
+          <i class="bi bi-cash-coin me-2"></i>
+          <h5 class="mb-0">Módulo de Caja</h5>
+        </div>
+        <ul class="nav flex-column sidebar-nav">
           <li class="nav-item">
-            <a
-              class="nav-link"
-              style="color: rgb(250, 247, 247); font-size: 18px"
-              routerLinkActive="active"
-              [routerLink]="['cobrofact']"
-              >Cobro Factura</a
-            >
-          </li>
-          <li class="nav-item">
-            <a
-              class="nav-link"
-              style="color: rgb(250, 247, 247); font-size: 18px"
-              routerLinkActive="active"
-              [routerLink]="['cuadrecaja']"
-              >Cuadre Caja</a
-            >
-          </li>
-          <li class="nav-item">
-            <a
-              class="nav-link"
-              style="color: rgb(250, 247, 247); font-size: 18px"
-              routerLinkActive="active"
-              [routerLink]="['reciboingreso']"
-              >Recibo de Ingreso
+            <a class="nav-link d-flex align-items-center" routerLinkActive="active" [routerLink]="['cobrofact']">
+              <i class="bi bi-receipt me-2"></i>
+              <span>Cobro Factura</span>
             </a>
           </li>
-
           <li class="nav-item">
-            <a
-              class="nav-link"
-              style="color: rgb(250, 247, 247); font-size: 18px"
-              routerLinkActive="active"
-              [routerLink]="['cajaenvio']"
-              >Caja Envio
+            <a class="nav-link d-flex align-items-center" routerLinkActive="active" [routerLink]="['cuadrecaja']">
+              <i class="bi bi-calculator me-2"></i>
+              <span>Cuadre Caja</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link d-flex align-items-center" routerLinkActive="active" [routerLink]="['reciboingreso']">
+              <i class="bi bi-journal-check me-2"></i>
+              <span>Recibo de Ingreso</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link d-flex align-items-center" routerLinkActive="active" [routerLink]="['cajaenvio']">
+              <i class="bi bi-send me-2"></i>
+              <span>Caja Envío</span>
             </a>
           </li>
         </ul>
       </div>
     </div>
-    <div class="col">
-      <router-outlet></router-outlet>
+
+    <!-- Sidebar para dispositivos móviles (offcanvas) -->
+    <div class="offcanvas offcanvas-start" tabindex="-1" id="cajaSidebar" aria-labelledby="cajaSidebarLabel">
+      <div class="offcanvas-header bg-danger text-white">
+        <h5 class="offcanvas-title" id="cajaSidebarLabel">Módulo de Caja</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+      </div>
+      <div class="offcanvas-body p-0">
+        <ul class="nav flex-column sidebar-nav">
+          <li class="nav-item">
+            <a class="nav-link d-flex align-items-center" routerLinkActive="active" [routerLink]="['cobrofact']" data-bs-dismiss="offcanvas">
+              <i class="bi bi-receipt me-2"></i>
+              <span>Cobro Factura</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link d-flex align-items-center" routerLinkActive="active" [routerLink]="['cuadrecaja']" data-bs-dismiss="offcanvas">
+              <i class="bi bi-calculator me-2"></i>
+              <span>Cuadre Caja</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link d-flex align-items-center" routerLinkActive="active" [routerLink]="['reciboingreso']" data-bs-dismiss="offcanvas">
+              <i class="bi bi-journal-check me-2"></i>
+              <span>Recibo de Ingreso</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link d-flex align-items-center" routerLinkActive="active" [routerLink]="['cajaenvio']" data-bs-dismiss="offcanvas">
+              <i class="bi bi-send me-2"></i>
+              <span>Caja Envío</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Contenido principal -->
+    <div class="col-12 col-lg-9 col-xl-10 main-content">
+      <div class="p-3">
+        <router-outlet></router-outlet>
+      </div>
     </div>
   </div>
 </div>
