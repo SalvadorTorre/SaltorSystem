@@ -1,6 +1,8 @@
-.nav-link {
-  color: rgb(250, 247, 247);
+.nav-link
+{
+    color: rgb(250, 247, 247);
 }
+
 
 .nav-link.active {
   text-decoration: none;
@@ -11,5 +13,13 @@
   border-radius: 8px;
   margin: 0px 10px;
 
-  background-color: #f0f0f0;
+  background-color: #F0F0F0;
+}
+.sidebar-nav .nav-link {
+  color: #212529; /* texto negro */
+}
+
+.sidebar-nav .nav-link.active {
+ background-color: #f7f8fa; /* azul bootstrap */
+  color: #611616; /* texto blanco en el activo */
 }

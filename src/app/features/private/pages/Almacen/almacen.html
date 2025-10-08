@@ -1,86 +1,137 @@
 <div class="container-fluid p-0">
-  <div class="row">
-    <div class="col-2">
-      <div class="left-sidebar" style="width: 100%">
-        <ul
-          class="nav flex-column"
-          style="background-color: #af3d2c; height: 90vh"
-        >
-          <br />
+  <div class="row g-0">
+    <!-- Botón para mostrar/ocultar sidebar en dispositivos móviles -->
+    <div class="d-block d-lg-none position-fixed start-0 top-0 p-2 z-index-1000">
+      <button class="btn btn-danger" type="button" data-bs-toggle="offcanvas" data-bs-target="#almacenSidebar" aria-controls="almacenSidebar">
+        <i class="bi bi-list"></i> Menú Almacén
+      </button>
+    </div>
+
+    <!-- Sidebar para pantallas grandes (lg y superiores) -->
+    <div class="col-lg-3 col-xl-2 d-none d-lg-block">
+      <div class="sidebar h-100 shadow-sm">
+        <div class="sidebar-header bg-danger text-white p-3 d-flex align-items-center">
+          <i class="bi bi-box-seam me-2"></i>
+          <h5 class="mb-0">Módulo de Almacén</h5>
+        </div>
+        <ul class="nav flex-column sidebar-nav">
           <li class="nav-item">
-            <a
-              class="nav-link"
-              routerLinkActive="active"
-              [routerLink]="['controlfact']"
-              >Control Factura</a
-            >
-          </li>
-          <li class="nav-item">
-            <a
-              class="nav-link"
-              routerLinkActive="active"
-              [routerLink]="['entradamerc']"
-              >Entrada Mercancias</a
-            >
-          </li>
-          <li class="nav-item">
-            <a
-              class="nav-link"
-              routerLinkActive="active"
-              [routerLink]="['ventainterna']"
-              >Venta Interna
+            <a class="nav-link d-flex align-items-center" routerLinkActive="active" [routerLink]="['controlfact']">
+              <i class="bi bi-file-earmark-check me-2"></i>
+              <span>Control Factura</span>
             </a>
           </li>
-
           <li class="nav-item">
-            <a
-              class="nav-link"
-              routerLinkActive="active"
-              [routerLink]="['pendiente']"
-              >Pendiente de Entrega
+            <a class="nav-link d-flex align-items-center" routerLinkActive="active" [routerLink]="['entradamerc']">
+              <i class="bi bi-box-arrow-in-down me-2"></i>
+              <span>Entrada Mercancías</span>
             </a>
           </li>
-
           <li class="nav-item">
-            <a
-              class="nav-link"
-              routerLinkActive="active"
-              [routerLink]="['salidafactura']"
-              >Control Salida Factura
+            <a class="nav-link d-flex align-items-center" routerLinkActive="active" [routerLink]="['ventainterna']">
+              <i class="bi bi-shop me-2"></i>
+              <span>Venta Interna</span>
             </a>
           </li>
-
           <li class="nav-item">
-            <a
-              class="nav-link"
-              routerLinkActive="active"
-              [routerLink]="['conduce']"
-              >Conduce</a
-            >
-          </li>
-
-          <li class="nav-item">
-            <a
-              class="nav-link"
-              routerLinkActive="active"
-              [routerLink]="['solicitudprestamo']"
-              >Solicitud Prestamo
+            <a class="nav-link d-flex align-items-center" routerLinkActive="active" [routerLink]="['pendiente']">
+              <i class="bi bi-hourglass-split me-2"></i>
+              <span>Pendiente de Entrega</span>
             </a>
           </li>
-
           <li class="nav-item">
-            <a
-              class="nav-link"
-              routerLinkActive="active"
-              [routerLink]="['controlgasoil']"
-              >Contol Gasoil</a
-            >
+            <a class="nav-link d-flex align-items-center" routerLinkActive="active" [routerLink]="['salidafactura']">
+              <i class="bi bi-box-arrow-right me-2"></i>
+              <span>Control Salida Factura</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link d-flex align-items-center" routerLinkActive="active" [routerLink]="['conduce']">
+              <i class="bi bi-truck me-2"></i>
+              <span>Conduce</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link d-flex align-items-center" routerLinkActive="active" [routerLink]="['solicitudprestamo']">
+              <i class="bi bi-clipboard-check me-2"></i>
+              <span>Solicitud Préstamo</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link d-flex align-items-center" routerLinkActive="active" [routerLink]="['controlgasoil']">
+              <i class="bi bi-fuel-pump me-2"></i>
+              <span>Control Gasoil</span>
+            </a>
           </li>
         </ul>
       </div>
     </div>
-    <div class="col">
-      <router-outlet></router-outlet>
+
+    <!-- Sidebar para dispositivos móviles (offcanvas) -->
+    <div class="offcanvas offcanvas-start" tabindex="-1" id="almacenSidebar" aria-labelledby="almacenSidebarLabel">
+      <div class="offcanvas-header bg-danger text-white">
+        <h5 class="offcanvas-title" id="almacenSidebarLabel">Módulo de Almacén</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+      </div>
+      <div class="offcanvas-body p-0">
+        <ul class="nav flex-column sidebar-nav">
+          <li class="nav-item">
+            <a class="nav-link d-flex align-items-center" routerLinkActive="active" [routerLink]="['controlfact']" data-bs-dismiss="offcanvas">
+              <i class="bi bi-file-earmark-check me-2"></i>
+              <span>Control Factura</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link d-flex align-items-center" routerLinkActive="active" [routerLink]="['entradamerc']" data-bs-dismiss="offcanvas">
+              <i class="bi bi-box-arrow-in-down me-2"></i>
+              <span>Entrada Mercancías</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link d-flex align-items-center" routerLinkActive="active" [routerLink]="['ventainterna']" data-bs-dismiss="offcanvas">
+              <i class="bi bi-shop me-2"></i>
+              <span>Venta Interna</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link d-flex align-items-center" routerLinkActive="active" [routerLink]="['pendiente']" data-bs-dismiss="offcanvas">
+              <i class="bi bi-hourglass-split me-2"></i>
+              <span>Pendiente de Entrega</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link d-flex align-items-center" routerLinkActive="active" [routerLink]="['salidafactura']" data-bs-dismiss="offcanvas">
+              <i class="bi bi-box-arrow-right me-2"></i>
+              <span>Control Salida Factura</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link d-flex align-items-center" routerLinkActive="active" [routerLink]="['conduce']" data-bs-dismiss="offcanvas">
+              <i class="bi bi-truck me-2"></i>
+              <span>Conduce</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link d-flex align-items-center" routerLinkActive="active" [routerLink]="['solicitudprestamo']" data-bs-dismiss="offcanvas">
+              <i class="bi bi-clipboard-check me-2"></i>
+              <span>Solicitud Préstamo</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link d-flex align-items-center" routerLinkActive="active" [routerLink]="['controlgasoil']" data-bs-dismiss="offcanvas">
+              <i class="bi bi-fuel-pump me-2"></i>
+              <span>Control Gasoil</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Contenido principal -->
+    <div class="col-12 col-lg-9 col-xl-10 main-content">
+      <div class="p-3">
+        <router-outlet></router-outlet>
+      </div>
     </div>
   </div>
 </div>
