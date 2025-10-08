@@ -14,8 +14,9 @@
             <input
               type="text"
               id="cedula"
+              #cedulaInput
               [(ngModel)]="cedula"
-              (keyup.enter)="buscarDespachador()"
+              (keyup.enter)="buscarDespachador(facturaInput)"
               class="form-control"
               placeholder="Ingrese la cédula"
             />
@@ -24,7 +25,7 @@
             <input  class="form-control" [value]="despacho!.nomDesp!" readonly />
           </div>
           <div class="col-2 d-flex justify-content-center">
-            <button class="btn btn-primary mb-1" (click)="buscarDespachador()">
+            <button class="btn btn-primary mb-1" (click)="buscarDespachador(facturaInput)">
               Buscar
             </button>
           </div>
@@ -39,6 +40,7 @@
     <input
       type="text"
       id="factura"
+      #facturaInput
       name="facturaNumero"
       [(ngModel)]="facturaNumero"
       (keyup.enter)="buscarFactura()"
