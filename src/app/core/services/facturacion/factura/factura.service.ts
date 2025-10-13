@@ -18,13 +18,13 @@ export class ServicioFacturacion {
      console.log('ServicioFacturacion - getByNumero llamado con número:', numero);
   }
 
-
-  //  buscarPorCedula(cedula: string): Observable<any> {
-  //   return this.http.GetRequest(`/despachadores/cedula/${cedula}`);
+  // marcarImpresa(numero: string, body: { fa_envio?: string; fa_fpago?: string }) {
+  //   return this.http.PatchRequest(`/factura-impresa/${numero}`, body);
   // }
-  marcarImpresa(numero: string, body: { fa_envio?: string; fa_fpago?: string }) {
-    return this.http.PatchRequest(`/facturas-impresa/${numero}`, body);
-  }
+ marcarImpresa(numero: string, body: { fa_envio?: string; fa_fpago?: string }) {
+    console.log("📤 Enviando PATCH a backend:", numero, body);
+   return this.http.PatchRequest(`/factura-impresa/${numero}`, body);
+ }
 
   guardarFacturacion(datosParaGuardar: any): Observable<any> {
     return this.http.PostRequest<any, any>("/facturacion", datosParaGuardar);
@@ -49,11 +49,11 @@ editarFacturacion(payload: any) {
 
   buscarTodasFacturacion( ): Observable<any> {
     let url = `/facturacion`;
-
-    console.log(url);
+    console.log("FACTURA",url);
     return this.http.GetRequest<any>(url);
   }
 
+  
   eliminarFacturacion(fa_codFact: string): Observable<any> {
     return this.http.DeleteRequest(`/eliminar-facturacion/${fa_codFact}`, "");
   }

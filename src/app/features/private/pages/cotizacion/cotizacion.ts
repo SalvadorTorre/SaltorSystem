@@ -72,6 +72,10 @@ export class Cotizacion implements OnInit {
   descripcion: string = '';
   codigo: string = '';
   fecha: string = '';
+  cotizacionNumero: string = '';
+  mensaje: string = '';
+  factura: string = '';
+  cotizacionData: any = null;      // objeto con la factura que devuelve el backend
   private descripcionBuscar = new BehaviorSubject<string>('');
   private codigoBuscar = new BehaviorSubject<string>('');
   private fechaBuscar = new BehaviorSubject<string>('');
@@ -516,6 +520,32 @@ export class Cotizacion implements OnInit {
       });
   }
 
+  generarPDF(Cotizacion: CotizacionModelData) {
+    console.log("No. Cotizacion",Cotizacion);
+    if (!Cotizacion.ct_codcoti || Cotizacion.ct_codcoti.trim() === '') {
+      alert('Debe ingresar un número de cotizacion');
+      return;
+    }
+  //   console.log('Buscando cotizacion con número:', this.cotizacionNumero);
+  // this.servicioCotizacion
+  //     .buscarCotizacionDetalle(Cotizacion.ct_codcoti)
+  //     .subscribe((response) => {
+
+    this.servicioCotizacion.getByNumero(Cotizacion.ct_codcoti).subscribe(response => {
+      this.cotizacionData = response.data;
+      console.log(this.cotizacionData.length);
+      if (response) {
+      this.cotizacionData = response; // 🔹 aquí está la cotizacion completa
+      console.log("cotizacionData", this.cotizacionData);
+        this.mensaje = '';
+      //  this.generarPDF();
+      } else {
+        this.cotizacionData = null;
+        this.mensaje = 'No se encontró una cotizacion con ese número';
+      }
+    });
+     
+  }
   eliminarCotizacion(CotizacionId: string) {
     Swal.fire({
       title: '¿Está seguro de eliminar este Cotizacion?',

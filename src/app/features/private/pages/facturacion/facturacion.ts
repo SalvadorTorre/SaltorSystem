@@ -95,6 +95,7 @@ export class Facturacion implements OnInit {
   tiponcf: string = 'Consumidor Final';
   static detFactura: detFacturaData[];
   codmerc: string = '';
+  tipomerc: string = '';
   descripcionmerc: string = '';
   cantidadmerc: number = 0;
   preciomerc: number = 0;
@@ -299,12 +300,12 @@ export class Facturacion implements OnInit {
 
 
   }
-obtenerfpago() {
+  obtenerfpago() {
     this.servicioFpago.obtenerTodosFpago().subscribe(response => {
       this.resultadoFpago = response.data;
     });
   }
-obtenerNcf() {
+  obtenerNcf() {
     this.servicioNcf.buscarTodosNcf().subscribe(response => {
       this.ncflist = response.data;
     });
@@ -338,7 +339,7 @@ obtenerNcf() {
       fa_envio: [''],
       fa_ncfFact: [{value:'', disabled: true }],
       fa_tipoNcf: ['1'],
-      fa_contact0o: [''],
+      fa_contacto: [''],
     });
 
   }
@@ -586,6 +587,7 @@ obtenerNcf() {
       df_cosMerc: ['',],
       df_codClie: ['',],
       df_status: ['',],
+      df_tipomerc: ['',],
     });
   }
 
@@ -696,7 +698,8 @@ obtenerNcf() {
     this.resultadoCodmerc = [];
     this.resultadodescripcionmerc = [];
     this.codmerc = inventario.in_codmerc;
-    this.preciomerc = inventario.in_premerc
+    this.preciomerc = inventario.in_premerc;
+    this.tipomerc = inventario.in_tipoproduct;
     this.descripcionmerc = inventario.in_desmerc;
     this.existenciatxt = inventario.in_canmerc
     this.costotxt = inventario.in_cosmerc;
@@ -716,6 +719,7 @@ obtenerNcf() {
     this.formularioFacturacion.patchValue({
       df_codMerc: inventario.in_codmerc,
       df_desMerc: inventario.in_desmerc,
+      df_tipomerc: inventario.in_tipoproduct,
       df_canMerc: inventario.in_canmerc,
       df_preMerc: inventario.in_premerc,
       df_cosMerc: inventario.in_cosmerc,
@@ -798,8 +802,6 @@ obtenerNcf() {
 
   );
   }
-
-
 
   mostrarMensajeError(mensaje: string): void {
     this.mensagePantalla = true;
@@ -1153,6 +1155,7 @@ obtenerNcf() {
     this.existenciatxt= 0;
     this.costotxt= 0;
     this.medidatxt= 0;
+    this.tipomerc = "";
     this.fecacttxt= " ";
     this.atxt =0;
     this.btxt =0;

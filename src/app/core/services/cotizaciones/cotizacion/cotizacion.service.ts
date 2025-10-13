@@ -39,7 +39,11 @@ export class ServicioCotizacion {
     return this.http.GetRequest<any>(`/detalle-cotizacion/${dc_codcoti}`);
   }
 
-
+  getByNumero(numero: string): Observable<any> {
+    console.log('ServicioCotizacion - getByNumero llamado con número:', numero);
+    return this.http.GetRequest<any>(`/cotizacion-numero/${numero}`);
+     console.log('ServicioFacturacion - getByNumero llamado con número:', numero);
+  }
  buscarCotizacion(pageIndex: number, pageSize: number, codigo?: string, nomcliente?: string, fecha?:string,): Observable<any> {
     let url = `/cotizacion-numero?page=${pageIndex}&limit=${pageSize}`;
 

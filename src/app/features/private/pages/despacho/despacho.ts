@@ -63,12 +63,10 @@ facturaData: any = null;      // objeto con la factura que devuelve el backend
 
     this.serviciofacturacion.getByNumero(this.facturaNumero).subscribe((response) => {
       //this.clienteNombre = this.facturaData.fa_nomClie || 'No encontrado';
-    console.log('actual: ' + this.facturaNumero);
 
-      console.log("respuesta", response);
       if (response) {
       this.facturaData = response; // 🔹 aquí está la factura completa
-      console.log("facturaData", this.facturaData.detalles);
+      console.log("facturaData", this.facturaData);
         this.mensaje = '';
         this.generarPDF();
       } else {
