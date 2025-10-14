@@ -2,7 +2,7 @@
   <div class="row g-3">
     <!-- Columna Izquierda: Datos de Factura -->
     <div class="col-lg-5">
-      <div class="card shadow-sm border-0 h-100">
+      <div class="card shadow-sm border-0 h-10">
         <div class="card-header bg-primary text-white">
           <h5 class="mb-0 fw-semibold">
             <i class="bi bi-receipt me-2"></i>Datos de Factura
@@ -14,7 +14,8 @@
             (ngSubmit)="guardarFacturacion()"
           >
             <!-- Número y Fecha -->
-            <div class="row g-2 mb-3">
+            <div class="row g-2 mb-2">
+              <div class="col-6"> </div>
               <div class="col-md-6">
                 <label class="form-label small text-muted fw-semibold"
                   >No. Factura</label
@@ -26,7 +27,10 @@
                   readonly
                 />
               </div>
-              <div class="col-md-6">
+            </div>
+            <div class="row g-2 mb-2">
+             <div class="col-6"> </div>
+            <div class="col-md-6">
                 <label class="form-label small text-muted fw-semibold"
                   >Fecha</label
                 >
@@ -38,7 +42,6 @@
                 />
               </div>
             </div>
-
             <!-- RNC y Tipo NCF -->
             <div class="row g-2 mb-2">
               <div class="col-md-4">
@@ -566,7 +569,7 @@
                       >
                       <input
                         type="text"
-                        class="form-control form-control-sm text-end fw-bold"
+                        class="form-control form-control-sm text-end fw-bold fs-5"
                         readonly
                         [value]="formatNumber(existenciatxt)"
                       />
@@ -577,7 +580,7 @@
                       >
                       <input
                         type="text"
-                        class="form-control form-control-sm text-end fw-bold"
+                        class="form-control form-control-sm text-end fw-bold fs-5"
                         readonly
                         [(ngModel)]="medidatxt"
                       />
@@ -588,7 +591,7 @@
                       >
                       <input
                         type="text"
-                        class="form-control form-control-sm text-end fw-bold"
+                        class="form-control form-control-sm text-end fw-bold fs-5"
                         readonly
                         [(ngModel)]="fecacttxt"
                       />
@@ -599,12 +602,13 @@
                       >
                       <input
                         type="text"
-                        class="form-control form-control-sm text-end fw-bold"
+                        class="form-control form-control-sm text-end fw-bold fs-5"
                         readonly
                         [value]="formatNumber(costotxt)"
                       />
                     </div>
                   </div>
+                  <div class="row g-1 mb-3"> </div>
 
                   <!-- Porcentajes de ganancia -->
                   <div class="row g-1 mb-2">
@@ -615,31 +619,31 @@
                       >
                       <input
                         type="text"
-                        class="form-control form-control-sm text-end fw-bold"
+                        class="form-control form-control-sm text-end fw-bold fs-5"
                         readonly
                         [value]="formatNumber(atxt)"
                       />
                     </div>
                     <div class="col-2">
                       <label
-                        class="form-label small mb-1 fw-semibold text-center d-block"
+                        class="form-label small mb-1 fw-semibold text-center d-block "
                         >7%</label
                       >
                       <input
                         type="text"
-                        class="form-control form-control-sm text-end fw-bold"
+                        class="form-control form-control-sm text-end fw-bold fs-5"
                         readonly
                         [value]="formatNumber(btxt)"
                       />
                     </div>
                     <div class="col-2">
                       <label
-                        class="form-label small mb-1 fw-semibold text-center d-block"
+                        class="form-label small mb-1 fw-semibold text-center d-block "
                         >10%</label
                       >
                       <input
                         type="text"
-                        class="form-control form-control-sm text-end fw-bold"
+                        class="form-control form-control-sm text-end fw-bold fs-5"
                         readonly
                         [value]="formatNumber(ctxt)"
                       />
@@ -651,7 +655,7 @@
                       >
                       <input
                         type="text"
-                        class="form-control form-control-sm text-end fw-bold"
+                        class="form-control form-control-sm text-end fw-bold fs-5"
                         readonly
                         [value]="formatNumber(dtxt)"
                       />
@@ -663,7 +667,7 @@
                       >
                       <input
                         type="text"
-                        class="form-control form-control-sm text-end fw-bold"
+                        class="form-control form-control-sm text-end fw-bold fs-5"
                         readonly
                         [value]="formatNumber(etxt)"
                       />
@@ -675,13 +679,13 @@
                       >
                       <input
                         type="text"
-                        class="form-control form-control-sm text-end fw-bold"
+                        class="form-control form-control-sm text-end fw-bold fs-5"
                         readonly
                         [value]="formatNumber(ftxt)"
                       />
                     </div>
                   </div>
-
+                  <div class="row g-1 mb-3"> </div>
                   <!-- Última fila con 18% y porcentajes -->
                   <div class="row g-2">
                     <div class="col-3">
@@ -690,7 +694,7 @@
                       >
                       <input
                         type="text"
-                        class="form-control form-control-sm text-end fw-bold"
+                        class="form-control form-control-sm text-end fw-bold fs-5"
                         readonly
                         [value]="formatNumber(gtxt)"
                       />
@@ -701,7 +705,7 @@
                       >
                       <input
                         type="text"
-                        class="form-control form-control-sm text-end fw-bold"
+                        class="form-control form-control-sm text-end fw-bold fs-5"
                         readonly
                         [value]="formatNumber(protxt)"
                         [ngStyle]="{'color': protxt < 10 ? 'red' : 'green'}"
@@ -713,7 +717,7 @@
                       >
                       <input
                         type="text"
-                        class="form-control form-control-sm text-end fw-bold"
+                        class="form-control form-control-sm text-end fw-bold fs-5"
                         readonly
                         [value]="formatNumber(factxt)"
                         [ngStyle]="{'color': factxt < 10 ? 'red' : 'green'}"
@@ -733,44 +737,44 @@
                   </h6>
                 </div>
                 <div class="card-body p-2">
-                  <div class="mb-2">
-                    <label class="form-label small mb-1 fw-semibold"
+                  <div class="mb-0">
+                    <label class="form-label small mb-0 fw-semibold"
                       >Sub-Total</label
                     >
                     <input
                       type="text"
-                      class="form-control text-end fw-bold fs-6"
+                      class="form-control text-end fw-bold fs-10"
                       disabled
                       [(ngModel)]="subtotaltxt"
                     />
                   </div>
-                  <div class="mb-2">
+                  <div class="mb-0">
                     <label class="form-label small mb-1 fw-semibold"
                       >Descuento</label
                     >
                     <input
                       type="text"
-                      class="form-control text-end fw-bold fs-6"
+                      class="form-control text-end fw-bold fs-10"
                       disabled
                       [(ngModel)]="descuentotxt"
                     />
                   </div>
-                  <div class="mb-2">
+                  <div class="mb-0">
                     <label class="form-label small mb-1 fw-semibold"
                       >ITBIS</label
                     >
                     <input
                       type="text"
-                      class="form-control text-end fw-bold fs-6"
+                      class="form-control text-end fw-bold fs-10"
                       disabled
                       [(ngModel)]="itbitxt"
                     />
                   </div>
                   <div class="border-top pt-2">
-                    <label class="form-label mb-1 fw-bold">Total General</label>
+                    <label class="form-label mb-0 fw-bold">Total General</label>
                     <input
                       type="text"
-                      class="form-control text-end fw-bold fs-5 text-success"
+                      class="form-control text-end fw-bold fs-10 text-success"
                       disabled
                       [(ngModel)]="totalgraltxt"
                     />
