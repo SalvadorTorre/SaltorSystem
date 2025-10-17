@@ -935,15 +935,16 @@ export class CobroFact implements OnInit {
   marcarImpresa() {
     const numero = this.formularioFacturacion.get('fa_codFact')?.value;
     console.log("numero", numero); 
+    console.log("this.ftipoPago", this.ftipoPago);
     this.servicioFacturacion
-    .marcarImpresa(numero, { fa_fpago: this.formularioFacturacion.get('fa_fpago')?.value,
+    .marcarImpresa(numero, { fa_fpago: this.ftipoPago,
       fa_envio: this.formularioFacturacion.get('fa_envio')?.value })
     .subscribe({next: (res: any) => {
       console.log("✅ Respuesta backend:", res);
         this.facturaData = res.data; // 👈 viene del backend
         console.log("Factura actualizada y marcada como impresa ✅", this.facturaData);
         this.mensaje = '';
-        this.generarPDF();
+        // this.generarPDF();
       },
       error: (err) => {
         console.error("Error marcando factura ❌", err);
@@ -982,6 +983,7 @@ generarPDF() {
     alert("Debe buscar una factura primero");
     return;
   }
+  console.log("this.facturaData", this.facturaData);
   const f = this.facturaData;
   const doc = new jsPDF({
     orientation: 'p',
@@ -1138,6 +1140,7 @@ generarPDF() {
 
   // --- Guardar PDF ---
   doc.save(`Factura_${f.fa_codFact}.pdf`);
+  this.limpia();
 }
 
 

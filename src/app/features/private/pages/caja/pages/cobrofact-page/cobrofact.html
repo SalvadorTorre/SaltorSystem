@@ -94,7 +94,7 @@
             </table>
 
             <!-- Controles de paginación -->
-            <nav aria-label="Paginación de facturas" class="mt-2">
+            <!-- <nav aria-label="Paginación de facturas" class="mt-2">
               <ul class="pagination pagination-sm justify-content-center">
                 <li class="page-item disabled">
                   <a class="page-link" href="#">
@@ -110,7 +110,7 @@
                   </a>
                 </li>
               </ul>
-            </nav>
+            </nav> -->
           </div>
         </div>
 
@@ -146,7 +146,7 @@
                       <select
                         #input9
                         name="formapago"
-                        [ngModel]="ftipoPago"
+                        [(ngModel)]="ftipoPago"
                         class="form-select"
                         [disabled]="!chekPagado"
                       >
@@ -220,30 +220,35 @@
                     </div>
                   </div>
                 </div>
-                
+                <!-- jhsfjghfdsjhj -->
                 <div class="row mt-3">
-                  <div class="col-12 d-flex justify-content-end">
-                    <button
-                      class="btn btn-success me-2"
-                      [disabled]="!chekPagado || valorPagado < formularioFacturacion.get('fa_valFact')?.value"
-                    >
-                      <i class="bi bi-save me-1"></i> Guardar Pago
-                    </button>
-                    <button
-                      class="btn btn-primary"
-                      [disabled]="!chekPagado"
-                      (click)="marcarImpresa()"
-                    >
-                      <i class="bi bi-printer me-1"></i> Imprimir
-                    </button>
-                  </div>
-                </div>
-              </div>
+                <div class="d-flex justify-content-between gap-2 mt-3"
+                >
+                <button
+                  class="btn btn-secondary flex-fill"
+                  [disabled]="!chekPagado || valorPagado < formularioFacturacion.get('fa_valFact')?.value"
+                  (click)="marcarImpresa()"  >
+                  <i class="bi bi-arrow-counterclockwise me-1"></i>Guardar
+                </button>
+                <button
+                  class="btn btn-success flex-fill"
+                  (click)="limpia()" >
+                  <i class="bi bi-check-circle me-1"></i>Deshacer
+                </button>
+                <button
+                  class="btn btn-primary flex-fill"
+                  [disabled]="!chekPagado"
+                  (click)="buscarFactura()">
+                  <i class="bi bi-printer me-1"></i> Imprimir
+                </button>
+              </div>      
             </div>
           </div>
         </div>
       </div>
     </div>
+    </div>
+  </div>
   </div>
       <!-- Detalles de la factura -->
 
