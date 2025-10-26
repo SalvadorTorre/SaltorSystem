@@ -1,0 +1,408 @@
+<div class="container-fluid">
+  <div class="card shadow-sm h-100">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+      <h1 class="h3 mb-0"><i class="bi bi-receipt me-2"></i>Mantenimiento de NCF</h1>
+    </div>
+    <div class="card-body">
+      <!-- Formulario principal -->
+      <form [formGroup]="ncfForm" (ngSubmit)="guardarNCF()" class="needs-validation">
+        
+        <!-- Sección de datos de empresa -->
+        <div class="card mb-4">
+          <div class="card-header bg-light">
+            <h5 class="mb-0"><i class="bi bi-building me-2"></i>Datos de la Empresa</h5>
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-12 col-md-6">
+                <div class="form-floating">
+                  <input 
+                    type="text" 
+                    id="empresaRNC" 
+                    formControlName="empresaRNC" 
+                    class="form-control" 
+                    placeholder="RNC de la Empresa"
+                    required>
+                  <label for="empresaRNC">RNC de la Empresa</label>
+                  <div class="invalid-feedback">
+                    El RNC de la empresa es requerido
+                  </div>
+                </div>
+              </div>
+              <div class="col-12 col-md-6">
+                <div class="form-floating">
+                  <input 
+                    type="text" 
+                    id="empresaNombre" 
+                    formControlName="empresaNombre" 
+                    class="form-control" 
+                    placeholder="Nombre de la Empresa"
+                    required>
+                  <label for="empresaNombre">Nombre de la Empresa</label>
+                  <div class="invalid-feedback">
+                    El nombre de la empresa es requerido
+                  </div>
+                </div>
+              </div>
+              <div class="col-12">
+                <div class="form-floating">
+                  <input 
+                    type="text" 
+                    id="empresaDireccion" 
+                    formControlName="empresaDireccion" 
+                    class="form-control" 
+                    placeholder="Dirección de la Empresa">
+                  <label for="empresaDireccion">Dirección de la Empresa</label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Sección de tipo NCF y secuencias -->
+        <div class="card mb-4">
+          <div class="card-header bg-light">
+            <h5 class="mb-0"><i class="bi bi-upc me-2"></i>Tipo de NCF y Secuencias</h5>
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-12 col-md-6">
+                <div class="form-floating">
+                  <select 
+                    id="tipoNCF" 
+                    formControlName="tipoNCF" 
+                    class="form-select" 
+                    required>
+                    <option value="" selected disabled>Seleccione un tipo</option>
+                    <option value="B01">B01 - Factura de Crédito Fiscal</option>
+                    <option value="B02">B02 - Factura de Consumo</option>
+                    <option value="B03">B03 - Nota de Débito</option>
+                    <option value="B04">B04 - Nota de Crédito</option>
+                    <option value="E31">E31 - Factura para Exportaciones</option>
+                    <option value="E32">E32 - Factura para Zonas Francas</option>
+                    <option value="E33">E33 - Factura para Regímenes Especiales</option>
+                    <option value="E34">E34 - Factura para Proveedores del Estado</option>
+                  </select>
+                  <label for="tipoNCF">Tipo de NCF</label>
+                  <div class="invalid-feedback">
+                    Debe seleccionar un tipo de NCF
+                  </div>
+                </div>
+              </div>
+              <div class="col-12 col-md-6">
+                <div class="form-floating">
+                  <input 
+                    type="text" 
+                    id="serie" 
+                    formControlName="serie" 
+                    class="form-control" 
+                    placeholder="Serie"
+                    required>
+                  <label for="serie">Serie</label>
+                  <div class="invalid-feedback">
+                    La serie es requerida
+                  </div>
+                </div>
+              </div>
+              <div class="col-12 col-md-6">
+                <div class="form-floating">
+                  <input 
+                    type="number" 
+                    id="secuenciaInicial" 
+                    formControlName="secuenciaInicial" 
+                    class="form-control" 
+                    placeholder="Secuencia Inicial"
+                    required>
+                  <label for="secuenciaInicial">Secuencia Inicial</label>
+                  <div class="invalid-feedback">
+                    La secuencia inicial es requerida
+                  </div>
+                </div>
+              </div>
+              <div class="col-12 col-md-6">
+                <div class="form-floating">
+                  <input 
+                    type="number" 
+                    id="secuenciaActual" 
+                    formControlName="secuenciaActual" 
+                    class="form-control" 
+                    placeholder="Secuencia Actual"
+                    required>
+                  <label for="secuenciaActual">Secuencia Actual</label>
+                  <div class="invalid-feedback">
+                    La secuencia actual es requerida
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Sección de cantidad y fecha NCF -->
+        <div class="card mb-4">
+          <div class="card-header bg-light">
+            <h5 class="mb-0"><i class="bi bi-calendar-check me-2"></i>Cantidad y Fecha NCF</h5>
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-12 col-md-6">
+                <div class="form-floating">
+                  <input 
+                    type="number" 
+                    id="cantidadNCF" 
+                    formControlName="cantidadNCF" 
+                    class="form-control" 
+                    placeholder="Cantidad de NCF"
+                    required>
+                  <label for="cantidadNCF">Cantidad de NCF</label>
+                  <div class="invalid-feedback">
+                    La cantidad de NCF es requerida
+                  </div>
+                </div>
+              </div>
+              <div class="col-12 col-md-6">
+                <div class="form-floating">
+                  <input 
+                    type="number" 
+                    id="cantidadDisponible" 
+                    formControlName="cantidadDisponible" 
+                    class="form-control" 
+                    placeholder="Cantidad Disponible"
+                    readonly>
+                  <label for="cantidadDisponible">Cantidad Disponible</label>
+                </div>
+              </div>
+              <div class="col-12 col-md-6">
+                <div class="form-floating">
+                  <input 
+                    type="date" 
+                    id="fechaVencimiento" 
+                    formControlName="fechaVencimiento" 
+                    class="form-control" 
+                    placeholder="Fecha de Vencimiento"
+                    required>
+                  <label for="fechaVencimiento">Fecha de Vencimiento</label>
+                  <div class="invalid-feedback">
+                    La fecha de vencimiento es requerida
+                  </div>
+                </div>
+              </div>
+              <div class="col-12 col-md-6">
+                <div class="form-floating">
+                  <input 
+                    type="date" 
+                    id="fechaEmision" 
+                    formControlName="fechaEmision" 
+                    class="form-control" 
+                    placeholder="Fecha de Emisión"
+                    required>
+                  <label for="fechaEmision">Fecha de Emisión</label>
+                  <div class="invalid-feedback">
+                    La fecha de emisión es requerida
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Sección de alertas NCF -->
+        <div class="card mb-4">
+          <div class="card-header bg-light">
+            <h5 class="mb-0"><i class="bi bi-exclamation-triangle me-2"></i>Configuración de Alertas</h5>
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-12 col-md-6">
+                <div class="form-floating">
+                  <input 
+                    type="number" 
+                    id="umbralAlerta" 
+                    formControlName="umbralAlerta" 
+                    class="form-control" 
+                    placeholder="Umbral de Alerta"
+                    required>
+                  <label for="umbralAlerta">Umbral de Alerta (cantidad)</label>
+                  <div class="invalid-feedback">
+                    El umbral de alerta es requerido
+                  </div>
+                  <div class="form-text">
+                    Se mostrará una alerta cuando la cantidad disponible sea menor a este valor
+                  </div>
+                </div>
+              </div>
+              <div class="col-12 col-md-6">
+                <div class="form-floating">
+                  <input 
+                    type="number" 
+                    id="diasAlerta" 
+                    formControlName="diasAlerta" 
+                    class="form-control" 
+                    placeholder="Días para Alerta"
+                    required>
+                  <label for="diasAlerta">Días para Alerta (vencimiento)</label>
+                  <div class="invalid-feedback">
+                    Los días para alerta son requeridos
+                  </div>
+                  <div class="form-text">
+                    Se mostrará una alerta cuando falten estos días para el vencimiento
+                  </div>
+                </div>
+              </div>
+              <div class="col-12">
+                <div class="form-check form-switch">
+                  <input 
+                    class="form-check-input" 
+                    type="checkbox" 
+                    id="alertaEmail" 
+                    formControlName="alertaEmail">
+                  <label class="form-check-label" for="alertaEmail">
+                    Enviar alertas por correo electrónico
+                  </label>
+                </div>
+              </div>
+              <div class="col-12" *ngIf="ncfForm.get('alertaEmail').value">
+                <div class="form-floating">
+                  <input 
+                    type="email" 
+                    id="emailAlerta" 
+                    formControlName="emailAlerta" 
+                    class="form-control" 
+                    placeholder="Correo para Alertas">
+                  <label for="emailAlerta">Correo para Alertas</label>
+                  <div class="invalid-feedback">
+                    Debe ingresar un correo electrónico válido
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Botones de acción -->
+        <div class="d-flex justify-content-end gap-2 mt-4">
+          <button type="button" class="btn btn-outline-secondary" (click)="limpiarFormulario()">
+            <i class="bi bi-x-circle me-1"></i>Cancelar
+          </button>
+          <button type="submit" class="btn btn-primary" [disabled]="ncfForm.invalid">
+            <i class="bi bi-save me-1"></i>Guardar
+          </button>
+        </div>
+      </form>
+      
+      <!-- Tabla de NCFs existentes -->
+      <div class="card mt-5">
+        <div class="card-header bg-light">
+          <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="bi bi-table me-2"></i>NCFs Registrados</h5>
+            <div class="input-group" style="max-width: 300px;">
+              <span class="input-group-text"><i class="bi bi-search"></i></span>
+              <input type="text" class="form-control" placeholder="Buscar NCF..." [(ngModel)]="filtroNCF">
+            </div>
+          </div>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover table-striped mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Tipo</th>
+                  <th>Serie</th>
+                  <th>Secuencia Actual</th>
+                  <th>Cantidad</th>
+                  <th>Disponibles</th>
+                  <th>Vencimiento</th>
+                  <th>Estado</th>
+                  <th class="text-center">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let ncf of ncfList | filter:filtroNCF">
+                  <td>{{ncf.tipoNCF}}</td>
+                  <td>{{ncf.serie}}</td>
+                  <td>{{ncf.secuenciaActual}}</td>
+                  <td>{{ncf.cantidadNCF}}</td>
+                  <td>
+                    <span [ngClass]="{'text-success': ncf.cantidadDisponible > ncf.umbralAlerta, 'text-warning': ncf.cantidadDisponible <= ncf.umbralAlerta && ncf.cantidadDisponible > 0, 'text-danger': ncf.cantidadDisponible <= 0}">
+                      {{ncf.cantidadDisponible}}
+                    </span>
+                  </td>
+                  <td>{{ncf.fechaVencimiento | date:'dd/MM/yyyy'}}</td>
+                  <td>
+                    <span class="badge" [ngClass]="{'bg-success': isActive(ncf), 'bg-danger': !isActive(ncf)}">
+                      {{isActive(ncf) ? 'Activo' : 'Inactivo'}}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="d-flex justify-content-center gap-2">
+                      <button class="btn btn-sm btn-outline-primary" (click)="editarNCF(ncf)" title="Editar">
+                        <i class="bi bi-pencil"></i>
+                      </button>
+                      <button class="btn btn-sm btn-outline-danger" (click)="eliminarNCF(ncf)" title="Eliminar">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                      <button class="btn btn-sm btn-outline-info" (click)="verDetalleNCF(ncf)" title="Ver detalle">
+                        <i class="bi bi-eye"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <tr *ngIf="ncfList?.length === 0">
+                  <td colspan="8" class="text-center py-3">
+                    No hay registros de NCF disponibles
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card-footer">
+          <nav aria-label="Paginación de NCFs">
+            <ul class="pagination pagination-sm justify-content-center mb-0">
+              <li class="page-item disabled">
+                <a class="page-link" href="#" tabindex="-1" aria-disabled="true">
+                  <i class="bi bi-chevron-left"></i>
+                </a>
+              </li>
+              <li class="page-item active"><a class="page-link" href="#">1</a></li>
+              <li class="page-item"><a class="page-link" href="#">2</a></li>
+              <li class="page-item"><a class="page-link" href="#">3</a></li>
+              <li class="page-item">
+                <a class="page-link" href="#">
+                  <i class="bi bi-chevron-right"></i>
+                </a>
+              </li>
+            </ul>
+          </nav>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de confirmación para eliminar -->
+<div class="modal fade" id="eliminarNCFModal" tabindex="-1" aria-labelledby="eliminarNCFModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title" id="eliminarNCFModalLabel">
+          <i class="bi bi-exclamation-triangle me-2"></i>Confirmar eliminación
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p>¿Está seguro que desea eliminar este registro de NCF?</p>
+        <p class="mb-0"><strong>Tipo:</strong> {{ncfSeleccionado?.tipoNCF}}</p>
+        <p class="mb-0"><strong>Serie:</strong> {{ncfSeleccionado?.serie}}</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+          <i class="bi bi-x-circle me-1"></i>Cancelar
+        </button>
+        <button type="button" class="btn btn-danger" (click)="confirmarEliminarNCF()">
+          <i class="bi bi-trash me-1"></i>Eliminar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

@@ -57,6 +57,10 @@ const routes: Routes = [
           path:"grupo-mercancias",
           loadChildren: () => import('./pages/grupormerc/grupomerc-modulo').then(m => m.ModuloGrupoMercancias)
         },
+           {
+          path:"ncf",
+          loadChildren: () => import('./pages/ncf/ncf-modulo').then(m => m.ModuloNcf)
+        },
       ]
     }
   ];

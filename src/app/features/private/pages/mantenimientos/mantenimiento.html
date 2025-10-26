@@ -17,71 +17,104 @@
         <ul class="nav flex-column sidebar-nav nav-pills">
 
         <!-- <ul class="nav flex-column sidebar-nav"> -->
-          <li class="nav-item">
-            <a class="nav-link d-flex align-items-center text-dark" routerLinkActive="active" [routerLink]="['inventario']">
-              <i class="bi bi-box me-2"></i>
-              <span>Inventario</span>
-            </a>
+        <li class="nav-item">
+          <a class="nav-link d-flex align-items-center text-dark" routerLinkActive="active" [routerLink]="['inventario']">
+            <i class="bi bi-box me-2"></i>
+            <span>Productos</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link d-flex align-items-center text-dark" routerLinkActive="active" [routerLink]="['cliente']">
+            <i class="bi bi-people me-2"></i>
+            <span>Cliente</span>
+          </a>
           </li>
+        <li class="nav-item">
+          <a class="nav-link d-flex align-items-center text-dark" routerLinkActive="active" [routerLink]="['suplidor']">
+            <i class="bi bi-truck me-2"></i>
+            <span>Suplidor</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link d-flex align-items-center text-dark" routerLinkActive="active" [routerLink]="['zona']">
+            <i class="bi bi-geo-alt me-2"></i>
+            <span>Zonas</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link d-flex align-items-center text-dark" routerLinkActive="active" [routerLink]="['sector']">
+            <i class="bi bi-map me-2"></i>
+            <span>Sector</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link d-flex align-items-center text-dark" routerLinkActive="active" [routerLink]="['usuario']">
+            <i class="bi bi-person me-2"></i>
+            <span>Usuario</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link d-flex align-items-center text-dark" routerLinkActive="active" [routerLink]="['choferes']">
+            <i class="bi bi-car-front me-2"></i>
+            <span>Choferes</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link d-flex align-items-center text-dark" routerLinkActive="active" [routerLink]="['despachadores']">
+            <i class="bi bi-send me-2"></i>
+            <span>Despachadores</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link d-flex align-items-center text-dark" routerLinkActive="active" [routerLink]="['grupo-mercancias']">
+            <i class="bi bi-collection me-2"></i>
+            <span>Grupo de Mercancías</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link d-flex align-items-center text-dark" routerLinkActive="active" [routerLink]="['Empresas']">
+            <i class="bi bi-building me-2"></i>
+            <span>Empresa</span>
+          </a>
+        </li>  
+        <!-- <li class="nav-item"> -->
+        <!-- Botón principal -->
+        <!-- <a href="javascript:void(0)"
+          class="nav-link d-flex align-items-center text-dark"
+          (click)="toggleMenu('configuracion')">
+   -->
+          <!-- Configuración con submenu -->
+          <!-- Configuración con submenu -->
           <li class="nav-item">
-            <a class="nav-link d-flex align-items-center text-dark" routerLinkActive="active" [routerLink]="['cliente']">
-              <i class="bi bi-people me-2"></i>
-              <span>Cliente</span>
+            <a
+              href="javascript:void(0)"
+              class="nav-link d-flex align-items-center text-dark justify-content-between"
+              (click)="toggleMenu('configuracion')"
+            >
+              <span>
+                <i class="bi bi-sliders me-2"></i> Configuración
+              </span>
+              <i
+                class="bi"
+                [ngClass]="{
+                  'bi-chevron-down': openMenu === 'configuracion',
+                  'bi-chevron-right': openMenu !== 'configuracion'
+                }"
+              ></i>
             </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link d-flex align-items-center text-dark" routerLinkActive="active" [routerLink]="['suplidor']">
-              <i class="bi bi-truck me-2"></i>
-              <span>Suplidor</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link d-flex align-items-center text-dark" routerLinkActive="active" [routerLink]="['zona']">
-              <i class="bi bi-geo-alt me-2"></i>
-              <span>Zonas</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link d-flex align-items-center text-dark" routerLinkActive="active" [routerLink]="['sector']">
-              <i class="bi bi-map me-2"></i>
-              <span>Sector</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link d-flex align-items-center text-dark" routerLinkActive="active" [routerLink]="['usuario']">
-              <i class="bi bi-person me-2"></i>
-              <span>Usuario</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link d-flex align-items-center text-dark" routerLinkActive="active" [routerLink]="['choferes']">
-              <i class="bi bi-car-front me-2"></i>
-              <span>Choferes</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link d-flex align-items-center text-dark" routerLinkActive="active" [routerLink]="['despachadores']">
-              <i class="bi bi-send me-2"></i>
-              <span>Despachadores</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link d-flex align-items-center text-dark" routerLinkActive="active" [routerLink]="['grupo-mercancias']">
-              <i class="bi bi-collection me-2"></i>
-              <span>Grupo de Mercancías</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link d-flex align-items-center text-dark" routerLinkActive="active" [routerLink]="['Empresas']">
-              <i class="bi bi-building me-2"></i>
-              <span>Empresa</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link d-flex align-items-center text-dark" href="#">
-              <i class="bi bi-sliders me-2"></i>
-              <span>Configuración</span>
-            </a>
+
+            <ul class="nav flex-column ms-4 collapse" [ngClass]="{'show': openMenu === 'configuracion'}">
+              <li class="nav-item">
+                <a class="nav-link text-dark" routerLinkActive="active" [routerLink]="['ncf']">
+                  <i class="bi bi-file-text me-2"></i> NCF
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link text-dark" routerLinkActive="active" [routerLink]="['otros']">
+                  <i class="bi bi-gear me-2"></i> Otros
+                </a>
+              </li>
+            </ul>
           </li>
         </ul>
       </div>
@@ -154,11 +187,47 @@
               <span>Empresa</span>
             </a>
           </li>
+       <!-- Configuración con submenu (móvil) -->
           <li class="nav-item">
-            <a class="nav-link d-flex align-items-center" href="#" data-bs-dismiss="offcanvas">
-              <i class="bi bi-sliders me-2"></i>
-              <span>Configuración</span>
+            <a
+              href="javascript:void(0)"
+              class="nav-link d-flex align-items-center justify-content-between text-dark"
+              (click)="toggleMenu('configuracion')"
+            >
+              <span>
+                <i class="bi bi-sliders me-2"></i> Configuración
+              </span>
+              <i
+                class="bi"
+                [ngClass]="{
+                  'bi-chevron-down': openMenu === 'configuracion',
+                  'bi-chevron-right': openMenu !== 'configuracion'
+                }"
+              ></i>
             </a>
+
+            <ul class="nav flex-column ms-4 collapse" [ngClass]="{'show': openMenu === 'configuracion'}">
+              <li class="nav-item">
+                <a
+                  class="nav-link text-dark"
+                  routerLinkActive="active"
+                  [routerLink]="['ncf']"
+                  data-bs-dismiss="offcanvas"
+                >
+                  <i class="bi bi-file-text me-2"></i> NCF
+                </a>
+              </li>
+              <li class="nav-item">
+                <a
+                  class="nav-link text-dark"
+                  routerLinkActive="active"
+                  [routerLink]="['otros']"
+                  data-bs-dismiss="offcanvas"
+                >
+                  <i class="bi bi-gear me-2"></i> Otros
+                </a>
+              </li>
+            </ul>
           </li>
         </ul>
       </div>

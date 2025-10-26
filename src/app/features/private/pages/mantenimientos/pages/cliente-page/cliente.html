@@ -1,140 +1,144 @@
-<div class="card" style="height: 87vh">
-  <div class="card-header">
-    <h1>Cliente</h1>
+<div class="card shadow-sm h-100">
+  <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+    <h1 class="h3 mb-0"><i class="bi bi-people-fill me-2"></i>Gestión de Clientes</h1>
   </div>
   <div class="card-body">
     <!-- buscador -->
-    <div class="row">
-      <div class="col-2">
-        <label for="">Buscar Codigo</label>
-        <input
-          [(ngModel)]="txtcodigo"
-          type="text"
-          placeholder="Digite codigo"
-          class="form-control"
-          (input)="idEntra($event)"
-        />
+    <div class="row g-3 mb-4">
+      <div class="col-12 col-md-4 col-lg-3">
+        <div class="form-floating">
+          <input
+            [(ngModel)]="txtcodigo"
+            type="text"
+            id="searchCode"
+            placeholder="Digite código"
+            class="form-control"
+            (input)="idEntra($event)"
+          />
+          <label for="searchCode">Buscar por Código</label>
+        </div>
       </div>
-      <div class="col-3">
-        <label for="">Buscar Nombre</label>
-        <input
-          [(ngModel)]="txtdescripcion"
-          type="text"
-          placeholder="Digite el Nombre..."
-          class="form-control"
-          (input)="descripcionEntra($event)"
-        />
+      <div class="col-12 col-md-5 col-lg-4">
+        <div class="form-floating">
+          <input
+            [(ngModel)]="txtdescripcion"
+            type="text"
+            id="searchName"
+            placeholder="Digite el Nombre..."
+            class="form-control"
+            (input)="descripcionEntra($event)"
+          />
+          <label for="searchName">Buscar por Nombre</label>
+        </div>
       </div>
-      <div class="col-2">
-        <button class="btn btn-danger mt-4" (click)="limpiaBusqueda()">
-          <i class="bi bi-arrow-counterclockwise"></i>
-        </button>
-      </div>
-      <div class="col-2">
-        <button class="btn btn-primary mt-4" (click)="nuevoCliente()">
-          Nuevo Cliente
-        </button>
-        <!-- <button class="btn btn-primary" (click)="obtenerTodosCliente()">Buscar Cliente</button> -->
+      <div class="col-12 col-md-3 col-lg-5">
+        <div class="d-flex gap-2 h-100 align-items-center">
+          <button class="btn btn-danger d-flex align-items-center" (click)="limpiaBusqueda()">
+            <i class="bi bi-arrow-counterclockwise me-1"></i>
+            <span class="d-none d-sm-inline">Limpiar</span>
+          </button>
+          <button class="btn btn-primary d-flex align-items-center" (click)="nuevoCliente()">
+            <i class="bi bi-plus-circle me-1"></i>
+            <span>Nuevo Cliente</span>
+          </button>
+        </div>
       </div>
     </div>
-    <br />
     <!-- fin buscador -->
 
     <!-- Grid -->
     <div class="table-responsive">
-      <!--  ***********************************-->
-      <style>
-        table tr:hover {
-          background-color: #963737; /* Cambia este color al que desees */
-        }
-      </style>
-      <!--**********************************-->
-
-      <table class="table table-bordered table-hover table-striped table-sm">
-        <thead class="table-dark">
-          <tr>
-            <th>Codigo</th>
-            <th>Nombre</th>
-            <th>Telefono</th>
-            <th>Rnc</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let clientes of clienteList">
-            <td>{{clientes.cl_codClie}}</td>
-            <td>{{clientes.cl_nomClie}}</td>
-            <td>{{clientes.cl_telClie}}</td>
-            <td>{{clientes.cl_rnc}}</td>
-            <td>
-
-              <i
-              (click)="editarCliente(clientes)"
-              class="bi bi-pencil text-primary"
-              style="padding: 10px"
-             >
-            </i>
-            <i
-            (click)="consultarCliente(clientes)"
-            class="bi bi-trash text-danger"
-            style="padding: 10px"
-           > 
-            </i>
-            <i
-             (click)="consultarCliente(clientes)"
-             class="bi bi-card-list text-success"
-             style="padding: 10px"
-           >
-         </i>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+          <table class="table table-hover table-striped mb-0">
+            <thead class="bg-light">
+              <tr>
+                <th class="text-center" style="width: 10%">Código</th>
+                <th style="width: 35%">Nombre</th>
+                <th style="width: 15%">Teléfono</th>
+                <th style="width: 15%">RNC</th>
+                <th class="text-center" style="width: 15%">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let clientes of clienteList">
+                <td class="text-center fw-bold">{{clientes.cl_codClie}}</td>
+                <td>{{clientes.cl_nomClie}}</td>
+                <td>{{clientes.cl_telClie}}</td>
+                <td>{{clientes.cl_rnc}}</td>
+                <td>
+                  <div class="d-flex justify-content-center gap-2">
+                    <button 
+                      (click)="editarCliente(clientes)"
+                      class="btn btn-sm btn-outline-primary"
+                      title="Editar cliente">
+                      <i class="bi bi-pencil"></i>
+                    </button>
+                    <button
+                      (click)="consultarCliente(clientes)"
+                      class="btn btn-sm btn-outline-danger"
+                      title="Eliminar cliente">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                    <button
+                      (click)="consultarCliente(clientes)"
+                      class="btn btn-sm btn-outline-success"
+                      title="Ver detalles">
+                      <i class="bi bi-card-list"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
-    <nav aria-label="Page navigation">
-      <ul class="pagination justify-content-center">
-        <li class="page-item" [class.disabled]="currentPage === 1">
-          <a class="page-link" (click)="changePage(1)" aria-label="First">
-            <span aria-hidden="true">&laquo;&laquo;</span>
-          </a>
-        </li>
-        <li class="page-item" [class.disabled]="currentPage === 1">
-          <a
-            class="page-link"
-            (click)="changePage(currentPage - 1)"
-            aria-label="Previous"
+    <div class="d-flex justify-content-center mt-3">
+      <nav aria-label="Page navigation">
+        <ul class="pagination pagination-sm flex-wrap justify-content-center">
+          <li class="page-item" [class.disabled]="currentPage === 1">
+            <a class="page-link" (click)="changePage(1)" aria-label="First">
+              <i class="bi bi-chevron-double-left"></i>
+            </a>
+          </li>
+          <li class="page-item" [class.disabled]="currentPage === 1">
+            <a
+              class="page-link"
+              (click)="changePage(currentPage - 1)"
+              aria-label="Previous"
+            >
+              <i class="bi bi-chevron-left"></i>
+            </a>
+          </li>
+          <li
+            *ngFor="let page of pages"
+            class="page-item"
+            [class.active]="currentPage === page"
           >
-            <span aria-hidden="true">&laquo;</span>
-          </a>
-        </li>
-        <li
-          *ngFor="let page of pages"
-          class="page-item"
-          [class.active]="currentPage === page"
-        >
-          <a class="page-link" (click)="changePage(page)">{{ page }}</a>
-        </li>
-        <li class="page-item" [class.disabled]="currentPage === totalPages">
-          <a
-            class="page-link"
-            (click)="changePage(currentPage + 1)"
-            aria-label="Next"
-          >
-            <span aria-hidden="true">&raquo;</span>
-          </a>
-        </li>
-        <li class="page-item" [class.disabled]="currentPage === totalPages">
-          <a
-            class="page-link"
-            (click)="changePage(totalPages)"
-            aria-label="Last"
-          >
-            <span aria-hidden="true">&raquo;&raquo;</span>
-          </a>
-        </li>
-      </ul>
-    </nav>
-    <br />
+            <a class="page-link" (click)="changePage(page)">{{ page }}</a>
+          </li>
+          <li class="page-item" [class.disabled]="currentPage === totalPages">
+            <a
+              class="page-link"
+              (click)="changePage(currentPage + 1)"
+              aria-label="Next"
+            >
+              <i class="bi bi-chevron-right"></i>
+            </a>
+          </li>
+          <li class="page-item" [class.disabled]="currentPage === totalPages">
+            <a
+              class="page-link"
+              (click)="changePage(totalPages)"
+              aria-label="Last"
+            >
+              <i class="bi bi-chevron-double-right"></i>
+            </a>
+          </li>
+        </ul>
+      </nav>
+    </div>
 
     <!-- Formulario de cliente -->
     <div
@@ -144,138 +148,156 @@
       aria-labelledby="modalClienteLabel"
       aria-hidden="true"
     >
-      <div class="modal-dialog modal-lg">
+      <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
-          <div class="modal-header">
-            <h1 class="modal-title fs-5" id="modalClienteLabel">
-              {{tituloModalCliente}}
-            </h1>
+          <div class="modal-header bg-primary text-white">
+            <h5 class="modal-title" id="modalClienteLabel">
+              <i class="bi bi-person-plus-fill me-2"></i>{{tituloModalCliente}}
+            </h5>
             <button
               type="button"
-              class="btn-close"
+              class="btn-close btn-close-white"
               data-bs-dismiss="modal"
               aria-label="Close"
             ></button>
           </div>
           <div class="modal-body">
-            <div *ngIf="habilitarFormulario" class="mb-3">
+            <div *ngIf="habilitarFormulario">
               <form
                 [formGroup]="formularioCliente"
                 (ngSubmit)="guardarCliente()"
+                class="needs-validation"
               >
-                <div class="form-row">
-                  <div class="form-group">
-                    <label for="cl_codClie"> Rnc</label>
-                    <input
-                      type="number"
-                      class="uppercase-input"
-                      (input)="convertToUpperCase($event)"
-                      (keydown)="moveFocus($event, input2)"
-                      #input1
-                      class="form-control form-control-sm"
-                      formControlName="cl_rnc"
-                    />
+                <div class="row g-3">
+                  <!-- Primera fila -->
+                  <div class="col-md-6">
+                    <div class="form-floating">
+                      <input
+                        type="number"
+                        id="cl_rnc"
+                        class="form-control uppercase-input"
+                        (input)="convertToUpperCase($event)"
+                        (keydown)="moveFocus($event, input2)"
+                        #input1
+                        formControlName="cl_rnc"
+                        placeholder="RNC"
+                      />
+                      <label for="cl_rnc">RNC</label>
+                    </div>
                   </div>
-                  <div class="form-group">
-                    <label for="cl_nomClie">Nombre</label>
-                    <input
-                      type="text"
-                      class="uppercase-input"
-                      (input)="convertToUpperCase($event)"
-                      (keydown)="moveFocus($event, input3)"
-                      #input2
-                      class="form-control form-control-sm"
-                      formControlName="cl_nomClie"
-                    />
+                  <div class="col-md-6">
+                    <div class="form-floating">
+                      <input
+                        type="text"
+                        id="cl_nomClie"
+                        class="form-control uppercase-input"
+                        (input)="convertToUpperCase($event)"
+                        (keydown)="moveFocus($event, input3)"
+                        #input2
+                        formControlName="cl_nomClie"
+                        placeholder="Nombre"
+                      />
+                      <label for="cl_nomClie">Nombre</label>
+                    </div>
+                  </div>
+                  
+                  <!-- Segunda fila -->
+                  <div class="col-12">
+                    <div class="form-floating">
+                      <input
+                        type="text"
+                        id="cl_dirClie"
+                        class="form-control uppercase-input"
+                        (input)="convertToUpperCase($event)"
+                        (keydown)="moveFocus($event, input5)"
+                        #input3
+                        formControlName="cl_dirClie"
+                        placeholder="Dirección"
+                      />
+                      <label for="cl_dirClie">Dirección</label>
+                    </div>
+                  </div>
+                  
+                  <!-- Tercera fila -->
+                  <div class="col-md-6">
+                    <div class="form-floating">
+                      <select formControlName="cl_codSect" class="form-select" id="cl_codSect">
+                        <option disabled selected value="">Seleccione un Sector</option>
+                        <option
+                          *ngFor="let sector of sectorList"
+                          [value]="sector.se_codSect"
+                        >
+                          {{sector.se_desSect}}
+                        </option>
+                      </select>
+                      <label for="cl_codSect">Sector</label>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="form-floating">
+                      <select formControlName="cl_codZona" class="form-select" id="cl_codZona">
+                        <option disabled selected value="">Seleccione una Zona</option>
+                        <option
+                          *ngFor="let zona of zonasList"
+                          [value]="zona.zo_codZona"
+                        >
+                          {{zona.zo_descrip}}
+                        </option>
+                      </select>
+                      <label for="cl_codZona">Zona</label>
+                    </div>
+                  </div>
+                  
+                  <!-- Cuarta fila -->
+                  <div class="col-md-6">
+                    <div class="form-floating">
+                      <input
+                        type="text"
+                        id="cl_telClie"
+                        class="form-control uppercase-input"
+                        (input)="convertToUpperCase($event)"
+                        (keydown)="moveFocus($event, input5)"
+                        #input5
+                        formControlName="cl_telClie"
+                        appPhoneNumberMask
+                        placeholder="Teléfono"
+                      />
+                      <label for="cl_telClie">Teléfono</label>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="form-floating">
+                      <input
+                        id="cl_tipo"
+                        formControlName="cl_tipo"
+                        class="form-control"
+                        placeholder="Tipo"
+                      />
+                      <label for="cl_tipo">Tipo</label>
+                    </div>
+                  </div>
+                  
+                  <!-- Quinta fila -->
+                  <div class="col-md-6">
+                    <div class="form-floating">
+                      <select formControlName="cl_status" class="form-select" id="cl_status">
+                        <option value="" disabled selected>Seleccione un estado</option>
+                        <option value="1">Activo</option>
+                        <option value="0">Inactivo</option>
+                      </select>
+                      <label for="cl_status">Estado</label>
+                    </div>
                   </div>
                 </div>
-                <div class="form-row">
-                  <div class="form-group">
-                    <label for="cl_dirClie">Direccion</label>
-                    <input
-                      type="text"
-                      class="uppercase-input"
-                      (input)="convertToUpperCase($event)"
-                      (keydown)="moveFocus($event, input5)"
-                      #input3
-                      class="form-control form-control-sm"
-                      formControlName="cl_dirClie"
-                    />
-                  </div>
-                  <div class="form-group">
-                    <label for="cl_codSect">Codigo de Sector</label>
-                    <select formControlName="cl_codSect" class="form-control">
-                      <option disabled selected>Selecione un Sector</option>
-                      <option
-                        *ngFor="let sector of sectorList"
-                        [value]="sector.se_codSect"
-                      >
-                        {{sector.se_desSect}}
-                      </option>
-                    </select>
-
-                    <!--<input type="text" class="uppercase-input" (input)="convertToUpperCase($event)"
-                    (keydown)="moveFocus($event, input5)" #input4
-                    class="form-control form-control-sm "
-                    formControlName="cl_codSect"
-                    />-->
-                  </div>
+                
+                <div class="d-flex justify-content-end mt-4">
+                  <button type="button" class="btn btn-outline-secondary me-2" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-1"></i>Cancelar
+                  </button>
+                  <button type="submit" class="btn btn-success">
+                    <i class="bi bi-check-circle me-1"></i>{{modoedicionCliente ? "Actualizar" : "Guardar"}}
+                  </button>
                 </div>
-                <div class="form-row">
-                  <div class="form-group">
-                    <label for="cl_codZona">Codigo de Zona</label>
-                    <select formControlName="cl_codZona" class="form-control">
-                      <option disabled selected>Selecione una Zona</option>
-                      <option
-                        *ngFor="let zona of zonasList"
-                        [value]="zona.zo_codZona"
-                      >
-                        {{zona.zo_descrip}}
-                      </option>
-                    </select>
-                  </div>
-                  <div class="form-group">
-                    <label for="cl_telClie">Telefono</label>
-                    <input
-                      type="text"
-                      class="uppercase-input"
-                      (input)="convertToUpperCase($event)"
-                      (keydown)="moveFocus($event, input5)"
-                      #input5
-                      class="form-control form-control-sm"
-                      formControlName="cl_telClie"
-                      appPhoneNumberMask
-                    />
-                  </div>
-                </div>
-                <div class="form-row">
-                  <div class="form-group">
-                    <label for="cl_tipo">Tipo</label>
-                    <input
-                      id="cl_tipo"
-                      formControlName="cl_tipo"
-                      class="form-control"
-                    />
-                  </div>
-                  <div class="form-group">
-                    <label for="cl_status">Status</label>
-                    <select formControlName="cl_status" class="form-control">
-                      <option value="" disabled selected>
-                        Selecciona un status...
-                      </option>
-                      <option value="1">Activo</option>
-                      <option value="0">Inactivo</option>
-                    </select>
-                  </div>
-                </div>
-                <div class="row">
-                  <div class="col d-flex justify-content-end">
-                    <button type="submit" class="btn btn-success">
-                      {{modoedicionCliente ? "Editar" : "Guardar"}}
-                    </button>
-                  </div>
-                </div>
-                <!-- <button type="button" class="btn btn-secondary" (click)="mostrarFormulario = false">Cancelar</button> -->
               </form>
             </div>
           </div>
