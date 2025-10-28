@@ -41,7 +41,10 @@ export class AuthService {
             localStorage.setItem('username', userData.data.usuario.nombreUsuario);
             localStorage.setItem('sucursal', userData.data.sucursal);
             localStorage.setItem('empresa', userData.data.empresa);
-            localStorage.setItem('idSucursal', userData.data.usuario.sucursal);
+            localStorage.setItem('codigousuario', userData.data.usuario.codUsuario);
+            localStorage.setItem('idSucursal', userData.data.usuario.sucursalid);
+            localStorage.setItem('codigoempresa', userData.data.usuario.cod_empre);
+  
             this.loggedIn = true;
           }
         }),

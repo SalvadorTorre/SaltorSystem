@@ -34,6 +34,7 @@ interface Ncf {
   templateUrl: './ncf.html',
   styleUrls: ['./ncf.css']
 })
+
 export class NcfComponent {
   ncf: Ncf = this.getNuevoNcf();
   listaNcf: Ncf[] = [];

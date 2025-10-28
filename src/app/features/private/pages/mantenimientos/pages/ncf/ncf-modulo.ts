@@ -8,7 +8,6 @@ import { RutaNcf } from './ncf-ruta';
 
 @NgModule({
   declarations: [
-    NcfComponent
   ],
   imports: [
     CommonModule,

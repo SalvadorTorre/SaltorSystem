@@ -127,27 +127,31 @@
       <!-- Sección de usuario con dropdown -->
       <div class="dropdown">
         <button
-          class="user-avatar-btn dropdown-toggle"
+          class="btn btn-outline-light rounded-circle fw-bold d-flex align-items-center justify-content-center dropdown-toggle user-avatar-btn"
           type="button"
           id="userDropdown"
           data-bs-toggle="dropdown"
+          data-bs-auto-close="true"
           aria-expanded="false"
-          [title]="this.personName"
+          [title]="personName"
+          aria-label="Opciones de usuario"
+          style="width: 40px; height: 40px;"
         >
-          {{this.initials}}
+          {{ initials }}
         </button>
-        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+        <ul class="dropdown-menu dropdown-menu-end dropdown-menu-dark shadow" aria-labelledby="userDropdown">
           <li class="dropdown-header">
             <div class="d-flex flex-column">
-              <span class="fw-bold">{{this.personName}}</span>
-              <small class="text-muted">{{this.sucursalName}}</small>
+              <span class="fw-bold">{{ personName }}</span>
+              <small class="text-muted">{{ sucursalName }}</small>
             </div>
           </li>
           <li><hr class="dropdown-divider" /></li>
           <li>
-            <a class="dropdown-item" href="#" (click)="logout(); $event.preventDefault()">
-              <i class="bi bi-box-arrow-right me-2"></i>Cerrar Sesión
-            </a>
+            <button class="dropdown-item d-flex align-items-center gap-2" type="button" (click)="logout()">
+              <i class="bi bi-box-arrow-right"></i>
+              <span>Cerrar Sesión</span>
+            </button>
           </li>
         </ul>
       </div>

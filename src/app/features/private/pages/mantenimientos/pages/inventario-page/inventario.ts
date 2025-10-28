@@ -163,8 +163,8 @@ export class Inventario implements OnInit {
 
   obtenerTodosInventario(page: number) {
     this.servicioInventario.obtenerTodosInventario(page, this.pageSize).subscribe(response => {
-      this.invenarioList = response.data;
-      this.totalItems = response.pagination.total;
+      this.invenarioList = response.data.rows;
+      this.totalItems = response.data.pagination.total;
       this.currentPage = page;
     }
     );

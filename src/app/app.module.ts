@@ -4,9 +4,11 @@ import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { RouterModule } from '@angular/router';
 import { HttpClientModule } from '@angular/common/http';
+import { NcfComponent } from './features/private/pages/mantenimientos/pages/ncf/ncf';
 @NgModule({
   declarations: [
-    AppComponent
+    AppComponent,
+    NcfComponent
   ],
   imports: [
     BrowserModule,
