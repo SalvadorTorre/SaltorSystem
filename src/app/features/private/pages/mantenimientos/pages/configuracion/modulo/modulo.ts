@@ -1,13 +1,14 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { NgForm } from '@angular/forms';
 import { ModuloModel, Modulo } from './modelo';
+import { ServicioModulo } from 'src/app/core/services/mantenimientos/modulo/modulo.service';
 
 @Component({
   selector: 'app-config-modulo',
   templateUrl: './modulo.html',
   styleUrls: ['./modulo.css']
 })
-export class ModuloPage {
+export class ModuloPage implements OnInit {
   modulos: Modulo[] = [];
   filtro = '';
 
@@ -19,12 +20,34 @@ export class ModuloPage {
     permisos: []
   };
 
-  constructor() {
-    this.modulos = [
-      new ModuloModel({ idmodulo: 1, descmodulo: 'Inventario', scceso: 'S', lectura: 'S' }),
-      new ModuloModel({ idmodulo: 2, descmodulo: 'Ventas', scceso: 'S', lectura: 'N' }),
-      new ModuloModel({ idmodulo: 3, descmodulo: 'Reportes', scceso: 'N', lectura: 'S' })
-    ];
+  constructor(private moduloSrv: ServicioModulo) {}
+
+  ngOnInit(): void {
+    this.cargarModulos();
+  }
+
+  cargarModulos(): void {
+    // Intentar obtener todos; si backend devuelve { data: [] } u []
+    this.moduloSrv.obtenerTodosModulo().subscribe({
+      next: (resp: any) => {
+        const lista = Array.isArray(resp?.data) ? resp.data : (Array.isArray(resp) ? resp : []);
+        this.modulos = (lista || []).map((m: any) => new ModuloModel({
+          idmodulo: m.idmodulo,
+          descmodulo: m.descmodulo,
+          scceso: m.scceso,
+          lectura: m.lectura,
+          permisos: m.permisos || []
+        }));
+      },
+      error: (err) => {
+        console.error('Error cargando módulos', err);
+        // Fallback opcional si falla: mantener lista vacía
+         alert(err.error.message); // “El módulo 'Contabilidad' ya existe.”
+        this.modulos = [];
+      }
+
+
+    });
   }
 
   get listaFiltrada(): Modulo[] {
@@ -47,18 +70,40 @@ export class ModuloPage {
     const lec = (this.nuevo.lectura || 'N').toUpperCase();
     if (!['S','N'].includes(scc) || !['S','N'].includes(lec)) return;
 
-    const nextId = this.modulos.length ? Math.max(...this.modulos.map(m => m.idmodulo)) + 1 : 1;
-    const nuevoModulo = new ModuloModel({
-      idmodulo: nextId,
+    const payload: Partial<Modulo> = {
       descmodulo: desc,
       scceso: scc,
       lectura: lec,
       permisos: []
-    });
+    };
 
-    this.modulos = [nuevoModulo, ...this.modulos];
-    // reset form
-    this.nuevo = { descmodulo: '', scceso: 'N', lectura: 'N', permisos: [] };
-    form.resetForm({ descmodulo: '', scceso: 'N', lectura: 'N' });
+    this.moduloSrv.guardarModulo(payload).subscribe({
+      next: () => {
+        // tras guardar, recargar lista desde backend
+        this.cargarModulos();
+        // reset form
+        this.nuevo = { descmodulo: '', scceso: 'N', lectura: 'N', permisos: [] };
+        form.resetForm({ descmodulo: '', scceso: 'N', lectura: 'N' });
+      },
+      error: (err) => {
+        console.error('Error guardando módulo', err);
+      }
+    });
   }
+  getBadgeClass(value: string, tipo: 'acceso' | 'lectura') {
+  if (tipo === 'acceso') return (value === 'S') ? 'bg-success' : 'bg-secondary';
+  if (tipo === 'lectura') return (value === 'S') ? 'bg-info' : 'bg-secondary';
+  return 'bg-secondary';
+}
+editarModulo(modulo: any) {
+  console.log('Editar módulo', modulo);
+  // Aquí abres modal o navegas a formulario de edición
+}
+
+eliminarModulo(modulo: any) {
+  if(confirm(`¿Desea eliminar el módulo ${modulo.descmodulo}?`)) {
+    console.log('Eliminar módulo', modulo);
+    // Aquí llamas al servicio que elimina el módulo
+  }
+}
 }

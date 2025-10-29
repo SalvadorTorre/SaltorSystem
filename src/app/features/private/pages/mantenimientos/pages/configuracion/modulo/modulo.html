@@ -19,15 +19,15 @@
         </div>
       </div>
 
-      <div class="table-responsive">
+      <!-- <div class="table-responsive">
         <table class="table table-hover table-striped">
           <thead class="table-light">
             <tr>
-              <th>ID</th>
-              <th>Descripción</th>
-              <th>Acceso</th>
-              <th>Lectura</th>
-              <th>Permisos</th>
+              <th scope="col">ID</th>
+              <th scope="col">Descripción</th>
+              <th scope="col">Acceso</th>
+              <th scope="col">Lectura</th>
+              <th scope="col">Permisos</th>
             </tr>
           </thead>
           <tbody>
@@ -51,7 +51,51 @@
             </tr>
           </tbody>
         </table>
-      </div>
+      </div> -->
+ <div class="table-responsive">
+  <table class="table table-hover table-striped">
+    <thead class="table-light">
+      <tr>
+        <th scope="col">ID</th>
+        <th scope="col">Descripción</th>
+        <th scope="col">Acceso</th>
+        <th scope="col">Lectura</th>
+        <th scope="col">Permisos</th>
+        <th scope="col">Acciones</th> <!-- Nueva columna para botones -->
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let m of listaFiltrada">
+        <td>{{ m.idmodulo }}</td>
+        <td>{{ m.descmodulo }}</td>
+        <td>
+          <span class="badge" [ngClass]="(m.scceso || 'N') === 'S' ? 'bg-success' : 'bg-secondary'">
+            {{ (m.scceso || 'N') === 'S' ? 'Sí' : 'No' }}
+          </span>
+        </td>
+        <td>
+          <span class="badge" [ngClass]="(m.lectura || 'N') === 'S' ? 'bg-info' : 'bg-secondary'">
+            {{ (m.lectura || 'N') === 'S' ? 'Sí' : 'No' }}
+          </span>
+        </td>
+        <td>{{ m.permisos?.length || 0 }}</td>
+        <td>
+          <!-- Botones de acción -->
+          <button class="btn btn-sm btn-primary me-1" (click)="editarModulo(m)">
+            Editar
+          </button>
+          <button class="btn btn-sm btn-danger" (click)="eliminarModulo(m)">
+            Eliminar
+          </button>
+        </td>
+      </tr>
+      <tr *ngIf="listaFiltrada?.length === 0">
+        <td colspan="6" class="text-center py-3">No hay módulos configurados</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
     </div>
   </div>
 </div>
