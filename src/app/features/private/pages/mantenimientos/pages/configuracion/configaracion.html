@@ -24,7 +24,8 @@
               <span><i class="bi bi-box-seam me-2"></i> Movimientos Productos</span>
               <i class="bi" [ngClass]="{'bi-chevron-down': openMenu === 'productos', 'bi-chevron-right': openMenu !== 'productos'}"></i>
             </a>
-                        <div class="collapse" [ngClass]="{'show': openMenu === 'productos'}" id="submenuProductos">
+            
+            <div class="collapse" [ngClass]="{'show': openMenu === 'productos'}" id="submenuProductos">
               <ul class="nav flex-column submenu">
                 <li class="nav-item">
                   <a class="nav-link submenu-item" [routerLink]="['movproducto']">
@@ -44,6 +45,7 @@
               </ul>
             </div>
           </li>
+
           <!-- Inventario -->
           <li class="nav-item">
             <a class="nav-link menu-item-productos d-flex justify-content-between align-items-center"

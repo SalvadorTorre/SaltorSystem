@@ -77,20 +77,13 @@
             <span>Empresa</span>
           </a>
         </li>  
-        <!-- <li class="nav-item"> -->
-        <!-- Botón principal -->
-        <!-- <a href="javascript:void(0)"
-          class="nav-link d-flex align-items-center text-dark"
-          (click)="toggleMenu('configuracion')">
-   -->
-          <!-- Configuración con submenu -->
+  
           <!-- Configuración con submenu -->
           <li class="nav-item">
             <a
               href="javascript:void(0)"
               class="nav-link d-flex align-items-center text-dark justify-content-between"
-              (click)="toggleMenu('configuracion')"
-            >
+              (click)="toggleMenu('configuracion')" >
               <span>
                 <i class="bi bi-sliders me-2"></i> Configuración
               </span>
@@ -107,6 +100,16 @@
               <li class="nav-item">
                 <a class="nav-link text-dark" routerLinkActive="active" [routerLink]="['ncf']">
                   <i class="bi bi-file-text me-2"></i> NCF
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link text-dark" routerLinkActive="active" [routerLink]="['modulo']">
+                  <i class="bi bi-ui-checks-grid me-2"></i> Modulos
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link text-dark" routerLinkActive="active" [routerLink]="['permiso']">
+                  <i class="bi bi-shield-lock me-2"></i> Permisos
                 </a>
               </li>
               <li class="nav-item">
@@ -215,6 +218,25 @@
                   data-bs-dismiss="offcanvas"
                 >
                   <i class="bi bi-file-text me-2"></i> NCF
+                </a>
+              </li>
+              <li class="nav-item">
+                <a
+                  class="nav-link text-dark"
+                  routerLinkActive="active"
+                  [routerLink]="['modulo']"
+                  data-bs-dismiss="offcanvas"
+                >
+                  <i class="bi bi-ui-checks-grid me-2"></i> Modulos                </a>
+              </li>
+              <li class="nav-item">
+                <a
+                  class="nav-link text-dark"
+                  routerLinkActive="active"
+                  [routerLink]="['permiso']"
+                  data-bs-dismiss="offcanvas"
+                >
+                  <i class="bi bi-shield-lock me-2"></i> Permisos
                 </a>
               </li>
               <li class="nav-item">

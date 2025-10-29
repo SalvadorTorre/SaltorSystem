@@ -61,6 +61,14 @@ const routes: Routes = [
           path:"ncf",
           loadChildren: () => import('./pages/ncf/ncf-modulo').then(m => m.ModuloNcf)
         },
+        {
+          path:"modulo",
+          loadChildren: () => import('./pages/configuracion/modulo/modulo-modulo').then(m => m.ModuloModulo)
+        },
+        {
+          path:"permiso",
+          loadChildren: () => import('./pages/configuracion/permiso/permiso-modulo').then(m => m.PermisoModulo)
+        },
       ]
     }
   ];
