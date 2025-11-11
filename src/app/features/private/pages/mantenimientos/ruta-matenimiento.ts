@@ -57,9 +57,13 @@ const routes: Routes = [
           path:"grupo-mercancias",
           loadChildren: () => import('./pages/grupormerc/grupomerc-modulo').then(m => m.ModuloGrupoMercancias)
         },
-           {
+        {
           path:"ncf",
           loadChildren: () => import('./pages/ncf/ncf-modulo').then(m => m.ModuloNcf)
+        },
+        {
+          path:"encf",
+          loadChildren: () => import('./pages/encf/encf-modulo').then(m => m.ModuloEncf)
         },
         {
           path:"modulo",
@@ -68,6 +72,14 @@ const routes: Routes = [
         {
           path:"permiso",
           loadChildren: () => import('./pages/configuracion/permiso/permiso-modulo').then(m => m.PermisoModulo)
+        },
+        {
+          path:"tipousuario",
+          loadChildren: () => import('./pages/configuracion/tipousuario/tipousuario-modulo').then(m => m.TipousuarioModulo)
+        },
+        {
+          path:"contfactura",
+          loadChildren: () => import('./pages/configuracion/contfactura/contfactura-modulo').then(m => m.ContFacturaModulo)
         },
       ]
     }

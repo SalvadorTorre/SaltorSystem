@@ -6,6 +6,7 @@ import { ServicioUsuario } from 'src/app/core/services/mantenimientos/usuario/us
 import { ServicioEmpresa } from 'src/app/core/services/mantenimientos/empresas/empresas.service';
 import { EmpresaModelData, SucursalesData } from 'src/app/core/services/mantenimientos/empresas';
 import { ServicioSucursal } from 'src/app/core/services/mantenimientos/sucursal/sucursal.service'; declare var $: any;
+import { ServicioTipousuario } from 'src/app/core/services/mantenimientos/tipousuario/tipousuario.service';
 import Swal from 'sweetalert2';
 import { Empresas } from '../empresas-page/empresas';
 import { HttpInvokeService } from 'src/app/core/services/http-invoke.service';
@@ -15,7 +16,6 @@ import { HttpInvokeService } from 'src/app/core/services/http-invoke.service';
   templateUrl: './usuario.html',
   styleUrls: ['./usuario.css']
 })
-
 
 export class Usuario implements OnInit {
   totalItems = 0;
@@ -53,12 +53,14 @@ export class Usuario implements OnInit {
   usuarioList: ModeloUsuarioData[] = [];
   selectedUsuario: any = null;
   empresaData: EmpresaModelData[] = [];
+  tiposList: any[] = [];
   constructor(
     private fb: FormBuilder,
     private servicioUsuario: ServicioUsuario,
     private servicioEmpresa: ServicioEmpresa,
     private http: HttpInvokeService,
-    private servicioSucursal: ServicioSucursal
+    private servicioSucursal: ServicioSucursal,
+    private tipoSrv: ServicioTipousuario
   ) {
     this.crearFormularioUsuario();
     this.descripcionBuscar.pipe(
@@ -113,9 +115,19 @@ export class Usuario implements OnInit {
       }
 
     });
-    this.formularioUsuario.get('empresa')!.disable();
-    this.formularioUsuario.get('idEmpresa')!.disable();
-    this.formularioUsuario.get('idSucursal')!.disable();
+    const empresaNombreCtrl = this.formularioUsuario.get('empresaNombre');
+    if (empresaNombreCtrl) empresaNombreCtrl.disable();
+
+    // Cargar tipos de usuario para el select
+    this.tipoSrv.obtenerTodosTipousuario().subscribe({
+      next: (res) => {
+        const items = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
+        this.tiposList = items || [];
+      },
+      error: () => {
+        this.tiposList = [];
+      }
+    });
   }
 
 
@@ -125,6 +137,16 @@ export class Usuario implements OnInit {
       claveUsuario: ['1234', Validators.required],
       nombreUsuario: ['', Validators.required],
       nivel: [''],
+      correo: [''],
+      claveCorreo: [''],
+      metaVenta: [''],
+      despacho: [false],
+      idtipoUsuario: [null],
+      sucursalid: [null, Validators.required],
+      cod_empre: [''],
+      empresaNombre: [''], // solo visual
+      idpermiso: [null],
+      // Permisos existentes (se conservan)
       facturacion: [false],
       factLectura: [false],
       compra: [false],
@@ -142,13 +164,6 @@ export class Usuario implements OnInit {
       mercadeo: [false],
       usuario: [false],
       vendedor: [false],
-      correo: [''],
-      despacho: [false],
-      empresa: ['', Validators.required],
-      sucursal: ['', Validators.required],
-      idEmpresa: [''],
-      idSucursal: [''],
-
     });
   }
   habilitarFormularioUsuario() {
@@ -176,11 +191,13 @@ export class Usuario implements OnInit {
     this.modoedicionUsuario = true;
     this.formularioUsuario.patchValue(usuario);
     this.formularioUsuario.patchValue({
-      sucursal: usuario.sucursal,
-      idSucursal: usuario.sucursal,
-      empresa: usuario.empresaInfo.nom_empre,
-      idEmpresa: usuario.empresa,
-
+      sucursalid: (this.userioSafe(usuario, 'sucursalid') ?? this.userioSafe(usuario, 'sucursal')) ?? null,
+      cod_empre: this.userioSafe(usuario, 'cod_empre') ?? this.userioSafe(usuario, 'empresa') ?? '',
+      empresaNombre: usuario?.empresaInfo?.nom_empre ?? '',
+      claveCorreo: this.userioSafe(usuario, 'claveCorreo') ?? '',
+      metaVenta: this.userioSafe(usuario, 'metaVenta') ?? '',
+      idtipoUsuario: this.userioSafe(usuario, 'idtipoUsuario') ?? null,
+      idpermiso: this.userioSafe(usuario, 'idpermiso') ?? null,
     });
     this.tituloModalUsuario = 'Editando Usuario';
     $('#modalusuario').modal('show');
@@ -197,11 +214,13 @@ export class Usuario implements OnInit {
     this.tituloModalUsuario = 'Consulta Usuario';
     this.formularioUsuario.patchValue(Usuario);
     this.formularioUsuario.patchValue({
-      sucursal: Usuario.sucursal,
-      idSucursal: Usuario.sucursal,
-      empresa: Usuario.empresaInfo.nom_empre,
-      idEmpresa: Usuario.empresa,
-
+      sucursalid: (this.userioSafe(Usuario, 'sucursalid') ?? this.userioSafe(Usuario, 'sucursal')) ?? null,
+      cod_empre: this.userioSafe(Usuario, 'cod_empre') ?? this.userioSafe(Usuario, 'empresa') ?? '',
+      empresaNombre: Usuario?.empresaInfo?.nom_empre ?? '',
+      claveCorreo: this.userioSafe(Usuario, 'claveCorreo') ?? '',
+      metaVenta: this.userioSafe(Usuario, 'metaVenta') ?? '',
+      idtipoUsuario: this.userioSafe(Usuario, 'idtipoUsuario') ?? null,
+      idpermiso: this.userioSafe(Usuario, 'idpermiso') ?? null,
     });
     $('#modalusuario').modal('show');
     this.habilitarFormulario = true;
@@ -236,6 +255,15 @@ export class Usuario implements OnInit {
     })
   }
 
+  private userioSafe(obj: any, key: string): any {
+    try {
+      const v = obj ? obj[key] : null;
+      return (v !== undefined && v !== null) ? v : null;
+    } catch {
+      return null;
+    }
+  }
+
   descripcionEntra(event: Event) {
     const inputElement = event.target as HTMLInputElement;
     this.descripcionBuscar.next(inputElement.value.toUpperCase());
@@ -248,10 +276,8 @@ export class Usuario implements OnInit {
     console.log(this.formularioUsuario.value);
     if (this.formularioUsuario.valid) {
       if (this.modoedicionUsuario) {
-        this.formularioUsuario.patchValue({
-          empresa: this.formularioUsuario.get('idEmpresa')!.value,
-        });
-        this.servicioUsuario.editarUsuario(this.usuarioid, this.formularioUsuario.value).subscribe(response => {
+        const payload = { ...this.formularioUsuario.value };
+        this.servicioUsuario.editarUsuario(this.usuarioid, payload).subscribe(response => {
           Swal.fire({
             title: "Excelente!",
             text: "Usuario Editado correctamente.",
@@ -266,11 +292,8 @@ export class Usuario implements OnInit {
         });
       }
       else {
-        this.formularioUsuario.patchValue({
-          empresa: this.formularioUsuario.get('idEmpresa')!.value,
-        });
-        this.formularioUsuario.get('empresa')!.enable();
-        this.servicioUsuario.guardarUsuario(this.formularioUsuario.value).subscribe(response => {
+        const payload = { ...this.formularioUsuario.value };
+        this.servicioUsuario.guardarUsuario(payload).subscribe(response => {
           Swal.fire({
             title: "Excelente!",
             text: "Usuario Guardado correctamente.",
@@ -352,8 +375,8 @@ export class Usuario implements OnInit {
     this.resultadoEmpresa = [];
     this.buscarEmpresa.reset();
     this.formularioUsuario.patchValue({
-      empresa: Empresas.cod_empre,
-
+      cod_empre: empresa.cod_empre,
+      empresaNombre: (empresa as any)?.nom_empre ?? '',
     });
   }
 
@@ -441,20 +464,20 @@ export class Usuario implements OnInit {
   // }
 
   seleccionarSucursal(sucursal: any) {
-    const sucur = this.formularioUsuario.get('sucursal')!.value;
+    const sucur = this.formularioUsuario.get('sucursalid')!.value;
     this.sucursalSeleccionada = this.sucursalesList.filter(s => s.cod_sucursal === parseInt(sucur));
     console.log('Sucursal seleccionada:', this.sucursalSeleccionada);
     // console.log('Sucursal seleccionada:', this.sucursalSeleccionada[0].cod_empre
 
     // );
     this.formularioUsuario.patchValue({
-      idSucursal: this.sucursalSeleccionada[0].cod_sucursal,
-      idEmpresa: this.sucursalSeleccionada[0].cod_empre
+      sucursalid: this.sucursalSeleccionada[0].cod_sucursal,
+      cod_empre: this.sucursalSeleccionada[0].cod_empre
     });
     this.servicioEmpresa.buscarEmpres(this.sucursalSeleccionada[0].cod_empre).subscribe((response) => {
       console.log('Empresa:', response);
       this.formularioUsuario.patchValue({
-        empresa: response.data[0].nom_empre
+        empresaNombre: response.data[0].nom_empre
       });
     })
     this.sucursales = [];

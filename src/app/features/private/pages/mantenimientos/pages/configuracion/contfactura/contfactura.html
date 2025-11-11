@@ -1,0 +1,85 @@
+<div class="container-fluid">
+  <div class="row g-3">
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white d-flex align-items-center justify-content-between">
+          <div class="d-flex align-items-center">
+            <i class="bi bi-receipt me-2"></i>
+            <h5 class="mb-0">Control Factura</h5>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <select class="form-select form-select-sm w-auto" [(ngModel)]="filtroSucursal" (change)="cargarItems(1)">
+              <option [ngValue]="undefined">Filtrar por sucursal</option>
+              <option *ngFor="let s of sucursales" [ngValue]="s.cod_sucursal">{{ s.nom_sucursal }}</option>
+            </select>
+            <button class="btn btn-light btn-sm" (click)="abrirNuevo()" data-bs-toggle="modal" data-bs-target="#contFacModal">
+              <i class="bi bi-plus-circle me-1"></i> Nuevo
+            </button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-sm table-hover">
+              <thead>
+                <tr>
+                  <th style="width: 10%">#</th>
+                  <th style="width: 30%">Sucursal</th>
+                  <th style="width: 15%">Año</th>
+                  <th style="width: 15%">Contador</th>
+                  <th style="width: 20%">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let it of items; let i = index">
+                  <td>{{ it.id || it.cod }}</td>
+                  <td>{{ descSucursal(it) }}</td>
+                  <td>{{ it.ano }}</td>
+                  <td>{{ it.contador }}</td>
+                  <td>
+                    <button class="btn btn-primary btn-sm me-2" (click)="abrirEditar(it, i)" data-bs-toggle="modal" data-bs-target="#contFacModal">Editar</button>
+                    <button class="btn btn-danger btn-sm" (click)="eliminar(it)">Eliminar</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: ContFactura -->
+  <div class="modal fade" id="contFacModal" tabindex="-1" aria-labelledby="contFacModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="contFacModalLabel">{{ editIndex >= 0 ? 'Editar Control Factura' : 'Nuevo Control Factura' }}</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <form #contForm="ngForm" (ngSubmit)="guardar(contForm)">
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label">Sucursal</label>
+              <select class="form-select" name="idsucursal" [(ngModel)]="actual.idsucursal" required>
+                <option [ngValue]="undefined">Seleccione una sucursal</option>
+                <option *ngFor="let s of sucursales" [ngValue]="s.cod_sucursal">{{ s.nom_sucursal }}</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Año</label>
+              <input class="form-control" type="number" name="ano" [(ngModel)]="actual.ano" required />
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Contador</label>
+              <input class="form-control" type="number" name="contador" [(ngModel)]="actual.contador" required />
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-primary" [disabled]="!contForm.valid" data-bs-dismiss="modal">{{ editIndex >= 0 ? 'Guardar cambios' : 'Agregar' }}</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

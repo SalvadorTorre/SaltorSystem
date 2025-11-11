@@ -46,40 +46,20 @@
       <table class="table table-bordered table-hover table-striped table-sm">
         <thead class="table-dark">
           <tr>
-            <th style="width: 7%">ID</th>
-            <th style="width: 23%">Nombre</th>
+            <th style="width: 10%">ID</th>
+            <th style="width: 40%">Nombre</th>
             <th class="text-center" style="width: 10%">Nivel</th>
-            <th class="text-center" style="width: 10%">Vendedor</th>
-            <th class="text-center" style="width: 12%">Mantenimiento</th>
-            <th class="text-center" style="width: 5%">Caja</th>
             <th class="text-center" style="width: 10%">Despacho</th>
-            <th class="text-center" style="width: 5%">Almacen</th>
             <th></th>
           </tr>
         </thead>
         <tbody>
           <tr *ngFor="let usuario of usuarioList">
-            <td class="text-center">{{usuario.idUsuario}}</td>
+            <td class="text-center">{{usuario.codUsuario}}</td>
             <td>{{usuario.nombreUsuario}}</td>
             <td class="text-center">{{usuario.nivel}}</td>
             <td class="text-center">
-              <input type="checkbox" disabled [checked]="usuario.vendedor" />
-            </td>
-            <td class="text-center">
-              <input
-                type="checkbox"
-                disabled
-                [checked]="usuario.mantenimiento"
-              />
-            </td>
-            <td class="text-center">
-              <input type="checkbox" disabled [checked]="usuario.caja" />
-            </td>
-            <td class="text-center">
               <input type="checkbox" disabled [checked]="usuario.despacho" />
-            </td>
-            <td class="text-center">
-              <input type="checkbox" disabled [checked]="usuario.almacen" />
             </td>
             <td>
               <i
@@ -265,6 +245,35 @@
                       </div>
                     </div>
 
+                    <div class="row mt-2">
+                      <div class="col-4">
+                        <h6>Clave Correo</h6>
+                        <input
+                          type="text"
+                          class="form-control form-control-sm"
+                          formControlName="claveCorreo"
+                        />
+                      </div>
+                      <div class="col-4">
+                        <h6>Meta de Venta</h6>
+                        <input
+                          type="number"
+                          step="0.01"
+                          class="form-control form-control-sm"
+                          formControlName="metaVenta"
+                        />
+                      </div>
+                      <div class="col-4">
+                        <h6>Tipo de Usuario</h6>
+                        <select class="form-select form-select-sm" formControlName="idtipoUsuario">
+                          <option [ngValue]="null">Seleccione...</option>
+                          <option *ngFor="let t of tiposList" [value]="t.id">
+                            {{ t.descripcion }}
+                          </option>
+                        </select>
+                      </div>
+                    </div>
+
                     <div class="row">
                       <div class="col-8">
                         <h6>Sucursal</h6>
@@ -276,13 +285,11 @@
                     <div class="row">
                       <div class="col-8">
                         <select
-                          name=""
-                          id=""
                           class="form-select"
                           (change)="seleccionarSucursal($event.target)"
-                          formControlName="sucursal"
+                          formControlName="sucursalid"
                         >
-                          <option value="" selected disabled>
+                          <option [ngValue]="null" selected disabled>
                             Seleciona una sucursal
                           </option>
                           <option
@@ -298,17 +305,17 @@
                           type="text"
                           class="form-control form-control-sm"
                           placeholder="Código Sucursal"
-                          formControlName="idSucursal"
+                          formControlName="sucursalid"
                         />
                       </div>
                     </div>
 
                     <div class="row">
                       <div class="col-8">
-                        <h6>Empresa</h6>
+                        <h6>Empresa (Nombre)</h6>
                       </div>
                       <div class="col-4">
-                        <h6>ID Empresa</h6>
+                        <h6>Código Empresa</h6>
                       </div>
                     </div>
                     <div class="row">
@@ -316,29 +323,25 @@
                         <input
                           type="text"
                           class="form-control form-control-sm"
-                          formControlName="empresa"
-                          placeholder="Descripción Empresa"
+                          formControlName="empresaNombre"
+                          placeholder="Nombre de Empresa"
+                          [disabled]="true"
                         />
-                        <!-- <input
-                          type="text"
-                          class="form-control form-control-sm"
-                          placeholder="Descripción Sucursal"
-                          disabled
-                        /> -->
                       </div>
                       <div class="col-4">
                         <input
                           type="text"
                           class="form-control form-control-sm"
-                          formControlName="idEmpresa"
-                          placeholder="Descripcion Empresa"
-                        />
-                        <!-- <input
-                          type="text"
-                          class="form-control form-control-sm"
+                          formControlName="cod_empre"
                           placeholder="Código Empresa"
-                          disabled
-                        /> -->
+                        />
+                      </div>
+                    </div>
+
+                    <div class="row mt-2">
+                      <div class="col-4">
+                        <h6>ID Permiso</h6>
+                        <input type="number" class="form-control form-control-sm" formControlName="idpermiso" />
                       </div>
                     </div>
                   </div>

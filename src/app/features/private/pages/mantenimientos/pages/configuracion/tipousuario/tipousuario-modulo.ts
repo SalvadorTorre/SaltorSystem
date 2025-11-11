@@ -3,14 +3,14 @@ import { CommonModule } from '@angular/common';
 import { RouterModule, Routes } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
-import { PermisoPage } from './permiso';
+import { TipousuarioPage } from './tipousuario';
 
 const routes: Routes = [
-  { path: '', component: PermisoPage }
+  { path: '', component: TipousuarioPage }
 ];
 
 @NgModule({
-  declarations: [PermisoPage],
+  declarations: [TipousuarioPage],
   imports: [CommonModule, FormsModule, HttpClientModule, RouterModule.forChild(routes)],
 })
-export class PermisoModulo {}
+export class TipousuarioModulo {}
