@@ -142,7 +142,7 @@
   aria-labelledby="modalEmpresaLabel"
   aria-hidden="true"
 >
-  <div class="modal-dialog modal-dialog-centered modal-lg">
+  <div class="modal-dialog modal-dialog-centered modal-xl emp-modal">
     <div class="modal-content">
       <div class="modal-header">
         <h1 class="modal-title fs-5" id="modalEmpresaLabel">
@@ -156,23 +156,24 @@
         ></button>
       </div>
       <div class="modal-body">
-        <form
-          class="custom-form-background"
-          [formGroup]="formularioEmpresa"
-          (ngSubmit)="guardarEmpresa()"
-        >
-          <div class="row">
-            <div class="col-12">
+        <div class="row g-3">
+          <!-- Columna: Datos de la Empresa -->
+          <div class="col-lg-6">
+            <form
+              class="custom-form-background"
+              [formGroup]="formularioEmpresa"
+              (ngSubmit)="guardarEmpresa()"
+            >
               <div class="card">
                 <div class="card-header">
-                  <h6>Datos de la Empresa</h6>
+                  <h6 class="mb-0">Datos de la Empresa</h6>
                 </div>
                 <div class="card-body">
                   <div class="row">
                     <div class="col-2">
                       <label>Cod. Empresa</label>
                       <input
-                        type="tect"
+                        type="text"
                         class="uppercase-input"
                         (input)="convertToUpperCase($event)"
                         (keydown)="moveFocus($event, input2)"
@@ -273,16 +274,14 @@
                   </button>
                 </div>
               </div>
-            </div>
+            </form>
           </div>
-        </form>
-        <br />
 
-        <div class="row">
-          <div class="col-12">
+          <!-- Columna: Sucursales -->
+          <div class="col-lg-6">
             <div class="card" *ngIf="activaformularioSucursal">
               <div class="card-header">
-                <h6>Datos de Sucursal</h6>
+                <h6 class="mb-0">Datos de Sucursal</h6>
               </div>
               <div class="card-body">
                 <form
@@ -355,41 +354,43 @@
                 </form>
               </div>
             </div>
-          </div>
-          <div class="row" *ngIf="activatablaSucursal">
-            <!-- *ngIf="activatablaSucursal">-->
-            <!--  && modoconsultaEmpresa && modoedicionEmpresa">-->
-            <div
-              class="table-responsive"
-              style="max-height: 400px; overflow-y: auto"
-            >
-              <table
-                class="table table-bordered table-hover table-striped table-sm"
+            <div class="row mt-3" *ngIf="activatablaSucursal">
+              <!-- *ngIf="activatablaSucursal">-->
+              <!--  && modoconsultaEmpresa && modoedicionEmpresa">-->
+              <div
+                class="table-responsive"
+              style="max-height: 380px; overflow-y: auto"
               >
-                <thead class="table-dark">
-                  <tr>
-                    <th style="width: 8%">Codigo</th>
-                    <th style="width: 30%">Sucursal</th>
-                    <th style="width: 50%">Direcion</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr *ngFor="let sucursal of sucursalList">
-                    <td class="text-center">{{sucursal.cod_sucursal}}</td>
-                    <td class="text">{{sucursal.nom_sucursal}}</td>
-                    <td class="text">{{sucursal.dir_sucursal}}</td>
-                    <td>
-                      <button
-                        class="btn btn-link"
-                        (click)="eliminarSucursal(sucursal.cod_empre)"
-                      >
-                        <i class="bi bi-trash text-danger"></i>
-                      </button>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+                <table
+                  class="table table-bordered table-hover table-striped table-sm"
+                >
+                  <thead class="table-dark">
+                    <tr>
+                      <th style="width: 8%">Codigo</th>
+                      <th style="width: 30%">Sucursal</th>
+                      <th style="width: 30%">Telefono</th>
+                      <th style="width: 30%">Dirección</th>
+                      <th style="width: 10%">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let sucursal of sucursalList">
+                      <td class="text-center">{{sucursal.cod_sucursal}}</td>
+                      <td class="text">{{sucursal.nom_sucursal}}</td>
+                      <td class="text">{{sucursal.tel_sucursal}}</td>
+                      <td class="text">{{sucursal.dir_sucursal}}</td>
+                      <td>
+                        <button
+                          class="btn btn-link"
+                          (click)="eliminarSucursal(sucursal.cod_sucursal)"
+                        >
+                          <i class="bi bi-trash text-danger"></i>
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>

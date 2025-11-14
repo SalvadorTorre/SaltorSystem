@@ -43,19 +43,19 @@ export class Empresas implements OnInit {
   constructor(private fb: FormBuilder, private servicioEmpresa: ServicioEmpresa, private servicioSucursal: ServicioSucursal) {
     this.crearFormularioEmpresa();
     this.crearformularioSucursal();
-    this.descripcionBuscar.pipe(
-      debounceTime(500),
-      distinctUntilChanged(),
-      switchMap(nombre => {
-        this.nomempresa = nombre;
-        return this.servicioEmpresa.buscarEmpresa(this.currentPage, this.pageSize, this.nomempresa);
-      })
-    )
-      .subscribe(response => {
-        this.empresaList = response.data;
-        this.totalItems = response.pagination.total;
-        this.currentPage = response.pagination.page;
-      });
+    // this.descripcionBuscar.pipe(
+    //   debounceTime(500),
+    //   distinctUntilChanged(),
+    //   switchMap(nombre => {
+    //     this.nomempresa = nombre;
+    //     return this.servicioEmpresa.buscarEmpresa(this.currentPage, this.pageSize, this.nomempresa);
+    //   })
+    // )
+      // .subscribe(response => {
+      //   this.empresaList = response.data;
+      //   this.totalItems = response.pagination.total;
+      //   this.currentPage = response.pagination.page;
+      // });
     this.codigoBuscar.pipe(
       debounceTime(500),
       distinctUntilChanged(),
@@ -64,12 +64,28 @@ export class Empresas implements OnInit {
         return this.servicioEmpresa.buscarEmpresa(this.currentPage, this.pageSize, this.nomempresa);
       })
     )
-      .subscribe(response => {
-        this.empresaList = response.data;
-        this.totalItems = response.pagination.total;
-        this.currentPage = response.pagination.page;
-      });
+      // .subscribe(response => {
+      //   this.empresaList = response.data;
+      //   this.totalItems = response.pagination.total;
+      //   this.currentPage = response.pagination.page;
+      // });
 
+  }
+
+  private buildEmpresaPayload(raw: any): any {
+    const orden = raw?.orden_compra;
+    const ordenNumber = (orden === '' || orden === null || orden === undefined) ? 0 : Number(orden);
+    const letra = String(raw?.letra_empre ?? '').trim().toUpperCase();
+    const telDigits = String(raw?.tel_empre || '').replace(/\D+/g, '').trim();
+    return {
+      cod_empre: String(raw?.cod_empre || '').trim().toUpperCase(),
+      rnc_empre: String(raw?.rnc_empre ?? '').trim(),
+      nom_empre: String(raw?.nom_empre || '').trim().toUpperCase(),
+      dir_empre: String(raw?.dir_empre || '').trim().toUpperCase(),
+      tel_empre: telDigits,
+      letra_empre: letra ? letra[0] : '',
+      orden_compra: isNaN(ordenNumber) ? 0 : ordenNumber,
+    };
   }
 
   agregarSucursal() {
@@ -153,7 +169,23 @@ export class Empresas implements OnInit {
     this.habilitarFormulario = true;
     this.activaformularioSucursal = false;
     this.activatablaSucursal = true;
-    this.sucursalList = Empresa.sucursales
+    this.sucursalList = Empresa.sucursales || [];
+    // Refrescar datos desde backend para asegurar sucursales
+    this.servicioEmpresa.buscarEmpres(this.empresaid).subscribe({
+      next: (resp) => {
+        const data = resp?.data;
+        const empresaFull = Array.isArray(data) ? data[0] : data;
+        if (empresaFull) {
+          // Backend puede devolver 'sucursales' o 'sucursal'
+          this.sucursalList = (empresaFull.sucursales || empresaFull.sucursal || []);
+          this.formularioEmpresa.patchValue(empresaFull);
+        }
+      },
+      error: () => {
+        // Mantener lo que vino en la lista si falla
+        this.sucursalList = Empresa.sucursales || [];
+      }
+    });
   }
 
   buscarTodasEmpresa(page: number) {
@@ -168,10 +200,28 @@ export class Empresas implements OnInit {
     this.habilitarFormulario = true;
     this.modoconsultaEmpresa = true;
     this.formularioEmpresa.disable();
-
-    this.activaformularioSucursal = false;
+    // Permitir agregar sucursales desde el modal de consulta
+    this.empresaid = Empresa.cod_empre;
+    this.activaformularioSucursal = true;
     this.activatablaSucursal = true;
-    this.sucursalList = Empresa.sucursales
+    this.sucursalList = Empresa.sucursales || [];
+    // Cargar sucursales desde backend para consulta
+    this.servicioEmpresa.buscarEmpres(this.empresaid).subscribe({
+      next: (resp) => {
+        const data = resp?.data;
+        const empresaFull = Array.isArray(data) ? data[0] : data;
+        if (empresaFull) {
+          // Backend puede devolver 'sucursales' o 'sucursal'
+          this.sucursalList = (empresaFull.sucursales || empresaFull.sucursal || []);
+          // No habilitamos el formulario empresa en consulta, solo refrescamos datos
+          this.formularioEmpresa.patchValue(empresaFull);
+        }
+      },
+      error: () => {
+        // Si falla, dejamos lo que venía de la lista
+        this.sucursalList = Empresa.sucursales || [];
+      }
+    });
   };
 
   consultarSucursal(Empresa: EmpresaModelData) {
@@ -211,7 +261,8 @@ export class Empresas implements OnInit {
       }
     })
   }
-  eliminarSucursal(sucursal: string) {
+  eliminarSucursal(sucursal: string | number) {
+    const codigo = String(sucursal);
     Swal.fire({
       title: '¿Está seguro de eliminar esta Sucursal?',
       text: "¡No podrá revertir esto!",
@@ -222,7 +273,7 @@ export class Empresas implements OnInit {
       confirmButtonText: 'Si, eliminar!'
     }).then((result) => {
       if (result.isConfirmed) {
-        this.servicioSucursal.eliminarSucursal(sucursal).subscribe(response => {
+        this.servicioSucursal.eliminarSucursal(codigo).subscribe(response => {
           Swal.fire(
             {
               title: "Excelente!",
@@ -232,10 +283,26 @@ export class Empresas implements OnInit {
               showConfirmButton: false,
             }
           )
-          this.buscarTodasEmpresa(this.currentPage);
+          // Refrescar la tabla de sucursales dentro del modal
+          this.refrescarSucursalesModal();
         });
       }
     })
+  }
+
+  private refrescarSucursalesModal(): void {
+    const cod = this.empresaid || this.formularioEmpresa.getRawValue()?.cod_empre;
+    if (!cod) { return; }
+    this.servicioEmpresa.buscarEmpres(cod).subscribe({
+      next: (resp) => {
+        const data = resp?.data;
+        const empresaFull = Array.isArray(data) ? data[0] : data;
+        if (empresaFull) {
+          // Backend puede devolver 'sucursales' o 'sucursal'
+          this.sucursalList = (empresaFull.sucursales || empresaFull.sucursal || []);
+        }
+      }
+    });
   }
 
 
@@ -249,84 +316,108 @@ export class Empresas implements OnInit {
     this.codigoBuscar.next(inputElement.value.toUpperCase());
   }
   guardarSucursal() {
-    console.log(this.formularioSucursal.value);
-    var datosFormulariEmpresa = this.formularioEmpresa.value;
-    this.formularioSucursal.patchValue({ cod_empre: datosFormulariEmpresa.cod_empre });
-    if (this.formularioSucursal.valid) {
-      this.servicioSucursal.guardarSucursal(this.formularioSucursal.value).subscribe(response => {
-        Swal.fire
-          ({
+    const datosEmpresa = this.formularioEmpresa.getRawValue();
+    const codEmpre = datosEmpresa?.cod_empre || this.empresaid;
+    this.formularioSucursal.patchValue({ cod_empre: codEmpre });
+    if (this.formularioSucursal.valid && codEmpre) {
+      this.servicioSucursal.guardarSucursal(this.formularioSucursal.value).subscribe({
+        next: () => {
+          Swal.fire({
             title: "Excelente!",
             text: "Sucursal Guardada correctamente.",
-            icon: 'warning',
+            icon: 'success',
             timer: 3000,
             showConfirmButton: false,
-          })
-        this.buscarTodasEmpresa(1);
-        this.formularioSucursal.reset();
-        this.crearformularioSucursal();
-        this.cerrarModalEmpresa();
-        $('#modalsucursal').modal('hide');
-      })
-    }
-    else {
-      alert("Esta Sucursal no fue Guardado");
+          });
+          // Refrescar la tabla de sucursales dentro del modal
+          this.refrescarSucursalesModal();
+          this.formularioSucursal.reset();
+          this.crearformularioSucursal();
+          this.formularioEmpresa.enable();
+          this.activaformularioSucursal = false;
+        },
+        error: (err) => {
+          const msg = (err?.error?.message || err?.message || 'Error al guardar la sucursal').toString();
+          Swal.fire({ title: 'Error', text: msg, icon: 'error' });
+        }
+      });
+    } else {
+      Swal.fire({ title: 'Datos incompletos', text: 'Falta el Código de Empresa.', icon: 'warning' });
     }
 
   }
 
   guardarEmpresa() {
-    console.log(this.formularioEmpresa.value);
-    if (this.formularioEmpresa.valid) {
+    const raw = this.formularioEmpresa.getRawValue();
+    const payload = this.buildEmpresaPayload(raw);
+    console.log('Payload Empresa:', payload);
+    if (this.formularioEmpresa.valid && payload.cod_empre && payload.nom_empre) {
       if (this.modoedicionEmpresa) {
-        this.servicioEmpresa.editarEmpresa(this.empresaid, this.formularioEmpresa.value).subscribe(response => {
-          Swal.fire({
-            title: "Excelente!",
-            text: "Empresa Editada correctamente.",
-            icon: "success",
-            timer: 5000,
-            showConfirmButton: false,
-          });
-          this.buscarTodasEmpresa(1);
-          this.formularioEmpresa.reset();
-          this.crearFormularioEmpresa();
-          $('#modalempresa').modal('hide');
+        this.servicioEmpresa.editarEmpresa(this.empresaid, payload).subscribe({
+          next: () => {
+            Swal.fire({
+              title: "Excelente!",
+              text: "Empresa Editada correctamente.",
+              icon: "success",
+              timer: 5000,
+              showConfirmButton: false,
+            });
+            this.buscarTodasEmpresa(1);
+            this.formularioEmpresa.reset();
+            this.crearFormularioEmpresa();
+            $('#modalempresa').modal('hide');
+          },
+          error: (err) => {
+            const details = err?.error?.details ? `\n${JSON.stringify(err.error.details)}` : '';
+            const msg = ((err?.error?.message || err?.message || 'Error al editar la empresa').toString()) + details;
+            Swal.fire({ title: 'Error', text: msg, icon: 'error' });
+          }
         });
-      }
-      else {
-        this.servicioEmpresa.guardarEmpresa(this.formularioEmpresa.value).subscribe(response => {
-          Swal.fire
-            ({
-              title: "Empresa Guardada correctamente",
-              text: "Desea Crear una Sucursal",
-              icon: 'warning',
-              showCancelButton: true,
-              confirmButtonColor: '#3085d6',
-              cancelButtonColor: '#d33',
-              confirmButtonText: 'Crear Sucursal'
-            }).then((result) => {
-              if (result.isConfirmed) {
-
-                this.formularioEmpresa.disable();
-                this.activaformularioSucursal = true;
-                this.activatablaSucursal = false;
-              }
-              else {
-                this.activaformularioSucursal = false;
+      } else {
+        this.servicioEmpresa.guardarEmpresa(payload).subscribe({
+          next: () => {
+            // Crear una sucursal por defecto automáticamente
+            const defaultSucursal = {
+              cod_empre: payload.cod_empre,
+              nom_sucursal: payload.nom_empre,
+              dir_sucursal: payload.dir_empre || 'NO APLICA',
+              tel_sucursal: payload.tel_empre || '0000000000',
+            };
+            this.servicioSucursal.guardarSucursal(defaultSucursal).subscribe({
+              next: () => {
+                Swal.fire({
+                  title: "Excelente!",
+                  text: "Empresa y Sucursal guardadas correctamente.",
+                  icon: 'success',
+                  timer: 5000,
+                  showConfirmButton: false,
+                });
                 this.buscarTodasEmpresa(1);
                 this.formularioEmpresa.reset();
                 this.crearFormularioEmpresa();
-                this.formularioEmpresa.enable();
                 $('#modalempresa').modal('hide');
-
+              },
+              error: (err) => {
+                const details = err?.error?.details ? `\n${JSON.stringify(err.error.details)}` : '';
+                const msg = ((err?.error?.message || err?.message || 'Empresa guardada, pero error creando la Sucursal').toString()) + details;
+                Swal.fire({ title: 'Aviso', text: msg, icon: 'warning' });
+                this.buscarTodasEmpresa(1);
+                this.formularioEmpresa.reset();
+                this.crearFormularioEmpresa();
+                $('#modalempresa').modal('hide');
               }
-
             });
-        })
+          },
+          error: (err) => {
+            const details = err?.error?.details ? `\n${JSON.stringify(err.error.details)}` : '';
+            const msg = ((err?.error?.message || err?.message || 'Error al guardar la empresa').toString()) + details;
+            Swal.fire({ title: 'Error', text: msg, icon: 'error' });
+          }
+        });
       }
-    }
-    else {
-      alert("Esta Empresa no fue Guardado");
+    } else {
+      this.formularioEmpresa.markAllAsTouched();
+      Swal.fire({ title: 'Formulario incompleto', text: 'Complete los campos requeridos.', icon: 'warning' });
     }
   }
 

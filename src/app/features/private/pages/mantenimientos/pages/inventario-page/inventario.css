@@ -5,3 +5,6 @@
 .card-body-custom {
   background-color: #b2bec3;
 }
+.modal-ancho {
+  max-width: 65% !important; /* ajusta entre 70% y 95% */
+}

@@ -8,7 +8,6 @@ import { ModeloZonaData } from 'src/app/core/services/mantenimientos/zonas';
 import { ServicioZona } from 'src/app/core/services/mantenimientos/zonas/zonas.service';
 import { BehaviorSubject, debounceTime, distinctUntilChanged, switchMap } from 'rxjs';
 import Swal from 'sweetalert2';
-declare var $: any; declare var $: any;
 declare var $: any;
 
 @Component({
@@ -68,7 +67,7 @@ export class Cliente implements OnInit {
         this.currentPage = response.pagination.page;
       });
   }
-  seleccionarCliente(cliente: any) { this.selectedCliente = Cliente; }
+  seleccionarCliente(cliente: any) { this.selectedCliente = cliente; }
 
   ngOnInit(): void {
     this.buscarTodosCliente(1);
@@ -82,7 +81,7 @@ export class Cliente implements OnInit {
       cl_dirClie: [''],
       cl_codSect: [''],
       cl_codZona: [''],
-      cl_telClie: ['', Validators.pattern(/^\(\d{3}\) \d{3}-\d{4}$/)],
+      cl_telClie: [''],
       cl_tipo: [''],
       cl_status: [true],
       cl_rnc: [''],
@@ -96,6 +95,8 @@ export class Cliente implements OnInit {
   nuevoCliente() {
     this.modoedicionCliente = false;
     this.tituloModalCliente = 'Agregando Cliente';
+    this.formularioCliente.reset();
+    this.crearFormularioCliente();
     $('#modalcliente').modal('show');
     this.habilitarFormulario = true;
   }
@@ -112,7 +113,16 @@ export class Cliente implements OnInit {
   editarCliente(clientes: ModeloClienteData) {
     this.clienteid = clientes.cl_codClie;
     this.modoedicionCliente = true;
-    this.formularioCliente.patchValue(clientes);
+    this.formularioCliente.patchValue({
+      cl_nomClie: (clientes.cl_nomClie || '').toUpperCase(),
+      cl_dirClie: (clientes.cl_dirClie || '').toUpperCase(),
+      cl_codSect: clientes.cl_codSect,
+      cl_codZona: clientes.cl_codZona,
+      cl_telClie: (clientes.cl_telClie || '').toUpperCase(),
+      cl_tipo: clientes.cl_tipo,
+      cl_status: Boolean(clientes.cl_status),
+      cl_rnc: clientes.cl_rnc,
+    });
     this.tituloModalCliente = 'Editando Cliente';
     $('#modalcliente').modal('show');
     this.habilitarFormulario = true;
@@ -170,13 +180,19 @@ export class Cliente implements OnInit {
     this.idBuscar.next(inputElement.value.toUpperCase());
   }
   guardarCliente() {
-    console.log(this.formularioCliente.value);
+    console.log("aa", this.formularioCliente.value);
     if (this.formularioCliente.valid) {
+      const payload: any = {
+        ...this.formularioCliente.value,
+        cl_nomClie: (this.formularioCliente.value.cl_nomClie || '').toUpperCase(),
+        cl_dirClie: (this.formularioCliente.value.cl_dirClie || '').toUpperCase(),
+        cl_telClie: (this.formularioCliente.value.cl_telClie || '').toUpperCase(),
+      };
       if (this.modoedicionCliente) {
-        this.servicioCliente.editarCliente(this.clienteid, this.formularioCliente.value).subscribe(response => {
+        this.servicioCliente.editarCliente(this.clienteid, payload).subscribe(response => {
           Swal.fire({
             title: "Excelente!",
-            text: "Usuario Editado correctamente.",
+            text: "Cliente Editado correctamente.",
             icon: "success",
             timer: 5000,
             showConfirmButton: false,
@@ -188,7 +204,7 @@ export class Cliente implements OnInit {
         });
       }
       else {
-        this.servicioCliente.guardarCliente(this.formularioCliente.value).subscribe(response => {
+        this.servicioCliente.guardarCliente(payload).subscribe(response => {
           Swal.fire({
             title: "Excelente!",
             text: "Cliente Guardado correctamente.",

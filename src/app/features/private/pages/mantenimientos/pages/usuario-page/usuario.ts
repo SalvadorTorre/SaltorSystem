@@ -491,5 +491,34 @@ export class Usuario implements OnInit {
 
     });
   }
+
+  // Helpers para mostrar datos tolerantes a distintas formas
+  tipoUsuarioDisplay(u: any): string {
+    return (
+      u?.tipousuario?.descripcion ??
+      u?.tipo?.descripcion ??
+      u?.tipousuarioDescripcion ??
+      u?.idtipoUsuario ??
+      ''
+    );
+  }
+
+  empresaDisplay(u: any): string {
+    return (
+      u?.empresaInfo?.nom_empre ??
+      u?.empresaNombre ??
+      u?.cod_empre ??
+      ''
+    );
+  }
+
+  sucursalDisplay(u: any): string {
+    return (
+      u?.sucursalInfo?.nom_sucursal ??
+      u?.sucursalNombre ??
+      u?.sucursalid ??
+      ''
+    );
+  }
 }
 

@@ -49,12 +49,6 @@
           </a>
         </li>
         <li class="nav-item">
-          <a class="nav-link d-flex align-items-center text-dark" routerLinkActive="active" [routerLink]="['usuario']">
-            <i class="bi bi-person me-2"></i>
-            <span>Usuario</span>
-          </a>
-        </li>
-        <li class="nav-item">
           <a class="nav-link d-flex align-items-center text-dark" routerLinkActive="active" [routerLink]="['choferes']">
             <i class="bi bi-car-front me-2"></i>
             <span>Choferes</span>
@@ -101,6 +95,16 @@
               <li class="nav-item">
                 <a class="nav-link text-dark" routerLinkActive="active" [routerLink]="['ncf']">
                   <i class="bi bi-file-text me-2"></i> NCF
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link text-dark" routerLinkActive="active" [routerLink]="['usuario']">
+                  <i class="bi bi-person me-2"></i> Usuario
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link text-dark" routerLinkActive="active" [routerLink]="['tipousuario']">
+                  <i class="bi bi-person-badge me-2"></i> Tipo de Usuario
                 </a>
               </li>
               <li class="nav-item">
@@ -162,12 +166,6 @@
             </a>
           </li>
           <li class="nav-item">
-            <a class="nav-link d-flex align-items-center" routerLinkActive="active" [routerLink]="['usuario']" data-bs-dismiss="offcanvas">
-              <i class="bi bi-person me-2"></i>
-              <span>Usuario</span>
-            </a>
-          </li>
-          <li class="nav-item">
             <a class="nav-link d-flex align-items-center" routerLinkActive="active" [routerLink]="['choferes']" data-bs-dismiss="offcanvas">
               <i class="bi bi-car-front me-2"></i>
               <span>Choferes</span>
@@ -219,6 +217,26 @@
                   data-bs-dismiss="offcanvas"
                 >
                   <i class="bi bi-file-text me-2"></i> NCF
+                </a>
+              </li>
+              <li class="nav-item">
+                <a
+                  class="nav-link text-dark"
+                  routerLinkActive="active"
+                  [routerLink]="['usuario']"
+                  data-bs-dismiss="offcanvas"
+                >
+                  <i class="bi bi-person me-2"></i> Usuario
+                </a>
+              </li>
+              <li class="nav-item">
+                <a
+                  class="nav-link text-dark"
+                  routerLinkActive="active"
+                  [routerLink]="['tipousuario']"
+                  data-bs-dismiss="offcanvas"
+                >
+                  <i class="bi bi-person-badge me-2"></i> Tipo de Usuario
                 </a>
               </li>
               <li class="nav-item">

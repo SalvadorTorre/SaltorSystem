@@ -25,7 +25,7 @@ export class ServicioSucursal {
   }
 
   eliminarSucursal(cod_sucursal: string): Observable<any> {
-    return this.http.DeleteRequest(`/sucursal/${cod_sucursal}`, "");
+    return this.http.DeleteRequest(`/sucursales/${cod_sucursal}`, "");
   }
 
   buscarsucursal(cod_sucursal: string): Observable<any> {

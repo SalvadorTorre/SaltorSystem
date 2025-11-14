@@ -46,20 +46,28 @@
       <table class="table table-bordered table-hover table-striped table-sm">
         <thead class="table-dark">
           <tr>
-            <th style="width: 10%">ID</th>
-            <th style="width: 40%">Nombre</th>
-            <th class="text-center" style="width: 10%">Nivel</th>
-            <th class="text-center" style="width: 10%">Despacho</th>
-            <th></th>
+            <th style="width: 8%">ID</th>
+            <th style="width: 22%">Nombre</th>
+            <th class="text-center" style="width: 8%">Nivel</th>
+            <th style="width: 16%">Tipo de Usuario</th>
+            <th style="width: 22%">Empresa</th>
+            <th style="width: 16%">Sucursal</th>
+            <th style="width: 8%"></th>
           </tr>
         </thead>
         <tbody>
           <tr *ngFor="let usuario of usuarioList">
-            <td class="text-center">{{usuario.codUsuario}}</td>
+            <td class="text-center">{{usuario.idUsuario}}</td>
             <td>{{usuario.nombreUsuario}}</td>
             <td class="text-center">{{usuario.nivel}}</td>
-            <td class="text-center">
-              <input type="checkbox" disabled [checked]="usuario.despacho" />
+            <td>
+              {{ tipoUsuarioDisplay(usuario) }}
+            </td>
+            <td>
+              {{ empresaDisplay(usuario) }}
+            </td>
+            <td>
+              {{ sucursalDisplay(usuario) }}
             </td>
             <td>
               <i

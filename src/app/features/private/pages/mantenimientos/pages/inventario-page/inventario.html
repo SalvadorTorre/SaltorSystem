@@ -133,7 +133,7 @@
     </nav>
   </div>
 </div>
-
+<!-- Modal productos -->
 <div
   class="modal fade"
   id="modalProducto"
@@ -141,7 +141,7 @@
   aria-labelledby="modalProductoLabel"
   aria-hidden="true"
 >
-  <div class="modal-dialog modal-xl modal-fullscreen-lg-down">
+  <div class="modal-dialog modal-ancho modal-fullscreen-lg-down">
     <div class="modal-content">
       <div class="modal-header bg-primary text-white">
         <h1 class="modal-title fs-5" id="modalProductoLabel">
@@ -166,7 +166,7 @@
             </div>
             <div class="card-body">
               <div class="row g-3">
-                <div class="col-12 col-md-6">
+                <div class="col-3 col-md-3">
                   <label for="codigo" class="form-label">Código</label>
                   <input
                     type="text"
@@ -176,7 +176,7 @@
                   />
                 </div>
                 
-                <div class="col-12">
+                <div class="col-8">
                   <label for="descripcion" class="form-label">Descripción</label>
                   <input
                     type="text"
@@ -190,8 +190,20 @@
                     {{ remainingChars }} caracteres restantes
                   </small>
                 </div>
-
-                <div class="col-6 col-md-3">
+                <div class="col-1 col-md-1">
+                  <label for="status" class="form-label">Status</label>
+                  <select
+                    id="status"
+                    class="form-select"
+                    formControlName="in_status"
+                  >
+                    <option value="A">Activo</option>
+                    <option value="I">Inactivo</option>
+                    <option value="E">Escaso</option>
+                    <option value="X">Autorizado</option>
+                  </select>
+                </div>
+                <div class="col-2 col-md-2">
                   <label for="unidad" class="form-label">Unidad</label>
                   <input
                     type="text"
@@ -200,7 +212,7 @@
                     formControlName="in_unidad"
                   />
                 </div>
-                <div class="col-6 col-md-3">
+                <div class="col-2 col-md-2">
                   <label for="peso" class="form-label">Peso</label>
                   <input
                     type="text"
@@ -209,7 +221,7 @@
                     formControlName="in_peso"
                   />
                 </div>
-                <div class="col-6 col-md-3">
+                <div class="col-2 col-md-2">
                   <label for="longitud" class="form-label">Longitud</label>
                   <input
                     type="text"
@@ -218,19 +230,7 @@
                     formControlName="in_longitud"
                   />
                 </div>
-                <div class="col-6 col-md-3">
-                  <label for="tipo" class="form-label">Tipo</label>
-                  <select
-                    id="tipo"
-                    class="form-select"
-                    formControlName="in_tipoproduct"
-                  >
-                    <option value="F">Forja</option>
-                    <option value="H">Hierro</option>
-                  </select>
-                </div>
-
-                <div class="col-12 col-md-7">
+                <div class="col-3 col-md-3">
                   <label for="grupo" class="form-label">Grupo</label>
                   <select
                     id="grupo"
@@ -248,25 +248,15 @@
                     </option>
                   </select>
                 </div>
-                <div class="col-4 col-md-2 d-none d-md-block">
-                  <label class="form-label">&nbsp;</label>
-                  <input
-                    type="text"
-                    class="form-control"
-                    readonly
-                  />
-                </div>
-                <div class="col-8 col-md-3">
-                  <label for="status" class="form-label">Status</label>
+                   <div class="col-6 col-md-3">
+                  <label for="tipo" class="form-label">Tipo</label>
                   <select
-                    id="status"
+                    id="tipo"
                     class="form-select"
-                    formControlName="in_status"
+                    formControlName="in_tipoproduct"
                   >
-                    <option value="A">Activo</option>
-                    <option value="I">Inactivo</option>
-                    <option value="E">Escaso</option>
-                    <option value="X">Autorizado</option>
+                    <option value="F">Forja</option>
+                    <option value="H">Hierro</option>
                   </select>
                 </div>
               </div>
@@ -281,7 +271,7 @@
             <div class="card-body">
               <h6 class="text-danger mb-3">Costo</h6>
               <div class="row g-3">
-                <div class="col-12 col-sm-6">
+                <div class="col-3 col-sm-3">
                   <label for="compra" class="form-label">Compra</label>
                   <div class="input-group">
                     <span class="input-group-text"><i class="bi bi-currency-dollar"></i></span>
@@ -293,22 +283,7 @@
                     />
                   </div>
                 </div>
-                <div class="col-12 col-sm-6">
-                  <label for="promedio" class="form-label">Promedio</label>
-                  <div class="input-group">
-                    <span class="input-group-text"><i class="bi bi-currency-dollar"></i></span>
-                    <input
-                      type="text"
-                      id="promedio"
-                      class="form-control"
-                      formControlName="in_costpro"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div class="row g-3 mt-1">
-                <div class="col-12 col-sm-6">
+                <div class="col-3 col-sm-3">
                   <label for="compraAnterior" class="form-label">Compra Anterior</label>
                   <div class="input-group">
                     <span class="input-group-text"><i class="bi bi-currency-dollar"></i></span>
@@ -320,7 +295,19 @@
                     />
                   </div>
                 </div>
-                <div class="col-12 col-sm-6">
+                <div class="col-3 col-sm-3">
+                  <label for="promedio" class="form-label">Promedio</label>
+                  <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-currency-dollar"></i></span>
+                    <input
+                      type="text"
+                      id="promedio"
+                      class="form-control"
+                      formControlName="in_costpro"
+                    />
+                  </div>
+                </div>
+                <div class="col-3 col-sm-3">
                   <label for="porcentajeVentas" class="form-label">% Ventas</label>
                   <div class="input-group">
                     <input
@@ -333,7 +320,6 @@
                   </div>
                 </div>
               </div>
-
               <h6 class="text-danger mb-3 mt-4">Precio</h6>
               <div class="row g-3">
                 <div class="col-12 col-sm-4">
