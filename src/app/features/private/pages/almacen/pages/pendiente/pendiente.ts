@@ -22,8 +22,8 @@ import {ModeloInventario,  ModeloInventarioData,} from 'src/app/core/services/ma
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { disableDebugTools } from '@angular/platform-browser';
-import { ServicioNcf } from 'src/app/core/services/ncf/ncf.service';
-import { ModeloNcfData } from 'src/app/core/services/ncf';
+import { ServicioNcf } from 'src/app/core/services/mantenimientos/ncf/ncf.service';
+import { ModeloNcfData } from 'src/app/core/services/mantenimientos/ncf';
 declare var $: any;
 declare var bootstrap: any;
 

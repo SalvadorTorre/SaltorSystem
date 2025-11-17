@@ -7,8 +7,7 @@ import { RutaNcf } from './ncf-ruta';
 
 
 @NgModule({
-  declarations: [
-  ],
+  declarations: [NcfComponent],
   imports: [
     CommonModule,
     RutaNcf,
@@ -16,6 +15,5 @@ import { RutaNcf } from './ncf-ruta';
     FormsModule
   ],
   providers: [],
-  bootstrap: [NcfComponent]
 })
 export class ModuloNcf { }

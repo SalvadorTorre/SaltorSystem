@@ -41,6 +41,7 @@ const routes: Routes = [
           path:"usuario",
           loadChildren: () => import('./pages/usuario-page/usuario-modulo').then(m => m.ModuloUsuario)
         },
+        
         {
           path:"choferes",
           loadChildren: () => import('./pages/choferes-page/choferes-modulo').then(m => m.ModuloChoferes)
@@ -56,10 +57,6 @@ const routes: Routes = [
         {
           path:"grupo-mercancias",
           loadChildren: () => import('./pages/grupormerc/grupomerc-modulo').then(m => m.ModuloGrupoMercancias)
-        },
-        {
-          path:"ncf",
-          loadChildren: () => import('./pages/ncf/ncf-modulo').then(m => m.ModuloNcf)
         },
         {
           path:"encf",

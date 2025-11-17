@@ -3,10 +3,7 @@ import { RouterModule, Routes } from '@angular/router';
 import { Sector } from './sector';
 
 const routes: Routes = [
-  {path:"",
-    component:Sector
-
-  }
+  { path: '', component: Sector }
 ];
 
 @NgModule({

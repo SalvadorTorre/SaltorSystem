@@ -6,22 +6,20 @@
     <div class="card-body">
       <form class="row g-3" #encfForm="ngForm" (ngSubmit)="guardarEncf()">
         <div class="col-md-6">
-          <label class="form-label fw-semibold">Código Empresa *</label>
-          <input type="text" class="form-control" name="codempr" [(ngModel)]="encf.codempr" required maxlength="6" placeholder="EMP001" />
+          <label class="form-label fw-semibold">Empresa *</label>
+          <select class="form-select" name="codempr" [(ngModel)]="encf.codempr" required>
+            <option value="">Seleccione una empresa</option>
+            <option *ngFor="let e of empresas" [value]="e.cod_empre">{{ e.nom_empre }} ({{ e.cod_empre }})</option>
+          </select>
         </div>
 
-        <div class="col-md-6">
-          <label class="form-label fw-semibold">Código Sucursal</label>
-          <input type="text" class="form-control" name="codsucu" [(ngModel)]="encf.codsucu" maxlength="5" placeholder="SUC01" />
-        </div>
+        <!-- Sucursal removida: no está en el modelo ENCF -->
 
         <div class="col-md-6">
           <label class="form-label fw-semibold">Tipo ENCF *</label>
           <select class="form-select" name="tipoencf" [(ngModel)]="encf.tipoencf" required>
             <option value="">Seleccione un tipo</option>
-            <option value="B">B - Crédito Fiscal</option>
-            <option value="C">C - Consumidor Final</option>
-            <option value="G">G - Gubernamental</option>
+            <option *ngFor="let t of tiposNcf" [value]="t.tipo">{{ t.desNcf }}</option>
           </select>
         </div>
 
@@ -78,7 +76,6 @@
           <thead class="table-primary">
             <tr>
               <th>EMPRESA</th>
-              <th>SUC.</th>
               <th>TIPO</th>
               <th>SECUENCIA</th>
               <th>CANTIDAD</th>
@@ -90,9 +87,8 @@
           </thead>
           <tbody>
             <tr *ngFor="let item of listaEncf">
-              <td>{{ item.codempr }}</td>
-              <td>{{ item.codsucu }}</td>
-              <td>{{ item.tipoencf }}</td>
+              <td>{{ item.empresacodempr?.nom_empre || item.codempr }}</td>
+              <td>{{ tipoDescripcion(item.tipoencf) }}</td>
               <td>{{ item.desdeencf }} - {{ item.hastaencf }}</td>
               <td>{{ item.cantencf }}</td>
               <td>{{ item.countencf }}</td>

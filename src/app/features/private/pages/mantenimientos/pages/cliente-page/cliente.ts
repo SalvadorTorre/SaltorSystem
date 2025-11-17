@@ -80,7 +80,7 @@ export class Cliente implements OnInit {
       cl_nomClie: ['', Validators.required],
       cl_dirClie: [''],
       cl_codSect: [''],
-      cl_codZona: [''],
+      cl_codZona: [{ value: '', disabled: true }],
       cl_telClie: [''],
       cl_tipo: [''],
       cl_status: [true],
@@ -97,6 +97,9 @@ export class Cliente implements OnInit {
     this.tituloModalCliente = 'Agregando Cliente';
     this.formularioCliente.reset();
     this.crearFormularioCliente();
+    // Estado activo por defecto y zona deshabilitada
+    this.formularioCliente.patchValue({ cl_status: true });
+    this.formularioCliente.get('cl_codZona')?.disable();
     $('#modalcliente').modal('show');
     this.habilitarFormulario = true;
   }
@@ -113,6 +116,8 @@ export class Cliente implements OnInit {
   editarCliente(clientes: ModeloClienteData) {
     this.clienteid = clientes.cl_codClie;
     this.modoedicionCliente = true;
+    // Asegura que el formulario esté habilitado en modo edición
+    this.formularioCliente.enable();
     this.formularioCliente.patchValue({
       cl_nomClie: (clientes.cl_nomClie || '').toUpperCase(),
       cl_dirClie: (clientes.cl_dirClie || '').toUpperCase(),
@@ -123,6 +128,8 @@ export class Cliente implements OnInit {
       cl_status: Boolean(clientes.cl_status),
       cl_rnc: clientes.cl_rnc,
     });
+    // Mantener zona solo lectura
+    this.formularioCliente.get('cl_codZona')?.disable();
     this.tituloModalCliente = 'Editando Cliente';
     $('#modalcliente').modal('show');
     this.habilitarFormulario = true;
@@ -141,6 +148,8 @@ export class Cliente implements OnInit {
     $('#modalcliente').modal('show');
     this.habilitarFormulario = true;
     this.modoconsultaCliente = true;
+    // Deshabilita todo el formulario en modo consulta
+    this.formularioCliente.disable();
   };
 
 
@@ -179,11 +188,25 @@ export class Cliente implements OnInit {
     const inputElement = event.target as HTMLInputElement;
     this.idBuscar.next(inputElement.value.toUpperCase());
   }
+
+  onSectorChange(event: Event): void {
+    const select = event.target as HTMLSelectElement;
+    const sectorId = Number(select.value);
+    if (!isNaN(sectorId)) {
+      const sector = this.sectorList.find(s => s.se_codSect === sectorId);
+      if (sector) {
+        this.formularioCliente.patchValue({ cl_codZona: sector.se_codZona });
+      } else {
+        this.formularioCliente.patchValue({ cl_codZona: '' });
+      }
+    }
+  }
   guardarCliente() {
     console.log("aa", this.formularioCliente.value);
     if (this.formularioCliente.valid) {
+      const raw = this.formularioCliente.getRawValue();
       const payload: any = {
-        ...this.formularioCliente.value,
+        ...raw,
         cl_nomClie: (this.formularioCliente.value.cl_nomClie || '').toUpperCase(),
         cl_dirClie: (this.formularioCliente.value.cl_dirClie || '').toUpperCase(),
         cl_telClie: (this.formularioCliente.value.cl_telClie || '').toUpperCase(),

@@ -1,6 +1,6 @@
 import { Injectable } from "@angular/core";
 import { Observable } from "rxjs";
-import { HttpInvokeService } from "../http-invoke.service";
+import { HttpInvokeService } from "../../http-invoke.service";
 
 @Injectable({
   providedIn: "root"

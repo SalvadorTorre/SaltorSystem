@@ -24,8 +24,8 @@ import { Usuario } from '../mantenimientos/pages/usuario-page/usuario';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { disableDebugTools } from '@angular/platform-browser';
-import { ServicioNcf } from 'src/app/core/services/ncf/ncf.service';
-import { ModeloNcfData } from 'src/app/core/services/ncf';
+import { ServicioNcf } from 'src/app/core/services/mantenimientos/ncf/ncf.service';
+import { ModeloNcfData } from 'src/app/core/services/mantenimientos/ncf';
 declare var $: any;
 
 @Component({

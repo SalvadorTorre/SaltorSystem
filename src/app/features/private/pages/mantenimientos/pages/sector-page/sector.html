@@ -1,115 +1,75 @@
 <div class="card" style="height: 87vh">
   <div class="card-header">
-    <h1>Sectores</h1>
+    <h1>Sector</h1>
   </div>
   <div class="card-body">
     <!-- buscador -->
     <div class="row">
       <div class="col-3">
-        <label for="">Buscar Sector</label>
+        <label for="">Buscar Descripción</label>
         <input
           [(ngModel)]="txtdescripcion"
           type="text"
-          placeholder="Digite el Sector..."
-          class="form-control uppercase"
-          (input)="descripcionEntra($event)"
+          placeholder="Digite la descripción..."
+          class="form-control"
         />
       </div>
       <div class="col-2">
-        <button class="btn btn-danger mt-4" (click)="limpiaBusqueda()">
-          <i class="bi bi-arrow-counterclockwise"></i>
+        <button class="btn btn-primary mt-4" (click)="buscarTodosSector(1)">
+          Buscar
         </button>
-      </div>
-      <div class="col-2">
-        <button class="btn btn-primary mt-4" (click)="nuevoSector()">
+        <button class="btn btn-primary mt-4 ms-2" (click)="nuevoSector()">
           Nuevo Sector
         </button>
-        <!-- <button class="btn btn-primary" (click)="obtenerTodosCliente()">Buscar Cliente</button> -->
       </div>
     </div>
     <br />
-    <!-- fin buscador -->
 
     <!-- Grid -->
     <div class="table-responsive" style="max-height: 400px; overflow-y: auto">
       <table class="table table-bordered table-hover table-striped table-sm">
         <thead class="table-dark">
           <tr>
-            <th>Código</th>
-            <th>Descropcion</th>
-            <th>Zona</th>
+            <th style="width: 10%">Código</th>
+            <th style="width: 50%">Descripción</th>
+            <th style="width: 20%">Zona</th>
             <th></th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let sector of sectorList">
-            <td>{{sector.se_codSect}}</td>
-            <td>{{sector.se_desSect}}</td>
-            <td>{{sector.se_codZona}}</td>
+          <tr
+            *ngFor="let sector of sectorList"
+            [ngClass]="{'selected':sector === selectedSector}"
+            (click)="seleccionarSector(sector)"
+          >
+            <td style="width: 10%">{{sector.se_codSect}}</td>
+            <td style="width: 50%">{{sector.se_desSect}}</td>
+            <td style="width: 20%">{{sector.se_codZona}}</td>
             <td>
               <i
-               (click)="editarSector(sector)"
-               class="bi bi-pencil text-primary"
-               style="padding: 10px"
+                (click)="editarSector(sector)"
+                class="bi bi-pencil text-primary"
+                style="padding: 10px"
               >
-             </i>
-             <i
-             (click)="eliminarSector(sector.se_codSect)"
-             class="bi bi-trash text-danger"
-             style="padding: 10px"
-            > 
-             </i>    
+              </i>
+              <i
+                class="bi bi-trash text-danger"
+                style="padding: 10px"
+                (click)="eliminarSector(sector.se_codSect)"
+              ></i>
+              <i
+                (click)="consultarSector(sector)"
+                class="bi bi-card-list text-success"
+                style="padding: 10px"
+              >
+              </i>
             </td>
           </tr>
         </tbody>
       </table>
     </div>
 
-    <nav aria-label="Page navigation">
-      <ul class="pagination justify-content-center">
-        <li class="page-item" [class.disabled]="currentPage === 1">
-          <a class="page-link" (click)="changePage(1)" aria-label="First">
-            <span aria-hidden="true">&laquo;&laquo;</span>
-          </a>
-        </li>
-        <li class="page-item" [class.disabled]="currentPage === 1">
-          <a
-            class="page-link"
-            (click)="changePage(currentPage - 1)"
-            aria-label="Previous"
-          >
-            <span aria-hidden="true">&laquo;</span>
-          </a>
-        </li>
-        <li
-          *ngFor="let page of pages"
-          class="page-item"
-          [class.active]="currentPage === page"
-        >
-          <a class="page-link" (click)="changePage(page)">{{ page }}</a>
-        </li>
-        <li class="page-item" [class.disabled]="currentPage === totalPages">
-          <a
-            class="page-link"
-            (click)="changePage(currentPage + 1)"
-            aria-label="Next"
-          >
-            <span aria-hidden="true">&raquo;</span>
-          </a>
-        </li>
-        <li class="page-item" [class.disabled]="currentPage === totalPages">
-          <a
-            class="page-link"
-            (click)="changePage(totalPages)"
-            aria-label="Last"
-          >
-            <span aria-hidden="true">&raquo;&raquo;</span>
-          </a>
-        </li>
-      </ul>
-    </nav>
-
-    <!-- Formulario de sector -->
+    <!-- Modal Sector -->
     <div
       class="modal fade"
       id="modalsector"
@@ -117,10 +77,10 @@
       aria-labelledby="modalSectorLabel"
       aria-hidden="true"
     >
-      <div class="modal-dialog">
+      <div class="modal-dialog modal-lg">
         <div class="modal-content">
           <div class="modal-header">
-            <h1 class="modal-title fs-5" id="modalsectorLabel">
+            <h1 class="modal-title fs-5" id="modalSectorLabel">
               {{tituloModalSector}}
             </h1>
             <button
@@ -131,50 +91,33 @@
             ></button>
           </div>
           <div class="modal-body">
-            <div class="mb-3">
-              <form [formGroup]="formularioSector" (ngSubmit)="guardarSector()">
-                <div class="row">
-                  <div class="col">
-                    <div class="form-group">
-                      <label for="se_desSect">Nombre del Sector</label>
-                      <input
-                        type="text"
-                        class="uppercase-input"
-                        (input)="convertToUpperCase($event)"
-                        class="form-control form-control-sm"
-                        formControlName="se_desSect"
-                        type="text"
-                        formControlName="se_desSect"
-                        class="form-control"
-                      />
-                    </div>
-                  </div>
-                </div>
-                <div class="row">
+            <div *ngIf="habilitarFormiarioSector" class="mb-3">
+              <form
+                [formGroup]="formularioSector"
+                (ngSubmit)="guardarSector()"
+              >
+                <div class="form-row">
                   <div class="form-group">
-                    <label for="se_codZona">Codigo de Zona</label>
-                    <select formControlName="se_codZona" class="form-control">
-                      <option disabled selected>Selecione una Zona</option>
-                      <option
-                        *ngFor="let zona of zonasList"
-                        [value]="zona.zo_codZona"
-                      >
-                        {{zona.zo_descrip}}
+                    <label for="se_desSect">Descripción</label>
+                    <input formControlName="se_desSect" class="form-control" />
+                  </div>
+                  <div class="form-group">
+                    <label for="se_codZona">Zona</label>
+                    <select formControlName="se_codZona" class="form-select">
+                      <option [ngValue]="null">Seleccione una zona</option>
+                      <option *ngFor="let z of zonasList" [ngValue]="z.zo_codZona">
+                        {{z.zo_codZona}} - {{z.zo_descrip}}
                       </option>
                     </select>
                   </div>
                 </div>
-                <div class="row">
-                  <div class="col d-flex justify-content-end">
-                    <button
-                      type="submit"
-                      *ngIf="!modoconsultaSector"
-                      class="btn btn-success"
-                    >
-                      {{modoedicionSector ? "Editar" : "Guardar"}}
-                    </button>
-                  </div>
-                </div>
+                <button
+                  type="submit"
+                  *ngIf="!modoconsultaSector"
+                  class="btn btn-success"
+                >
+                  {{modoedicionSector ? "Editar" : "Guardar"}}
+                </button>
               </form>
             </div>
           </div>

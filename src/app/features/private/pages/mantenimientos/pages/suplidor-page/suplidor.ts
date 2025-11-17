@@ -115,6 +115,8 @@ export class Suplidor implements OnInit {
     this.tituloModalSuplidor = 'Agregando Suplidor';
     $('#modalsuplidor').modal('show');
     this.habilitarFormiarioSuplidor = true;
+    // Aseguramos que el formulario esté habilitado para nueva creación
+    this.formularioSuplidor.enable({ emitEvent: false });
   }
 
   cerrarModalSuplidor() {
@@ -129,6 +131,8 @@ export class Suplidor implements OnInit {
   editarSuplidor(suplidor: ModeloSuplidorData) {
     this.suplidorid = suplidor.su_codSupl;
     this.modoedicionSuplidor = true;
+    // Habilitar el formulario para permitir edición
+    this.formularioSuplidor.enable({ emitEvent: false });
     this.formularioSuplidor.patchValue(suplidor);
     this.tituloModalSuplidor = 'Editando Suplidor';
     $('#modalsuplidor').modal('show');
@@ -148,11 +152,20 @@ export class Suplidor implements OnInit {
     $('#modalsuplidor').modal('show');
     this.habilitarFormiarioSuplidor = true;
     this.modoconsultaSuplidor = true;
+    // Deshabilitar todos los campos en modo consulta (solo lectura)
+    this.formularioSuplidor.disable({ emitEvent: false });
   };
 
-  eliminarSuplidor(suplidor: ModeloSuplidorData) {
-    this.servicioSuplidor.eliminarSuplidor(suplidor.su_codSupl).subscribe(response => {
-      alert("Suplidor Eliminado");
+  eliminarSuplidor(su_codSupl: number) {
+    console.log("ID que llega:", su_codSupl);
+    this.servicioSuplidor.eliminarSuplidor(su_codSupl).subscribe(response => {
+            Swal.fire({
+            title: "Excelente!",
+            text: "Suplidor Eliminado correctamente.",
+            icon: "success",
+            timer: 3000,
+            showConfirmButton: false,
+          });
       this.buscarTodosSuplidor(this.currentPage);
     });
   }
@@ -161,8 +174,13 @@ export class Suplidor implements OnInit {
   guardarSuplidor() {
     console.log(this.formularioSuplidor.value);
     if (this.formularioSuplidor.valid) {
+      const raw = this.formularioSuplidor.value as any;
+      const payload = {
+        ...raw,
+        su_rncSupl: raw.su_rncSupl !== undefined && raw.su_rncSupl !== null ? String(raw.su_rncSupl) : null,
+      };
       if (this.modoedicionSuplidor) {
-        this.servicioSuplidor.editarSuplidor(this.suplidorid, this.formularioSuplidor.value).subscribe(response => {
+        this.servicioSuplidor.editarSuplidor(this.suplidorid, payload).subscribe(response => {
           Swal.fire({
             title: "Excelente!",
             text: "Suplidor Guardado correctamente.",
@@ -176,7 +194,7 @@ export class Suplidor implements OnInit {
           $('#modalsuplidor').modal('hide');
         });
       } else {
-        this.servicioSuplidor.guardarSuplidor(this.formularioSuplidor.value).subscribe(response => {
+        this.servicioSuplidor.guardarSuplidor(payload).subscribe(response => {
           Swal.fire({
             title: "Excelente!",
             text: "Suplidor Guardado correctamente.",

@@ -76,7 +76,7 @@
                       <i class="bi bi-pencil"></i>
                     </button>
                     <button
-                      (click)="consultarCliente(clientes)"
+                      (click)="eliminarCliente(clientes)"
                       class="btn btn-sm btn-outline-danger"
                       title="Eliminar cliente">
                       <i class="bi bi-trash"></i>
@@ -222,7 +222,7 @@
                   <!-- Tercera fila -->
                   <div class="col-md-6">
                     <div class="form-floating">
-                      <select formControlName="cl_codSect" class="form-select" id="cl_codSect">
+                      <select formControlName="cl_codSect" class="form-select" id="cl_codSect" (change)="onSectorChange($event)">
                         <option disabled selected value="">Seleccione un Sector</option>
                         <option
                           *ngFor="let sector of sectorList"
@@ -236,7 +236,7 @@
                   </div>
                   <div class="col-md-6">
                     <div class="form-floating">
-                      <select formControlName="cl_codZona" class="form-select" id="cl_codZona">
+                      <select formControlName="cl_codZona" class="form-select" id="cl_codZona" [disabled]="true">
                         <option disabled selected value="">Seleccione una Zona</option>
                         <option
                           *ngFor="let zona of zonasList"
@@ -295,7 +295,7 @@
                   <button type="button" class="btn btn-outline-secondary me-2" data-bs-dismiss="modal">
                     <i class="bi bi-x-circle me-1"></i>Cancelar
                   </button>
-                  <button type="submit" class="btn btn-success">
+                  <button *ngIf="!modoconsultaCliente" type="submit" class="btn btn-success">
                     <i class="bi bi-check-circle me-1"></i>{{modoedicionCliente ? "Actualizar" : "Guardar"}}
                   </button>
                 </div>
