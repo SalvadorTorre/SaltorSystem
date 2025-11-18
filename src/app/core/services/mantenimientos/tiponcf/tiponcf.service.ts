@@ -13,10 +13,11 @@ export class ServicioTiponcf {
   constructor(private http: HttpInvokeService) {}
 
   obtenerTodos(): Observable<TiponcfData[]> {
-    return this.http.GetRequest<TiponcfData[]>("/tiponcf");
+    // Algunos backends exponen este recurso como "/tiposncf" (plural)
+    return this.http.GetRequest<TiponcfData[]>("/tiposncf");
   }
 
   obtenerPorTipo(tipo: string): Observable<TiponcfData[]> {
-    return this.http.GetRequest<TiponcfData[]>(`/tiponcf/${tipo}`);
+    return this.http.GetRequest<TiponcfData[]>(`/tiposncf/${tipo}`);
   }
 }

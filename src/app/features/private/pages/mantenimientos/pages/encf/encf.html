@@ -5,7 +5,7 @@
     </div>
     <div class="card-body">
       <form class="row g-3" #encfForm="ngForm" (ngSubmit)="guardarEncf()">
-        <div class="col-md-6">
+        <div class="col-md-3">
           <label class="form-label fw-semibold">Empresa *</label>
           <select class="form-select" name="codempr" [(ngModel)]="encf.codempr" required>
             <option value="">Seleccione una empresa</option>
@@ -15,48 +15,49 @@
 
         <!-- Sucursal removida: no está en el modelo ENCF -->
 
-        <div class="col-md-6">
+        <div class="col-md-2">
           <label class="form-label fw-semibold">Tipo ENCF *</label>
           <select class="form-select" name="tipoencf" [(ngModel)]="encf.tipoencf" required>
             <option value="">Seleccione un tipo</option>
             <option *ngFor="let t of tiposNcf" [value]="t.tipo">{{ t.desNcf }}</option>
           </select>
         </div>
-
-        <div class="col-md-3">
+        <div class="col-md-1">
+          <label class="form-label fw-semibold">Cantidad ENCF</label>
+          <input type="number" class="form-control" name="cantencf" [(ngModel)]="encf.cantencf" placeholder="1000" />
+        </div>
+        <div class="col-md-1">
           <label class="form-label fw-semibold">Secuencia Desde</label>
           <input type="number" class="form-control text-center" name="desdeencf" [(ngModel)]="encf.desdeencf" placeholder="1" />
         </div>
 
-        <div class="col-md-3">
+        <div class="col-md-1">
           <label class="form-label fw-semibold">Secuencia Hasta</label>
           <input type="number" class="form-control text-center" name="hastaencf" [(ngModel)]="encf.hastaencf" placeholder="1000" />
         </div>
 
-        <div class="col-md-6">
-          <label class="form-label fw-semibold">Cantidad ENCF</label>
-          <input type="number" class="form-control" name="cantencf" [(ngModel)]="encf.cantencf" placeholder="1000" />
-        </div>
+      
 
-        <div class="col-md-6">
+        <div class="col-md-1">
           <label class="form-label fw-semibold">Contador ENCF</label>
           <input type="number" class="form-control" name="countencf" [(ngModel)]="encf.countencf" placeholder="1" />
         </div>
 
-        <div class="col-md-6">
+        <div class="col-md-1">
           <label class="form-label fw-semibold">Fecha *</label>
           <input type="date" class="form-control" name="fechaencf" [(ngModel)]="encf.fechaencf" required />
         </div>
 
-        <div class="col-md-6">
+        <div class="col-md-2">
           <label class="form-label fw-semibold">Alerta ENCF (%)</label>
           <input type="number" class="form-control" name="alertaencf" [(ngModel)]="encf.alertaencf" placeholder="20" />
           <div class="form-text">Porcentaje de uso para activar la alerta</div>
         </div>
 
         <div class="col-12 d-flex justify-content-end gap-2 mt-3">
-          <button type="submit" class="btn btn-primary px-4" [disabled]="!encfForm.valid">
-            <i class="bi bi-save me-1"></i> {{ editIndex >= 0 ? 'Guardar cambios' : 'Guardar ENCF' }}
+          <button type="submit" class="btn btn-primary px-4" [disabled]="!encfForm.valid || guardando">
+            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" *ngIf="guardando"></span>
+            <i class="bi bi-save me-1" *ngIf="!guardando"></i> {{ editIndex >= 0 ? 'Guardar cambios' : 'Guardar ENCF' }}
           </button>
           <button type="button" class="btn btn-outline-secondary px-4" (click)="limpiarFormulario()">
             <i class="bi bi-arrow-counterclockwise me-1"></i> Limpiar
@@ -71,6 +72,33 @@
       <h5 class="mb-0"><i class="bi bi-list-check me-2"></i>ENCF Registrados</h5>
     </div>
     <div class="card-body p-0">
+      <!-- Filtros -->
+      <!-- <div class="p-3 border-bottom bg-light">
+        <div class="row g-3 align-items-end">
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Empresa</label>
+            <select class="form-select" [(ngModel)]="filtroCodempr">
+              <option value="">Todas</option>
+              <option *ngFor="let e of empresas" [value]="e.cod_empre">{{ e.nom_empre }} ({{ e.cod_empre }})</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Tipo ENCF</label>
+            <select class="form-select" [(ngModel)]="filtroTipo">
+              <option value="">Todos</option>
+              <option *ngFor="let t of tiposNcf" [value]="t.tipo">{{ t.desNcf }}</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Nombre Empresa</label>
+            <input type="text" class="form-control" [(ngModel)]="filtroDescripcion" placeholder="Buscar por nombre" />
+          </div>
+          <div class="col-md-2 d-flex gap-2">
+            <button class="btn btn-primary w-100" (click)="aplicarFiltros()">Buscar</button>
+            <button class="btn btn-outline-secondary w-100" (click)="limpiarFiltros()">Limpiar</button>
+          </div>
+        </div>
+      </div> -->
       <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
           <thead class="table-primary">
@@ -108,6 +136,16 @@
             </tr>
           </tbody>
         </table>
+      </div>
+      <!-- Paginación -->
+      <div class="d-flex justify-content-between align-items-center p-3 border-top">
+        <div>
+          Página {{ paginacion.page }} de {{ paginacion.totalPages }}
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-outline-secondary" [disabled]="page === 1" (click)="cambiarPagina(page - 1)">Anterior</button>
+          <button class="btn btn-outline-secondary" [disabled]="paginacion.page >= paginacion.totalPages" (click)="cambiarPagina(page + 1)">Siguiente</button>
+        </div>
       </div>
     </div>
   </div>

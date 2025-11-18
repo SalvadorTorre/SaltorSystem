@@ -31,8 +31,12 @@
                   <td>{{ t.id }}</td>
                   <td>{{ t.descripcion }}</td>
                   <td>
-                    <button class="btn btn-primary btn-sm me-2" (click)="abrirModalEditarTipo(t, i); $event.stopPropagation();" data-bs-toggle="modal" data-bs-target="#tipoModal">Editar</button>
-                    <button class="btn btn-danger btn-sm" (click)="eliminarTipo(t); $event.stopPropagation();">Eliminar</button>
+                    <button class="btn btn-primary btn-sm me-2" (click)="abrirModalEditarTipo(t, i); $event.stopPropagation();" data-bs-toggle="modal" data-bs-target="#tipoModal" title="Editar tipo" aria-label="Editar tipo">
+                      <i class="bi bi-pencil"></i>
+                    </button>
+                    <button class="btn btn-danger btn-sm" (click)="eliminarTipo(t); $event.stopPropagation();" title="Eliminar tipo" aria-label="Eliminar tipo">
+                      <i class="bi bi-trash"></i>
+                    </button>
                   </td>
                 </tr>
               </tbody>
@@ -73,8 +77,12 @@
                   <td>{{ d.acceso }}</td>
                   <td>{{ d.lectura }}</td>
                   <td>
-                    <button class="btn btn-primary btn-sm me-2" (click)="abrirModalEditarDet(d, i)" data-bs-toggle="modal" data-bs-target="#detModal">Editar</button>
-                    <button class="btn btn-danger btn-sm" (click)="eliminarDet(d)">Eliminar</button>
+                    <button class="btn btn-primary btn-sm me-2" (click)="abrirModalEditarDet(d, i)" data-bs-toggle="modal" data-bs-target="#detModal" title="Editar módulo del tipo" aria-label="Editar módulo del tipo">
+                      <i class="bi bi-pencil"></i>
+                    </button>
+                    <button class="btn btn-danger btn-sm" (click)="eliminarDet(d)" title="Eliminar módulo del tipo" aria-label="Eliminar módulo del tipo">
+                      <i class="bi bi-trash"></i>
+                    </button>
                   </td>
                 </tr>
               </tbody>

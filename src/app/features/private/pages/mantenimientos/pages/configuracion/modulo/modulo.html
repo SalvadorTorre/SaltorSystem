@@ -81,11 +81,11 @@
         <td>{{ m.permisos?.length || 0 }}</td>
         <td>
           <!-- Botones de acción -->
-          <button class="btn btn-sm btn-primary me-1" (click)="editarModulo(m)">
-            Editar
+          <button class="btn btn-sm btn-primary me-1" (click)="editarModulo(m)" title="Editar módulo" aria-label="Editar módulo">
+            <i class="bi bi-pencil"></i>
           </button>
-          <button class="btn btn-sm btn-danger" (click)="eliminarModulo(m)">
-            Eliminar
+          <button class="btn btn-sm btn-danger" (click)="eliminarModulo(m)" title="Eliminar módulo" aria-label="Eliminar módulo">
+            <i class="bi bi-trash"></i>
           </button>
         </td>
       </tr>

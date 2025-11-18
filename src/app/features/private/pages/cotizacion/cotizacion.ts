@@ -113,6 +113,7 @@ export class Cotizacion implements OnInit {
   sucursales = [];
   sucursalSeleccionada: any = null;
   habilitarIcono: boolean = true;
+  clientesNombreCache = new Map<string, string>();
 
   private codigoSubject = new BehaviorSubject<string>('');
   private nomclienteSubject = new BehaviorSubject<string>('');
@@ -135,7 +136,7 @@ export class Cotizacion implements OnInit {
     });
 
     this.crearFormularioCotizacion();
-    console.log(this.formularioCotizacion.value);
+    console.log("formulario", this.formularioCotizacion.value);
 
     this.nomclienteSubject
       .pipe(
@@ -816,6 +817,17 @@ export class Cotizacion implements OnInit {
   }
 
   buscarPorCodigo(codigo: string) {}
+
+  nombreClientePorCodigo(codCliente: string | null | undefined): string {
+    if (!codCliente) return '';
+    const cached = this.clientesNombreCache.get(codCliente);
+    if (cached) return cached;
+    this.servicioCliente.buscarCliente(Number(codCliente)).subscribe((res) => {
+      const nombre = res?.data?.cl_nomClie || '';
+      this.clientesNombreCache.set(codCliente, nombre);
+    });
+    return '';
+  }
 
   buscarClienteporNombre() {
     this.servicioCliente

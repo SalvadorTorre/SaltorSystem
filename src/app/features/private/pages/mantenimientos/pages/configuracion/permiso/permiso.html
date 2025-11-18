@@ -42,8 +42,12 @@
               <td>{{ p.acceso }}</td>
               <td>{{ p.lectura }}</td>
               <td>
-                <button class="btn btn-primary btn-sm me-2" (click)="abrirModalEditar(p, i)" data-bs-toggle="modal" data-bs-target="#permisoModal">Editar</button>
-                <button class="btn btn-danger btn-sm" (click)="eliminarPermiso(p)">Eliminar</button>
+                <button class="btn btn-primary btn-sm me-2" (click)="abrirModalEditar(p, i)" data-bs-toggle="modal" data-bs-target="#permisoModal" title="Editar permiso" aria-label="Editar permiso">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn btn-danger btn-sm" (click)="eliminarPermiso(p)" title="Eliminar permiso" aria-label="Eliminar permiso">
+                  <i class="bi bi-trash"></i>
+                </button>
               </td>
             </tr>
           </tbody>

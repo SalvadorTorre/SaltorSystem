@@ -8,7 +8,7 @@ import { HttpInvokeService } from "../../http-invoke.service";
 export class ServicioEncf {
   constructor(private http: HttpInvokeService) {}
 
-  listarEncf(page: number = 1, limit: number = 10, codigo?: string, descripcion?: string): Observable<any> {
+  listarEncf(page: number = 1, limit: number = 10, codigo?: string, descripcion?: string, tipo?: string): Observable<any> {
     let url = `/encf?page=${page}&limit=${limit}`;
     if (codigo) {
       url += `&codigo=${codigo}`;
@@ -16,11 +16,18 @@ export class ServicioEncf {
     if (descripcion) {
       url += `&descripcion=${descripcion}`;
     }
+    if (tipo) {
+      url += `&tipo=${tipo}`;
+    }
     return this.http.GetRequest<any>(url);
   }
 
   crearEncf(data: any): Observable<any> {
     return this.http.PostRequest<any, any>("/encf", data);
+  }
+
+  editarEncf(id: number, data: any): Observable<any> {
+    return this.http.PutRequest<any, any>(`/encf/${id}`, data);
   }
 
   eliminarEncf(id: number): Observable<any> {
