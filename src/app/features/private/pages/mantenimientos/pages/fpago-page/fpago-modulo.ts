@@ -1,35 +1,11 @@
 import { NgModule } from '@angular/core';
-import { BrowserModule } from '@angular/platform-browser';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { Fpago } from './fpago';
 import { RutaFpago } from './fpago-ruta';
 
-
-
 @NgModule({
-  declarations: [
-    Fpago
-  ],
-  imports: [
-    CommonModule,
-    RutaFpago,
-    ReactiveFormsModule,
-    FormsModule,
-  ],
-  providers: [],
-  bootstrap: [Fpago]
+  declarations: [Fpago],
+  imports: [CommonModule, RutaFpago, ReactiveFormsModule, FormsModule],
 })
-
-
-export interface ModeloFpago {
-  codigo: string;
-  descripcion: string;
-}
-
-export interface RespuestaFpago {
-  status: string;
-  code: number;
-  message: string;
-  data: ModeloFpago[];
-}
+export class FpagoModulo {}

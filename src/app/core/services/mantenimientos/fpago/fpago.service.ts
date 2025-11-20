@@ -1,6 +1,6 @@
 import { Inject, Injectable } from "@angular/core";
 import { Observable } from "rxjs";
-import { ModeloFpago } from ".";
+import { ModeloFpago, ModeloFpagoData } from ".";
 import { HttpInvokeService } from "../../http-invoke.service";
 
 @Injectable({
@@ -17,8 +17,8 @@ export class ServicioFpago {
     return this.http.PostRequest<any, any>("/fpago", fpago);
   }
 
-  editarFpago(fp_codfpago: number, fpago: ModeloFpago): Observable<any> {
-    return this.http.PutRequest<any, any>(`/fpago/${fp_codfpago}`, fp_codfpago);
+  editarFpago(fp_codfpago: number, fpago: Partial<ModeloFpagoData> | { fp_descfpago: string }): Observable<any> {
+    return this.http.PutRequest<any, any>(`/fpago/${fp_codfpago}`, fpago);
   }
   eliminarfpago(fp_codfpago: number): Observable<any> {
     return this.http.DeleteRequest(`/fpago/${fp_codfpago}`, "");

@@ -287,6 +287,7 @@ export class CobroFact implements OnInit {
     this.habilitarCantidad = false;
     this.valorPagado = 0;
     this.cambio = 0;
+    this.valCambio = 0;
     this.fentrega = '';
     this.ftipoPago = '';
     // volver a ejecutar la lógica de inicio
@@ -872,6 +873,7 @@ export class CobroFact implements OnInit {
       this.txtvalPagado = true; // sigue deshabilitado
       this.valorPagado = 0;
       this.cambio = 0;
+      this.valCambio = 0;
     } else {
       // si no está marcado, lo marco y habilito input
       this.chekPagado = true;
@@ -938,7 +940,7 @@ export class CobroFact implements OnInit {
     console.log("this.ftipoPago", this.ftipoPago);
     this.servicioFacturacion
     .marcarImpresa(numero, { fa_fpago: this.ftipoPago,
-      fa_envio: this.formularioFacturacion.get('fa_envio')?.value })
+      fa_envio: this.fentrega })
     .subscribe({next: (res: any) => {
       console.log("✅ Respuesta backend:", res);
         this.facturaData = res.data; // 👈 viene del backend
