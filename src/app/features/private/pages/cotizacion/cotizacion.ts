@@ -62,8 +62,9 @@ export class Cotizacion implements OnInit {
   @ViewChild('inputCodmerc') inputCodmerc!: ElementRef; // Para manejar el foco
   @ViewChild('descripcionInput') descripcionInput!: ElementRef; // Para manejar el foco
   @ViewChild('Tabladetalle') Tabladetalle!: ElementRef;
+  @ViewChild('input5') vendedorInput!: ElementRef<HTMLInputElement>; // Referencia al input de ct_codvend
   totalItems = 0;
-  pageSize = 12;
+  pageSize = 10;
   currentPage = 1;
   maxPagesToShow = 5;
   txtdescripcion: string = '';
@@ -157,6 +158,50 @@ export class Cotizacion implements OnInit {
         this.totalItems = response.pagination.total;
         this.currentPage = response.pagination.page;
       });
+
+    // Búsqueda por código
+    this.codigoBuscar
+      .pipe(
+        debounceTime(500),
+        distinctUntilChanged(),
+        switchMap((codigo) => {
+          this.txtcodigo = codigo;
+          return this.servicioCotizacion.buscarCotizacion(
+            this.currentPage,
+            this.pageSize,
+            this.txtcodigo,
+            this.txtdescripcion,
+            this.txtfecha
+          );
+        })
+      )
+      .subscribe((response) => {
+        this.cotizacionList = response.data;
+        this.totalItems = response.pagination.total;
+        this.currentPage = response.pagination.page;
+      });
+
+    // Búsqueda por fecha
+    this.fechaBuscar
+      .pipe(
+        debounceTime(500),
+        distinctUntilChanged(),
+        switchMap((fecha) => {
+          this.txtfecha = fecha;
+          return this.servicioCotizacion.buscarCotizacion(
+            this.currentPage,
+            this.pageSize,
+            this.txtcodigo,
+            this.txtdescripcion,
+            this.txtfecha
+          );
+        })
+      )
+      .subscribe((response) => {
+        this.cotizacionList = response.data;
+        this.totalItems = response.pagination.total;
+        this.currentPage = response.pagination.page;
+      });
   }
 
   agregarCotizacion() {
@@ -180,15 +225,15 @@ export class Cotizacion implements OnInit {
   @ViewChild('buscarcodmercInput') buscarcodmercElement!: ElementRef;
   buscarNombre = new FormControl();
   resultadoNombre: ModeloClienteData[] = [];
-  selectedIndex = 1;
+  selectedIndex = 0;
   buscarcodmerc = new FormControl();
   buscardescripcionmerc = new FormControl();
   // buscarcodmercElement = new FormControl();
   nativeElement = new FormControl();
   resultadoCodmerc: ModeloInventarioData[] = [];
-  selectedIndexcodmerc = 1;
+  selectedIndexcodmerc = 0;
   resultadodescripcionmerc: ModeloInventarioData[] = [];
-  selectedIndexcoddescripcionmerc = 1;
+  selectedIndexcoddescripcionmerc = 0;
   seleccionarCotizacion(cotizacion: any) {
     this.selectedCotizacion = cotizacion;
   }
@@ -363,6 +408,8 @@ export class Cotizacion implements OnInit {
     this.tituloModalCotizacion = 'Editando Cotizacion';
     $('#modalcotizacion').modal('show');
     this.habilitarFormulario = true;
+    // Desactivar edición del código del vendedor en modo edición
+    this.formularioCotizacion.get('ct_codvend')!.disable();
     const inputs = document.querySelectorAll('.seccion-productos input');
     inputs.forEach((input) => {
       (input as HTMLInputElement).disabled = true;
@@ -585,63 +632,104 @@ export class Cotizacion implements OnInit {
   }
   fechaEntra(event: Event) {
     const inputElement = event.target as HTMLInputElement;
-    this.codigoBuscar.next(inputElement.value.toUpperCase());
+    const raw = inputElement.value?.trim();
+    const formatted = this.formatFechaFiltro(raw);
+    this.txtfecha = formatted;
+    this.fechaBuscar.next(formatted);
   }
 
   guardarCotizacion() {
     const date = new Date();
     this.formularioCotizacion.get('ct_valcoti')?.patchValue(this.totalGral);
     this.formularioCotizacion.get('ct_itbis')?.patchValue(this.totalItbis);
-    this.formularioCotizacion.get('ct_codcoti')!.enable();
-    this.formularioCotizacion.get('ct_feccoti')!.enable();
-    this.formularioCotizacion.get('ct_nomvend')!.enable();
+    // Refrescar estado de validación
+    this.formularioCotizacion.markAllAsTouched();
+    this.formularioCotizacion.updateValueAndValidity();
     const payload = {
-      cotizacion: this.formularioCotizacion.value,
+      // Incluir valores de controles deshabilitados
+      cotizacion: this.formularioCotizacion.getRawValue(),
       detalle: this.items,
       idCotizacion: this.formularioCotizacion.get('ct_codcoti')?.value,
     };
 
     if (this.formularioCotizacion.valid) {
       if (this.modoedicionCotizacion) {
+        const payloadEdit = {
+          cotizacion: this.formularioCotizacion.getRawValue(),
+          detalle: this.items,
+          idCotizacion: this.cotizacionid,
+        };
         this.servicioCotizacion
-          .editarCotizacion(this.cotizacionid, this.formularioCotizacion.value)
-          .subscribe((response) => {
-            Swal.fire({
-              title: 'Excelente!',
-              text: 'Cotizacion Editada correctamente.',
-              icon: 'success',
-              timer: 5000,
-              showConfirmButton: false,
-            });
-            this.buscarTodasCotizacion(1);
-            this.formularioCotizacion.reset();
-            this.crearFormularioCotizacion();
-            $('#modalcotizacion').modal('hide');
+          .editarCotizacion(this.cotizacionid, payloadEdit as any)
+          .subscribe({
+            next: (response) => {
+              Swal.fire({
+                title: 'Excelente!',
+                text: 'Cotizacion editada correctamente.',
+                icon: 'success',
+                timer: 3000,
+                showConfirmButton: false,
+              });
+              this.buscarCotizacion(this.currentPage);
+              this.formularioCotizacion.reset();
+              this.crearFormularioCotizacion();
+              $('#modalcotizacion').modal('hide');
+            },
+            error: (err) => {
+              Swal.fire({
+                icon: 'error',
+                title: 'A V I S O',
+                text: 'No se pudo editar la cotización.',
+              });
+            },
           });
       } else {
         if (this.formularioCotizacion.valid) {
           this.servicioCotizacion
             .guardarCotizacion(payload)
-            .subscribe((response) => {
-              Swal.fire({
-                title: 'Excelente!',
-                text: 'Cotizacion creada correctamente.',
-                icon: 'success',
-                timer: 1000,
-                showConfirmButton: false,
-              });
-              this.buscarTodasCotizacion(1);
-              this.formularioCotizacion.reset();
-              this.crearFormularioCotizacion();
-              this.formularioCotizacion.enable();
-              $('#modalcotizacion').modal('hide');
+            .subscribe({
+              next: (response) => {
+                Swal.fire({
+                  title: 'Excelente!',
+                  text: 'Cotizacion creada correctamente.',
+                  icon: 'success',
+                  timer: 1500,
+                  showConfirmButton: false,
+                });
+                this.buscarCotizacion(this.currentPage);
+                this.formularioCotizacion.reset();
+                this.crearFormularioCotizacion();
+                this.formularioCotizacion.enable();
+                $('#modalcotizacion').modal('hide');
+              },
+              error: (err) => {
+                Swal.fire({
+                  icon: 'error',
+                  title: 'A V I S O',
+                  text: 'No se pudo crear la cotización.',
+                });
+              },
             });
         } else {
           console.log(this.formularioCotizacion.value);
         }
       }
     } else {
-      alert('Esta Empresa no fue Guardado');
+      Swal.fire({
+        icon: 'warning',
+        title: 'Campos incompletos',
+        text: 'La cotización no fue guardada. Verifique los campos requeridos (por ejemplo, Vendedor).',
+      });
+      // Enfocar automáticamente el campo de vendedor si está vacío/invalid
+      const vendCtrl = this.formularioCotizacion.get('ct_codvend');
+      if (vendCtrl && vendCtrl.invalid) {
+        vendCtrl.markAsTouched();
+        // Asegurar que el input exista antes de enfocar
+        setTimeout(() => {
+          this.vendedorInput?.nativeElement?.focus();
+          this.vendedorInput?.nativeElement?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 0);
+      }
     }
   }
 
@@ -663,15 +751,26 @@ export class Cotizacion implements OnInit {
 
   changePage(page: number) {
     this.currentPage = page;
-    // Trigger a new search with the current codigo and descripcion
-    const descripcion = this.descripcionBuscar.getValue();
+    // Mantener filtros actuales en la paginación
     this.servicioCotizacion
-      .buscarTodasCotizacion(this.currentPage, this.pageSize)
+      .buscarCotizacion(this.currentPage, this.pageSize, this.txtcodigo, this.txtdescripcion, this.txtfecha)
       .subscribe((response) => {
         this.cotizacionList = response.data;
         this.totalItems = response.pagination.total;
         this.currentPage = page;
         this.formularioCotizacion.reset();
+      });
+  }
+
+  // Wrapper para ejecutar la consulta con los filtros actuales
+  buscarCotizacion(page: number) {
+    this.currentPage = page;
+    this.servicioCotizacion
+      .buscarCotizacion(this.currentPage, this.pageSize, this.txtcodigo, this.txtdescripcion, this.txtfecha)
+      .subscribe((response) => {
+        this.cotizacionList = response.data;
+        this.totalItems = response.pagination.total;
+        this.currentPage = response.pagination.page ?? page;
       });
   }
 
@@ -844,6 +943,73 @@ export class Cotizacion implements OnInit {
     return `${day}/${month}/${year}`;
   }
 
+  // Normaliza diferentes formatos a dd/mm/aaaa para filtros y despliegue
+  formatFechaFiltro(fechaInput: any): string {
+    if (!fechaInput && fechaInput !== 0) return '';
+    // Si ya es Date
+    if (fechaInput instanceof Date && !isNaN(fechaInput.getTime())) {
+      const yyyy = fechaInput.getFullYear();
+      const mm = (fechaInput.getMonth() + 1).toString().padStart(2, '0');
+      const dd = fechaInput.getDate().toString().padStart(2, '0');
+      return `${dd}/${mm}/${yyyy}`;
+    }
+    // Si es número (timestamp)
+    if (typeof fechaInput === 'number') {
+      const d = new Date(fechaInput);
+      if (!isNaN(d.getTime())) {
+        const yyyy = d.getFullYear();
+        const mm = (d.getMonth() + 1).toString().padStart(2, '0');
+        const dd = d.getDate().toString().padStart(2, '0');
+        return `${dd}/${mm}/${yyyy}`;
+      }
+    }
+    // Si es string
+    if (typeof fechaInput === 'string') {
+      let v = fechaInput.trim();
+      // Quitar hora si viene en ISO: yyyy-mm-ddTHH:mm:ssZ
+      if (v.includes('T')) v = v.split('T')[0];
+      // Quitar hora si viene con espacio: dd/mm/yyyy HH:mm
+      if (v.includes(' ')) v = v.split(' ')[0];
+      // Caso: yyyy-mm-dd
+      const iso = /^\d{4}-\d{2}-\d{2}$/;
+      if (iso.test(v)) {
+        const [yyyy, mm, dd] = v.split('-');
+        return `${dd}/${mm}/${yyyy}`;
+      }
+      // Caso: yyyy/mm/dd
+      const isoSlash = /^\d{4}\/\d{2}\/\d{2}$/;
+      if (isoSlash.test(v)) {
+        const [yyyy, mm, dd] = v.split('/');
+        return `${dd}/${mm}/${yyyy}`;
+      }
+      // Caso: dd/mm/yyyy ya correcto
+      const dmy = /^\d{2}\/\d{2}\/\d{4}$/;
+      if (dmy.test(v)) return v;
+      // Intento genérico: separar por / o - y reorganizar
+      const parts = v.split(/[\/-]/);
+      if (parts.length === 3) {
+        const idxYear = parts.findIndex((p) => p.length === 4);
+        if (idxYear === 0) {
+          const [yyyy, mm, dd] = parts;
+          if (mm.length === 2 && dd.length === 2) return `${dd}/${mm}/${yyyy}`;
+        } else if (idxYear === 2) {
+          const [dd, mm, yyyy] = parts;
+          if (dd.length === 2 && mm.length === 2) return `${dd}/${mm}/${yyyy}`;
+        }
+      }
+      // Último intento: usar Date.parse
+      const parsed = new Date(v);
+      if (!isNaN(parsed.getTime())) {
+        const yyyy = parsed.getFullYear();
+        const mm = (parsed.getMonth() + 1).toString().padStart(2, '0');
+        const dd = parsed.getDate().toString().padStart(2, '0');
+        return `${dd}/${mm}/${yyyy}`;
+      }
+      return v; // Devolver original si no se puede normalizar
+    }
+    return '';
+  }
+
   cargarDatosCliente(cliente: ModeloClienteData) {
     this.resultadoNombre = [];
     this.buscarNombre.reset();
@@ -893,26 +1059,6 @@ export class Cotizacion implements OnInit {
     }
   }
 
-  // handleKeydown(event: KeyboardEvent): void {
-  //   const key = event.key;
-  //   const maxIndex = this.resultadoNombre.length;
-
-  //   if (key === 'ArrowDown') {
-  //     // Mueve la selección hacia abajo
-  //     this.selectedIndex = this.selectedIndex < maxIndex ? this.selectedIndex + 1 : 0;
-  //     event.preventDefault();
-  //   } else if (key === 'ArrowUp') {
-  //     // Mueve la selección hacia arriba
-  //     this.selectedIndex = this.selectedIndex > 0 ? this.selectedIndex - 1 : maxIndex;
-  //     event.preventDefault();
-  //   } else if (key === 'Enter') {
-  //     // Selecciona el ítem actual
-  //     if (this.selectedIndex >= 0 && this.selectedIndex <= maxIndex) {
-  //       this.cargarDatosCliente(this.resultadoNombre[this.selectedIndex]);
-  //     }
-  //     event.preventDefault();
-  //   }
-  // }
 
   cancelarBusquedaDescripcion: boolean = false;
   cancelarBusquedaCodigo: boolean = false;
@@ -941,7 +1087,7 @@ export class Cotizacion implements OnInit {
 
   handleKeydownInventario(event: KeyboardEvent): void {
     const key = event.key;
-    const maxIndex = this.resultadoCodmerc.length;
+    const maxIndex = this.resultadoCodmerc.length - 1;
     if (key === 'ArrowDown') {
       console.log('paso');
       this.selectedIndexcodmerc =
@@ -971,7 +1117,7 @@ export class Cotizacion implements OnInit {
 
   handleKeydownInventariosdesc(event: KeyboardEvent): void {
     const key = event.key;
-    const maxIndex = this.resultadodescripcionmerc.length;
+    const maxIndex = this.resultadodescripcionmerc.length - 1;
     if (key === 'ArrowDown') {
       // Mueve la selección hacia abajo
       this.selectedIndexcoddescripcionmerc =

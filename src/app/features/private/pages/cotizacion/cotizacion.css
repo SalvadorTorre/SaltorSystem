@@ -1,4 +1,26 @@
 /* Estilos generales */
+.tabla-fija {
+  height: 350px;          /* Fijo */
+  overflow-y: auto;       /* Scroll vertical */
+  overflow-x: hidden;     /* Opcional */
+  border: 1px solid #ddd; /* Para separarla visualmente */
+}
+.tabla-detalle-sm thead {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background-color: #f8f9fa; /* Color del header */
+}
+
+.modal-altura {
+  max-height: 60vh; /* Ajusta a tu gusto */
+}
+
+.modal-altura .modal-content {
+  max-height: 60vh;
+  overflow-y: auto; /* Para scroll si el contenido es largo */
+}
+
 .container-fluid {
   background-color: #f8f9fa;
 }
