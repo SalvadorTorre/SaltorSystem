@@ -16,6 +16,8 @@ import { ServicioSector } from 'src/app/core/services/mantenimientos/sector/sect
 import { ModeloSectorData } from 'src/app/core/services/mantenimientos/sector';
 import { ModeloFpagoData } from 'src/app/core/services/mantenimientos/fpago';
 import { ServicioFpago } from 'src/app/core/services/mantenimientos/fpago/fpago.service';
+import { ModeloFentregaData } from 'src/app/core/services/mantenimientos/fentrega';
+import { ServicioFentrega } from 'src/app/core/services/mantenimientos/fentrega/fentrega.service';
 import { ModeloInventarioData } from 'src/app/core/services/mantenimientos/inventario';
 import jsPDF from 'jspdf';
 import { HttpClient } from '@angular/common/http';
@@ -174,6 +176,7 @@ export class CobroFact implements OnInit {
     private ServicioRnc: ServicioRnc,
     private ServicioSector: ServicioSector,
     private servicioFpago: ServicioFpago,
+    private servicioFentrega: ServicioFentrega,
     private servicioNcf: ServicioNcf,
     private http: HttpClient
   ) {
@@ -190,6 +193,7 @@ export class CobroFact implements OnInit {
   resultadoNombre: ModeloClienteData[] = [];
   resultadoSector: ModeloSectorData[] = [];
   resultadoFpago: ModeloFpagoData[] = [];
+  resultadoFentrega: ModeloFentregaData[] = [];
   buscarSector = new FormControl();
   buscarFpago = new FormControl();
   selectedIndex = 1;
@@ -211,10 +215,16 @@ export class CobroFact implements OnInit {
     this.buscarFacturasNoImpresas();
     this.obtenerNcf();
     this.obtenerfpago();
+    this.obtenerFentrega();
   }
   obtenerfpago() {
     this.servicioFpago.obtenerTodosFpago().subscribe((response) => {
       this.resultadoFpago = response.data;
+    });
+  }
+  obtenerFentrega() {
+    this.servicioFentrega.obtenerTodosFentrega().subscribe((response) => {
+      this.resultadoFentrega = response.data || [];
     });
   }
   obtenerNcf() {

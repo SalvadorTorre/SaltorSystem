@@ -213,8 +213,8 @@ export class Facturacion implements OnInit {
           this.resultadoCodmerc = results.data.sort((a, b) => {
             return a.in_codmerc.localeCompare(b.in_codmerc, undefined, { numeric: true, sensitivity: 'base' });
           });
-          // Aquí seleccionamos automáticamente el primer ítem
-          this.selectedIndex = 0;
+          // Seleccionar automáticamente el primer resultado del buscador de código
+          this.selectedIndexcodmerc = 0;
 
           this.codnotfound = false;
         } else {
@@ -618,55 +618,85 @@ export class Facturacion implements OnInit {
     }
   }
 
-   moveFocus(event: KeyboardEvent, nextElement: HTMLInputElement | HTMLSelectElement) {
-    if (event.key === 'Enter' && nextElement) {
-      event.preventDefault(); // Evita el comportamiento predeterminado del Enter
-      nextElement.focus(); // Enfoca el siguiente campo
+   moveFocus(event: Event, nextElement: HTMLInputElement | HTMLSelectElement) {
+    if (nextElement) {
+      event.preventDefault();
+      nextElement.focus();
     }
   }
 
-  moveFocuscodmerc(event: KeyboardEvent, nextInput: HTMLInputElement) {
-    console.log("move focus")
-    if (event.key === 'Enter' || event.key === 'Tab') {
-      event.preventDefault(); // Previene el comportamiento predeterminado de Enter
-      // const currentControl = this.formularioFacturacion.get('ct_codvend');
-      const currentInputValue = (event.target as HTMLInputElement).value.trim();
-      if (currentInputValue === '') {
-        this.codmerVacio = true;
-        console.log("vacio")
-      }
-      else {
+  moveFocuscodmerc(event: Event, descripcionInput: HTMLInputElement, cantidadInput: HTMLInputElement) {
+    // Enter: buscar por cadena (prefijo). Si coincide o hay selección en grid -> ir a cantidad.
+    // Si vacío -> ir a descripción. Si no hay coincidencias -> error y pasar a descripción.
+    event.preventDefault();
+    const currentInputValue = (event.target as HTMLInputElement).value.trim();
+
+    if (currentInputValue === '') {
+      this.codmerVacio = true;
+      descripcionInput?.focus();
+      descripcionInput?.select?.();
+      return;
+    }
+
+    const queryLower = currentInputValue.toLowerCase();
+    const maxIndex = this.resultadoCodmerc.length - 1;
+
+    // Priorizar selección manual del grid
+    if (this.selectedIndexcodmerc >= 0 && this.selectedIndexcodmerc <= maxIndex) {
+      const seleccionadoGrid = this.resultadoCodmerc[this.selectedIndexcodmerc];
+      if (seleccionadoGrid) {
+        this.cargarDatosInventario(seleccionadoGrid);
+        cantidadInput?.focus();
+        cantidadInput?.select?.();
         this.codmerVacio = false;
-      }
-      if (!this.codnotfound === false) {
-        console.log(this.codnotfound);
-        this.mensagePantalla = true;
-        Swal.fire({
-          icon: "error",
-          title: "A V I S O",
-          text: 'Codigo invalido.',
-          focusConfirm: true,
-          allowEnterKey: true,
-        }).then(() => { this.mensagePantalla = false });
-        this.codmerVacio = false;
-        this.codnotfound = false;
-        this.codmerc = ""
-        this.descripcionmerc = ""
         return;
       }
-      else {
-        if (this.codmerVacio === true) {
-          nextInput.focus();
-          this.codmerVacio = false;
-          console.log("vedadero");
-        }
-        else {
-          $("#input8").focus();
-          $("#input8").select();
-        }
-        this.codmerVacio = false;
-      }
     }
+
+    // Buscar por prefijo en resultados ya cargados
+    const candidatosLocales = this.resultadoCodmerc.filter(r => String(r.in_codmerc).toLowerCase().startsWith(queryLower));
+    if (candidatosLocales.length > 0) {
+      this.cargarDatosInventario(candidatosLocales[0]);
+      cantidadInput?.focus();
+      cantidadInput?.select?.();
+      this.codmerVacio = false;
+      return;
+    }
+
+    // Fallback: consultar al backend con la cadena y aplicar startsWith
+    this.http.GetRequest<ModeloInventario>(`/productos-buscador/${currentInputValue}`).subscribe((results: ModeloInventario) => {
+      if (results && Array.isArray(results.data) && results.data.length) {
+        const ordenados = results.data.sort((a, b) => a.in_codmerc.localeCompare(b.in_codmerc, undefined, { numeric: true, sensitivity: 'base' }));
+        this.resultadoCodmerc = ordenados;
+        this.selectedIndexcodmerc = 0;
+        const candidatos = ordenados.filter(r => String(r.in_codmerc).toLowerCase().startsWith(queryLower));
+        if (candidatos.length > 0) {
+          this.cargarDatosInventario(candidatos[0]);
+          cantidadInput?.focus();
+          cantidadInput?.select?.();
+          this.codmerVacio = false;
+          return;
+        }
+      }
+      // No existe: mostrar error y avanzar a Descripción
+      this.mensagePantalla = true;
+      Swal.fire({
+        icon: 'error',
+        title: 'A V I S O',
+        text: 'Producto no encontrado.',
+        focusConfirm: true,
+        allowEnterKey: true,
+        showConfirmButton: false,
+        timer: 1200,
+      }).then(() => {
+        this.mensagePantalla = false;
+        descripcionInput?.focus();
+        descripcionInput?.select?.();
+      });
+      this.codmerc = '';
+      this.descripcionmerc = '';
+      this.codmerVacio = false;
+    });
   }
   handleKeydownInventario(event: KeyboardEvent): void {
     console.log("handle")
@@ -689,6 +719,9 @@ export class Facturacion implements OnInit {
       else if (key === 'Enter') {
         if (this.selectedIndexcodmerc >= 0 && this.selectedIndexcodmerc <= maxIndex) {
           this.cargarDatosInventario(this.resultadoCodmerc[this.selectedIndexcodmerc]);
+          const qty = document.getElementById('input15') as HTMLInputElement | null;
+          qty?.focus();
+          qty?.select?.();
         }
         event.preventDefault();
       }
@@ -725,8 +758,10 @@ export class Facturacion implements OnInit {
       df_cosMerc: inventario.in_cosmerc,
       df_unidad: inventario.in_unidad,
     });
-    $("#input8").focus();
-    $("#input8").select();
+    // Si el usuario seleccionó desde el grid o validó el código, llevar el foco a Cantidad
+    const qty = document.getElementById('input15') as HTMLInputElement | null;
+    qty?.focus();
+    qty?.select?.();
   }
 
   buscarUsuario(event: Event, nextElement: HTMLInputElement | null): void {
@@ -781,11 +816,14 @@ export class Facturacion implements OnInit {
       return;
     }
     // Buscar RNC en el servicio
-    this.ServicioRnc.buscarRncPorId(rnc).subscribe(
+    this.ServicioRnc.buscarRncPorrncId(rnc).subscribe(
     (response) => {
-    if (response?.data?.length) {
+    if (response?.data) {
+      console.log(response.data);
       // Si se encuentra el RNC, asignar el nombre del cliente
-      const nombreEmpresa = response.data[0]?.rason;
+        const nombreEmpresa = response.data.rason;
+
+    //  const nombreEmpresa = response.data[0]?.rason;
       this.formularioFacturacion.patchValue({ fa_nomClie: nombreEmpresa });
       this.formularioFacturacion.patchValue({ fa_tipoNcf: 2 });
       this.formularioFacturacion.get("fa_tipoNcf")?.enable();
@@ -936,45 +974,101 @@ export class Facturacion implements OnInit {
       // Selecciona el ítem actual
       if (this.selectedIndexdescripcionmerc >= 0 && this.selectedIndexdescripcionmerc <= maxIndex) {
         this.cargarDatosInventario(this.resultadodescripcionmerc[this.selectedIndexdescripcionmerc]);
+        const qty = document.getElementById('input15') as HTMLInputElement | null;
+        qty?.focus();
+        qty?.select?.();
       }
       event.preventDefault();
     }
   }
   moveFocusdesc(event: KeyboardEvent, nextInput: HTMLInputElement) {
     if (event.key === 'Enter' || event.key === 'Tab') {
-      event.preventDefault(); // Previene el comportamiento predeterminado de Enter
+      event.preventDefault();
       const currentInputValue = (event.target as HTMLInputElement).value.trim();
+
       if (currentInputValue === '') {
         this.desmerVacio = true;
-      };
-
-      if (!this.desnotfound === false) {
         this.mensagePantalla = true;
         Swal.fire({
-          icon: "error",
-          title: "A V I S O",
-          text: 'Codigo invalido.',
-        }).then(() => { this.mensagePantalla = false });
-        this.desnotfound = true
+          icon: 'error',
+          title: 'A V I S O',
+          text: 'Producto no encontrado.',
+          focusConfirm: true,
+          allowEnterKey: true,
+          showConfirmButton: false,
+          timer: 1200,
+        }).then(() => {
+          this.mensagePantalla = false;
+          const input = event.target as HTMLInputElement;
+          input?.focus();
+          input?.select?.();
+        });
+        this.desnotfound = true;
         return;
       }
-      else {
-        if (this.desmerVacio === true) {
-          this.mensagePantalla = true;
-          Swal.fire({
-            icon: "error",
-            title: "A V I S O",
-            text: 'Codigo invalido.',
-          }).then(() => { this.mensagePantalla = false });
-          this.desnotfound = true
+
+      const queryLower = currentInputValue.toLowerCase();
+      const maxIndex = this.resultadodescripcionmerc.length - 1;
+
+      // Priorizar selección manual del grid
+      if (this.selectedIndexdescripcionmerc >= 0 && this.selectedIndexdescripcionmerc <= maxIndex) {
+        const seleccionadoGrid = this.resultadodescripcionmerc[this.selectedIndexdescripcionmerc];
+        if (seleccionadoGrid) {
+          this.cargarDatosInventario(seleccionadoGrid);
+          nextInput?.focus();
+          nextInput?.select?.();
+          this.desnotfound = false;
+          this.desmerVacio = false;
           return;
         }
-        else {
-          $("#input8").focus();
-          $("#input8").select();
-        }
-        this.desmerVacio = false;
       }
+
+      // Buscar por prefijo en resultados ya cargados (por descripción)
+      const candidatosLocales = this.resultadodescripcionmerc.filter(r => String(r.in_desmerc).toLowerCase().startsWith(queryLower));
+      if (candidatosLocales.length > 0) {
+        this.cargarDatosInventario(candidatosLocales[0]);
+        nextInput?.focus();
+        nextInput?.select?.();
+        this.desnotfound = false;
+        this.desmerVacio = false;
+        return;
+      }
+
+      // Fallback: consultar al backend con la cadena y aplicar startsWith
+      this.http.GetRequest<ModeloInventario>(`/productos-buscador-desc/${currentInputValue}`).subscribe((results: ModeloInventario) => {
+        if (results && Array.isArray(results.data) && results.data.length) {
+          const ordenados = results.data.sort((a, b) => a.in_desmerc.localeCompare(b.in_desmerc, undefined, { sensitivity: 'base' }));
+          this.resultadodescripcionmerc = ordenados;
+          this.selectedIndexdescripcionmerc = 0;
+          const candidatos = ordenados.filter(r => String(r.in_desmerc).toLowerCase().startsWith(queryLower));
+          if (candidatos.length > 0) {
+            this.cargarDatosInventario(candidatos[0]);
+            nextInput?.focus();
+            nextInput?.select?.();
+            this.desnotfound = false;
+            this.desmerVacio = false;
+            return;
+          }
+        }
+        // No existe: mostrar error y mantener foco en descripción
+        this.mensagePantalla = true;
+        Swal.fire({
+          icon: 'error',
+          title: 'A V I S O',
+          text: 'Producto no encontrado.',
+          focusConfirm: true,
+          allowEnterKey: true,
+          showConfirmButton: false,
+          timer: 1200,
+        }).then(() => {
+          this.mensagePantalla = false;
+          const input = event.target as HTMLInputElement;
+          input?.focus();
+          input?.select?.();
+        });
+        this.desnotfound = true;
+        this.desmerVacio = false;
+      });
     }
   }
   moveFocusCantidad(event: KeyboardEvent, nextInput: HTMLInputElement) {
@@ -985,19 +1079,18 @@ export class Facturacion implements OnInit {
         Swal.fire({
           icon: "error",
           title: "A V I S O",
-          text: 'Por favor complete todos los campos requeridos antes de agregar el ítem.',
+          text: 'Por favor complete todos los campos requeridos antes de continuar.',
         }).then(() => { this.mensagePantalla = false });
         return;
       }
-      else {
-        // nextInput.focus();
-        $("#input9").focus();
-        $("#input9").select();
-      }
+      // Pasar a Precio (nextInput)
+      nextInput?.focus();
+      nextInput?.select?.();
     }
   }
-  moveFocusPrecio(event: KeyboardEvent, nextInput: HTMLInputElement) {
-    if (event.key === 'Enter' || event.key === 'Tab') {
+  moveFocusPrecio(event: Event, nextInput: HTMLInputElement) {
+    const key = (event as KeyboardEvent).key;
+    if (key === 'Enter' || key === 'Tab') {
       event.preventDefault();
       if (!this.productoselect || this.preciomerc <= 0 || this.preciomerc <= this.productoselect.in_cosmerc) {
         this.mensagePantalla = true;

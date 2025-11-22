@@ -1,9 +1,26 @@
 <div class="container-fluid py-3">
+  <!-- Hero Comercial -->
+  <div
+    class="rounded-4 p-4 mb-3"
+    style="background: linear-gradient(90deg, #0d6efd, #6610f2); color: #fff; box-shadow: 0 8px 24px rgba(13, 110, 253, 0.25)"
+  >
+    <div class="d-flex align-items-center justify-content-between">
+      <div>
+        <h4 class="mb-1 fw-bold">
+          <i class="bi bi-file-earmark-text me-2"></i>Facturación
+        </h4>
+        <p class="mb-0 opacity-75">Gestión comercial de ventas y detalle de productos</p>
+      </div>
+      <div class="d-none d-md-block text-end">
+        <span class="badge bg-light text-primary fs-6 px-3 py-2" style="border-radius: 12px">Comercial</span>
+      </div>
+    </div>
+  </div>
   <div class="row g-3">
     <!-- Columna Izquierda: Datos de Factura -->
     <div class="col-lg-5">
       <div class="card shadow-sm border-0 h-10">
-        <div class="card-header bg-primary text-white">
+        <div class="card-header text-white" style="background: linear-gradient(90deg, #0d6efd, #20c997); box-shadow: 0 2px 8px rgba(13,110,253,.2)">
           <h5 class="mb-0 fw-semibold">
             <i class="bi bi-receipt me-2"></i>Datos de Factura
           </h5>
@@ -110,6 +127,8 @@
                     z-index: 1050;
                     max-height: 250px;
                     overflow-y: auto;
+                    border-radius: 12px;
+                    border: none;
                   "
                 >
                   <a
@@ -193,6 +212,8 @@
                       z-index: 1050;
                       max-height: 200px;
                       overflow-y: auto;
+                      border-radius: 12px;
+                      border: none;
                     "
                   >
                     <a
@@ -268,7 +289,7 @@
                   #input11
                   name="listaenvio"
                   id="listaenvio"
-                  (keydown)="moveFocus($event, input12)"
+                  (keydown.enter)="moveFocus($event, input12)"
                   class="form-select"
                 >
                   <option value="envio">Envío</option>
@@ -335,7 +356,7 @@
     <!-- Columna Derecha: Detalles de Factura -->
     <div class="col-lg-7">
       <div class="card shadow-sm border-0 h-100">
-        <div class="card-header bg-danger text-white">
+        <div class="card-header text-white" style="background: linear-gradient(90deg, #dc3545, #fd7e14); box-shadow: 0 2px 8px rgba(220,53,69,.2)">
           <h5 class="mb-0 fw-semibold">
             <i class="bi bi-list-ul me-2"></i>Detalles de la Factura
           </h5>
@@ -343,8 +364,8 @@
         <div class="card-body">
           <!-- Agregar Productos -->
           <div class="card border-0 shadow-sm mb-3">
-            <div class="card-header bg-white border-bottom">
-              <h6 class="mb-0 text-secondary fw-semibold">
+            <div class="card-header text-white" style="background: linear-gradient(90deg, #20c997, #0d6efd); box-shadow: 0 2px 8px rgba(32,201,151,.25)">
+              <h6 class="mb-0 fw-semibold">
                 <i class="bi bi-cart-plus me-2"></i>Agregar Productos
               </h6>
             </div>
@@ -362,7 +383,7 @@
                       #codigoInput
                       autocomplete="off"
                       (keydown)="handleKeydownInventario($event)"
-                      (keydown)="moveFocuscodmerc($event, input14)"
+                      (keydown.enter)="moveFocuscodmerc($event, input14, input15)"
                       #input13
                       [formControl]="buscarcodmerc"
                       [(ngModel)]="codmerc"
@@ -377,6 +398,8 @@
                         z-index: 1050;
                         max-height: 200px;
                         overflow-y: auto;
+                        border-radius: 12px;
+                        border: none;
                       "
                     >
                       <a
@@ -417,6 +440,8 @@
                         z-index: 1050;
                         max-height: 200px;
                         overflow-y: auto;
+                        border-radius: 12px;
+                        border: none;
                       "
                     >
                       <a
@@ -442,6 +467,7 @@
                     [(ngModel)]="cantidadmerc"
                     [formControl]="cantidadform"
                     #input15
+                    id="input15"
                     (keydown)="moveFocusCantidad($event, input16)"
                     class="form-control"
                     min="1"
@@ -457,9 +483,8 @@
                     [formControl]="precioform"
                     #input16
                     (input)="actualizarCalculo()"
-                    (keydown)="moveFocus($event, input13)"
+                    (keydown.enter)="moveFocusPrecio($event, input13)"
                     class="form-control"
-                    (keydown.enter)="agregaItem($event)"
                     min="0"
                     step="0.01"
                   />
@@ -481,7 +506,7 @@
           <!-- Tabla de Productos -->
           <div
             class="table-responsive"
-            style="max-height: 300px; overflow-y: auto"
+            style="max-height: 300px; overflow-y: auto; border-radius: 12px; box-shadow: 0 6px 16px rgba(0,0,0,.08)"
           >
             <table
               class="table table-hover table-sm align-middle mb-0"
@@ -489,7 +514,7 @@
               (keydown)="navigateTable($event)"
               #Tabledetalle
             >
-              <thead class="table-dark sticky-top">
+              <thead class="sticky-top" style="background: linear-gradient(90deg, #0d6efd, #20c997); color: #fff;">
                 <tr>
                   <th style="width: 13%">Código</th>
                   <th style="width: 37%">Descripción</th>
@@ -500,7 +525,7 @@
                 </tr>
               </thead>
               <tbody>
-                <tr
+                <tr 
                   *ngFor="let item of items; let i = index"
                   [class.table-active]="i === selectedRow"
                   (click)="selectRow(i)"
@@ -553,7 +578,7 @@
           <div class="row g-3 mt-2">
             <!-- Información del Producto -->
             <div class="col-lg-7">
-              <div class="card border-primary">
+              <div class="card border-primary shadow-sm info-producto" style="border-radius: 12px">
                 <div class="card-header bg-white border-bottom">
                   <h6 class="mb-0 text-secondary fw-semibold small">
                     <i class="bi bi-info-circle me-2"></i>Información del
@@ -730,7 +755,7 @@
 
             <!-- Totales -->
             <div class="col-lg-5">
-              <div class="card border-success">
+              <div class="card border-success shadow-sm" style="border-radius: 12px">
                 <div class="card-header bg-white border-bottom">
                   <h6 class="mb-0 text-secondary fw-semibold small">
                     <i class="bi bi-calculator me-2"></i>Totales
@@ -799,7 +824,7 @@
 >
   <div class="modal-dialog modal-lg modal-dialog-centered">
     <div class="modal-content shadow-lg border-0">
-      <div class="modal-header bg-primary text-white">
+      <div class="modal-header text-white" style="background: linear-gradient(90deg, #0d6efd, #6610f2)">
         <h5 class="modal-title fw-semibold" id="modalBuscarFacturaLabel">
           <i class="bi bi-search me-2"></i>Buscar Factura
         </h5>

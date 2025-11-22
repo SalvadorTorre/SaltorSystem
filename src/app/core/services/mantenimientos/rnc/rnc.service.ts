@@ -44,4 +44,7 @@ export class ServicioRnc {
   buscarRncPorId(rnc: string): Observable<any> {
     return this.http.GetRequest<any>(`/rnc-id/${rnc}`);
   }
+    buscarRncPorrncId(rnc: string): Observable<any> {
+    return this.http.GetRequest<any>(`/rncid/${rnc}`);
+  }
 }

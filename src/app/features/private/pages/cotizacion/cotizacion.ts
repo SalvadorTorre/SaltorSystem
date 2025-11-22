@@ -1199,11 +1199,11 @@ export class Cotizacion implements OnInit {
     const rnc = this.formularioCotizacion.get('ct_rnc')?.value;
     if (rnc) {
       if (rnc.length === 9 || rnc.length === 11) {
-        this.ServicioRnc.buscarRncPorId(rnc).subscribe((rnc) => {
+        this.ServicioRnc.buscarRncPorrncId(rnc).subscribe((rnc) => {
           console.log(rnc.data);
-          if (rnc.data.length) {
+          if (rnc.data) {
             this.formularioCotizacion.patchValue({
-              ct_nomclie: rnc.data[0].rason,
+              ct_nomclie: rnc.data.rason,
             });
             nextElement?.focus();
             console.log(rnc.data[0].rason);

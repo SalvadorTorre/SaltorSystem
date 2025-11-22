@@ -1,12 +1,29 @@
 <div class="row">
+  <!-- Hero de página -->
+  <div class="col-12 mb-3">
+    <div style="
+      background: linear-gradient(90deg, #1f3c88, #4e9af1);
+      color: #fff;
+      border-radius: 10px;
+      padding: 16px 20px;
+      box-shadow: 0 8px 16px rgba(31,60,136,0.15);
+    ">
+      <h3 style="margin: 0; font-weight: 700; letter-spacing: 0.2px;">Control de Facturas</h3>
+      <div style="opacity: 0.9; font-size: 14px;">Gestión ágil de clientes, pagos y detalle de productos</div>
+    </div>
+  </div>
   <div class="col-6">
-    <div class="card">
-      <div class="card-header" style="height: 35px; background-color: #0101b9">
-        <h4 class="card-title" style="color: white; text-align: left">
-          Datos Factura
-        </h4>
+    <div class="card shadow-sm rounded-3 border-0">
+      <div class="card-header" style="
+        min-height: 48px;
+        background: linear-gradient(90deg, #1f3c88, #4e9af1);
+        color: #fff;
+        border-top-left-radius: 12px;
+        border-top-right-radius: 12px;
+      ">
+        <h4 class="card-title m-0" style="color: white; text-align: left; font-weight: 700;">Datos de la Factura</h4>
       </div>
-      <div class="card-body" style="background-color: #e6e4e4">
+      <div class="card-body" style="background-color: #f8fafc">
         <form
           [formGroup]="formularioFacturacion"
           class="custom-form-background"
@@ -352,20 +369,21 @@
               style="
                 height: 250px;
                 overflow-y: auto;
-                border: 2px solid #040ab9;
-                border-radius: 4px;
+                border: 1px solid #e0e3eb;
+                border-radius: 10px;
+                box-shadow: 0 6px 16px rgba(0,0,0,0.06);
               "
             >
               <table
-                class="table table-bordered table-hover table-striped table-sm"
+                class="table table-bordered table-hover table-striped table-sm align-middle"
                 id="tablaFactura"
               >
-                <thead class="table-dark sticky-header">
+                <thead class="sticky-header" style="position: sticky; top: 0; z-index: 10; background: linear-gradient(90deg, #0f172a, #334155); color: #fff;">
                   <tr>
-                    <th style="width: 10%">Numero</th>
+                    <th style="width: 10%">Número</th>
                     <th style="width: 40%">Nombre</th>
                     <th class="text-center" style="width: 15%">Fecha</th>
-                    <th style="width: 16%">Valor</th>
+                    <th class="text-end" style="width: 16%">Valor</th>
                     <th style="width: 10%">Cobro</th>
                   </tr>
                 </thead>
@@ -458,36 +476,30 @@
               class="card-body"
               style="height: 60px; background-color: #f7eeeebd"
             >
-              <div class="row mt-0">
-                <!-- <div class="col-1"></div> -->
-                <div class="col-4">
-                  <button
-                    [disabled]="botonEditar"
-                    class="btn btn-success btn-block btn-lx w-50"
-                    (click)="editarFactura()"
-                  >
-                    <i class="bi bi-arrow-clockwise"></i> Editar
-                  </button>
-                </div>
-                <!-- <div class="col-1"></div> -->
-                <div class="col-4">
-                  <button
-                    [disabled]="botonGuardar"
-                    class="btn btn-success btn-lx w-50"
-                    (click)="guardarFacturacion()"
-                  >
-                    <i class="bi bi-check"></i> Guardar
-                  </button>
-                </div>
-                <!-- <div class="col-1"></div> -->
-                <div class="col-4">
-                  <button
-                    class="btn btn-success btn-block btn-lx w-50"
-                    (click)="limpia()"
-                  >
-                    <i class="bi bi-arrow-clockwise"></i> Deshacer
-                  </button>
-                </div>
+              <div class="d-flex justify-content-center align-items-center gap-3 mt-0">
+                <button
+                  [disabled]="botonEditar"
+                  class="btn btn-primary btn-lx"
+                  style="min-width: 180px"
+                  (click)="editarFactura()"
+                >
+                  <i class="bi bi-arrow-clockwise"></i> Editar
+                </button>
+                <button
+                  [disabled]="botonGuardar"
+                  class="btn btn-success btn-lx"
+                  style="min-width: 180px"
+                  (click)="guardarFacturacion()"
+                >
+                  <i class="bi bi-check"></i> Guardar
+                </button>
+                <button
+                  class="btn btn-secondary btn-lx"
+                  style="min-width: 180px"
+                  (click)="limpia()"
+                >
+                  <i class="bi bi-arrow-clockwise"></i> Deshacer
+                </button>
               </div>
             </div>
           </div>
@@ -498,13 +510,19 @@
     </div>
   </div>
   <div class="col-6">
-    <div class="card">
-      <div class="card-header" style="height: 35px; background-color: #f40b0b">
-        <h4 class="card-title" style="color: white; text-align: left">
-          Detalles de la factura
+    <div class="card shadow-sm rounded-3 border-0">
+      <div class="card-header" style="
+        min-height: 48px;
+        background: linear-gradient(90deg, #d7263d, #ff6b6b);
+        color: #fff;
+        border-top-left-radius: 12px;
+        border-top-right-radius: 12px;
+      ">
+        <h4 class="card-title m-0" style="color: white; text-align: left; font-weight: 700;">
+          Detalles de la Factura
         </h4>
       </div>
-      <div class="card-body">
+      <div class="card-body" style="background-color: #ffffff">
         <div class="row align-items-end">
           <div class="col-2">
             <label for=""> Código </label>
@@ -652,15 +670,17 @@
               style="
                 height: 350px;
                 overflow-y: auto;
-                border: 2px solid rgb(4, 10, 185);
+                border: 1px solid #e0e3eb;
+                border-radius: 10px;
+                box-shadow: 0 6px 16px rgba(0,0,0,0.06);
               "
               tabindex="0"
               (keydown)="navigateTable($event)"
               #Tabledetalle
             >
-              <table class="table table-sm table-bordered">
-                <thead class="table-dark">
-                  <tr style="background-color: rgb(55, 0, 255)">
+              <table class="table table-sm table-bordered table-hover align-middle">
+                <thead class="sticky-header" style="position: sticky; top: 0; z-index: 10; background: linear-gradient(90deg, #0f172a, #334155); color: #fff;">
+                  <tr>
                     <th style="width: 13%">Código</th>
                     <th style="width: 37%">Descripción</th>
                     <th style="width: 10%">Cant.</th>
@@ -756,7 +776,13 @@
           <!-- <div class="col-1"></div> -->
           <div class="col-5">
             <div class="row mt-1">
-              <div style="padding: 5px; border: 2px solid rgb(4, 10, 185)">
+              <div style="
+                padding: 10px;
+                border: 1px solid #e0e3eb;
+                border-radius: 10px;
+                background: linear-gradient(180deg, #fafafa, #f5f7fb);
+                box-shadow: 0 6px 16px rgba(0,0,0,0.06);
+              ">
                 <div class="row">
                   <h6
                     class="col-4 col-form-label text-black"

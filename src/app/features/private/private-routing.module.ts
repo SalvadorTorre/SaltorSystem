@@ -45,10 +45,10 @@ const routes: Routes = [
         path: "contabilidad",
         loadChildren: () => import('./pages/contabilidad/contabilidad-modulo').then(m => m.ModuloContabilidad)
       },
-      {
-        path: "reporte",
-        loadChildren: () => import('./pages/reporte/reporte-modulo').then(m => m.ModuloReporte)
-      }
+      // {
+      //   path: "reporte",
+      //   loadChildren: () => import('./pages/reporte/reporte-modulo').then(m => m.ModuloReporte)
+      // }
 
 
     ]
