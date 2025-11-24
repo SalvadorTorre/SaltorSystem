@@ -89,6 +89,7 @@ export class Facturacion implements OnInit {
   etxt: any;
   ftxt: any;
   gtxt: any;
+  htxt: any;
   factxt: any;
   protxt: any;
   descuentotxt: string = '';
@@ -297,6 +298,9 @@ export class Facturacion implements OnInit {
       }
 
     });
+
+    // Inicializar los totales visibles en la vista (0.00) al cargar
+    this.actualizarTotales();
 
 
   }
@@ -745,6 +749,7 @@ export class Facturacion implements OnInit {
     this.etxt = Number(inventario.in_cosmerc) + (Number(inventario.in_cosmerc)  * 14)/100;
     this.ftxt = Number(inventario.in_cosmerc) + (Number(inventario.in_cosmerc)  * 16)/100;
     this.gtxt = Number(inventario.in_cosmerc) + (Number(inventario.in_cosmerc)  * 18)/100;
+    this.htxt = Number(inventario.in_cosmerc) + (Number(inventario.in_cosmerc)  * 20)/100;
 
     this.productoselect = inventario;
     this.cancelarBusquedaDescripcion = true;
@@ -1257,6 +1262,7 @@ export class Facturacion implements OnInit {
     this.etxt =0;
     this.ftxt =0;
     this.gtxt =0;
+    this.htxt =0;
     this.protxt =0;
   }
 
@@ -1265,6 +1271,7 @@ export class Facturacion implements OnInit {
     this.totalGral = 0;       // Reiniciar el total general
     this.totalItbis = 0;      // Reiniciar el total del ITBIS
     this.subTotal = 0;        // Reiniciar el subtotal
+    this.actualizarTotales(); // Reflejar 0.00 en subtotaltxt, itbitxt y totalgraltxt
   }
 
   borarItem(item: any) {
@@ -1324,10 +1331,9 @@ export class Facturacion implements OnInit {
     this.formularioFacturacion.get('fa_fecFact')!.enable();
     this.formularioFacturacion.get('fa_nomVend')!.enable();
     this.formularioFacturacion.get('fa_ncfFact')!.enable();
-    const datosParaGuardar = {
-      factura: this.formularioFacturacion.value,
-      detalle: this.items,
+    const datosParaGuardar = {factura: this.formularioFacturacion.value, detalle: this.items,
     };
+    console.log("Datos",datosParaGuardar);
     if (this.formularioFacturacion.valid) {
         this.servicioFacturacion.guardarFacturacion(datosParaGuardar).subscribe(response => {
           Swal.fire({
@@ -1346,7 +1352,7 @@ export class Facturacion implements OnInit {
 
     }
     else {
-      alert("Esta Factura no fue Guardado");
+      alert("Esta Factura no fue Guardada");
     }
 
   }

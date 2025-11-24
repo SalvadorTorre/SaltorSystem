@@ -37,6 +37,7 @@
                 <label class="form-label small text-muted fw-semibold"
                   >No. Factura</label
                 >
+                
                 <input
                   type="text"
                   class="form-control"
@@ -356,20 +357,13 @@
     <!-- Columna Derecha: Detalles de Factura -->
     <div class="col-lg-7">
       <div class="card shadow-sm border-0 h-100">
-        <div class="card-header text-white" style="background: linear-gradient(90deg, #dc3545, #fd7e14); box-shadow: 0 2px 8px rgba(220,53,69,.2)">
+        <div class="card-header text-white" style="background: linear-gradient(90deg, #20c997, #0d6efd); box-shadow: 0 2px 8px rgba(32,201,151,.25)">
           <h5 class="mb-0 fw-semibold">
             <i class="bi bi-list-ul me-2"></i>Detalles de la Factura
           </h5>
         </div>
         <div class="card-body">
           <!-- Agregar Productos -->
-          <div class="card border-0 shadow-sm mb-3">
-            <div class="card-header text-white" style="background: linear-gradient(90deg, #20c997, #0d6efd); box-shadow: 0 2px 8px rgba(32,201,151,.25)">
-              <h6 class="mb-0 fw-semibold">
-                <i class="bi bi-cart-plus me-2"></i>Agregar Productos
-              </h6>
-            </div>
-            <div class="card-body">
               <div class="row g-2">
                 <div class="col-md-2">
                   <label class="form-label small text-muted fw-semibold"
@@ -500,8 +494,6 @@
                   </button>
                 </div>
               </div>
-            </div>
-          </div>
 
           <!-- Tabla de Productos -->
           <div
@@ -576,233 +568,259 @@
 
           <!-- Información de Producto y Totales -->
           <div class="row g-3 mt-2">
-            <!-- Información del Producto -->
-            <div class="col-lg-7">
+            <div class="col-lg-3">
               <div class="card border-primary shadow-sm info-producto" style="border-radius: 12px">
                 <div class="card-header bg-white border-bottom">
                   <h6 class="mb-0 text-secondary fw-semibold small">
                     <i class="bi bi-info-circle me-2"></i>Información del
                     Producto
                   </h6>
-                </div>
+                </div>  
                 <div class="card-body p-2">
-                  <!-- Primera fila de info -->
-                  <div class="row g-2 mb-2">
-                    <div class="col-3">
-                      <label class="form-label small mb-1 fw-semibold"
-                        >Existencia</label
-                      >
+                  <div class="row g-2 ">
+                    <div class="col-8  mb-0">
+                      <label class="form-label small mb-0 fw-semibold">Existencia</label>
+                    </div>
+                    <div class="col-4">
                       <input
                         type="text"
-                        class="form-control form-control-sm text-end fw-bold fs-5"
+                        class="form-control form-control-sm text-end fw-bold"
                         readonly
                         [value]="formatNumber(existenciatxt)"
                       />
                     </div>
+                  </div>
+                  <div class="row g-2 ">
+                    <div class="col-8  mb-0">
+                      <label class="form-label small mb-0 fw-semibold">Medida</label>
+                    </div>
                     <div class="col-4">
-                      <label class="form-label small mb-1 fw-semibold"
-                        >Medida</label
-                      >
                       <input
                         type="text"
-                        class="form-control form-control-sm text-end fw-bold fs-5"
+                        class="form-control form-control-sm text-end fw-bold"
                         readonly
                         [(ngModel)]="medidatxt"
                       />
+                    </div>  
+                  </div>
+                  <div class="row g-2 ">
+                    <div class="col-8  mb-0">
+                        <label class="form-label small mb-0 fw-semibold">Actualiz.</label>
                     </div>
-                    <div class="col-3">
-                      <label class="form-label small mb-1 fw-semibold"
-                        >Actualiz.</label
-                      >
+                    <div class="col-4">    
                       <input
                         type="text"
-                        class="form-control form-control-sm text-end fw-bold fs-5"
+                        class="form-control form-control-sm text-end fw-bold"
                         readonly
                         [(ngModel)]="fecacttxt"
                       />
+                    </div>  
+                  </div>
+                  <div class="row g-2 ">
+                    <div class="col-8  mb-0">
+                      <label class="form-label small mb-0 fw-semibold">Costo</label>
                     </div>
-                    <div class="col-2">
-                      <label class="form-label small mb-1 fw-semibold"
-                        >Costo</label
-                      >
+                    <div class="col-4">
                       <input
                         type="text"
-                        class="form-control form-control-sm text-end fw-bold fs-5"
+                        class="form-control form-control-sm text-end fw-bold"
                         readonly
                         [value]="formatNumber(costotxt)"
                       />
-                    </div>
-                  </div>
-                  <div class="row g-1 mb-3"> </div>
-
-                  <!-- Porcentajes de ganancia -->
-                  <div class="row g-1 mb-2">
-                    <div class="col-2">
-                      <label
-                        class="form-label small mb-1 fw-semibold text-center d-block"
-                        >5%</label
-                      >
-                      <input
-                        type="text"
-                        class="form-control form-control-sm text-end fw-bold fs-5"
-                        readonly
-                        [value]="formatNumber(atxt)"
-                      />
-                    </div>
-                    <div class="col-2">
-                      <label
-                        class="form-label small mb-1 fw-semibold text-center d-block "
-                        >7%</label
-                      >
-                      <input
-                        type="text"
-                        class="form-control form-control-sm text-end fw-bold fs-5"
-                        readonly
-                        [value]="formatNumber(btxt)"
-                      />
-                    </div>
-                    <div class="col-2">
-                      <label
-                        class="form-label small mb-1 fw-semibold text-center d-block "
-                        >10%</label
-                      >
-                      <input
-                        type="text"
-                        class="form-control form-control-sm text-end fw-bold fs-5"
-                        readonly
-                        [value]="formatNumber(ctxt)"
-                      />
-                    </div>
-                    <div class="col-2">
-                      <label
-                        class="form-label small mb-1 fw-semibold text-center d-block"
-                        >12%</label
-                      >
-                      <input
-                        type="text"
-                        class="form-control form-control-sm text-end fw-bold fs-5"
-                        readonly
-                        [value]="formatNumber(dtxt)"
-                      />
-                    </div>
-                    <div class="col-2">
-                      <label
-                        class="form-label small mb-1 fw-semibold text-center d-block"
-                        >14%</label
-                      >
-                      <input
-                        type="text"
-                        class="form-control form-control-sm text-end fw-bold fs-5"
-                        readonly
-                        [value]="formatNumber(etxt)"
-                      />
-                    </div>
-                    <div class="col-2">
-                      <label
-                        class="form-label small mb-1 fw-semibold text-center d-block"
-                        >16%</label
-                      >
-                      <input
-                        type="text"
-                        class="form-control form-control-sm text-end fw-bold fs-5"
-                        readonly
-                        [value]="formatNumber(ftxt)"
-                      />
-                    </div>
-                  </div>
-                  <div class="row g-1 mb-3"> </div>
-                  <!-- Última fila con 18% y porcentajes -->
-                  <div class="row g-2">
-                    <div class="col-3">
-                      <label class="form-label small mb-1 fw-semibold"
-                        >18%</label
-                      >
-                      <input
-                        type="text"
-                        class="form-control form-control-sm text-end fw-bold fs-5"
-                        readonly
-                        [value]="formatNumber(gtxt)"
-                      />
-                    </div>
-                    <div class="col-3">
-                      <label class="form-label small mb-1 fw-semibold"
-                        >% Producto</label
-                      >
-                      <input
-                        type="text"
-                        class="form-control form-control-sm text-end fw-bold fs-5"
-                        readonly
-                        [value]="formatNumber(protxt)"
-                        [ngStyle]="{'color': protxt < 10 ? 'red' : 'green'}"
-                      />
-                    </div>
-                    <div class="col-3">
-                      <label class="form-label small mb-1 fw-semibold"
-                        >% Factura</label
-                      >
-                      <input
-                        type="text"
-                        class="form-control form-control-sm text-end fw-bold fs-5"
-                        readonly
-                        [value]="formatNumber(factxt)"
-                        [ngStyle]="{'color': factxt < 10 ? 'red' : 'green'}"
-                      />
-                    </div>
-                  </div>
+                    </div>  
+                  </div>   
                 </div>
-              </div>
+              </div>       
             </div>
+            <div class="col-lg-5"> </div>
+            <!-- Información del Producto -->
+          
 
             <!-- Totales -->
-            <div class="col-lg-5">
+            <div class="col-lg-4">
               <div class="card border-success shadow-sm" style="border-radius: 12px">
                 <div class="card-header bg-white border-bottom">
                   <h6 class="mb-0 text-secondary fw-semibold small">
                     <i class="bi bi-calculator me-2"></i>Totales
                   </h6>
                 </div>
+                
                 <div class="card-body p-2">
-                  <div class="mb-0">
-                    <label class="form-label small mb-0 fw-semibold"
-                      >Sub-Total</label
-                    >
-                    <input
-                      type="text"
-                      class="form-control text-end fw-bold fs-10"
-                      disabled
-                      [(ngModel)]="subtotaltxt"
-                    />
+                  <div class="row g-2">
+                    <div class="col-6 mb-0">
+                      <label class="form-label small mb-0 fw-semibold">Sub-Total</label>
+                    </div>
+                    <div class="col-6">
+                      <input
+                        type="text"
+                        class="form-control text-end fw-bold"
+                        readonly
+                        [(ngModel)]="subtotaltxt"
+                      />
+                    </div>
                   </div>
-                  <div class="mb-0">
-                    <label class="form-label small mb-1 fw-semibold"
-                      >Descuento</label
-                    >
-                    <input
-                      type="text"
-                      class="form-control text-end fw-bold fs-10"
-                      disabled
-                      [(ngModel)]="descuentotxt"
-                    />
+                  <div class="row g-2">
+                    <div class="col-6">
+                      <label class="form-label small mb-0 fw-semibold">Descuento</label>
+                    </div>
+                    <div class="col-6">
+                      <input
+                        type="text"
+                        class="form-control text-end fw-bold"
+                        readonly
+                        [(ngModel)]="descuentotxt"
+                      />
+                    </div>
                   </div>
-                  <div class="mb-0">
-                    <label class="form-label small mb-1 fw-semibold"
-                      >ITBIS</label
-                    >
-                    <input
-                      type="text"
-                      class="form-control text-end fw-bold fs-10"
-                      disabled
-                      [(ngModel)]="itbitxt"
-                    />
+                  <div class="row g-2">
+                    <div class="col-6">
+                      <label class="form-label small mb-0 fw-semibold">ITBIS</label>
+                    </div>
+                    <div class="col-6">
+                      <input
+                        type="text"
+                        class="form-control text-end fw-bold"
+                        readonly
+                        [(ngModel)]="itbitxt"
+                      />
+                    </div>
                   </div>
-                  <div class="border-top pt-2">
-                    <label class="form-label mb-0 fw-bold">Total General</label>
-                    <input
-                      type="text"
-                      class="form-control text-end fw-bold fs-10 text-success"
-                      disabled
-                      [(ngModel)]="totalgraltxt"
-                    />
+                  <div class="row h-2">
+                    <div class="col-6">
+                      <label class="form-label small mb-0 fw-bold">Total General</label>
+                    </div>
+                    <div class="col-6">
+                      <input
+                        type="text"
+                        class="form-control text-end fw-bold text-success"
+                        readonly
+                        [(ngModel)]="totalgraltxt"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Información del producto -->
+          <div class="row g-3 mt-2">
+            <div class=" col-8">
+              <div class="card border-primary shadow-sm info-producto" style="border-radius: 12px">
+                <div class="card-header bg-white border-bottom">
+                  <h6 class="mb-0 text-secondary fw-semibold small">
+                    <i class="bi bi-info-circle me-2"></i>Margenes de Venta del
+                    Producto
+                  </h6>
+                </div>  
+                <div class="card-body p-2">
+                  <div class="row g-2 mb-2">
+                    <div class="col-1  text-center mb-3">
+                      <label class="form-label small mb-0 fw-semibold">5%</label>
+                      <input
+                        type="text"
+                        class="form-control form-control-sm text-end fw-bold"
+                        readonly
+                        [value]="formatNumber(atxt)"
+                      />
+                    </div>
+                    <div class="col-1  text-center mb-3">
+                      <label class="form-label small mb-0 fw-semibold">7%</label>
+                      <input
+                        type="text"
+                        class="form-control form-control-sm text-end fw-bold"
+                        readonly
+                        [value]="formatNumber(btxt)"
+                      />
+                    </div>
+                    <div class="col-1  text-center mb-3">
+                      <label class="form-label small mb-0 fw-semibold">10%</label>
+                      <input
+                        type="text"
+                        class="form-control form-control-sm text-end fw-bold"
+                        readonly
+                        [value]="formatNumber(ctxt)"
+                      />
+                    </div>
+                    <div class="col-1  text-center mb-3">
+                      <label class="form-label small mb-0 fw-semibold">12%</label>
+                      <input
+                        type="text"
+                        class="form-control form-control-sm text-end fw-bold"
+                        readonly
+                        [value]="formatNumber(dtxt)"
+                      />
+                    </div>
+                    <div class="col-1  text-center mb-3">
+                      <label class="form-label small mb-0 fw-semibold">14%</label>
+                      <input
+                        type="text"
+                        class="form-control form-control-sm text-end fw-bold"
+                        readonly
+                        [value]="formatNumber(etxt)"
+                      />
+                    </div>
+                    <div class="col-1  text-center mb-3">
+                      <label class="form-label small mb-0 fw-semibold">16%</label>
+                      <input
+                        type="text"
+                        class="form-control form-control-sm text-end fw-bold"
+                        readonly
+                        [value]="formatNumber(ftxt)"
+                      />
+                    </div>
+                    <div class="col-1  text-center mb-3">
+                      <label class="form-label small mb-0 fw-semibold">18%</label>
+                      <input
+                        type="text"
+                        class="form-control form-control-sm text-end fw-bold"
+                        readonly
+                        [value]="formatNumber(gtxt)"
+                      />
+                    </div>
+                    <div class="col-1  text-center mb-3">
+                    <label class="form-label small mb-0 fw-semibold">20%</label>
+                      <input
+                        type="text"
+                        class="form-control form-control-sm text-end fw-bold"
+                        readonly
+                        [value]="formatNumber(htxt)"
+                      />
+                    </div>
+                  </div>
+                </div>  
+              </div>  
+            </div>
+            <div class="col-4">
+              <div class="card border-primary shadow-sm info-producto" style="border-radius: 12px">
+                <div class="card-header bg-white border-bottom">
+                  <h6 class="mb-0 text-secondary fw-semibold small">
+                    <i class="bi bi-info-circle me-2"></i>Margen Ventas %
+                  </h6>
+                </div>
+                <div class="card-body p-2">
+                  <div class="col-lg-7">
+                    <div class="d-flex align-items-center gap-2">
+                      <label class="form-label small mb-0 fw-semibold">% Producto</label>
+                      <input
+                        type="text"
+                        class="form-control form-control-sm text-end fw-bold"
+                        readonly
+                        [value]="formatNumber(protxt)"
+                        [ngStyle]="{'color': protxt < 10 ? 'red' : 'green'}"
+                      />
+                    </div>
+                  </div>
+                  <div class="col-5">
+                    <div class="d-flex align-items-center gap-2">
+                      <label class="form-label small mb-0 fw-semibold">% Factura</label>
+                      <input
+                        type="text"
+                        class="form-control form-control-sm text-end fw-bold"
+                        readonly
+                        [value]="formatNumber(factxt)"
+                        [ngStyle]="{'color': factxt < 10 ? 'red' : 'green'}"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
