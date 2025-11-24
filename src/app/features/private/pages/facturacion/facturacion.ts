@@ -601,6 +601,37 @@ export class Facturacion implements OnInit {
     return String(input);
   }
 
+  toPrismaDate(input: string | Date | null | undefined): string {
+    // Devuelve 'YYYY-MM-DD' (compatible con Prisma/ISO date sin tiempo)
+    if (!input) return '';
+    if (input instanceof Date) {
+      const y = input.getFullYear();
+      const m = (input.getMonth() + 1).toString().padStart(2, '0');
+      const d = input.getDate().toString().padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+    const s = String(input);
+    // dd/MM/yyyy -> YYYY-MM-DD
+    const m1 = s.match(/^([0-3]?\d)\/([0-1]?\d)\/(\d{4})$/);
+    if (m1) {
+      const d = m1[1].padStart(2, '0');
+      const mo = m1[2].padStart(2, '0');
+      const y = m1[3];
+      return `${y}-${mo}-${d}`;
+    }
+    // yyyy-MM-dd -> mantener
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+    // Fallback: parsear y devolver YYYY-MM-DD
+    const d = new Date(s);
+    if (!isNaN(d.getTime())) {
+      const y = d.getFullYear();
+      const mo = (d.getMonth() + 1).toString().padStart(2, '0');
+      const da = d.getDate().toString().padStart(2, '0');
+      return `${y}-${mo}-${da}`;
+    }
+    return s;
+  }
+
   crearformulariodetFactura() {
     this.formulariodetFactura = this.fb.group({
 
@@ -1360,8 +1391,12 @@ export class Facturacion implements OnInit {
     this.formularioFacturacion.get('fa_fecFact')!.enable();
     this.formularioFacturacion.get('fa_nomVend')!.enable();
     this.formularioFacturacion.get('fa_ncfFact')!.enable();
-    const datosParaGuardar = {factura: this.formularioFacturacion.value, detalle: this.items,
-    };
+    // Construir payload asegurando fecha en formato Prisma (YYYY-MM-DD)
+    const facturaPayload = { ...this.formularioFacturacion.getRawValue() } as any;
+    facturaPayload.fa_codEmpr = localStorage.getItem('codigoempresa');
+    facturaPayload.fa_codSucu = parseInt(localStorage.getItem('idSucursal') || '0');
+    facturaPayload.fa_fecFact = this.toPrismaDate(facturaPayload.fa_fecFact);
+    const datosParaGuardar = { factura: facturaPayload, detalle: this.items };
     console.log("Datos",datosParaGuardar);
     if (this.formularioFacturacion.valid) {
         this.servicioFacturacion.guardarFacturacion(datosParaGuardar).subscribe(response => {
@@ -1372,10 +1407,11 @@ export class Facturacion implements OnInit {
             timer: 1000,
             showConfirmButton: false,
           });
+          //limpia
           this.buscarTodasFacturacion();
-          this.formularioFacturacion.reset();
-          this.crearFormularioFacturacion();
-          this.formularioFacturacion.enable();
+         // this.formularioFacturacion.reset();
+        //  this.crearFormularioFacturacion();
+         // this.formularioFacturacion.enable();
           this.limpia();
         });
 
