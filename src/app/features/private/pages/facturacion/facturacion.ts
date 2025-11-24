@@ -329,7 +329,6 @@ export class Facturacion implements OnInit {
       fa_nomClie: [''],
       fa_rncFact: [null],
       fa_telClie: [''],
-      fa_telClie2: [''],
       fa_dirClie: [''],
       fa_correo: [''],
       fa_codVend: ['', Validators.required],
@@ -464,6 +463,9 @@ export class Facturacion implements OnInit {
     this.formularioFacturacion.reset()
     this.crearFormularioFacturacion()
     this.formularioFacturacion.patchValue(factura);
+    // Asegurar formato de fecha dd/MM/yyyy al consultar
+    const fechaFormateada = this.formatFecha((factura as any).fa_fecFact);
+    this.formularioFacturacion.patchValue({ fa_fecFact: fechaFormateada });
     this.tituloModalFacturacion = 'Consulta Factura';
     // $('#modalfacturacion').modal('show');
     this.habilitarFormulario = true;
@@ -577,6 +579,28 @@ export class Facturacion implements OnInit {
     return `${day}/${month}/${year}`;
   }
 
+  formatFecha(input: string | Date | null | undefined): string {
+    if (!input) return '';
+    try {
+      if (input instanceof Date) {
+        return this.formatofecha(input);
+      }
+      const s = String(input);
+      // ISO o similar: yyyy-mm-dd...
+      if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
+        const d = new Date(s);
+        if (!isNaN(d.getTime())) return this.formatofecha(d);
+      }
+      // dd/mm/yyyy ya formateado
+      if (/^\d{2}\/\d{2}\/\d{4}$/.test(s)) {
+        return s;
+      }
+      const d = new Date(s);
+      if (!isNaN(d.getTime())) return this.formatofecha(d);
+    } catch {}
+    return String(input);
+  }
+
   crearformulariodetFactura() {
     this.formulariodetFactura = this.fb.group({
 
@@ -623,11 +647,16 @@ export class Facturacion implements OnInit {
   }
 
    moveFocus(event: Event, nextElement: HTMLInputElement | HTMLSelectElement) {
+    const key = (event as KeyboardEvent).key;
+    if (key !== 'Enter') {
+      return;
+    }
     if (nextElement) {
-      event.preventDefault();
+      (event as KeyboardEvent).preventDefault();
       nextElement.focus();
     }
   }
+  
 
   moveFocuscodmerc(event: Event, descripcionInput: HTMLInputElement, cantidadInput: HTMLInputElement) {
     // Enter: buscar por cadena (prefijo). Si coincide o hay selección en grid -> ir a cantidad.

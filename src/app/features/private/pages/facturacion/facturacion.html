@@ -82,7 +82,7 @@
                 <select
                   name="tipoNcf"
                   formControlName="fa_tipoNcf"
-                  (keydown)="moveFocus($event, input3)"
+                  (keydown.enter)="moveFocus($event, input3)"
                   class="form-select"
                 >
                   <option [value]="ncf.codNcf" *ngFor="let ncf of ncflist">
@@ -155,42 +155,27 @@
                 type="text"
                 id="input3"
                 formControlName="fa_dirClie"
-                (keydown)="moveFocus($event, input4)"
+                (keydown.enter)="moveFocus($event, input4)"
                 #input3
                 class="form-control text-uppercase"
               />
             </div>
 
-            <!-- Teléfonos y Sector -->
+            <!-- Teléfono y Sector -->
             <div class="row g-2 mb-2">
-              <div class="col-md-4">
-                <label class="form-label small text-muted fw-semibold"
-                  >Teléfono 1</label
-                >
+              <div class="col-md-6">
+                <label class="form-label small text-muted fw-semibold">Teléfono</label>
                 <input
                   type="text"
                   id="input4"
                   formControlName="fa_telClie"
-                  (keydown)="moveFocus($event, input5)"
+                  (keydown.enter)="moveFocus($event, input6)"
                   #input4
-                  placeholder="Tel. 1"
+                  placeholder="Teléfono"
                   class="form-control"
                 />
               </div>
-              <div class="col-md-4">
-                <label class="form-label small text-muted fw-semibold"
-                  >Teléfono 2</label
-                >
-                <input
-                  type="text"
-                  formControlName="fa_telClie2"
-                  (keydown)="moveFocus($event, input6)"
-                  #input5
-                  placeholder="Tel. 2"
-                  class="form-control"
-                />
-              </div>
-              <div class="col-md-4">
+              <div class="col-md-6">
                 <label class="form-label small text-muted fw-semibold"
                   >Sector</label
                 >
@@ -198,7 +183,7 @@
                   <input
                     type="text"
                     formControlName="fa_sector"
-                    (keydown)="moveFocus($event, input7)"
+                    (keydown.enter)="moveFocus($event, input7)"
                     (keydown)="handleKeydownSector($event)"
                     #input6
                     placeholder="Sector"
@@ -241,7 +226,7 @@
                 <input
                   type="email"
                   formControlName="fa_correo"
-                  (keydown)="moveFocus($event, input8)"
+                  (keydown.enter)="moveFocus($event, input8)"
                   #input7
                   class="form-control"
                 />
@@ -254,7 +239,7 @@
                   type="text"
                   formControlName="fa_contacto"
                   placeholder="Contacto"
-                  (keydown)="moveFocus($event, input9)"
+                  (keydown.enter)="moveFocus($event, input9)"
                   #input8
                   class="form-control text-uppercase"
                 />
@@ -905,7 +890,7 @@
               <tr *ngFor="let factura of facturacionList" class="border-bottom">
                 <td class="fw-semibold text-primary">{{factura.fa_codFact}}</td>
                 <td>{{factura.fa_nomClie}}</td>
-                <td class="text-center">{{factura.fa_fecFact}}</td>
+                <td class="text-center">{{ formatFecha(factura.fa_fecFact) }}</td>
                 <td class="text-end fw-semibold">{{factura.fa_valFact}}</td>
                 <td class="text-center">
                   <button
