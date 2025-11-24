@@ -1,7 +1,7 @@
 <div class="container-fluid py-3">
   <!-- Hero Comercial -->
   <div
-    class="rounded-4 p-4 mb-3"
+    class="rounded-4 p-4 mb-2"
     style="background: linear-gradient(90deg, #0d6efd, #6610f2); color: #fff; box-shadow: 0 8px 24px rgba(13, 110, 253, 0.25)"
   >
     <div class="d-flex align-items-center justify-content-between">
@@ -553,69 +553,170 @@
 
           <!-- Información de Producto y Totales -->
           <div class="row g-3 mt-2">
-            <div class="col-lg-3">
+            <div class="col-lg-8">
+              <div class="row g-2">
+                <div class="col-9">
+                  <div class="card border-primary shadow-sm info-producto" style="border-radius: 12px">
+                    <div class="card-header bg-white border-bottom">
+                      <h6 class="mb-0 text-secondary fw-semibold small">
+                        <i class="bi bi-info-circle me-2"></i>Información del
+                        Producto
+                      </h6>
+                    </div>  
+                    <div class="row g-2 ">
+                      <div class="col-3 text-center  mb-0">
+                        <label class="form-label small mb-0 fw-semibold">Exist.</label>
+                        <input
+                          type="text"
+                          class="form-control form-control-sm text-end fw-bold"
+                          readonly
+                          [value]="formatNumber(existenciatxt)"
+                        />
+                      </div>
+                      <div class="col-3 text-center  mb-0">
+                        <label class="form-label small mb-0 fw-semibold">Medida</label>
+                        <input
+                          type="text"
+                          class="form-control form-control-sm text-end fw-bold"
+                          readonly
+                          [(ngModel)]="medidatxt"
+                        />
+                      </div>  
+                      <div class="col-3 text-center  mb-0">
+                        <label class="form-label small mb-0 fw-semibold">Act..</label>
+                        <input
+                          type="text"
+                          class="form-control form-control-sm text-end fw-bold"
+                          readonly
+                          [(ngModel)]="fecacttxt"
+                        />
+                      </div>  
+                      <div class="col-3 text-center  mb-0">
+                        <label class="form-label small mb-0 fw-semibold">Costo</label>
+                        <input
+                          type="text"
+                          class="form-control form-control-sm text-end fw-bold"
+                          readonly
+                          [value]="formatNumber(costotxt)"
+                        />
+                      </div>  
+                    </div>   
+                  </div>   
+                </div>
+                <div class="col-3">  
               <div class="card border-primary shadow-sm info-producto" style="border-radius: 12px">
                 <div class="card-header bg-white border-bottom">
                   <h6 class="mb-0 text-secondary fw-semibold small">
-                    <i class="bi bi-info-circle me-2"></i>Información del
-                    Producto
+                    <i class="bi bi-info-circle me-2"></i>Margen Fact.
                   </h6>
-                </div>  
-                  <div class="row g-2 ">
-                    <div class="col-8  mb-0">
-                      <label class="form-label small mb-0 fw-semibold">Existencia</label>
-                    </div>
-                    <div class="col-4">
+                </div>
+                  <div class="row g-2 mb-0">
+                    <div class="col-6 text-center">
+                      <label class="form-label small mb-0 fw-semibold">% Prod.</label>
                       <input
                         type="text"
                         class="form-control form-control-sm text-end fw-bold"
                         readonly
-                        [value]="formatNumber(existenciatxt)"
+                        [value]="formatNumber(protxt)"
+                        [ngStyle]="{'color': protxt < 10 ? 'red' : 'green'}"
                       />
+                    </div>
+                    <div class="col-6 text-center">
+                        <label class="form-label small mb-0 fw-semibold">% Factura</label>
+                        <input
+                          type="text"
+                          class="form-control form-control-sm text-end fw-bold"
+                          readonly
+                          [value]="formatNumber(factxt)"
+                          [ngStyle]="{'color': factxt < 10 ? 'red' : 'green'}"
+                        />
                     </div>
                   </div>
-                  <div class="row g-2 ">
-                    <div class="col-8  mb-0">
-                      <label class="form-label small mb-0 fw-semibold">Medida</label>
-                    </div>
-                    <div class="col-4">
-                      <input
-                        type="text"
-                        class="form-control form-control-sm text-end fw-bold"
-                        readonly
-                        [(ngModel)]="medidatxt"
-                      />
+              </div>
+
+
+                </div>   
+              </div>  
+              <div class="row g-2">
+                <div class=" col-12">
+                  <div class="card border-primary shadow-sm info-producto" style="border-radius: 12px">
+                    <div class="card-header bg-white border-bottom">
+                      <h6 class="mb-0 text-secondary fw-semibold small">
+                        <i class="bi bi-info-circle me-2"></i>Margenes de Venta del
+                        Producto
+                      </h6>
                     </div>  
-                  </div>
-                  <div class="row g-2 ">
-                    <div class="col-8  mb-0">
-                        <label class="form-label small mb-0 fw-semibold">Actualiz.</label>
+                    <div class="row g-2 mb-2">
+                      <!-- <div class="col-1  text-center ">
+                        <label class="form-label small mb-0 fw-semibold">5%</label>
+                        <input
+                          type="text"
+                          class="form-control form-control-sm text-end fw-bold"
+                          readonly
+                          [value]="formatNumber(atxt)"
+                        />
+                      </div> -->
+                      <div class="col-2  text-center ">
+                        <label class="form-label small mb-0 fw-semibold">7%</label>
+                        <input
+                          type="text"
+                          class="form-control form-control-sm text-end fw-bold"
+                          readonly
+                          [value]="formatNumber(btxt)"
+                        />
+                      </div>
+                      <div class="col-2  text-center ">
+                        <label class="form-label small mb-0 fw-semibold">10%</label>
+                        <input
+                          type="text"
+                          class="form-control form-control-sm text-end fw-bold"
+                          readonly
+                          [value]="formatNumber(ctxt)"
+                        />
+                      </div>
+                      <div class="col-2  text-center ">
+                        <label class="form-label small mb-0 fw-semibold">12%</label>
+                        <input
+                          type="text"
+                          class="form-control form-control-sm text-end fw-bold"
+                          readonly
+                          [value]="formatNumber(dtxt)"
+                        />
+                      </div>
+                      <div class="col-2  text-center ">
+                        <label class="form-label small mb-0 fw-semibold">14%</label>
+                        <input
+                          type="text"
+                          class="form-control form-control-sm text-end fw-bold"
+                          readonly
+                          [value]="formatNumber(etxt)"
+                        />
+                      </div>
+                      <div class="col-2  text-center ">
+                        <label class="form-label small mb-0 fw-semibold">16%</label>
+                        <input
+                          type="text"
+                          class="form-control form-control-sm text-end fw-bold"
+                          readonly
+                          [value]="formatNumber(ftxt)"
+                        />
+                      </div>
+                      <div class="col-2  text-center ">
+                        <label class="form-label small mb-0 fw-semibold">18%</label>
+                        <input
+                          type="text"
+                          class="form-control form-control-sm text-end fw-bold"
+                          readonly
+                          [value]="formatNumber(gtxt)"
+                        />
+                      </div>
                     </div>
-                    <div class="col-4">    
-                      <input
-                        type="text"
-                        class="form-control form-control-sm text-end fw-bold"
-                        readonly
-                        [(ngModel)]="fecacttxt"
-                      />
-                    </div>  
-                  </div>
-                  <div class="row g-2 ">
-                    <div class="col-8  mb-0">
-                      <label class="form-label small mb-0 fw-semibold">Costo</label>
-                    </div>
-                    <div class="col-4">
-                      <input
-                        type="text"
-                        class="form-control form-control-sm text-end fw-bold"
-                        readonly
-                        [value]="formatNumber(costotxt)"
-                      />
-                    </div>  
-                  </div>   
-              </div>       
+                  </div>  
+                </div>          
+              </div> 
+
             </div>
-            <div class="col-lg-5"> </div>
+            <!-- <div class="col-lg-5"> </div> -->
 
             <!-- Totales -->
             <div class="col-lg-4">
@@ -626,10 +727,10 @@
                   </h6>
                 </div>
                   <div class="row g-2">
-                    <div class="col-6 mb-0">
+                    <div class="col-6 mb-2">
                       <label class="form-label small mb-0 fw-semibold">Sub-Total</label>
                     </div>
-                    <div class="col-6">
+                    <div class="col-6 mb-2">
                       <input
                         type="text"
                         class="form-control text-end fw-bold"
@@ -639,10 +740,10 @@
                     </div>
                   </div>
                   <div class="row g-2">
-                    <div class="col-6">
+                    <div class="col-6 mb-2">
                       <label class="form-label small mb-0 fw-semibold">Descuento</label>
                     </div>
-                    <div class="col-6">
+                    <div class="col-6 mb-2">
                       <input
                         type="text"
                         class="form-control text-end fw-bold"
@@ -652,10 +753,10 @@
                     </div>
                   </div>
                   <div class="row g-2">
-                    <div class="col-6">
+                    <div class="col-6 mb-3">
                       <label class="form-label small mb-0 fw-semibold">ITBIS</label>
                     </div>
-                    <div class="col-6">
+                    <div class="col-6 mb-3">
                       <input
                         type="text"
                         class="form-control text-end fw-bold"
@@ -664,7 +765,7 @@
                       />
                     </div>
                   </div>
-                  <div class="row h-2">
+                  <div class="row g-2">
                     <div class="col-6">
                       <label class="form-label small mb-0 fw-bold">Total General</label>
                     </div>
@@ -680,9 +781,9 @@
               </div>
             </div>
           </div>
-          <!-- Información del producto -->
+          <!-- Margenes De Ventas -->
           <div class="row g-3 mt-2">
-            <div class=" col-9">
+            <!-- <div class=" col-9">
               <div class="card border-primary shadow-sm info-producto" style="border-radius: 12px">
                 <div class="card-header bg-white border-bottom">
                   <h6 class="mb-0 text-secondary fw-semibold small">
@@ -691,7 +792,7 @@
                   </h6>
                 </div>  
                 <div class="row g-2 mb-2">
-                  <!-- <div class="col-1  text-center ">
+                 <div class="col-1  text-center ">
                     <label class="form-label small mb-0 fw-semibold">5%</label>
                     <input
                       type="text"
@@ -699,7 +800,7 @@
                       readonly
                       [value]="formatNumber(atxt)"
                     />
-                  </div> -->
+                  </div> 
                   <div class="col-2  text-center ">
                     <label class="form-label small mb-0 fw-semibold">7%</label>
                     <input
@@ -754,7 +855,7 @@
                       [value]="formatNumber(gtxt)"
                     />
                   </div>
-                  <!-- <div class="col-2  text-center ">
+                  <div class="col-2  text-center ">
                     <label class="form-label small mb-0 fw-semibold">20%</label>
                     <input
                       type="text"
@@ -762,41 +863,11 @@
                       readonly
                       [value]="formatNumber(htxt)"
                     />
-                  </div> -->
+                  </div> 
                 </div>
               </div>  
-            </div>
-            <div class="col-3">
-              <div class="card border-primary shadow-sm info-producto" style="border-radius: 12px">
-                <div class="card-header bg-white border-bottom">
-                  <h6 class="mb-0 text-secondary fw-semibold small">
-                    <i class="bi bi-info-circle me-2"></i>Margen Ventas %
-                  </h6>
-                </div>
-                  <div class="row g-2 mb-2">
-                    <div class="col-6 text-center">
-                      <label class="form-label small mb-0 fw-semibold">% Prod.</label>
-                      <input
-                        type="text"
-                        class="form-control form-control-sm text-end fw-bold"
-                        readonly
-                        [value]="formatNumber(protxt)"
-                        [ngStyle]="{'color': protxt < 10 ? 'red' : 'green'}"
-                      />
-                    </div>
-                    <div class="col-6 text-center">
-                        <label class="form-label small mb-0 fw-semibold">% Factura</label>
-                        <input
-                          type="text"
-                          class="form-control form-control-sm text-end fw-bold"
-                          readonly
-                          [value]="formatNumber(factxt)"
-                          [ngStyle]="{'color': factxt < 10 ? 'red' : 'green'}"
-                        />
-                    </div>
-                  </div>
-              </div>
-            </div>
+            </div> -->
+         
           </div>
         </div>
       </div>
