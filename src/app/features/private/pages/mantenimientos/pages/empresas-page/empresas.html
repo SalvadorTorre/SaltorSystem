@@ -376,7 +376,7 @@
                     </tr>
                   </thead>
                   <tbody>
-                    <tr *ngFor="let sucursal of sucursalList">
+                    <tr *ngFor="let sucursal of sucursalList" (click)="modoconsultaEmpresa && mostrarDetalleSucursal(sucursal)" style="cursor: {{modoconsultaEmpresa ? 'pointer' : 'default'}};">
                       <td class="text-center">{{sucursal.cod_sucursal}}</td>
                       <td class="text">{{sucursal.nom_sucursal}}</td>
                       <td class="text">{{sucursal.tel_sucursal}}</td>
@@ -384,19 +384,24 @@
                       <td class="text-center">{{ contfacturaPorSucursal[sucursal.cod_sucursal]?.ano ?? '-' }}</td>
                       <td class="text-end">{{ contfacturaPorSucursal[sucursal.cod_sucursal]?.contador ?? '-' }}</td>
                       <td>
-                        <button
-                          class="btn btn-link"
-                          (click)="abrirContFacturaModal(sucursal)"
-                          title="Editar control de factura"
-                        >
-                          <i class="bi bi-pencil-square text-primary"></i>
-                        </button>
-                        <button
-                          class="btn btn-link"
-                          (click)="eliminarSucursal(sucursal.cod_sucursal)"
-                        >
-                          <i class="bi bi-trash text-danger"></i>
-                        </button>
+                        <ng-container *ngIf="modoedicionEmpresa; else accionesConsulta">
+                          <button
+                            class="btn btn-link"
+                            (click)="$event.stopPropagation(); abrirContFacturaModal(sucursal)"
+                            title="Editar control de factura"
+                          >
+                            <i class="bi bi-pencil-square text-primary"></i>
+                          </button>
+                          <button
+                            class="btn btn-link"
+                            (click)="$event.stopPropagation(); eliminarSucursal(sucursal.cod_sucursal)"
+                          >
+                            <i class="bi bi-trash text-danger"></i>
+                          </button>
+                        </ng-container>
+                        <ng-template #accionesConsulta>
+                          <!-- sin acciones en modo consulta -->
+                        </ng-template>
                       </td>
                     </tr>
                   </tbody>
@@ -433,6 +438,7 @@
             <input class="form-control" type="number" name="contador" [(ngModel)]="contfacturaActual.contador" required />
           </div>
         </div>
+        
         <div class="modal-footer">
           <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
           <button type="submit" class="btn btn-primary" [disabled]="!contEmpresaForm.valid" data-bs-dismiss="modal">{{contfacturaEditId ? 'Guardar cambios' : 'Agregar'}}</button>
@@ -441,3 +447,25 @@
     </div>
   </div>
 </div>
+<!-- Modal: Detalle de Sucursal (solo lectura en consulta) -->
+<div class="modal fade" id="detalleSucursalModal" tabindex="-1" aria-labelledby="detalleSucursalModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="detalleSucursalModalLabel">Detalle de Sucursal</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" *ngIf="sucursalDetalle as s">
+        <div class="mb-2"><strong>Código:</strong> {{ s.cod_sucursal }}</div>
+        <div class="mb-2"><strong>Nombre:</strong> {{ s.nom_sucursal }}</div>
+        <div class="mb-2"><strong>Teléfono:</strong> {{ s.tel_sucursal }}</div>
+        <div class="mb-2"><strong>Dirección:</strong> {{ s.dir_sucursal }}</div>
+        <div class="mb-2"><strong>Año:</strong> {{ detalleCont?.ano ?? '-' }}</div>
+        <div class="mb-2"><strong>Secuencia:</strong> {{ detalleCont?.contador ?? '-' }}</div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button>
+      </div>
+    </div>
+  </div>
+  </div>

@@ -46,6 +46,8 @@ export class Empresas implements OnInit {
   contfacturaEditId: number | null = null;
   contSucursalNombre: string = '';
   contfacturaPorSucursal: Record<number, { ano: number; contador: number } | null> = {};
+  sucursalDetalle: SucursalesData | null = null;
+  detalleCont: { ano: number; contador: number } | null = null;
 
   constructor(
     private fb: FormBuilder,
@@ -184,7 +186,7 @@ export class Empresas implements OnInit {
     this.tituloModalEmpresa = 'Editando Empresa';
     $('#modalempresa').modal('show');
     this.habilitarFormulario = true;
-    this.activaformularioSucursal = false;
+    this.activaformularioSucursal = true; // permitir agregar sucursales también en edición
     this.activatablaSucursal = true;
     this.sucursalList = Empresa.sucursales || [];
     this.cargarContadoresSucursales();
@@ -349,6 +351,15 @@ export class Empresas implements OnInit {
         });
       }
     });
+  }
+
+  // Mostrar detalle de sucursal al hacer clic en la tabla en modo consulta
+  mostrarDetalleSucursal(sucursal: SucursalesData): void {
+    this.sucursalDetalle = sucursal;
+    const sid = Number(sucursal?.cod_sucursal);
+    const cont = this.contfacturaPorSucursal[sid] || null;
+    this.detalleCont = cont ? { ano: cont.ano, contador: cont.contador } : null;
+    $('#detalleSucursalModal').modal('show');
   }
 
   consultarSucursal(Empresa: EmpresaModelData) {
