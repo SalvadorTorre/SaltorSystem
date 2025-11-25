@@ -300,3 +300,21 @@ i {
   border-radius: 12px;
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
 }
+
+/* Filas más compactas dentro de la tabla de detalle */
+.detalle-table-container .table.table-sm td,
+.detalle-table-container .table.table-sm th {
+  /* padding: 0.35rem 0.4rem;
+  line-height: 1.15; */
+  /* padding-top: 1px !important;
+  padding-bottom: 1px !important;
+  padding-left: 6px !important;
+  padding-right: 6px !important;
+  line-height: 10px !important; */
+   padding: 2 !important;
+  line-height: 12px !important;
+}
+
+.detalle-table-container thead th {
+  padding: 0.45rem;
+}
