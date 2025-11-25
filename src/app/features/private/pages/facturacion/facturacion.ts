@@ -1155,23 +1155,29 @@ export class Facturacion implements OnInit {
   }
   moveFocusPrecio(event: Event, nextInput: HTMLInputElement) {
     const key = (event as KeyboardEvent).key;
-    if (key === 'Enter' || key === 'Tab') {
-      event.preventDefault();
-      if (!this.productoselect || this.preciomerc <= 0 || this.preciomerc <= this.productoselect.in_cosmerc) {
-        this.mensagePantalla = true;
-        Swal.fire({
-          icon: "error",
-          title: "A V I S O",
-          text: 'Por favor complete todos los campos requeridos antes de agregar el ítem.',
-        }).then(() => { this.mensagePantalla = false });
-        return;
-      }
-      else {
-        // nextInput.focus();
-        $("#input13").focus();
-        $("#input13").select();
-      }
+    // Solo manejar Enter/Tab
+    if (key !== 'Enter' && key !== 'Tab') return;
+    event.preventDefault();
+
+    // Validaciones básicas antes de continuar
+    if (!this.productoselect || this.preciomerc <= 0 || this.preciomerc <= this.productoselect.in_cosmerc) {
+      this.mensagePantalla = true;
+      Swal.fire({
+        icon: "error",
+        title: "A V I S O",
+        text: 'Por favor complete todos los campos requeridos antes de agregar el ítem.',
+      }).then(() => { this.mensagePantalla = false });
+      return;
     }
+
+    // Si se presiona Enter: agregar el ítem
+    if (key === 'Enter') {
+      this.agregaItem(event);
+    }
+
+    // Enfocar el código del producto usando la referencia recibida
+    nextInput?.focus();
+    nextInput?.select?.();
   }
   moveFocusnomclie(event: Event, nextInput: HTMLInputElement) {
     event.preventDefault();
@@ -1407,11 +1413,11 @@ export class Facturacion implements OnInit {
             timer: 1000,
             showConfirmButton: false,
           });
-          //limpia
+          
           this.buscarTodasFacturacion();
-         // this.formularioFacturacion.reset();
-        //  this.crearFormularioFacturacion();
-         // this.formularioFacturacion.enable();
+          this.formularioFacturacion.reset();
+          this.crearFormularioFacturacion();
+          this.formularioFacturacion.enable();
           this.limpia();
         });
 
