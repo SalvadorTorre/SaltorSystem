@@ -5,6 +5,7 @@ import Swal from 'sweetalert2';
 import { ServicioEmpresa } from 'src/app/core/services/mantenimientos/empresas/empresas.service';
 import { EmpresaModelData, SucursalesData } from 'src/app/core/services/mantenimientos/empresas';
 import { ServicioSucursal } from 'src/app/core/services/mantenimientos/sucursal/sucursal.service';
+import { ServicioContFactura } from 'src/app/core/services/mantenimientos/contfactura/contfactura.service';
 declare var $: any;
 
 
@@ -40,7 +41,18 @@ export class Empresas implements OnInit {
   selectedEmpresa: any = null;
   modoedicionSucursal: boolean = false;
   static cod_empre: any;
-  constructor(private fb: FormBuilder, private servicioEmpresa: ServicioEmpresa, private servicioSucursal: ServicioSucursal) {
+  // Control de factura (contfactura)
+  contfacturaActual: { idsucursal?: number; ano: number; contador: number } = { idsucursal: undefined, ano: new Date().getFullYear(), contador: 0 };
+  contfacturaEditId: number | null = null;
+  contSucursalNombre: string = '';
+  contfacturaPorSucursal: Record<number, { ano: number; contador: number } | null> = {};
+
+  constructor(
+    private fb: FormBuilder,
+    private servicioEmpresa: ServicioEmpresa,
+    private servicioSucursal: ServicioSucursal,
+    private contSrv: ServicioContFactura,
+  ) {
     this.crearFormularioEmpresa();
     this.crearformularioSucursal();
     // this.descripcionBuscar.pipe(
@@ -148,6 +160,11 @@ export class Empresas implements OnInit {
     $('#modalempresa').modal('hide');
     this.crearFormularioEmpresa();
     this.sucursalList = []
+    // limpiar estado del modal contfactura
+    this.contfacturaActual = { idsucursal: undefined, ano: new Date().getFullYear(), contador: 0 };
+    this.contfacturaEditId = null;
+    this.contSucursalNombre = '';
+    this.contfacturaPorSucursal = {};
   }
 
 
@@ -170,6 +187,7 @@ export class Empresas implements OnInit {
     this.activaformularioSucursal = false;
     this.activatablaSucursal = true;
     this.sucursalList = Empresa.sucursales || [];
+    this.cargarContadoresSucursales();
     // Refrescar datos desde backend para asegurar sucursales
     this.servicioEmpresa.buscarEmpres(this.empresaid).subscribe({
       next: (resp) => {
@@ -179,11 +197,13 @@ export class Empresas implements OnInit {
           // Backend puede devolver 'sucursales' o 'sucursal'
           this.sucursalList = (empresaFull.sucursales || empresaFull.sucursal || []);
           this.formularioEmpresa.patchValue(empresaFull);
+          this.cargarContadoresSucursales();
         }
       },
       error: () => {
         // Mantener lo que vino en la lista si falla
         this.sucursalList = Empresa.sucursales || [];
+        this.cargarContadoresSucursales();
       }
     });
   }
@@ -205,6 +225,7 @@ export class Empresas implements OnInit {
     this.activaformularioSucursal = true;
     this.activatablaSucursal = true;
     this.sucursalList = Empresa.sucursales || [];
+    this.cargarContadoresSucursales();
     // Cargar sucursales desde backend para consulta
     this.servicioEmpresa.buscarEmpres(this.empresaid).subscribe({
       next: (resp) => {
@@ -215,14 +236,120 @@ export class Empresas implements OnInit {
           this.sucursalList = (empresaFull.sucursales || empresaFull.sucursal || []);
           // No habilitamos el formulario empresa en consulta, solo refrescamos datos
           this.formularioEmpresa.patchValue(empresaFull);
+          this.cargarContadoresSucursales();
         }
       },
       error: () => {
         // Si falla, dejamos lo que venía de la lista
         this.sucursalList = Empresa.sucursales || [];
+        this.cargarContadoresSucursales();
       }
     });
   };
+
+  // Abrir modal de control de factura para una sucursal
+  abrirContFacturaModal(sucursal: SucursalesData): void {
+    const sucId = Number(sucursal?.cod_sucursal);
+    if (!sucId || isNaN(sucId)) {
+      Swal.fire({ title: 'Aviso', text: 'Sucursal inválida para control de factura.', icon: 'warning' });
+      return;
+    }
+    this.contSucursalNombre = String(sucursal?.nom_sucursal || '');
+    this.contfacturaActual = { idsucursal: sucId, ano: new Date().getFullYear(), contador: 0 };
+    this.contfacturaEditId = null;
+
+    // Buscar si ya existe un control de factura para esta sucursal (opcionalmente por año actual)
+    this.contSrv.buscarTodos(1, 200, undefined).subscribe({
+      next: (resp) => {
+        const lista = Array.isArray(resp?.data) ? resp.data : [];
+        // Filtrar por la sucursal seleccionada
+        const listaSucursal = lista.filter((it: any) => Number(it?.idsucursal || it?.sucursal?.cod_sucursal) === sucId);
+        // Preferir el registro del año actual; si no hay, usar el primero de la sucursal
+        const actualYear = new Date().getFullYear();
+        const existente = listaSucursal.find((it: any) => Number(it?.ano) === actualYear) || listaSucursal[0];
+        if (existente) {
+          const id = Number(existente?.id || existente?.cod);
+          this.contfacturaEditId = isNaN(id) ? null : id;
+          this.contfacturaActual = {
+            idsucursal: Number(existente?.idsucursal ?? existente?.sucursal?.cod_sucursal ?? sucId),
+            ano: Number(existente?.ano ?? actualYear),
+            contador: Number(existente?.contador ?? 0),
+          };
+        } else {
+          // No hay registro para la sucursal: preparar para crear
+          this.contfacturaEditId = null;
+          this.contfacturaActual = { idsucursal: sucId, ano: actualYear, contador: 0 };
+        }
+        // Mostrar el modal
+        $('#contFacModalEmpresa').modal('show');
+      },
+      error: () => {
+        // Abrir modal con valores por defecto si falla la carga
+        $('#contFacModalEmpresa').modal('show');
+      }
+    });
+  }
+
+  // Guardar/Editar control de factura desde el modal de empresa
+  guardarContFacturaEmpresa(form: any): void {
+    const payload = {
+      idsucursal: Number(this.contfacturaActual.idsucursal),
+      ano: Number(this.contfacturaActual.ano),
+      contador: Number(this.contfacturaActual.contador),
+    };
+    if (!payload.idsucursal || isNaN(payload.idsucursal)) {
+      Swal.fire({ title: 'Datos incompletos', text: 'Falta la sucursal.', icon: 'warning' });
+      return;
+    }
+    // Buscar si ya existe un registro para la misma sucursal y año
+    this.contSrv.buscarTodos(1, 500, undefined).subscribe({
+      next: (resp) => {
+        const lista = Array.isArray(resp?.data) ? resp.data : [];
+        const listaSucursal = lista.filter((it: any) => Number(it?.idsucursal || it?.sucursal?.cod_sucursal) === payload.idsucursal);
+        const existente = listaSucursal.find((it: any) => Number(it?.ano) === payload.ano);
+        const id = Number(existente?.id || existente?.cod);
+        if (existente && !isNaN(id)) {
+          // Editar si existe
+          this.contSrv.editarContFactura(id, payload).subscribe({
+            next: () => {
+              Swal.fire({ title: 'Excelente!', text: 'Control de factura actualizado.', icon: 'success', timer: 3000, showConfirmButton: false });
+              this.contfacturaEditId = id;
+              this.cargarContadoresSucursales();
+            },
+            error: (err) => {
+              const msg = (err?.error?.message || err?.message || 'Error al actualizar el control de factura').toString();
+              Swal.fire({ title: 'Error', text: msg, icon: 'error' });
+            }
+          });
+        } else {
+          // Crear si no existe
+          this.contSrv.guardarContFactura(payload).subscribe({
+            next: () => {
+              Swal.fire({ title: 'Excelente!', text: 'Control de factura creado.', icon: 'success', timer: 3000, showConfirmButton: false });
+              this.cargarContadoresSucursales();
+            },
+            error: (err) => {
+              const msg = (err?.error?.message || err?.message || 'Error al crear el control de factura').toString();
+              Swal.fire({ title: 'Error', text: msg, icon: 'error' });
+            }
+          });
+        }
+      },
+      error: () => {
+        // Si falla la búsqueda, intentar crear
+        this.contSrv.guardarContFactura(payload).subscribe({
+          next: () => {
+            Swal.fire({ title: 'Excelente!', text: 'Control de factura creado.', icon: 'success', timer: 3000, showConfirmButton: false });
+            this.cargarContadoresSucursales();
+          },
+          error: (err) => {
+            const msg = (err?.error?.message || err?.message || 'Error al crear el control de factura').toString();
+            Swal.fire({ title: 'Error', text: msg, icon: 'error' });
+          }
+        });
+      }
+    });
+  }
 
   consultarSucursal(Empresa: EmpresaModelData) {
     //this.tituloModalEmpresa = 'Consulta Empresa';
@@ -300,7 +427,42 @@ export class Empresas implements OnInit {
         if (empresaFull) {
           // Backend puede devolver 'sucursales' o 'sucursal'
           this.sucursalList = (empresaFull.sucursales || empresaFull.sucursal || []);
+          this.cargarContadoresSucursales();
         }
+      }
+    });
+  }
+
+  private cargarContadoresSucursales(): void {
+    const sucursales = this.sucursalList || [];
+    if (!sucursales.length) {
+      this.contfacturaPorSucursal = {};
+      return;
+    }
+    this.contSrv.buscarTodos(1, 500, undefined).subscribe({
+      next: (resp) => {
+        const registros = Array.isArray(resp?.data) ? resp.data : [];
+        const currentYear = new Date().getFullYear();
+        const mapa: Record<number, { ano: number; contador: number } | null> = {};
+        for (const suc of sucursales) {
+          const sid = Number(suc?.cod_sucursal);
+          const delSucursal = registros.filter((it: any) => Number(it?.idsucursal || it?.sucursal?.cod_sucursal) === sid);
+          if (delSucursal.length) {
+            const paraYearActual = delSucursal.find((it: any) => Number(it?.ano) === currentYear);
+            const elegido = paraYearActual || delSucursal.reduce((acc: any, cur: any) => {
+              const accAno = Number(acc?.ano || 0);
+              const curAno = Number(cur?.ano || 0);
+              return curAno > accAno ? cur : acc;
+            }, delSucursal[0]);
+            mapa[sid] = { ano: Number(elegido?.ano || currentYear), contador: Number(elegido?.contador || 0) };
+          } else {
+            mapa[sid] = null;
+          }
+        }
+        this.contfacturaPorSucursal = mapa;
+      },
+      error: () => {
+        this.contfacturaPorSucursal = {};
       }
     });
   }

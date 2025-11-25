@@ -370,6 +370,8 @@
                       <th style="width: 30%">Sucursal</th>
                       <th style="width: 30%">Telefono</th>
                       <th style="width: 30%">Dirección</th>
+                      <th style="width: 10%">Año</th>
+                      <th style="width: 10%">Secuencia</th>
                       <th style="width: 10%">Acciones</th>
                     </tr>
                   </thead>
@@ -379,7 +381,16 @@
                       <td class="text">{{sucursal.nom_sucursal}}</td>
                       <td class="text">{{sucursal.tel_sucursal}}</td>
                       <td class="text">{{sucursal.dir_sucursal}}</td>
+                      <td class="text-center">{{ contfacturaPorSucursal[sucursal.cod_sucursal]?.ano ?? '-' }}</td>
+                      <td class="text-end">{{ contfacturaPorSucursal[sucursal.cod_sucursal]?.contador ?? '-' }}</td>
                       <td>
+                        <button
+                          class="btn btn-link"
+                          (click)="abrirContFacturaModal(sucursal)"
+                          title="Editar control de factura"
+                        >
+                          <i class="bi bi-pencil-square text-primary"></i>
+                        </button>
                         <button
                           class="btn btn-link"
                           (click)="eliminarSucursal(sucursal.cod_sucursal)"
@@ -395,6 +406,38 @@
           </div>
         </div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Control de Factura por Sucursal -->
+<div class="modal fade" id="contFacModalEmpresa" tabindex="-1" aria-labelledby="contFacModalEmpresaLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="contFacModalEmpresaLabel">{{contfacturaEditId ? 'Editar Control de Factura' : 'Nuevo Control de Factura'}}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form #contEmpresaForm="ngForm" (ngSubmit)="guardarContFacturaEmpresa(contEmpresaForm)">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Sucursal</label>
+            <input class="form-control" type="text" [value]="contSucursalNombre" readonly />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Año</label>
+            <input class="form-control" type="number" name="ano" [(ngModel)]="contfacturaActual.ano" required />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Contador</label>
+            <input class="form-control" type="number" name="contador" [(ngModel)]="contfacturaActual.contador" required />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary" [disabled]="!contEmpresaForm.valid" data-bs-dismiss="modal">{{contfacturaEditId ? 'Guardar cambios' : 'Agregar'}}</button>
+        </div>
+      </form>
     </div>
   </div>
 </div>
