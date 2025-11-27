@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { NgForm } from '@angular/forms';
 import { ServicioTipousuario } from 'src/app/core/services/mantenimientos/tipousuario/tipousuario.service';
 import { ServicioModulo } from 'src/app/core/services/mantenimientos/modulo/modulo.service';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-config-tipousuario',
@@ -22,6 +23,15 @@ export class TipousuarioPage implements OnInit {
 
   actualDet: any = { idmodulo: undefined, acceso: 'N', lectura: 'N' };
   editDetIndex = -1;
+
+  // Toast SweetAlert para mensajes no bloqueantes
+  Toast = (Swal as any).mixin({
+    toast: true,
+    position: 'bottom-start',
+    showConfirmButton: false,
+    timer: 5000,
+    timerProgressBar: false
+  });
 
   constructor(
     private tipoSrv: ServicioTipousuario,
@@ -117,21 +127,43 @@ export class TipousuarioPage implements OnInit {
   guardarTipo(form: NgForm): void {
     if (!form.valid) return;
     const payload = { descripcion: this.actualTipo.descripcion };
+
+    // Validación de duplicado al crear: misma descripción (case-insensitive)
+    if (this.editTipoIndex < 0) {
+      const desc = String(payload.descripcion || '').trim().toLowerCase();
+      const existe = this.tipos.some((t: any) => String(t?.descripcion || '').trim().toLowerCase() === desc);
+      if (existe) {
+        this.Toast.fire({ title: 'Tipo de usuario duplicado', icon: 'warning' as any });
+        return;
+      }
+    }
+
     if (this.editTipoIndex >= 0) {
       const edit = this.tipos[this.editTipoIndex];
       this.tipoSrv.editarTipousuario(edit.id, payload).subscribe({
         next: () => {
           edit.descripcion = payload.descripcion;
           this.cargarTipos();
+          this.Toast.fire({ title: 'Tipo actualizado', icon: 'success' as any, timer: 4000, timerProgressBar: true });
         },
-        error: () => {}
+        error: () => {
+          this.Toast.fire({ title: 'Error al actualizar tipo', icon: 'error' as any });
+        }
       });
     } else {
       this.tipoSrv.guardarTipousuario(payload).subscribe({
         next: () => {
           this.cargarTipos();
+          this.Toast.fire({ title: 'Tipo creado', icon: 'success' as any, timer: 4000, timerProgressBar: true });
         },
-        error: () => {}
+        error: (err) => {
+          const status = err?.status;
+          if (status === 409) {
+            this.Toast.fire({ title: 'Tipo ya existe', icon: 'warning' as any });
+          } else {
+            this.Toast.fire({ title: 'Error al crear tipo', icon: 'error' as any });
+          }
+        }
       });
     }
     this.editTipoIndex = -1;
@@ -141,15 +173,28 @@ export class TipousuarioPage implements OnInit {
 
   eliminarTipo(t: any): void {
     if (!t || !t.id) return;
-    this.tipoSrv.eliminarTipousuario(t.id).subscribe({
-      next: () => {
-        if (this.seleccionado?.id === t.id) {
-          this.seleccionado = null;
-          this.detalles = [];
+    Swal.fire({
+      title: 'Eliminar tipo',
+      text: `¿Eliminar el tipo "${t.descripcion}" (ID ${t.id})?`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Eliminar',
+      cancelButtonText: 'Cancelar'
+    }).then((res) => {
+      if (!res.isConfirmed) return;
+      this.tipoSrv.eliminarTipousuario(t.id).subscribe({
+        next: () => {
+          if (this.seleccionado?.id === t.id) {
+            this.seleccionado = null;
+            this.detalles = [];
+          }
+          this.cargarTipos();
+          this.Toast.fire({ title: 'Tipo eliminado', icon: 'success' as any, timer: 4000, timerProgressBar: true });
+        },
+        error: () => {
+          this.Toast.fire({ title: 'Error al eliminar tipo', icon: 'error' as any });
         }
-        this.cargarTipos();
-      },
-      error: () => {}
+      });
     });
   }
 
@@ -183,15 +228,32 @@ export class TipousuarioPage implements OnInit {
           edit.acceso = acceso;
           edit.lectura = lectura;
           this.refrescarSeleccionado();
+          this.Toast.fire({ title: 'Detalle actualizado', icon: 'success' as any, timer: 4000, timerProgressBar: true });
         },
-        error: () => {}
+        error: () => {
+          this.Toast.fire({ title: 'Error al actualizar detalle', icon: 'error' as any });
+        }
       });
     } else {
+      // Validación de duplicado al crear: mismo módulo ya asignado
+      const existeDet = this.detalles.some((d: any) => Number(d?.idmodulo) === idmodulo);
+      if (existeDet) {
+        this.Toast.fire({ title: 'Módulo ya asignado a este tipo', icon: 'warning' as any });
+        return;
+      }
       this.tipoSrv.agregarDetalle(idtipousuario, payload).subscribe({
         next: () => {
           this.refrescarSeleccionado();
+          this.Toast.fire({ title: 'Módulo agregado al tipo', icon: 'success' as any, timer: 4000, timerProgressBar: true });
         },
-        error: () => {}
+        error: (err) => {
+          const status = err?.status;
+          if (status === 409) {
+            this.Toast.fire({ title: 'Módulo duplicado para este tipo', icon: 'warning' as any });
+          } else {
+            this.Toast.fire({ title: 'Error al agregar módulo', icon: 'error' as any });
+          }
+        }
       });
     }
 
@@ -202,11 +264,24 @@ export class TipousuarioPage implements OnInit {
 
   eliminarDet(d: any): void {
     if (!d || !d.id) return;
-    this.tipoSrv.eliminarDetalle(d.id).subscribe({
-      next: () => {
-        this.refrescarSeleccionado();
-      },
-      error: () => {}
+    Swal.fire({
+      title: 'Eliminar módulo del tipo',
+      text: '¿Desea eliminar este módulo del tipo de usuario?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Eliminar',
+      cancelButtonText: 'Cancelar'
+    }).then((res) => {
+      if (!res.isConfirmed) return;
+      this.tipoSrv.eliminarDetalle(d.id).subscribe({
+        next: () => {
+          this.refrescarSeleccionado();
+          this.Toast.fire({ title: 'Módulo eliminado del tipo', icon: 'success' as any, timer: 4000, timerProgressBar: true });
+        },
+        error: () => {
+          this.Toast.fire({ title: 'Error al eliminar módulo', icon: 'error' as any });
+        }
+      });
     });
   }
 }

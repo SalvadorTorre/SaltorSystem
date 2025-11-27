@@ -32,8 +32,9 @@
           <i class="bi bi-arrow-counterclockwise"></i>
         </button>
       </div>
+      <div class="col-3"></div>
       <div class="col-2">
-        <button class="btn btn-primary mt-4" (click)="nuevaEmpresa()">
+        <button class="btn btn-primary mt-4 justify-content-end" (click)="nuevaEmpresa()">
           Nueva Empresa
         </button>
       </div>
@@ -158,7 +159,7 @@
       <div class="modal-body">
         <div class="row g-3">
           <!-- Columna: Datos de la Empresa -->
-          <div class="col-lg-6">
+          <!-- <div class="col-lg-12"> -->
             <form
               class="custom-form-background"
               [formGroup]="formularioEmpresa"
@@ -166,7 +167,20 @@
             >
               <div class="card">
                 <div class="card-header">
-                  <h6 class="mb-0">Datos de la Empresa</h6>
+                  <!-- <div class="modal-header"> -->
+                  <div class="row">
+                    <div class="col-10">
+                      <h6 class="mb-0">Datos de la Empresa</h6>
+                    </div> 
+                    <div class="col-2  justify-content-end">
+                      <button
+                        type="submit"
+                        *ngIf="!modoconsultaEmpresa"
+                        class="btn btn-success">
+                        {{modoedicionEmpresa ? "Guardar Cambio" : "Guardar"}}
+                      </button>
+                    </div>
+                  </div>
                 </div>
                 <div class="card-body">
                   <div class="row">
@@ -182,7 +196,7 @@
                         formControlName="cod_empre"
                       />
                     </div>
-                    <div class="col-4">
+                    <div class="col-2">
                       <label>Rnc. Empresa</label>
                       <input
                         type="number"
@@ -205,174 +219,77 @@
                         formControlName="nom_empre"
                       />
                     </div>
-                  </div>
-                  <div class="row mt-2">
-                    <div class="col-4">
-                      <h6>Telefono</h6>
-                    </div>
-                    <div class="col-4">
-                      <h6>Direccion</h6>
-                    </div>
-                  </div>
-                  <div class="row mt-2">
-                    <div class="col-4">
-                      <input
-                        type="text"
-                        (keydown)="moveFocus($event, input5)"
-                        #input4
-                        class="form-control form-control-sm"
-                        formControlName="tel_empre"
-                      />
-                    </div>
-                    <div class="col-8">
-                      <input
-                        type="text"
-                        class="uppercase-input"
-                        (input)="convertToUpperCase($event)"
-                        (keydown)="moveFocus($event, input6)"
-                        #input5
-                        class="form-control form-control-sm"
-                        formControlName="dir_empre"
-                      />
-                    </div>
-                  </div>
-                  <div class="row mt-2">
                     <div class="col-2">
                       <label for="">Iniciales</label>
                       <input
                         type="text"
                         class="uppercase-input"
                         (input)="convertToUpperCase($event)"
-                        (keydown)="moveFocus($event, input7)"
-                        #input6
+                        (keydown)="moveFocus($event, input5)"
+                        #input4
                         class="form-control form-control-sm"
                         formControlName="letra_empre"
                       />
                     </div>
-
-                    <div class="col-4">
-                      <label for="">Control Orden Compra</label>
+                  </div>
+                  <div class="row">
+                    <div class="col-6">
+                      <label>Telefono</label>
                       <input
-                        type="number"
-                        (keydown)="moveFocus($event, input7)"
-                        #input7
+                        type="text"
+                        (keydown)="moveFocus($event, input6)"
+                        #input5
                         class="form-control form-control-sm"
-                        formControlName="orden_compra"
+                        formControlName="tel_empre"
+                      />
+                    
+                    </div>
+                    <div class="col-6">
+                      <label>Direccion</label>
+                      <input
+                        type="text"
+                        class="uppercase-input"
+                        (input)="convertToUpperCase($event)"
+                        #input6
+                        class="form-control form-control-sm"
+                        formControlName="dir_empre"
                       />
                     </div>
                   </div>
+                 
                 </div>
               </div>
-              <div class="row mt-4">
-                <div class="col d-flex justify-content-end">
-                  <button
-                    type="submit"
-                    *ngIf="!modoconsultaEmpresa"
-                    class="btn btn-success"
-                  >
-                    {{modoedicionEmpresa ? "Guardar Cambio" : "Guardar"}}
-                  </button>
-                </div>
-              </div>
+       
             </form>
-          </div>
-
+          <!-- </div> -->
+        </div>
+        <div class="row g-3">
           <!-- Columna: Sucursales -->
-          <div class="col-lg-6">
-            <div class="card" *ngIf="activaformularioSucursal">
-              <div class="card-header">
-                <h6 class="mb-0">Datos de Sucursal</h6>
-              </div>
-              <div class="card-body">
-                <form
-                  [formGroup]="formularioSucursal"
-                  (ngSubmit)="guardarSucursal()"
-                >
-                  <div class="row">
-                    <div class="col-10">
-                      <div class="row">
-                        <div class="col-8">
-                          <label>Nombre Sucursal</label>
-                          <input
-                            type="text"
-                            class="uppercase-input"
-                            (input)="convertToUpperCase($event)"
-                            (keydown)="moveFocus($event, input2)"
-                            #input1
-                            class="form-control form-control-sm"
-                            formControlName="nom_sucursal"
-                          />
-                        </div>
-                        <div class="col-4">
-                          <label>Telefono</label>
-                          <input
-                            type="text"
-                            (keydown)="moveFocus($event, input3)"
-                            #input2
-                            class="form-control form-control-sm"
-                            formControlName="tel_sucursal"
-                          />
-                        </div>
-                      </div>
-                      <div class="row">
-                        <div class="col-12">
-                          <label>Direccion</label>
-                          <input
-                            type="text"
-                            class="uppercase-input"
-                            (input)="convertToUpperCase($event)"
-                            (keydown)="moveFocus($event, input3)"
-                            #input3
-                            class="form-control form-control-sm"
-                            formControlName="dir_sucursal"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                    <div class="col-2 mt-4">
-                      <div class="row">
-                        <div class="col">
-                          <button type="submit" class="btn btn-success">
-                            Guardar
-                          </button>
-                        </div>
-                      </div>
-                      &nbsp;&nbsp;
-                      <div class="row">
-                        <div class="col">
-                          <button
-                            type="button"
-                            class="btn btn-danger"
-                            (click)="cerrarModalEmpresa()"
-                          >
-                            Cancelar
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </form>
-              </div>
-            </div>
+          <div class="col-lg-12">
+            <!-- Se eliminó el formulario inline de sucursales en modo consulta. Se gestionará con un modal aparte. -->
             <div class="row mt-3" *ngIf="activatablaSucursal">
               <!-- *ngIf="activatablaSucursal">-->
               <!--  && modoconsultaEmpresa && modoedicionEmpresa">-->
-              <div
-                class="table-responsive"
-              style="max-height: 380px; overflow-y: auto"
-              >
+              <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                  <h6 class="mb-0">Sucursales</h6>
+                  <button *ngIf="modoedicionEmpresa" type="button" class="btn btn-primary btn-sm" (click)="abrirModalNuevaSucursal()">
+                    <i class="bi bi-plus-circle"></i> Agregar sucursal
+                  </button>
+                </div>
+                <div class="table-responsive" style="max-height: 380px; overflow-y: auto">
                 <table
                   class="table table-bordered table-hover table-striped table-sm"
                 >
                   <thead class="table-dark">
                     <tr>
-                      <th style="width: 8%">Codigo</th>
-                      <th style="width: 30%">Sucursal</th>
-                      <th style="width: 30%">Telefono</th>
-                      <th style="width: 30%">Dirección</th>
+                      <th style="width: 4%">Codigo</th>
+                      <th style="width: 20%">Sucursal</th>
+                      <th style="width: 10%">Telefono</th>
+                      <th style="width: 31%">Dirección</th>
                       <th style="width: 10%">Año</th>
                       <th style="width: 10%">Secuencia</th>
-                      <th style="width: 10%">Acciones</th>
+                      <th style="width: 15%">Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -385,6 +302,13 @@
                       <td class="text-end">{{ contfacturaPorSucursal[sucursal.cod_sucursal]?.contador ?? '-' }}</td>
                       <td>
                         <ng-container *ngIf="modoedicionEmpresa; else accionesConsulta">
+                          <button
+                            class="btn btn-link"
+                            (click)="$event.stopPropagation(); abrirModalEditarSucursal(sucursal)"
+                            title="Editar sucursal"
+                          >
+                            <i class="bi bi-pencil text-secondary"></i>
+                          </button>
                           <button
                             class="btn btn-link"
                             (click)="$event.stopPropagation(); abrirContFacturaModal(sucursal)"
@@ -408,10 +332,56 @@
                 </table>
               </div>
             </div>
+            <!-- ENCF por Empresa -->
+            <div class="row mt-3">
+              <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                  <h6 class="mb-0">ENC-F de la Empresa</h6>
+                  <button *ngIf="modoedicionEmpresa" type="button" class="btn btn-primary btn-sm" (click)="agregarEncfEmpresa()">
+                    <i class="bi bi-plus-circle"></i> Agregar ENCF
+                  </button>
+                </div>
+                <div class="card-body p-0">
+                  <div class="table-responsive" style="max-height: 300px; overflow-y: auto">
+                    <table class="table table-bordered table-hover table-striped table-sm">
+                      <thead class="table-dark">
+                        <tr>
+                          <th style="width: 20%">Tipo</th>
+                          <th style="width: 18%">Rango</th>
+                          <th style="width: 10%">Cantidad</th>
+                          <th style="width: 12%">Contador</th>
+                          <th style="width: 10%">Fecha</th>
+                          <th style="width: 10%">Alerta (%)</th>
+                          <th style="width: 20%">Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr *ngFor="let item of encfList">
+                          <td>{{ tipoDescripcion(item?.tipoencf) }}</td>
+                          <td>{{ item?.desdeencf }} - {{ item?.hastaencf }}</td>
+                          <td class="text-end">{{ item?.cantencf }}</td>
+                          <td class="text-end">{{ item?.countencf }}</td>
+                          <td>{{ item?.fechaencf | date:'dd/MM/yyyy' }}</td>
+                          <td class="text-end">{{ item?.alertaencf }}</td>
+                          <td>
+                            <button class="btn btn-link" (click)="abrirDetalleEncf(item)"><i class="bi bi-eye"></i> Ver</button>
+                        <button *ngIf="modoedicionEmpresa" class="btn btn-link" (click)="abrirEditarEncf(item)"><i class="bi bi-pencil-square"></i> Editar</button>
+                          </td>
+                        </tr>
+                        <tr *ngIf="encfList.length === 0">
+                          <td colspan="7" class="text-center text-muted py-3">No hay registros ENC-F para esta empresa</td>
+                        </tr>
+                      </tbody>
+                </table>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </div>
+  </div>
+</div>
   </div>
 </div>
 
@@ -438,7 +408,7 @@
             <input class="form-control" type="number" name="contador" [(ngModel)]="contfacturaActual.contador" required />
           </div>
         </div>
-        
+
         <div class="modal-footer">
           <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
           <button type="submit" class="btn btn-primary" [disabled]="!contEmpresaForm.valid" data-bs-dismiss="modal">{{contfacturaEditId ? 'Guardar cambios' : 'Agregar'}}</button>
@@ -466,6 +436,126 @@
       <div class="modal-footer">
         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button>
       </div>
+    </div>
+  </div>
+  </div>
+
+<!-- Modal: Crear/Editar Sucursal -->
+<div class="modal fade" id="modalSucursal" tabindex="-1" aria-labelledby="modalSucursalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalSucursalLabel">{{ modoedicionSucursal ? 'Editar Sucursal' : 'Nueva Sucursal' }}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form [formGroup]="formularioSucursal" (ngSubmit)="guardarSucursal()">
+        <div class="modal-body">
+          <div class="mb-2">
+            <label class="form-label">Nombre Sucursal</label>
+            <input type="text" class="form-control" formControlName="nom_sucursal" />
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Teléfono</label>
+            <input type="text" class="form-control" formControlName="tel_sucursal" />
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Dirección</label>
+            <input type="text" class="form-control" formControlName="dir_sucursal" />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary" data-bs-dismiss="modal">{{ modoedicionSucursal ? 'Guardar cambios' : 'Guardar' }}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  </div>
+
+<!-- Modal: Detalle ENCF -->
+<div class="modal fade" id="detalleEncfModal" tabindex="-1" aria-labelledby="detalleEncfModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="detalleEncfModalLabel">Detalle ENC-F</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" *ngIf="encfSeleccionado as e">
+        <div class="mb-2"><strong>Tipo:</strong> {{ tipoDescripcion(e?.tipoencf) }}</div>
+        <div class="mb-2"><strong>Rango:</strong> {{ e?.desdeencf }} - {{ e?.hastaencf }}</div>
+        <div class="mb-2"><strong>Cantidad:</strong> {{ e?.cantencf }}</div>
+        <div class="mb-2"><strong>Contador:</strong> {{ e?.countencf }}</div>
+        <div class="mb-2"><strong>Fecha:</strong> {{ e?.fechaencf | date:'dd/MM/yyyy' }}</div>
+        <div class="mb-2"><strong>Alerta (%):</strong> {{ e?.alertaencf }}</div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button>
+      </div>
+    </div>
+  </div>
+  </div>
+
+<!-- Modal: Editar/Crear ENCF -->
+<div class="modal fade" id="editarEncfModal" tabindex="-1" aria-labelledby="editarEncfModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="editarEncfModalLabel">{{ encfEditId ? 'Editar ENCF' : 'Nuevo ENCF' }}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form [formGroup]="formEncf" (ngSubmit)="guardarEncfEmpresa()">
+        <div class="modal-body">
+          <div class="mb-2">
+            <label class="form-label">Empresa</label>
+            <input class="form-control" type="text" formControlName="codempr" readonly />
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Tipo ENCF</label>
+            <select class="form-select" formControlName="tipoencf" required>
+              <option value="">Seleccione tipo</option>
+              <option value="B01">B01 - Crédito Fiscal</option>
+              <option value="B02">B02 - Consumidor Final</option>
+              <option value="B14">B14 - Gubernamental</option>
+              <option value="E01">E01 - Comprobante Especial</option>
+              <option value="E02">E02 - Regímenes Especiales</option>
+            </select>
+          </div>
+          <div class="row g-2">
+            <div class="col-6">
+              <label class="form-label">Desde</label>
+              <input class="form-control" type="number" formControlName="desdeencf" />
+            </div>
+            <div class="col-6">
+              <label class="form-label">Hasta</label>
+              <input class="form-control" type="number" formControlName="hastaencf" />
+            </div>
+          </div>
+          <div class="row g-2 mt-1">
+            <div class="col-6">
+              <label class="form-label">Cantidad</label>
+              <input class="form-control" type="number" formControlName="cantencf" />
+            </div>
+            <div class="col-6">
+              <label class="form-label">Contador</label>
+              <input class="form-control" type="number" formControlName="countencf" />
+            </div>
+          </div>
+          <div class="row g-2 mt-1">
+            <div class="col-6">
+              <label class="form-label">Fecha</label>
+              <input class="form-control" type="date" formControlName="fechaencf" />
+            </div>
+            <div class="col-6">
+              <label class="form-label">Alerta (%)</label>
+              <input class="form-control" type="number" formControlName="alertaencf" />
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary" data-bs-dismiss="modal">{{ encfEditId ? 'Guardar cambios' : 'Guardar' }}</button>
+        </div>
+      </form>
     </div>
   </div>
   </div>

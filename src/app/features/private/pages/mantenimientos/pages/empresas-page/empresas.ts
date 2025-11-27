@@ -6,6 +6,7 @@ import { ServicioEmpresa } from 'src/app/core/services/mantenimientos/empresas/e
 import { EmpresaModelData, SucursalesData } from 'src/app/core/services/mantenimientos/empresas';
 import { ServicioSucursal } from 'src/app/core/services/mantenimientos/sucursal/sucursal.service';
 import { ServicioContFactura } from 'src/app/core/services/mantenimientos/contfactura/contfactura.service';
+import { ServicioEncf } from 'src/app/core/services/mantenimientos/encf/encf.service';
 declare var $: any;
 
 
@@ -48,15 +49,22 @@ export class Empresas implements OnInit {
   contfacturaPorSucursal: Record<number, { ano: number; contador: number } | null> = {};
   sucursalDetalle: SucursalesData | null = null;
   detalleCont: { ano: number; contador: number } | null = null;
+  // ENCF por empresa
+  encfList: any[] = [];
+  encfSeleccionado: any | null = null;
+  encfEditId: number | null = null;
+  formEncf!: FormGroup;
 
   constructor(
     private fb: FormBuilder,
     private servicioEmpresa: ServicioEmpresa,
     private servicioSucursal: ServicioSucursal,
     private contSrv: ServicioContFactura,
+    private servicioEncf: ServicioEncf,
   ) {
     this.crearFormularioEmpresa();
     this.crearformularioSucursal();
+    this.crearFormularioEncf();
     // this.descripcionBuscar.pipe(
     //   debounceTime(500),
     //   distinctUntilChanged(),
@@ -125,6 +133,20 @@ export class Empresas implements OnInit {
     });
   }
 
+  private crearFormularioEncf() {
+    this.formEncf = this.fb.group({
+      id: [null],
+      codempr: ['', Validators.required],
+      tipoencf: ['', Validators.required],
+      desdeencf: [0, [Validators.min(0)]],
+      hastaencf: [0, [Validators.min(0)]],
+      cantencf: [0, [Validators.min(0)]],
+      countencf: [0, [Validators.min(0)]],
+      fechaencf: ['', Validators.required],
+      alertaencf: [0, [Validators.min(0)]],
+    });
+  }
+
   seleccionarEmpresa(empresas: any) { this.selectedEmpresa = Empresas; }
   ngOnInit(): void { this.buscarTodasEmpresa(1); }
 
@@ -186,10 +208,12 @@ export class Empresas implements OnInit {
     this.tituloModalEmpresa = 'Editando Empresa';
     $('#modalempresa').modal('show');
     this.habilitarFormulario = true;
-    this.activaformularioSucursal = true; // permitir agregar sucursales también en edición
+    this.activaformularioSucursal = false; // gestionar sucursales en modal independiente
     this.activatablaSucursal = true;
     this.sucursalList = Empresa.sucursales || [];
     this.cargarContadoresSucursales();
+    // Cargar ENCF de la empresa
+    this.cargarEncfEmpresa(this.empresaid);
     // Refrescar datos desde backend para asegurar sucursales
     this.servicioEmpresa.buscarEmpres(this.empresaid).subscribe({
       next: (resp) => {
@@ -200,12 +224,14 @@ export class Empresas implements OnInit {
           this.sucursalList = (empresaFull.sucursales || empresaFull.sucursal || []);
           this.formularioEmpresa.patchValue(empresaFull);
           this.cargarContadoresSucursales();
+          this.cargarEncfEmpresa(this.empresaid);
         }
       },
       error: () => {
         // Mantener lo que vino en la lista si falla
         this.sucursalList = Empresa.sucursales || [];
         this.cargarContadoresSucursales();
+        this.cargarEncfEmpresa(this.empresaid);
       }
     });
   }
@@ -222,12 +248,14 @@ export class Empresas implements OnInit {
     this.habilitarFormulario = true;
     this.modoconsultaEmpresa = true;
     this.formularioEmpresa.disable();
-    // Permitir agregar sucursales desde el modal de consulta
+    // Alta/edición de sucursales se hará con modal aparte
     this.empresaid = Empresa.cod_empre;
-    this.activaformularioSucursal = true;
+    this.activaformularioSucursal = false;
     this.activatablaSucursal = true;
     this.sucursalList = Empresa.sucursales || [];
     this.cargarContadoresSucursales();
+    // Cargar ENCF de la empresa para la consulta
+    this.cargarEncfEmpresa(this.empresaid);
     // Cargar sucursales desde backend para consulta
     this.servicioEmpresa.buscarEmpres(this.empresaid).subscribe({
       next: (resp) => {
@@ -239,12 +267,14 @@ export class Empresas implements OnInit {
           // No habilitamos el formulario empresa en consulta, solo refrescamos datos
           this.formularioEmpresa.patchValue(empresaFull);
           this.cargarContadoresSucursales();
+          this.cargarEncfEmpresa(this.empresaid);
         }
       },
       error: () => {
         // Si falla, dejamos lo que venía de la lista
         this.sucursalList = Empresa.sucursales || [];
         this.cargarContadoresSucursales();
+        this.cargarEncfEmpresa(this.empresaid);
       }
     });
   };
@@ -428,6 +458,34 @@ export class Empresas implements OnInit {
     })
   }
 
+  // ===================== Modal de Sucursal =====================
+  private sucursalEditId: number | null = null;
+
+  abrirModalNuevaSucursal(): void {
+    const cod = this.empresaid || this.formularioEmpresa.getRawValue()?.cod_empre;
+    this.modoedicionSucursal = false;
+    this.sucursalEditId = null;
+    this.formularioSucursal.reset({
+      cod_empre: cod || '',
+      nom_sucursal: '',
+      tel_sucursal: '',
+      dir_sucursal: '',
+    });
+    $('#modalSucursal').modal('show');
+  }
+
+  abrirModalEditarSucursal(sucursal: SucursalesData): void {
+    this.modoedicionSucursal = true;
+    this.sucursalEditId = Number(sucursal?.cod_sucursal) || null;
+    this.formularioSucursal.reset({
+      cod_empre: sucursal.cod_empre,
+      nom_sucursal: sucursal.nom_sucursal,
+      tel_sucursal: sucursal.tel_sucursal,
+      dir_sucursal: sucursal.dir_sucursal,
+    });
+    $('#modalSucursal').modal('show');
+  }
+
   private refrescarSucursalesModal(): void {
     const cod = this.empresaid || this.formularioEmpresa.getRawValue()?.cod_empre;
     if (!cod) { return; }
@@ -439,6 +497,7 @@ export class Empresas implements OnInit {
           // Backend puede devolver 'sucursales' o 'sucursal'
           this.sucursalList = (empresaFull.sucursales || empresaFull.sucursal || []);
           this.cargarContadoresSucursales();
+          this.cargarEncfEmpresa(cod);
         }
       }
     });
@@ -478,6 +537,105 @@ export class Empresas implements OnInit {
     });
   }
 
+  // ===================== ENCF Empresa =====================
+  private cargarEncfEmpresa(codEmpresa: string | undefined): void {
+    const cod = String(codEmpresa || this.empresaid || this.formularioEmpresa.getRawValue()?.cod_empre || '').trim();
+    if (!cod) { this.encfList = []; return; }
+    this.servicioEncf.obtenerEncfPorEmpresaId(cod).subscribe({
+      next: (resp) => {
+        const data = Array.isArray(resp?.data) ? resp.data : (Array.isArray(resp) ? resp : []);
+        this.encfList = data || [];
+      },
+      error: () => { this.encfList = []; }
+    });
+  }
+
+  tipoDescripcion(tipo?: string | null): string {
+    const t = String(tipo || '').toUpperCase();
+    const mapa: Record<string, string> = {
+      'B01': 'Crédito Fiscal',
+      'B02': 'Consumidor Final',
+      'B14': 'Gubernamental',
+      'E01': 'Comprobante Especial',
+      'E02': 'Regímenes Especiales',
+    };
+    return mapa[t] || t || '-';
+  }
+
+  abrirDetalleEncf(item: any): void {
+    this.encfSeleccionado = item || null;
+    $('#detalleEncfModal').modal('show');
+  }
+
+  abrirEditarEncf(item: any): void {
+    this.encfEditId = Number(item?.id) || null;
+    const cod = this.empresaid || this.formularioEmpresa.getRawValue()?.cod_empre;
+    this.formEncf.reset({
+      id: this.encfEditId,
+      codempr: cod || item?.codempr || '',
+      tipoencf: item?.tipoencf || '',
+      desdeencf: Number(item?.desdeencf || 0),
+      hastaencf: Number(item?.hastaencf || 0),
+      cantencf: Number(item?.cantencf || 0),
+      countencf: Number(item?.countencf || 0),
+      fechaencf: (item?.fechaencf ? (new Date(item.fechaencf)).toISOString().substring(0,10) : ''),
+      alertaencf: Number(item?.alertaencf || 0),
+    });
+    this.formEncf.get('codempr')?.disable();
+    $('#editarEncfModal').modal('show');
+  }
+
+  agregarEncfEmpresa(): void {
+    const cod = this.empresaid || this.formularioEmpresa.getRawValue()?.cod_empre;
+    this.encfEditId = null;
+    this.formEncf.reset({
+      id: null,
+      codempr: cod || '',
+      tipoencf: '',
+      desdeencf: 0,
+      hastaencf: 0,
+      cantencf: 0,
+      countencf: 0,
+      fechaencf: new Date().toISOString().substring(0,10),
+      alertaencf: 0,
+    });
+    this.formEncf.get('codempr')?.disable();
+    $('#editarEncfModal').modal('show');
+  }
+
+  guardarEncfEmpresa(): void {
+    const raw = this.formEncf.getRawValue();
+    const payload = {
+      codempr: String(this.empresaid || raw.codempr || '').trim(),
+      cantencf: Number(raw.cantencf || 0),
+      countencf: Number(raw.countencf || 0),
+      alertaencf: Number(raw.alertaencf || 0),
+      fechaencf: raw.fechaencf,
+      hastaencf: Number(raw.hastaencf || 0),
+      tipoencf: String(raw.tipoencf || '').trim(),
+      desdeencf: Number(raw.desdeencf || 0),
+    };
+    if (!payload.codempr || !payload.tipoencf || !payload.fechaencf) {
+      Swal.fire({ title: 'Datos incompletos', text: 'Complete empresa, tipo y fecha.', icon: 'warning' });
+      return;
+    }
+    const id = Number(raw.id || this.encfEditId);
+    const req$ = (!isNaN(id) && id > 0)
+      ? this.servicioEncf.editarEncf(id, payload)
+      : this.servicioEncf.crearEncf(payload);
+    req$.subscribe({
+      next: () => {
+        Swal.fire({ title: 'Excelente!', text: (!isNaN(id) && id > 0) ? 'ENC-F actualizado.' : 'ENC-F creado.', icon: 'success', timer: 2000, showConfirmButton: false });
+        this.cargarEncfEmpresa(payload.codempr);
+        $('#editarEncfModal').modal('hide');
+      },
+      error: (err) => {
+        const msg = (err?.error?.message || err?.message || 'Error guardando ENC-F').toString();
+        Swal.fire({ title: 'Error', text: msg, icon: 'error' });
+      }
+    });
+  }
+
 
   descripcionEntra(event: Event) {
     const inputElement = event.target as HTMLInputElement;
@@ -493,11 +651,16 @@ export class Empresas implements OnInit {
     const codEmpre = datosEmpresa?.cod_empre || this.empresaid;
     this.formularioSucursal.patchValue({ cod_empre: codEmpre });
     if (this.formularioSucursal.valid && codEmpre) {
-      this.servicioSucursal.guardarSucursal(this.formularioSucursal.value).subscribe({
+      const payload = this.formularioSucursal.value;
+      const editId = this.sucursalEditId;
+      const req$ = (editId && !isNaN(editId))
+        ? this.servicioSucursal.editaSucursal(String(editId), payload)
+        : this.servicioSucursal.guardarSucursal(payload);
+      req$.subscribe({
         next: () => {
           Swal.fire({
             title: "Excelente!",
-            text: "Sucursal Guardada correctamente.",
+            text: editId ? "Sucursal actualizada correctamente." : "Sucursal guardada correctamente.",
             icon: 'success',
             timer: 3000,
             showConfirmButton: false,
@@ -508,6 +671,7 @@ export class Empresas implements OnInit {
           this.crearformularioSucursal();
           this.formularioEmpresa.enable();
           this.activaformularioSucursal = false;
+          $('#modalSucursal').modal('hide');
         },
         error: (err) => {
           const msg = (err?.error?.message || err?.message || 'Error al guardar la sucursal').toString();

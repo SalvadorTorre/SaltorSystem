@@ -33,9 +33,15 @@ export interface ModeloUsuarioData {
   metaVenta: string;
   correo: string;
   claveCorreo: string;
-  despacho: boolean;
+  // Nuevos campos opcionales según requerimiento del modelo Usuario
+  idtipoUsuario?: number;
+  sucursalid?: number;
+  idpermiso?: number;
+  cod_empre?: string;
+  despacho?: boolean;
   empresa: string;
   sucursal: number;
   empresaInfo: any;
   sucursalInfo: any;
 }
+

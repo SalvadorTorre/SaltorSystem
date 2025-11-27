@@ -78,6 +78,10 @@ const routes: Routes = [
           path:"contfactura",
           loadChildren: () => import('./pages/configuracion/contfactura/contfactura-modulo').then(m => m.ContFacturaModulo)
         },
+        {
+          path:"fentrega",
+          loadChildren: () => import('./pages/fentrega-page/fentrega-modulo').then(m => m.ModuloFentrega)
+        },
       ]
     }
   ];

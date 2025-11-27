@@ -1,19 +1,19 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { Usuario } from './usuario';
-import { RutaUsuario } from './usuario-ruta';
+import { Fentrega } from './fentrega';
+import { RutaFentrega } from './fentrega-ruta';
 
 @NgModule({
-  declarations: [Usuario],
+  declarations: [Fentrega],
   imports: [
     CommonModule,
-    RutaUsuario,
+    RutaFentrega,
     ReactiveFormsModule,
     FormsModule,
   ],
   providers: [],
-  bootstrap: [Usuario]
+  bootstrap: [Fentrega]
 })
-export class ModuloUsuario { }
+export class ModuloFentrega { }
 

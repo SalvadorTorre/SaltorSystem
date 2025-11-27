@@ -35,7 +35,7 @@ export class ServicioEncf {
   }
 
   obtenerEncfPorEmpresaId(codempr: string): Observable<any> {
-    return this.http.GetRequest<any>(`/encf/${codempr}`);
+    return this.http.GetRequest<any>(`/encf-empresa/${codempr}`);
   }
 
   obtenerEncfPorTipo(tipoencf: string): Observable<any> {

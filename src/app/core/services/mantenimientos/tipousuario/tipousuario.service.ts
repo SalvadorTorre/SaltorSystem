@@ -34,9 +34,11 @@ export class ServicioTipousuario {
     return this.http.GetRequest<any>(`/tipousuario/${id}`);
   }
 
-  // Cuando el backend incluye los detalles de dtipousuario bajo el mismo controlador
+  // Crear detalle dtipousuario: el backend actual espera POST /dtipousuario
+  // con el idtipousuario dentro del body
   agregarDetalle(idtipousuario: number, detalle: any): Observable<any> {
-    return this.http.PostRequest<any, any>(`/tipousuario/${idtipousuario}/dtipousuario`, detalle);
+    const payload = { ...detalle, idtipousuario };
+    return this.http.PostRequest<any, any>(`/dtipousuario`, payload);
   }
 
   editarDetalle(idDetalle: number, detalle: any): Observable<any> {

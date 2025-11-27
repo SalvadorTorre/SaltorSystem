@@ -48,7 +48,6 @@ import {
   ModeloInventario,
   ModeloInventarioData,
 } from 'src/app/core/services/mantenimientos/inventario';
-import { Usuario } from '../mantenimientos/pages/usuario-page/usuario';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 declare var $: any;

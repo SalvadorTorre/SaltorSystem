@@ -20,7 +20,6 @@ import { ModeloSector, ModeloSectorData } from 'src/app/core/services/mantenimie
 import { ModeloFpago, ModeloFpagoData } from 'src/app/core/services/mantenimientos/fpago';
 import { ServicioFpago } from 'src/app/core/services/mantenimientos/fpago/fpago.service';
 import { ModeloInventario, ModeloInventarioData } from 'src/app/core/services/mantenimientos/inventario';
-import { Usuario } from '../mantenimientos/pages/usuario-page/usuario';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { disableDebugTools } from '@angular/platform-browser';

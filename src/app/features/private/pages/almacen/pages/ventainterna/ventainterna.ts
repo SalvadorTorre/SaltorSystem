@@ -14,7 +14,6 @@ import { ModeloCliente, ModeloClienteData } from 'src/app/core/services/mantenim
 import { VentainternaDetalleModel, interfaceDetalleModel } from 'src/app/core/services/almacen/ventainterna/ventainterna';
 import { ServicioInventario } from 'src/app/core/services/mantenimientos/inventario/inventario.service';
 import { ModeloInventario, ModeloInventarioData } from 'src/app/core/services/mantenimientos/inventario';
-import { Usuario } from './../../../mantenimientos/pages/usuario-page/usuario';
 import { Inventario } from './../../../mantenimientos/pages/inventario-page/inventario';
 declare var $: any;
 @Component({
