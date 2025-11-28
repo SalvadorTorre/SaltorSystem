@@ -20,9 +20,12 @@
               "zone.js"
             ],
             "tsConfig": "tsconfig.app.json",
+            "serviceWorker": true,
+            "ngswConfigPath": "ngsw-config.json",
             "assets": [
               "src/favicon.ico",
-              "src/assets"
+              "src/assets",
+              "src/manifest.webmanifest"
             ],
             "styles": [
               "node_modules/bootstrap/dist/css/bootstrap.min.css",

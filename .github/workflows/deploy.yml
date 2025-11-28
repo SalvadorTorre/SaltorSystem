@@ -1,0 +1,36 @@
+name: Deploy to GitHub Pages
+
+on:
+push:
+branches:
+- main
+workflow_dispatch: {}
+
+permissions:
+contents: write
+
+jobs:
+build-deploy:
+runs-on: ubuntu-latest
+steps:
+- uses: actions/checkout@v4
+- uses: actions/setup-node@v4
+with:
+node-version: '18'
+cache: 'npm'
+- name: Install dependencies
+  run: npm ci
+- name: Set Angular project name
+  run: echo "PROJECT_NAME=$(node -p 'require(\"./angular.json\").defaultProject || Object.keys(require(\"./angular.json\").projects)[0]')" >> $GITHUB_ENV
+- name: Build Angular app
+  run: npx ng build --configuration production --base-href "/${{ github.event.repository.name }}/"
+- name: Add 404 fallback
+  run: cp "dist/${{ env.PROJECT_NAME }}/index.html" "dist/${{ env.PROJECT_NAME }}/404.html"
+- uses: peaceiris/actions-gh-pages@v3
+with:
+github_token: ${{ secrets.GITHUB_TOKEN }}
+publish_dir: dist/${{ env.PROJECT_NAME }}
+publish_branch: gh-pages
+user_name: github-actions[bot]
+user_email: 41898282+github-actions[bot]@users.noreply.github.com
+force_orphan: true
