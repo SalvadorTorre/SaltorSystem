@@ -7,7 +7,8 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-     "dev": "cross-env PORT=3390 npx kill-port 3390 && nodemon src/index.js"
+     "dev": "cross-env PORT=3390 npx kill-port 3390 && nodemon src/index.js",
+     "deploy:ghp": "npm run build && gh-pages -d dist/saltor-system"
   },
   "private": true,
   "dependencies": {
@@ -18,8 +19,8 @@
     "@angular/forms": "^16.2.0",
     "@angular/platform-browser": "^16.2.0",
     "@angular/platform-browser-dynamic": "^16.2.0",
-    "@angular/service-worker": "^16.2.12",
     "@angular/router": "^16.2.0",
+    "@angular/service-worker": "^16.2.12",
     "@popperjs/core": "^2.11.8",
     "bootstrap": "^5.3.7",
     "bootstrap-icons": "^1.11.3",
@@ -42,6 +43,7 @@
     "@angular/compiler-cli": "^16.2.0",
     "@types/jasmine": "~4.3.0",
     "cross-env": "^10.1.0",
+    "gh-pages": "^6.3.0",
     "jasmine-core": "~4.6.0",
     "karma": "~6.4.0",
     "karma-chrome-launcher": "~3.2.0",
