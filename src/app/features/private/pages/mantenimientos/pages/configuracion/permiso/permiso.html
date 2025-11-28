@@ -1,0 +1,111 @@
+<div class="container-fluid">
+  <div class="card shadow-sm">
+    <div class="card-header bg-primary text-white d-flex align-items-center">
+      <i class="bi bi-shield-lock me-2"></i>
+      <h5 class="mb-0">Configuración - Permisos</h5>
+    </div>
+    <div class="card-body">
+      <div class="row g-3 mb-3">
+        <div class="col-12 col-md-6">
+          <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-search"></i></span>
+            <input type="text" class="form-control" placeholder="Buscar permiso..." [(ngModel)]="filtro">
+          </div>
+        </div>
+        <div class="col-12 col-md-6 text-md-end">
+          <button class="btn btn-primary" (click)="abrirModalNuevo()" data-bs-toggle="modal" data-bs-target="#permisoModal">
+            <i class="bi bi-plus-circle me-1"></i> Nuevo Permiso
+          </button>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-sm table-hover">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Usuario</th>
+              <th>Módulo</th>
+              <th>Acceso</th>
+              <th>Lectura</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let p of listaFiltrada; let i = index">
+              <td>{{ p.idpermiso }}</td>
+              <td>
+                {{ nombreUsuario(p.idusuario) }}
+                <small class="text-muted">({{ p.idusuario }})</small>
+              </td>
+              <td>{{ descModulo(p.idmodulo) }}</td>
+              <td>{{ p.acceso }}</td>
+              <td>{{ p.lectura }}</td>
+              <td>
+                <button class="btn btn-primary btn-sm me-2" (click)="abrirModalEditar(p, i)" data-bs-toggle="modal" data-bs-target="#permisoModal" title="Editar permiso" aria-label="Editar permiso">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn btn-danger btn-sm" (click)="eliminarPermiso(p)" title="Eliminar permiso" aria-label="Eliminar permiso">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- Modal: Crear/Editar Permiso -->
+<div class="modal fade" id="permisoModal" tabindex="-1" aria-labelledby="permisoModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="permisoModalLabel">{{ editIndex >= 0 ? 'Editar permiso' : 'Nuevo permiso' }}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form #permisoForm="ngForm" (ngSubmit)="guardarPermiso(permisoForm)">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Usuario</label>
+            <select class="form-select" name="idusuario" [(ngModel)]="actual.idusuario" required>
+              <option [ngValue]="''">Seleccione un usuario</option>
+              <option *ngFor="let u of usuarios" [ngValue]="u.codUsuario">{{ u.nombreUsuario }} ({{ u.idUsuario }})</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Módulo</label>
+            <select class="form-select" name="idmodulo" [(ngModel)]="actual.idmodulo" required>
+              <option [ngValue]="undefined">Seleccione un módulo</option>
+              <option *ngFor="let m of modulos" [ngValue]="m.idmodulo">{{ m.descmodulo }}</option>
+            </select>
+          </div>
+
+          <div class="row g-3">
+            <div class="col-6">
+              <label class="form-label">Acceso</label>
+              <select class="form-select" name="acceso" [(ngModel)]="actual.acceso" required>
+                <option value="S">Sí</option>
+                <option value="N">No</option>
+              </select>
+            </div>
+            <div class="col-6">
+              <label class="form-label">Lectura</label>
+              <select class="form-select" name="lectura" [(ngModel)]="actual.lectura" required>
+                <option value="S">Sí</option>
+                <option value="N">No</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary" [disabled]="!permisoForm.valid" data-bs-dismiss="modal">
+            <i class="bi bi-save me-1"></i> {{ editIndex >= 0 ? 'Guardar cambios' : 'Agregar' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

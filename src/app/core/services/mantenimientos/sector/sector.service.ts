@@ -14,9 +14,22 @@ export class ServicioSector {
   }
 
   editarSector(se_codSect:number,sector:ModeloSector): Observable<any>{
-    return this.http.PutRequest<any,any>(`/zonas/${se_codSect}`,sector);
+    return this.http.PutRequest<any,any>(`/sector/${se_codSect}`,sector);
   }
-  obtenerTodasSector(): Observable<ModeloSector>{
+  eliminarSector(se_codSect:number): Observable<any>{
+    return this.http.DeleteRequest(`/sector/${se_codSect}`, "");
+  }
+
+  buscarTodosSector(pageIndex: number, pageSize: number,   descripcion?: string): Observable<any> {
+    let url = `/sector?page=${pageIndex}&limit=${pageSize}`;
+       if (descripcion) {
+      url += `&descripcion=${descripcion}`;
+    }
+console.log(url);
+    return this.http.GetRequest<any>(url);
+  }
+
+  obtenerTodosSector(): Observable<ModeloSector>{
     return this.http.GetRequest<ModeloSector>("/sector");
   }
 }

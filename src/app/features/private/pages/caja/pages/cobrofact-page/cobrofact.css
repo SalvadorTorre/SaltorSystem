@@ -1,0 +1,31 @@
+.sticky-header th {
+  position: sticky;
+  top: 0;
+  background-color: #343a40;
+  /* color de fondo oscuro como table-dark */
+  color: white;
+  z-index: 10;
+}
+
+/* .selected-row {
+  background-color: #d0e7ff !important;
+  /* Verde claro
+color: #000;
+}*/
+
+*/ .selected-row td {
+  background-color: #f0b27a !important;
+  color: black;
+}
+
+.input-destacado {
+  font-weight: bold;
+  /* Negrita */
+  font-size: 1.2rem;
+  /* Tamaño más grande, puedes subirlo si quieres */
+}
+
+.is-invalid {
+  border-color: #dc3545 !important;
+  box-shadow: 0 0 0 0.15rem rgba(220, 53, 69, 0.25);
+}

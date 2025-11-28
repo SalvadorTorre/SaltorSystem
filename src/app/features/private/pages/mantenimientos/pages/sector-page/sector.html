@@ -1,73 +1,128 @@
-<div class="card" style="height: 80vh">
+<div class="card" style="height: 87vh">
   <div class="card-header">
     <h1>Sector</h1>
   </div>
   <div class="card-body">
     <!-- buscador -->
-
     <div class="row">
-      <div class="col-2">
-        <label>Codigo Sector</label>
+      <div class="col-3">
+        <label for="">Buscar Descripción</label>
         <input
+          [(ngModel)]="txtdescripcion"
           type="text"
-          disabled
+          placeholder="Digite la descripción..."
           class="form-control"
-          [(ngModel)]="sectorcodigo"
         />
       </div>
       <div class="col-2">
-        <label>Descripcion Sector</label>
-        <input
-          type="text"
-          class="form-control"
-          [(ngModel)]="sectordescripcion"
-        />
-      </div>
-      <div class="col-2">
-        <label for="se_codZona">Zona</label>
-        <select formControlName="se_codZona" class="form-control">
-          <option disabled selected>Selecione una Zona</option>
-          <option *ngFor="let zona of zonaList" [value]="zona.zo_codZona">
-            {{zona.zo_descrip}}
-          </option>
-        </select>
-      </div>
-      <div class="col-2">
-        <button class="btn btn-primary mt-4" (click)="gualdarSector()">
+        <button class="btn btn-primary mt-4" (click)="buscarTodosSector(1)">
+          Buscar
+        </button>
+        <button class="btn btn-primary mt-4 ms-2" (click)="nuevoSector()">
           Nuevo Sector
         </button>
       </div>
     </div>
-
-    <!-- fin buscador -->
-
     <br />
-    <!--   Grid -->
-    <div class="table-responsive">
+
+    <!-- Grid -->
+    <div class="table-responsive" style="max-height: 400px; overflow-y: auto">
       <table class="table table-bordered table-hover table-striped table-sm">
         <thead class="table-dark">
           <tr>
-            <th>Codigo</th>
-            <th>Descripcion</th>
+            <th style="width: 10%">Código</th>
+            <th style="width: 50%">Descripción</th>
+            <th style="width: 20%">Zona</th>
             <th></th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let sector of sectorList">
-            <td>{{sector.se_codSect}}</td>
-            <td>{{sector.se_desSect}}</td>
+          <tr
+            *ngFor="let sector of sectorList"
+            [ngClass]="{'selected':sector === selectedSector}"
+            (click)="seleccionarSector(sector)"
+          >
+            <td style="width: 10%">{{sector.se_codSect}}</td>
+            <td style="width: 50%">{{sector.se_desSect}}</td>
+            <td style="width: 20%">{{sector.se_codZona}}</td>
             <td>
-              <button class="btn btn-link" (click)="editarSector(sector)">
-                <i class="bi bi-pencil text-warning"></i>
-              </button>
-              &nbsp;
-              <button class="btn btn-link">
-                <i class="bi bi-trash text-danger"></i>
-              </button>
+              <i
+                (click)="editarSector(sector)"
+                class="bi bi-pencil text-primary"
+                style="padding: 10px"
+              >
+              </i>
+              <i
+                class="bi bi-trash text-danger"
+                style="padding: 10px"
+                (click)="eliminarSector(sector.se_codSect)"
+              ></i>
+              <i
+                (click)="consultarSector(sector)"
+                class="bi bi-card-list text-success"
+                style="padding: 10px"
+              >
+              </i>
             </td>
           </tr>
         </tbody>
       </table>
+    </div>
+
+    <!-- Modal Sector -->
+    <div
+      class="modal fade"
+      id="modalsector"
+      tabindex="-1"
+      aria-labelledby="modalSectorLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h1 class="modal-title fs-5" id="modalSectorLabel">
+              {{tituloModalSector}}
+            </h1>
+            <button
+              type="button"
+              class="btn-close"
+              (click)="cerrarModalSector()"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <div *ngIf="habilitarFormiarioSector" class="mb-3">
+              <form
+                [formGroup]="formularioSector"
+                (ngSubmit)="guardarSector()"
+              >
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="se_desSect">Descripción</label>
+                    <input formControlName="se_desSect" class="form-control" />
+                  </div>
+                  <div class="form-group">
+                    <label for="se_codZona">Zona</label>
+                    <select formControlName="se_codZona" class="form-select">
+                      <option [ngValue]="null">Seleccione una zona</option>
+                      <option *ngFor="let z of zonasList" [ngValue]="z.zo_codZona">
+                        {{z.zo_codZona}} - {{z.zo_descrip}}
+                      </option>
+                    </select>
+                  </div>
+                </div>
+                <button
+                  type="submit"
+                  *ngIf="!modoconsultaSector"
+                  class="btn btn-success"
+                >
+                  {{modoedicionSector ? "Editar" : "Guardar"}}
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>

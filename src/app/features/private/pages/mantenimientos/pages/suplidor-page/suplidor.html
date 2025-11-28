@@ -1,4 +1,4 @@
-<div class="card" style="height: 80vh">
+<div class="card" style="height: 87vh">
   <div class="card-header">
     <h1>Suplidor</h1>
   </div>
@@ -8,19 +8,21 @@
       <div class="col-2">
         <label for="">Buscar Codigo</label>
         <input
+          [(ngModel)]="txtcodigo"
           type="text"
-          placeholder="Digite codigo"
+          placeholder="Digite el Codigo"
           class="form-control"
-          [disabled]="habilitarFormiarioSuplidor"
+          (input)="codigoEntra($event)"
         />
       </div>
       <div class="col-3">
         <label for="">Buscar Nombre</label>
         <input
+          [(ngModel)]="txtdescripcion"
           type="text"
           placeholder="Digite el Nombre..."
           class="form-control"
-          [disabled]="habilitarFormiarioSuplidor"
+          (input)="descripcionEntra($event)"
         />
       </div>
       <div class="col-2">
@@ -51,38 +53,79 @@
             [ngClass]="{'selected':suplidor === selectedSuplidor}"
             (click)="seleccionarSuplidor(suplidor)"
           >
-            <td>{{suplidor.su_codSupl}}</td>
-            <td>{{suplidor.su_nomSupl}}</td>
-            <td>{{suplidor.su_telSupl}}</td>
-            <td>{{suplidor.su_rncSupl}}</td>
+            <td style="width: 10%">{{suplidor.su_codSupl}}</td>
+            <td style="width: 40%">{{suplidor.su_nomSupl}}</td>
+            <td style="width: 20%">{{suplidor.su_telSupl}}</td>
+            <td style="width: 15%">{{suplidor.su_rncSupl}}</td>
             <td>
-              <button
-                class="btn btn-link"
-                (click)="editarSuplidor(suplidor) ; $event.stopPropagation()"
-              >
-                <i class="bi bi-pencil text-primary"></i>
-              </button>
-              &nbsp;
-              <button
-                class="btn btn-link"
-                (click)="eliminarSuplidor(suplidor); $event.stopPropagation()"
-              >
-                <i class="bi bi-trash text-danger"></i>
-              </button>
-              &nbsp;
-              <button
-                class="btn btn-link"
-                (click)="consultarSuplidor(suplidor); $event.stopPropagation()"
-              >
-                <i class="bi bi-card-list text-success"></i>
-              </button>
+           
+              <i
+              (click)="editarSuplidor(suplidor)"
+              class="bi bi-pencil text-primary"
+              style="padding: 10px"
+            >
+            </i>
+            <i
+              class="bi bi-trash text-danger"
+              style="padding: 10px"
+              (click)="eliminarSuplidor(suplidor.su_codSupl)"
+            ></i>
+            <i
+              (click)="consultarSuplidor(suplidor)"
+              class="bi bi-card-list text-success"
+              style="padding: 10px"
+            >
+            </i>
+           
             </td>
           </tr>
         </tbody>
       </table>
     </div>
 
-    <br />
+    <nav aria-label="Page navigation">
+      <ul class="pagination justify-content-center">
+        <li class="page-item" [class.disabled]="currentPage === 1">
+          <a class="page-link" (click)="changePage(1)" aria-label="First">
+            <span aria-hidden="true">&laquo;&laquo;</span>
+          </a>
+        </li>
+        <li class="page-item" [class.disabled]="currentPage === 1">
+          <a
+            class="page-link"
+            (click)="changePage(currentPage - 1)"
+            aria-label="Previous"
+          >
+            <span aria-hidden="true">&laquo;</span>
+          </a>
+        </li>
+        <li
+          *ngFor="let page of pages"
+          class="page-item"
+          [class.active]="currentPage === page"
+        >
+          <a class="page-link" (click)="changePage(page)">{{ page }}</a>
+        </li>
+        <li class="page-item" [class.disabled]="currentPage === totalPages">
+          <a
+            class="page-link"
+            (click)="changePage(currentPage + 1)"
+            aria-label="Next"
+          >
+            <span aria-hidden="true">&raquo;</span>
+          </a>
+        </li>
+        <li class="page-item" [class.disabled]="currentPage === totalPages">
+          <a
+            class="page-link"
+            (click)="changePage(totalPages)"
+            aria-label="Last"
+          >
+            <span aria-hidden="true">&raquo;&raquo;</span>
+          </a>
+        </li>
+      </ul>
+    </nav>
 
     <!-- Formulario de cliente -->
     <div
@@ -115,7 +158,7 @@
                   <div class="form-group">
                     <label for="su_rncSupl"> Rnc</label>
                     <input
-                      type="number"
+                      type="text"
                       formControlName="su_rncSupl"
                       class="form-control"
                     />

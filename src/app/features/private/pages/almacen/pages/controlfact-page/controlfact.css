@@ -1,0 +1,7 @@
+.active-row {
+  background-color: #5793d3 !important; /* El color que prefieras */
+}
+/* Cambia el color de fondo de la fila cuando el cursor está encima */
+#miTabla tr:hover {
+  background-color: #e6f7ff;
+}

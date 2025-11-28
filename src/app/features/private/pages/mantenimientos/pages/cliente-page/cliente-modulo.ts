@@ -8,13 +8,15 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 
 @NgModule({
   declarations: [
-    Cliente
+    Cliente,
   ],
   imports: [
     CommonModule,
     RutaCliente,
     ReactiveFormsModule,
+    FormsModule,
   ],
+
   providers: [],
   bootstrap: [Cliente]
 })

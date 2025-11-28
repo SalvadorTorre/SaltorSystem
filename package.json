@@ -6,7 +6,8 @@
     "start": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+     "dev": "cross-env PORT=3390 npx kill-port 3390 && nodemon src/index.js"
   },
   "private": true,
   "dependencies": {
@@ -17,27 +18,37 @@
     "@angular/forms": "^16.2.0",
     "@angular/platform-browser": "^16.2.0",
     "@angular/platform-browser-dynamic": "^16.2.0",
+    "@angular/service-worker": "^16.2.12",
     "@angular/router": "^16.2.0",
     "@popperjs/core": "^2.11.8",
-    "bootstrap": "^5.3.3",
+    "bootstrap": "^5.3.7",
     "bootstrap-icons": "^1.11.3",
+    "html2canvas": "^1.4.1",
+    "html2pdf.js": "^0.10.3",
+    "inputmask": "^5.0.9",
     "jquery": "^3.7.1",
+    "jspdf": "^2.5.2",
+    "jspdf-autotable": "^3.8.4",
+    "ngx-mask": "^18.0.0",
+    "pdfmake": "^0.2.20",
     "rxjs": "~7.8.0",
-    "sweetalert2": "^11.10.8",
+    "sweetalert2": "^11.6.13",
     "tslib": "^2.3.0",
     "zone.js": "~0.13.0"
   },
   "devDependencies": {
-    "@angular-devkit/build-angular": "^16.2.14",
+    "@angular-devkit/build-angular": "^16.0.6",
     "@angular/cli": "^16.2.14",
     "@angular/compiler-cli": "^16.2.0",
     "@types/jasmine": "~4.3.0",
+    "cross-env": "^10.1.0",
     "jasmine-core": "~4.6.0",
     "karma": "~6.4.0",
     "karma-chrome-launcher": "~3.2.0",
     "karma-coverage": "~2.2.0",
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.1.0",
+    "kill-port": "^2.0.1",
     "typescript": "~5.1.3"
   }
 }

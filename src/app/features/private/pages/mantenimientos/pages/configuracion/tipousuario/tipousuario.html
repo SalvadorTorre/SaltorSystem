@@ -1,0 +1,162 @@
+<div class="container-fluid">
+  <div class="row g-3">
+    <!-- Tipos de Usuario -->
+    <div class="col-12 col-xl-5">
+      <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white d-flex align-items-center justify-content-between">
+          <div class="d-flex align-items-center">
+            <i class="bi bi-people me-2"></i>
+            <h5 class="mb-0">Tipos de Usuario</h5>
+          </div>
+          <button class="btn btn-light btn-sm" (click)="abrirModalNuevoTipo()" data-bs-toggle="modal" data-bs-target="#tipoModal">
+            <i class="bi bi-plus-circle me-1"></i> Nuevo
+          </button>
+        </div>
+        <div class="card-body">
+          <div class="input-group mb-3">
+            <span class="input-group-text"><i class="bi bi-search"></i></span>
+            <input type="text" class="form-control" placeholder="Buscar tipo..." [(ngModel)]="filtroTipo">
+          </div>
+          <div class="table-responsive">
+            <table class="table table-sm table-hover">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Descripción</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let t of tiposFiltrados; let i = index" [class.table-active]="seleccionado?.id === t.id" (click)="seleccionarTipo(t)">
+                  <td>{{ t.id }}</td>
+                  <td>{{ t.descripcion }}</td>
+                  <td>
+                    <button class="btn btn-primary btn-sm me-2" (click)="abrirModalEditarTipo(t, i); $event.stopPropagation();" data-bs-toggle="modal" data-bs-target="#tipoModal" title="Editar tipo" aria-label="Editar tipo">
+                      <i class="bi bi-pencil"></i>
+                    </button>
+                    <button class="btn btn-danger btn-sm" (click)="eliminarTipo(t); $event.stopPropagation();" title="Eliminar tipo" aria-label="Eliminar tipo">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Detalles (Módulos por Tipo) -->
+    <div class="col-12 col-xl-7">
+      <div class="card shadow-sm">
+        <div class="card-header bg-secondary text-white d-flex align-items-center justify-content-between">
+          <div class="d-flex align-items-center">
+            <i class="bi bi-ui-checks-grid me-2"></i>
+            <h5 class="mb-0">Módulos del Tipo</h5>
+          </div>
+          <button class="btn btn-light btn-sm" (click)="abrirModalNuevoDet()" [disabled]="!seleccionado" data-bs-toggle="modal" data-bs-target="#detModal">
+            <i class="bi bi-plus-circle me-1"></i> Agregar módulo
+          </button>
+        </div>
+        <div class="card-body">
+          <div *ngIf="!seleccionado" class="text-muted">Seleccione un tipo de usuario para ver sus módulos.</div>
+          <div *ngIf="seleccionado" class="mb-2"><strong>Tipo seleccionado:</strong> {{ seleccionado.descripcion }} (ID {{ seleccionado.id }})</div>
+          <div class="table-responsive" *ngIf="seleccionado">
+            <table class="table table-sm table-hover">
+              <thead>
+                <tr>
+                  <th>Módulo</th>
+                  <th>Acceso</th>
+                  <th>Lectura</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let d of detalles; let i = index">
+                  <td>{{ descModulo(d.idmodulo) }}</td>
+                  <td>{{ d.acceso }}</td>
+                  <td>{{ d.lectura }}</td>
+                  <td>
+                    <button class="btn btn-primary btn-sm me-2" (click)="abrirModalEditarDet(d, i)" data-bs-toggle="modal" data-bs-target="#detModal" title="Editar módulo del tipo" aria-label="Editar módulo del tipo">
+                      <i class="bi bi-pencil"></i>
+                    </button>
+                    <button class="btn btn-danger btn-sm" (click)="eliminarDet(d)" title="Eliminar módulo del tipo" aria-label="Eliminar módulo del tipo">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: TipoUsuario -->
+  <div class="modal fade" id="tipoModal" tabindex="-1" aria-labelledby="tipoModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="tipoModalLabel">{{ editTipoIndex >= 0 ? 'Editar Tipo' : 'Nuevo Tipo' }}</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <form #tipoForm="ngForm" (ngSubmit)="guardarTipo(tipoForm)">
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label">Descripción</label>
+              <input class="form-control" name="descripcion" [(ngModel)]="actualTipo.descripcion" required />
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-primary" [disabled]="!tipoForm.valid" data-bs-dismiss="modal">{{ editTipoIndex >= 0 ? 'Guardar cambios' : 'Agregar' }}</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Dtipousuario -->
+  <div class="modal fade" id="detModal" tabindex="-1" aria-labelledby="detModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="detModalLabel">{{ editDetIndex >= 0 ? 'Editar módulo del tipo' : 'Agregar módulo al tipo' }}</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <form #detForm="ngForm" (ngSubmit)="guardarDet(detForm)">
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label">Módulo</label>
+              <select class="form-select" name="idmodulo" [(ngModel)]="actualDet.idmodulo" required>
+                <option [ngValue]="undefined">Seleccione un módulo</option>
+                <option *ngFor="let m of modulos" [ngValue]="m.idmodulo">{{ m.descmodulo }}</option>
+              </select>
+            </div>
+            <div class="row g-3">
+              <div class="col-6">
+                <label class="form-label">Acceso</label>
+                <select class="form-select" name="acceso" [(ngModel)]="actualDet.acceso" required>
+                  <option value="S">Sí</option>
+                  <option value="N">No</option>
+                </select>
+              </div>
+              <div class="col-6">
+                <label class="form-label">Lectura</label>
+                <select class="form-select" name="lectura" [(ngModel)]="actualDet.lectura" required>
+                  <option value="S">Sí</option>
+                  <option value="N">No</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-primary" [disabled]="!detForm.valid" data-bs-dismiss="modal">{{ editDetIndex >= 0 ? 'Guardar cambios' : 'Agregar' }}</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

@@ -9,6 +9,7 @@ const routes: Routes = [
     redirectTo:"inventario",
     pathMatch:"full"
   },
+
     {path:"",
       component:Mantenimiento,
       children:[
@@ -40,13 +41,46 @@ const routes: Routes = [
           path:"usuario",
           loadChildren: () => import('./pages/usuario-page/usuario-modulo').then(m => m.ModuloUsuario)
         },
-      {
+        
+        {
           path:"choferes",
           loadChildren: () => import('./pages/choferes-page/choferes-modulo').then(m => m.ModuloChoferes)
         },
         {
           path:"despachadores",
           loadChildren: () => import('./pages/despachadores-page/despachadores-modulo').then(m => m.ModuloDespachadores)
+        },
+        {
+          path:"Empresas",
+          loadChildren: () => import('./pages/empresas-page/empresas-modulo').then(m => m.ModuloEmpresas)
+        },
+        {
+          path:"grupo-mercancias",
+          loadChildren: () => import('./pages/grupormerc/grupomerc-modulo').then(m => m.ModuloGrupoMercancias)
+        },
+        {
+          path:"encf",
+          loadChildren: () => import('./pages/encf/encf-modulo').then(m => m.ModuloEncf)
+        },
+        {
+          path:"modulo",
+          loadChildren: () => import('./pages/configuracion/modulo/modulo-modulo').then(m => m.ModuloModulo)
+        },
+        {
+          path:"permiso",
+          loadChildren: () => import('./pages/configuracion/permiso/permiso-modulo').then(m => m.PermisoModulo)
+        },
+        {
+          path:"tipousuario",
+          loadChildren: () => import('./pages/configuracion/tipousuario/tipousuario-modulo').then(m => m.TipousuarioModulo)
+        },
+        {
+          path:"contfactura",
+          loadChildren: () => import('./pages/configuracion/contfactura/contfactura-modulo').then(m => m.ContFacturaModulo)
+        },
+        {
+          path:"fentrega",
+          loadChildren: () => import('./pages/fentrega-page/fentrega-modulo').then(m => m.ModuloFentrega)
         },
       ]
     }

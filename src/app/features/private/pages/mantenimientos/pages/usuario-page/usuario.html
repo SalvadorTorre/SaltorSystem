@@ -1,294 +1,344 @@
-<div class="card " style="height: 80vh;">
-  <div class="card-header">
-    <h1>Usuario</h1>
-  </div>
-  <div class="card-body">
-
-    <!-- buscador -->
-
-    <div class="row ">
-      <div class="col-2">
-        <label for="">Buscar Codigo</label>
-        <input type="text" placeholder="Digite codigo" class="form-control" [disabled]="habilitarFormulario">
+<div class="container-fluid">
+  <div class="card shadow-sm">
+    <div class="card-header bg-primary text-white d-flex align-items-center">
+      <i class="bi bi-people me-2"></i>
+      <h5 class="mb-0">Usuarios</h5>
+    </div>
+    <div class="card-body">
+      <div class="row g-3 mb-3 align-items-center">
+        <div class="col-12 col-md-6">
+          <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-search"></i></span>
+            <input type="text" class="form-control" placeholder="Buscar usuario..." [(ngModel)]="filtroUsuario">
+          </div>
+        </div>
+        <div class="col-12 col-md-6 text-md-end">
+          <button class="btn btn-success" (click)="abrirNuevoUsuario()" data-bs-toggle="modal" data-bs-target="#modalNuevoUsuario">
+            <i class="bi bi-person-plus me-1"></i> Nuevo usuario
+          </button>
+        </div>
       </div>
-      <div class="col-3">
-        <label for="">Buscar Nombre</label>
-        <input type="text" placeholder="Digite el Nombre..." class="form-control" [disabled]="habilitarFormulario">
-      </div>
-      <div class=" col-2">
-        <button class="btn btn-primary" (click)="nuevoUsuario()">Nuevo Usuario</button>
+
+      <div class="table-responsive">
+        <table class="table table-sm table-hover">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Usuario</th>
+              <th>Nombre</th>
+              <th>Nivel</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let u of usuariosFiltrados; let i = index">
+              <td>{{ u.codUsuario }}</td>
+              <td>{{ u.idUsuario }}</td>
+              <td>{{ u.nombreUsuario }}</td>
+              <td>{{ u.nivel }}</td>
+              <td>
+                <button class="btn btn-info btn-sm me-2" (click)="consultarUsuario(u)" title="Consulta">
+                  <i class="bi bi-eye"></i>
+                </button>
+                <button class="btn btn-primary btn-sm me-2" (click)="abrirEditarUsuario(u)" title="Editar">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn btn-danger btn-sm me-2" (click)="eliminarUsuario(u)" title="Eliminar">
+                  <i class="bi bi-trash"></i>
+                </button>
+                <button class="btn btn-secondary btn-sm" (click)="abrirPermisosUsuario(u)" title="Permisos">
+                  <i class="bi bi-shield-lock"></i>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
-    <!-- fin buscador -->
+  </div>
+</div>
 
-    <!-- Grid -->
-    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
-      <table class="table table-bordered table-hover table-striped table-sm">
-        <thead class="table-dark">
+<!-- Modal: Consulta Usuario -->
+<div class="modal fade" id="modalConsultaUsuario" tabindex="-1" aria-labelledby="modalConsultaUsuarioLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalConsultaUsuarioLabel">Detalle del Usuario</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+  <div class="modal-body">
+    <div class="mb-2"><strong>Código:</strong> {{ selectedUsuario?.codUsuario }}</div>
+    <div class="mb-2"><strong>Usuario:</strong> {{ selectedUsuario?.idUsuario }}</div>
+    <div class="mb-2"><strong>Nombre:</strong> {{ selectedUsuario?.nombreUsuario }}</div>
+    <div class="mb-2"><strong>Nivel:</strong> {{ selectedUsuario?.nivel }}</div>
+
+    <hr>
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <h6 class="mb-0">Permisos</h6>
+      <button class="btn btn-primary btn-sm" (click)="abrirNuevoPermiso()" data-bs-toggle="modal" data-bs-target="#permisoUsuarioFormModal">
+        <i class="bi bi-plus-circle me-1"></i> Agregar permiso
+      </button>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-sm table-hover">
+        <thead>
           <tr>
-            <th style="width: 5%; ">Codigo</th>
-            <th style="width: 25%;">Nombre</th>
-            <th class="text-center" style="width: 10%;">Nivel</th>
-            <th class="text-center" style="width: 10%; ">Vendedor</th>
-            <th class="text-center" style="width: 12%; ">Mantenimiento</th>
-            <th class="text-center" style="width: 5%; ">Caja</th>
-            <th class="text-center" style="width: 10%; ">Despacho</th>
-            <th class="text-center" style="width: 5%;">Almacen</th>
-            <th></th>
+            <th>#</th>
+            <th>Módulo</th>
+            <th>Acceso</th>
+            <th>Lectura</th>
+            <th>Acciones</th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let usuario of usuarioList" >
-            <td class="text-center">{{usuario.codUsuario}}</td>
-            <td>{{usuario.nombreUsuario}}</td>
-            <td class="text-center">{{usuario.nivel}}</td>
-            <td class="text-center"><input type="checkbox" disabled [checked]="usuario.vendedor"></td>
-            <td class="text-center"><input type="checkbox" disabled [checked]="usuario.mantenimiento"></td>
-            <td class="text-center"><input type="checkbox" disabled [checked]="usuario.caja"></td>
-            <td class="text-center"><input type="checkbox" disabled [checked]="usuario.despacho"></td>
-            <td class="text-center"><input type="checkbox" disabled [checked]="usuario.almacen"></td>
+          <tr *ngFor="let p of permisos; let i = index">
+            <td>{{ p.idpermiso }}</td>
+            <td>{{ descModulo(p.idmodulo) }}</td>
+            <td>{{ p.acceso }}</td>
+            <td>{{ p.lectura }}</td>
             <td>
-              <button class="btn btn-link" (click)="editarUsuario(usuario)"><i class="bi bi-pencil text-primary"></i></button>
-              &nbsp;
-              <button class="btn btn-link" (click)="eliminarUsuario(usuario)" ><i class="bi bi-trash text-danger"></i></button>
-              &nbsp;
-              <button class="btn btn-link" (click)="consultarUsuario(usuario)"><i class="bi bi-card-list text-success"></i></button>
+              <button class="btn btn-danger btn-sm" (click)="eliminarPermiso(p)" title="Eliminar">
+                <i class="bi bi-trash"></i>
+              </button>
             </td>
           </tr>
         </tbody>
       </table>
     </div>
-    <br>
-    <!-- Fin grid -->
+  </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button>
+      </div>
+    </div>
+  </div>
+  </div>
+
+<!-- Modal: Permisos del Usuario -->
+<div class="modal fade" id="modalPermisosUsuario" tabindex="-1" aria-labelledby="modalPermisosUsuarioLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalPermisosUsuarioLabel">
+          Permisos de {{ selectedUsuario?.nombreUsuario }} ({{ selectedUsuario?.idUsuario }})
+        </h5>
+        <button type="button" class="btn-close" (click)="cerrarModalPermisosUsuario()" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <!-- Se omite el botón de "Agregar permiso" cuando se abre desde Permisos -->
+
+        <div class="table-responsive">
+          <table class="table table-sm table-hover">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Módulo</th>
+                <th>Acceso</th>
+                <th>Lectura</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let p of permisos; let i = index">
+                <td>{{ p.idpermiso }}</td>
+                <td>{{ descModulo(p.idmodulo) }}</td>
+                <td>{{ p.acceso }}</td>
+                <td>{{ p.lectura }}</td>
+                <td>
+                  <button class="btn btn-primary btn-sm me-2" (click)="abrirEditarPermiso(p, i)" data-bs-toggle="modal" data-bs-target="#permisoUsuarioFormModal" title="Editar">
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                  <button class="btn btn-danger btn-sm" (click)="eliminarPermiso(p)" title="Eliminar">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
-<!-- Formulario de cliente -->
-<div class="modal fade"  id="modalusuario"  tabindex="-1" aria-labelledby="modalUsuarioLabel" aria-hidden="true">
-  <div class="modal-dialog custom-modal">
+<!-- Submodal: Crear/Editar permiso -->
+<div class="modal fade" id="permisoUsuarioFormModal" tabindex="-1" aria-labelledby="permisoUsuarioFormModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h4 class="modal-title fs-5" id="modalSuplidorLabel">
-          {{tituloModalUsuario}}
-        </h4>
-        <button
-          type="button"
-          class="btn-close" (click)="cerrarModalUsuario()"
-          aria-label="Close">
-        </button>
+        <h5 class="modal-title" id="permisoUsuarioFormModalLabel">{{ editIndex >= 0 ? 'Editar permiso' : 'Nuevo permiso' }}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <div class="modal-body">
-        <form
-          [formGroup]="formularioUsuario"
-          (ngSubmit)="guardarUsuario()">
-          <div class="form-row">
-            <div class="col-20">
-              <div class="card">
-                <div class="card-header">
-                  <h4>Datos del Usuario</h4>
-                </div>
-                <div class="card-body">
-                  <div class="row">
-                    <div class="col-3">
-                      <label for="">Id Usuario</label>
-                      <input type="text" class="form-control form-control-sm" formControlName="idUsuario" />
-                    </div>
-                    <div class="col-3">
-                      <label for="">Clave</label>
-                      <input type="text" class="form-control form-control-sm" formControlName="claveUsuario"/>
-                    </div>
-                  </div>
-                  <div class="row">
-                    <div class="col-6">
-                      <label for="">Nombre</label>
-                      <input type="text" class="form-control form-control-sm" formControlName="nombreUsuario"/>
-                    </div>
-                    <div class="col-3">
-                      <label for="">Nivel de Usuario</label>
-                      <input type="text" class="form-control form-control-sm" formControlName="nivel"/>
-                    </div>
-                  </div>
-                  <div class="row">
-                    <div class="col-6">
-                      <label for="">Email</label>
-                      <input type="text" class="form-control form-control-sm" formControlName="correo"/>
-                    </div>
-                  </div>
-
-                </div>
-              </div>
-            </div>
+      <form #permisoForm="ngForm" (ngSubmit)="guardarPermiso(permisoForm)">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Módulo</label>
+            <select class="form-select" name="idmodulo" [(ngModel)]="actual.idmodulo" required>
+              <option [ngValue]="undefined">Seleccione un módulo</option>
+              <option *ngFor="let m of modulos" [ngValue]="m.idmodulo">{{ m.descmodulo }}</option>
+            </select>
           </div>
-
-        <div class="col">
-          <div class="card">
-            <div class="card-header">
-              <h6>Permiso</h6>
+          <div class="row g-3">
+            <div class="col-6">
+              <label class="form-label">Acceso</label>
+              <select class="form-select" name="acceso" [(ngModel)]="actual.acceso" required>
+                <option value="S">Sí</option>
+                <option value="N">No</option>
+              </select>
             </div>
-            <div class="card-body">
-              <div class="row d-flex justify-content-end">
-                <div class="col-3">
-                  <h6 class="text-danger">Acceso</h6>
-                </div>
-                <div class="col-3 text-center">
-                  <h6 class="text-danger">Lectura</h6>
-                </div>
-              </div>
-              <div class="row">
-                <div class="col-6">
-                <h6>Mantenimiento</h6>
-              </div>
-              <div class="col-3">
-                <div class="form-check">
-                  <label class="form-check-label" for="mantenimiento"></label>
-                  <input type="checkbox" class="form-check-input custom-checkbox" formControlName="mantenimiento" id="mantenimiento">
-                </div>
-              </div>
-              <div class="col-3">
-                <div class="form-check">
-                  <label class="form-check-label" for="mantlectura"></label>
-                  <input type="checkbox" class="form-check-input custom-checkbox" formControlName="mantLectura" id="mantlectura">
-                </div>
-              </div>
-            </div>
-            <div class="row">
-              <div class="col">
-                <h6>Facturacion</h6>
-              </div>
-              <div class="col">
-                <div class="form-check">
-                  <label class="form-check-label" for="facturacion"></label>
-                  <input type="checkbox" class="form-check-input custom-checkbox" formControlName="facturacion" id="facturacion">
-                </div>
-              </div>
-                <div class="col-3">
-                  <div class="form-check">
-                    <label class="form-check-label" for="factlectura"></label>
-                    <input type="checkbox" class="form-check-input custom-checkbox" formControlName="factLectura" id="factlectura">
-                  </div>
-                </div>
-              </div>
-              <div class="row">
-                <div class="col">
-                  <h6>Caja</h6>
-                </div>
-                <div class="col">
-                  <div class="form-check">
-                    <label class="form-check-label" for="caja"></label>
-                     <input type="checkbox" class="form-check-input custom-checkbox" formControlName="caja" id="caja">
-                  </div>
-                </div>
-                <div class="col-3">
-                  <div class="form-check">
-                    <label class="form-check-label" for="caja_lectura"></label>
-                    <input type="checkbox" class="form-check-input custom-checkbox" formControlName="caja_Lectura" id="caja_lectura">
-                  </div>
-                </div>
-              </div>
-              <div class="row">
-                <div class="col">
-                  <h6>Compra</h6>
-                </div>
-                <div class="col">
-                  <div class="form-check">
-                    <label class="form-check-label" for="compra"></label>
-                    <input type="checkbox" class="form-check-input custom-checkbox" formControlName="compra" id="compra">
-                  </div>
-                </div>
-                <div class="col-3">
-                  <div class="form-check">
-                    <label class="form-check-label" for="caja_lectura"></label>
-                    <input type="checkbox" class="form-check-input custom-checkbox" formControlName="compLectura" id="complectura">
-                  </div>
-                </div>
-              </div>
-              <div class="row">
-                <div class="col">
-                  <h6>Reporte</h6>
-                </div>
-                <div class="col">
-                  <div class="form-check">
-                    <label class="form-check-label" for="reporte"></label>
-                    <input type="checkbox" class="form-check-input custom-checkbox" formControlName="reporte" id="reporte">
-                  </div>
-                </div>
-                <div class="col-3">
-                  <div class="form-check">
-                    <label class="form-check-label" for="replectura"></label>
-                    <input type="checkbox" class="form-check-input custom-checkbox" formControlName="repLectura" id="replectura">
-                  </div>
-                </div>
-              </div>
-              <div class="row">
-                <div class="col">
-                  <h6>Almacen</h6>
-                </div>
-                <div class="col">
-                  <div class="form-check">
-                    <label class="form-check-label" for="almacen"></label>
-                    <input type="checkbox" class="form-check-input custom-checkbox" formControlName="almacen" id="almacen">
-                  </div>
-                </div>
-                <div class="col-3">
-                  <div class="form-check">
-                    <label class="form-check-label" for="almlectura"></label>
-                    <input type="checkbox" class="form-check-input  custom-checkbox" formControlName="almLectura" id="almlectura">
-                  </div>
-                </div>
-              </div>
-              <div class="row">
-                <div class="col-8 ">
-                  <h6>Mercadeo</h6>
-                </div>
-                <div class="col-2">
-                  <div class="form-check">
-                    <label class="form-check-label" for="mercadeo"></label>
-                    <input type="checkbox" class="form-check-input custom-checkbox" formControlName="mercadeo" id="mercadeo">
-                  </div>
-                </div>
-              </div>
-              <div class="row">
-                <div class="col">
-                  <h6>Usuaario</h6>
-                </div>
-                <div class="col ">
-                  <div class="form-check">
-                    <label class="form-check-label" for="usuario"></label>
-                    <input type="checkbox" class="form-check-input custom-checkbox" formControlName="usuario" id="usuario">
-                  </div>
-                </div>
-              </div>
-              <div class="row">
-                <div class="col ">
-                  <h6>Vendedor</h6>
-                </div>
-                <div class="col ">
-                  <div class="form-check">
-                    <label class="form-check-label" for="vendedor"></label>
-                    <input type="checkbox" class="form-check-input custom-checkbox" formControlName="vendedor" id="vendedor">
-                  </div>
-                </div>
-              </div>
-              <div class="row">
-                <div class="col">
-                  <h6>Despacho</h6>
-                </div>
-                  <div class="col ">
-                    <div class="form-check">
-                      <label class="form-check-label" for="despacho"></label>
-                      <input type="checkbox" class="form-check-input custom-checkbox" formControlName="despacho" id="despacho">
-                    </div>
-                  </div>
-                </div>
-                <div class="row">
-                  <div class="col d-flex justify-content-end">
-                    <button type="submit" *ngIf="!modoconsultaUsuario" class="btn btn-success">{{modoedicionUsuario ? "Editar" : "Guardar"}}</button>
-                  </div>
-              </div>
+            <div class="col-6">
+              <label class="form-label">Lectura</label>
+              <select class="form-select" name="lectura" [(ngModel)]="actual.lectura" required>
+                <option value="S">Sí</option>
+                <option value="N">No</option>
+              </select>
             </div>
           </div>
         </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary" [disabled]="!permisoForm.valid">
+            <i class="bi bi-save me-1"></i> {{ editIndex >= 0 ? 'Guardar cambios' : 'Agregar' }}
+          </button>
+        </div>
       </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Editar Usuario -->
+<div class="modal fade" id="modalEditarUsuario" tabindex="-1" aria-labelledby="modalEditarUsuarioLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalEditarUsuarioLabel">Editar usuario</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
+      <form #editarUsuarioForm="ngForm" (ngSubmit)="guardarEdicionUsuario(editarUsuarioForm)">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Usuario</label>
+            <input type="text" class="form-control" name="idUsuario" [(ngModel)]="editableUsuario.idUsuario" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Nombre</label>
+            <input type="text" class="form-control" name="nombreUsuario" [(ngModel)]="editableUsuario.nombreUsuario" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Clave</label>
+            <input type="password" class="form-control" name="claveUsuario" [(ngModel)]="editableUsuario.claveUsuario">
+          </div>
+          <div class="row g-3">
+            <div class="col-6">
+              <label class="form-label">Nivel</label>
+              <input type="number" class="form-control" name="nivel" [(ngModel)]="editableUsuario.nivel" required>
+            </div>
+            <div class="col-6">
+              <label class="form-label">Sucursal</label>
+              <select class="form-select" name="sucursal" [(ngModel)]="editableUsuario.sucursal" required>
+                <option [ngValue]="undefined">Seleccione una sucursal</option>
+                <option *ngFor="let s of sucursales" [ngValue]="s.cod_sucursal">{{ s.nom_sucursal }} ({{ s.cod_empre }})</option>
+              </select>
+            </div>
+          </div>
+          <div class="row g-3 mt-0">
+            <div class="col-6">
+              <label class="form-label">Correo</label>
+              <input type="email" class="form-control" name="correo" [(ngModel)]="editableUsuario.correo">
+            </div>
+            <div class="col-6">
+              <label class="form-label">Empresa</label>
+              <input type="text" class="form-control" name="empresa" [(ngModel)]="editableUsuario.empresa">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary" [disabled]="!editarUsuarioForm.valid">
+            <i class="bi bi-save me-1"></i> Guardar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Nuevo Usuario -->
+<div class="modal fade" id="modalNuevoUsuario" tabindex="-1" aria-labelledby="modalNuevoUsuarioLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalNuevoUsuarioLabel">Nuevo usuario</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form #nuevoUsuarioForm="ngForm" (ngSubmit)="guardarNuevoUsuario(nuevoUsuarioForm)">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Código (codUsuario)</label>
+            <input type="number" class="form-control" name="codUsuario" [(ngModel)]="nuevoUsuario.codUsuario" placeholder="Autogenerado" disabled>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Usuario</label>
+            <input type="text" class="form-control" name="idUsuario" [(ngModel)]="nuevoUsuario.idUsuario" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Nombre</label>
+            <input type="text" class="form-control" name="nombreUsuario" [(ngModel)]="nuevoUsuario.nombreUsuario" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Clave</label>
+            <input type="password" class="form-control" name="claveUsuario" [(ngModel)]="nuevoUsuario.claveUsuario" required>
+          </div>
+          <div class="row g-3">
+            <div class="col-6">
+              <label class="form-label">Nivel</label>
+              <input type="number" class="form-control" name="nivel" [(ngModel)]="nuevoUsuario.nivel" required>
+            </div>
+            <div class="col-6">
+              <label class="form-label">Sucursal (sucursalid)</label>
+              <select class="form-select" name="sucursalid" [(ngModel)]="nuevoUsuario.sucursalid" (ngModelChange)="onSucursalChange($event)" required>
+                <option [ngValue]="undefined">Seleccione una sucursal</option>
+                <option *ngFor="let s of sucursales" [ngValue]="s.cod_sucursal">{{ s.nom_sucursal }} ({{ s.cod_empre }})</option>
+              </select>
+            </div>
+          </div>
+          <div class="row g-3 mt-0">
+            <div class="col-6">
+              <label class="form-label">Correo</label>
+              <input type="email" class="form-control" name="correo" [(ngModel)]="nuevoUsuario.correo">
+            </div>
+            <div class="col-6">
+              <label class="form-label">Clave de correo (claveCorreo)</label>
+              <input type="password" class="form-control" name="claveCorreo" [(ngModel)]="nuevoUsuario.claveCorreo">
+            </div>
+          </div>
+          <div class="row g-3 mt-0">
+            <div class="col-6">
+              <label class="form-label">Tipo de usuario (idtipoUsuario)</label>
+              <select class="form-select" name="idtipoUsuario" [(ngModel)]="nuevoUsuario.idtipoUsuario" (ngModelChange)="onTipoUsuarioChange($event)">
+                <option [ngValue]="undefined">Seleccione un tipo</option>
+                <option *ngFor="let t of tipousuarios" [ngValue]="t.id">{{ t.descripcion || t.id }}</option>
+              </select>
+            </div>
+            <div class="col-6">
+              <label class="form-label">ID Permiso (idpermiso)</label>
+              <input type="number" class="form-control" name="idpermiso" [(ngModel)]="nuevoUsuario.idpermiso">
+            </div>
+          </div>
+          <div class="row g-3 mt-0">
+            <div class="col-12">
+              <label class="form-label">Empresa (cod_empre)</label>
+              <input type="text" class="form-control" name="cod_empre" [(ngModel)]="nuevoUsuario.cod_empre" placeholder="Código de empresa">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-success" [disabled]="!nuevoUsuarioForm.valid">
+            <i class="bi bi-check2-circle me-1"></i> Crear
+          </button>
+        </div>
+      </form>
+    </div>
   </div>
 </div>

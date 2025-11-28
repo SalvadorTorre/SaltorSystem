@@ -13,6 +13,7 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
     CommonModule,
     RutaSuplidor,
     ReactiveFormsModule,
+    FormsModule,
   ],
   providers: [],
   bootstrap: [Suplidor]

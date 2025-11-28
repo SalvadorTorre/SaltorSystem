@@ -6,29 +6,43 @@ import { HttpInvokeService } from "../../http-invoke.service";
 @Injectable({
   providedIn: "root"
 })
+
 export class ServicioUsuario {
-  constructor(private http:HttpInvokeService) {}
+  constructor(private http: HttpInvokeService) { }
 
-  buscarTodosUsuario(): Observable<ModeloUsuario>{
-    return this.http.GetRequest<ModeloUsuario>("/usuario");
-  }
-  guardarUsuario(usuario:ModeloUsuarioData): Observable<any>{
-    return this.http.PostRequest<any,any>("/usuario",usuario);
+  buscarTodosUsuario(pageIndex: number, pageSize: number, codigo?: string, descripcion?: string): Observable<any> {
+    let url = `/usuario?page=${pageIndex}&limit=${pageSize}`;
+    if (codigo) {
+      url += `&codigo=${codigo}`;
+    }
+    if (descripcion) {
+      url += `&descripcion=${descripcion}`;
+    }
+    console.log(url);
+    return this.http.GetRequest<any>(url);
   }
 
-  editarUsuario(su_codSupl:number,usuario:ModeloUsuario): Observable<any>{
-    return this.http.PutRequest<any,any>(`/usuario/${su_codSupl}`,usuario);
+  guardarUsuario(usuario: ModeloUsuarioData): Observable<any> {
+    return this.http.PostRequest<any, any>("/usuario", usuario);
   }
 
-  eliminarUsuario(su_codSupl:number): Observable<any>{
+  editarUsuario(su_codSupl: number, usuario: ModeloUsuario): Observable<any> {
+    return this.http.PutRequest<any, any>(`/usuario/${su_codSupl}`, usuario);
+  }
+
+  eliminarUsuario(su_codSupl: number): Observable<any> {
     return this.http.DeleteRequest(`/usuario/${su_codSupl}`, "");
   }
 
-  buscarUsuario(su_codSupl:number): Observable<any>{
-    return this.http.GetRequest<any>(`/usuario/${su_codSupl}`);
+  buscarUsuario(claveUsuario: number): Observable<any> {
+    return this.http.GetRequest<any>(`/usuario/${claveUsuario}`);
   }
 
-  buscartodoUsuario(): Observable<ModeloUsuario>{
-    return this.http.GetRequest<ModeloUsuario>("/usuario");
+  buscartodoUsuario(claveUsuario: number): Observable<ModeloUsuario> {
+    return this.http.GetRequest<ModeloUsuario>("/usuario/${claveUsuario}");
+  }
+
+  buscarUsuarioPorClave(claveUsuario: string): Observable<any> {
+    return this.http.GetRequest<any>(`/usuario-clave/${claveUsuario}`);
   }
 }

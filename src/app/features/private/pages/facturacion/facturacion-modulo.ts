@@ -1,3 +1,4 @@
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';  // Importa ReactiveFormsModule
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { CommonModule } from '@angular/common';
@@ -10,7 +11,11 @@ import { RutaFacturacion } from './facturacion-ruta';
   ],
   imports: [
     CommonModule,
-    RutaFacturacion
+    RutaFacturacion,
+  //  BrowserModule,
+   // ReactiveFormsModule
+   ReactiveFormsModule,
+    FormsModule,
   ],
   providers: [],
   bootstrap: [Facturacion]

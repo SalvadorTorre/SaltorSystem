@@ -1,9 +1,10 @@
 import { Component } from '@angular/core';
 
 @Component({
-  selector: 'caja',
+  selector: 'Caja',
   templateUrl: './caja.html',
   styleUrls: ['./caja.css']
 })
+
 export class Caja {
 }

@@ -1,4 +1,5 @@
 export interface ModeloCliente{
+  pagination: any;
   status: string;
   code: number;
   message: string;

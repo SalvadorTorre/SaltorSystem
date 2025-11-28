@@ -4,13 +4,14 @@ import { CommonModule } from '@angular/common';
 import { Home } from './home';
 import { RutaHome } from './ruta-home';
 
+
 @NgModule({
   declarations: [
     Home
   ],
   imports: [
     CommonModule,
-    RutaHome
+    RutaHome,
   ],
   providers: [],
   bootstrap: [Home]

@@ -9,9 +9,22 @@ import { HttpInvokeService } from "../../http-invoke.service";
 export class ServicioSuplidor {
   constructor(private http:HttpInvokeService) {}
 
-  buscarTodosSuplidor(): Observable<ModeloSuplidor>{
-    return this.http.GetRequest<ModeloSuplidor>("/suplidor");
+  // buscarTodosSuplidor(): Observable<ModeloSuplidor>{
+  //   return this.http.GetRequest<ModeloSuplidor>("/suplidor");
+  // }
+
+  buscarTodosSuplidor(pageIndex: number, pageSize: number, codigo?: string, descripcion?: string): Observable<any> {
+    let url = `/suplidor?page=${pageIndex}&limit=${pageSize}`;
+    if (codigo) {
+      url += `&codigo=${codigo}`;
+    }
+    if (descripcion) {
+      url += `&descripcion=${descripcion}`;
+    }
+    console.log(url);
+    return this.http.GetRequest<any>(url);
   }
+
   guardarSuplidor(suplidor:ModeloSuplidorData): Observable<any>{
     return this.http.PostRequest<any,any>("/suplidor",suplidor);
   }
@@ -30,5 +43,9 @@ export class ServicioSuplidor {
 
   buscartodoSuplidor(): Observable<ModeloSuplidor>{
     return this.http.GetRequest<ModeloSuplidor>("/suplidor");
+  }
+
+  buscarporNombre(nombre:string): Observable<ModeloSuplidor>{
+    return this.http.GetRequest<ModeloSuplidor>(`/suplidor-nombre/${nombre}`);
   }
 }

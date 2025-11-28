@@ -1,0 +1,153 @@
+/* Estilos generales */
+.card {
+  transition: all 0.3s ease;
+  border-radius: 0.5rem;
+}
+
+.card-header {
+  border-radius: 0.5rem 0.5rem 0 0 !important;
+}
+
+.card-header h1, .card-header h5 {
+  font-weight: 600;
+}
+
+/* Estilos para los formularios */
+.form-floating > .form-control:focus ~ label,
+.form-floating > .form-control:not(:placeholder-shown) ~ label {
+  color: #0d6efd;
+  opacity: 0.8;
+}
+
+.form-floating > .form-control:focus {
+  border-color: #0d6efd;
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+/* Estilos para la tabla */
+.table-responsive {
+  border-radius: 0.25rem;
+}
+
+.table {
+  margin-bottom: 0;
+}
+
+.table th {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.table td {
+  vertical-align: middle;
+}
+
+/* Estilos para botones */
+.btn {
+  border-radius: 0.25rem;
+  transition: all 0.2s;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.btn-sm {
+  padding: 0.25rem 0.5rem;
+}
+
+/* Estilos para badges */
+.badge {
+  padding: 0.5em 0.75em;
+  font-weight: 500;
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.card {
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+/* Estilos para dispositivos móviles */
+@media (max-width: 767.98px) {
+  .card-header h1 {
+    font-size: 1.5rem;
+  }
+  
+  .card-header h5 {
+    font-size: 1.1rem;
+  }
+  
+  .table th, .table td {
+    font-size: 0.9rem;
+  }
+  
+  .btn-sm {
+    padding: 0.2rem 0.4rem;
+  }
+  
+  .pagination {
+    flex-wrap: wrap;
+  }
+}
+
+/* Mejoras para el modal */
+.modal-content {
+  border-radius: 0.5rem;
+  border: none;
+  box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+}
+
+.modal-header {
+  border-radius: 0.5rem 0.5rem 0 0;
+}
+
+/* Estilos para los estados de NCF */
+.text-success {
+  font-weight: 600;
+}
+
+.text-warning {
+  font-weight: 600;
+  color: #ffc107 !important;
+}
+
+.text-danger {
+  font-weight: 600;
+}
+
+/* Estilos para el switch de alertas */
+.form-switch .form-check-input {
+  width: 3em;
+  height: 1.5em;
+  margin-top: 0.25em;
+}
+
+.form-switch .form-check-input:checked {
+  background-color: #0d6efd;
+  border-color: #0d6efd;
+}
+
+/* Estilos para el campo de búsqueda */
+.input-group .input-group-text {
+  background-color: #f8f9fa;
+  border-right: none;
+}
+
+.input-group .form-control {
+  border-left: none;
+}
+
+.input-group .form-control:focus {
+  box-shadow: none;
+  border-color: #ced4da;
+}
+
+.input-group .form-control:focus + .input-group-text {
+  border-color: #ced4da;
+}

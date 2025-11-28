@@ -18,4 +18,9 @@ import { RutaDespachadores } from './despachadores-ruta';
   providers: [],
   bootstrap: [Despachadores]
 })
+
+// models/despachador.ts
+
+
+
 export class ModuloDespachadores { }

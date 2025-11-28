@@ -14,6 +14,7 @@ import { RutaChoferes } from './choferes-ruta';
     CommonModule,
     RutaChoferes,
     ReactiveFormsModule,
+    FormsModule
   ],
   providers: [],
   bootstrap: [Choferes]

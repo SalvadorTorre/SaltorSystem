@@ -1,0 +1,9 @@
+.table-active {
+  cursor: pointer;
+}
+.card-header .btn {
+  border: none;
+}
+.container-fluid {
+  padding-bottom: 1rem;
+}

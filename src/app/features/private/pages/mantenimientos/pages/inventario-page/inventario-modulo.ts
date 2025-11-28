@@ -14,6 +14,7 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
     CommonModule,
     RutaInventario,
     ReactiveFormsModule,
+    FormsModule,
   ],
   providers: [],
   bootstrap: [Inventario]

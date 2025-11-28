@@ -1,4 +1,13 @@
-.table-responsive {
-  max-height: 400px;
-  overflow-y: auto;
+/* Estilos básicos para el componente Sector */
+.selected {
+  background-color: #eef5ff;
+}
+
+.form-row {
+  display: flex;
+  gap: 1rem;
+}
+
+.form-group {
+  flex: 1;
 }

@@ -1,0 +1,8 @@
+/* Estilos base similares al NCF */
+.rounded-top-4 { border-top-left-radius: 1rem; border-top-right-radius: 1rem; }
+.rounded-4 { border-radius: 1rem; }
+
+.table thead th { font-weight: 600; }
+.table tbody td { vertical-align: middle; }
+
+.form-text { font-size: 0.85rem; color: #6c757d; }

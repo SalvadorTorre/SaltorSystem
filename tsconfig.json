@@ -8,6 +8,7 @@
     "strict": true,
     "paths": {
       "@env/*": ["src/environments/*"],
+
     },
     "noImplicitOverride": true,
     "noPropertyAccessFromIndexSignature": true,
@@ -25,7 +26,9 @@
     "lib": [
       "ES2022",
       "dom"
+
     ]
+
   },
   "angularCompilerOptions": {
     "enableI18nLegacyMessageIdFormat": false,

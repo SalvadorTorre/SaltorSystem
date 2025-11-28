@@ -1,19 +1,20 @@
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { CommonModule } from '@angular/common';
-import { Despacho} from './despacho';
-import { RutaDespacho } from './despacho-ruta';
+import { Rnc } from './rnc';
 
 
 @NgModule({
   declarations: [
-    Despacho
-  ],
+    Rnc],
   imports: [
     CommonModule,
-    RutaDespacho
+    Rnc,
+    ReactiveFormsModule,
+    FormsModule
   ],
   providers: [],
-  bootstrap: [Despacho]
+  bootstrap: [Rnc]
 })
-export class ModuloDespacho { }
+export class ModuloRnc { }
