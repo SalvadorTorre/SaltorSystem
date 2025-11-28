@@ -1,0 +1,6 @@
+.table td, .table th {
+  vertical-align: middle;
+}
+.uppercase-input {
+  text-transform: uppercase;
+}

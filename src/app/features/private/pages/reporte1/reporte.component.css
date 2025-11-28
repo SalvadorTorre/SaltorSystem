@@ -1,0 +1,166 @@
+/* Estilos para el sidebar */
+.sidebar {
+  background-color: #af3d2c;
+  min-height: 100vh;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.sidebar-header {
+  background-color: #913226;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Estilos para los elementos del menú */
+.menu-item {
+  color: #faf7f7;
+  font-size: 18px;
+  padding: 12px 15px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.3s ease;
+}
+
+.menu-item:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Estilos para los submenús */
+.submenu {
+  background-color: #913226;
+  padding-left: 0;
+}
+
+.submenu-item {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 16px;
+  padding: 8px 15px 8px 30px;
+  transition: all 0.3s ease;
+}
+
+.submenu-item:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+/* Estilos para el menú móvil */
+.mobile-menu .menu-item {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.mobile-menu .submenu {
+  background-color: #f8f9fa;
+}
+
+.mobile-menu .submenu-item {
+  color: #333;
+  padding-left: 40px;
+}
+
+.mobile-menu .submenu-item:hover {
+  background-color: #f0f0f0;
+  color: #af3d2c;
+}
+
+/* Estilos para el área de contenido */
+.content-area {
+  background-color: #f8f9fa;
+  min-height: 100vh;
+}
+
+/* Animación para los iconos de flecha */
+.bi-chevron-right, .bi-chevron-down {
+  transition: transform 0.3s ease;
+}
+
+/* Estilos para el botón de menú móvil */
+.offcanvas-header {
+  background-color: #af3d2c;
+  color: white;
+}
+
+/* Media queries para ajustes responsivos */
+@media (max-width: 767.98px) {
+  .content-area {
+    padding-top: 56px; /* Altura del botón de menú móvil */
+  }
+}
+
+/* Estilos para el contenido de los reportes */
+.report-container {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.report-title {
+  color: #333;
+  font-size: 1.5rem;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #af3d2c;
+}
+
+/* Estilos para tablas de reportes */
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.report-table th {
+  background-color: #af3d2c;
+  color: white;
+  padding: 10px;
+  text-align: left;
+}
+
+.report-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.report-table tr:hover {
+  background-color: #f5f5f5;
+}
+
+/* Estilos para filtros de reportes */
+.report-filters {
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 20px;
+  border: 1px solid #eee;
+}
+
+/* Estilos para botones de acción */
+.action-btn {
+  background-color: #af3d2c;
+  color: white;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.action-btn:hover {
+  background-color: #913226;
+}
+
+.action-btn.secondary {
+  background-color: #6c757d;
+}
+
+.action-btn.secondary:hover {
+  background-color: #5a6268;
+}
+
+/* Estilos para gráficos */
+.chart-container {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  padding: 20px;
+  margin-bottom: 20px;
+  height: 300px;
+}

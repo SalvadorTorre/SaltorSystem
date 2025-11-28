@@ -1,0 +1,74 @@
+/* Estilos para el sidebar */
+.sidebar {
+  background-color: f8f9fa;
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  border-right: 1px solid rgba(0,0,0,.125);
+  transition: all 0.3s ease;
+}
+
+.sidebar-header {
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.sidebar-nav .nav-link {
+  color: #495057;
+  padding: 0.8rem 1rem;
+  border-radius: 0;
+  transition: all 0.2s ease;
+}
+
+.sidebar-nav .nav-link:hover {
+  background-color: rgba(0,123,255,0.1);
+  color: #007bff;
+}
+
+.sidebar-nav .nav-link.active {
+  background-color: #007bff;
+  color: white;
+}
+
+/* Estilos para el contenido principal */
+.main-content {
+  min-height: 100vh;
+  transition: all 0.3s;
+}
+
+/* Estilos para dispositivos móviles */
+.z-index-1000 {
+  z-index: 1000;
+}
+
+/* Estilos para el offcanvas sidebar */
+.offcanvas {
+  max-width: 280px;
+}
+
+.offcanvas-body .nav-link {
+  padding: 0.8rem 1rem;
+  border-bottom: 1px solid rgba(0,0,0,.05);
+}
+
+/* Animaciones y transiciones */
+.nav-link {
+  transition: all 0.2s ease;
+}
+
+/* Estilos para iconos */
+.bi {
+  font-size: 1.1rem;
+}
+
+/* Media queries para ajustes adicionales */
+@media (max-width: 991.98px) {
+  .main-content {
+    padding-top: 60px; /* Espacio para el botón de menú fijo */
+  }
+}
+
+@media (min-width: 992px) {
+  .sidebar {
+    width: 100%;
+  }
+}

@@ -1,0 +1,11 @@
+.fpago-page .card-header {
+  font-weight: 600;
+}
+
+.fpago-page .table td, .fpago-page .table th {
+  vertical-align: middle;
+}
+
+.fpago-page .btn + .btn {
+  margin-left: 0.5rem;
+}

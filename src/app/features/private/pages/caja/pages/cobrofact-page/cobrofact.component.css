@@ -1,0 +1,100 @@
+/* Estilos generales para el formulario de cobro de facturas */
+.card {
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  margin-bottom: 1.5rem;
+}
+
+.card-header {
+  border-radius: 8px 8px 0 0;
+}
+
+.bg-purple {
+  background-color: #6f42c1;
+}
+
+/* Estilos para tablas */
+.table-responsive {
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.sticky-header thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.table-hover tbody tr:hover {
+  background-color: rgba(13, 110, 253, 0.1);
+  cursor: pointer;
+}
+
+/* Estilos para inputs y formularios */
+.form-floating > .form-control:focus ~ label,
+.form-floating > .form-control:not(:placeholder-shown) ~ label {
+  color: #0d6efd;
+}
+
+.form-floating > .form-control:focus {
+  border-color: #0d6efd;
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+/* Estilos para secciones de totales */
+.card-footer .card {
+  border: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+/* Optimizaciones para móviles */
+@media (max-width: 767.98px) {
+  .card-title {
+    font-size: 1.1rem;
+  }
+  
+  .form-floating > label {
+    font-size: 0.9rem;
+  }
+  
+  .table-responsive {
+    max-height: 200px;
+  }
+  
+  .table th, .table td {
+    padding: 0.5rem;
+    font-size: 0.9rem;
+  }
+  
+  .btn {
+    padding: 0.375rem 0.5rem;
+    font-size: 0.9rem;
+  }
+  
+  .input-group-text {
+    padding: 0.375rem 0.5rem;
+  }
+}
+
+/* Animaciones y efectos */
+.btn {
+  transition: all 0.2s ease-in-out;
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+}
+
+.form-control:focus {
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+/* Estilos para la impresión */
+@media print {
+  #factura {
+    display: block !important;
+  }
+  
+  body > *:not(#factura) {
+    display: none;
+  }
+}

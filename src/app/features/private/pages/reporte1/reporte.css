@@ -1,0 +1,13 @@
+.active-submenu {
+  background-color: #ffffff33; /* un sombreado semi-transparente */
+  border-radius: 5px;
+  font-weight: bold;
+}
+.menu-item-productos {
+  color: #02060a; /* azul Bootstrap */
+  font-weight: bold;
+}
+
+.menu-item-productos:hover {
+  color: #0056b3; /* tono más oscuro al pasar el mouse */
+}

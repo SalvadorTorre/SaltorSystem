@@ -1,0 +1,286 @@
+<div class="container-fluid p-0">
+  <!-- Botón de menú móvil (visible solo en pantallas pequeñas) -->
+  <div class="d-md-none bg-primary text-white p-2 sticky-top">
+    <button class="btn btn-outline-light" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu">
+      <i class="bi bi-list"></i> Menú de Reportes
+    </button>
+  </div>
+
+  <div class="sidebar shadow-sm h-100">
+    <div class="row g-0">
+    <!-- Sidebar para pantallas medianas y grandes -->
+      <div class="col-md-3 col-lg-2 d-none d-md-block">
+      <div class="sidebar-header bg-primary text-white p-3 d-flex align-items-center">
+        <i class="bi bi-graph-up  me-2"></i>
+        <h5 class="mb-0">Reportes</h5>
+      </div>
+      <ul class="nav flex-column">
+          <!-- Movimientos Productos -->
+          <li class="nav-item">
+            <a class="nav-link menu-item-productos d-flex justify-content-between align-items-center"
+              data-bs-toggle="collapse" href="#submenuProductos" role="button" 
+              aria-expanded="false" aria-controls="submenuProductos"
+              (click)="toggleMenu('productos')">
+              <span><i class="bi bi-box-seam me-2"></i> Movimientos Productos</span>
+              <i class="bi" [ngClass]="{'bi-chevron-down': openMenu === 'productos', 'bi-chevron-right': openMenu !== 'productos'}"></i>
+            </a>
+            
+            <div class="collapse" [ngClass]="{'show': openMenu === 'productos'}" id="submenuProductos">
+              <ul class="nav flex-column submenu">
+                <li class="nav-item">
+                  <a class="nav-link submenu-item" [routerLink]="['movproducto']">
+                    <i class="bi bi-arrow-right-short"></i> Mov. por Productos
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link submenu-item" [routerLink]="['entradaProducto']">
+                    <i class="bi bi-arrow-right-short"></i> Mov. por Grupo
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link submenu-item" [routerLink]="['salidaProducto']">
+                    <i class="bi bi-arrow-right-short"></i> General
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </li>
+
+          <!-- Inventario -->
+          <li class="nav-item">
+            <a class="nav-link menu-item-productos d-flex justify-content-between align-items-center"
+               data-bs-toggle="collapse" href="#submenuInventario" role="button" 
+               aria-expanded="false" aria-controls="submenuInventario"
+               (click)="toggleMenu('inventario')">
+              <span><i class="bi bi-clipboard-data me-2"></i> Inventario</span>
+              <i class="bi" [ngClass]="{'bi-chevron-down': openMenu === 'inventario', 'bi-chevron-right': openMenu !== 'inventario'}"></i>
+            </a>
+            
+            <div class="collapse" [ngClass]="{'show': openMenu === 'inventario'}" id="submenuInventario">
+              <ul class="nav flex-column submenu">
+                <li class="nav-item">
+                  <a class="nav-link submenu-item" [routerLink]="['consultaProducto']">
+                    <i class="bi bi-arrow-right-short"></i> Existencia
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link submenu-item" [routerLink]="['consultaProducto']">
+                    <i class="bi bi-arrow-right-short"></i> Existencia Mínima
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </li>
+
+          <!-- Ventas -->
+          <li class="nav-item">
+            <a class="nav-link menu-item-productos d-flex justify-content-between align-items-center"
+               data-bs-toggle="collapse" href="#submenuVentas" role="button" 
+               aria-expanded="false" aria-controls="submenuVentas"
+               (click)="toggleMenu('ventas')">
+              <span><i class="bi bi-cart-check me-2"></i> Ventas</span>
+              <i class="bi" [ngClass]="{'bi-chevron-down': openMenu === 'ventas', 'bi-chevron-right': openMenu !== 'ventas'}"></i>
+            </a>
+            
+            <div class="collapse" [ngClass]="{'show': openMenu === 'ventas'}" id="submenuVentas">
+              <ul class="nav flex-column submenu">
+                <li class="nav-item">
+                  <a class="nav-link submenu-item" [routerLink]="['consultaProducto']">
+                    <i class="bi bi-arrow-right-short"></i> Ventas
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link submenu-item" [routerLink]="['consultaProducto']">
+                    <i class="bi bi-arrow-right-short"></i> Ventas Por Vendedor
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </li>
+          
+          <!-- Clientes -->
+          <li class="nav-item">
+            <a class="nav-link menu-item-productos d-flex justify-content-between align-items-center"
+               data-bs-toggle="collapse" href="#submenuClientes" role="button" 
+               aria-expanded="false" aria-controls="submenuClientes"
+               (click)="toggleMenu('cliente')">
+              <span><i class="bi bi-people me-2"></i> Clientes</span>
+              <i class="bi" [ngClass]="{'bi-chevron-down': openMenu === 'cliente', 'bi-chevron-right': openMenu !== 'cliente'}"></i>
+            </a>
+            
+            <div class="collapse" [ngClass]="{'show': openMenu === 'cliente'}" id="submenuClientes">
+              <ul class="nav flex-column submenu">
+                <li class="nav-item">
+                  <a class="nav-link submenu-item" [routerLink]="['consultaProducto']">
+                    <i class="bi bi-arrow-right-short"></i> Compra Individual Cliente
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link submenu-item" [routerLink]="['consultaProducto']">
+                    <i class="bi bi-arrow-right-short"></i> Rep. Cliente Sectorizado
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link submenu-item" [routerLink]="['consultaProducto']">
+                    <i class="bi bi-arrow-right-short"></i> Por Antigüedad de Compras
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+     <!-- Contenido principal
+    <div class="col-md-9 col-lg-10 content-area">
+       <div class="p-3"> -->
+        <!-- Encabezado de página -->
+        <!-- <div class="d-flex justify-content-between align-items-center mb-4">
+          <h2 class="report-title mb-0">
+            <i class="bi bi-file-earmark-bar-graph me-2"></i>
+            <span *ngIf="!currentReport">Reportes del Sistema</span>
+            <span *ngIf="currentReport">{{currentReport}}</span>
+          </h2>
+          <div>
+            <button class="btn action-btn me-2">
+              <i class="bi bi-printer me-1"></i> Imprimir
+            </button>
+            <button class="btn action-btn secondary">
+              <i class="bi bi-download me-1"></i> Exportar
+            </button>
+          </div>
+        </div>  -->
+        
+        
+        <!-- Contenido del router outlet -->
+        <!-- <router-outlet></router-outlet>
+      </div>
+    </div> -->
+  </div>
+
+  <!-- Sidebar offcanvas para móviles -->
+  <div class="offcanvas offcanvas-start" tabindex="-1" id="sidebarMenu">
+    <div class="offcanvas-header">
+      <h5 class="offcanvas-title">Módulo de Reportes</h5>
+      <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body p-0">
+      <ul class="nav flex-column mobile-menu">
+        <!-- Movimientos Productos -->
+        <li class="nav-item">
+          <a class="nav-link menu-item d-flex justify-content-between align-items-center"
+             data-bs-toggle="collapse" href="#mobileSubmenuProductos" role="button" 
+             aria-expanded="false" aria-controls="mobileSubmenuProductos"
+             (click)="toggleMenu('productos')">
+            <span><i class="bi bi-box-seam me-2"></i> Movimientos Productos</span>
+            <i class="bi" [ngClass]="{'bi-chevron-down': openMenu === 'productos', 'bi-chevron-right': openMenu !== 'productos'}"></i>
+          </a>
+          
+          <div class="collapse" [ngClass]="{'show': openMenu === 'productos'}" id="mobileSubmenuProductos">
+            <ul class="nav flex-column submenu">
+              <li class="nav-item">
+                <a class="nav-link submenu-item" [routerLink]="['movproducto']" data-bs-dismiss="offcanvas">
+                  <i class="bi bi-arrow-right-short"></i> Mov. por Productos
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link submenu-item" [routerLink]="['entradaProducto']" data-bs-dismiss="offcanvas">
+                  <i class="bi bi-arrow-right-short"></i> Mov. por Grupo
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link submenu-item" [routerLink]="['salidaProducto']" data-bs-dismiss="offcanvas">
+                  <i class="bi bi-arrow-right-short"></i> General
+                </a>
+              </li>
+            </ul>
+          </div>
+        </li>
+
+        <!-- Inventario -->
+        <li class="nav-item">
+          <a class="nav-link menu-item d-flex justify-content-between align-items-center"
+             data-bs-toggle="collapse" href="#mobileSubmenuInventario" role="button" 
+             aria-expanded="false" aria-controls="mobileSubmenuInventario"
+             (click)="toggleMenu('inventario')">
+            <span><i class="bi bi-clipboard-data me-2"></i> Inventario</span>
+            <i class="bi" [ngClass]="{'bi-chevron-down': openMenu === 'inventario', 'bi-chevron-right': openMenu !== 'inventario'}"></i>
+          </a>
+          
+          <div class="collapse" [ngClass]="{'show': openMenu === 'inventario'}" id="mobileSubmenuInventario">
+            <ul class="nav flex-column submenu">
+              <li class="nav-item">
+                <a class="nav-link submenu-item" [routerLink]="['consultaProducto']" data-bs-dismiss="offcanvas">
+                  <i class="bi bi-arrow-right-short"></i> Existencia
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link submenu-item" [routerLink]="['consultaProducto']" data-bs-dismiss="offcanvas">
+                  <i class="bi bi-arrow-right-short"></i> Existencia Mínima
+                </a>
+              </li>
+            </ul>
+          </div>
+        </li>
+
+        <!-- Ventas -->
+        <li class="nav-item">
+          <a class="nav-link menu-item d-flex justify-content-between align-items-center"
+             data-bs-toggle="collapse" href="#mobileSubmenuVentas" role="button" 
+             aria-expanded="false" aria-controls="mobileSubmenuVentas"
+             (click)="toggleMenu('ventas')">
+            <span><i class="bi bi-cart-check me-2"></i> Ventas</span>
+            <i class="bi" [ngClass]="{'bi-chevron-down': openMenu === 'ventas', 'bi-chevron-right': openMenu !== 'ventas'}"></i>
+          </a>
+          
+          <div class="collapse" [ngClass]="{'show': openMenu === 'ventas'}" id="mobileSubmenuVentas">
+            <ul class="nav flex-column submenu">
+              <li class="nav-item">
+                <a class="nav-link submenu-item" [routerLink]="['consultaProducto']" data-bs-dismiss="offcanvas">
+                  <i class="bi bi-arrow-right-short"></i> Ventas
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link submenu-item" [routerLink]="['consultaProducto']" data-bs-dismiss="offcanvas">
+                  <i class="bi bi-arrow-right-short"></i> Ventas Por Vendedor
+                </a>
+              </li>
+            </ul>
+          </div>
+        </li>
+
+        <!-- Clientes -->
+        <li class="nav-item">
+          <a class="nav-link menu-item d-flex justify-content-between align-items-center"
+             data-bs-toggle="collapse" href="#mobileSubmenuClientes" role="button" 
+             aria-expanded="false" aria-controls="mobileSubmenuClientes"
+             (click)="toggleMenu('cliente')">
+            <span><i class="bi bi-people me-2"></i> Clientes</span>
+            <i class="bi" [ngClass]="{'bi-chevron-down': openMenu === 'cliente', 'bi-chevron-right': openMenu !== 'cliente'}"></i>
+          </a>
+          
+          <div class="collapse" [ngClass]="{'show': openMenu === 'cliente'}" id="mobileSubmenuClientes">
+            <ul class="nav flex-column submenu">
+              <li class="nav-item">
+                <a class="nav-link submenu-item" [routerLink]="['consultaProducto']" data-bs-dismiss="offcanvas">
+                  <i class="bi bi-arrow-right-short"></i> Compra Individual Cliente
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link submenu-item" [routerLink]="['consultaProducto']" data-bs-dismiss="offcanvas">
+                  <i class="bi bi-arrow-right-short"></i> Rep. Cliente Sectorizado
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link submenu-item" [routerLink]="['consultaProducto']" data-bs-dismiss="offcanvas">
+                  <i class="bi bi-arrow-right-short"></i> Por Antigüedad de Compras
+                </a>
+              </li>
+            </ul>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </div>
+</div>

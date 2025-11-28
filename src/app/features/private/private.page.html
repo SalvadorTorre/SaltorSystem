@@ -1,0 +1,164 @@
+<nav class="navbar navbar-expand-lg navbar-dark shadow-sm">
+  <div class="container-fluid px-3">
+    <!-- Logo -->
+    <a class="navbar-brand d-flex align-items-center" href="#">
+      <img src="assets/logo.jpg" alt="Logo" class="navbar-logo" />
+    </a>
+
+    <!-- Toggler para móvil -->
+    <button
+      class="navbar-toggler border-0"
+      type="button"
+      data-bs-toggle="collapse"
+      data-bs-target="#navbarContent"
+      aria-controls="navbarContent"
+      aria-expanded="false"
+      aria-label="Toggle navigation"
+    >
+      <i class="bi bi-list text-white fs-2"></i>
+    </button>
+
+    <!-- Contenido del navbar -->
+    <div class="collapse navbar-collapse" id="navbarContent">
+      <!-- Menú de navegación -->
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+        <li class="nav-item">
+          <button
+            class="nav-link-btn"
+            [routerLink]="['/private/home']"
+            routerLinkActive="active"
+            (click)="closeNavbar()"
+            title="Inicio"
+          >
+            <i class="bi bi-house-fill"></i>
+            <span class="nav-text">Inicio</span>
+          </button>
+        </li>
+        <li class="nav-item">
+          <button
+            class="nav-link-btn"
+            [routerLink]="['/private/mantenimientos']"
+            routerLinkActive="active"
+            (click)="closeNavbar()"
+          >
+            <i class="bi bi-gear-fill"></i>
+            <span class="nav-text">Mantenimientos</span>
+          </button>
+        </li>
+        <li class="nav-item">
+          <button
+            class="nav-link-btn"
+            [routerLink]="['/private/facturacion']"
+            routerLinkActive="active"
+            (click)="closeNavbar()"
+          >
+            <i class="bi bi-receipt"></i>
+            <span class="nav-text">Facturación</span>
+          </button>
+        </li>
+        <li class="nav-item">
+          <button
+            class="nav-link-btn"
+            [routerLink]="['/private/cotizacion']"
+            routerLinkActive="active"
+            (click)="closeNavbar()"
+          >
+            <i class="bi bi-file-text"></i>
+            <span class="nav-text">Cotización</span>
+          </button>
+        </li>
+        <li class="nav-item">
+          <button
+            class="nav-link-btn"
+            [routerLink]="['/private/caja']"
+            routerLinkActive="active"
+            (click)="closeNavbar()"
+          >
+            <i class="bi bi-cash-stack"></i>
+            <span class="nav-text">Caja</span>
+          </button>
+        </li>
+        <li class="nav-item">
+          <button
+            class="nav-link-btn"
+            [routerLink]="['/private/almacen']"
+            routerLinkActive="active"
+            (click)="closeNavbar()"
+          >
+            <i class="bi bi-box-seam"></i>
+            <span class="nav-text">Almacén</span>
+          </button>
+        </li>
+        <li class="nav-item">
+          <button
+            class="nav-link-btn"
+            [routerLink]="['/private/despacho']"
+            routerLinkActive="active"
+            (click)="closeNavbar()"
+          >
+            <i class="bi bi-truck"></i>
+            <span class="nav-text">Despacho</span>
+          </button>
+        </li>
+        <li class="nav-item">
+          <button
+            class="nav-link-btn"
+            [routerLink]="['/private/contabilidad']"
+            routerLinkActive="active"
+            (click)="closeNavbar()"
+          >
+            <i class="bi bi-calculator"></i>
+            <span class="nav-text">Contabilidad</span>
+          </button>
+        </li>
+        <li class="nav-item">
+          <button
+            class="nav-link-btn"
+            [routerLink]="['/private/reporte']"
+            routerLinkActive="active"
+            (click)="closeNavbar()"
+          >
+            <i class="bi bi-graph-up"></i>
+            <span class="nav-text">Reportes</span>
+          </button>
+        </li>
+      </ul>
+
+      <!-- Sección de usuario con dropdown -->
+      <div class="dropdown">
+        <button
+          class="btn btn-outline-light rounded-circle fw-bold d-flex align-items-center justify-content-center dropdown-toggle user-avatar-btn"
+          type="button"
+          id="userDropdown"
+          data-bs-toggle="dropdown"
+          data-bs-auto-close="true"
+          aria-expanded="false"
+          [title]="personName"
+          aria-label="Opciones de usuario"
+          style="width: 40px; height: 40px;"
+        >
+          {{ initials }}
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end dropdown-menu-dark shadow" aria-labelledby="userDropdown">
+          <li class="dropdown-header">
+            <div class="d-flex flex-column">
+              <span class="fw-bold">{{ personName }}</span>
+              <small class="text-muted">{{ sucursalName }}</small>
+            </div>
+          </li>
+          <li><hr class="dropdown-divider" /></li>
+          <li>
+            <button class="dropdown-item d-flex align-items-center gap-2" type="button" (click)="logout()">
+              <i class="bi bi-box-arrow-right"></i>
+              <span>Cerrar Sesión</span>
+            </button>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<main class="main-content">
+  <router-outlet></router-outlet>
+</main>

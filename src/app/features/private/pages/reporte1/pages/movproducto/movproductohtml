@@ -1,0 +1,54 @@
+<div class="container mt-4">
+  <h2>{{ title }}</h2>
+  <hr />
+
+  <!-- Formulario de filtros -->
+  <form [formGroup]="filtroForm" (ngSubmit)="filtrar()" class="row g-3 mb-4">
+    <div class="col-md-3">
+      <label class="form-label">Fecha</label>
+      <input type="date" class="form-control" formControlName="fecha" />
+    </div>
+
+    <div class="col-md-4">
+      <label class="form-label">Producto</label>
+      <input type="text" class="form-control" placeholder="Nombre producto" formControlName="producto" />
+    </div>
+
+    <div class="col-md-3">
+      <label class="form-label">Tipo Movimiento</label>
+      <select class="form-select" formControlName="tipo">
+        <option value="">Todos</option>
+        <option value="Entrada">Entrada</option>
+        <option value="Salida">Salida</option>
+      </select>
+    </div>
+
+    <div class="col-md-2 d-flex align-items-end">
+      <button class="btn btn-primary me-2" type="submit">Buscar</button>
+      <button class="btn btn-secondary" type="button" (click)="limpiar()">Limpiar</button>
+    </div>
+  </form>
+
+  <!-- Resultados -->
+  <table class="table table-striped">
+    <thead>
+      <tr>
+        <th>Fecha</th>
+        <th>Producto</th>
+        <th>Tipo Movimiento</th>
+        <th>Cantidad</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let mov of resultados">
+        <td>{{ mov.fecha }}</td>
+        <td>{{ mov.producto }}</td>
+        <td>{{ mov.tipo }}</td>
+        <td>{{ mov.cantidad }}</td>
+      </tr>
+      <tr *ngIf="resultados.length === 0">
+        <td colspan="4" class="text-center">No se encontraron movimientos</td>
+      </tr>
+    </tbody>
+  </table>
+</div>

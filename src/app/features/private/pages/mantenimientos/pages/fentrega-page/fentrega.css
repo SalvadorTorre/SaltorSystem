@@ -1,0 +1,11 @@
+.fentrega-page .card-header {
+  font-weight: 600;
+}
+
+.fentrega-page .table td, .fentrega-page .table th {
+  vertical-align: middle;
+}
+
+.fentrega-page .btn + .btn {
+  margin-left: 0.5rem;
+}

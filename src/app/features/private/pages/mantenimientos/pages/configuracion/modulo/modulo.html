@@ -1,0 +1,151 @@
+<div class="container-fluid">
+  <div class="card shadow-sm">
+    <div class="card-header bg-primary text-white d-flex align-items-center">
+      <i class="bi bi-ui-checks-grid me-2"></i>
+      <h5 class="mb-0">Configuración - Módulos</h5>
+    </div>
+    <div class="card-body">
+      <div class="row g-3 mb-3">
+        <div class="col-12 col-md-6">
+          <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-search"></i></span>
+            <input type="text" class="form-control" placeholder="Buscar módulo..." [(ngModel)]="filtro">
+          </div>
+        </div>
+        <div class="col-12 col-md-6 text-md-end">
+          <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#nuevoModuloModal">
+            <i class="bi bi-plus-circle me-1"></i> Nuevo Módulo
+          </button>
+        </div>
+      </div>
+
+      <!-- <div class="table-responsive">
+        <table class="table table-hover table-striped">
+          <thead class="table-light">
+            <tr>
+              <th scope="col">ID</th>
+              <th scope="col">Descripción</th>
+              <th scope="col">Acceso</th>
+              <th scope="col">Lectura</th>
+              <th scope="col">Permisos</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let m of listaFiltrada">
+              <td>{{ m.idmodulo }}</td>
+              <td>{{ m.descmodulo }}</td>
+              <td>
+                <span class="badge" [ngClass]="{ 'bg-success': (m.scceso||'N')==='S', 'bg-secondary': (m.scceso||'N')!=='S' }">
+                  {{ (m.scceso||'N')==='S' ? 'Sí' : 'No' }}
+                </span>
+              </td>
+              <td>
+                <span class="badge" [ngClass]="{ 'bg-info': (m.lectura||'N')==='S', 'bg-secondary': (m.lectura||'N')!=='S' }">
+                  {{ (m.lectura||'N')==='S' ? 'Sí' : 'No' }}
+                </span>
+              </td>
+              <td>{{ m.permisos?.length || 0 }}</td>
+            </tr>
+            <tr *ngIf="listaFiltrada?.length === 0">
+              <td colspan="5" class="text-center py-3">No hay módulos configurados</td>
+            </tr>
+          </tbody>
+        </table>
+      </div> -->
+ <div class="table-responsive">
+  <table class="table table-hover table-striped">
+    <thead class="table-light">
+      <tr>
+        <th scope="col">ID</th>
+        <th scope="col">Descripción</th>
+        <th scope="col">Acceso</th>
+        <th scope="col">Lectura</th>
+        <th scope="col">Permisos</th>
+        <th scope="col">Acciones</th> <!-- Nueva columna para botones -->
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let m of listaFiltrada">
+        <td>{{ m.idmodulo }}</td>
+        <td>{{ m.descmodulo }}</td>
+        <td>
+          <span class="badge" [ngClass]="(m.scceso || 'N') === 'S' ? 'bg-success' : 'bg-secondary'">
+            {{ (m.scceso || 'N') === 'S' ? 'Sí' : 'No' }}
+          </span>
+        </td>
+        <td>
+          <span class="badge" [ngClass]="(m.lectura || 'N') === 'S' ? 'bg-info' : 'bg-secondary'">
+            {{ (m.lectura || 'N') === 'S' ? 'Sí' : 'No' }}
+          </span>
+        </td>
+        <td>{{ m.permisos?.length || 0 }}</td>
+        <td>
+          <!-- Botones de acción -->
+          <button class="btn btn-sm btn-primary me-1" (click)="editarModulo(m)" title="Editar módulo" aria-label="Editar módulo">
+            <i class="bi bi-pencil"></i>
+          </button>
+          <button class="btn btn-sm btn-danger" (click)="eliminarModulo(m)" title="Eliminar módulo" aria-label="Eliminar módulo">
+            <i class="bi bi-trash"></i>
+          </button>
+        </td>
+      </tr>
+      <tr *ngIf="listaFiltrada?.length === 0">
+        <td colspan="6" class="text-center py-3">No hay módulos configurados</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+    </div>
+  </div>
+</div>
+<!-- Modal: Nuevo Módulo -->
+<div class="modal fade" id="nuevoModuloModal" tabindex="-1" aria-labelledby="nuevoModuloLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="nuevoModuloLabel">Agregar nuevo módulo</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form #nuevoForm="ngForm" (ngSubmit)="crearModulo(nuevoForm)">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Descripción</label>
+            <input
+              type="text"
+              class="form-control"
+              name="descmodulo"
+              [(ngModel)]="nuevo.descmodulo"
+              required
+              maxlength="30"
+              placeholder="Ej. Inventario"
+            />
+            <div class="form-text">Máximo 30 caracteres</div>
+          </div>
+          <div class="row g-3">
+            <div class="col-6">
+              <label class="form-label">Acceso</label>
+              <select class="form-select" name="scceso" [(ngModel)]="nuevo.scceso" required>
+                <option value="S">Sí</option>
+                <option value="N">No</option>
+              </select>
+            </div>
+            <div class="col-6">
+              <label class="form-label">Lectura</label>
+              <select class="form-select" name="lectura" [(ngModel)]="nuevo.lectura" required>
+                <option value="S">Sí</option>
+                <option value="N">No</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary" [disabled]="!nuevoForm.valid" data-bs-dismiss="modal">
+            <i class="bi bi-plus-circle me-1"></i> Agregar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

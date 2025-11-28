@@ -1,0 +1,320 @@
+/* Estilos generales */
+.container-fluid {
+  background-color: #f8f9fa;
+}
+
+/* Cards */
+.card {
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.card-header {
+  border-radius: 8px 8px 0 0 !important;
+  padding: 1rem 1rem;
+}
+
+.card-header h5,
+.card-header h6 {
+  margin: 0;
+}
+
+.card-body {
+  padding: 1rem;
+}
+
+/* Inputs y Selects */
+.form-control,
+.form-select {
+  border-radius: 6px;
+  border: 1px solid #dee2e6;
+  transition: all 0.3s ease;
+  font-size: 0.9rem;
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: #0d6efd;
+  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
+  outline: none;
+}
+
+.form-control:disabled,
+.form-control[readonly] {
+  background-color: #e9ecef;
+  cursor: not-allowed;
+}
+
+.form-label {
+  margin-bottom: 0.375rem;
+  font-weight: 500;
+  font-size: 0.875rem;
+}
+
+/* Tablas */
+.table-responsive {
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+}
+
+.table-responsive thead th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background-color: #212529;
+  color: white;
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 0.6rem;
+  border: none;
+}
+
+.table tbody tr:hover {
+  background-color: #f8f9fa;
+}
+
+.table td {
+  padding: 0.65rem;
+  vertical-align: middle;
+  font-size: 0.9rem;
+  border: 1px solid #dee2e6;
+}
+
+/* Compactar filas específicamente para tablas pequeñas */
+.table.table-sm th,
+.table.table-sm td {
+  padding: 0.45rem 0.5rem;
+  font-size: 0.85rem;
+  line-height: 1.2;
+}
+
+.table.table-sm thead th {
+  padding: 0.5rem;
+  font-size: 0.8rem;
+}
+
+.table th {
+  border: 1px solid #dee2e6;
+}
+
+.table-active {
+  background-color: #e7f3ff !important;
+}
+
+/* Botones */
+.btn {
+  border-radius: 6px;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+}
+
+.btn-sm {
+  min-width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Dropdown personalizado */
+.dropdown-menu {
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 0.5rem 0;
+  display: none; /* visible solo cuando tenga .show */
+}
+
+.dropdown-item {
+  padding: 0.5rem 1rem;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+}
+
+.dropdown-item:hover,
+.dropdown-item.active {
+  background-color: #0d6efd;
+  color: white;
+}
+
+.dropdown-item i {
+  font-size: 1.1rem;
+}
+
+/* Iconos */
+i {
+  cursor: pointer;
+}
+
+/* Uppercase helper */
+.text-uppercase {
+  text-transform: uppercase;
+}
+
+/* Espaciado con gap */
+.gap-1 {
+  gap: 0.25rem;
+}
+
+/* Scrollbar personalizado */
+.table-responsive::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.table-responsive::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 10px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Responsive */
+@media (max-width: 991px) {
+  .card-body {
+    padding: 0.75rem;
+  }
+
+  .table.table-sm td,
+  .table.table-sm th {
+    padding: 0.4rem 0.3rem;
+    font-size: 0.82rem;
+  }
+
+  .btn-sm {
+    min-width: 28px;
+    height: 28px;
+    font-size: 0.75rem;
+  }
+
+  .form-control,
+  .form-select {
+    font-size: 0.85rem;
+  }
+
+  .form-label {
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .table.table-sm td,
+  .table.table-sm th {
+    padding: 0.35rem 0.2rem;
+    font-size: 0.78rem;
+  }
+
+  .btn-sm {
+    min-width: 26px;
+    height: 26px;
+  }
+
+  .card-header h5,
+  .card-header h6 {
+    font-size: 0.9rem;
+  }
+
+  /* Hacer scroll horizontal más visible */
+  .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+@media (max-width: 576px) {
+  .container-fluid {
+    padding: 0.5rem;
+  }
+
+  .table td,
+  .table th {
+    padding: 0.3rem 0.2rem;
+    font-size: 0.75rem;
+  }
+
+  .btn-sm {
+    min-width: 24px;
+    height: 24px;
+    font-size: 0.7rem;
+  }
+
+  .btn-sm i {
+    font-size: 0.75rem;
+  }
+}
+
+
+/* Modal */
+.modal-content {
+  border-radius: 12px;
+  border: none;
+}
+
+.modal-header {
+  border-radius: 12px 12px 0 0;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.modal-body {
+  padding: 1.5rem;
+}
+
+/* Reducir tamaño de “Información del Producto” */
+.info-producto .form-label {
+  font-size: 0.8rem;
+}
+
+.info-producto .form-control.form-control-sm {
+  font-size: 0.85rem;
+  line-height: 1.2;
+  padding: 0.35rem 0.5rem;
+}
+
+.info-producto .fs-5 {
+  font-size: 1rem !important;
+}
+.dropdown-menu.show {
+  display: block;
+}
+
+.table td,
+.table th {
+  color: #212529;
+}
+
+/* Contenedor con altura fija para la tabla de detalle */
+.detalle-table-container {
+  height: 300px;
+  min-height: 300px;
+  overflow-y: auto;
+  border-radius: 12px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+}
+
+/* Filas más compactas dentro de la tabla de detalle */
+.detalle-table-container .table.table-sm td,
+.detalle-table-container .table.table-sm th {
+  /* padding: 0.35rem 0.4rem;
+  line-height: 1.15; */
+  /* padding-top: 1px !important;
+  padding-bottom: 1px !important;
+  padding-left: 6px !important;
+  padding-right: 6px !important;
+  line-height: 10px !important; */
+   padding: 2 !important;
+  line-height: 12px !important;
+}
+
+.detalle-table-container thead th {
+  padding: 0.45rem;
+}
