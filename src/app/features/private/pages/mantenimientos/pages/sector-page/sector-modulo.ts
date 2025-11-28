@@ -13,6 +13,5 @@ import { RutaSector } from './sector-ruta';
     FormsModule,
   ],
   providers: [],
-  bootstrap: [Sector]
 })
 export class ModuloSector { }

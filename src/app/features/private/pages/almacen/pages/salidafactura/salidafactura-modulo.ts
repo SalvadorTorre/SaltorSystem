@@ -1,5 +1,4 @@
 import { NgModule } from '@angular/core';
-import { BrowserModule } from '@angular/platform-browser';
 import { CommonModule } from '@angular/common';
 import { RutaSalidafactura } from './salidafactura';
 import { RouterModule, Routes } from '@angular/router';
@@ -27,6 +26,5 @@ const routes: Routes = [
   exports: [
   ],
   providers: [],
-  bootstrap: [] // No Salidafactura bootstrap since it does not exist
 })
 export class ModuloSalidafactura { }

@@ -1,5 +1,4 @@
 import { NgModule } from '@angular/core';
-import { BrowserModule } from '@angular/platform-browser';
 import { CommonModule } from '@angular/common';
 import { Mantenimiento } from './mantenimiento';
 import { RutaMantenimiento } from './ruta-matenimiento';
@@ -18,6 +17,5 @@ import { PhoneNumberMaskDirective } from 'src/app/core/directive/phonemask.direc
     PhoneNumberMaskDirective
   ],
   providers: [],
-  bootstrap: [Mantenimiento]
 })
 export class ModuloMantenimiento { }

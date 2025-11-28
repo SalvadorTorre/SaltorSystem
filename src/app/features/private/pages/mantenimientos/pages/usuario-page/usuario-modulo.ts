@@ -13,7 +13,6 @@ import { RutaUsuario } from './usuario-ruta';
     FormsModule,
   ],
   providers: [],
-  bootstrap: [Usuario]
 })
 export class ModuloUsuario { }
 

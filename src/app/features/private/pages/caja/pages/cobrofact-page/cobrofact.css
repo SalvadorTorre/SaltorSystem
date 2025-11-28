@@ -13,7 +13,7 @@
 color: #000;
 }*/
 
-*/ .selected-row td {
+.selected-row td {
   background-color: #f0b27a !important;
   color: black;
 }

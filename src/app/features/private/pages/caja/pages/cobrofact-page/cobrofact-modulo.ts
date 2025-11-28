@@ -1,6 +1,5 @@
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';  // Importa ReactiveFormsModule
 import { NgModule } from '@angular/core';
-import { BrowserModule } from '@angular/platform-browser';
 import { CommonModule } from '@angular/common';
 import { CobroFact} from './cobrofact';
 import { RutaCobroFact } from './cobrofact-ruta';
@@ -19,6 +18,5 @@ import { RutaCobroFact } from './cobrofact-ruta';
     FormsModule,
   ],
   providers: [],
-  bootstrap: [CobroFact]
 })
 export class ModuloCobroFact { }
