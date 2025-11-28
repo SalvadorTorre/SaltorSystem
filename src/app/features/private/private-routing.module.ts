@@ -32,10 +32,10 @@ const routes: Routes = [
         path: "caja",
         loadChildren: () => import('./pages/caja/caja-modulo').then(m => m.ModuloCaja)
       },
-      {
-        path: "almacen",
-        loadChildren: () => import('./pages/almacen').then(m => m.ModuloAlmacen)
-      },
+      // {
+      //   path: "almacen",
+      //   loadChildren: () => import('./pages/almacen').then(m => m.ModuloAlmacen)
+      // },
       {
         path: "despacho",
         loadChildren: () => import('./pages/despacho/despacho.modulo').then(m => m.ModuloDespacho)
