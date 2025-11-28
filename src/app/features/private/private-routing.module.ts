@@ -1,4 +1,3 @@
-import { ModuloMantenimiento } from './pages/mantenimientos/modulo-mantenimiento';
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { PrivatePage } from './private.page';
@@ -35,7 +34,7 @@ const routes: Routes = [
       },
       {
         path: "almacen",
-        loadChildren: () => import('./pages/almacen/almacen-modulo').then(m => m.ModuloAlmacen)
+        loadChildren: () => import('./pages/almacen').then(m => m.ModuloAlmacen)
       },
       {
         path: "despacho",
