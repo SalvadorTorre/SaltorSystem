@@ -315,7 +315,7 @@
           <div class="row g-3 mt-0">
             <div class="col-6">
               <label class="form-label">Tipo de usuario (idtipoUsuario)</label>
-              <select class="form-select" name="idtipoUsuario" [(ngModel)]="nuevoUsuario.idtipoUsuario">
+              <select class="form-select" name="idtipoUsuario" [(ngModel)]="nuevoUsuario.idtipoUsuario" (ngModelChange)="onTipoUsuarioChange($event)">
                 <option [ngValue]="undefined">Seleccione un tipo</option>
                 <option *ngFor="let t of tipousuarios" [ngValue]="t.id">{{ t.descripcion || t.id }}</option>
               </select>

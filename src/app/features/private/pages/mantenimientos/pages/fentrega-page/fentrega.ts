@@ -8,4 +8,3 @@ import { Component } from '@angular/core';
 export class Fentrega {
   // Componente placeholder para evitar errores de compilación
 }
-

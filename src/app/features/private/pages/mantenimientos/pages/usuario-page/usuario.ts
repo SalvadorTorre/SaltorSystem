@@ -8,6 +8,7 @@ import { Permiso, PermisoModel } from 'src/app/features/private/pages/mantenimie
 import Swal from 'sweetalert2';
 import { ServicioSucursal } from 'src/app/core/services/mantenimientos/sucursal/sucursal.service';
 import { ServicioTipousuario } from 'src/app/core/services/mantenimientos/tipousuario/tipousuario.service';
+import { forkJoin } from 'rxjs';
 declare var $: any;
 
 @Component({
@@ -31,6 +32,8 @@ export class Usuario implements OnInit {
   // Edición/creación de usuarios
   editableUsuario: Partial<ModeloUsuarioData> = {};
   nuevoUsuario: Partial<ModeloUsuarioData> = {};
+  // Detalles de tipo seleccionado para nuevo usuario
+  detallesTipoSeleccionado: any[] = [];
 
   // Toast SweetAlert para mensajes no bloqueantes
   Toast = Swal.mixin({
@@ -214,7 +217,22 @@ export class Usuario implements OnInit {
       idpermiso: undefined,
       cod_empre: '',
     } as any;
+    this.detallesTipoSeleccionado = [];
     $('#modalNuevoUsuario').modal('show');
+  }
+
+  onTipoUsuarioChange(idtipo: number | undefined): void {
+    this.detallesTipoSeleccionado = [];
+    if (!idtipo) return;
+    this.tipoSrv.buscarTipousuario(Number(idtipo)).subscribe({
+      next: (res: any) => {
+        const tipo = Array.isArray(res?.data) ? res.data[0] : (res?.data ?? res);
+        this.detallesTipoSeleccionado = Array.isArray(tipo?.dtipousuarios) ? tipo.dtipousuarios : [];
+      },
+      error: () => {
+        this.detallesTipoSeleccionado = [];
+      }
+    });
   }
 
   guardarNuevoUsuario(form: NgForm): void {
@@ -231,13 +249,66 @@ export class Usuario implements OnInit {
       return;
     }
     this.usuarioSrv.guardarUsuario(this.nuevoUsuario as any).subscribe({
-      next: () => {
-        this.cargarUsuarios();
-        $('#modalNuevoUsuario').modal('hide');
-        this.fireToast({ title: 'Usuario creado', icon: 'success' });
+      next: (res) => {
+        // Intentar obtener el codUsuario creado
+        const nuevoCod = Number(res?.data?.codUsuario ?? res?.codUsuario ?? (Array.isArray(res?.data) ? res.data[0]?.codUsuario : undefined));
+        const continuar = (cod: number | undefined) => {
+          if (!cod || isNaN(cod)) {
+            // Buscar por idUsuario si no vino el id
+            const clave = String((this.nuevoUsuario as any)?.idUsuario || '');
+            this.usuarioSrv.buscarUsuarioPorClave(clave).subscribe({
+              next: (buscado) => {
+                const usuarioEncontrado = Array.isArray(buscado?.data) ? buscado.data[0] : (buscado?.data ?? buscado);
+                const codEncontrado = Number(usuarioEncontrado?.codUsuario);
+                if (codEncontrado) {
+                  this.persistirPermisosDesdeDetalles(codEncontrado);
+                } else {
+                  this.fireToast({ title: 'Usuario creado (sin permisos por tipo)', icon: 'info' });
+                }
+                this.cargarUsuarios();
+                $('#modalNuevoUsuario').modal('hide');
+                this.fireToast({ title: 'Usuario creado', icon: 'success' });
+              },
+              error: () => {
+                this.cargarUsuarios();
+                $('#modalNuevoUsuario').modal('hide');
+                this.fireToast({ title: 'Usuario creado (no se pudieron cargar permisos)', icon: 'warning' });
+              }
+            });
+          } else {
+            this.persistirPermisosDesdeDetalles(cod);
+            this.cargarUsuarios();
+            $('#modalNuevoUsuario').modal('hide');
+            this.fireToast({ title: 'Usuario creado', icon: 'success' });
+          }
+        };
+        continuar(nuevoCod);
       },
       error: () => {
         this.fireToast({ title: 'Error al crear usuario', icon: 'error' });
+      }
+    });
+  }
+
+  private persistirPermisosDesdeDetalles(codusuario: number): void {
+    if (!codusuario || !Array.isArray(this.detallesTipoSeleccionado) || this.detallesTipoSeleccionado.length === 0) {
+      return;
+    }
+    const llamadas = this.detallesTipoSeleccionado.map((d: any) => {
+      const payload: Partial<Permiso> = {
+        codusuario,
+        idmodulo: Number(d?.idmodulo),
+        acceso: String(d?.acceso || 'N').toUpperCase(),
+        lectura: String(d?.lectura || 'N').toUpperCase(),
+      };
+      return this.permisoSrv.guardarPermiso(payload);
+    });
+    forkJoin(llamadas).subscribe({
+      next: () => {
+        this.fireToast({ title: 'Permisos aplicados por tipo de usuario', icon: 'success' });
+      },
+      error: () => {
+        this.fireToast({ title: 'Error aplicando permisos por tipo', icon: 'error' });
       }
     });
   }
