@@ -17,26 +17,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '18'
-          cache: 'npm'
-      - name: Install dependencies
-        run: npm ci
-      - name: Set Angular project name
-        run: echo "PROJECT_NAME=$(node -p 'require(\"./angular.json\").defaultProject || Object.keys(require(\"./angular.json\").projects)[0]')" >> $GITHUB_ENV
-      - name: Set Angular output path
-        run: echo "OUTPUT_PATH=$(node -p 'const a=require(\"./angular.json\"); const n=process.env.PROJECT_NAME || (a.defaultProject || Object.keys(a.projects)[0]); (a.projects[n]?.architect?.build?.options?.outputPath) || `dist/${n}`')" >> $GITHUB_ENV
-      - name: Build Angular app
-        run: npx ng build --configuration production --base-href "/${{ github.event.repository.name }}/"
-      - name: Add 404 fallback
-        run: |
-          if [ -f "${{ env.OUTPUT_PATH }}/index.html" ]; then
-            cp "${{ env.OUTPUT_PATH }}/index.html" "${{ env.OUTPUT_PATH }}/404.html";
-          else
-            echo "index.html no encontrado en ${{ env.OUTPUT_PATH }}; se omite crear 404.html";
-          fi
+          cache: 'yarn'
+      - run: yarn install --frozen-lockfile
+      - run: npx ng build --configuration production --base-href "/${{ github.event.repository.name }}/"
+      - run: cp dist/SaltorSystem/index.html dist/SaltorSystem/404.html
       - uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ${{ env.OUTPUT_PATH }}
+          publish_dir: dist/SaltorSystem
           publish_branch: gh-pages
           user_name: github-actions[bot]
           user_email: 41898282+github-actions[bot]@users.noreply.github.com
