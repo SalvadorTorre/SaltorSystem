@@ -17,9 +17,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '18'
-          cache: 'yarn'
-      - run: yarn install --frozen-lockfile
-      - run: npx ng build --configuration production --base-href "/${{ github.event.repository.name }}/"
+          cache: 'npm'
+      - run: npm ci --no-audit --no-fund
+      - run: npm run build -- --configuration production --base-href "/${{ github.event.repository.name }}/"
       - run: cp dist/SaltorSystem/index.html dist/SaltorSystem/404.html
       - uses: peaceiris/actions-gh-pages@v3
         with:
