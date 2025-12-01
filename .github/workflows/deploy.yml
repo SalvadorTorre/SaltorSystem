@@ -20,11 +20,11 @@ jobs:
           cache: 'npm'
       - run: npm ci --no-audit --no-fund
       - run: npm run build -- --configuration production --base-href "/${{ github.event.repository.name }}/"
-      - run: cp dist/SaltorSystem/index.html dist/SaltorSystem/404.html
+      - run: cp dist/saltor-system/index.html dist/saltor-system/404.html
       - uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: dist/SaltorSystem
+          publish_dir: dist/saltor-system
           publish_branch: gh-pages
           user_name: github-actions[bot]
           user_email: 41898282+github-actions[bot]@users.noreply.github.com
