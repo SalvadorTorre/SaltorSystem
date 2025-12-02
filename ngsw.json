@@ -1,0 +1,139 @@
+{
+  "configVersion": 1,
+  "timestamp": 1764681080990,
+  "index": "/SaltorSystem/index.html",
+  "assetGroups": [
+    {
+      "name": "app",
+      "installMode": "prefetch",
+      "updateMode": "prefetch",
+      "cacheQueryOptions": {
+        "ignoreVary": true
+      },
+      "urls": [
+        "/SaltorSystem/106.49959536b4374471.js",
+        "/SaltorSystem/118.dff679f248610dac.js",
+        "/SaltorSystem/133.0e90bdb4420287ea.js",
+        "/SaltorSystem/168.1a1172b045a4357a.js",
+        "/SaltorSystem/223.259bb3974bdb9f45.js",
+        "/SaltorSystem/226.28ca0cf67e17a768.js",
+        "/SaltorSystem/234.46823621869c47dd.js",
+        "/SaltorSystem/289.71b053cb1e496a54.js",
+        "/SaltorSystem/313.a021651850b343b7.js",
+        "/SaltorSystem/328.a5aad6704045a0e4.js",
+        "/SaltorSystem/353.4a4e0bc80184e1dd.js",
+        "/SaltorSystem/368.effa8105594d9880.js",
+        "/SaltorSystem/377.b1a772055fe9703f.js",
+        "/SaltorSystem/403.b7cf336c6767c3ff.js",
+        "/SaltorSystem/456.4e539d411512e310.js",
+        "/SaltorSystem/47.1d5a415ac4adc455.js",
+        "/SaltorSystem/486.9b5131cfd72a64b4.js",
+        "/SaltorSystem/503.dd7212c01e95e843.js",
+        "/SaltorSystem/556.2a82fd922b258e8e.js",
+        "/SaltorSystem/654.5bf45415999814e1.js",
+        "/SaltorSystem/655.f5ceb6b916ad8460.js",
+        "/SaltorSystem/665.eb2370071b5e3e96.js",
+        "/SaltorSystem/695.03038d400271ccaf.js",
+        "/SaltorSystem/730.522eef17def8bcf3.js",
+        "/SaltorSystem/746.3a2c2931ae087a7c.js",
+        "/SaltorSystem/749.13a75a0b3bb14b3d.js",
+        "/SaltorSystem/784.d2df7b50a3a2a00d.js",
+        "/SaltorSystem/797.b0d6ecedb78b601b.js",
+        "/SaltorSystem/798.631d9dce225cdade.js",
+        "/SaltorSystem/827.24e37847c83c5655.js",
+        "/SaltorSystem/885.82799db57b11cd95.js",
+        "/SaltorSystem/896.a7fbfba46ae4a4e4.js",
+        "/SaltorSystem/898.1f938b1043427941.js",
+        "/SaltorSystem/common.c012cd09906608b1.js",
+        "/SaltorSystem/favicon.ico",
+        "/SaltorSystem/index.html",
+        "/SaltorSystem/main.5f573df64909f380.js",
+        "/SaltorSystem/manifest.webmanifest",
+        "/SaltorSystem/polyfills.4240d9f215fcc783.js",
+        "/SaltorSystem/runtime.7d188a42a8da0a5f.js",
+        "/SaltorSystem/scripts.57bd936209690c16.js",
+        "/SaltorSystem/styles.19360a9aba887258.css"
+      ],
+      "patterns": []
+    },
+    {
+      "name": "assets",
+      "installMode": "lazy",
+      "updateMode": "prefetch",
+      "cacheQueryOptions": {
+        "ignoreVary": true
+      },
+      "urls": [
+        "/SaltorSystem/assets/logo.jpg",
+        "/SaltorSystem/assets/logo2.png"
+      ],
+      "patterns": []
+    }
+  ],
+  "dataGroups": [],
+  "hashTable": {
+    "/SaltorSystem/106.49959536b4374471.js": "631194ea0db9cc1fa512d98fef5b26772b4d27d8",
+    "/SaltorSystem/118.dff679f248610dac.js": "cd4057946dbeeba2ecf29a940b03141025b7b6e3",
+    "/SaltorSystem/133.0e90bdb4420287ea.js": "b5cf3b959c93b9572811e08328e0b024baa70261",
+    "/SaltorSystem/168.1a1172b045a4357a.js": "e5b1625e2dc539aef14062214745a5bd2663c57f",
+    "/SaltorSystem/223.259bb3974bdb9f45.js": "8636d1f63bc6bcbcdbef898af99b4440d44b3313",
+    "/SaltorSystem/226.28ca0cf67e17a768.js": "007af812166de27b2c35f237e281e0cd7cd5f33f",
+    "/SaltorSystem/234.46823621869c47dd.js": "238e304cee07fa7a87dcf599e1ad308bf181bf2f",
+    "/SaltorSystem/289.71b053cb1e496a54.js": "9a7e291c57afad7ee433f9b7f339152de3ad97a1",
+    "/SaltorSystem/313.a021651850b343b7.js": "7a6917c4b5ffc63f4d3c1d63d4165dcd4ad588d0",
+    "/SaltorSystem/328.a5aad6704045a0e4.js": "f3c1709fdce82dadba60bad8ea4825aa39af02b3",
+    "/SaltorSystem/353.4a4e0bc80184e1dd.js": "0f8a263a89ef9de45ef77128e7109c82d0d12da4",
+    "/SaltorSystem/368.effa8105594d9880.js": "07878742edd17c2e9ebdd5ca64037d42d47369e4",
+    "/SaltorSystem/377.b1a772055fe9703f.js": "8a0c694e06c0745ec800a556e4b64d3b4ddbdf40",
+    "/SaltorSystem/403.b7cf336c6767c3ff.js": "51b866d21f650055df02bdecdc6eb2b576e948f2",
+    "/SaltorSystem/456.4e539d411512e310.js": "155a967c56fd52cd7e8b79b059419c52d9d2c242",
+    "/SaltorSystem/47.1d5a415ac4adc455.js": "62fcf72e76c6080e9fd7eefe40ae970e296836f1",
+    "/SaltorSystem/486.9b5131cfd72a64b4.js": "f34bf80ab206f91e01c83c1bbef617c5b787f880",
+    "/SaltorSystem/503.dd7212c01e95e843.js": "88e31de5ba35c4e41a6476e5f3e045cc62530581",
+    "/SaltorSystem/556.2a82fd922b258e8e.js": "85b1bd7e1c25fe100b57ed2242d9a2684d6baeec",
+    "/SaltorSystem/654.5bf45415999814e1.js": "dc5ec03e4685d2bab040b3d175762b486362c89e",
+    "/SaltorSystem/655.f5ceb6b916ad8460.js": "a589681ab5c30238370c14efecd83b255e688983",
+    "/SaltorSystem/665.eb2370071b5e3e96.js": "337f801ad2c652c8f7a1c0bd055587023507f59f",
+    "/SaltorSystem/695.03038d400271ccaf.js": "13d63a6b967e49a6beff32d861a9b2d590611c65",
+    "/SaltorSystem/730.522eef17def8bcf3.js": "a9c271e23952d1f9f0f38939b0724052e63d090b",
+    "/SaltorSystem/746.3a2c2931ae087a7c.js": "3b46053c59786145e6064198d086618d6e9d929b",
+    "/SaltorSystem/749.13a75a0b3bb14b3d.js": "9382e92101165a843986338e662eeccdeb5ade90",
+    "/SaltorSystem/784.d2df7b50a3a2a00d.js": "2a5e08efce59c0bc908c27d6126c2798338cbe42",
+    "/SaltorSystem/797.b0d6ecedb78b601b.js": "808123294e911b782c47c06e4f853a1c5c1cb935",
+    "/SaltorSystem/798.631d9dce225cdade.js": "d2c356e5fcef74a29ad2a56564eb6b14c12a6a43",
+    "/SaltorSystem/827.24e37847c83c5655.js": "7212c84d76c2f42996c0036e81a2c08528f8ebbc",
+    "/SaltorSystem/885.82799db57b11cd95.js": "b9ec675df3eee9eb90b60ae8687a8bd353911d27",
+    "/SaltorSystem/896.a7fbfba46ae4a4e4.js": "ee7ea14ac161a57bcb9091fe4d8983a00da812e7",
+    "/SaltorSystem/898.1f938b1043427941.js": "0ec817485661b2f522ddac64b0506d7be9be913c",
+    "/SaltorSystem/assets/logo.jpg": "d4912bcb011b306949f96a2545bfbc81cc3362ec",
+    "/SaltorSystem/assets/logo2.png": "cfd8b0ca5c5d402637087bf6eb4012fe4ad78e37",
+    "/SaltorSystem/common.c012cd09906608b1.js": "51ca5e5206673484c662e8375b5762ff8f2905d1",
+    "/SaltorSystem/favicon.ico": "22f6a4a3bcaafafb0254e0f2fa4ceb89e505e8b2",
+    "/SaltorSystem/index.html": "151987e45622dfb0a9191b9a914b3a4d8c0e1e40",
+    "/SaltorSystem/main.5f573df64909f380.js": "7221db765ff2850fadce51203e18f52e26ece0b8",
+    "/SaltorSystem/manifest.webmanifest": "7821b675ca322281ff85d4b0365c60031f710b79",
+    "/SaltorSystem/polyfills.4240d9f215fcc783.js": "8d77d2feda492ea9f6c4898d76b4b8ee0c030147",
+    "/SaltorSystem/runtime.7d188a42a8da0a5f.js": "1b666a71072575cd60a944d542b67a79996e20e2",
+    "/SaltorSystem/scripts.57bd936209690c16.js": "a3aa3506362e7db8195778428b68e0c4352310bb",
+    "/SaltorSystem/styles.19360a9aba887258.css": "377d96104ef6b554a7a54ffdd151a4afc8d7aed8"
+  },
+  "navigationUrls": [
+    {
+      "positive": true,
+      "regex": "^\\/.*$"
+    },
+    {
+      "positive": false,
+      "regex": "^\\/(?:.+\\/)?[^/]*\\.[^/]*$"
+    },
+    {
+      "positive": false,
+      "regex": "^\\/(?:.+\\/)?[^/]*__[^/]*$"
+    },
+    {
+      "positive": false,
+      "regex": "^\\/(?:.+\\/)?[^/]*__[^/]*\\/.*$"
+    }
+  ],
+  "navigationRequestStrategy": "performance"
+}
