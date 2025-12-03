@@ -24,27 +24,27 @@ const routes: Routes = [
 
       {
         path: "controlfact",
-        loadChildren: () => import('./pages/controlfact-page/controlfact-modulo').then(m => m.ModuloControlFact)
+        loadChildren: () => import('src/app/features/private/pages/Almacen/pages/controlfact-page/controlfact-modulo').then(m => m.ModuloControlFact)
       },
       {
         path: "entradamerc",
-        loadChildren: () => import('./pages/entradamerc-page/entradamerc-modulo').then(m => m.ModuloEntradamerc)
+        loadChildren: () => import('src/app/features/private/pages/Almacen/pages/entradamerc-page/entradamerc-modulo').then(m => m.ModuloEntradamerc)
       },
 
       {
         path: "ventainterna",
-        loadChildren: () => import('./pages/ventainterna/ventainterna-modulo').then(m => m.ModuloVentainterna)
+        loadChildren: () => import('src/app/features/private/pages/Almacen/pages/ventainterna/ventainterna-modulo').then(m => m.ModuloVentainterna)
       },
 
         {
           path:"pendiente",
-          loadChildren: () => import('./pages/pendiente/pendiente-modulo').then(m => m.ModuloPendiente)
+          loadChildren: () => import('src/app/features/private/pages/Almacen/pages/pendiente/pendiente-modulo').then(m => m.ModuloPendiente)
         },
 
 
       {
         path: "salidafactura",
-        loadChildren: () => import('./pages/salidafactura/salidafactura-modulo').then(m => m.ModuloSalidafactura)
+        loadChildren: () => import('src/app/features/private/pages/Almacen/pages/salidafactura/salidafactura-modulo').then(m => m.ModuloSalidafactura)
       },
       //   {
       //     path:"Conduce",
