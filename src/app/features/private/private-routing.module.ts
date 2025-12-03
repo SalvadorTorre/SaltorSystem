@@ -69,6 +69,7 @@ const routes: Routes = [
     ],
   },
 ];
+// listo
 
 @NgModule({
   imports: [RouterModule.forChild(routes)],
