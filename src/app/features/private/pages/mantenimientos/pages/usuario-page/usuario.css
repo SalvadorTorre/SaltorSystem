@@ -1,2 +1,73 @@
 .table-responsive { max-height: 60vh; }
 .modal .table { margin-bottom: 0; }
+
+.modal-header-degradado {
+  /* background: linear-gradient(90deg, #0066ff, #ff0000);  */
+ /* background: linear-gradient(90deg, #005eff, #ff4b4b); */
+background: linear-gradient(45deg, #0066ff, #ff0000);
+
+ color: white;               /* Mantiene el texto visible */
+  border-top-left-radius: 10px;
+  border-top-right-radius: 10px;
+}
+/* ----------------------------- */
+/*   MODAL MODERNO PERSONALIZADO */
+/* ----------------------------- */
+
+.modal-modern {
+  border-radius: 14px;
+  overflow: hidden;               /* Para que el header redondeado funcione */
+  box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+  border: none;
+}
+
+/* HEADER degradado */
+.modal-header-degradado {
+  background: linear-gradient(90deg, #0066ff, #ff0000);
+  color: white;
+  padding: 15px 20px;
+  border-bottom: none;
+}
+
+/* Cambiar color del título */
+.modal-header-degradado .modal-title {
+  font-weight: 600;
+  font-size: 1.15rem;
+}
+
+/* Color blanco para el botón de cerrar */
+.btn-close-white {
+  filter: invert(1);
+}
+
+/* Mejoras en el contenido */
+.modal-modern .modal-body {
+  background: #f8f9fa;       /* Gris claro */
+  padding: 20px;
+}
+
+.modal-modern .modal-footer {
+  background: #f1f1f1;
+  border-top: none;
+  padding: 15px 20px;
+}
+
+/* Inputs más elegantes */
+.modal-modern .form-control,
+.modal-modern .form-select {
+  border-radius: 8px;
+  box-shadow: none;
+  border: 1px solid #d0d0d0;
+}
+
+.modal-modern .form-control:focus,
+.modal-modern .form-select:focus {
+  border-color: #0066ff;
+  box-shadow: 0 0 0 0.15rem rgba(0, 102, 255, 0.25);
+}
+
+/* Botón verde más elegante */
+.modal-modern .btn-success {
+  border-radius: 8px;
+  font-weight: 600;
+}

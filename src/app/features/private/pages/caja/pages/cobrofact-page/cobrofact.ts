@@ -65,6 +65,7 @@ export class CobroFact implements OnInit {
   valorpagado: number = 0;
   valCambio: number = 0;
   facturaSelecionada: any = null;
+  DatosSeleccionado!: FacturacionModelData;
   codFacturaselecte = ' ';
   txtdescripcion: string = '';
   descripcionFormaPago: string = '';
@@ -118,6 +119,8 @@ export class CobroFact implements OnInit {
   dtxt: any;
   etxt: any;
   ftxt: any;
+  // Referencia a la ventana de impresión para evitar bloqueos de pop-ups
+  private printWindow: Window | null = null;
   gtxt: any;
   factxt: any;
   protxt: any;
@@ -416,7 +419,10 @@ export class CobroFact implements OnInit {
     this.botonEditar = false; // Habilita el botón
     this.chekpagada = false; // Habilita el botón
     this.fentrega = factura.fa_envio || '';
-    this.ftipoPago = factura.fa_fpago || '';
+    this.DatosSeleccionado = factura;
+    // Usa el código numérico de forma de pago, pero almacénalo como string
+    // para mantener el tipo declarado de ftipoPago.
+    this.ftipoPago = String((factura as any).fa_codfpago ?? 1);
     // this.botonImprimir = true; // Deshabilita el botón
 
     const inputs = document.querySelectorAll('.seccion-productos input');
@@ -504,11 +510,13 @@ export class CobroFact implements OnInit {
 
         this.formularioFacturacion.patchValue({
           fa_fpago: factura.fa_fpago,
+          fa_codfpago: (factura as any).fa_codfpago ?? this.ftipoPago,
         });
         // Consultar la descripción de forma de pago
 
         this.servicioFpago
-          .obtenerFpagoPorId(factura.fa_fpago)
+          // Consulta por ID (código numérico) para evitar errores en backend
+          .obtenerFpagoPorId(String(this.ftipoPago))
           .subscribe((response) => {
             const formaPago = response.data?.[0]; // Accede al primer elemento del array
             this.descripcionFormaPago = formaPago
@@ -931,13 +939,40 @@ export class CobroFact implements OnInit {
       .replace(/\B(?=(\d{3})+(?!\d))/g, '.'); // separador de miles
   }
   buscarFactura() {
-    this.marcarImpresa();
+    // Preabrir ventana en el gesto de clic para permitir impresión controlada en ventana
+    try {
+      this.printWindow = window.open('', '_blank');
+    } catch (e) {
+      this.printWindow = null;
+    }
     this.servicioFacturacion.getByNumero(this.formularioFacturacion.get('fa_codFact')?.value).subscribe((response) => {
       if (response) {
       this.facturaData = response; // 🔹 aquí está la factura completa
       console.log("facturaData", this.facturaData);
         this.mensaje = '';
-        this.generarPDF();
+        const numero = this.formularioFacturacion.get('fa_codFact')?.value;
+        // Cargar detalles antes de generar el PDF para evitar documento vacío
+        this.servicioFacturacion.buscarFacturaDetalle(numero).subscribe((det) => {
+          try {
+            const detalles = det?.data || [];
+            // Asignar detalles dentro del objeto correcto según la forma de respuesta
+            if ((this.facturaData as any)?.data) {
+              ((this.facturaData as any).data as any).detalles = detalles;
+            } else {
+              (this.facturaData as any).detalles = detalles;
+            }
+            console.log('Detalles cargados:', Array.isArray(detalles) ? detalles.length : 0);
+          } catch (e) {
+            console.warn('No se pudieron asignar detalles a facturaData', e);
+          }
+          this.generarPDF();
+          // Marcar como impresa DESPUÉS de haber generado el PDF para evitar pisar facturaData
+          this.marcarImpresa();
+        }, (err) => {
+          console.warn('No se pudieron obtener detalles, imprimiendo encabezado y totales.', err);
+          this.generarPDF();
+          this.marcarImpresa();
+        });
       } else {
         this.facturaData = null;
         this.mensaje = 'No se encontró una factura con ese número';
@@ -953,14 +988,13 @@ export class CobroFact implements OnInit {
       fa_envio: this.fentrega })
     .subscribe({next: (res: any) => {
       console.log("✅ Respuesta backend:", res);
-        this.facturaData = res.data; // 👈 viene del backend
-        console.log("Factura actualizada y marcada como impresa ✅", this.facturaData);
+        // No pisar this.facturaData aquí para evitar perder los detalles cargados
+        console.log("Factura marcada como impresa ✅");
         this.mensaje = '';
         // this.generarPDF();
       },
       error: (err) => {
         console.error("Error marcando factura ❌", err);
-        this.facturaData = null;
         this.mensaje = 'No se pudo actualizar la factura';
       }
     });
@@ -991,16 +1025,141 @@ export class CobroFact implements OnInit {
   // }
 
 generarPDF() {
-  if (!this.facturaData) {
+  if (!this.DatosSeleccionado) {
     alert("Debe buscar una factura primero");
     return;
   }
-  console.log("this.facturaData", this.facturaData);
-  const f = this.facturaData;
+  var payload = {
+    Version: "1.0",
+    TipoeCF: this.DatosSeleccionado.fa_tipoNcf ,
+    ENCF: "E320000000040",
+    IndicadorMontoGravado: "0",
+    TipoIngresos: "01",
+    TipoPago: "1",
+    FormaPago[1]: this.DatosSeleccionado.fa_fpago,
+    MontoPago[1]: this.DatosSeleccionado.fa_valFact,
+    RNCEmisor: "132177975",
+    RazonSocialEmisor: localStorage.getItem('empresa') || '',
+    NombreComercial: "DOCUMENTOS ELECTRONICOS DE 02",
+    DireccionEmisor: "AVE. ISABEL AGUIAR NO. 269, ZONA INDUSTRIAL DE HERRERA",
+    Municipio: "010100",
+    Provincia: "010000",
+    TelefonoEmisor[1]: "809-472-7676",
+    TelefonoEmisor[2]: "809-491-1918",
+    CorreoEmisor: "DOCUMENTOSELECTRONICOSDE0612345678969789+9000000000000000000000000000001@123.COM",
+    WebSite: "www.facturaelectronica.com",
+    CodigoVendedor: "AA0000000100000000010000000002000000000300000000050000000006",
+    NumeroFacturaInterna: "123456789016",
+    NumeroPedidoInterno: "123456789016",
+    ZonaVent: "NORTE",
+    FechaEmision: "01-04-2020",
+    RNCComprador: "131880681",
+    RazonSocialComprador: "DOCUMENTOS ELECTRONICOS DE 03",
+    ContactoComprador: "MARCOS LATIPLOL",
+    CorreoComprador: "MARCOSLATIPLOL@KKKK.COM",
+    DireccionComprador: "CALLE JACINTO DE LA CONCHA FELIZ ESQUINA 27 DE FEBRERO,FRENTE A DOMINO",
+    MunicipioComprador: "010100",
+    ProvinciaComprador: "010000",
+    FechaEntrega: "10-10-2020",
+    FechaOrdenCompra: "10-11-2018",
+    NumeroOrdenCompra: "4500352238",
+    CodigoInternoComprador: "10633440",
+    MontoGravadoTotal: "350765.00",
+    MontoGravadoI1: "269805.00",
+    MontoGravadoI2: "80190.00",
+    MontoGravadoI3: "770.00",
+    MontoExento: "1625.00",
+    ITBIS1: "18",
+    ITBIS2: "16",
+    ITBIS3: "0",
+    TotalITBIS: this.DatosSeleccionado.fa_itbiFact,
+    TotalITBIS1: "48564.90",
+    TotalITBIS2: "12830.40",
+    TotalITBIS3: "0.00",
+    MontoTotal: "413785.30",
+    MontoPeriodo: "413785.30",
+    ValorPagar: "413785.30",
+    NumeroLinea[1]: "1",
+    IndicadorFacturacion[1]: "1",
+    NombreItem[1]: "LAPICES",
+    IndicadorBienoServicio[1]: "1",
+    CantidadItem[1]: "23.00",
+    UnidadMedida[1]: "43",
+    PrecioUnitarioItem[1]: "35.0000",
+    MontoItem[1]: "805.00",
+    NumeroLinea[2]: "2",
+    IndicadorFacturacion[2]: "2",
+    NombreItem[2]: "GALLETAS",
+    IndicadorBienoServicio[2]: "1",
+    CantidadItem[2]: "547.00",
+    UnidadMedida[2]: "6",
+    PrecioUnitarioItem[2]: "145.0000",
+    MontoItem[2]: "79315.00",
+    NumeroLinea[3]: "3",
+    IndicadorFacturacion[3]: "3",
+    NombreItem[3]: "PAN",
+    IndicadorBienoServicio[3]: "1",
+    CantidadItem[3]: "14.00",
+    UnidadMedida[3]: "31",
+    PrecioUnitarioItem[3]: "55.0000",
+    MontoItem[3]: "770.00",
+    NumeroLinea[4]: "4",
+    IndicadorFacturacion[4]: "4",
+    NombreItem[4]: "LECHE",
+    IndicadorBienoServicio[4]: "1",
+    CantidadItem[4]: "25.00",
+    UnidadMedida[4]: "47",
+    PrecioUnitarioItem[4]: "65.0000",
+    MontoItem[4]: "1625.00",
+    NumeroLinea[5]: "5",
+    IndicadorFacturacion[5]: "2",
+    NombreItem[5]: "SALSA",
+    IndicadorBienoServicio[5]: "1",
+    CantidadItem[5]: "35.00",
+    UnidadMedida[5]: "47",
+    PrecioUnitarioItem[5]: "25.0000",
+    MontoItem[5]: "875.00",
+    NumeroLinea[6]: "6",
+    IndicadorFacturacion[6]: "1",
+    NombreItem[6]: "TV LG 57\",
+    IndicadorBienoServicio[6]: "1",
+    CantidadItem[6]: "2.00",
+    UnidadMedida[6]: "43",
+    PrecioUnitarioItem[6]: "57000.0000",
+    MontoItem[6]: "114000.00",
+    NumeroLinea[7]: "7",
+    IndicadorFacturacion[7]: "1",
+    NombreItem[7]: "LAVADORA-SECADORA  WESTINGHOUSE",
+    IndicadorBienoServicio[7]: "1",
+    CantidadItem[7]: "1.00",
+    UnidadMedida[7]: "43",
+    PrecioUnitarioItem[7]: "75000.0000",
+    MontoItem[7]: "75000.00",
+    NumeroLinea[8]: "8",
+    IndicadorFacturacion[8]: "1",
+    NombreItem[8]: "ESTUFA MABE",
+    IndicadorBienoServicio[8]: "1",
+    CantidadItem[8]: "1.00",
+    UnidadMedida[8]: "43",
+    PrecioUnitarioItem[8]: "45000.0000",
+    MontoItem[8]: "45000.00",
+    NumeroLinea[9]: "9",
+    IndicadorFacturacion[9]: "1",
+    NombreItem[9]: "LAPICES",
+    IndicadorBienoServicio[9]: "1",
+    CantidadItem[9]: "1.00",
+    UnidadMedida[9]: "43",
+    PrecioUnitarioItem[9]: "35000.0000",
+    MontoItem[9]: "35000.00"  
+  } 
+  console.log("this.facturaData", this.DatosSeleccionado);
+  // Normalizar posibles formas de respuesta del backend (puede venir en response o response.data)
+  const f: any = (this.DatosSeleccionado as any)?.data ?? this.DatosSeleccionado;
   const doc = new jsPDF({
     orientation: 'p',
     unit: 'mm',
-    format: [72, 297]  // ancho 72mm, alto ajustable
+    // Ajuste para impresora POS (80mm). Usa 80mm de ancho.
+    format: [80, 297]  // ancho 80mm, alto ajustable
   });
   
   // Formateador para pesos dominicanos (DOP)
@@ -1019,19 +1178,27 @@ generarPDF() {
 
   doc.setFontSize(8);
   doc.setTextColor(0, 0, 0);
-  doc.text(`Factura No: ${f.fa_codFact}`, 2, 20);
-  doc.text(`Fecha: ${f.fa_fecFact}`, 2, 25);
-  doc.text(`Cliente: ${f.fa_nomClie}`, 2, 30);
-  doc.text(`RNC: ${f.fa_rncFact || 'N/A'}`, 2, 35);
-  doc.text(`Dirección: ${f.fa_dirClie}`, 2, 40);
-  doc.text(`Teléfono: ${f.fa_telClie}`, 2, 45);
-  doc.text(`Vendedor: ${f.fa_nomVend}`, 2, 50);
+  const codFact = f.fa_codFact ?? f.codFact ?? this.formularioFacturacion.get('fa_codFact')?.value ?? '';
+  const fecFact = f.fa_fecFact ?? f.fecFact ?? '';
+  const nomClie = f.fa_nomClie ?? f.nomClie ?? '';
+  const rnc = f.fa_rncFact ?? f.rnc ?? 'N/A';
+  const dirClie = f.fa_dirClie ?? f.dirClie ?? f.direccion ?? '';
+  const telClie = f.fa_telClie ?? f.telClie ?? f.telefono ?? '';
+  const nomVend = f.fa_nomVend ?? f.nomVend ?? f.vendedor ?? '';
+
+  doc.text(`Factura No: ${String(codFact)}`, 2, 20);
+  doc.text(`Fecha: ${String(fecFact)}`, 2, 25);
+  doc.text(`Cliente: ${String(nomClie)}`, 2, 30);
+  doc.text(`RNC: ${String(rnc)}`, 2, 35);
+  doc.text(`Dirección: ${String(dirClie)}`, 2, 40);
+  doc.text(`Teléfono: ${String(telClie)}`, 2, 45);
+  doc.text(`Vendedor: ${String(nomVend)}`, 2, 50);
 
   // --- Tabla de productos ---
   const tableColumn = ['Cant.', 'Precio', 'Itbis', 'Total', ''];
   const tableRows: any[] = [];
-
-  f.detalles.forEach((item: any) => {
+  const detalles: any[] = Array.isArray((f as any).detalles) ? (f as any).detalles : [];
+  detalles.forEach((item: any) => {
     // Primera fila → cantidad, precio, total
     tableRows.push([
       { content: item.df_canMerc, styles: { halign: 'right' } },
@@ -1050,6 +1217,22 @@ generarPDF() {
       }
     ]);
   });
+  if (detalles.length === 0) {
+    tableRows.push([
+      { content: '', styles: { halign: 'right' } },
+      { content: '', styles: { halign: 'right' } },
+      { content: '', styles: { halign: 'right' } },
+      { content: '', styles: { halign: 'right' } },
+      ''
+    ]);
+    tableRows.push([
+      {
+        content: `Sin detalle de productos cargados`,
+        colSpan: 5,
+        styles: { halign: 'left', fontStyle: 'italic' }
+      }
+    ]);
+  }
 
   // Generar tabla con líneas en encabezado, principio y final
   autoTable(doc, {
@@ -1130,15 +1313,19 @@ generarPDF() {
 
   // --- Totales ---
   doc.setFontSize(7);
+  const subFact = f.fa_subFact ?? f.subTotal ?? f.subfact ?? 0;
+  const itbiFact = f.fa_itbiFact ?? f.itbis ?? f.itbi ?? 0;
+  const valFact = f.fa_valFact ?? f.valFact ?? f.total ?? 0;
+
   doc.text(`Subtotal:`, 5, finalY + 7);
-  doc.text(formatoMoneda.format(Number(f.fa_subFact)), 17, finalY + 7);
+  doc.text(formatoMoneda.format(Number(subFact)), 17, finalY + 7);
   doc.text('ITBIS:', 5, finalY + 10);
-  doc.text(formatoMoneda.format(Number(f.fa_itbiFact)), 17, finalY + 10);
+  doc.text(formatoMoneda.format(Number(itbiFact)), 17, finalY + 10);
   
   doc.setFontSize(8);
   doc.setFont('helvetica', 'bold');
   doc.text('Total:', 5, finalY + 13);
-  doc.text(formatoMoneda.format(Number(f.fa_valFact)), 17, finalY + 13);
+  doc.text(formatoMoneda.format(Number(valFact)), 17, finalY + 13);
   doc.setFont('helvetica', 'normal');
 
   // --- Pie de página ---
@@ -1150,9 +1337,65 @@ generarPDF() {
   //   doc.text(`Página ${i} de ${pageCount}`, pageWidth / 2, 290, { align: 'center' });
   // }
 
-  // --- Guardar PDF ---
-  doc.save(`Factura_${f.fa_codFact}.pdf`);
-  this.limpia();
+  // --- Imprimir en impresora POS ---
+  // Envía el documento al diálogo de impresión del navegador
+  // para que el usuario seleccione la impresora de punto de venta.
+  (doc as any).autoPrint();
+  const pdfBlob = doc.output('blob');
+  const pdfUrl = URL.createObjectURL(pdfBlob);
+  // Si tenemos una ventana preabierta, incrustamos el PDF y disparamos print ahí
+  if (this.printWindow && !this.printWindow.closed) {
+    const w = this.printWindow;
+    try {
+      w.document.open();
+      w.document.write(`<!doctype html><html><head><title>Imprimir</title></head>
+        <body style="margin:0">
+          <embed id="pdfEmbed" type="application/pdf" src="${pdfUrl}" style="width:100%;height:100vh" />
+          <script>
+            const doPrint = () => { try { window.focus(); window.print(); } catch(e) { console.log(e); } };
+            // Espera pequeña para que el visor PDF cargue contenido
+            window.addEventListener('load', () => setTimeout(doPrint, 400));
+          </script>
+        </body></html>`);
+      w.document.close();
+    } catch (e) {
+      console.warn('No se pudo escribir en la ventana de impresión, se usa iframe oculto.', e);
+      this.imprimirEnIframeOculto(pdfUrl);
+    }
+    // Limpieza diferida
+    setTimeout(() => {
+      try { URL.revokeObjectURL(pdfUrl); } catch {}
+      this.limpia();
+    }, 1200);
+  } else {
+    // Fallback: imprime en iframe oculto si no hay ventana
+    this.imprimirEnIframeOculto(pdfUrl);
+  }
+}
+
+private imprimirEnIframeOculto(pdfUrl: string) {
+  const iframe = document.createElement('iframe');
+  iframe.style.position = 'fixed';
+  iframe.style.right = '0';
+  iframe.style.bottom = '0';
+  iframe.style.width = '0';
+  iframe.style.height = '0';
+  iframe.style.border = '0';
+  document.body.appendChild(iframe);
+  iframe.onload = () => {
+    try {
+      iframe.contentWindow?.focus();
+      // Dar un respiro al visor PDF antes de imprimir
+      setTimeout(() => iframe.contentWindow?.print(), 400);
+    } finally {
+      setTimeout(() => {
+        document.body.removeChild(iframe);
+        try { URL.revokeObjectURL(pdfUrl); } catch {}
+        this.limpia();
+      }, 1400);
+    }
+  };
+  iframe.src = pdfUrl;
 }
 
 

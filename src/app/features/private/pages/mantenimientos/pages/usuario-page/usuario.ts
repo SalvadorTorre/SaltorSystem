@@ -8,6 +8,7 @@ import { Permiso, PermisoModel } from 'src/app/features/private/pages/mantenimie
 import Swal from 'sweetalert2';
 import { ServicioSucursal } from 'src/app/core/services/mantenimientos/sucursal/sucursal.service';
 import { ServicioTipousuario } from 'src/app/core/services/mantenimientos/tipousuario/tipousuario.service';
+import { ServicioEmpresa } from 'src/app/core/services/mantenimientos/empresas/empresas.service';
 import { forkJoin } from 'rxjs';
 declare var $: any;
 
@@ -50,6 +51,7 @@ export class Usuario implements OnInit {
     private moduloSrv: ServicioModulo,
     private sucSrv: ServicioSucursal,
     private tipoSrv: ServicioTipousuario,
+    private empresaSrv: ServicioEmpresa,
   ) {}
 
   ngOnInit(): void {
@@ -320,6 +322,20 @@ export class Usuario implements OnInit {
       (this.nuevoUsuario as any).sucursalid = sucursalId;
       (this.nuevoUsuario as any).sucursal = sucursalId; // mantener compatibilidad con backend existente
       (this.nuevoUsuario as any).cod_empre = s.cod_empre ?? (this.nuevoUsuario as any).cod_empre;
+      // Buscar nombre de la empresa por código y reflejarlo en el formulario
+      if (s.cod_empre) {
+        this.empresaSrv.buscarEmpres(String(s.cod_empre)).subscribe({
+          next: (res: any) => {
+            const empresa = Array.isArray(res?.data) ? res.data[0] : (res?.data ?? res);
+            (this.nuevoUsuario as any).empresa = String(empresa?.nom_empre || '').trim();
+          },
+          error: () => {
+            (this.nuevoUsuario as any).empresa = '';
+          }
+        });
+      } else {
+        (this.nuevoUsuario as any).empresa = '';
+      }
     }
   }
 

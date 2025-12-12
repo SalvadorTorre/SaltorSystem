@@ -1401,6 +1401,7 @@ export class Facturacion implements OnInit {
     facturaPayload.fa_codEmpr = localStorage.getItem('codigoempresa');
     facturaPayload.fa_codSucu = parseInt(localStorage.getItem('idSucursal') || '0');
     facturaPayload.fa_fecFact = this.toPrismaDate(facturaPayload.fa_fecFact);
+    facturaPayload.fa_rncFact = facturaPayload.fa_rncFact || "";
     const datosParaGuardar = { factura: facturaPayload, detalle: this.items };
     console.log("Datos",datosParaGuardar);
     if (this.formularioFacturacion.valid) {
