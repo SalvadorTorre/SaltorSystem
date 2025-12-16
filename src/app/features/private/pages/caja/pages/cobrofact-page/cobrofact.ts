@@ -1029,23 +1029,28 @@ generarPDF() {
     alert("Debe buscar una factura primero");
     return;
   }
-  var payload = {
+  // Utilidad para soportar campos con múltiples entradas en formato "Clave[1]", "Clave[2]", etc.
+  const appendIndexed = (obj: any, key: string, values: any[] | any) => {
+    const arr = Array.isArray(values) ? values : [values];
+    arr.forEach((v, i) => {
+      obj[`${key}[${i + 1}]`] = v;
+    });
+  };
+
+  // Construcción base del payload (campos unitarios)
+  const payload: any = {
     Version: "1.0",
-    TipoeCF: this.DatosSeleccionado.fa_tipoNcf ,
+    TipoeCF: this.DatosSeleccionado.fa_tipoNcf,
     ENCF: "E320000000040",
     IndicadorMontoGravado: "0",
     TipoIngresos: "01",
     TipoPago: "1",
-    FormaPago[1]: this.DatosSeleccionado.fa_fpago,
-    MontoPago[1]: this.DatosSeleccionado.fa_valFact,
     RNCEmisor: "132177975",
     RazonSocialEmisor: localStorage.getItem('empresa') || '',
     NombreComercial: "DOCUMENTOS ELECTRONICOS DE 02",
     DireccionEmisor: "AVE. ISABEL AGUIAR NO. 269, ZONA INDUSTRIAL DE HERRERA",
     Municipio: "010100",
     Provincia: "010000",
-    TelefonoEmisor[1]: "809-472-7676",
-    TelefonoEmisor[2]: "809-491-1918",
     CorreoEmisor: "DOCUMENTOSELECTRONICOSDE0612345678969789+9000000000000000000000000000001@123.COM",
     WebSite: "www.facturaelectronica.com",
     CodigoVendedor: "AA0000000100000000010000000002000000000300000000050000000006",
@@ -1079,79 +1084,36 @@ generarPDF() {
     MontoTotal: "413785.30",
     MontoPeriodo: "413785.30",
     ValorPagar: "413785.30",
-    NumeroLinea[1]: "1",
-    IndicadorFacturacion[1]: "1",
-    NombreItem[1]: "LAPICES",
-    IndicadorBienoServicio[1]: "1",
-    CantidadItem[1]: "23.00",
-    UnidadMedida[1]: "43",
-    PrecioUnitarioItem[1]: "35.0000",
-    MontoItem[1]: "805.00",
-    NumeroLinea[2]: "2",
-    IndicadorFacturacion[2]: "2",
-    NombreItem[2]: "GALLETAS",
-    IndicadorBienoServicio[2]: "1",
-    CantidadItem[2]: "547.00",
-    UnidadMedida[2]: "6",
-    PrecioUnitarioItem[2]: "145.0000",
-    MontoItem[2]: "79315.00",
-    NumeroLinea[3]: "3",
-    IndicadorFacturacion[3]: "3",
-    NombreItem[3]: "PAN",
-    IndicadorBienoServicio[3]: "1",
-    CantidadItem[3]: "14.00",
-    UnidadMedida[3]: "31",
-    PrecioUnitarioItem[3]: "55.0000",
-    MontoItem[3]: "770.00",
-    NumeroLinea[4]: "4",
-    IndicadorFacturacion[4]: "4",
-    NombreItem[4]: "LECHE",
-    IndicadorBienoServicio[4]: "1",
-    CantidadItem[4]: "25.00",
-    UnidadMedida[4]: "47",
-    PrecioUnitarioItem[4]: "65.0000",
-    MontoItem[4]: "1625.00",
-    NumeroLinea[5]: "5",
-    IndicadorFacturacion[5]: "2",
-    NombreItem[5]: "SALSA",
-    IndicadorBienoServicio[5]: "1",
-    CantidadItem[5]: "35.00",
-    UnidadMedida[5]: "47",
-    PrecioUnitarioItem[5]: "25.0000",
-    MontoItem[5]: "875.00",
-    NumeroLinea[6]: "6",
-    IndicadorFacturacion[6]: "1",
-    NombreItem[6]: "TV LG 57\",
-    IndicadorBienoServicio[6]: "1",
-    CantidadItem[6]: "2.00",
-    UnidadMedida[6]: "43",
-    PrecioUnitarioItem[6]: "57000.0000",
-    MontoItem[6]: "114000.00",
-    NumeroLinea[7]: "7",
-    IndicadorFacturacion[7]: "1",
-    NombreItem[7]: "LAVADORA-SECADORA  WESTINGHOUSE",
-    IndicadorBienoServicio[7]: "1",
-    CantidadItem[7]: "1.00",
-    UnidadMedida[7]: "43",
-    PrecioUnitarioItem[7]: "75000.0000",
-    MontoItem[7]: "75000.00",
-    NumeroLinea[8]: "8",
-    IndicadorFacturacion[8]: "1",
-    NombreItem[8]: "ESTUFA MABE",
-    IndicadorBienoServicio[8]: "1",
-    CantidadItem[8]: "1.00",
-    UnidadMedida[8]: "43",
-    PrecioUnitarioItem[8]: "45000.0000",
-    MontoItem[8]: "45000.00",
-    NumeroLinea[9]: "9",
-    IndicadorFacturacion[9]: "1",
-    NombreItem[9]: "LAPICES",
-    IndicadorBienoServicio[9]: "1",
-    CantidadItem[9]: "1.00",
-    UnidadMedida[9]: "43",
-    PrecioUnitarioItem[9]: "35000.0000",
-    MontoItem[9]: "35000.00"  
-  } 
+  };
+
+  // Campos con múltiples entradas
+  // Forma de pago y montos (si hay múltiples, se agregan todas)
+  appendIndexed(payload, 'FormaPago', this.DatosSeleccionado.fa_fpago ? [this.DatosSeleccionado.fa_fpago] : []);
+  appendIndexed(payload, 'MontoPago', this.DatosSeleccionado.fa_valFact ? [this.DatosSeleccionado.fa_valFact] : []);
+
+  // Teléfonos del emisor (ejemplo con dos teléfonos)
+  appendIndexed(payload, 'TelefonoEmisor', ["809-472-7676", "809-491-1918"]);
+
+  // Detalle de ítems según los productos cargados en la factura (this.items)
+  const numeroLinea = this.items.map((_, idx) => String(idx + 1));
+  const indicadorFacturacion = this.items.map((_, idx) => String(idx + 1)); // Placeholder
+  const nombreItem = this.items.map((it) => (it?.producto?.in_desmerc ?? ''));
+  const indicadorBienoServicio = this.items.map(() => '1'); // Placeholder
+  const cantidadItem = this.items.map((it) => Number(it.cantidad).toFixed(2));
+  const unidadMedida = this.items.map(() => '43'); // Placeholder o derive si está disponible
+  const precioUnitarioItem = this.items.map((it) => Number(it.precio).toFixed(4));
+  const montoItem = this.items.map((it) => Number(it.total).toFixed(2));
+
+  appendIndexed(payload, 'NumeroLinea', numeroLinea);
+  appendIndexed(payload, 'IndicadorFacturacion', indicadorFacturacion);
+  appendIndexed(payload, 'NombreItem', nombreItem);
+  appendIndexed(payload, 'IndicadorBienoServicio', indicadorBienoServicio);
+  appendIndexed(payload, 'CantidadItem', cantidadItem);
+  appendIndexed(payload, 'UnidadMedida', unidadMedida);
+  appendIndexed(payload, 'PrecioUnitarioItem', precioUnitarioItem);
+  appendIndexed(payload, 'MontoItem', montoItem);
+
+  // A partir de aquí se usa el payload construido dinámicamente
   console.log("this.facturaData", this.DatosSeleccionado);
   // Normalizar posibles formas de respuesta del backend (puede venir en response o response.data)
   const f: any = (this.DatosSeleccionado as any)?.data ?? this.DatosSeleccionado;
@@ -1172,9 +1134,12 @@ generarPDF() {
   const pageWidth = doc.internal.pageSize.getWidth();
 
   // --- Encabezado ---
+  doc.setFontSize(16);
+  doc.setTextColor(0, 0, 0);
+  doc.text(payload.RazonSocialEmisor, pageWidth / 2, 20, { align: 'center' });
   doc.setFontSize(12);
   doc.setTextColor(0, 0, 0);
-  doc.text('FACTURA', pageWidth / 2, 10, { align: 'center' });
+   doc.text('FACTURA', pageWidth / 2, 10, { align: 'center' });
 
   doc.setFontSize(8);
   doc.setTextColor(0, 0, 0);
