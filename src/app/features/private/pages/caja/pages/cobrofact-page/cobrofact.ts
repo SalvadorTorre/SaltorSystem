@@ -1000,35 +1000,14 @@ export class CobroFact implements OnInit {
     });
 }
 
-  // marcarImpresa() {
-  //   this.servicioFacturacion.marcarImpresa(this.formularioFacturacion.get('fa_codFact')?.value, {
-  //     fa_envio: this.formularioFacturacion.get('fa_envio')?.value,
-  //     fa_fpago: this.formularioFacturacion.get('fa_fpago')?.value,
-  //   }).subscribe((response) => {
-  //     console.log("response", response);
-  //     if (response) {
-  //       Swal.fire({
-  //         icon: 'success',
-  //         title: 'Factura marcada como impresa',
-  //         showConfirmButton: false,
-  //         timer: 1500
-  //       });
-  //     } else {
-  //       Swal.fire({
-  //         icon: 'error',
-  //         title: 'Error al marcar la factura como impresa',
-  //         showConfirmButton: false,
-  //         timer: 1500
-  //       });
-  //     }
-  //   });
-  // }
+
 
 generarPDF() {
   if (!this.DatosSeleccionado) {
     alert("Debe buscar una factura primero");
     return;
   }
+
   // Utilidad para soportar campos con múltiples entradas en formato "Clave[1]", "Clave[2]", etc.
   const appendIndexed = (obj: any, key: string, values: any[] | any) => {
     const arr = Array.isArray(values) ? values : [values];
@@ -1038,6 +1017,7 @@ generarPDF() {
   };
 
   // Construcción base del payload (campos unitarios)
+  
   const payload: any = {
     Version: "1.0",
     TipoeCF: this.DatosSeleccionado.fa_tipoNcf,
@@ -1136,7 +1116,7 @@ generarPDF() {
   // --- Encabezado ---
   doc.setFontSize(16);
   doc.setTextColor(0, 0, 0);
-  doc.text(payload.RazonSocialEmisor, pageWidth / 2, 20, { align: 'center' });
+  doc.text(payload.RazonSocialEmisor, pageWidth / 2, 5, { align: 'center' });
   doc.setFontSize(12);
   doc.setTextColor(0, 0, 0);
    doc.text('FACTURA', pageWidth / 2, 10, { align: 'center' });
