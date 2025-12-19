@@ -26,6 +26,7 @@ export class FacturasPendientesComponent implements OnInit {
     this.loading = true;
     this.servicioFacturacion.buscarFacturasPendientesDgii().subscribe({
       next: (response: any) => {
+        console.log('Facturas Pendientes Response:', response);
         this.allFacturas = response.data || [];
         this.total = this.allFacturas.length;
         this.updatePaginatedFacturas();
@@ -60,8 +61,54 @@ export class FacturasPendientesComponent implements OnInit {
   }
 
   verXml(factura: any) {
-    // TODO: Implementar lógica para ver XML real
-    Swal.fire('Info', 'Funcionalidad de ver XML en desarrollo', 'info');
+    const xmlContent =
+      factura.xmls?.ecf ||
+      factura.xmls?.rfce ||
+      factura.xmls?.ECF ||
+      factura.xmls?.RFCE ||
+      'No hay XML disponible';
+
+    // Función simple para escapar caracteres HTML
+    const escapeHtml = (unsafe: string) => {
+      return unsafe
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    };
+
+    const escapedXml = escapeHtml(xmlContent);
+
+    Swal.fire({
+      title: 'Vista Previa del XML',
+      html: `
+        <div style="text-align: left; max-height: 400px; overflow-y: auto; background: #f4f4f4; padding: 10px; border-radius: 5px;">
+          <pre><code class="language-xml" style="font-size: 12px; font-family: monospace;">${escapedXml}</code></pre>
+        </div>
+      `,
+      width: '800px',
+      showCloseButton: true,
+      focusConfirm: false,
+      confirmButtonText: '<i class="bi bi-clipboard"></i> Copiar',
+      confirmButtonAriaLabel: 'Copiar XML',
+      showCancelButton: true,
+      cancelButtonText: 'Cerrar',
+      preConfirm: () => {
+        // Lógica para copiar al portapapeles
+        navigator.clipboard.writeText(xmlContent).then(
+          () => {
+            Swal.showValidationMessage('¡Copiado al portapapeles!');
+            setTimeout(() => Swal.resetValidationMessage(), 1500);
+          },
+          (err) => {
+            console.error('Error al copiar: ', err);
+            Swal.showValidationMessage('Error al copiar');
+          }
+        );
+        return false; // Prevenir cierre automático al copiar
+      },
+    });
   }
 
   get totalPages(): number {

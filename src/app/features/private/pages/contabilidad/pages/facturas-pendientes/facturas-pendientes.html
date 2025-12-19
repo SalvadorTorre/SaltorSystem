@@ -42,14 +42,14 @@
               <td>
                 <span class="badge bg-light text-dark border">{{ f.tipoEcf || 'N/A' }}</span>
               </td>
-              <td>{{ f.signatureDateTime | date:'dd/MM/yyyy HH:mm' }}</td>
+              <td>{{ (f.signatureDateTime || f.signatureDateTime) }}</td>
               <td class="text-end fw-bold">{{ f.fa_valFact | currency:'DOP':'symbol':'1.2-2' }}</td>
               <td class="text-center">
                 <span class="badge" [ngClass]="{
-                  'bg-warning text-dark': f.status === 'PENDIENTE',
-                  'bg-danger': f.status === 'ERROR',
-                  'bg-success': f.status === 'ENVIADO'
-                }">{{ f.status || 'PENDIENTE' }}</span>
+                  'bg-warning text-dark': (f.status || f.Status) === 'PENDIENTE',
+                  'bg-danger': (f.status || f.Status) === 'ERROR',
+                  'bg-success': (f.status || f.Status) === 'ENVIADO'
+                }">{{ f.status || f.Status || 'PENDIENTE' }}</span>
               </td>
               <td class="text-end pe-4">
                 <div class="btn-group btn-group-sm">
