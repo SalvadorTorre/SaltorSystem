@@ -706,9 +706,11 @@ export class CobroFact implements OnInit {
     // 2. Construir el escenario base
     const scenario: any = {
       Version: '1.0',
-      RncEmisor: rncEmisor.replace('-', ''),
+      RncEmisor: rncEmisor.replace(/-/g, ''),
       RazonSocialEmisor: razonSocialEmisor,
-      RncComprador: String(factura.fa_rncFact || '').trim(),
+      RncComprador: String(factura.fa_rncFact || '')
+        .trim()
+        .replace(/-/g, ''),
       RazonSocialComprador: String(factura.fa_nomClie || '').trim(),
       ENCF: encf,
       TipoeCF: tipoeCF,
