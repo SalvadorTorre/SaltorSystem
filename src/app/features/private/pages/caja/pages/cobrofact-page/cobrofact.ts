@@ -745,7 +745,8 @@ export class CobroFact implements OnInit {
       scenario[`IndicadorFacturacion[${i}]`] = '1';
     });
 
-    return { scenarios: [scenario] };
+    // Retornar el objeto escenario directamente, sin envolverlo en un array
+    return scenario;
   }
 
   imprimirFactura() {
