@@ -269,18 +269,36 @@ export class PrintingService {
       drawDashedLine(yPos);
       yPos += 5;
 
-      // --- DGII INFO (Security Code & QR) ---
+      // --- DGII INFO & EXTRAS ---
       // Intentar buscar en la raíz o en facturaData.data
       const securityCode =
         facturaData.securityCode || f.securityCode || f.CodigoSeguridad;
       const qrUrl = facturaData.qrUrl || f.qrUrl;
+      const signatureDateTime =
+        facturaData.signatureDateTime || f.signatureDateTime;
 
-      if (securityCode) {
-        doc.setFont('helvetica', 'bold');
-        centerText(`Código Seguridad: ${securityCode}`, yPos);
-        yPos += 5;
+      // 1. BARCODE (Primero)
+      if (codFact) {
+        try {
+          const canvas = document.createElement('canvas');
+          JsBarcode(canvas, codFact, {
+            format: 'CODE128',
+            width: 2,
+            height: 40,
+            displayValue: true,
+            fontSize: 10,
+            margin: 0,
+          });
+          const barcodeData = canvas.toDataURL('image/png');
+          // Center barcode 50x15
+          doc.addImage(barcodeData, 'PNG', centerX - 25, yPos, 50, 15);
+          yPos += 20;
+        } catch (e) {
+          console.error('Error generating barcode', e);
+        }
       }
 
+      // 2. QR CODE (Segundo)
       if (qrUrl) {
         try {
           const qrDataUrl = await QRCode.toDataURL(qrUrl, {
@@ -294,35 +312,30 @@ export class PrintingService {
         }
       }
 
+      // 3. SECURITY CODE (Tercero)
+      if (securityCode) {
+        doc.setFont('helvetica', 'bold');
+        centerText(`Código Seguridad: ${securityCode}`, yPos);
+        yPos += 5;
+      }
+
+      // 4. SIGNATURE DATE/TIME (Cuarto)
+      if (signatureDateTime) {
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(7); // Slightly smaller
+        centerText(`Fecha Firma: ${signatureDateTime}`, yPos);
+        doc.setFontSize(10); // Reset font size (though next is footer which sets its own)
+        yPos += 5;
+      }
+
+      yPos += 5; // Space before footer
+
       // --- 6. FOOTER ---
       doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
       doc.text(`Artículos: ${items.length}`, leftMargin, yPos);
       yPos += 4;
       centerText('*** GRACIAS POR SU COMPRA ***', yPos);
-      yPos += 8; // Extra space before barcode
-
-      // --- 7. BARCODE ---
-      if (codFact) {
-        try {
-          const canvas = document.createElement('canvas');
-          JsBarcode(canvas, codFact, {
-            format: 'CODE128',
-            width: 2,
-            height: 40,
-            displayValue: true,
-            fontSize: 10,
-            margin: 0,
-          });
-          const barcodeData = canvas.toDataURL('image/png');
-          // Center barcode
-          // Assuming barcode width roughly fits. Adjust width/height in addImage.
-          // 40mm width for barcode
-          doc.addImage(barcodeData, 'PNG', centerX - 25, yPos, 50, 15);
-          yPos += 20;
-        } catch (e) {
-          console.error('Error generating barcode', e);
-        }
-      }
 
       // Espacio adicional al final para el corte de papel
       yPos += 15;
