@@ -695,7 +695,7 @@ export class CobroFact implements OnInit {
       tipoeCF = encf.substring(1, 3);
     }
 
-    const rncEmisor = localStorage.getItem('rnc') || '';
+    const rncEmisor = localStorage.getItem('rnc_empresa') || '';
     const razonSocialEmisor = localStorage.getItem('nombre_empresa') || '';
 
     // Normalizar fecha
@@ -706,7 +706,7 @@ export class CobroFact implements OnInit {
     // 2. Construir el escenario base
     const scenario: any = {
       Version: '1.0',
-      RncEmisor: rncEmisor,
+      RncEmisor: rncEmisor.replace('-', ''),
       RazonSocialEmisor: razonSocialEmisor,
       RncComprador: String(factura.fa_rncFact || '').trim(),
       RazonSocialComprador: String(factura.fa_nomClie || '').trim(),
@@ -763,7 +763,7 @@ export class CobroFact implements OnInit {
 
     // URL del endpoint externo
     const url =
-      'https://ecfrecepcion.starsoftdominicana.com/api/generate-xml-no-send';
+      'https://ecfrecepcion.starsoftdominicana.com/ecf/api/test/api/generate-xml-no-send';
 
     // Realizar POST
     this.http.post(url, dgiiData).subscribe(
