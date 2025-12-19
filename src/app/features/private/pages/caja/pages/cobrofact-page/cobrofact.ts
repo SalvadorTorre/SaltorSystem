@@ -762,7 +762,19 @@ export class CobroFact implements OnInit {
       dgiiData = this.buildDGIIRequest(facturaData, this.items);
     } catch (error) {
       console.error('Error construyendo datos DGII', error);
+      Swal.fire('Error', 'Error construyendo datos para DGII', 'error');
+      return;
     }
+
+    // Mostrar Loading
+    Swal.fire({
+      title: 'Procesando...',
+      text: 'Generando comprobante electrónico...',
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      },
+    });
 
     // URL del endpoint externo
     const url =
@@ -773,16 +785,53 @@ export class CobroFact implements OnInit {
       (response: any) => {
         console.log('Respuesta DGII:', response);
 
-        // Combinar respuesta con datos de factura para impresión
-        // Se asume que response trae campos necesarios (ej. qrCode, secCode, etc.)
-        const datosParaImprimir = { ...facturaData, ...response };
+        // Actualizar mensaje de loading
+        Swal.update({
+          text: 'Actualizando datos de factura...',
+        });
 
-        this.printingService.imprimirFactura80mm(datosParaImprimir, this.items);
+        // Llamar a nuestro backend para guardar los datos DGII
+        this.servicioFacturacion
+          .actualizarDatosDgii(facturaData.fa_codFact, response)
+          .subscribe({
+            next: (res) => {
+              console.log('Datos DGII guardados correctamente', res);
+              Swal.close();
+
+              // Combinar respuesta con datos de factura para impresión
+              const datosParaImprimir = { ...facturaData, ...response };
+              this.printingService.imprimirFactura80mm(
+                datosParaImprimir,
+                this.items
+              );
+            },
+            error: (err) => {
+              console.error('Error guardando datos DGII', err);
+              Swal.fire(
+                'Error',
+                'Se generó el comprobante pero falló al guardar los datos en el sistema.',
+                'warning'
+              ).then(() => {
+                // Opcional: imprimir de todos modos o detenerse
+                // Por seguridad, imprimimos para que no se pierda el comprobante generado
+                const datosParaImprimir = { ...facturaData, ...response };
+                this.printingService.imprimirFactura80mm(
+                  datosParaImprimir,
+                  this.items
+                );
+              });
+            },
+          });
       },
       (error) => {
         console.error('Error obteniendo datos DGII:', error);
-        // En caso de error, imprimir solo con datos locales
-        this.printingService.imprimirFactura80mm(facturaData, this.items);
+        Swal.fire(
+          'Error',
+          'No se pudo generar el comprobante electrónico.',
+          'error'
+        );
+        // En caso de error, imprimir solo con datos locales (opcional, comentado por ahora)
+        // this.printingService.imprimirFactura80mm(facturaData, this.items);
       }
     );
   }
