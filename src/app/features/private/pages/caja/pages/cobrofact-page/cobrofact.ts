@@ -763,7 +763,7 @@ export class CobroFact implements OnInit {
 
     // URL del endpoint externo
     const url =
-      'https://ecfrecepcion.starsoftdominicana.com//api/generate-xml-no-send';
+      'https://ecfrecepcion.starsoftdominicana.com/api/generate-xml-no-send';
 
     // Realizar POST
     this.http.post(url, dgiiData).subscribe(
