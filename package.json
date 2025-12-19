@@ -7,8 +7,8 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-     "dev": "cross-env PORT=3390 npx kill-port 3390 && nodemon src/index.js",
-     "deploy:ghp": "npm run build && gh-pages -d dist/saltor-system"
+    "dev": "cross-env PORT=3390 npx kill-port 3390 && nodemon src/index.js",
+    "deploy:ghp": "npm run build && gh-pages -d dist/saltor-system"
   },
   "private": true,
   "dependencies": {
@@ -28,6 +28,7 @@
     "html2pdf.js": "^0.10.3",
     "inputmask": "^5.0.9",
     "jquery": "^3.7.1",
+    "jsbarcode": "^3.12.1",
     "jspdf": "^2.5.2",
     "jspdf-autotable": "^3.8.4",
     "ngx-mask": "^18.0.0",

@@ -82,6 +82,10 @@ const routes: Routes = [
           path:"fentrega",
           loadChildren: () => import('./pages/fentrega-page/fentrega-modulo').then(m => m.ModuloFentrega)
         },
+        {
+          path:"rnc",
+          loadChildren: () => import('./pages/rnc-page/rnc-modulo').then(m => m.ModuloRnc)
+        },
       ]
     }
   ];

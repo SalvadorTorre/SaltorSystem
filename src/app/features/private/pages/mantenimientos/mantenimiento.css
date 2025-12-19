@@ -23,3 +23,28 @@
  background-color: #f7f8fa; /* azul bootstrap */
   color: #611616; /* texto blanco en el activo */
 }
+
+/* Estilos para el sidebar fijo */
+.sidebar {
+  background-color: #f8f9fa;
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  overflow-y: auto; /* Permite scroll interno si el menú es muy largo */
+  border-right: 1px solid rgba(0,0,0,.125);
+  z-index: 100;
+}
+
+/* Personalización del scrollbar del sidebar */
+.sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background-color: rgba(0,0,0,0.2);
+  border-radius: 3px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}

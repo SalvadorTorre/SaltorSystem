@@ -1,16 +1,34 @@
-import { Component, NgModule, OnInit, ViewChild, ElementRef, ɵNG_COMP_DEF, HostListener, ViewChildren, QueryList,} from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { FormBuilder, FormControl, FormGroup, Validators, } from '@angular/forms';
-import { BehaviorSubject, debounceTime, distinctUntilChanged, filter, from, skip, switchMap, tap,} from 'rxjs';
+import {
+  Component,
+  OnInit,
+  ViewChild,
+  ElementRef,
+  HostListener,
+  ViewChildren,
+  QueryList,
+} from '@angular/core';
+import {
+  FormBuilder,
+  FormControl,
+  FormGroup,
+  Validators,
+} from '@angular/forms';
+import { BehaviorSubject } from 'rxjs';
 import Swal from 'sweetalert2';
 import { ServicioRnc } from 'src/app/core/services/mantenimientos/rnc/rnc.service';
 import { ServicioUsuario } from 'src/app/core/services/mantenimientos/usuario/usuario.service';
 import { ServicioFacturacion } from 'src/app/core/services/facturacion/factura/factura.service';
-import { FacturacionModelData, detFacturaData,} from 'src/app/core/services/facturacion/factura';
+import {
+  FacturacionModelData,
+  detFacturaData,
+} from 'src/app/core/services/facturacion/factura';
 import { ServicioCliente } from 'src/app/core/services/mantenimientos/clientes/cliente.service';
 import { HttpInvokeService } from 'src/app/core/services/http-invoke.service';
 import { ModeloClienteData } from 'src/app/core/services/mantenimientos/clientes';
-import { FacturaDetalleModel, interfaceDetalleModel } from 'src/app/core/services/facturacion/factura/factura';
+import {
+  FacturaDetalleModel,
+  interfaceDetalleModel,
+} from 'src/app/core/services/facturacion/factura/factura';
 import { ServicioInventario } from 'src/app/core/services/mantenimientos/inventario/inventario.service';
 import { ServicioSector } from 'src/app/core/services/mantenimientos/sector/sector.service';
 import { ModeloSectorData } from 'src/app/core/services/mantenimientos/sector';
@@ -19,16 +37,10 @@ import { ServicioFpago } from 'src/app/core/services/mantenimientos/fpago/fpago.
 import { ModeloFentregaData } from 'src/app/core/services/mantenimientos/fentrega';
 import { ServicioFentrega } from 'src/app/core/services/mantenimientos/fentrega/fentrega.service';
 import { ModeloInventarioData } from 'src/app/core/services/mantenimientos/inventario';
-import jsPDF from 'jspdf';
 import { HttpClient } from '@angular/common/http';
-import autoTable from 'jspdf-autotable';
-import { disableDebugTools } from '@angular/platform-browser';
 import { ServicioNcf } from 'src/app/core/services/mantenimientos/ncf/ncf.service';
 import { ModeloNcfData } from 'src/app/core/services/mantenimientos/ncf';
-import { registerLocaleData } from '@angular/common';
-import localeEs from '@angular/common/locales/es';
-import * as html2pdf from 'html2pdf.js';
-import html2canvas from 'html2canvas';
+import { PrintingService } from 'src/app/core/services/utils/printing.service';
 
 declare var $: any;
 
@@ -44,8 +56,7 @@ export class CobroFact implements OnInit {
   @ViewChildren('filaSeleccionada') filas!: QueryList<ElementRef>;
   @ViewChild('contenedorScroll') contenedorScroll!: ElementRef;
   @ViewChild('valorPagadoInput') valorPagadoInput!: ElementRef;
-  @ViewChild('facturaRef', { static: false }) facturaRef!: ElementRef;
-  facturaData: any = null;      // objeto con la factura que devuelve el backend
+  facturaData: any = null; // objeto con la factura que devuelve el backend
   mensaje: string = '';
   facturas: any[] = []; // ✅ Declaración de la propiedad
   botonEditar = true; // Empieza deshabilitado
@@ -85,10 +96,9 @@ export class CobroFact implements OnInit {
   facturacionid!: string;
   modoconsultaFacturacion: boolean = false;
   facturacionList: FacturacionModelData[] = [];
-  factura!:FacturacionModelData;
+  factura!: FacturacionModelData;
 
   detFacturaList: detFacturaData[] = [];
-  selectedFacturacion: any = null;
   items: interfaceDetalleModel[] = [];
   ncflist: ModeloNcfData[] = [];
   selectedItem: any = null;
@@ -120,7 +130,6 @@ export class CobroFact implements OnInit {
   etxt: any;
   ftxt: any;
   // Referencia a la ventana de impresión para evitar bloqueos de pop-ups
-  private printWindow: Window | null = null;
   gtxt: any;
   factxt: any;
   protxt: any;
@@ -181,7 +190,8 @@ export class CobroFact implements OnInit {
     private servicioFpago: ServicioFpago,
     private servicioFentrega: ServicioFentrega,
     private servicioNcf: ServicioNcf,
-    private http: HttpClient
+    private http: HttpClient,
+    private printingService: PrintingService
   ) {
     this.form = this.fb.group({
       fa_codVend: ['', Validators.required], // El campo es requerido
@@ -210,9 +220,6 @@ export class CobroFact implements OnInit {
   selectedIndexfpago = 1;
   resultadodescripcionmerc: ModeloInventarioData[] = [];
   selectedIndexdescripcionmerc = 1;
-  seleccionarFacturacion(facturacion: any) {
-    this.selectedFacturacion = facturacion;
-  }
 
   ngOnInit(): void {
     this.buscarFacturasNoImpresas();
@@ -559,844 +566,255 @@ export class CobroFact implements OnInit {
     }
   }
 
-  moveFocus(
-    event: KeyboardEvent,
-    nextElement: HTMLInputElement | HTMLSelectElement
-  ) {
-    if (event.key === 'Enter' && nextElement) {
-      event.preventDefault(); // Evita el comportamiento predeterminado del Enter
-      nextElement.focus(); // Enfoca el siguiente campo
-    }
-  }
+  // --- Funciones para manejar la edición en línea ---
+  iniciarEdicion(index: number, item: any) {
+    this.index_item = index;
+    this.itemToEdit = { ...item }; // Clonar el item para no modificar directamente
+    this.isEditing = true;
+    this.habilitarCantidad = true;
+    // this.cantidadform.setValue(item.cantidad);
+    // this.precioform.setValue(item.precio);
+    this.cantidadmerc = item.cantidad;
+    this.preciomerc = item.precio;
 
-  mostrarMensajeError(mensaje: string): void {
-    this.mensagePantalla = true;
-
-    Swal.fire({
-      icon: 'error',
-      title: 'A V I S O',
-      text: mensaje,
-    }).then(() => {
-      this.mensagePantalla = false;
-    });
-  }
-
-  moveFocusFpago(
-    event: Event,
-    nextInput: HTMLInputElement | HTMLSelectElement
-  ) {
-    // KeyboardEvent, element: HTMLInputElement | HTMLSelectElement
-    event.preventDefault();
-    if (event.target instanceof HTMLSelectElement) {
-      if (!event.target.value) {
-        this.mensagePantalla = true;
-        Swal.fire({
-          icon: 'error',
-          title: 'A V I S O',
-          text: 'Por favor complete el campo Tipo de Pago.',
-        }).then(() => {
-          this.mensagePantalla = false;
-        });
-      } else {
-        nextInput.focus(); // Si es válido, mueve el foco al siguiente input
-      }
-    }
-  }
-
-  actualizarCalculo() {
-    this.protxt = ((this.preciomerc - this.costotxt) * 100) / this.costotxt; // Aquí puedes hacer cualquier cálculo
-  }
-
-  recalcularTotales() {
-    this.totalGral = 0;
-    this.totalItbis = 0;
-    this.subTotal = 0;
-
-    for (const item of this.items) {
-      const itbis = (item.total * 0.18) / 1.18; // si total incluye ITBIS
-      const subtotal = item.total - itbis;
-
-      this.totalItbis += itbis;
-      this.subTotal += subtotal;
-      this.totalGral += item.total;
-    }
-  }
-
-  actualizarTotales() {
-    this.totalGral = this.items.reduce((sum, item) => sum + item.total, 0);
-    this.totalItbis = this.items.reduce(
-      (sum, item) => sum + item.total * 0.18,
-      0
-    );
-    this.subTotal = this.items.reduce(
-      (sum, item) => sum + (item.total - item.total * 0.18),
-      0
-    );
-    this.totalcosto = this.items.reduce(
-      (sum, item) => sum + this.costotxt * item.cantidad,
-      0
-    );
-    const formatCurrency = (value: number) =>
-      value.toLocaleString('es-DO', {
-        style: 'currency',
-        currency: 'DOP',
-      });
-    this.subtotaltxt = formatCurrency(this.subTotal);
-    this.itbitxt = formatCurrency(this.totalItbis);
-    this.totalgraltxt = formatCurrency(this.totalGral);
-  }
-  guardarFacturacion() {
-    const codFact = this.formularioFacturacion.get('fa_codFact')?.value;
-
-    // Asignar totales al formulario
-    this.formularioFacturacion.patchValue({
-      fa_valFact: this.totalGral,
-      fa_itbiFact: this.totalItbis,
-      fa_cosFact: this.totalcosto,
-      fa_subFact: this.subTotal,
-    });
-    this.formularioFacturacion.get('fa_valFact')?.patchValue(this.totalGral);
-    this.formularioFacturacion.get('fa_itbiFact')?.patchValue(this.totalItbis);
-    this.formularioFacturacion.get('fa_cosFact')?.patchValue(this.totalcosto);
-    this.formularioFacturacion.get('fa_subFact')?.patchValue(this.subTotal);
-
-    this.formularioFacturacion.get('fa_tipoNcf')!.enable();
-    this.formularioFacturacion.get('fa_codFact')!.enable();
-    this.formularioFacturacion.get('fa_fecFact')!.enable();
-    this.formularioFacturacion.get('fa_nomVend')!.enable();
-    this.formularioFacturacion.get('fa_ncfFact')!.enable();
-    this.formularioFacturacion.get('fa_fpago')!.enable();
-    const payload = {
-      factura: this.formularioFacturacion.value,
-      detalle: this.items,
-    };
-
-    if (this.formularioFacturacion.valid) {
-      if (codFact) {
-        // 🔁 Modo edición
-        this.servicioFacturacion
-          .editarFacturacion(payload)
-          .subscribe((response) => {
-            Swal.fire({
-              title: 'Actualizado!',
-              text: 'Factura modificada correctamente.',
-              icon: 'success',
-              timer: 1000,
-              showConfirmButton: false,
-            });
-            this.refrescarFormulario();
-          });
-      } else {
-        // 🆕 Modo creación
-        this.servicioFacturacion
-          .guardarFacturacion(payload)
-          .subscribe((response) => {
-            Swal.fire({
-              title: 'Excelente!',
-              text: 'Factura creada correctamente.',
-              icon: 'success',
-              timer: 1000,
-              showConfirmButton: false,
-            });
-            this.refrescarFormulario();
-          });
-      }
-    } else {
-      alert('Esta Factura no fue guardada');
-    }
-  }
-
-  refrescarFormulario() {
-    this.buscarFacturasNoImpresas();
-    this.formularioFacturacion.reset();
-    this.crearFormularioFacturacion();
-    this.formularioFacturacion.enable();
-    this.limpia();
-  }
-
-  navigateTable(event: KeyboardEvent) {
-    const key = event.key;
-
-    if (key === 'ArrowDown') {
-      // Mueve hacia abajo en la tabla
-      if (this.selectedRow < this.items.length - 1) {
-        this.selectedRow++;
-        this.selectRow(this.selectedRow);
-      }
-    } else if (key === 'ArrowUp') {
-      // Mueve hacia arriba en la tabla
-      if (this.selectedRow > 0) {
-        this.selectedRow--;
-        this.selectRow(this.selectedRow);
-      }
-    }
-  }
-
-  selectRow(index: number) {
-    this.selectedRow = index; // Selecciona la fila cuando se hace clic
-    this.selectedItem = this.items[index];
-    console.log(this.selectedItem);
-    this.calcularPorcentaje();
-  }
-
-  calcularPorcentaje(): void {
-    this.protxt =
-      ((this.selectedItem.total - this.selectedItem.costo) * 100) /
-      this.selectedItem.costo;
-  }
-
-  ngAfterViewInit() {
-    // Establece el foco en la tabla cuando se cargue la vista
-    this.Tabladetalle.nativeElement.focus();
-  }
-
-  formatNumber(value: any): string {
-    let num = Number(value);
-    if (isNaN(num)) {
-      return ' ';
-    }
-    return num.toLocaleString('en-US', { minimumFractionDigits: 2 });
-  }
-
-  goToFirstPage() {
-    this.currentPage = 1;
-  }
-
-  goToLastPage() {
-    this.currentPage = this.totalPages;
-  }
-
-  nextPage() {
-    if (this.currentPage < this.totalPages) {
-      this.currentPage++;
-    }
-  }
-
-  prevPage() {
-    if (this.currentPage > 1) {
-      this.currentPage--;
-    }
-  }
-
-  onTableKeydown(event: KeyboardEvent) {
-    const max = this.paginatedData.length - 1;
-
-    switch (event.key) {
-      case 'ArrowDown':
-        if (this.selectedRow < max) {
-          this.selectedRow++;
-          this.scrollToRow(this.selectedRow);
-          this.consultarFacturacion(this.paginatedData[this.selectedRow]);
-        }
-        event.preventDefault();
-        break;
-
-      case 'ArrowUp':
-        if (this.selectedRow > 0) {
-          this.selectedRow--;
-          this.scrollToRow(this.selectedRow);
-          this.consultarFacturacion(this.paginatedData[this.selectedRow]);
-        }
-        event.preventDefault();
-        break;
-
-      case 'Enter':
-        this.consultarFacturacion(this.paginatedData[this.selectedRow]);
-        event.preventDefault();
-        break;
-    }
-  }
-
-  private scrollToRow(index: number) {
-    // Opcional: centra la fila seleccionada en el scroll
-    const tableBody: HTMLElement | null = document.querySelector(
-      '.table-responsive tbody'
-    );
-    const rows = tableBody?.querySelectorAll('tr');
-    if (rows && rows[index]) {
-      (rows[index] as HTMLElement).scrollIntoView({
-        block: 'nearest',
-        behavior: 'smooth',
-      });
-    }
-  }
-
-  seleccionarFactura(factura: any, index: number) {
-    this.consultarFacturacion(factura); // ✅ Llamada automática
-    this.codFacturaselecte = factura.fa_codFact;
-
-    this.factura = factura;
-
+    // Enfocar el input de cantidad
     setTimeout(() => {
-      const fila = this.filas.toArray()[index];
-      const contenedor = this.contenedorScroll.nativeElement;
-
-      if (fila && contenedor) {
-        const filaOffsetTop = fila.nativeElement.offsetTop;
-        const filaHeight = fila.nativeElement.offsetHeight;
-        const contenedorScrollTop = contenedor.scrollTop;
-        const contenedorHeight = contenedor.offsetHeight;
-
-        // Si la fila está fuera del área visible, hacer scroll
-        if (
-          filaOffsetTop < contenedorScrollTop ||
-          filaOffsetTop + filaHeight > contenedorScrollTop + contenedorHeight
-        ) {
-          contenedor.scrollTop =
-            filaOffsetTop - contenedorHeight / 2 + filaHeight / 2;
-        }
+      const input = document.getElementById(
+        'cantidad-' + index
+      ) as HTMLInputElement;
+      if (input) {
+        input.focus();
+        input.select();
       }
-    }, 0);
-  }
-
-  @HostListener('document:keydown.arrowdown', ['$event'])
-  handleArrowDown(event: KeyboardEvent) {
-    if (this.selectedIndex < this.facturacionList.length - 1) {
-      this.selectedIndex++;
-      this.facturaSelecionada = this.facturacionList[this.selectedIndex];
-      this.consultarFacturacion(this.facturaSelecionada); // ✅
-      event.preventDefault();
-    }
-  }
-
-  @HostListener('document:keydown.arrowup', ['$event'])
-  handleArrowUp(event: KeyboardEvent) {
-    if (this.selectedIndex > 0) {
-      this.selectedIndex--;
-      this.facturaSelecionada = this.facturacionList[this.selectedIndex];
-      this.consultarFacturacion(this.facturaSelecionada); // ✅
-      event.preventDefault();
-    }
-  }
-  onInputPagado(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const valPagado = parseFloat(input.value) || 0;
-
-    const valFactura =
-      parseFloat(this.formularioFacturacion.get('fa_valFact')?.value) || 0;
-
-    const cambio = valPagado - valFactura;
-
-    // Actualiza el valor en el formulario reactivo
-    this.formularioFacturacion.patchValue({
-      valpagado: valPagado,
-      valcambio: cambio > 0 ? cambio : 0, // si es negativo, pones 0 o lo que prefieras
-    });
-  }
-
-  toggleCheckPagado() {
-    // si está marcado y hacen clic => lo desmarco, pero NO habilito input
-    if (this.chekPagado) {
-      this.chekPagado = false;
-      this.txtvalPagado = true; // sigue deshabilitado
-      this.valorPagado = 0;
-      this.cambio = 0;
-      this.valCambio = 0;
-    } else {
-      // si no está marcado, lo marco y habilito input
-      this.chekPagado = true;
-      this.txtvalPagado = false;
-      setTimeout(() => {
-        if (this.valorPagadoInput) {
-          this.valorPagadoInput.nativeElement.focus();
-          this.valorPagadoInput.nativeElement.select();
-        }
-      }, 0);
-    }
-  }
-
-  onValorPagadoChange(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    this.valorPagado = parseFloat(input.value) || 0;
-    const valFactura = this.formularioFacturacion.get('fa_valFact')?.value || 0;
-    this.valCambio = this.valorPagado - valFactura;
-    if (this.valCambio > 0) {
-      this.botonImprimir = false;
-    } else {
-      this.botonImprimir = true;
-    }
-  }
-
-  onValorPagadoFormatted(event: Event): void {
-    const input = (event.target as HTMLInputElement).value;
-
-    // Remplaza la coma por punto para parsear
-    const valorNumerico = parseFloat(input.replace(',', '.')) || 0;
-
-    this.valorPagado = valorNumerico;
-    this.valorPagadoFormateado = this.formatearNumero(valorNumerico);
-
-    const valFactura =
-      parseFloat(this.formularioFacturacion.get('fa_valFact')?.value) || 0;
-    const cambioCalc = valorNumerico - valFactura;
-    this.cambio = cambioCalc > 0 ? cambioCalc : 0;
-  }
-
-  formatearNumero(valor: number): string {
-    return valor
-      .toFixed(2) // "1234.56"
-      .replace('.', ',') // "1234,56"
-      .replace(/\B(?=(\d{3})+(?!\d))/g, '.'); // separador de miles
-  }
-  buscarFactura() {
-    // Preabrir ventana en el gesto de clic para permitir impresión controlada en ventana
-    try {
-      this.printWindow = window.open('', '_blank');
-    } catch (e) {
-      this.printWindow = null;
-    }
-    this.servicioFacturacion.getByNumero(this.formularioFacturacion.get('fa_codFact')?.value).subscribe((response) => {
-      if (response) {
-      this.facturaData = response; // 🔹 aquí está la factura completa
-      console.log("facturaData", this.facturaData);
-        this.mensaje = '';
-        const numero = this.formularioFacturacion.get('fa_codFact')?.value;
-        // Cargar detalles antes de generar el PDF para evitar documento vacío
-        this.servicioFacturacion.buscarFacturaDetalle(numero).subscribe((det) => {
-          try {
-            const detalles = det?.data || [];
-            // Asignar detalles dentro del objeto correcto según la forma de respuesta
-            if ((this.facturaData as any)?.data) {
-              ((this.facturaData as any).data as any).detalles = detalles;
-            } else {
-              (this.facturaData as any).detalles = detalles;
-            }
-            console.log('Detalles cargados:', Array.isArray(detalles) ? detalles.length : 0);
-          } catch (e) {
-            console.warn('No se pudieron asignar detalles a facturaData', e);
-          }
-          this.generarPDF();
-          // Marcar como impresa DESPUÉS de haber generado el PDF para evitar pisar facturaData
-          this.marcarImpresa();
-        }, (err) => {
-          console.warn('No se pudieron obtener detalles, imprimiendo encabezado y totales.', err);
-          this.generarPDF();
-          this.marcarImpresa();
-        });
-      } else {
-        this.facturaData = null;
-        this.mensaje = 'No se encontró una factura con ese número';
-      }
-    });
-  }
-  marcarImpresa() {
-    const numero = this.formularioFacturacion.get('fa_codFact')?.value;
-    console.log("numero", numero); 
-    console.log("this.ftipoPago", this.ftipoPago);
-    this.servicioFacturacion
-    .marcarImpresa(numero, { fa_fpago: this.ftipoPago,
-      fa_envio: this.fentrega })
-    .subscribe({next: (res: any) => {
-      console.log("✅ Respuesta backend:", res);
-        // No pisar this.facturaData aquí para evitar perder los detalles cargados
-        console.log("Factura marcada como impresa ✅");
-        this.mensaje = '';
-        // this.generarPDF();
-      },
-      error: (err) => {
-        console.error("Error marcando factura ❌", err);
-        this.mensaje = 'No se pudo actualizar la factura';
-      }
-    });
-}
-
-  // marcarImpresa() {
-  //   this.servicioFacturacion.marcarImpresa(this.formularioFacturacion.get('fa_codFact')?.value, {
-  //     fa_envio: this.formularioFacturacion.get('fa_envio')?.value,
-  //     fa_fpago: this.formularioFacturacion.get('fa_fpago')?.value,
-  //   }).subscribe((response) => {
-  //     console.log("response", response);
-  //     if (response) {
-  //       Swal.fire({
-  //         icon: 'success',
-  //         title: 'Factura marcada como impresa',
-  //         showConfirmButton: false,
-  //         timer: 1500
-  //       });
-  //     } else {
-  //       Swal.fire({
-  //         icon: 'error',
-  //         title: 'Error al marcar la factura como impresa',
-  //         showConfirmButton: false,
-  //         timer: 1500
-  //       });
-  //     }
-  //   });
-  // }
-
-generarPDF() {
-  if (!this.DatosSeleccionado) {
-    alert("Debe buscar una factura primero");
-    return;
-  }
-  // Utilidad para soportar campos con múltiples entradas en formato "Clave[1]", "Clave[2]", etc.
-  const appendIndexed = (obj: any, key: string, values: any[] | any) => {
-    const arr = Array.isArray(values) ? values : [values];
-    arr.forEach((v, i) => {
-      obj[`${key}[${i + 1}]`] = v;
-    });
-  };
-
-  // Construcción base del payload (campos unitarios)
-  const payload: any = {
-    Version: "1.0",
-    TipoeCF: this.DatosSeleccionado.fa_tipoNcf,
-    ENCF: "E320000000040",
-    IndicadorMontoGravado: "0",
-    TipoIngresos: "01",
-    TipoPago: "1",
-    RNCEmisor: "132177975",
-    RazonSocialEmisor: localStorage.getItem('empresa') || '',
-    NombreComercial: "DOCUMENTOS ELECTRONICOS DE 02",
-    DireccionEmisor: "AVE. ISABEL AGUIAR NO. 269, ZONA INDUSTRIAL DE HERRERA",
-    Municipio: "010100",
-    Provincia: "010000",
-    CorreoEmisor: "DOCUMENTOSELECTRONICOSDE0612345678969789+9000000000000000000000000000001@123.COM",
-    WebSite: "www.facturaelectronica.com",
-    CodigoVendedor: "AA0000000100000000010000000002000000000300000000050000000006",
-    NumeroFacturaInterna: "123456789016",
-    NumeroPedidoInterno: "123456789016",
-    ZonaVent: "NORTE",
-    FechaEmision: "01-04-2020",
-    RNCComprador: "131880681",
-    RazonSocialComprador: "DOCUMENTOS ELECTRONICOS DE 03",
-    ContactoComprador: "MARCOS LATIPLOL",
-    CorreoComprador: "MARCOSLATIPLOL@KKKK.COM",
-    DireccionComprador: "CALLE JACINTO DE LA CONCHA FELIZ ESQUINA 27 DE FEBRERO,FRENTE A DOMINO",
-    MunicipioComprador: "010100",
-    ProvinciaComprador: "010000",
-    FechaEntrega: "10-10-2020",
-    FechaOrdenCompra: "10-11-2018",
-    NumeroOrdenCompra: "4500352238",
-    CodigoInternoComprador: "10633440",
-    MontoGravadoTotal: "350765.00",
-    MontoGravadoI1: "269805.00",
-    MontoGravadoI2: "80190.00",
-    MontoGravadoI3: "770.00",
-    MontoExento: "1625.00",
-    ITBIS1: "18",
-    ITBIS2: "16",
-    ITBIS3: "0",
-    TotalITBIS: this.DatosSeleccionado.fa_itbiFact,
-    TotalITBIS1: "48564.90",
-    TotalITBIS2: "12830.40",
-    TotalITBIS3: "0.00",
-    MontoTotal: "413785.30",
-    MontoPeriodo: "413785.30",
-    ValorPagar: "413785.30",
-  };
-
-  // Campos con múltiples entradas
-  // Forma de pago y montos (si hay múltiples, se agregan todas)
-  appendIndexed(payload, 'FormaPago', this.DatosSeleccionado.fa_fpago ? [this.DatosSeleccionado.fa_fpago] : []);
-  appendIndexed(payload, 'MontoPago', this.DatosSeleccionado.fa_valFact ? [this.DatosSeleccionado.fa_valFact] : []);
-
-  // Teléfonos del emisor (ejemplo con dos teléfonos)
-  appendIndexed(payload, 'TelefonoEmisor', ["809-472-7676", "809-491-1918"]);
-
-  // Detalle de ítems según los productos cargados en la factura (this.items)
-  const numeroLinea = this.items.map((_, idx) => String(idx + 1));
-  const indicadorFacturacion = this.items.map((_, idx) => String(idx + 1)); // Placeholder
-  const nombreItem = this.items.map((it) => (it?.producto?.in_desmerc ?? ''));
-  const indicadorBienoServicio = this.items.map(() => '1'); // Placeholder
-  const cantidadItem = this.items.map((it) => Number(it.cantidad).toFixed(2));
-  const unidadMedida = this.items.map(() => '43'); // Placeholder o derive si está disponible
-  const precioUnitarioItem = this.items.map((it) => Number(it.precio).toFixed(4));
-  const montoItem = this.items.map((it) => Number(it.total).toFixed(2));
-
-  appendIndexed(payload, 'NumeroLinea', numeroLinea);
-  appendIndexed(payload, 'IndicadorFacturacion', indicadorFacturacion);
-  appendIndexed(payload, 'NombreItem', nombreItem);
-  appendIndexed(payload, 'IndicadorBienoServicio', indicadorBienoServicio);
-  appendIndexed(payload, 'CantidadItem', cantidadItem);
-  appendIndexed(payload, 'UnidadMedida', unidadMedida);
-  appendIndexed(payload, 'PrecioUnitarioItem', precioUnitarioItem);
-  appendIndexed(payload, 'MontoItem', montoItem);
-
-  // A partir de aquí se usa el payload construido dinámicamente
-  console.log("this.facturaData", this.DatosSeleccionado);
-  // Normalizar posibles formas de respuesta del backend (puede venir en response o response.data)
-  const f: any = (this.DatosSeleccionado as any)?.data ?? this.DatosSeleccionado;
-  const doc = new jsPDF({
-    orientation: 'p',
-    unit: 'mm',
-    // Ajuste para impresora POS (80mm). Usa 80mm de ancho.
-    format: [80, 297]  // ancho 80mm, alto ajustable
-  });
-  
-  // Formateador para pesos dominicanos (DOP)
-  const formatoMoneda = new Intl.NumberFormat('es-DO', {
-    style: 'currency',
-    currency: 'DOP',
-    minimumFractionDigits: 2
-  });
-  
-  const pageWidth = doc.internal.pageSize.getWidth();
-
-  // --- Encabezado ---
-  doc.setFontSize(16);
-  doc.setTextColor(0, 0, 0);
-  doc.text(payload.RazonSocialEmisor, pageWidth / 2, 20, { align: 'center' });
-  doc.setFontSize(12);
-  doc.setTextColor(0, 0, 0);
-   doc.text('FACTURA', pageWidth / 2, 10, { align: 'center' });
-
-  doc.setFontSize(8);
-  doc.setTextColor(0, 0, 0);
-  const codFact = f.fa_codFact ?? f.codFact ?? this.formularioFacturacion.get('fa_codFact')?.value ?? '';
-  const fecFact = f.fa_fecFact ?? f.fecFact ?? '';
-  const nomClie = f.fa_nomClie ?? f.nomClie ?? '';
-  const rnc = f.fa_rncFact ?? f.rnc ?? 'N/A';
-  const dirClie = f.fa_dirClie ?? f.dirClie ?? f.direccion ?? '';
-  const telClie = f.fa_telClie ?? f.telClie ?? f.telefono ?? '';
-  const nomVend = f.fa_nomVend ?? f.nomVend ?? f.vendedor ?? '';
-
-  doc.text(`Factura No: ${String(codFact)}`, 2, 20);
-  doc.text(`Fecha: ${String(fecFact)}`, 2, 25);
-  doc.text(`Cliente: ${String(nomClie)}`, 2, 30);
-  doc.text(`RNC: ${String(rnc)}`, 2, 35);
-  doc.text(`Dirección: ${String(dirClie)}`, 2, 40);
-  doc.text(`Teléfono: ${String(telClie)}`, 2, 45);
-  doc.text(`Vendedor: ${String(nomVend)}`, 2, 50);
-
-  // --- Tabla de productos ---
-  const tableColumn = ['Cant.', 'Precio', 'Itbis', 'Total', ''];
-  const tableRows: any[] = [];
-  const detalles: any[] = Array.isArray((f as any).detalles) ? (f as any).detalles : [];
-  detalles.forEach((item: any) => {
-    // Primera fila → cantidad, precio, total
-    tableRows.push([
-      { content: item.df_canMerc, styles: { halign: 'right' } },
-      { content: item.df_preMerc, styles: { halign: 'right' } },
-      { content: item.df_itbiMerc || '0.00', styles: { halign: 'right' } },
-      { content: item.df_valMerc, styles: { halign: 'right' } },
-      '' // vacío para cuadrar colSpan
-    ]);
-    
-    // Segunda fila → descripción y código
-    tableRows.push([
-      {
-        content: `${item.df_desMerc} (${item.df_codMerc})`,
-        colSpan: 5, // ocupa todo el ancho de la tabla
-        styles: { halign: 'left', fontStyle: 'italic' }
-      }
-    ]);
-  });
-  if (detalles.length === 0) {
-    tableRows.push([
-      { content: '', styles: { halign: 'right' } },
-      { content: '', styles: { halign: 'right' } },
-      { content: '', styles: { halign: 'right' } },
-      { content: '', styles: { halign: 'right' } },
-      ''
-    ]);
-    tableRows.push([
-      {
-        content: `Sin detalle de productos cargados`,
-        colSpan: 5,
-        styles: { halign: 'left', fontStyle: 'italic' }
-      }
-    ]);
-  }
-
-  // Generar tabla con líneas en encabezado, principio y final
-  autoTable(doc, {
-    startY: 52,
-    head: [tableColumn],
-    body: tableRows,
-    theme: 'plain', // Usamos 'plain' para controlar manualmente las líneas
-    
-    headStyles: {
-      fontSize: 7,
-      textColor: 0, 
-      fontStyle: 'bold', 
-      fillColor: false,
-      lineColor: [0, 0, 0],
-      lineWidth: { top: 0.3, right: 0, bottom: 0.3, left: 0 }, // 👈 solo línea abajo
-    },
-
-    bodyStyles: { 
-      fontSize: 7,
-      lineWidth: 0, // Sin bordes automáticos
-      cellPadding: { top: 0.5, bottom: 0.5 }
-    },
-    
-    margin: { left: 2 },
-    
-    // Función para dibujar líneas personalizadas
-    // didDrawCell: (data: any) => {
-    //   // Línea al principio de la tabla (encima del header)
-    //   if (data.row.section === 'head' && data.row.index === 0 && data.column.index === 0) {
-    //     doc.setDrawColor(0);
-    //     doc.setLineWidth(0.3);
-    //     doc.line(
-    //       data.table.startX,
-    //       data.cell.y, // parte superior del header
-    //       data.table.startX + data.table.width,
-    //       data.cell.y
-    //     );
-    //   }
-      
-    //   // Línea debajo del encabezado
-    //   if (data.row.section === 'head' && data.column.index === 0) {
-    //     doc.setDrawColor(0);
-    //     doc.setLineWidth(0.3);
-    //     doc.line(
-    //       data.table.startX,
-    //       data.cell.y + data.cell.height, // parte de abajo del header
-    //       data.table.startX + data.table.width,
-    //       data.cell.y + data.cell.height
-    //     );
-    //   }
-      
-    //   // Línea al final de la tabla (después del último row del body)
-    //   if (data.row.section === 'body' 
-    //       && data.row.index === data.table.body.length - 1 // última fila
-    //       && data.column.index === data.table.body[0].length - 1) { // última columna
-    //     doc.setDrawColor(0);
-    //     doc.setLineWidth(0.3);
-    //     doc.line(
-    //       data.table.startX,
-    //       data.cell.y + data.cell.height, // parte de abajo del último item
-    //       data.table.startX + data.table.width,
-    //       data.cell.y + data.cell.height
-    //     );
-    //   }
-    // },
-
-    columnStyles: {
-      0: { cellWidth: 12, halign: 'left' },
-      1: { cellWidth: 12, halign: 'right' },
-      2: { cellWidth: 15, halign: 'right' },
-      3: { cellWidth: 15, halign: 'right' },
-      4: { cellWidth: 10, halign: 'right' }
-    }
-  });
-
-  // Obtener la posición final de la tabla desde el doc
-  const finalY = (doc as any).lastAutoTable.finalY || 70;
-
-  // --- Totales ---
-  doc.setFontSize(7);
-  const subFact = f.fa_subFact ?? f.subTotal ?? f.subfact ?? 0;
-  const itbiFact = f.fa_itbiFact ?? f.itbis ?? f.itbi ?? 0;
-  const valFact = f.fa_valFact ?? f.valFact ?? f.total ?? 0;
-
-  doc.text(`Subtotal:`, 5, finalY + 7);
-  doc.text(formatoMoneda.format(Number(subFact)), 17, finalY + 7);
-  doc.text('ITBIS:', 5, finalY + 10);
-  doc.text(formatoMoneda.format(Number(itbiFact)), 17, finalY + 10);
-  
-  doc.setFontSize(8);
-  doc.setFont('helvetica', 'bold');
-  doc.text('Total:', 5, finalY + 13);
-  doc.text(formatoMoneda.format(Number(valFact)), 17, finalY + 13);
-  doc.setFont('helvetica', 'normal');
-
-  // --- Pie de página ---
-  doc.text(`Recibido Conforme`, pageWidth / 2, 290, { align: 'center' });
-  // const pageCount = doc.getNumberOfPages();
-  // for (let i = 1; i <= pageCount; i++) {
-  //   doc.setPage(i);
-  //   doc.setFontSize(6);
-  //   doc.text(`Página ${i} de ${pageCount}`, pageWidth / 2, 290, { align: 'center' });
-  // }
-
-  // --- Imprimir en impresora POS ---
-  // Envía el documento al diálogo de impresión del navegador
-  // para que el usuario seleccione la impresora de punto de venta.
-  (doc as any).autoPrint();
-  const pdfBlob = doc.output('blob');
-  const pdfUrl = URL.createObjectURL(pdfBlob);
-  // Si tenemos una ventana preabierta, incrustamos el PDF y disparamos print ahí
-  if (this.printWindow && !this.printWindow.closed) {
-    const w = this.printWindow;
-    try {
-      w.document.open();
-      w.document.write(`<!doctype html><html><head><title>Imprimir</title></head>
-        <body style="margin:0">
-          <embed id="pdfEmbed" type="application/pdf" src="${pdfUrl}" style="width:100%;height:100vh" />
-          <script>
-            const doPrint = () => { try { window.focus(); window.print(); } catch(e) { console.log(e); } };
-            // Espera pequeña para que el visor PDF cargue contenido
-            window.addEventListener('load', () => setTimeout(doPrint, 400));
-          </script>
-        </body></html>`);
-      w.document.close();
-    } catch (e) {
-      console.warn('No se pudo escribir en la ventana de impresión, se usa iframe oculto.', e);
-      this.imprimirEnIframeOculto(pdfUrl);
-    }
-    // Limpieza diferida
-    setTimeout(() => {
-      try { URL.revokeObjectURL(pdfUrl); } catch {}
-      this.limpia();
-    }, 1200);
-  } else {
-    // Fallback: imprime en iframe oculto si no hay ventana
-    this.imprimirEnIframeOculto(pdfUrl);
-  }
-}
-
-private imprimirEnIframeOculto(pdfUrl: string) {
-  const iframe = document.createElement('iframe');
-  iframe.style.position = 'fixed';
-  iframe.style.right = '0';
-  iframe.style.bottom = '0';
-  iframe.style.width = '0';
-  iframe.style.height = '0';
-  iframe.style.border = '0';
-  document.body.appendChild(iframe);
-  iframe.onload = () => {
-    try {
-      iframe.contentWindow?.focus();
-      // Dar un respiro al visor PDF antes de imprimir
-      setTimeout(() => iframe.contentWindow?.print(), 400);
-    } finally {
-      setTimeout(() => {
-        document.body.removeChild(iframe);
-        try { URL.revokeObjectURL(pdfUrl); } catch {}
-        this.limpia();
-      }, 1400);
-    }
-  };
-  iframe.src = pdfUrl;
-}
-
-
-
-
-
-  generarFacturaPDF() {
-    const opt = {
-      margin: 5,
-      filename: `Factura_${
-        this.formularioFacturacion.get('fa_codFact')?.value
-      }.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2 },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-    };
-
-    //Mostrar temporalmente la factura para que se renderice correctamente
-    const facturaDiv = this.facturaElement.nativeElement as HTMLElement;
-    facturaDiv.style.display = 'block';
-
-    const element = this.facturaRef.nativeElement;
-    html2pdf().from(element).set(opt).save();
-
-    setTimeout(() => {
-      html2pdf()
-        .from(facturaDiv)
-        .set(opt)
-        .save()
-        .then(() => {
-          facturaDiv.style.display = 'none';
-        });
     }, 100);
   }
 
+  guardarEdicion(index: number) {
+    if (this.index_item === index) {
+      const item = this.items[index];
+      // Validar que la cantidad y precio sean válidos
+      if (this.cantidadmerc <= 0 || this.preciomerc <= 0) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'La cantidad y el precio deben ser mayores a 0',
+        });
+        return;
+      }
+      // Actualizar el item
+      item.cantidad = this.cantidadmerc;
+      item.precio = this.preciomerc;
+      item.total = item.cantidad * item.precio;
+      // Recalcular totales
+      this.actualizarTotales();
+      this.isEditing = false;
+      this.itemToEdit = null;
+      this.index_item = -1;
+      this.habilitarCantidad = false;
+      this.cantidadmerc = 0;
+      this.preciomerc = 0;
+    }
+  }
+
+  cancelarEdicion() {
+    this.isEditing = false;
+    this.itemToEdit = null;
+    this.index_item = -1;
+    this.habilitarCantidad = false;
+    this.cantidadmerc = 0;
+    this.preciomerc = 0;
+  }
+
+  // --- Funciones para manejar teclas ---
+  @HostListener('window:keydown', ['$event'])
+  handleKeyboardEvent(event: KeyboardEvent) {
+    if (event.key === 'F2') {
+      this.limpia();
+    }
+    if (event.key === 'F4') {
+      this.guardarFacturacion();
+    }
+    if (event.key === 'F7') {
+      this.buscarProducto();
+    }
+    if (event.key === 'F8') {
+      this.buscarCliente();
+    }
+    if (event.key === 'F9') {
+      this.buscarVendedor();
+    }
+    if (event.key === 'F10') {
+      this.buscarFormaPago();
+    }
+  }
+
+  buscarProducto() {
+    // Lógica para abrir modal de búsqueda de producto
+    $('#modalbuscarproducto').modal('show');
+  }
+  buscarCliente() {
+    // Lógica para abrir modal de búsqueda de cliente
+    $('#modalbuscarcliente').modal('show');
+  }
+  buscarVendedor() {
+    // Lógica para abrir modal de búsqueda de vendedor
+    $('#modalbuscarvendedor').modal('show');
+  }
+  buscarFormaPago() {
+    // Lógica para abrir modal de búsqueda de forma de pago
+    $('#modalbuscarformapago').modal('show');
+  }
+
+  actualizarTotales() {
+    this.subTotal = this.items.reduce((acc, item) => acc + item.total, 0);
+    this.totalItbis = this.items.reduce((acc, item) => {
+      // Calcular ITBIS por item
+      // Asumiendo que item.producto.in_itbis indica si paga ITBIS
+      // y que la tasa es 18%
+      // Ajustar según lógica real
+      const itbis = item.producto?.in_itbis ? item.total * 0.18 : 0;
+      return acc + itbis;
+    }, 0);
+    this.totalGral = this.subTotal + this.totalItbis;
+  }
+
+  guardarFacturacion() {
+    // Implementar lógica de guardado
+    console.log('Guardando facturación...');
+  }
+
+  /**
+   * Construye el payload para el servicio de DGII (QR/eCF)
+   * basado en la factura seleccionada y los items cargados.
+   */
+  private buildDGIIRequest(factura: FacturacionModelData, items: any[]): any {
+    // 1. Obtener datos de cabecera
+    const encf = String(factura.fa_ncfFact || '').trim();
+    let tipoeCF = '';
+    if (encf.length >= 3 && encf.startsWith('E')) {
+      tipoeCF = encf.substring(1, 3);
+    }
+
+    const rncEmisor = localStorage.getItem('rnc') || '';
+    const razonSocialEmisor = localStorage.getItem('nombre_empresa') || '';
+
+    // Normalizar fecha
+    const fechaEmision = factura.fa_fecFact
+      ? String(factura.fa_fecFact).substring(0, 10)
+      : new Date().toISOString().split('T')[0];
+
+    // 2. Construir el escenario base
+    const scenario: any = {
+      Version: '1.0',
+      RncEmisor: rncEmisor,
+      RazonSocialEmisor: razonSocialEmisor,
+      RncComprador: String(factura.fa_rncFact || '').trim(),
+      RazonSocialComprador: String(factura.fa_nomClie || '').trim(),
+      ENCF: encf,
+      TipoeCF: tipoeCF,
+      FechaEmision: fechaEmision,
+      MontoTotal: factura.fa_valFact,
+      TotalITBIS: factura.fa_itbiFact,
+      MontoGravadoTotal: factura.fa_subFact,
+      TipoIngresos: '01',
+      TipoPago: String(factura.fa_fpago || '1'),
+      RegimenPagos: '0',
+      IndicadorMontoGravado: '1',
+    };
+
+    // 3. Agregar items
+    items.forEach((item, index) => {
+      const i = index + 1;
+      // Normalizar campos según vengan de 'items' (modelo local) o 'detalles' (backend)
+      const nombre = item.producto?.in_desmerc || item.df_desMerc || '';
+      const cantidad = Number(item.cantidad || item.df_canMerc || 0);
+      const precio = Number(item.precio || item.df_preMerc || 0);
+      const total = Number(item.total || item.df_valMerc || 0);
+      // Calcular o usar ITBIS
+      const itbis = item.df_itbiMerc ? Number(item.df_itbiMerc) : total * 0.18;
+
+      scenario[`NumeroLinea[${i}]`] = i;
+      scenario[`NombreItem[${i}]`] = nombre;
+      scenario[`CantidadItem[${i}]`] = cantidad.toFixed(2);
+      scenario[`PrecioUnitarioItem[${i}]`] = precio.toFixed(2);
+      scenario[`MontoItem[${i}]`] = total.toFixed(2);
+      scenario[`MontoITBIS[${i}]`] = itbis.toFixed(2);
+      scenario[`TasaITBIS[${i}]`] = 0.18;
+      scenario[`IndicadorFacturacion[${i}]`] = '1';
+    });
+
+    return { scenarios: [scenario] };
+  }
+
   imprimirFactura() {
+    this.formularioFacturacion.get('fa_codFact')?.enable();
+
+    // Preparar datos de la factura
+    const facturaData =
+      this.DatosSeleccionado || this.formularioFacturacion.value;
+
+    // Construir payload DGII
+    let dgiiData: any = {};
+    try {
+      dgiiData = this.buildDGIIRequest(facturaData, this.items);
+    } catch (error) {
+      console.error('Error construyendo datos DGII', error);
+    }
+
+    // URL del endpoint externo
+    const url =
+      'https://ecfrecepcion.starsoftdominicana.com//api/generate-xml-no-send';
+
+    // Realizar POST
+    this.http.post(url, dgiiData).subscribe(
+      (response: any) => {
+        console.log('Respuesta DGII:', response);
+
+        // Combinar respuesta con datos de factura para impresión
+        // Se asume que response trae campos necesarios (ej. qrCode, secCode, etc.)
+        const datosParaImprimir = { ...facturaData, ...response };
+
+        this.printingService.imprimirFactura80mm(datosParaImprimir, this.items);
+      },
+      (error) => {
+        console.error('Error obteniendo datos DGII:', error);
+        // En caso de error, imprimir solo con datos locales
+        this.printingService.imprimirFactura80mm(facturaData, this.items);
+      }
+    );
+  }
+
+  toggleCheckPagado() {
+    this.chekPagado = !this.chekPagado;
+    if (this.chekPagado) {
+      this.valorPagado =
+        this.formularioFacturacion.get('fa_valFact')?.value || 0;
+      this.txtvalPagado = false;
+      this.actualizarCambio();
+    } else {
+      this.valorPagado = 0;
+      this.txtvalPagado = true;
+      this.valCambio = 0;
+    }
+  }
+
+  onValorPagadoChange(event: any) {
+    const valor = parseFloat(event.target.value);
+    this.valorPagado = isNaN(valor) ? 0 : valor;
+    this.actualizarCambio();
+  }
+
+  actualizarCambio() {
+    const total = this.formularioFacturacion.get('fa_valFact')?.value || 0;
+    this.valCambio = this.valorPagado - total;
+    if (this.valCambio < 0) this.valCambio = 0;
+  }
+
+  selectRow(index: number) {
+    this.selectedRow = index;
+  }
+
+  marcarImpresa() {
     this.formularioFacturacion.get('fa_codFact')?.enable();
     var paylod = {
       fa_codFact: this.formularioFacturacion.get('fa_codFact')?.value,
@@ -1404,43 +822,19 @@ private imprimirEnIframeOculto(pdfUrl: string) {
       fa_envio: this.formularioFacturacion.get('fa_envio')?.value,
       fa_fpago: this.formularioFacturacion.get('fa_fpago')?.value,
     };
-    console.log('Imprimiendo factura con payload:', paylod);
-
-    const original = this.facturaRef.nativeElement;
-    const numeroFactura = this.formularioFacturacion.get('fa_codFact')?.value;
-    // ✅ Clonar y mostrar fuera del viewport
-    const clone = original.cloneNode(true) as HTMLElement;
-    clone.style.position = 'absolute';
-    clone.style.top = '0';
-    clone.style.left = '-9999px';
-    clone.style.display = 'block';
-    document.body.appendChild(clone);
 
     this.servicioFacturacion.marcarFacturaComoImpresa(paylod).subscribe(() => {
-      console.log('Factura actualizada correctamente.');
-
-      setTimeout(() => {
-        html2canvas(clone).then((canvas) => {
-          const imgData = canvas.toDataURL('image/png');
-          const pdf = new jsPDF('p', 'mm', 'a4');
-          const imgProps = pdf.getImageProperties(imgData);
-          const pdfWidth = pdf.internal.pageSize.getWidth();
-          const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-          pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-          pdf.save(`${numeroFactura}.pdf`);
-
-          // ❌ Quitar el clonF
-          document.body.removeChild(clone);
-          this.limpia();
-          console.log('Payload:', paylod);
-
-          // actualiza
-          const formaPago =
-            this.formularioFacturacion.get('fa_fpago')?.value || 1; // Por defecto 1
-        });
-      }, 100);
+      Swal.fire({
+        icon: 'success',
+        title: 'Guardado',
+        text: 'Factura guardada correctamente',
+        timer: 1500,
+      });
+      this.limpia();
     });
+  }
 
-    // Esperar a que el DOM procese
+  buscarFactura() {
+    this.imprimirFactura();
   }
 }

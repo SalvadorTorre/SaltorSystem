@@ -37,7 +37,7 @@
                 <label class="form-label small text-muted fw-semibold"
                   >No. Factura</label
                 >
-                
+
                 <input
                   type="text"
                   class="form-control"
@@ -58,7 +58,7 @@
             </div>
             <div class="row g-2 mb-2">
             <div class="col-6"> </div>
-            
+
             </div>
             <!-- RNC y Tipo NCF -->
             <div class="row g-2 mb-2">
@@ -71,6 +71,7 @@
                   #input1
                   id="input1"
                   (keydown.enter)="buscarRnc($event,input2)"
+                  (keydown.tab)="buscarRnc($event,input2)"
                   formControlName="fa_rncFact"
                   class="form-control"
                 />
@@ -85,8 +86,8 @@
                   (keydown.enter)="moveFocus($event, input3)"
                   class="form-select"
                 >
-                  <option [value]="ncf.codNcf" *ngFor="let ncf of ncflist">
-                    {{ncf.desNcf}}
+                  <option [value]="ncf.codigo" *ngFor="let ncf of ncflist">
+                    {{ncf.tipo}} - {{ncf.desNcf}}
                   </option>
                 </select>
               </div>
@@ -117,7 +118,6 @@
                   (keydown)="handleKeydown($event)"
                   #input2
                   id="input2"
-                  [formControl]="buscarNombre"
                   formControlName="fa_nomClie"
                 />
                 <div
@@ -278,8 +278,8 @@
                   (keydown.enter)="moveFocus($event, input12)"
                   class="form-select"
                 >
-                  <option value="envio">Envío</option>
-                  <option value="retiral">Retiro Cliente</option>
+                  <option value="1">Envío</option>
+                  <option value="2">Retiro Cliente</option>
                 </select>
               </div>
               <div class="col-md-2">
@@ -331,8 +331,15 @@
             <button
               class="btn btn-success flex-fill"
               (click)="guardarFacturacion()"
+              [disabled]="isLoading"
             >
-              <i class="bi bi-check-circle me-1"></i>Guardar
+              <ng-container *ngIf="!isLoading">
+                <i class="bi bi-check-circle me-1"></i>Guardar
+              </ng-container>
+              <ng-container *ngIf="isLoading">
+                <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                Guardando...
+              </ng-container>
             </button>
           </div>
         </div>
@@ -499,7 +506,7 @@
                 </tr>
               </thead>
               <tbody>
-                <tr 
+                <tr
                   *ngFor="let item of items; let i = index"
                   [class.table-active]="i === selectedRow"
                   (click)="selectRow(i)"
@@ -559,7 +566,7 @@
                         <i class="bi bi-info-circle me-2"></i>Información del
                         Producto
                       </h6>
-                    </div>  
+                    </div>
                     <div class="card-body bg-light">
                       <div class="row g-2 ">
                         <div class="col-3 text-center  mb-0">
@@ -579,7 +586,7 @@
                             readonly
                             [(ngModel)]="medidatxt"
                           />
-                        </div>  
+                        </div>
                         <div class="col-3 text-center  mb-0">
                           <label class="form-label small mb-0 fw-semibold">Act..</label>
                           <input
@@ -588,7 +595,7 @@
                             readonly
                             [(ngModel)]="fecacttxt"
                           />
-                        </div>  
+                        </div>
                         <div class="col-3 text-center  mb-0">
                           <label class="form-label small mb-0 fw-semibold">Costo</label>
                           <input
@@ -597,18 +604,18 @@
                             readonly
                             [value]="formatNumber(costotxt)"
                           />
-                        </div>  
-                      </div> 
-                    </div>  
-                  </div>   
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div class="col-3">  
+                <div class="col-3">
               <div class="card border-primary shadow-sm info-producto" style="border-radius: 12px">
                 <div class="card-header bg-white border-bottom">
                   <h6 class="mb-0 text-secondary fw-semibold small">
                     <i class="bi bi-info-circle me-2"></i>Margen Fact.
                   </h6>
-                </div>  
+                </div>
                 <div class="card-body bg-light">
                   <div class="row g-2 mb-0">
                     <div class="col-6 text-center">
@@ -636,8 +643,8 @@
               </div>
 
 
-                </div>   
-              </div>  
+                </div>
+              </div>
               <div class="row g-2">
                 <div class=" col-12">
                   <div class="card border-primary shadow-sm info-producto" style="border-radius: 12px">
@@ -646,7 +653,7 @@
                         <i class="bi bi-info-circle me-2"></i>Margenes de Venta del
                         Producto
                       </h6>
-                    </div>  
+                    </div>
                     <div class="row g-2 mb-2">
                       <!-- <div class="col-1  text-center ">
                         <label class="form-label small mb-0 fw-semibold">5%</label>
@@ -712,9 +719,9 @@
                         />
                       </div>
                     </div>
-                  </div>  
-                </div>          
-              </div> 
+                  </div>
+                </div>
+              </div>
 
             </div>
             <!-- <div class="col-lg-5"> </div> -->
@@ -726,7 +733,7 @@
                   <h6 class="mb-0 text-secondary fw-semibold small">
                     <i class="bi bi-calculator me-2"></i>Totales
                   </h6>
-                </div>  
+                </div>
                 <div class="card-body bg-light">
                   <div class="row g-2">
                     <div class="col-6 mb-2">
@@ -739,10 +746,10 @@
                         readonly
                         [(ngModel)]="subtotaltxt"
                       />
-                      
+
                     </div>
                   </div>
-                </div>  
+                </div>
                   <div class="row g-2">
                     <div class="col-6 mb-2">
                       <label class="form-label small mb-0 fw-semibold">Descuento</label>
