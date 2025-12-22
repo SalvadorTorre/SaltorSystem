@@ -10,19 +10,19 @@ const routes: Routes = [
     children: [
       {
         path: 'facturas-pendientes',
-        component: FacturasPendientesComponent
+        component: FacturasPendientesComponent,
       },
       {
         path: '',
         redirectTo: 'facturas-pendientes',
-        pathMatch: 'full'
-      }
-    ]
-  }
+        pathMatch: 'full',
+      },
+    ],
+  },
 ];
 
 @NgModule({
   imports: [RouterModule.forChild(routes)],
-  exports: [RouterModule]
+  exports: [RouterModule],
 })
-export class RutaContabilidad { }
+export class RutaContabilidad {}

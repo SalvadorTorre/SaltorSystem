@@ -158,6 +158,7 @@
                 (keydown.enter)="moveFocus($event, input4)"
                 #input3
                 class="form-control text-uppercase"
+                [attr.disabled]="isDisabled ? true : null"
               />
             </div>
 
@@ -173,6 +174,7 @@
                   #input4
                   placeholder="Teléfono"
                   class="form-control"
+                  [attr.disabled]="isDisabled ? true : null"
                 />
               </div>
               <div class="col-md-6">
@@ -189,6 +191,7 @@
                     placeholder="Sector"
                     class="form-control text-uppercase"
                     [formControl]="buscarSector"
+                    [attr.disabled]="isDisabled ? true : null"
                   />
                   <div
                     [ngClass]="{ 'show': resultadoSector.length > 0 }"
@@ -229,6 +232,7 @@
                   (keydown.enter)="moveFocus($event, input8)"
                   #input7
                   class="form-control"
+                  [attr.disabled]="isDisabled ? true : null"
                 />
               </div>
               <div class="col-md-5">
@@ -242,6 +246,7 @@
                   (keydown.enter)="moveFocus($event, input9)"
                   #input8
                   class="form-control text-uppercase"
+                  [attr.disabled]="isDisabled ? true : null"
                 />
               </div>
             </div>
@@ -258,6 +263,7 @@
                   formControlName="fa_fpago"
                   (keydown.enter)="moveFocusFpago($event, input11)"
                   class="form-select"
+                  [attr.disabled]="isDisabled ? true : null"
                 >
                   <option
                     [value]="fpago.fp_codfpago"
@@ -277,6 +283,7 @@
                   id="listaenvio"
                   (keydown.enter)="moveFocus($event, input12)"
                   class="form-select"
+                  [attr.disabled]="isDisabled ? true : null"
                 >
                   <option value="1">Envío</option>
                   <option value="2">Retiro Cliente</option>
@@ -378,14 +385,15 @@
                     />
                     <div
                       [ngClass]="{ 'show': resultadoCodmerc.length > 0 }"
-                      class="dropdown-menu shadow-sm w-100"
+                      class="dropdown-menu shadow-sm"
                       style="
                         margin-top: 2px;
                         z-index: 1050;
-                        max-height: 200px;
+                        max-height: 300px;
                         overflow-y: auto;
                         border-radius: 12px;
                         border: none;
+                        min-width: 450px;
                       "
                     >
                       <a
@@ -396,7 +404,7 @@
                         style="cursor: pointer"
                       >
                         <i class="bi bi-box-seam me-2 text-success"></i>
-                        <span>{{ result.in_codmerc }}</span>
+                        <span>{{ result.in_codmerc || $any(result).IN_CODMERC }} - {{ result.in_desmerc || $any(result).IN_DESMERC }}</span>
                       </a>
                     </div>
                   </div>
@@ -420,14 +428,15 @@
                     />
                     <div
                       [ngClass]="{ 'show': resultadodescripcionmerc.length > 0 }"
-                      class="dropdown-menu shadow-sm w-100"
+                      class="dropdown-menu shadow-sm"
                       style="
                         margin-top: 2px;
                         z-index: 1050;
-                        max-height: 200px;
+                        max-height: 300px;
                         overflow-y: auto;
                         border-radius: 12px;
                         border: none;
+                        min-width: 450px;
                       "
                     >
                       <a
@@ -438,7 +447,7 @@
                         style="cursor: pointer"
                       >
                         <i class="bi bi-box-seam me-2 text-success"></i>
-                        <span>{{ result.in_desmerc }}</span>
+                        <span>{{ result.in_codmerc || $any(result).IN_CODMERC }} - {{ result.in_desmerc || $any(result).IN_DESMERC }}</span>
                       </a>
                     </div>
                   </div>

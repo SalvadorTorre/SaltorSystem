@@ -74,6 +74,7 @@ export class Facturacion implements OnInit {
   @ViewChild('inputCodmerc') inputCodmerc!: ElementRef; // Para manejar el foco
   @ViewChild('descripcionInput') descripcionInput!: ElementRef; // Para manejar el foco
   @ViewChild('Tabladetalle') Tabladetalle!: ElementRef;
+  isDisabled: boolean = true;
   totalItems = 0;
   pageSize = 5;
   currentPage = 1;
@@ -161,7 +162,6 @@ export class Facturacion implements OnInit {
   private nomclienteSubject = new BehaviorSubject<string>('');
   selectedRow: number = -1; // Para rastrear la fila seleccionada
 
-  isDisabled: boolean = true;
   form: FormGroup;
   constructor(
     private fb: FormBuilder,
@@ -525,8 +525,13 @@ export class Facturacion implements OnInit {
 
   buscarTodasFactura(page: number) {
     this.servicioFacturacion.buscarTodasFacturacion().subscribe((response) => {
-      console.log(response);
-      this.facturacionList = response.data;
+      console.log('buscarTodasFactura response:', response);
+      if (response && Array.isArray(response.data)) {
+        this.facturacionList = response.data;
+      } else {
+        console.warn('response.data is not an array:', response?.data);
+        this.facturacionList = [];
+      }
       console.log(this.facturacionList.length);
     });
   }
@@ -727,7 +732,13 @@ export class Facturacion implements OnInit {
 
   buscarTodasFacturacion() {
     this.servicioFacturacion.buscarTodasFacturacion().subscribe((response) => {
-      this.facturacionList = response.data;
+      console.log('buscarTodasFacturacion response:', response);
+      if (response && Array.isArray(response.data)) {
+        this.facturacionList = response.data;
+      } else {
+        console.warn('response.data is not an array:', response?.data);
+        this.facturacionList = [];
+      }
       console.log(this.facturacionList.length);
     });
   }
@@ -892,52 +903,46 @@ export class Facturacion implements OnInit {
       event.preventDefault();
     }
   }
-  cargarDatosInventario(inventario: ModeloInventarioData) {
+  cargarDatosInventario(inventario: any) {
     console.log(inventario);
     this.resultadoCodmerc = [];
     this.resultadodescripcionmerc = [];
-    this.codmerc = inventario.in_codmerc;
-    this.preciomerc = inventario.in_premerc;
-    this.tipomerc = inventario.in_tipoproduct;
-    this.descripcionmerc = inventario.in_desmerc;
-    this.existenciatxt = inventario.in_canmerc;
-    this.costotxt = inventario.in_cosmerc;
-    this.medidatxt = inventario.in_medida;
-    this.fecacttxt = inventario.in_fecmodif;
-    this.atxt =
-      Number(inventario.in_cosmerc) + (Number(inventario.in_cosmerc) * 5) / 100;
-    this.btxt =
-      Number(inventario.in_cosmerc) + (Number(inventario.in_cosmerc) * 7) / 100;
-    this.ctxt =
-      Number(inventario.in_cosmerc) +
-      (Number(inventario.in_cosmerc) * 10) / 100;
-    this.dtxt =
-      Number(inventario.in_cosmerc) +
-      (Number(inventario.in_cosmerc) * 12) / 100;
-    this.etxt =
-      Number(inventario.in_cosmerc) +
-      (Number(inventario.in_cosmerc) * 14) / 100;
-    this.ftxt =
-      Number(inventario.in_cosmerc) +
-      (Number(inventario.in_cosmerc) * 16) / 100;
-    this.gtxt =
-      Number(inventario.in_cosmerc) +
-      (Number(inventario.in_cosmerc) * 18) / 100;
-    this.htxt =
-      Number(inventario.in_cosmerc) +
-      (Number(inventario.in_cosmerc) * 20) / 100;
+
+    // Helper to safely get property case-insensitively
+    const getProp = (obj: any, key: string) =>
+      obj[key] || obj[key.toUpperCase()] || obj[key.toLowerCase()];
+
+    this.codmerc = getProp(inventario, 'in_codmerc');
+    this.preciomerc = getProp(inventario, 'in_premerc');
+    this.tipomerc = getProp(inventario, 'in_tipoproduct');
+    this.descripcionmerc = getProp(inventario, 'in_desmerc');
+    this.existenciatxt = getProp(inventario, 'in_canmerc');
+    this.costotxt = getProp(inventario, 'in_cosmerc');
+    this.medidatxt = getProp(inventario, 'in_medida');
+    this.fecacttxt = getProp(inventario, 'in_fecmodif');
+
+    const costo = Number(this.costotxt) || 0;
+
+    this.atxt = costo + (costo * 5) / 100;
+    this.btxt = costo + (costo * 7) / 100;
+    this.ctxt = costo + (costo * 10) / 100;
+    this.dtxt = costo + (costo * 12) / 100;
+    this.etxt = costo + (costo * 14) / 100;
+    this.ftxt = costo + (costo * 16) / 100;
+    this.gtxt = costo + (costo * 18) / 100;
+    this.htxt = costo + (costo * 20) / 100;
 
     this.productoselect = inventario;
     this.cancelarBusquedaDescripcion = true;
     this.cancelarBusquedaCodigo = true;
     this.formularioFacturacion.patchValue({
-      df_codMerc: inventario.in_codmerc,
-      df_desMerc: inventario.in_desmerc,
-      df_tipomerc: inventario.in_tipoproduct,
-      df_canMerc: inventario.in_canmerc,
-      df_preMerc: inventario.in_premerc,
-      df_cosMerc: inventario.in_cosmerc,
-      df_unidad: inventario.in_unidad,
+      df_codMerc: this.codmerc,
+      df_desMerc: this.descripcionmerc,
+      df_tipomerc: this.tipomerc,
+      df_canMerc: this.existenciatxt,
+      df_preMerc: this.preciomerc,
+      df_cosMerc: this.costotxt,
+      df_unidad: getProp(inventario, 'in_unidad'),
     });
     // Si el usuario seleccionó desde el grid o validó el código, llevar el foco a Cantidad
     const qty = document.getElementById('input15') as HTMLInputElement | null;
@@ -1010,12 +1015,17 @@ export class Facturacion implements OnInit {
         this.formularioFacturacion.patchValue({ fa_tipoNcf: 2 });
         this.formularioFacturacion.get('fa_tipoNcf')?.enable();
         this.ncflist = this.ncflist.filter((ncf) => ncf.codNcf !== 1);
+
+        // Habilitar campos
+        this.isDisabled = false;
+
         $('#input3').focus();
         $('#input3').select();
       } else {
         // Si no se encuentra el RNC, mostrar error
         this.mostrarMensajeError('RNC inválido.');
         console.log('RNC no encontrado.');
+        this.isDisabled = true;
       }
     });
   }
@@ -1062,6 +1072,11 @@ export class Facturacion implements OnInit {
       // Selecciona el ítem actual
       if (this.selectedIndex >= 0 && this.selectedIndex <= maxIndex) {
         this.cargarDatosCliente(this.resultadoNombre[this.selectedIndex]);
+      }
+      // Habilitar campos si hay un nombre de cliente
+      const nombreCliente = this.formularioFacturacion.get('fa_nomClie')?.value;
+      if (nombreCliente && nombreCliente.trim() !== '') {
+        this.isDisabled = false;
       }
       event.preventDefault();
     }
@@ -1240,7 +1255,16 @@ export class Facturacion implements OnInit {
         )
         .subscribe((results: ModeloInventario) => {
           if (results && Array.isArray(results.data) && results.data.length) {
-            const ordenados = results.data.sort((a, b) =>
+            // Normalize data keys to lowercase to match template expectations
+            const normalizedData = results.data.map((item: any) => {
+              const newItem: any = {};
+              Object.keys(item).forEach((key) => {
+                newItem[key.toLowerCase()] = item[key];
+              });
+              return newItem;
+            });
+
+            const ordenados = normalizedData.sort((a, b) =>
               a.in_desmerc.localeCompare(b.in_desmerc, undefined, {
                 sensitivity: 'base',
               })
