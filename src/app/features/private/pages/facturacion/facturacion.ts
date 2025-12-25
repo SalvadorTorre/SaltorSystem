@@ -1385,10 +1385,7 @@ export class Facturacion implements OnInit {
         this.resultadoFpago.length > 0
       ) {
         this.cargarDatosFpago(this.resultadoFpago[this.selectedIndexfpago]);
-      } else if (
-        this.resultadoFpago.length === 0 &&
-        this.formularioFacturacion.get('fa_codfpago')?.value
-      ) {
+      } else if (this.resultadoFpago.length === 0 && this.formularioFacturacion.get('fa_codfpago')?.value) {
         // Si no hay lista (ya seleccionado) y presiona enter, mover al siguiente
         const nextInput = document.getElementById('input11');
         if (nextInput) nextInput.focus();
