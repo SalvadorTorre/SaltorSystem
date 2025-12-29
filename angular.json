@@ -40,7 +40,7 @@
               "node_modules/pdfmake/build/pdfmake.min.js",
               "node_modules/pdfmake/build/vfs_fonts.js"
 
-
+              
             ]
           },
           "configurations": {

@@ -1,66 +1,25 @@
 import { Inventario } from './../mantenimientos/pages/inventario-page/inventario';
-import {
-  Component,
-  NgModule,
-  OnInit,
-  ViewChild,
-  ElementRef,
-  ɵNG_COMP_DEF,
-} from '@angular/core';
+import { Component, NgModule, OnInit, ViewChild, ElementRef, ɵNG_COMP_DEF } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import {
-  FormBuilder,
-  FormControl,
-  FormGroup,
-  Validators,
-} from '@angular/forms';
-import {
-  BehaviorSubject,
-  debounceTime,
-  distinctUntilChanged,
-  filter,
-  from,
-  switchMap,
-  tap,
-  catchError,
-  of,
-  map,
-} from 'rxjs';
+import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
+import { BehaviorSubject, debounceTime, distinctUntilChanged, filter, from, switchMap, tap } from 'rxjs';
 import Swal from 'sweetalert2';
 import { ModeloUsuarioData } from 'src/app/core/services/mantenimientos/usuario';
 import { ModeloRncData } from 'src/app/core/services/mantenimientos/rnc';
 import { ServicioRnc } from 'src/app/core/services/mantenimientos/rnc/rnc.service';
 import { ServicioUsuario } from 'src/app/core/services/mantenimientos/usuario/usuario.service';
 import { ServicioFacturacion } from 'src/app/core/services/facturacion/factura/factura.service';
-import {
-  FacturacionModelData,
-  detFacturaData,
-} from 'src/app/core/services/facturacion/factura';
+import { FacturacionModelData, detFacturaData } from 'src/app/core/services/facturacion/factura';
 import { ServicioCliente } from 'src/app/core/services/mantenimientos/clientes/cliente.service';
 import { HttpInvokeService } from 'src/app/core/services/http-invoke.service';
-import {
-  ModeloCliente,
-  ModeloClienteData,
-} from 'src/app/core/services/mantenimientos/clientes';
-import {
-  FacturaDetalleModel,
-  interfaceDetalleModel,
-} from 'src/app/core/services/facturacion/factura/factura';
+import { ModeloCliente, ModeloClienteData } from 'src/app/core/services/mantenimientos/clientes';
+import { FacturaDetalleModel, interfaceDetalleModel } from 'src/app/core/services/facturacion/factura/factura';
 import { ServicioInventario } from 'src/app/core/services/mantenimientos/inventario/inventario.service';
 import { ServicioSector } from 'src/app/core/services/mantenimientos/sector/sector.service';
-import {
-  ModeloSector,
-  ModeloSectorData,
-} from 'src/app/core/services/mantenimientos/sector';
-import {
-  ModeloFpago,
-  ModeloFpagoData,
-} from 'src/app/core/services/mantenimientos/fpago';
+import { ModeloSector, ModeloSectorData } from 'src/app/core/services/mantenimientos/sector';
+import { ModeloFpago, ModeloFpagoData } from 'src/app/core/services/mantenimientos/fpago';
 import { ServicioFpago } from 'src/app/core/services/mantenimientos/fpago/fpago.service';
-import {
-  ModeloInventario,
-  ModeloInventarioData,
-} from 'src/app/core/services/mantenimientos/inventario';
+import { ModeloInventario, ModeloInventarioData } from 'src/app/core/services/mantenimientos/inventario';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { disableDebugTools } from '@angular/platform-browser';
@@ -71,13 +30,14 @@ declare var $: any;
 @Component({
   selector: 'facturacion',
   templateUrl: './facturacion.html',
-  styleUrls: ['./facturacion.css'],
+  styleUrls: ['./facturacion.css']
 })
+
+
 export class Facturacion implements OnInit {
   @ViewChild('inputCodmerc') inputCodmerc!: ElementRef; // Para manejar el foco
   @ViewChild('descripcionInput') descripcionInput!: ElementRef; // Para manejar el foco
   @ViewChild('Tabladetalle') Tabladetalle!: ElementRef;
-  isDisabled: boolean = true;
   totalItems = 0;
   pageSize = 5;
   currentPage = 1;
@@ -96,7 +56,7 @@ export class Facturacion implements OnInit {
   formularioFacturacion!: FormGroup;
   formulariodetFactura!: FormGroup;
   modoedicionFacturacion: boolean = false;
-  facturacionid!: string;
+  facturacionid!: string
   modoconsultaFacturacion: boolean = false;
   facturacionList: FacturacionModelData[] = [];
   detFacturaList: detFacturaData[] = [];
@@ -115,7 +75,7 @@ export class Facturacion implements OnInit {
   medidatxt: any;
   costotxt: any;
   totalcostotxt: any;
-  fecacttxt: any;
+  fecacttxt:any;
   itbitxt: string = '';
   totalgraltxt: string = '';
   txtFactura: string = '';
@@ -151,8 +111,6 @@ export class Facturacion implements OnInit {
   mensagePantalla: boolean = false;
   codmerVacio: boolean = false;
   desmerVacio: boolean = false;
-  isLoading: boolean = false;
-
   habilitarCampos: boolean = false;
 
   sucursales = [];
@@ -165,6 +123,7 @@ export class Facturacion implements OnInit {
   private nomclienteSubject = new BehaviorSubject<string>('');
   selectedRow: number = -1; // Para rastrear la fila seleccionada
 
+  isDisabled: boolean = true;
   form: FormGroup;
   constructor(
     private fb: FormBuilder,
@@ -176,7 +135,7 @@ export class Facturacion implements OnInit {
     private ServicioRnc: ServicioRnc,
     private ServicioSector: ServicioSector,
     private servicioFpago: ServicioFpago,
-    private servicioNcf: ServicioNcf
+    private servicioNcf: ServicioNcf,
   ) {
     this.form = this.fb.group({
       fa_codVend: ['', Validators.required], // El campo es requerido
@@ -185,64 +144,34 @@ export class Facturacion implements OnInit {
 
     this.crearFormularioFacturacion();
 
-    this.nomclienteSubject
-      .pipe(
-        debounceTime(500),
-        distinctUntilChanged(),
-        switchMap((nomcliente) => {
-          this.txtdescripcion = nomcliente;
-          return this.servicioFacturacion.buscarFacturacion(
-            this.currentPage,
-            this.facturacionList.length,
-            this.codigo,
-            this.txtdescripcion
-          );
-        })
-      )
-      .subscribe((response) => {
-        if (response && Array.isArray(response.data)) {
-          this.facturacionList = response.data;
-          this.totalItems = response.pagination?.total || 0;
-          this.currentPage = response.pagination?.page || 1;
-        } else {
-          console.warn(
-            'Respuesta de búsqueda por cliente no es válida:',
-            response
-          );
-          this.facturacionList = [];
-          this.totalItems = 0;
-        }
-      });
 
-    this.numfacturaSubject
-      .pipe(
-        debounceTime(500),
-        distinctUntilChanged(),
-        switchMap((codigo) => {
-          this.txtFactura = codigo;
-          return this.servicioFacturacion.buscarFacturacion(
-            this.currentPage,
-            this.facturacionList.length,
-            this.codigo,
-            this.txtdescripcion,
-            this.txtFactura
-          );
-        })
-      )
-      .subscribe((response) => {
-        if (response && Array.isArray(response.data)) {
-          this.facturacionList = response.data;
-          this.totalItems = response.pagination?.total || 0;
-          this.currentPage = response.pagination?.page || 1;
-        } else {
-          console.warn(
-            'Respuesta de búsqueda por número de factura no es válida:',
-            response
-          );
-          this.facturacionList = [];
-          this.totalItems = 0;
-        }
-      });
+    this.nomclienteSubject.pipe(
+      debounceTime(500),
+      distinctUntilChanged(),
+      switchMap(nomcliente => {
+        this.txtdescripcion = nomcliente;
+        return this.servicioFacturacion.buscarFacturacion(this.currentPage, this.facturacionList.length, this.codigo, this.txtdescripcion);
+      })
+    ).subscribe(response => {
+      this.facturacionList = response.data;
+      this.totalItems = response.pagination.total;
+      this.currentPage = response.pagination.page;
+    });
+
+    this.numfacturaSubject.pipe(
+      debounceTime(500),
+      distinctUntilChanged(),
+      switchMap(codigo => {
+        this.txtFactura = codigo;
+        return this.servicioFacturacion.buscarFacturacion(this.currentPage, this.facturacionList.length, this.codigo, this.txtdescripcion, this.txtFactura);
+      })
+    ).subscribe(response => {
+      this.facturacionList = response.data;
+      this.totalItems = response.pagination.total;
+      this.currentPage = response.pagination.page;
+    });
+
+
   }
 
   @ViewChild('buscarcodmercInput') buscarcodmercElement!: ElementRef;
@@ -250,19 +179,8 @@ export class Facturacion implements OnInit {
   resultadoNombre: ModeloClienteData[] = [];
   resultadoSector: ModeloSectorData[] = [];
   resultadoFpago: ModeloFpagoData[] = [];
-  listaFpago: ModeloFpagoData[] = []; // Lista completa de pagos para filtrar
   buscarSector = new FormControl();
   buscarFpago = new FormControl();
-
-  // Entrega
-  buscarEnvio = new FormControl();
-  listaEnvio = [
-    { codigo: '1', descripcion: 'Envío' },
-    { codigo: '2', descripcion: 'Retiro Cliente' },
-  ];
-  resultadoEnvio: any[] = [];
-  selectedIndexEnvio = 0;
-
   selectedIndex = 1;
   selectedIndexsector = 1;
   buscarcodmerc = new FormControl();
@@ -274,305 +192,124 @@ export class Facturacion implements OnInit {
   selectedIndexfpago = 1;
   resultadodescripcionmerc: ModeloInventarioData[] = [];
   selectedIndexdescripcionmerc = 1;
-  seleccionarFacturacion(facturacion: any) {
-    this.selectedFacturacion = facturacion;
-  }
+  seleccionarFacturacion(facturacion: any) { this.selectedFacturacion = facturacion; }
+
 
   ngOnInit(): void {
     this.buscarTodasFacturacion();
-    this.buscarcodmerc.valueChanges
-      .pipe(
-        tap((v) => {
-          console.log('DEBUG: Input Code Change:', v);
-          this.resultadoCodmerc = [];
-        }),
-        debounceTime(300),
-        distinctUntilChanged(),
-        filter((query: any) => (query || '').toString().trim() !== ''),
-        tap((q) => console.log('DEBUG: Searching Code:', q)),
-        switchMap((query: string) =>
-          this.http
-            .GetRequest<ModeloInventario>(
-              `/productos-buscador/${encodeURIComponent(query)}`
-            )
-            .pipe(
-              catchError((error) => {
-                console.error('Error en búsqueda de código:', error);
-                return of({ data: [] } as any); // Retorna estructura vacía válida
-              })
-            )
-        ),
-        map((response: any) => {
-          if (response && Array.isArray(response.data)) {
-            response.data = response.data.map((item: any) => {
-              const newItem: any = {};
-              Object.keys(item).forEach((key) => {
-                newItem[key.toLowerCase()] = item[key];
-              });
-              return newItem;
-            });
-          }
-          return response;
-        })
-      )
-      .subscribe((results: ModeloInventario) => {
-        console.log(results.data);
-        if (results) {
-          if (Array.isArray(results.data) && results.data.length) {
-            // Aquí ordenamos los resultados por el campo 'nombre' (puedes cambiar el campo según tus necesidades)
-            this.resultadoCodmerc = results.data.sort((a: any, b: any) => {
-              const valA = a.in_codmerc || '';
-              const valB = b.in_codmerc || '';
-              return valA.localeCompare(valB, undefined, {
-                numeric: true,
-                sensitivity: 'base',
-              });
-            });
-            // Seleccionar automáticamente el primer resultado del buscador de código
-            this.selectedIndexcodmerc = 0;
+    this.buscarcodmerc.valueChanges.pipe(
+      debounceTime(50),
+      distinctUntilChanged(),
+      tap(() => {
+        this.resultadoCodmerc = [];
+      }),
+      filter((query: string) => query.trim() !== '' && !this.cancelarBusquedaCodigo && !this.isEditing),
+      switchMap((query: string) => this.http.GetRequest<ModeloInventario>(`/productos-buscador/${query}`))
+    ).subscribe((results: ModeloInventario) => {
+      console.log(results.data);
+      if (results) {
+        if (Array.isArray(results.data) && results.data.length) {
+          // Aquí ordenamos los resultados por el campo 'nombre' (puedes cambiar el campo según tus necesidades)
+          this.resultadoCodmerc = results.data.sort((a, b) => {
+            return a.in_codmerc.localeCompare(b.in_codmerc, undefined, { numeric: true, sensitivity: 'base' });
+          });
+          // Seleccionar automáticamente el primer resultado del buscador de código
+          this.selectedIndexcodmerc = 0;
 
-            this.codnotfound = false;
-          } else {
-            this.codnotfound = true;
-            return;
-          }
-        } else {
-          this.resultadoCodmerc = [];
           this.codnotfound = false;
-
+        } else {
+          this.codnotfound = true;
           return;
         }
-      });
-    $('#input1').focus();
-    $('#input1').select();
+      } else {
+        this.resultadoCodmerc = [];
+        this.codnotfound = false;
+
+        return;
+      }
+
+    });
+    $("#input1").focus();
+    $("#input1").select()
     this.obtenerNcf();
     this.obtenerfpago();
-
-    // Subscripciones para buscadores locales
-    this.buscarFpago.valueChanges.subscribe((value) => {
-      if (!value) {
-        this.resultadoFpago = this.listaFpago;
-      } else {
-        const filterValue = value.toLowerCase();
-        this.resultadoFpago = this.listaFpago.filter((option) =>
-          option.fp_descfpago.toLowerCase().includes(filterValue)
-        );
-      }
-      this.selectedIndexfpago = 0;
-    });
-
-    this.buscarEnvio.valueChanges.subscribe((value) => {
-      if (!value) {
-        this.resultadoEnvio = this.listaEnvio;
-      } else {
-        const filterValue = value.toLowerCase();
-        this.resultadoEnvio = this.listaEnvio.filter((option) =>
-          option.descripcion.toLowerCase().includes(filterValue)
-        );
-      }
-      this.selectedIndexEnvio = 0;
-    });
-    this.buscardescripcionmerc.valueChanges
-      .pipe(
-        tap((v) => {
-          console.log('DEBUG: Input Desc Change:', v);
-          this.resultadodescripcionmerc = [];
-        }),
-        debounceTime(300),
-        distinctUntilChanged(),
-        filter((query: any) => (query || '').toString().trim() !== ''),
-        tap((q) => console.log('DEBUG: Searching Desc:', q)),
-        switchMap((query: string) =>
-          this.http
-            .GetRequest<ModeloInventario>(
-              `/productos-buscador-desc/${encodeURIComponent(query)}`
-            )
-            .pipe(
-              catchError((error) => {
-                console.error('Error en búsqueda de descripción:', error);
-                return of({ data: [] } as any);
-              })
-            )
-        ),
-        map((response: any) => {
-          if (response && Array.isArray(response.data)) {
-            response.data = response.data.map((item: any) => {
-              const newItem: any = {};
-              Object.keys(item).forEach((key) => {
-                newItem[key.toLowerCase()] = item[key];
-              });
-              return newItem;
-            });
-          }
-          return response;
-        })
-      )
-      .subscribe((results: ModeloInventario) => {
-        console.log(results.data);
-        if (results) {
-          if (Array.isArray(results.data) && results.data.length) {
-            this.resultadodescripcionmerc = results.data;
-            this.desnotfound = false;
-          } else {
-            this.desnotfound = true;
-          }
-        } else {
-          this.resultadodescripcionmerc = [];
+    this.buscardescripcionmerc.valueChanges.pipe(
+      debounceTime(50),
+      distinctUntilChanged(),
+      tap(() => {
+        this.resultadodescripcionmerc = [];
+      }),
+      filter((query: string) => query !== '' && !this.cancelarBusquedaDescripcion && !this.isEditing),
+      switchMap((query: string) => this.http.GetRequest<ModeloInventario>(`/productos-buscador-desc/${query}`))
+    ).subscribe((results: ModeloInventario) => {
+      console.log(results.data);
+      if (results) {
+        if (Array.isArray(results.data) && results.data.length) {
+          this.resultadodescripcionmerc = results.data;
           this.desnotfound = false;
         }
-      });
-
-    // Suscripción al campo fa_nomClie del formulario principal
-    this.formularioFacturacion
-      .get('fa_nomClie')
-      ?.valueChanges.pipe(
-        debounceTime(500),
-        distinctUntilChanged(),
-        tap(() => {
-          this.resultadoNombre = [];
-        }),
-        filter((query: string) => query !== ''),
-        switchMap((query: string) =>
-          this.http.GetRequest<ModeloCliente>(`/cliente-nombre/${query}`).pipe(
-            catchError((error) => {
-              console.error('Error en búsqueda de cliente:', error);
-              return of({ data: [] } as any);
-            })
-          )
-        )
-      )
-      .subscribe((results: ModeloCliente) => {
-        console.log(results.data);
-        if (results) {
-          if (Array.isArray(results.data)) {
-            this.resultadoNombre = results.data;
-          }
-        } else {
-          this.resultadoNombre = [];
+        else {
+          this.desnotfound = true;
         }
-      });
+      } else {
+        this.resultadodescripcionmerc = [];
+        this.desnotfound = false;
+      }
 
-    this.buscarSector.valueChanges
-      .pipe(
-        debounceTime(500),
-        distinctUntilChanged(),
-        tap(() => {
-          this.resultadoSector = [];
-        }),
-        filter((query: string) => query !== ''),
-        switchMap((query: string) =>
-          this.http.GetRequest<ModeloSector>(`/sector-nombre/${query}`).pipe(
-            catchError((error) => {
-              console.error('Error en búsqueda de sector:', error);
-              return of({ data: [] } as any);
-            })
-          )
-        )
-      )
-      .subscribe((results: ModeloSector) => {
-        console.log(results.data);
-        if (results) {
-          if (Array.isArray(results.data)) {
-            this.resultadoSector = results.data;
-          }
-        } else {
-          this.resultadoSector = [];
+    });
+
+    this.buscarNombre.valueChanges.pipe(
+      debounceTime(500),
+      distinctUntilChanged(),
+      tap(() => {
+        this.resultadoNombre = [];
+      }),
+      filter((query: string) => query !== ''),
+      switchMap((query: string) => this.http.GetRequest<ModeloCliente>(`/cliente-nombre/${query}`))
+    ).subscribe((results: ModeloCliente) => {
+      console.log(results.data);
+      if (results) {
+        if (Array.isArray(results.data)) {
+          this.resultadoNombre = results.data;
         }
-      });
+      } else {
+        this.resultadoNombre = [];
+      }
+
+    });
+
+    this.buscarSector.valueChanges.pipe(
+      debounceTime(500),
+      distinctUntilChanged(),
+      tap(() => {
+        this.resultadoSector = [];
+      }),
+      filter((query: string) => query !== ''),
+      switchMap((query: string) => this.http.GetRequest<ModeloSector>(`/sector-nombre/${query}`))
+    ).subscribe((results: ModeloSector) => {
+      console.log(results.data);
+      if (results) {
+        if (Array.isArray(results.data)) {
+          this.resultadoSector = results.data;
+        }
+      } else {
+        this.resultadoSector = [];
+      }
+
+    });
 
     // Inicializar los totales visibles en la vista (0.00) al cargar
     this.actualizarTotales();
 
-    // Sincronizar controles con propiedades (Reemplazo de [(ngModel)])
-    this.buscarcodmerc.valueChanges.subscribe(
-      (val) => (this.codmerc = val || '')
-    );
-    this.buscardescripcionmerc.valueChanges.subscribe(
-      (val) => (this.descripcionmerc = val || '')
-    );
-    this.cantidadform.valueChanges.subscribe(
-      (val) => (this.cantidadmerc = Number(val) || 0)
-    );
-    this.precioform.valueChanges.subscribe(
-      (val) => (this.preciomerc = Number(val) || 0)
-    );
 
-    // Asegurar que los campos de búsqueda estén habilitados
-    this.buscarcodmerc.enable();
-    this.buscardescripcionmerc.enable();
-
-    // Gestionar estado de campos dependientes
-    this.manageFieldsState();
-  }
-
-  manageFieldsState() {
-    const rncControl = this.formularioFacturacion.get('fa_rncFact');
-    const nombreControl = this.formularioFacturacion.get('fa_nomClie');
-
-    const fieldsToManage = [
-      'fa_dirClie',
-      'fa_telClie',
-      'fa_sector',
-      'fa_correo',
-      'fa_contacto',
-      'fa_fpago',
-      'fa_envio',
-      'fa_codVend',
-    ];
-
-    const updateState = () => {
-      const rnc = rncControl?.value;
-      const nombre = nombreControl?.value;
-
-      // Verificar si hay algún valor válido en RNC o Nombre
-      const hasRnc =
-        rnc !== null && rnc !== undefined && rnc.toString().trim() !== '';
-      const hasNombre =
-        nombre !== null &&
-        nombre !== undefined &&
-        nombre.toString().trim() !== '';
-
-      const shouldEnable = hasRnc || hasNombre;
-
-      fieldsToManage.forEach((fieldName) => {
-        const control = this.formularioFacturacion.get(fieldName);
-        if (control) {
-          if (shouldEnable) {
-            // Solo habilitar si estaba deshabilitado para evitar loops o eventos innecesarios
-            if (control.disabled) {
-              control.enable({ emitEvent: false });
-            }
-          } else {
-            if (control.enabled) {
-              control.disable({ emitEvent: false });
-            }
-          }
-        }
-      });
-    };
-
-    // Suscribirse a cambios
-    rncControl?.valueChanges.subscribe(() => updateState());
-    nombreControl?.valueChanges.subscribe(() => updateState());
-
-    // Estado inicial
-    updateState();
   }
   obtenerfpago() {
-    this.servicioFpago.obtenerTodosFpago().subscribe((response) => {
-      this.listaFpago = response.data; // Guardamos la lista completa
-      // Si hay un valor seleccionado, intentamos setear el nombre en el input
-      const currentId = this.formularioFacturacion.get('fa_codfpago')?.value;
-      if (currentId) {
-        const found = this.listaFpago.find((f) => f.fp_codfpago === currentId);
-        if (found) {
-          this.buscarFpago.setValue(found.fp_descfpago, { emitEvent: false });
-        }
-      }
+    this.servicioFpago.obtenerTodosFpago().subscribe(response => {
+      this.resultadoFpago = response.data;
     });
   }
   obtenerNcf() {
-    this.servicioNcf.buscarTodosNcf().subscribe((response) => {
+    this.servicioNcf.buscarTodosNcf().subscribe(response => {
       this.ncflist = response.data;
     });
   }
@@ -582,7 +319,7 @@ export class Facturacion implements OnInit {
     const fechaActualStr = this.formatofecha(fechaActual);
     this.formularioFacturacion = this.fb.group({
       fa_codFact: [{ value: '', disabled: true }],
-      fa_fecFact: [{ value: fechaActualStr, disabled: true }],
+      fa_fecFact: [{value: fechaActualStr, disabled: true}],
       fa_valFact: [''],
       fa_subFact: [''],
       fa_itbiFact: [''],
@@ -602,42 +339,38 @@ export class Facturacion implements OnInit {
       fa_fpago: [''],
       fa_codfpago: ['1'],
       fa_envio: [''],
-      fa_ncfFact: [{ value: '', disabled: true }],
-      fa_tipoNcf: [{ value: '32', disabled: true }],
+      fa_ncfFact: [{value:'', disabled: true }],
+      fa_tipoNcf: ['1'],
       fa_contacto: [''],
     });
+
   }
   limpia(): void {
     //this.formularioFacturacion.reset();
     this.crearFormularioFacturacion();
-    this.txtdescripcion = '';
-    this.txtFactura = '';
-    this.txtFecha = '';
-    //   this.buscarTodasFacturaciomtimbresobre tim0
-    this.productoselect;
-    this.codmerc = '';
-    this.descripcionmerc = '';
-    this.preciomerc = 0;
-    this.cantidadmerc = 0;
-
-    // Sincronizar controles
-    this.buscarcodmerc.setValue('', { emitEvent: false });
-    this.buscardescripcionmerc.setValue('', { emitEvent: false });
-    this.precioform.setValue(0, { emitEvent: false });
-    this.cantidadform.setValue(0, { emitEvent: false });
-
-    this.isEditing = false;
-    this.items = []; // Limpiar el array de items
-    this.totalGral = 0; // Reiniciar el total general
-    this.totalItbis = 0; // Reiniciar el total del ITBIS
-    this.subTotal = 0; // Reiniciar el subtotal
+      this.txtdescripcion = '';
+      this.txtFactura = '';
+      this.txtFecha = '';
+   //   this.buscarTodasFacturaciomtimbresobre tim0
+   this.productoselect;
+   this.codmerc = ""
+   this.descripcionmerc = ""
+   this.preciomerc = 0;
+   this.cantidadmerc = 0;
+   this.isEditing = false;
+   this.items = [];          // Limpiar el array de items
+    this.totalGral = 0;       // Reiniciar el total general
+    this.totalItbis = 0;      // Reiniciar el total del ITBIS
+    this.subTotal = 0;        // Reiniciar el subtotal
     this.totalcosto = 0;
     this.costoGral = 0;
     this.factxt = 0;
-    this.actualizarTotales();
-    $('#input1').focus();
-    $('#input1').select();
+    this.actualizarTotales()
+    $("#input1").focus();
+    $("#input1").select();
+
   }
+
 
   editardetFacturacion(detFactura: detFacturaData) {
     this.facturacionid = detFactura.df_codFact;
@@ -655,85 +388,79 @@ export class Facturacion implements OnInit {
     });
     // Limpiar los items antes de agregar los nuevos
     this.items = [];
-    this.servicioFacturacion
-      .buscarFacturaDetalle(Factura.fa_codFact)
-      .subscribe((response) => {
-        let subtotal = 0;
-        let itbis = 0;
-        let totalGeneral = 0;
-        const itbisRate = 0.18; // Ejemplo: 18% de ITBIS
-        response.data.forEach((item: any) => {
-          const producto: ModeloInventarioData = {
-            in_codmerc: item.df_codMerc,
-            in_desmerc: item.df_desMerc,
-            in_grumerc: '',
-            in_tipoproduct: '',
-            in_canmerc: 0,
-            in_caninve: 0,
-            in_fecinve: null,
-            in_eximini: 0,
-            in_cosmerc: 0,
-            in_premerc: 0,
-            in_precmin: 0,
-            //   in_costpro: 0,
-            in_ucosto: 0,
-            in_porgana: 0,
-            in_peso: 0,
-            in_longitud: 0,
-            in_unidad: 0,
-            in_medida: 0,
-            in_longitu: 0,
-            in_fecmodif: null,
-            in_amacen: 0,
-            in_imagen: '',
-            in_status: '',
-            in_itbis: false,
-            in_minvent: 0,
-          };
-          const cantidad = item.df_canMerc;
-          const precio = item.df_preMerc;
-          const totalItem = cantidad * precio;
-          this.items.push({
-            producto: producto,
-            cantidad: cantidad,
-            precio: precio,
-            total: totalItem,
-            fecfactActual: new Date(),
-            costo: this.costotxt,
-          });
-          //fecfactActual: new Date(),
-          // Calcular el subtotal
-          subtotal += totalItem;
-          // Calcular ITBIS solo si el producto tiene ITBIS
-          // if (item.dc_itbis) {
-          this.totalItbis += totalItem * itbisRate;
-          // }
+    this.servicioFacturacion.buscarFacturaDetalle(Factura.fa_codFact).subscribe(response => {
+      let subtotal = 0;
+      let itbis = 0;
+      let totalGeneral = 0;
+      const itbisRate = 0.18; // Ejemplo: 18% de ITBIS
+      response.data.forEach((item: any) => {
+        const producto: ModeloInventarioData = {
+          in_codmerc: item.df_codMerc,
+          in_desmerc: item.df_desMerc,
+          in_grumerc: '',
+          in_tipoproduct: '',
+          in_canmerc: 0,
+          in_caninve: 0,
+          in_fecinve: null,
+          in_eximini: 0,
+          in_cosmerc: 0,
+          in_premerc: 0,
+          in_precmin: 0,
+       //   in_costpro: 0,
+          in_ucosto: 0,
+          in_porgana: 0,
+          in_peso: 0,
+          in_longitud: 0,
+          in_unidad: 0,
+          in_medida: 0,
+          in_longitu: 0,
+          in_fecmodif: null,
+          in_amacen: 0,
+          in_imagen: '',
+          in_status: '',
+          in_itbis: false,
+          in_minvent: 0,
+        };
+        const cantidad = item.df_canMerc;
+        const precio = item.df_preMerc;
+        const totalItem = cantidad * precio;
+        this.items.push({
+          producto: producto,
+          cantidad: cantidad,
+          precio: precio,
+          total: totalItem,
+          fecfactActual: new Date(),
+          costo:this.costotxt
+
         });
-        // Calcular el total general (subtotal + ITBIS)
-        totalGeneral = subtotal + this.totalItbis;
-        // Asignar los totales a variables o mostrarlos en la interfaz
-        this.subTotal = subtotal;
-        this.totalItbis = this.totalItbis;
-        this.totalGral = totalGeneral;
+        //fecfactActual: new Date(),
+        // Calcular el subtotal
+        subtotal += totalItem;
+        // Calcular ITBIS solo si el producto tiene ITBIS
+        // if (item.dc_itbis) {
+        this.totalItbis += totalItem * itbisRate;
+        // }
       });
+      // Calcular el total general (subtotal + ITBIS)
+      totalGeneral = subtotal + this.totalItbis;
+      // Asignar los totales a variables o mostrarlos en la interfaz
+      this.subTotal = subtotal;
+      this.totalItbis = this.totalItbis;
+      this.totalGral = totalGeneral;
+    });
   }
 
   buscarTodasFactura(page: number) {
-    this.servicioFacturacion.buscarTodasFacturacion().subscribe((response) => {
-      console.log('buscarTodasFactura response:', response);
-      if (response && Array.isArray(response.data)) {
-        this.facturacionList = response.data;
-      } else {
-        console.warn('response.data is not an array:', response?.data);
-        this.facturacionList = [];
-      }
-      console.log(this.facturacionList.length);
+    this.servicioFacturacion.buscarTodasFacturacion().subscribe(response => {
+      console.log(response);
+      this.facturacionList = response.data;
+      console.log(this.facturacionList.length)
     });
   }
   consultarFacturacion(factura: FacturacionModelData) {
     this.modoconsultaFacturacion = true;
-    this.formularioFacturacion.reset();
-    this.crearFormularioFacturacion();
+    this.formularioFacturacion.reset()
+    this.crearFormularioFacturacion()
     this.formularioFacturacion.patchValue(factura);
     // Asegurar formato de fecha dd/MM/yyyy al consultar
     const fechaFormateada = this.formatFecha((factura as any).fa_fecFact);
@@ -742,7 +469,7 @@ export class Facturacion implements OnInit {
     // $('#modalfacturacion').modal('show');
     this.habilitarFormulario = true;
     this.formularioFacturacion.disable();
-    console.log('ff', factura);
+    console.log("ff",factura)
     this.habilitarIcono = false;
     const inputs = document.querySelectorAll('.seccion-productos input');
     inputs.forEach((input) => {
@@ -750,102 +477,98 @@ export class Facturacion implements OnInit {
     });
     // Limpiar los items antes de agregar los nuevos
     this.items = [];
-    this.servicioFacturacion
-      .buscarFacturaDetalle(factura.fa_codFact)
-      .subscribe((response) => {
-        let subtotal = 0;
-        let itbis = 0;
-        let totalGeneral = 0;
-        let totalcosto = 0;
-        const itbisRate = 0.18; // Ejemplo: 18% de ITBIS
-        console.log('faa', response.data);
-        response.data.forEach((item: any) => {
-          const producto: ModeloInventarioData = {
-            in_codmerc: item.df_codMerc,
-            in_desmerc: item.df_desMerc,
-            in_grumerc: '',
-            in_tipoproduct: '',
-            in_canmerc: 0,
-            in_caninve: 0,
-            in_fecinve: null,
-            in_eximini: 0,
-            in_cosmerc: 0,
-            in_premerc: 0,
-            in_precmin: 0,
-            //  in_costpro: 0,
-            in_ucosto: 0,
-            in_porgana: 0,
-            in_peso: 0,
-            in_longitud: 0,
-            in_unidad: 0,
-            in_medida: 0,
-            in_longitu: 0,
-            in_fecmodif: null,
-            in_amacen: 0,
-            in_imagen: '',
-            in_status: '',
-            in_itbis: false,
-            in_minvent: 0,
-          };
-          const cantidad = item.df_canMerc;
-          const precio = item.df_preMerc;
-          const totalItem = cantidad * precio;
-          const costoItem = item.df_cosMerc;
-          this.items.push({
-            producto: producto,
-            cantidad: cantidad,
-            precio: precio,
-            total: totalItem,
-            costo: costoItem,
-            fecfactActual: new Date(),
+    this.servicioFacturacion.buscarFacturaDetalle(factura.fa_codFact).subscribe(response => {
+      let subtotal = 0;
+      let itbis = 0;
+      let totalGeneral = 0;
+      let totalcosto = 0;
+      const itbisRate = 0.18; // Ejemplo: 18% de ITBIS
+      console.log("faa",response.data)
+      response.data.forEach((item: any) => {
+        const producto: ModeloInventarioData = {
+          in_codmerc: item.df_codMerc,
+          in_desmerc: item.df_desMerc,
+          in_grumerc: '',
+          in_tipoproduct: '',
+          in_canmerc: 0,
+          in_caninve: 0,
+          in_fecinve: null,
+          in_eximini: 0,
+          in_cosmerc: 0,
+          in_premerc: 0,
+          in_precmin: 0,
+          //  in_costpro: 0,
+          in_ucosto: 0,
+          in_porgana: 0,
+          in_peso: 0,
+          in_longitud: 0,
+          in_unidad: 0,
+          in_medida: 0,
+          in_longitu: 0,
+          in_fecmodif: null,
+          in_amacen: 0,
+          in_imagen: '',
+          in_status: '',
+          in_itbis: false,
+          in_minvent: 0,
+        };
+        const cantidad = item.df_canMerc;
+        const precio = item.df_preMerc;
+        const totalItem = cantidad * precio;
+        const costoItem = item.df_cosMerc;
+        this.items.push({
+          producto: producto,
+          cantidad: cantidad,
+          precio: precio,
+          total: totalItem,
+          costo: costoItem,
+          fecfactActual: new Date(),
 
-            //costo:0
-          });
-          // Calcular el subtotal
-          subtotal += costoItem;
-          // Calcular ITBIS solo si el producto tiene ITBIS
-          // if (item.dc_itbis) {
-          this.totalItbis += totalItem * itbisRate;
+          //costo:0
         });
-        // Calcular el total general (subtotal + ITBIS)
-        totalGeneral = subtotal + this.totalItbis;
-        // totalcosto += costoItem;
-        // Asignar los totales a variables o mostrarlos en la interfaz
-        this.subTotal = subtotal;
-        this.totalItbis = this.totalItbis;
-        this.totalGral = totalGeneral;
-        this.factxt =
-          ((factura.fa_valFact - factura.fa_cosFact) * 100) /
-          factura.fa_cosFact;
-        this.actualizarTotales();
+        // Calcular el subtotal
+        subtotal += costoItem;
+        // Calcular ITBIS solo si el producto tiene ITBIS
+        // if (item.dc_itbis) {
+        this.totalItbis += totalItem * itbisRate;
       });
+      // Calcular el total general (subtotal + ITBIS)
+      totalGeneral = subtotal + this.totalItbis;
+     // totalcosto += costoItem;
+      // Asignar los totales a variables o mostrarlos en la interfaz
+      this.subTotal = subtotal;
+      this.totalItbis = this.totalItbis;
+      this.totalGral = totalGeneral;
+      this.factxt = (factura.fa_valFact - factura.fa_cosFact) * 100/ factura.fa_cosFact;
+      this.actualizarTotales();
+    });
   }
 
   eliminarFacturacion(facturacionId: string) {
     Swal.fire({
       title: '¿Está seguro de eliminar este Facturacion?',
-      text: '¡No podrá revertir esto!',
+      text: "¡No podrá revertir esto!",
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#3085d6',
       cancelButtonColor: '#d33',
-      confirmButtonText: 'Si, eliminar!',
+      confirmButtonText: 'Si, eliminar!'
     }).then((result) => {
       if (result.isConfirmed) {
-        this.servicioFacturacion
-          .eliminarFacturacion(facturacionId)
-          .subscribe((response) => {
-            Swal.fire({
-              title: 'Excelente!',
-              text: 'Empresa eliminado correctamente.',
-              icon: 'success',
+        this.servicioFacturacion.eliminarFacturacion(facturacionId).subscribe(response => {
+          Swal.fire(
+            {
+              title: "Excelente!",
+              text: "Empresa eliminado correctamente.",
+              icon: "success",
               timer: 2000,
               showConfirmButton: false,
-            });
-            this.buscarTodasFacturacion();
-          });
+            }
+          )
+          this.buscarTodasFacturacion();
+        });
       }
-    });
+    })
   }
 
   formatofecha(date: Date): string {
@@ -910,30 +633,25 @@ export class Facturacion implements OnInit {
 
   crearformulariodetFactura() {
     this.formulariodetFactura = this.fb.group({
-      df_codFact: [''],
-      df_fecFact: [''],
-      df_codMerc: [''],
-      df_desMerc: [''],
-      df_canMerc: [''],
-      df_preMerc: [''],
-      df_valMerc: [''],
-      df_unidad: [''],
-      df_cosMerc: [''],
-      df_codClie: [''],
-      df_status: [''],
-      df_tipomerc: [''],
+
+      df_codFact: ['',],
+      df_fecFact: ['',],
+      df_codMerc: ['',],
+      df_desMerc: ['',],
+      df_canMerc: ['',],
+      df_preMerc: ['',],
+      df_valMerc: ['',],
+      df_unidad: ['',],
+      df_cosMerc: ['',],
+      df_codClie: ['',],
+      df_status: ['',],
+      df_tipomerc: ['',],
     });
   }
 
   buscarTodasFacturacion() {
-    this.servicioFacturacion.buscarTodasFacturacion().subscribe((response) => {
-      console.log('buscarTodasFacturacion response:', response);
-      if (response && Array.isArray(response.data)) {
-        this.facturacionList = response.data;
-      } else {
-        console.warn('response.data is not an array:', response?.data);
-        this.facturacionList = [];
-      }
+    this.servicioFacturacion.buscarTodasFacturacion().subscribe(response => {
+      this.facturacionList = response.data;
       console.log(this.facturacionList.length);
     });
   }
@@ -958,7 +676,7 @@ export class Facturacion implements OnInit {
     }
   }
 
-  moveFocus(event: Event, nextElement: HTMLInputElement | HTMLSelectElement) {
+   moveFocus(event: Event, nextElement: HTMLInputElement | HTMLSelectElement) {
     const key = (event as KeyboardEvent).key;
     if (key !== 'Enter') {
       return;
@@ -968,12 +686,9 @@ export class Facturacion implements OnInit {
       nextElement.focus();
     }
   }
+  
 
-  moveFocuscodmerc(
-    event: Event,
-    descripcionInput: HTMLInputElement,
-    cantidadInput: HTMLInputElement
-  ) {
+  moveFocuscodmerc(event: Event, descripcionInput: HTMLInputElement, cantidadInput: HTMLInputElement) {
     // Enter: buscar por cadena (prefijo). Si coincide o hay selección en grid -> ir a cantidad.
     // Si vacío -> ir a descripción. Si no hay coincidencias -> error y pasar a descripción.
     event.preventDefault();
@@ -990,10 +705,7 @@ export class Facturacion implements OnInit {
     const maxIndex = this.resultadoCodmerc.length - 1;
 
     // Priorizar selección manual del grid
-    if (
-      this.selectedIndexcodmerc >= 0 &&
-      this.selectedIndexcodmerc <= maxIndex
-    ) {
+    if (this.selectedIndexcodmerc >= 0 && this.selectedIndexcodmerc <= maxIndex) {
       const seleccionadoGrid = this.resultadoCodmerc[this.selectedIndexcodmerc];
       if (seleccionadoGrid) {
         this.cargarDatosInventario(seleccionadoGrid);
@@ -1005,9 +717,7 @@ export class Facturacion implements OnInit {
     }
 
     // Buscar por prefijo en resultados ya cargados
-    const candidatosLocales = this.resultadoCodmerc.filter((r) =>
-      String(r.in_codmerc).toLowerCase().startsWith(queryLower)
-    );
+    const candidatosLocales = this.resultadoCodmerc.filter(r => String(r.in_codmerc).toLowerCase().startsWith(queryLower));
     if (candidatosLocales.length > 0) {
       this.cargarDatosInventario(candidatosLocales[0]);
       cantidadInput?.focus();
@@ -1017,163 +727,100 @@ export class Facturacion implements OnInit {
     }
 
     // Fallback: consultar al backend con la cadena y aplicar startsWith
-    this.http
-      .GetRequest<ModeloInventario>(`/productos-buscador/${currentInputValue}`)
-      .pipe(
-        catchError((error) => {
-          console.error('Error en búsqueda manual de código:', error);
-          return of({ data: [] } as any);
-        }),
-        map((response: any) => {
-          if (response && Array.isArray(response.data)) {
-            response.data = response.data.map((item: any) => {
-              const newItem: any = {};
-              Object.keys(item).forEach((key) => {
-                newItem[key.toLowerCase()] = item[key];
-              });
-              return newItem;
-            });
-          }
-          return response;
-        })
-      )
-      .subscribe((results: ModeloInventario) => {
-        if (results && Array.isArray(results.data) && results.data.length) {
-          const ordenados = results.data.sort((a: any, b: any) => {
-            const valA = a.in_codmerc || '';
-            const valB = b.in_codmerc || '';
-            return valA.localeCompare(valB, undefined, {
-              numeric: true,
-              sensitivity: 'base',
-            });
-          });
-          this.resultadoCodmerc = ordenados;
-          this.selectedIndexcodmerc = 0;
-          const candidatos = ordenados.filter((r) =>
-            String(r.in_codmerc).toLowerCase().startsWith(queryLower)
-          );
-          if (candidatos.length > 0) {
-            this.cargarDatosInventario(candidatos[0]);
-            cantidadInput?.focus();
-            cantidadInput?.select?.();
-            this.codmerVacio = false;
-            return;
-          }
+    this.http.GetRequest<ModeloInventario>(`/productos-buscador/${currentInputValue}`).subscribe((results: ModeloInventario) => {
+      if (results && Array.isArray(results.data) && results.data.length) {
+        const ordenados = results.data.sort((a, b) => a.in_codmerc.localeCompare(b.in_codmerc, undefined, { numeric: true, sensitivity: 'base' }));
+        this.resultadoCodmerc = ordenados;
+        this.selectedIndexcodmerc = 0;
+        const candidatos = ordenados.filter(r => String(r.in_codmerc).toLowerCase().startsWith(queryLower));
+        if (candidatos.length > 0) {
+          this.cargarDatosInventario(candidatos[0]);
+          cantidadInput?.focus();
+          cantidadInput?.select?.();
+          this.codmerVacio = false;
+          return;
         }
-        // No existe: mostrar error y avanzar a Descripción
-        this.mensagePantalla = true;
-        Swal.fire({
-          icon: 'error',
-          title: 'A V I S O',
-          text: 'Producto no encontrado.',
-          focusConfirm: true,
-          allowEnterKey: true,
-          showConfirmButton: false,
-          timer: 1200,
-        }).then(() => {
-          this.mensagePantalla = false;
-          descripcionInput?.focus();
-          descripcionInput?.select?.();
-        });
-        this.codmerc = '';
-        this.descripcionmerc = '';
-        this.codmerVacio = false;
+      }
+      // No existe: mostrar error y avanzar a Descripción
+      this.mensagePantalla = true;
+      Swal.fire({
+        icon: 'error',
+        title: 'A V I S O',
+        text: 'Producto no encontrado.',
+        focusConfirm: true,
+        allowEnterKey: true,
+        showConfirmButton: false,
+        timer: 1200,
+      }).then(() => {
+        this.mensagePantalla = false;
+        descripcionInput?.focus();
+        descripcionInput?.select?.();
       });
+      this.codmerc = '';
+      this.descripcionmerc = '';
+      this.codmerVacio = false;
+    });
   }
   handleKeydownInventario(event: KeyboardEvent): void {
-    console.log('handle');
+    console.log("handle")
     const key = event.key;
     const maxIndex = this.resultadoCodmerc.length - 1;
     if (this.resultadoCodmerc.length === 1) {
       this.selectedIndexcodmerc = 0;
-      console.log('prueba');
+      console.log("prueba")
     }
 
     if (key === 'ArrowDown') {
-      this.selectedIndexcodmerc =
-        this.selectedIndexcodmerc < maxIndex
-          ? this.selectedIndexcodmerc + 1
-          : 0;
-      event.preventDefault();
-    } else if (key === 'ArrowUp') {
-      this.selectedIndexcodmerc =
-        this.selectedIndexcodmerc > 0
-          ? this.selectedIndexcodmerc - 1
-          : maxIndex;
-      event.preventDefault();
-    } else if (key === 'Enter') {
-      if (
-        this.selectedIndexcodmerc >= 0 &&
-        this.selectedIndexcodmerc <= maxIndex
-      ) {
-        this.cargarDatosInventario(
-          this.resultadoCodmerc[this.selectedIndexcodmerc]
-        );
-        const qty = document.getElementById(
-          'input15'
-        ) as HTMLInputElement | null;
-        qty?.focus();
-        qty?.select?.();
-      }
+      this.selectedIndexcodmerc = this.selectedIndexcodmerc < maxIndex ? this.selectedIndexcodmerc + 1 : 0;
       event.preventDefault();
     }
+    else
+      if (key === 'ArrowUp') {
+        this.selectedIndexcodmerc = this.selectedIndexcodmerc > 0 ? this.selectedIndexcodmerc - 1 : maxIndex;
+        event.preventDefault();
+      }
+      else if (key === 'Enter') {
+        if (this.selectedIndexcodmerc >= 0 && this.selectedIndexcodmerc <= maxIndex) {
+          this.cargarDatosInventario(this.resultadoCodmerc[this.selectedIndexcodmerc]);
+          const qty = document.getElementById('input15') as HTMLInputElement | null;
+          qty?.focus();
+          qty?.select?.();
+        }
+        event.preventDefault();
+      }
   }
-  cargarDatosInventario(inventario: any) {
+  cargarDatosInventario(inventario: ModeloInventarioData) {
     console.log(inventario);
     this.resultadoCodmerc = [];
     this.resultadodescripcionmerc = [];
-
-    // Helper to safely get property case-insensitively
-    const getProp = (obj: any, key: string) =>
-      obj[key] || obj[key.toUpperCase()] || obj[key.toLowerCase()];
-
-    this.codmerc = getProp(inventario, 'in_codmerc');
-    this.preciomerc = getProp(inventario, 'in_premerc');
-    this.tipomerc = getProp(inventario, 'in_tipoproduct');
-    this.descripcionmerc = getProp(inventario, 'in_desmerc');
-
-    // Sincronizar controles (fix ngModel warning)
-    this.buscarcodmerc.setValue(this.codmerc, { emitEvent: false });
-    this.buscardescripcionmerc.setValue(this.descripcionmerc, {
-      emitEvent: false,
-    });
-    this.precioform.setValue(this.preciomerc, { emitEvent: false });
-    this.cantidadform.setValue(0, { emitEvent: false }); // Reset cantidad logic if appropriate
-
-    this.existenciatxt = getProp(inventario, 'in_canmerc');
-    this.costotxt = getProp(inventario, 'in_cosmerc');
-    this.medidatxt = getProp(inventario, 'in_medida');
-    this.fecacttxt = getProp(inventario, 'in_fecmodif');
-
-    const costo = Number(this.costotxt) || 0;
-
-    this.atxt = costo + (costo * 5) / 100;
-    this.btxt = costo + (costo * 7) / 100;
-    this.ctxt = costo + (costo * 10) / 100;
-    this.dtxt = costo + (costo * 12) / 100;
-    this.etxt = costo + (costo * 14) / 100;
-    this.ftxt = costo + (costo * 16) / 100;
-    this.gtxt = costo + (costo * 18) / 100;
-    this.htxt = costo + (costo * 20) / 100;
-
-    // Calcular margen del producto actual
-    if (costo > 0) {
-      this.protxt = ((this.preciomerc - costo) * 100) / costo;
-    } else {
-      this.protxt = 0;
-    }
+    this.codmerc = inventario.in_codmerc;
+    this.preciomerc = inventario.in_premerc;
+    this.tipomerc = inventario.in_tipoproduct;
+    this.descripcionmerc = inventario.in_desmerc;
+    this.existenciatxt = inventario.in_canmerc
+    this.costotxt = inventario.in_cosmerc;
+    this.medidatxt= inventario.in_medida;
+    this.fecacttxt= inventario.in_fecmodif;
+    this.atxt = Number(inventario.in_cosmerc) + (Number(inventario.in_cosmerc)  * 5)/ 100;
+    this.btxt = Number(inventario.in_cosmerc) + (Number(inventario.in_cosmerc)  * 7)/100;
+    this.ctxt = Number(inventario.in_cosmerc) + (Number(inventario.in_cosmerc)  * 10)/100;
+    this.dtxt = Number(inventario.in_cosmerc) + (Number(inventario.in_cosmerc)  * 12)/100;
+    this.etxt = Number(inventario.in_cosmerc) + (Number(inventario.in_cosmerc)  * 14)/100;
+    this.ftxt = Number(inventario.in_cosmerc) + (Number(inventario.in_cosmerc)  * 16)/100;
+    this.gtxt = Number(inventario.in_cosmerc) + (Number(inventario.in_cosmerc)  * 18)/100;
+    this.htxt = Number(inventario.in_cosmerc) + (Number(inventario.in_cosmerc)  * 20)/100;
 
     this.productoselect = inventario;
     this.cancelarBusquedaDescripcion = true;
     this.cancelarBusquedaCodigo = true;
     this.formularioFacturacion.patchValue({
-      df_codMerc: this.codmerc,
-      df_desMerc: this.descripcionmerc,
-      df_tipomerc: this.tipomerc,
-      df_canMerc: this.existenciatxt,
-      df_preMerc: this.preciomerc,
-      df_cosMerc: this.costotxt,
-      df_unidad: getProp(inventario, 'in_unidad'),
+      df_codMerc: inventario.in_codmerc,
+      df_desMerc: inventario.in_desmerc,
+      df_tipomerc: inventario.in_tipoproduct,
+      df_canMerc: inventario.in_canmerc,
+      df_preMerc: inventario.in_premerc,
+      df_cosMerc: inventario.in_cosmerc,
+      df_unidad: inventario.in_unidad,
     });
     // Si el usuario seleccionó desde el grid o validó el código, llevar el foco a Cantidad
     const qty = document.getElementById('input15') as HTMLInputElement | null;
@@ -1188,43 +835,40 @@ export class Facturacion implements OnInit {
       this.ServicioUsuario.buscarUsuarioPorClave(claveUsuario).subscribe(
         (usuario) => {
           if (usuario.data.length) {
-            this.formularioFacturacion.patchValue({
-              fa_nomVend: usuario.data[0].idUsuario,
-            });
-            nextElement?.focus();
+            this.formularioFacturacion.patchValue({ fa_nomVend: usuario.data[0].idUsuario });
+            nextElement?.focus()
           } else {
             this.mensagePantalla = true;
             Swal.fire({
-              icon: 'error',
-              title: 'A V I S O',
+              icon: "error",
+              title: "A V I S O",
               text: 'Codigo de usuario invalido.',
-            }).then(() => {
-              this.mensagePantalla = false;
-            });
+            }).then(() => { this.mensagePantalla = false });
             return;
           }
-        }
+        },
       );
-    } else {
+    }
+    else {
       this.mensagePantalla = true;
       Swal.fire({
-        icon: 'error',
-        title: 'A V I S O',
+        icon: "error",
+        title: "A V I S O",
         text: 'Codigo de usuario invalido.',
-      }).then(() => {
-        this.mensagePantalla = false;
-      });
+      }).then(() => { this.mensagePantalla = false });
       return;
     }
   }
   buscarRnc(event: Event, nextElement: HTMLInputElement | null): void {
     event.preventDefault();
     const rnc = this.formularioFacturacion.get('fa_rncFact')?.value;
-    if (!rnc || rnc.trim() === '') {
-      // Si no se ha ingresado un RNC, por defecto Tipo NCF = 32 (Consumidor Final)
-      this.formularioFacturacion.patchValue({ fa_tipoNcf: '32' });
-      this.formularioFacturacion.get('fa_tipoNcf')?.disable();
-      // Pasamos el foco al siguiente elemento (Cliente)
+    if (!rnc) {
+      this.obtenerNcf();
+      this.formularioFacturacion.patchValue({ fa_tipoNcf: 1 });
+      this.formularioFacturacion.get("fa_tipoNcf")?.disable();
+      // Si no se ha ingresado un RNC, pasamos el foco al siguiente elemento
+      console.log('RNC vacío.');
+      console.log(this.formularioFacturacion.value);
       nextElement?.focus();
       return;
     }
@@ -1236,72 +880,66 @@ export class Facturacion implements OnInit {
       return;
     }
     // Buscar RNC en el servicio
-    this.ServicioRnc.buscarRncPorrncId(rnc).subscribe((response) => {
-      if (response?.data) {
-        console.log(response.data);
-        // Si se encuentra el RNC, asignar el nombre del cliente
+    this.ServicioRnc.buscarRncPorrncId(rnc).subscribe(
+    (response) => {
+    if (response?.data) {
+      console.log(response.data);
+      // Si se encuentra el RNC, asignar el nombre del cliente
         const nombreEmpresa = response.data.rason;
 
-        //  const nombreEmpresa = response.data[0]?.rason;
-        this.formularioFacturacion.patchValue({ fa_nomClie: nombreEmpresa });
+    //  const nombreEmpresa = response.data[0]?.rason;
+      this.formularioFacturacion.patchValue({ fa_nomClie: nombreEmpresa });
+      this.formularioFacturacion.patchValue({ fa_tipoNcf: 2 });
+      this.formularioFacturacion.get("fa_tipoNcf")?.enable();
+      this.ncflist = this.ncflist.filter(ncf => ncf.codNcf !== 1);
+      $("#input3").focus();
+      $("#input3").select();
+    }
+    else {
+      // Si no se encuentra el RNC, mostrar error
+      this.mostrarMensajeError('RNC inválido.');
+      console.log('RNC no encontrado.');
+    }
+    }
 
-        // MANTENIMIENTO: Todas las facturas son E32 por el momento, incluso con RNC.
-        // Se mantiene deshabilitado el dropdown.
-        this.formularioFacturacion.patchValue({ fa_tipoNcf: 32 });
-        this.formularioFacturacion.get('fa_tipoNcf')?.disable();
-
-        // this.ncflist = this.ncflist.filter((ncf) => ncf.codNcf !== 1);
-
-        // Habilitar campos
-        this.isDisabled = false;
-
-        $('#input3').focus();
-        $('#input3').select();
-      } else {
-        // Si no se encuentra el RNC, mostrar error
-        this.mostrarMensajeError('RNC inválido.');
-        console.log('RNC no encontrado.');
-        this.isDisabled = true;
-      }
-    });
+  );
   }
 
   mostrarMensajeError(mensaje: string): void {
     this.mensagePantalla = true;
 
     Swal.fire({
-      icon: 'error',
-      title: 'A V I S O',
+      icon: "error",
+      title: "A V I S O",
       text: mensaje,
-    }).then(() => {
-      this.mensagePantalla = false;
-    });
+    }).then(() => { this.mensagePantalla = false });
   }
 
   handleKeydown(event: KeyboardEvent): void {
     const key = event.key;
-    const maxIndex = this.resultadoNombre.length - 1; // Ajustamos el límite máximo
+    const maxIndex = this.resultadoNombre.length - 1;  // Ajustamos el límite máximo
     if (this.resultadoNombre.length === 1) {
       this.selectedIndex = 0;
-      console.log('prueba');
+      console.log("prueba")
     }
 
     if (key === 'ArrowDown') {
+
       // Mueve la selección hacia abajo
       if (this.selectedIndex < maxIndex) {
         this.selectedIndex++;
       } else {
-        this.selectedIndex = 0; // Vuelve al primer ítem
+        this.selectedIndex = 0;  // Vuelve al primer ítem
       }
       event.preventDefault();
     } else if (key === 'ArrowUp') {
-      console.log('paso 677');
+      console.log("paso 677");
 
       // Mueve la selección hacia arriba
       if (this.selectedIndex > 0) {
         this.selectedIndex--;
       } else {
-        this.selectedIndex = maxIndex; // Vuelve al último ítem
+        this.selectedIndex = maxIndex;  // Vuelve al último ítem
       }
       event.preventDefault();
     } else if (key === 'Enter') {
@@ -1309,45 +947,38 @@ export class Facturacion implements OnInit {
       if (this.selectedIndex >= 0 && this.selectedIndex <= maxIndex) {
         this.cargarDatosCliente(this.resultadoNombre[this.selectedIndex]);
       }
-      // Habilitar campos si hay un nombre de cliente
-      const nombreCliente = this.formularioFacturacion.get('fa_nomClie')?.value;
-      if (nombreCliente && nombreCliente.trim() !== '') {
-        this.isDisabled = false;
-      }
       event.preventDefault();
     }
   }
   handleKeydownSector(event: KeyboardEvent): void {
     const key = event.key;
-    const maxIndex = this.resultadoSector.length - 1; // Ajustamos el límite máximo
+    const maxIndex = this.resultadoSector.length - 1;  // Ajustamos el límite máximo
     if (this.resultadoSector.length === 1) {
       this.selectedIndexsector = 0;
-      console.log('prueba');
+      console.log("prueba")
     }
     if (key === 'ArrowDown') {
+
       // Mueve la selección hacia abajo
       if (this.selectedIndexsector < maxIndex) {
         this.selectedIndex++;
       } else {
-        this.selectedIndexsector = 0; // Vuelve al primer ítem
+        this.selectedIndexsector = 0;  // Vuelve al primer ítem
       }
       event.preventDefault();
     } else if (key === 'ArrowUp') {
-      console.log('paso 677');
+      console.log("paso 677");
 
       // Mueve la selección hacia arriba
       if (this.selectedIndexsector > 0) {
         this.selectedIndex--;
       } else {
-        this.selectedIndexsector = maxIndex; // Vuelve al último ítem
+        this.selectedIndexsector = maxIndex;  // Vuelve al último ítem
       }
       event.preventDefault();
     } else if (key === 'Enter') {
       // Selecciona el ítem actual
-      if (
-        this.selectedIndexsector >= 0 &&
-        this.selectedIndexsector <= maxIndex
-      ) {
+      if (this.selectedIndexsector >= 0 && this.selectedIndexsector <= maxIndex) {
         this.cargarDatosSector(this.resultadoSector[this.selectedIndexsector]);
       }
       event.preventDefault();
@@ -1355,40 +986,35 @@ export class Facturacion implements OnInit {
   }
   handleKeydownFpago(event: KeyboardEvent): void {
     const key = event.key;
-    const maxIndex = this.resultadoFpago.length - 1; // Ajustamos el límite máximo
+    const maxIndex = this.resultadoFpago.length - 1;  // Ajustamos el límite máximo
 
     if (this.resultadoFpago.length === 1) {
       this.selectedIndexfpago = 0;
+      console.log("prueba")
     }
 
     if (key === 'ArrowDown') {
+
       // Mueve la selección hacia abajo
       if (this.selectedIndexfpago < maxIndex) {
         this.selectedIndexfpago++;
       } else {
-        this.selectedIndexfpago = 0; // Vuelve al primer ítem
+        this.selectedIndexfpago = 0;  // Vuelve al primer ítem
       }
       event.preventDefault();
     } else if (key === 'ArrowUp') {
+
       // Mueve la selección hacia arriba
       if (this.selectedIndexfpago > 0) {
         this.selectedIndexfpago--;
       } else {
-        this.selectedIndexfpago = maxIndex; // Vuelve al último ítem
+        this.selectedIndexfpago = maxIndex;  // Vuelve al último ítem
       }
       event.preventDefault();
     } else if (key === 'Enter') {
       // Selecciona el ítem actual
-      if (
-        this.selectedIndexfpago >= 0 &&
-        this.selectedIndexfpago <= maxIndex &&
-        this.resultadoFpago.length > 0
-      ) {
+      if (this.selectedIndex >= 0 && this.selectedIndexfpago <= maxIndex) {
         this.cargarDatosFpago(this.resultadoFpago[this.selectedIndexfpago]);
-      } else if (this.resultadoFpago.length === 0 && this.formularioFacturacion.get('fa_codfpago')?.value) {
-        // Si no hay lista (ya seleccionado) y presiona enter, mover al siguiente
-        const nextInput = document.getElementById('input11');
-        if (nextInput) nextInput.focus();
       }
       event.preventDefault();
     }
@@ -1398,34 +1024,21 @@ export class Facturacion implements OnInit {
     const maxIndex = this.resultadodescripcionmerc.length;
     if (this.resultadodescripcionmerc.length === 1) {
       this.selectedIndexdescripcionmerc = 0;
-      console.log('prueba');
+      console.log("prueba")
     }
     if (key === 'ArrowDown') {
       // Mueve la selección hacia abajo
-      this.selectedIndexdescripcionmerc =
-        this.selectedIndexdescripcionmerc < maxIndex
-          ? this.selectedIndexdescripcionmerc + 1
-          : 0;
+      this.selectedIndexdescripcionmerc = this.selectedIndexdescripcionmerc < maxIndex ? this.selectedIndexdescripcionmerc + 1 : 0;
       event.preventDefault();
     } else if (key === 'ArrowUp') {
       // Mueve la selección hacia arriba
-      this.selectedIndexdescripcionmerc =
-        this.selectedIndexdescripcionmerc > 0
-          ? this.selectedIndexdescripcionmerc - 1
-          : maxIndex;
+      this.selectedIndexdescripcionmerc = this.selectedIndexdescripcionmerc > 0 ? this.selectedIndexdescripcionmerc - 1 : maxIndex;
       event.preventDefault();
     } else if (key === 'Enter') {
       // Selecciona el ítem actual
-      if (
-        this.selectedIndexdescripcionmerc >= 0 &&
-        this.selectedIndexdescripcionmerc <= maxIndex
-      ) {
-        this.cargarDatosInventario(
-          this.resultadodescripcionmerc[this.selectedIndexdescripcionmerc]
-        );
-        const qty = document.getElementById(
-          'input15'
-        ) as HTMLInputElement | null;
+      if (this.selectedIndexdescripcionmerc >= 0 && this.selectedIndexdescripcionmerc <= maxIndex) {
+        this.cargarDatosInventario(this.resultadodescripcionmerc[this.selectedIndexdescripcionmerc]);
+        const qty = document.getElementById('input15') as HTMLInputElement | null;
         qty?.focus();
         qty?.select?.();
       }
@@ -1462,12 +1075,8 @@ export class Facturacion implements OnInit {
       const maxIndex = this.resultadodescripcionmerc.length - 1;
 
       // Priorizar selección manual del grid
-      if (
-        this.selectedIndexdescripcionmerc >= 0 &&
-        this.selectedIndexdescripcionmerc <= maxIndex
-      ) {
-        const seleccionadoGrid =
-          this.resultadodescripcionmerc[this.selectedIndexdescripcionmerc];
+      if (this.selectedIndexdescripcionmerc >= 0 && this.selectedIndexdescripcionmerc <= maxIndex) {
+        const seleccionadoGrid = this.resultadodescripcionmerc[this.selectedIndexdescripcionmerc];
         if (seleccionadoGrid) {
           this.cargarDatosInventario(seleccionadoGrid);
           nextInput?.focus();
@@ -1479,9 +1088,7 @@ export class Facturacion implements OnInit {
       }
 
       // Buscar por prefijo en resultados ya cargados (por descripción)
-      const candidatosLocales = this.resultadodescripcionmerc.filter((r) =>
-        String(r.in_desmerc).toLowerCase().startsWith(queryLower)
-      );
+      const candidatosLocales = this.resultadodescripcionmerc.filter(r => String(r.in_desmerc).toLowerCase().startsWith(queryLower));
       if (candidatosLocales.length > 0) {
         this.cargarDatosInventario(candidatosLocales[0]);
         nextInput?.focus();
@@ -1492,65 +1099,40 @@ export class Facturacion implements OnInit {
       }
 
       // Fallback: consultar al backend con la cadena y aplicar startsWith
-      this.http
-        .GetRequest<ModeloInventario>(
-          `/productos-buscador-desc/${encodeURIComponent(currentInputValue)}`
-        )
-        .pipe(
-          catchError((error) => {
-            console.error('Error en búsqueda manual de descripción:', error);
-            return of({ data: [] } as any);
-          })
-        )
-        .subscribe((results: ModeloInventario) => {
-          if (results && Array.isArray(results.data) && results.data.length) {
-            // Normalize data keys to lowercase to match template expectations
-            const normalizedData = results.data.map((item: any) => {
-              const newItem: any = {};
-              Object.keys(item).forEach((key) => {
-                newItem[key.toLowerCase()] = item[key];
-              });
-              return newItem;
-            });
-
-            const ordenados = normalizedData.sort((a, b) =>
-              a.in_desmerc.localeCompare(b.in_desmerc, undefined, {
-                sensitivity: 'base',
-              })
-            );
-            this.resultadodescripcionmerc = ordenados;
-            this.selectedIndexdescripcionmerc = 0;
-            const candidatos = ordenados.filter((r) =>
-              String(r.in_desmerc).toLowerCase().startsWith(queryLower)
-            );
-            if (candidatos.length > 0) {
-              this.cargarDatosInventario(candidatos[0]);
-              nextInput?.focus();
-              nextInput?.select?.();
-              this.desnotfound = false;
-              this.desmerVacio = false;
-              return;
-            }
+      this.http.GetRequest<ModeloInventario>(`/productos-buscador-desc/${currentInputValue}`).subscribe((results: ModeloInventario) => {
+        if (results && Array.isArray(results.data) && results.data.length) {
+          const ordenados = results.data.sort((a, b) => a.in_desmerc.localeCompare(b.in_desmerc, undefined, { sensitivity: 'base' }));
+          this.resultadodescripcionmerc = ordenados;
+          this.selectedIndexdescripcionmerc = 0;
+          const candidatos = ordenados.filter(r => String(r.in_desmerc).toLowerCase().startsWith(queryLower));
+          if (candidatos.length > 0) {
+            this.cargarDatosInventario(candidatos[0]);
+            nextInput?.focus();
+            nextInput?.select?.();
+            this.desnotfound = false;
+            this.desmerVacio = false;
+            return;
           }
-          // No existe: mostrar error y mantener foco en descripción
-          this.mensagePantalla = true;
-          Swal.fire({
-            icon: 'error',
-            title: 'A V I S O',
-            text: 'Producto no encontrado.',
-            focusConfirm: true,
-            allowEnterKey: true,
-            showConfirmButton: false,
-            timer: 1200,
-          }).then(() => {
-            this.mensagePantalla = false;
-            const input = event.target as HTMLInputElement;
-            input?.focus();
-            input?.select?.();
-          });
-          this.desnotfound = true;
-          this.desmerVacio = false;
+        }
+        // No existe: mostrar error y mantener foco en descripción
+        this.mensagePantalla = true;
+        Swal.fire({
+          icon: 'error',
+          title: 'A V I S O',
+          text: 'Producto no encontrado.',
+          focusConfirm: true,
+          allowEnterKey: true,
+          showConfirmButton: false,
+          timer: 1200,
+        }).then(() => {
+          this.mensagePantalla = false;
+          const input = event.target as HTMLInputElement;
+          input?.focus();
+          input?.select?.();
         });
+        this.desnotfound = true;
+        this.desmerVacio = false;
+      });
     }
   }
   moveFocusCantidad(event: KeyboardEvent, nextInput: HTMLInputElement) {
@@ -1559,12 +1141,10 @@ export class Facturacion implements OnInit {
       if (!this.productoselect || this.cantidadmerc <= 0) {
         this.mensagePantalla = true;
         Swal.fire({
-          icon: 'error',
-          title: 'A V I S O',
+          icon: "error",
+          title: "A V I S O",
           text: 'Por favor complete todos los campos requeridos antes de continuar.',
-        }).then(() => {
-          this.mensagePantalla = false;
-        });
+        }).then(() => { this.mensagePantalla = false });
         return;
       }
       // Pasar a Precio (nextInput)
@@ -1579,19 +1159,13 @@ export class Facturacion implements OnInit {
     event.preventDefault();
 
     // Validaciones básicas antes de continuar
-    if (
-      !this.productoselect ||
-      this.preciomerc <= 0 ||
-      this.preciomerc <= this.productoselect.in_cosmerc
-    ) {
+    if (!this.productoselect || this.preciomerc <= 0 || this.preciomerc <= this.productoselect.in_cosmerc) {
       this.mensagePantalla = true;
       Swal.fire({
-        icon: 'error',
-        title: 'A V I S O',
+        icon: "error",
+        title: "A V I S O",
         text: 'Por favor complete todos los campos requeridos antes de agregar el ítem.',
-      }).then(() => {
-        this.mensagePantalla = false;
-      });
+      }).then(() => { this.mensagePantalla = false });
       return;
     }
 
@@ -1611,34 +1185,32 @@ export class Facturacion implements OnInit {
       if (!event.target.value) {
         this.mensagePantalla = true;
         Swal.fire({
-          icon: 'error',
-          title: 'A V I S O',
+          icon: "error",
+          title: "A V I S O",
           text: 'Por favor complete el campo Nombre del Cliente Para Poder continual.',
-        }).then(() => {
-          this.mensagePantalla = false;
-        });
-      } else {
+        }).then(() => { this.mensagePantalla = false });
+
+      }
+      else {
         nextInput.focus(); // Si es válido, mueve el foco al siguiente input
       }
     }
   }
   cargarDatosCliente(cliente: ModeloClienteData) {
     this.resultadoNombre = [];
-    if (cliente.cl_nomClie !== '') {
-      console.log(this.resultadoNombre);
-      this.formularioFacturacion.patchValue(
-        {
-          fa_codClie: cliente.cl_codClie,
-          fa_nomClie: cliente.cl_nomClie,
-          fa_rncFact: cliente.cl_rnc,
-          fa_telClie: cliente.cl_telClie,
-          fa_dirClie: cliente.cl_dirClie,
-          fa_codZona: cliente.cl_codZona,
-          fa_sector: cliente.cl_codSect,
-        },
-        { emitEvent: false }
-      );
-      console.log(cliente);
+    this.buscarNombre.reset();
+    if (cliente.cl_nomClie !== "") {
+      console.log(this.resultadoNombre)
+      this.formularioFacturacion.patchValue({
+        fa_codClie: cliente.cl_codClie,
+        fa_nomClie: cliente.cl_nomClie,
+        fa_rncFact: cliente.cl_rnc,
+        fa_telClie: cliente.cl_telClie,
+        fa_dirClie: cliente.cl_dirClie,
+        fa_codZona: cliente.cl_codZona,
+        fa_sector: cliente.cl_codSect,
+      });
+      console.log(cliente)
       console.log('Formulario actualizado:', this.formularioFacturacion.value);
     }
   }
@@ -1646,106 +1218,55 @@ export class Facturacion implements OnInit {
   cargarDatosSector(sector: ModeloSectorData) {
     this.resultadoNombre = [];
     this.buscarSector.reset();
-    if (sector.se_desSect !== '') {
-      console.log(this.resultadoSector);
+    if (sector.se_desSect !== "") {
+      console.log(this.resultadoSector)
       this.formularioFacturacion.patchValue({
         fa_codSect: sector.se_codSect,
         fa_sector: sector.se_desSect,
         fa_codZona: sector.se_codZona,
       });
-      console.log(sector);
+      console.log(sector)
     }
   }
   cargarDatosFpago(fpago: ModeloFpagoData) {
-    this.resultadoFpago = []; // Ocultar lista
-    // this.buscarFpago.reset(); // No resetear, poner la descripción
-    this.buscarFpago.setValue(fpago.fp_descfpago, { emitEvent: false });
-
-    if (fpago.fp_descfpago !== '') {
+    this.resultadoFpago = [];
+    this.buscarFpago.reset();
+    if (fpago.fp_descfpago !== "") {
+      console.log(this.resultadoFpago)
       this.formularioFacturacion.patchValue({
-        // fa_fpago: fpago.fp_descfpago, // Ya no se usa para el ID
+        fa_fpago: fpago.fp_descfpago,
         fa_codfpago: fpago.fp_codfpago,
       });
-
-      // Mover foco al siguiente elemento si es necesario
-      // Pero esto se llama desde Enter/Click.
-      // Si es desde Enter en input, el preventDefault ya ocurrió.
-      // Si queremos mover el foco, podemos hacerlo aquí.
-      const nextInput = document.getElementById('input11'); // Entrega input ID
-      if (nextInput) {
-        nextInput.focus();
-      }
     }
   }
 
-  cargarDatosEnvio(envio: any) {
-    this.resultadoEnvio = [];
-    this.buscarEnvio.setValue(envio.descripcion, { emitEvent: false });
-    this.formularioFacturacion.patchValue({ fa_envio: envio.codigo });
-
-    // Mover foco al siguiente (Vendedor o Boton)
-    const nextInput = document.getElementById('input12');
-    if (nextInput) {
-      nextInput.focus();
-    }
-  }
-
-  handleKeydownEnvio(event: KeyboardEvent): void {
-    const key = event.key;
-    const maxIndex = this.resultadoEnvio.length - 1;
-
-    if (key === 'ArrowDown') {
-      if (this.selectedIndexEnvio < maxIndex) {
-        this.selectedIndexEnvio++;
-      } else {
-        this.selectedIndexEnvio = 0;
-      }
-      event.preventDefault();
-    } else if (key === 'ArrowUp') {
-      if (this.selectedIndexEnvio > 0) {
-        this.selectedIndexEnvio--;
-      } else {
-        this.selectedIndexEnvio = maxIndex;
-      }
-      event.preventDefault();
-    } else if (key === 'Enter') {
-      if (this.selectedIndexEnvio >= 0 && this.selectedIndexEnvio <= maxIndex) {
-        this.cargarDatosEnvio(this.resultadoEnvio[this.selectedIndexEnvio]);
-      } else if (
-        this.resultadoEnvio.length === 0 &&
-        this.formularioFacturacion.get('fa_envio')?.value
-      ) {
-        // Si ya hay valor seleccionado y presionan enter, mover foco
-        const nextInput = document.getElementById('input12');
-        if (nextInput) nextInput.focus();
-      }
-      event.preventDefault();
-    }
-  }
-
-  moveFocusFpago(event: any, nextInput: any) {
-    // Deprecated logic mostly, logic moved to handleKeydownFpago or cargarDatosFpago
-    // But keep for safety if used elsewhere
+  moveFocusFpago(event: Event, nextInput: HTMLInputElement | HTMLSelectElement) {
+   // KeyboardEvent, element: HTMLInputElement | HTMLSelectElement
     event.preventDefault();
-    if (nextInput) nextInput.focus();
+    if (event.target instanceof  HTMLSelectElement) {
+      if (!event.target.value) {
+        this.mensagePantalla = true;
+        Swal.fire({
+          icon: "error",
+          title: "A V I S O",
+          text: 'Por favor complete el campo Tipo de Pago.',
+        }).then(() => { this.mensagePantalla = false });
+      }
+      else {
+        nextInput.focus(); // Si es válido, mueve el foco al siguiente input
+      }
+    }
   }
 
   agregaItem(event: Event) {
     event.preventDefault();
-    if (
-      !this.productoselect ||
-      this.cantidadmerc <= 0 ||
-      this.preciomerc <= 0 ||
-      this.preciomerc <= this.productoselect.in_cosmerc
-    ) {
+    if (!this.productoselect || this.cantidadmerc <= 0 || this.preciomerc <= 0 || this.preciomerc <= this.productoselect.in_cosmerc) {
       this.mensagePantalla = true;
       Swal.fire({
-        icon: 'error',
-        title: 'A V I S O',
+        icon: "error",
+        title: "A V I S O",
         text: 'Por favor complete todos los campos requeridos antes de agregar el ítem.',
-      }).then(() => {
-        this.mensagePantalla = false;
-      });
+      }).then(() => { this.mensagePantalla = false });
       return;
     }
     const fechaActual = new Date(); // Obtiene la fecha actual
@@ -1764,7 +1285,8 @@ export class Facturacion implements OnInit {
       // Restablecer el estado de edición
       this.isEditing = false;
       this.itemToEdit = null;
-    } else {
+    }
+    else {
       const total = this.cantidadmerc * this.preciomerc;
       this.totalGral += total;
       const itbis = total * 0.18;
@@ -1772,17 +1294,11 @@ export class Facturacion implements OnInit {
       this.subTotal += total - itbis;
       const tcosto = this.costotxt * this.cantidadmerc;
       this.totalcosto += this.costotxt * this.cantidadmerc;
-      this.factxt =
-        ((this.totalGral - this.totalcosto) * 100) / this.totalcosto;
-      this.protxt = ((this.preciomerc - this.costotxt) * 100) / this.costotxt;
+      this.factxt = (this.totalGral - this.totalcosto) * 100/ this.totalcosto;
+      this.protxt = ( this.preciomerc - this.costotxt) * 100/ this.costotxt;
       this.items.push({
-        producto: this.productoselect,
-        cantidad: this.cantidadmerc,
-        precio: this.preciomerc,
-        total,
-        costo: tcosto,
-        fecfactActual: fechaActual, // Agrega la fecha actual al nuevo ítem
-      });
+      producto: this.productoselect, cantidad: this.cantidadmerc, precio: this.preciomerc, total, costo: tcosto , fecfactActual: fechaActual, // Agrega la fecha actual al nuevo ítem
+      })
       this.actualizarTotales();
       this.cancelarBusquedaDescripcion = false;
       this.cancelarBusquedaCodigo = false;
@@ -1790,44 +1306,36 @@ export class Facturacion implements OnInit {
     this.limpiarCampos();
   }
   actualizarCalculo() {
-    const precio = Number(this.precioform.value) || 0;
-    this.protxt = ((precio - this.costotxt) * 100) / this.costotxt; // Aquí puedes hacer cualquier cálculo
+    this.protxt = (this.preciomerc - this.costotxt) * 100/ this.costotxt; // Aquí puedes hacer cualquier cálculo
   }
   limpiarCampos() {
     this.productoselect;
-    this.codmerc = '';
-    this.descripcionmerc = '';
+    this.codmerc = ""
+    this.descripcionmerc = ""
     this.preciomerc = 0;
     this.cantidadmerc = 0;
-
-    // Sincronizar controles
-    this.buscarcodmerc.setValue('', { emitEvent: false });
-    this.buscardescripcionmerc.setValue('', { emitEvent: false });
-    this.precioform.setValue(0, { emitEvent: false });
-    this.cantidadform.setValue(0, { emitEvent: false });
-
     this.isEditing = false;
-    this.existenciatxt = 0;
-    this.costotxt = 0;
-    this.medidatxt = 0;
-    this.tipomerc = '';
-    this.fecacttxt = ' ';
-    this.atxt = 0;
-    this.btxt = 0;
-    this.ctxt = 0;
-    this.dtxt = 0;
-    this.etxt = 0;
-    this.ftxt = 0;
-    this.gtxt = 0;
-    this.htxt = 0;
-    this.protxt = 0;
+    this.existenciatxt= 0;
+    this.costotxt= 0;
+    this.medidatxt= 0;
+    this.tipomerc = "";
+    this.fecacttxt= " ";
+    this.atxt =0;
+    this.btxt =0;
+    this.ctxt =0;
+    this.dtxt =0;
+    this.etxt =0;
+    this.ftxt =0;
+    this.gtxt =0;
+    this.htxt =0;
+    this.protxt =0;
   }
 
   limpiarTabla() {
-    this.items = []; // Limpiar el array de items
-    this.totalGral = 0; // Reiniciar el total general
-    this.totalItbis = 0; // Reiniciar el total del ITBIS
-    this.subTotal = 0; // Reiniciar el subtotal
+    this.items = [];          // Limpiar el array de items
+    this.totalGral = 0;       // Reiniciar el total general
+    this.totalItbis = 0;      // Reiniciar el total del ITBIS
+    this.subTotal = 0;        // Reiniciar el subtotal
     this.actualizarTotales(); // Reflejar 0.00 en subtotaltxt, itbitxt y totalgraltxt
   }
 
@@ -1841,7 +1349,7 @@ export class Facturacion implements OnInit {
       this.totalItbis -= itbis;
 
       // Restar el subtotal del ítem eliminado
-      this.subTotal -= item.total - itbis;
+      this.subTotal -= (item.total - itbis);
 
       // Eliminar el ítem de la lista
       this.items.splice(index, 1);
@@ -1851,47 +1359,31 @@ export class Facturacion implements OnInit {
   editarItem(item: any) {
     this.index_item = this.items.indexOf(item);
 
+
     this.isEditing = true;
     this.itemToEdit = item;
 
     this.productoselect = item.producto;
     this.codmerc = item.producto.in_codmerc;
     this.descripcionmerc = item.producto.in_desmerc;
-    this.preciomerc = item.precio;
-    this.cantidadmerc = item.cantidad;
+    this.preciomerc = item.precio
+    this.cantidadmerc = item.cantidad
     this.existenciatxt = item.producto.in_canmerc;
     this.costotxt = item.producto.in_cosmerc;
-
-    // Sincronizar controles
-    this.buscarcodmerc.setValue(this.codmerc, { emitEvent: false });
-    this.buscardescripcionmerc.setValue(this.descripcionmerc, {
-      emitEvent: false,
-    });
-    this.precioform.setValue(this.preciomerc, { emitEvent: false });
-    this.cantidadform.setValue(this.cantidadmerc, { emitEvent: false });
   }
   actualizarTotales() {
-    this.totalGral = this.items.reduce((sum, item) => sum + item.total, 0);
-    this.totalItbis = this.items.reduce(
-      (sum, item) => sum + item.total * 0.18,
-      0
-    );
-    this.subTotal = this.items.reduce(
-      (sum, item) => sum + (item.total - item.total * 0.18),
-      0
-    );
-    this.totalcosto = this.items.reduce(
-      (sum, item) => sum + this.costotxt * item.cantidad,
-      0
-    );
-    const formatCurrency = (value: number) =>
-      value.toLocaleString('es-DO', {
-        style: 'currency',
-        currency: 'DOP',
-      });
+    this.totalGral  = this.items.reduce((sum, item) => sum + item.total, 0);
+    this.totalItbis = this.items.reduce((sum, item) => sum + (item.total * 0.18), 0);
+    this.subTotal   = this.items.reduce((sum, item) => sum + (item.total - (item.total * 0.18)), 0);
+    this.totalcosto = this.items.reduce((sum, item) => sum + (this.costotxt * item.cantidad), 0);
+    const formatCurrency = (value: number) => value.toLocaleString('es-DO', {
+      style: 'currency',
+      currency: 'DOP',
+    });
     this.subtotaltxt = formatCurrency(this.subTotal);
     this.itbitxt = formatCurrency(this.totalItbis);
     this.totalgraltxt = formatCurrency(this.totalGral);
+
   }
   guardarFacturacion() {
     const date = new Date();
@@ -1899,81 +1391,41 @@ export class Facturacion implements OnInit {
     this.formularioFacturacion.get('fa_itbiFact')?.patchValue(this.totalItbis);
     this.formularioFacturacion.get('fa_cosFact')?.patchValue(this.totalcosto);
     this.formularioFacturacion.get('fa_subFact')?.patchValue(this.subTotal);
-    this.formularioFacturacion.get('fa_tipoNcf')!.enable();
+    this.formularioFacturacion.get("fa_tipoNcf")!.enable();
     this.formularioFacturacion.get('fa_codFact')!.enable();
     this.formularioFacturacion.get('fa_fecFact')!.enable();
     this.formularioFacturacion.get('fa_nomVend')!.enable();
     this.formularioFacturacion.get('fa_ncfFact')!.enable();
     // Construir payload asegurando fecha en formato Prisma (YYYY-MM-DD)
-    const facturaPayload = {
-      ...this.formularioFacturacion.getRawValue(),
-    } as any;
+    const facturaPayload = { ...this.formularioFacturacion.getRawValue() } as any;
     facturaPayload.fa_codEmpr = localStorage.getItem('codigoempresa');
-    facturaPayload.fa_codSucu = parseInt(
-      localStorage.getItem('idSucursal') || '0'
-    );
-    // Convertir fa_tipoNcf a entero
-    if (facturaPayload.fa_tipoNcf) {
-      facturaPayload.fa_tipoNcf = parseInt(
-        facturaPayload.fa_tipoNcf.toString(),
-        10
-      );
-    }
+    facturaPayload.fa_codSucu = parseInt(localStorage.getItem('idSucursal') || '0');
     facturaPayload.fa_fecFact = this.toPrismaDate(facturaPayload.fa_fecFact);
-    facturaPayload.fa_rncFact = facturaPayload.fa_rncFact || '';
+    facturaPayload.fa_rncFact = facturaPayload.fa_rncFact || "";
     const datosParaGuardar = { factura: facturaPayload, detalle: this.items };
-    console.log('Datos', datosParaGuardar);
-
-    const codCliente = this.formularioFacturacion.get('fa_codClie')?.value;
-    const nomCliente = this.formularioFacturacion.get('fa_nomClie')?.value;
-    const rncFactura = this.formularioFacturacion.get('fa_rncFact')?.value;
-
-    const tieneNombre = nomCliente && nomCliente.toString().trim() !== '';
-    const tieneRnc = rncFactura && rncFactura.toString().trim() !== '';
-
-    // Debe tener al menos un Nombre de Cliente O un RNC válido
-    if (!tieneNombre && !tieneRnc) {
-      this.isLoading = false;
-      Swal.fire({
-        icon: 'error',
-        title: 'Error de validación',
-        text: 'Debe ingresar un Nombre de Cliente o un RNC antes de facturar.',
-      });
-      return;
-    }
-
+    console.log("Datos",datosParaGuardar);
     if (this.formularioFacturacion.valid) {
-      this.isLoading = true;
-      this.servicioFacturacion.guardarFacturacion(datosParaGuardar).subscribe(
-        (response) => {
-          this.isLoading = false;
+        this.servicioFacturacion.guardarFacturacion(datosParaGuardar).subscribe(response => {
           Swal.fire({
-            title: 'Excelente!',
-            text: 'Facturacion creada correctamente.',
-            icon: 'success',
+            title: "Excelente!",
+            text: "Facturacion creada correctamente.",
+            icon: "success",
             timer: 1000,
             showConfirmButton: false,
           });
-
+          
           this.buscarTodasFacturacion();
           this.formularioFacturacion.reset();
           this.crearFormularioFacturacion();
           this.formularioFacturacion.enable();
           this.limpia();
-        },
-        (error) => {
-          this.isLoading = false;
-          console.error('Error al guardar facturación:', error);
-          Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: 'Hubo un error al guardar la factura.',
-          });
-        }
-      );
-    } else {
-      alert('Esta Factura no fue Guardada');
+        });
+
     }
+    else {
+      alert("Esta Factura no fue Guardada");
+    }
+
   }
 
   navigateTable(event: KeyboardEvent) {
@@ -2002,9 +1454,7 @@ export class Facturacion implements OnInit {
   }
 
   calcularPorcentaje(): void {
-    this.protxt =
-      ((this.selectedItem.total - this.selectedItem.costo) * 100) /
-      this.selectedItem.costo;
+      this.protxt  = (this.selectedItem.total - this.selectedItem.costo)*100/this.selectedItem.costo;
   }
 
   ngAfterViewInit() {
@@ -2020,162 +1470,170 @@ export class Facturacion implements OnInit {
     return num.toLocaleString('en-US', { minimumFractionDigits: 2 });
   }
 
+
   generatePDF(factura: FacturacionModelData) {
     console.log(factura);
-    this.servicioFacturacion
-      .buscarFacturaDetalle(factura.fa_codFact)
-      .subscribe((response) => {
-        let subtotal = 0;
-        let itbis = 0;
-        let totalGeneral = 0;
-        const itbisRate = 0.18; // Ejemplo: 18% de ITBIS
-        response.data.forEach((item: any) => {
-          const producto: ModeloInventarioData = {
-            in_codmerc: item.dc_codmerc,
-            in_desmerc: item.dc_descrip,
-            in_grumerc: '',
-            in_tipoproduct: '',
-            in_canmerc: 0,
-            in_caninve: 0,
-            in_fecinve: null,
-            in_eximini: 0,
-            in_cosmerc: 0,
-            in_premerc: 0,
-            in_precmin: 0,
-            // in_costpro: 0,
-            in_ucosto: 0,
-            in_porgana: 0,
-            in_peso: 0,
-            in_longitud: 0,
-            in_unidad: 0,
-            in_medida: 0,
-            in_longitu: 0,
-            in_fecmodif: null,
-            in_amacen: 0,
-            in_imagen: '',
-            in_status: '',
-            in_itbis: false,
-            in_minvent: 0,
-          };
-          const cantidad = item.dc_canmerc;
-          const precio = item.dc_premerc;
-          const totalItem = cantidad * precio;
-          this.items.push({
-            producto: producto,
-            cantidad: cantidad,
-            precio: precio,
-            total: totalItem,
-            fecfactActual: new Date(),
-            costo: 0,
-          });
-          // Calcular el subtotal
-          subtotal += totalItem;
-          // Calcular ITBIS solo si el producto tiene ITBIS
-          // if (item.dc_itbis) {
-          this.totalItbis += totalItem * itbisRate;
-          // }
+    this.servicioFacturacion.buscarFacturaDetalle(factura.fa_codFact).subscribe(response => {
+      let subtotal = 0;
+      let itbis = 0;
+      let totalGeneral = 0;
+      const itbisRate = 0.18; // Ejemplo: 18% de ITBIS
+      response.data.forEach((item: any) => {
+        const producto: ModeloInventarioData = {
+          in_codmerc: item.dc_codmerc,
+          in_desmerc: item.dc_descrip,
+          in_grumerc: '',
+          in_tipoproduct: '',
+          in_canmerc: 0,
+          in_caninve: 0,
+          in_fecinve: null,
+          in_eximini: 0,
+          in_cosmerc: 0,
+          in_premerc: 0,
+          in_precmin: 0,
+         // in_costpro: 0,
+          in_ucosto: 0,
+          in_porgana: 0,
+          in_peso: 0,
+          in_longitud: 0,
+          in_unidad: 0,
+          in_medida: 0,
+          in_longitu: 0,
+          in_fecmodif: null,
+          in_amacen: 0,
+          in_imagen: '',
+          in_status: '',
+          in_itbis: false,
+          in_minvent: 0,
+        };
+        const cantidad = item.dc_canmerc;
+        const precio = item.dc_premerc;
+        const totalItem = cantidad * precio;
+        this.items.push({
+          producto: producto,
+          cantidad: cantidad,
+          precio: precio,
+          total: totalItem,
+          fecfactActual: new Date(),
+          costo: 0,
+
+
         });
-        // Calcular el total general (subtotal + ITBIS)
-        totalGeneral = subtotal + this.totalItbis;
-        // Asignar los totales a variables o mostrarlos en la interfaz
-        this.subTotal = subtotal;
-        this.totalItbis = this.totalItbis;
-        this.totalGral = totalGeneral;
+        // Calcular el subtotal
+        subtotal += totalItem;
+        // Calcular ITBIS solo si el producto tiene ITBIS
+        // if (item.dc_itbis) {
+        this.totalItbis += totalItem * itbisRate;
+        // }
 
-        const formatCurrency = (value: number) =>
-          value.toLocaleString('es-DO', {
-            style: 'currency',
-            currency: 'DOP',
-          });
-
-        const doc = new jsPDF();
-
-        const imgData = 'assets/logo2.png'; // Asegúrate de usar una ruta válida o base64
-
-        const imgWidth = 20; // Ancho de la imagen
-        const imgHeight = 20; // Alto de la imagen
-
-        // Cálculo para centrar la imagen
-        const pageWidth = doc.internal.pageSize.getWidth();
-        const imgX = (pageWidth - imgWidth) / 2; // Posición X centrada
-
-        // Agregar el logo centrado
-        doc.addImage(imgData, 'PNG', imgX, 10, imgWidth, imgHeight); // (x, y, ancho, alto)
-
-        // Título y detalles del negocio
-        doc.setFontSize(16);
-        doc.text('CENTRAL HIERRO, SRL', 105, 40, { align: 'center' });
-        doc.setFontSize(10);
-        doc.text('#172 Esq. Albert Thomas', 105, 47, { align: 'center' });
-        doc.text('809-384-2000, 809-384-200', 105, 52, { align: 'center' });
-        doc.text('1-30-29922-6', 105, 57, { align: 'center' });
-
-        // Cotización
-        doc.setFontSize(14);
-        doc.text('FACTURA', 105, 70, { align: 'center' });
-
-        // Detalles de la cotización
-        doc.setFontSize(10);
-        doc.text(`No. ${factura.fa_codFact}`, 14, 80);
-        doc.text(`Fecha: ${factura.fa_fecFact}`, 14, 85);
-        doc.text(`Vendedido por: ${factura.fa_nomVend}`, 14, 90);
-
-        // Cliente
-        doc.setFontSize(12);
-        doc.text('CLIENTE', 14, 100);
-        doc.setFontSize(10);
-        doc.text(factura.fa_nomClie, 14, 106);
-
-        // Tabla de descripción de productos
-        autoTable(doc, {
-          head: [
-            ['Codigo', 'Descripción', 'Cantidad', 'Precio', 'Itbis', 'Total'],
-          ],
-          body: response.data.map((item: any) => [
-            item.df_codMerc,
-            item.df_desMerc,
-            parseInt(item.df_canMerc),
-            formatCurrency(parseFloat(item.df_preMerc)),
-            formatCurrency((item.df_preMerc * item.df_canMerc * 18) / 100),
-            formatCurrency(item.df_preMerc * item.df_canMerc),
-          ]),
-          startY: 115,
-        });
-
-        // Obtener la posición final de la tabla
-        const finalY = (doc as any).lastAutoTable.finalY;
-
-        // Agregar el subtotal, ITBIS y Total a Pagar como pie de página
-        doc.setFontSize(12);
-        doc.text(`Subtotal:`, 118, finalY + 10);
-        doc.setFontSize(10);
-        doc.text(`${formatCurrency(subtotal)} `, 160, finalY + 10);
-        doc.setFontSize(12);
-        doc.text(`ITBIS:`, 118, finalY + 16);
-        doc.setFontSize(10);
-        doc.text(`${formatCurrency(this.totalItbis)} `, 160, finalY + 16);
-        doc.setFontSize(12);
-        doc.text(`TOTAL A PAGAR: `, 118, finalY + 22);
-        doc.setFontSize(14);
-        doc.text(`${formatCurrency(totalGeneral)} `, 160, finalY + 22);
-
-        doc.setFontSize(12);
-        // Nota final
-        // doc.text('Estos Precios Estan Sujetos a Cambio Sin Previo Aviso', 105, finalY + 40, { align: 'center' });
-        doc.setFontSize(14);
-        doc.text('WWW.GRUPOHIERRO.COM', 105, finalY + 47, { align: 'center' });
-        doc.setFontSize(12);
-        doc.text('*** Gracias por Preferirnos ***', 105, finalY + 55, {
-          align: 'center',
-        });
-
-        // Guardar PDF
-        // doc.save(`${cotizacion.ct_codcoti}.pdf`);
-        const pdfBlob = doc.output('blob');
-
-        // Crear un objeto URL para el Blob y abrirlo en una nueva pestaña
-        const pdfUrl = URL.createObjectURL(pdfBlob);
-        window.open(pdfUrl, '_blank');
       });
+      // Calcular el total general (subtotal + ITBIS)
+      totalGeneral = subtotal + this.totalItbis;
+      // Asignar los totales a variables o mostrarlos en la interfaz
+      this.subTotal = subtotal;
+      this.totalItbis = this.totalItbis;
+      this.totalGral = totalGeneral;
+
+
+      const formatCurrency = (value: number) => value.toLocaleString('es-DO', {
+        style: 'currency',
+        currency: 'DOP',
+      });
+
+
+      const doc = new jsPDF();
+
+      const imgData = 'assets/logo2.png';  // Asegúrate de usar una ruta válida o base64
+
+      const imgWidth = 20;  // Ancho de la imagen
+      const imgHeight = 20;  // Alto de la imagen
+
+      // Cálculo para centrar la imagen
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const imgX = (pageWidth - imgWidth) / 2;  // Posición X centrada
+
+      // Agregar el logo centrado
+      doc.addImage(imgData, 'PNG', imgX, 10, imgWidth, imgHeight);  // (x, y, ancho, alto)
+
+
+      // Título y detalles del negocio
+      doc.setFontSize(16);
+      doc.text('CENTRAL HIERRO, SRL', 105, 40, { align: 'center' });
+      doc.setFontSize(10);
+      doc.text('#172 Esq. Albert Thomas', 105, 47, { align: 'center' });
+      doc.text('809-384-2000, 809-384-200', 105, 52, { align: 'center' });
+      doc.text('1-30-29922-6', 105, 57, { align: 'center' });
+
+      // Cotización
+      doc.setFontSize(14);
+      doc.text('FACTURA', 105, 70, { align: 'center' });
+
+      // Detalles de la cotización
+      doc.setFontSize(10);
+      doc.text(`No. ${factura.fa_codFact}`, 14, 80);
+      doc.text(`Fecha: ${factura.fa_fecFact}`, 14, 85);
+      doc.text(`Vendedido por: ${factura.fa_nomVend}`, 14, 90);
+
+      // Cliente
+      doc.setFontSize(12);
+      doc.text('CLIENTE', 14, 100);
+      doc.setFontSize(10);
+      doc.text(factura.fa_nomClie, 14, 106);
+
+      // Tabla de descripción de productos
+      autoTable(doc, {
+        head: [['Codigo', 'Descripción', 'Cantidad', 'Precio', 'Itbis', 'Total']],
+        body: response.data.map((item: any) => [
+          item.df_codMerc,
+          item.df_desMerc,
+          parseInt(item.df_canMerc),
+          formatCurrency(parseFloat(item.df_preMerc)),
+          formatCurrency((item.df_preMerc * item.df_canMerc) * 18 / 100),
+          formatCurrency(item.df_preMerc * item.df_canMerc)
+        ]),
+        startY: 115,
+      });
+
+
+
+
+      // Obtener la posición final de la tabla
+      const finalY = (doc as any).lastAutoTable.finalY;
+
+      // Agregar el subtotal, ITBIS y Total a Pagar como pie de página
+      doc.setFontSize(12);
+      doc.text(`Subtotal:`, 118, finalY + 10);
+      doc.setFontSize(10);
+      doc.text(`${formatCurrency(subtotal)} `, 160, finalY + 10);
+      doc.setFontSize(12);
+      doc.text(`ITBIS:`, 118, finalY + 16);
+      doc.setFontSize(10);
+      doc.text(`${formatCurrency(this.totalItbis)} `, 160, finalY + 16);
+      doc.setFontSize(12);
+      doc.text(`TOTAL A PAGAR: `, 118, finalY + 22);
+      doc.setFontSize(14);
+      doc.text(`${formatCurrency(totalGeneral)} `, 160, finalY + 22);
+
+      doc.setFontSize(12);
+      // Nota final
+      // doc.text('Estos Precios Estan Sujetos a Cambio Sin Previo Aviso', 105, finalY + 40, { align: 'center' });
+      doc.setFontSize(14);
+      doc.text('WWW.GRUPOHIERRO.COM', 105, finalY + 47, { align: 'center' });
+      doc.setFontSize(12);
+      doc.text('*** Gracias por Preferirnos ***', 105, finalY + 55, { align: 'center' });
+
+      // Guardar PDF
+      // doc.save(`${cotizacion.ct_codcoti}.pdf`);
+      const pdfBlob = doc.output('blob');
+
+      // Crear un objeto URL para el Blob y abrirlo en una nueva pestaña
+      const pdfUrl = URL.createObjectURL(pdfBlob);
+      window.open(pdfUrl, '_blank');
+    });
+
   }
+
+
+
+
 }
