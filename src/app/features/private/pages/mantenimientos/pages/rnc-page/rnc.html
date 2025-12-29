@@ -1,0 +1,126 @@
+<div class="card shadow-sm h-100">
+  <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+    <h1 class="h3 mb-0"><i class="bi bi-file-text me-2"></i>Gestión de RNC</h1>
+  </div>
+  <div class="card-body">
+    <!-- Toolbar -->
+    <div class="d-flex justify-content-between mb-3">
+      <div class="flex-grow-1 me-3">
+        <div class="input-group">
+          <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+          <input type="text" class="form-control border-start-0 ps-0" placeholder="Buscar por RNC o Razón Social (Enter)..." [(ngModel)]="filtro" (keydown.enter)="filtrar()">
+          <button class="btn btn-outline-secondary border-start-0" type="button" *ngIf="filtro" (click)="limpiarFiltro()" title="Limpiar búsqueda">
+            <i class="bi bi-x-lg"></i>
+          </button>
+          <button class="btn btn-outline-secondary border-start-0" type="button" (click)="filtrar()">
+            <i class="bi bi-arrow-right"></i>
+          </button>
+        </div>
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-primary" (click)="nuevo()">
+          <i class="bi bi-plus-lg me-2"></i>Nuevo
+        </button>
+        <button class="btn btn-warning text-white" (click)="importarDesdeDgii()">
+          <i class="bi bi-cloud-download me-2"></i>Actualizar desde DGII
+        </button>
+      </div>
+    </div>
+
+    <!-- Grid -->
+    <div class="table-responsive mb-3">
+      <table class="table table-hover table-striped align-middle">
+        <thead class="table-light">
+          <tr>
+            <th>RNC</th>
+            <th>Razón Social</th>
+            <th>Estado</th>
+            <th class="text-end">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of rncList">
+            <td>{{ item.rnc }}</td>
+            <td>{{ item.rason }}</td>
+            <td>
+              <span class="badge" [ngClass]="{'bg-success': item.status === 'ACTIVO', 'bg-danger': item.status !== 'ACTIVO'}">
+                {{ item.status || 'N/A' }}
+              </span>
+            </td>
+            <td class="text-end">
+              <button class="btn btn-sm btn-outline-primary" (click)="editar(item)" title="Editar">
+                <i class="bi bi-pencil"></i>
+              </button>
+            </td>
+          </tr>
+          <tr *ngIf="rncList.length === 0">
+            <td colspan="3" class="text-center py-4 text-muted">
+              No hay registros disponibles.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="d-flex justify-content-between align-items-center">
+      <div class="d-flex align-items-center">
+        <label for="pageSize" class="me-2 text-muted">Mostrar:</label>
+        <select id="pageSize" class="form-select form-select-sm" style="width: auto;" [(ngModel)]="limit" (change)="cambiarLimite()">
+          <option *ngFor="let l of limits" [value]="l">{{ l }}</option>
+        </select>
+        <span class="ms-3 text-muted" *ngIf="totalItems > 0">
+          Total: {{ totalItems }} registros
+        </span>
+      </div>
+      <nav aria-label="Page navigation" *ngIf="totalPages > 1">
+        <ul class="pagination pagination-sm mb-0">
+          <li class="page-item" [class.disabled]="page === 1">
+            <button class="page-link" (click)="cambiarPagina(page - 1)" aria-label="Previous">
+              <span aria-hidden="true">&laquo;</span>
+            </button>
+          </li>
+          <li class="page-item disabled">
+            <span class="page-link">Página {{ page }} de {{ totalPages }}</span>
+          </li>
+          <li class="page-item" [class.disabled]="page === totalPages">
+            <button class="page-link" (click)="cambiarPagina(page + 1)" aria-label="Next">
+              <span aria-hidden="true">&raquo;</span>
+            </button>
+          </li>
+        </ul>
+      </nav>
+    </div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="modalrnc" tabindex="-1" aria-labelledby="modalrncLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title" id="modalrncLabel">{{ tituloModalrnc }}</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form [formGroup]="formulariornc">
+          <div class="mb-3">
+            <label for="rnc" class="form-label">RNC</label>
+            <input type="text" class="form-control" id="rnc" formControlName="rnc">
+          </div>
+          <div class="mb-3">
+            <label for="rason" class="form-label">Razón Social</label>
+            <input type="text" class="form-control" id="rason" formControlName="rason">
+            <div *ngIf="formulariornc.get('rason')?.invalid && (formulariornc.get('rason')?.dirty || formulariornc.get('rason')?.touched)" class="text-danger small mt-1">
+              La razón social es requerida.
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" (click)="guardar()" [disabled]="formulariornc.invalid">Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
