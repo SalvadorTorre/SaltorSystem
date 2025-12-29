@@ -18,6 +18,10 @@ const routes: Routes = [
           path:"CobroFact",
           loadChildren: () => import('./pages/cobrofact-page/cobrofact-modulo').then(m => m.ModuloCobroFact)
         },
+        {
+          path:"cuadrecaja",
+          loadChildren: () => import('./pages/cuadecaja-page/cuadrecaja-modulo').then(m => m.ModuloCuadreCaja)
+        },
 
         
       ]

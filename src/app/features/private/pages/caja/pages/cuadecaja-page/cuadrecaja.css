@@ -1,0 +1,11 @@
+.card-header {
+    font-weight: bold;
+}
+
+.table th {
+    background-color: #f8f9fa;
+}
+
+.text-end {
+    text-align: right;
+}
