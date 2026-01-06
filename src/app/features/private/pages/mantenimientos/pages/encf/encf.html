@@ -1,150 +1,206 @@
-<div class="container-fluid py-4">
-  <div class="card shadow-sm mb-4 border-0 rounded-4">
-    <div class="card-header bg-primary text-white rounded-top-4">
-      <h5 class="mb-0"><i class="bi bi-receipt-cutoff me-2"></i>Registro de ENCF</h5>
-    </div>
-    <div class="card-body">
-      <form class="row g-3" #encfForm="ngForm" (ngSubmit)="guardarEncf()">
-        <div class="col-md-3">
-          <label class="form-label fw-semibold">Empresa *</label>
-          <select class="form-select" name="codempr" [(ngModel)]="encf.codempr" required>
-            <option value="">Seleccione una empresa</option>
-            <option *ngFor="let e of empresas" [value]="e.cod_empre">{{ e.nom_empre }} ({{ e.cod_empre }})</option>
-          </select>
-        </div>
+<div class="container-fluid py-4 bg-light min-vh-100">
+  <div class="row g-4 justify-content-center">
 
-        <!-- Sucursal removida: no está en el modelo ENCF -->
-
-        <div class="col-md-2">
-          <label class="form-label fw-semibold">Tipo ENCF *</label>
-          <select class="form-select" name="tipoencf" [(ngModel)]="encf.tipoencf" required>
-            <option value="">Seleccione un tipo</option>
-            <option *ngFor="let t of tiposNcf" [value]="t.tipo">{{ t.desNcf }}</option>
-          </select>
-        </div>
-        <div class="col-md-1">
-          <label class="form-label fw-semibold">Cantidad ENCF</label>
-          <input type="number" class="form-control" name="cantencf" [(ngModel)]="encf.cantencf" placeholder="1000" />
-        </div>
-        <div class="col-md-1">
-          <label class="form-label fw-semibold">Secuencia Desde</label>
-          <input type="number" class="form-control text-center" name="desdeencf" [(ngModel)]="encf.desdeencf" placeholder="1" />
-        </div>
-
-        <div class="col-md-1">
-          <label class="form-label fw-semibold">Secuencia Hasta</label>
-          <input type="number" class="form-control text-center" name="hastaencf" [(ngModel)]="encf.hastaencf" placeholder="1000" />
-        </div>
-
-      
-
-        <div class="col-md-1">
-          <label class="form-label fw-semibold">Contador ENCF</label>
-          <input type="number" class="form-control" name="countencf" [(ngModel)]="encf.countencf" placeholder="1" />
-        </div>
-
-        <div class="col-md-1">
-          <label class="form-label fw-semibold">Fecha *</label>
-          <input type="date" class="form-control" name="fechaencf" [(ngModel)]="encf.fechaencf" required />
-        </div>
-
-        <div class="col-md-2">
-          <label class="form-label fw-semibold">Alerta ENCF (%)</label>
-          <input type="number" class="form-control" name="alertaencf" [(ngModel)]="encf.alertaencf" placeholder="20" />
-          <div class="form-text">Porcentaje de uso para activar la alerta</div>
-        </div>
-
-        <div class="col-12 d-flex justify-content-end gap-2 mt-3">
-          <button type="submit" class="btn btn-primary px-4" [disabled]="!encfForm.valid || guardando">
-            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" *ngIf="guardando"></span>
-            <i class="bi bi-save me-1" *ngIf="!guardando"></i> {{ editIndex >= 0 ? 'Guardar cambios' : 'Guardar ENCF' }}
-          </button>
-          <button type="button" class="btn btn-outline-secondary px-4" (click)="limpiarFormulario()">
-            <i class="bi bi-arrow-counterclockwise me-1"></i> Limpiar
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-  <!-- Tabla -->
-  <div class="card shadow-sm border-0 rounded-4">
-    <div class="card-header bg-primary text-white rounded-top-4">
-      <h5 class="mb-0"><i class="bi bi-list-check me-2"></i>ENCF Registrados</h5>
-    </div>
-    <div class="card-body p-0">
-      <!-- Filtros -->
-      <!-- <div class="p-3 border-bottom bg-light">
-        <div class="row g-3 align-items-end">
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Empresa</label>
-            <select class="form-select" [(ngModel)]="filtroCodempr">
-              <option value="">Todas</option>
-              <option *ngFor="let e of empresas" [value]="e.cod_empre">{{ e.nom_empre }} ({{ e.cod_empre }})</option>
-            </select>
-          </div>
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Tipo ENCF</label>
-            <select class="form-select" [(ngModel)]="filtroTipo">
-              <option value="">Todos</option>
-              <option *ngFor="let t of tiposNcf" [value]="t.tipo">{{ t.desNcf }}</option>
-            </select>
-          </div>
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Nombre Empresa</label>
-            <input type="text" class="form-control" [(ngModel)]="filtroDescripcion" placeholder="Buscar por nombre" />
-          </div>
-          <div class="col-md-2 d-flex gap-2">
-            <button class="btn btn-primary w-100" (click)="aplicarFiltros()">Buscar</button>
-            <button class="btn btn-outline-secondary w-100" (click)="limpiarFiltros()">Limpiar</button>
+    <!-- Formulario Section -->
+    <div class="col-lg-12">
+      <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+        <div class="card-header bg-white border-bottom py-3 px-4">
+          <div class="d-flex align-items-center">
+            <div class="bg-primary bg-opacity-10 p-2 rounded-circle me-3 text-primary">
+              <i class="bi bi-receipt-cutoff fs-5"></i>
+            </div>
+            <h5 class="mb-0 fw-bold text-dark">Registro de ENCF</h5>
           </div>
         </div>
-      </div> -->
-      <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
-          <thead class="table-primary">
-            <tr>
-              <th>EMPRESA</th>
-              <th>TIPO</th>
-              <th>SECUENCIA</th>
-              <th>CANTIDAD</th>
-              <th>CONTADOR</th>
-              <th>FECHA</th>
-              <th>ALERTA</th>
-              <th class="text-center">ACCIONES</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let item of listaEncf">
-              <td>{{ item.empresacodempr?.nom_empre || item.codempr }}</td>
-              <td>{{ tipoDescripcion(item.tipoencf) }}</td>
-              <td>{{ item.desdeencf }} - {{ item.hastaencf }}</td>
-              <td>{{ item.cantencf }}</td>
-              <td>{{ item.countencf }}</td>
-              <td>{{ item.fechaencf | date:'dd/MM/yyyy' }}</td>
-              <td>{{ item.alertaencf }}%</td>
-              <td class="text-center">
-                <button class="btn btn-sm btn-outline-primary me-1" (click)="editar(item)">
-                  <i class="bi bi-pencil"></i>
-                </button>
-                <button class="btn btn-sm btn-outline-danger" (click)="eliminar(item)">
-                  <i class="bi bi-trash"></i>
-                </button>
-              </td>
-            </tr>
-            <tr *ngIf="listaEncf.length === 0">
-              <td colspan="9" class="text-center text-muted py-3">No hay ENCF registrados</td>
-            </tr>
-          </tbody>
-        </table>
+
+        <div class="card-body p-4">
+          <form #encfForm="ngForm" (ngSubmit)="guardarEncf()">
+            <!-- Sección: Datos Principales -->
+            <div class="row g-3 mb-4">
+              <div class="col-12">
+                <h6 class="text-uppercase text-muted small fw-bold mb-3 border-bottom pb-2">Información General</h6>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label fw-semibold text-secondary small">Empresa *</label>
+                <div class="input-group">
+                  <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-building"></i></span>
+                  <select class="form-select border-start-0 ps-0" name="codempr" [(ngModel)]="encf.codempr" required>
+                    <option value="">Seleccione una empresa</option>
+                    <option *ngFor="let e of empresas" [value]="e.cod_empre">{{ e.nom_empre }} ({{ e.cod_empre }})</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label fw-semibold text-secondary small">Tipo de Comprobante *</label>
+                <div class="input-group">
+                  <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-tags"></i></span>
+                  <select class="form-select border-start-0 ps-0" name="tipoencf" [(ngModel)]="encf.tipoencf" required>
+                    <option value="">Seleccione un tipo</option>
+                    <option *ngFor="let t of tiposNcf" [value]="t.codigo!">{{ t.tipo }} - {{ t.desNcf }}</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- Sección: Secuencia y Control -->
+            <div class="row g-3 mb-4">
+              <div class="col-12">
+                <h6 class="text-uppercase text-muted small fw-bold mb-3 border-bottom pb-2">Secuencia y Control</h6>
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label fw-semibold text-secondary small">Desde</label>
+                <input type="number" class="form-control" name="desdeencf" [(ngModel)]="encf.desdeencf" placeholder="1" />
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label fw-semibold text-secondary small">Hasta</label>
+                <input type="number" class="form-control" name="hastaencf" [(ngModel)]="encf.hastaencf" placeholder="1000" />
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label fw-semibold text-secondary small">Cantidad Total</label>
+                <input type="number" class="form-control" name="cantencf" [(ngModel)]="encf.cantencf" placeholder="Total" />
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label fw-semibold text-secondary small">Contador Actual</label>
+                <input type="number" class="form-control" name="countencf" [(ngModel)]="encf.countencf" placeholder="0" />
+              </div>
+            </div>
+
+            <!-- Sección: Vigencia y Alertas -->
+            <div class="row g-3">
+              <div class="col-12">
+                <h6 class="text-uppercase text-muted small fw-bold mb-3 border-bottom pb-2">Vigencia y Alertas</h6>
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label fw-semibold text-secondary small">Fecha de Vencimiento *</label>
+                <div class="input-group">
+                  <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-calendar"></i></span>
+                  <input type="date" class="form-control border-start-0 ps-0" name="fechaencf" [(ngModel)]="encf.fechaencf" required />
+                </div>
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label fw-semibold text-secondary small">Alerta de Consumo (%)</label>
+                <div class="input-group">
+                  <input type="number" class="form-control border-end-0" name="alertaencf" [(ngModel)]="encf.alertaencf" placeholder="20" />
+                  <span class="input-group-text bg-white border-start-0 text-muted">%</span>
+                </div>
+                <div class="form-text small mt-1">Notificar al llegar a este porcentaje disponible.</div>
+              </div>
+            </div>
+
+            <!-- Botones -->
+            <div class="d-flex justify-content-end gap-3 mt-5 pt-3 border-top">
+              <button type="button" class="btn btn-light px-4 border" (click)="limpiarFormulario()">
+                <i class="bi bi-arrow-counterclockwise me-2"></i> Limpiar
+              </button>
+              <button type="submit" class="btn btn-primary px-4 shadow-sm" [disabled]="!encfForm.valid || guardando">
+                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" *ngIf="guardando"></span>
+                <i class="bi bi-check-lg me-2" *ngIf="!guardando"></i>
+                {{ editIndex >= 0 ? 'Guardar Cambios' : 'Registrar ENCF' }}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
-      <!-- Paginación -->
-      <div class="d-flex justify-content-between align-items-center p-3 border-top">
-        <div>
-          Página {{ paginacion.page }} de {{ paginacion.totalPages }}
+    </div>
+
+    <!-- Tabla Section -->
+    <div class="col-lg-12">
+      <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+        <div class="card-header bg-white border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
+          <div class="d-flex align-items-center">
+            <div class="bg-success bg-opacity-10 p-2 rounded-circle me-3 text-success">
+              <i class="bi bi-list-check fs-5"></i>
+            </div>
+            <h5 class="mb-0 fw-bold text-dark">Comprobantes Registrados</h5>
+          </div>
         </div>
-        <div class="btn-group">
-          <button class="btn btn-outline-secondary" [disabled]="page === 1" (click)="cambiarPagina(page - 1)">Anterior</button>
-          <button class="btn btn-outline-secondary" [disabled]="paginacion.page >= paginacion.totalPages" (click)="cambiarPagina(page + 1)">Siguiente</button>
+
+        <div class="card-body p-0">
+          <div class="table-responsive" style="max-height: 500px; overflow-y: auto">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="table-light sticky-top">
+                <tr class="text-secondary small text-uppercase">
+                  <th class="py-3 ps-4">Empresa</th>
+                  <th class="py-3">Tipo</th>
+                  <th class="py-3 text-center">Rango</th>
+                  <th class="py-3 text-center">Cantidad</th>
+                  <th class="py-3 text-center">Contador</th>
+                  <th class="py-3 text-center">Vigencia</th>
+                  <th class="py-3 text-center">Alerta</th>
+                  <th class="py-3 text-center pe-4">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let item of listaEncf">
+                  <td class="ps-4">
+                    <div class="fw-bold text-dark">{{ item.empresacodempr?.nom_empre || item.codempr }}</div>
+                    <div class="small text-muted">{{ item.codempr }}</div>
+                  </td>
+                  <td>
+                    <span class="badge bg-light text-dark border fw-normal">{{ tipoDescripcion(item.tipoencf) }}</span>
+                  </td>
+                  <td class="text-center font-monospace small text-muted">
+                    {{ item.desdeencf }} <i class="bi bi-arrow-right mx-1"></i> {{ item.hastaencf }}
+                  </td>
+                  <td class="text-center fw-bold">{{ item.cantencf | number }}</td>
+                  <td class="text-center">
+                    <span class="badge bg-primary bg-opacity-10 text-primary">{{ item.countencf | number }}</span>
+                  </td>
+                  <td class="text-center text-muted small">
+                    <i class="bi bi-calendar-event me-1"></i> {{ item.fechaencf | date:'dd/MM/yyyy' }}
+                  </td>
+                  <td class="text-center">
+                    <span class="badge bg-warning bg-opacity-10 text-warning border border-warning" *ngIf="item.alertaencf">{{ item.alertaencf }}%</span>
+                    <span class="text-muted small" *ngIf="!item.alertaencf">-</span>
+                  </td>
+                  <td class="text-center pe-4">
+                    <div class="btn-group shadow-sm" role="group">
+                      <button class="btn btn-sm btn-outline-secondary bg-white" (click)="editar(item)" title="Editar">
+                        <i class="bi bi-pencil"></i>
+                      </button>
+                      <button class="btn btn-sm btn-outline-danger bg-white" (click)="eliminar(item)" title="Eliminar">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <tr *ngIf="listaEncf.length === 0">
+                  <td colspan="8" class="text-center py-5 text-muted">
+                    <div class="d-flex flex-column align-items-center">
+                      <div class="bg-light rounded-circle p-4 mb-3">
+                        <i class="bi bi-inbox fs-1 text-secondary opacity-50"></i>
+                      </div>
+                      <span class="fw-semibold">No hay comprobantes registrados</span>
+                      <small class="text-muted">Utiliza el formulario superior para agregar uno nuevo.</small>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Paginación -->
+          <div class="d-flex justify-content-between align-items-center p-3 border-top bg-light">
+            <small class="text-muted">
+              Mostrando página <span class="fw-bold text-dark">{{ paginacion.page }}</span> de {{ paginacion.totalPages }}
+            </small>
+            <div class="btn-group">
+              <button class="btn btn-sm btn-outline-secondary bg-white" [disabled]="page === 1" (click)="cambiarPagina(page - 1)">
+                <i class="bi bi-chevron-left me-1"></i> Anterior
+              </button>
+              <button class="btn btn-sm btn-outline-secondary bg-white" [disabled]="paginacion.page >= paginacion.totalPages" (click)="cambiarPagina(page + 1)">
+                Siguiente <i class="bi bi-chevron-right ms-1"></i>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

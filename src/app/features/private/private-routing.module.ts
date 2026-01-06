@@ -43,13 +43,11 @@ const routes: Routes = [
         loadChildren: () =>
           import('./pages/caja/caja-modulo').then((m) => m.ModuloCaja),
       },
-      {
-        path: 'almacen',
-        loadChildren: () =>
-          import('./pages/almacen2/almacen-modulo').then(
-            (m) => m.ModuloAlmacen
-          ),
-      },
+      // {
+      //   path: 'almacen',
+      //   loadChildren: () =>
+      //     import('./pages/Almacen/almacen-modulo').then((m) => m.ModuloAlmacen),
+      // },
       {
         path: 'despacho',
         loadChildren: () =>

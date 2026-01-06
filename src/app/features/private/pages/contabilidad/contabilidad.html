@@ -1,34 +1,72 @@
-<h1>Ahora Estoy en Contabilidad</h1>
+<div class="container-fluid p-0">
+  <div class="row g-0">
+    <!-- Botón para mostrar/ocultar sidebar en dispositivos móviles -->
+    <div class="d-block d-lg-none position-fixed start-0 top-0 p-2 z-index-1000">
+      <button class="btn btn-primary" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarContabilidad" aria-controls="sidebarContabilidad">
+        <i class="bi bi-list"></i> Menú
+      </button>
+    </div>
 
-<div class="left-sidebar" style="width: 15%">
-  <ul class="nav flex-column" style="background-color: #d00606">
-    <li class="nav-item">
-      <a
-        class="nav-link active"
-        style="color: rgb(250, 247, 247)"
-        aria-current="page"
-        href="#"
-        >Nota de Credito</a
-      >
-    </li>
-    <li class="nav-item">
-      <a class="nav-link" style="color: rgb(250, 247, 247)" href="#"
-        >Cuentas x Cobrar</a
-      >
-    </li>
-    <li class="nav-item">
-      <a class="nav-link" style="color: rgb(250, 247, 248)" href="#"
-        >Factura Vencidads</a
-      >
-    </li>
-    <li class="nav-item">
-      <a class="nav-link" style="color: rgb(250, 247, 247)" href="#"
-        >Rep. 606</a
-      >
-    </li>
+    <!-- Sidebar para pantallas grandes (lg y superiores) -->
+    <div class="col-lg-3 col-xl-2 d-none d-lg-block position-fixed start-0 overflow-auto border-end bg-light" style="z-index: 900; top: 80px; height: calc(100vh - 80px);">
+      <div class="sidebar">
+        <div class="sidebar-header bg-primary text-white p-3 d-flex align-items-center sticky-top">
+          <i class="bi bi-calculator me-2"></i>
+          <h5 class="mb-0">Contabilidad</h5>
+        </div>
+        <ul class="nav flex-column sidebar-nav nav-pills p-2">
+          <li class="nav-item">
+            <a class="nav-link d-flex align-items-center text-dark" routerLinkActive="active" [routerLink]="['facturas-pendientes']">
+              <i class="bi bi-receipt-cutoff me-2"></i>
+              <span>Facturas Pendientes</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link d-flex align-items-center text-dark" routerLinkActive="active" [routerLink]="['nota-credito']">
+              <i class="bi bi-file-earmark-minus me-2"></i>
+              <span>Nota de Crédito</span>
+            </a>
+          </li>
+          <li class="nav-item">
+             <a class="nav-link d-flex align-items-center text-dark" routerLinkActive="active" [routerLink]="['cuentas-por-cobrar']">
+              <i class="bi bi-cash-coin me-2"></i>
+              <span>Cuentas x Cobrar</span>
+            </a>
+          </li>
+          <li class="nav-item">
+             <a class="nav-link d-flex align-items-center text-dark" routerLinkActive="active" [routerLink]="['reporte-606']">
+              <i class="bi bi-file-earmark-spreadsheet me-2"></i>
+              <span>Rep. 606</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
 
-    <li class="nav-item">
-      <a class="nav-link" href="#"> </a>
-    </li>
-  </ul>
+    <!-- Sidebar para dispositivos móviles (offcanvas) -->
+    <div class="offcanvas offcanvas-start" tabindex="-1" id="sidebarContabilidad" aria-labelledby="sidebarContabilidadLabel">
+      <div class="offcanvas-header bg-primary text-white">
+        <h5 class="offcanvas-title" id="sidebarContabilidadLabel">Contabilidad</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+      </div>
+      <div class="offcanvas-body p-0">
+        <ul class="nav flex-column sidebar-nav">
+          <li class="nav-item">
+            <a class="nav-link d-flex align-items-center" routerLinkActive="active" [routerLink]="['facturas-pendientes']" data-bs-dismiss="offcanvas">
+              <i class="bi bi-receipt-cutoff me-2"></i>
+              <span>Facturas Pendientes</span>
+            </a>
+          </li>
+          <!-- TODO: Agregar el resto de los items para movil si es necesario -->
+        </ul>
+      </div>
+    </div>
+
+    <!-- Contenido principal -->
+    <div class="col-12 col-lg-9 col-xl-10 offset-lg-3 offset-xl-2 main-content">
+      <div class="p-3">
+        <router-outlet></router-outlet>
+      </div>
+    </div>
+  </div>
 </div>

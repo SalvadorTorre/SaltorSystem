@@ -1,35 +1,36 @@
 import { Facturacion } from './../../../../features/private/pages/facturacion/facturacion';
-import { Injectable } from "@angular/core";
-import { Observable } from "rxjs";
+import { Injectable } from '@angular/core';
+import { Observable } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
-import { HttpInvokeService } from "../../http-invoke.service";
-import { FacturacionModel, FacturacionModelData } from ".";
+import { HttpInvokeService } from '../../http-invoke.service';
+import { FacturacionModel, FacturacionModelData } from '.';
 import { HttpParams } from '@angular/common/http';
 import { map } from 'rxjs/operators';
 @Injectable({
-  providedIn: "root"
+  providedIn: 'root',
 })
 export class ServicioFacturacion {
-    private baseUrl = '/api'; // Ajusta la URL base según sea necesario
-  constructor(private http: HttpInvokeService) { }
+  private baseUrl = '/api'; // Ajusta la URL base según sea necesario
+  constructor(private http: HttpInvokeService) {}
 
   getByNumero(numero: string): Observable<any> {
     return this.http.GetRequest<any>(`/factura-numero/${numero}`);
-     console.log('ServicioFacturacion - getByNumero llamado con número:', numero);
   }
 
   // marcarImpresa(numero: string, body: { fa_envio?: string; fa_fpago?: string }) {
   //   return this.http.PatchRequest(`/factura-impresa/${numero}`, body);
   // }
- marcarImpresa(numero: string, body: { fa_envio?: string; fa_fpago?: string }) {
-    console.log("📤 Enviando PATCH a backend:", numero, body);
-   return this.http.PatchRequest(`/factura-impresa/${numero}`, body);
- }
-
-  guardarFacturacion(datosParaGuardar: any): Observable<any> {
-    return this.http.PostRequest<any, any>("/facturacion", datosParaGuardar);
+  marcarImpresa(
+    numero: string,
+    body: { fa_envio?: string; fa_fpago?: string }
+  ) {
+    console.log('📤 Enviando PATCH a backend:', numero, body);
+    return this.http.PatchRequest(`/factura-impresa/${numero}`, body);
   }
 
+  guardarFacturacion(datosParaGuardar: any): Observable<any> {
+    return this.http.PostRequest<any, any>('/facturacion', datosParaGuardar);
+  }
 
   obtenerFacturasNoImpresas(): Observable<any> {
     const endpoint = '/facturas-no-impresas';
@@ -37,29 +38,31 @@ export class ServicioFacturacion {
     return this.http.get(endpoint, params);
   }
 
-  marcarFacturaComoImpresa(payload:any) {
-    const cod=payload.fa_codFact;
+  marcarFacturaComoImpresa(payload: any) {
+    const cod = payload.fa_codFact;
     return this.http.PatchRequest(`/factura-impresa/${cod}`, payload);
   }
 
-editarFacturacion(payload: any) {
-  const cod = payload.factura.fa_codFact;
-  return this.http.PutRequest(`/facturacion/${cod}`, payload);
-}
+  editarFacturacion(payload: any) {
+    const cod = payload.factura.fa_codFact;
+    return this.http.PutRequest(`/facturacion/${cod}`, payload);
+  }
 
-  buscarTodasFacturacion( ): Observable<any> {
+  buscarTodasFacturacion(): Observable<any> {
     let url = `/facturacion`;
-    console.log("FACTURA",url);
+    console.log('FACTURA', url);
     return this.http.GetRequest<any>(url);
   }
 
-  
   eliminarFacturacion(fa_codFact: string): Observable<any> {
-    return this.http.DeleteRequest(`/eliminar-facturacion/${fa_codFact}`, "");
+    return this.http.DeleteRequest(`/eliminar-facturacion/${fa_codFact}`, '');
   }
 
-
-  buscarFacturacionPorNombre(currentPage: number, pageSize: number, fa_nomClie: string, ): Observable<any> {
+  buscarFacturacionPorNombre(
+    currentPage: number,
+    pageSize: number,
+    fa_nomClie: string
+  ): Observable<any> {
     return this.http.GetRequest<any>(`/facturacion/${fa_nomClie}`);
   }
   buscarFacturaDetalle(df_codFact: string): Observable<any> {
@@ -68,17 +71,28 @@ editarFacturacion(payload: any) {
   buscarFacturaDetallePendiente(df_codFact: string): Observable<any> {
     return this.http.GetRequest<any>(`/facturacion-detpendiente/${df_codFact}`);
   }
-actutalizarPendienteNuevo(fa_codFact: string) {
-    return this.http.PutRequest(`/crea-pendiente/${fa_codFact}`, "");
+  actutalizarPendienteNuevo(fa_codFact: string) {
+    return this.http.PutRequest(`/crea-pendiente/${fa_codFact}`, '');
   }
-actutalizarPendienteModficado(fa_codFact: string, accion:"poner" | "quitar") {
-    return this.http.PatchRequest(`/actualiza-pendiente/${fa_codFact}`, { accion });
+  actutalizarPendienteModficado(
+    fa_codFact: string,
+    accion: 'poner' | 'quitar'
+  ) {
+    return this.http.PatchRequest(`/actualiza-pendiente/${fa_codFact}`, {
+      accion,
+    });
   }
-acturalizaDetPendiente(payload: any) {
-  const cod = payload.factura.df_codFact;
-  return this.http.PutRequest(`/actualiza-detpendiente/${cod}`, payload);
-}
- buscarFacturacion(pageIndex: number, pageSize: number, codigo?: string, nomcliente?: string, fecha?:string,): Observable<any> {
+  acturalizaDetPendiente(payload: any) {
+    const cod = payload.factura.df_codFact;
+    return this.http.PutRequest(`/actualiza-detpendiente/${cod}`, payload);
+  }
+  buscarFacturacion(
+    pageIndex: number,
+    pageSize: number,
+    codigo?: string,
+    nomcliente?: string,
+    fecha?: string
+  ): Observable<any> {
     let url = `/facturacion-numero?page=${pageIndex}&limit=${pageSize}`;
 
     if (codigo) {
@@ -93,9 +107,22 @@ acturalizaDetPendiente(payload: any) {
     return this.http.GetRequest<any>(url);
   }
 
-  buscarFacturacionPendiente(pageIndex: number, pageSize: number): Observable<any> {
-  let url = `/facturacion/pendientes?page=${pageIndex}&limit=${pageSize}`;
-  return this.http.GetRequest<any>(url);
-}
+  buscarFacturacionPendiente(
+    pageIndex: number,
+    pageSize: number
+  ): Observable<any> {
+    let url = `/facturacion/pendientes?page=${pageIndex}&limit=${pageSize}`;
+    return this.http.GetRequest<any>(url);
+  }
 
+  buscarFacturasPendientesDgii(): Observable<any> {
+    return this.http.GetRequest<any>('/facturacion/pendientes-dgii');
+  }
+
+  actualizarDatosDgii(fa_codFact: string, payload: any): Observable<any> {
+    return this.http.PatchRequest(
+      `/facturacion/actualizar-datos-dgii/${fa_codFact}`,
+      payload
+    );
+  }
 }
