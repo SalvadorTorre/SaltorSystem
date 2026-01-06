@@ -12,12 +12,12 @@
     
     <div class="col-md-6 d-flex justify-content-end align-items-center gap-2">
       <div class="input-group input-group-sm" style="width: auto;">
-        <span class="input-group-text">Desde</span>
-        <input type="date" class="form-control" [(ngModel)]="fechaInicio" (change)="aplicarFiltros()">
+        <span class="input-group-text">Desde Factura</span>
+        <input type="text" class="form-control" [value]="inicioFactura" readonly>
       </div>
       <div class="input-group input-group-sm" style="width: auto;">
-        <span class="input-group-text">Hasta</span>
-        <input type="date" class="form-control" [(ngModel)]="fechaFin" (change)="aplicarFiltros()">
+        <span class="input-group-text">Hasta Factura</span>
+        <input type="text" class="form-control" [value]="finFactura" readonly>
       </div>
       <button class="btn btn-sm btn-outline-secondary" (click)="generarReporte()">
         <i class="fas fa-print me-1"></i> PDF
@@ -29,36 +29,54 @@
   </div>
 
   <!-- Cards de Totales -->
-  <div class="row mb-4">
-    <div class="col-md-3">
-      <div class="card bg-success text-white shadow-sm h-100">
-        <div class="card-body">
-          <h6 class="card-title text-uppercase font-weight-bold opacity-75">Efectivo</h6>
-          <h3 class="mb-0">{{ totales.efectivo | currency:'DOP' }}</h3>
+  <div class="sticky-top bg-white pb-3 pt-2" style="z-index: 1020; border-bottom: 1px solid #e3e6f0;">
+    <div class="row row-cols-1 row-cols-md-3 row-cols-xl-6 g-2">
+      <div class="col">
+        <div class="card bg-success text-white shadow-sm h-100">
+          <div class="card-body p-2 text-center">
+            <h6 class="card-title text-uppercase font-weight-bold opacity-75 small mb-1">Efectivo</h6>
+            <h5 class="mb-0">{{ totales.efectivo | number:'1.2-2' }}</h5>
+          </div>
         </div>
       </div>
-    </div>
-    <div class="col-md-3">
-      <div class="card bg-info text-white shadow-sm h-100">
-        <div class="card-body">
-          <h6 class="card-title text-uppercase font-weight-bold opacity-75">Tarjeta / Crédito</h6>
-          <h3 class="mb-0">{{ totales.tarjeta | currency:'DOP' }}</h3>
+      <div class="col">
+        <div class="card bg-info text-white shadow-sm h-100">
+          <div class="card-body p-2 text-center">
+            <h6 class="card-title text-uppercase font-weight-bold opacity-75 small mb-1">Tarjeta</h6>
+            <h5 class="mb-0">{{ totales.tarjeta | number:'1.2-2' }}</h5>
+          </div>
         </div>
       </div>
-    </div>
-    <div class="col-md-3">
-      <div class="card bg-warning text-dark shadow-sm h-100">
-        <div class="card-body">
-          <h6 class="card-title text-uppercase font-weight-bold opacity-75">Depósito / Transf.</h6>
-          <h3 class="mb-0">{{ totales.deposito | currency:'DOP' }}</h3>
+      <div class="col">
+        <div class="card bg-primary text-white shadow-sm h-100">
+          <div class="card-body p-2 text-center">
+            <h6 class="card-title text-uppercase font-weight-bold opacity-75 small mb-1">Crédito</h6>
+            <h5 class="mb-0">{{ totales.credito | number:'1.2-2' }}</h5>
+          </div>
         </div>
       </div>
-    </div>
-    <div class="col-md-3">
-      <div class="card bg-dark text-white shadow-sm h-100">
-        <div class="card-body">
-          <h6 class="card-title text-uppercase font-weight-bold opacity-75">Total General</h6>
-          <h3 class="mb-0">{{ totales.total | currency:'DOP' }}</h3>
+      <div class="col">
+        <div class="card bg-warning text-dark shadow-sm h-100">
+          <div class="card-body p-2 text-center">
+            <h6 class="card-title text-uppercase font-weight-bold opacity-75 small mb-1">Depósito</h6>
+            <h5 class="mb-0">{{ totales.deposito | number:'1.2-2' }}</h5>
+          </div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="card bg-secondary text-white shadow-sm h-100">
+          <div class="card-body p-2 text-center">
+            <h6 class="card-title text-uppercase font-weight-bold opacity-75 small mb-1">Cheque</h6>
+            <h5 class="mb-0">{{ totales.cheque | number:'1.2-2' }}</h5>
+          </div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="card bg-dark text-white shadow-sm h-100">
+          <div class="card-body p-2 text-center">
+            <h6 class="card-title text-uppercase font-weight-bold opacity-75 small mb-1">Total General</h6>
+            <h5 class="mb-0">{{ totales.total | number:'1.2-2' }}</h5>
+          </div>
         </div>
       </div>
     </div>
@@ -75,31 +93,21 @@
         <table class="table table-hover table-striped align-middle mb-0">
           <thead class="bg-light">
             <tr>
-              <th class="ps-4">Factura</th>
-              <th>Fecha</th>
-              <th>Cliente</th>
-              <th>Forma Pago</th>
-              <th class="text-end pe-4">Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let f of facturasFiltradas">
-              <td class="ps-4 fw-bold">{{ f.fa_codFact }}</td>
-              <td>{{ f.fa_fecha | date:'dd/MM/yyyy HH:mm' }}</td>
-              <td>{{ f.fa_nomClie }}</td>
-              <td>
-                <span class="badge" 
-                  [ngClass]="{
-                    'bg-success': f.fa_fpago.toLowerCase().includes('efectivo'),
-                    'bg-info': f.fa_fpago.toLowerCase().includes('tarjeta'),
-                    'bg-warning text-dark': f.fa_fpago.toLowerCase().includes('deposito'),
-                    'bg-secondary': !f.fa_fpago.toLowerCase().includes('efectivo') && !f.fa_fpago.toLowerCase().includes('tarjeta')
-                  }">
-                  {{ f.fa_fpago }}
-                </span>
-              </td>
-              <td class="text-end pe-4 fw-bold">{{ f.fa_total | currency:'DOP' }}</td>
-            </tr>
+              <th class="ps-4">Código Factura</th>
+          <th>Fecha</th>
+          <th>Nombre Cliente</th>
+          <th class="text-end">Valor Factura</th>
+          <th class="text-end pe-4">Forma Pago</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let f of facturasFiltradas">
+          <td class="ps-4 fw-bold">{{ f.fa_codFact }}</td>
+          <td>{{ f.fa_fecFact | date:'dd/MM/yyyy HH:mm' }}</td>
+          <td>{{ f.fa_nomClie }}</td>
+          <td class="fw-bold text-end">{{ f.fa_valFact | number:'1.2-2' }}</td>
+          <td class="text-end pe-4">{{ obtenerDescripcionPago(f.fa_fpago) }}</td>
+        </tr>
             <tr *ngIf="facturasFiltradas.length === 0">
               <td colspan="5" class="text-center py-5 text-muted">
                 <i class="fas fa-inbox fa-3x mb-3"></i>

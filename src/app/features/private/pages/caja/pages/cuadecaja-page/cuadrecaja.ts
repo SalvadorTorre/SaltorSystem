@@ -2,6 +2,7 @@
 import { Component, OnInit } from '@angular/core';
 import { ServicioFacturacion } from 'src/app/core/services/facturacion/factura/factura.service';
 import { ServicioCierreCaja } from 'src/app/core/services/caja/cierrecaja/cierrecaja.service';
+import { ServicioFpago } from 'src/app/core/services/mantenimientos/fpago/fpago.service';
 import Swal from 'sweetalert2';
 import { ReporteCierreBuilder } from './reporte-builder';
 
@@ -15,14 +16,18 @@ export class CuadreCaja implements OnInit {
   facturasFiltradas: any[] = [];
   ultimaFacturaCuadrada: string = ''; 
   isLoading: boolean = false;
+  formasPago: any[] = [];
   
   // Filtros
-  fechaInicio: string = '';
-  fechaFin: string = '';
+  inicioFactura: string = '';
+  finFactura: string = '';
+  // fechaInicio: string = '';
+  // fechaFin: string = '';
 
   totales = {
     efectivo: 0,
     tarjeta: 0,
+    credito: 0,
     deposito: 0,
     cheque: 0,
     total: 0
@@ -30,15 +35,46 @@ export class CuadreCaja implements OnInit {
 
   constructor(
     private facturaService: ServicioFacturacion,
-    private cierreService: ServicioCierreCaja
+    private cierreService: ServicioCierreCaja,
+    private fpagoService: ServicioFpago
   ) { }
 
   ngOnInit(): void {
-    const hoy = new Date();
-    this.fechaInicio = hoy.toISOString().split('T')[0];
-    this.fechaFin = hoy.toISOString().split('T')[0];
-    
+    console.log('CuadreCaja Component Initialized - Version Updated');
+    this.cargarFormasPago();
     this.obtenerUltimoCierreYFacturas();
+  }
+
+  cargarFormasPago() {
+    this.fpagoService.obtenerTodosFpago().subscribe({
+      next: (res: any) => {
+        console.log('Formas de pago cargadas:', res.data);
+        this.formasPago = res.data || [];
+      },
+      error: (err: any) => {
+        console.error('Error cargando formas de pago', err);
+      }
+    });
+  }
+
+  obtenerDescripcionPago(codigo: string): string {
+    if (!codigo) return '';
+    // Normalizar a string para comparación
+    const codigoStr = String(codigo).trim();
+    
+    // Buscar coincidencia exacta por ID o descripción
+    const pago = this.formasPago.find(p => 
+        String(p.fp_codfpago) === codigoStr || 
+        p.fp_descfpago.toLowerCase() === codigoStr.toLowerCase()
+    );
+
+    if (pago) {
+        return `${pago.fp_codfpago} - ${pago.fp_descfpago}`;
+    }
+    
+    // Debug si no encuentra match
+    // console.warn(`No se encontró forma de pago para código: ${codigoStr}`, this.formasPago);
+    return codigo; 
   }
 
   obtenerUltimoCierreYFacturas() {
@@ -70,6 +106,7 @@ export class CuadreCaja implements OnInit {
       next: (res: any) => {
         this.isLoading = false;
         const todas = res.data || [];
+        console.log('Facturas cargadas:', todas.length > 0 ? todas[0] : 'No hay facturas');
         this.facturas = todas; 
         this.aplicarFiltros();
       },
@@ -84,29 +121,30 @@ export class CuadreCaja implements OnInit {
   aplicarFiltros() {
     if (!this.facturas.length) return;
 
-    // Filtro por fecha opcional (si el usuario quiere acotar más)
-    const inicio = new Date(this.fechaInicio + 'T00:00:00');
-    const fin = new Date(this.fechaFin + 'T23:59:59');
-
-    // Lógica principal: Filtrar facturas posteriores a la última cuadrada
+    // Lógica principal: traer TODAS las facturas con código mayor a la última cuadrada,
+    // sin importar la fecha
     let facturasCandidatas = this.facturas;
 
     if (this.ultimaFacturaCuadrada) {
-      // Ordenamos cronológicamente ascendente (viejas -> nuevas)
-      facturasCandidatas = this.facturas.sort((a, b) => new Date(a.fa_fecha).getTime() - new Date(b.fa_fecha).getTime());
-      
-      const idx = facturasCandidatas.findIndex(f => f.fa_codFact === this.ultimaFacturaCuadrada);
-      if (idx !== -1) {
-          // Tomamos las facturas DESPUÉS de la última cuadrada
-          facturasCandidatas = facturasCandidatas.slice(idx + 1);
-      }
+      const last = Number(this.ultimaFacturaCuadrada);
+      facturasCandidatas = this.facturas.filter(f => {
+        const cod = Number(f.fa_codFact);
+        if (!isNaN(last) && !isNaN(cod)) {
+          return cod > last;
+        }
+        return String(f.fa_codFact) > String(this.ultimaFacturaCuadrada);
+      });
     }
 
-    // Aplicar filtro de fecha de UI sobre las candidatas
-    this.facturasFiltradas = facturasCandidatas.filter(f => {
-      const fechaFactura = new Date(f.fa_fecha);
-      return fechaFactura >= inicio && fechaFactura <= fin;
-    });
+    if (facturasCandidatas.length > 0) {
+      // Ordenamos por código para mostrar un rango coherente
+      const ordenadas = [...facturasCandidatas].sort((a, b) => String(a.fa_codFact).localeCompare(String(b.fa_codFact)));
+      this.inicioFactura = ordenadas[0].fa_codFact;
+      this.finFactura = ordenadas[ordenadas.length - 1].fa_codFact;
+      this.facturasFiltradas = ordenadas;
+    } else {
+      this.facturasFiltradas = [];
+    }
 
     this.calcularTotales();
   }
@@ -115,43 +153,49 @@ export class CuadreCaja implements OnInit {
     this.totales = {
       efectivo: 0,
       tarjeta: 0,
+      credito: 0,
       deposito: 0,
       cheque: 0,
       total: 0
     };
 
     this.facturasFiltradas.forEach(f => {
-      const monto = Number(f.fa_total) || 0;
-      const metodo = (f.fa_fpago || '').toLowerCase();
+      const monto = Number(f.fa_valFact) || 0;
+      // Usar la descripción completa (ej: "2 - Tarjeta") para buscar palabras clave
+      const metodo = this.obtenerDescripcionPago(f.fa_fpago).toLowerCase();
 
-      if (metodo.includes('efectivo')) {
+      if (metodo.includes('efectivo') || metodo.includes('contado')) {
         this.totales.efectivo += monto;
-      } else if (metodo.includes('tarjeta') || metodo.includes('credito')) {
+      } else if (metodo.includes('tarjeta') || metodo.includes('t/c')) {
         this.totales.tarjeta += monto;
+      } else if (metodo.includes('credito')) {
+        this.totales.credito += monto;
       } else if (metodo.includes('deposito') || metodo.includes('transferencia')) {
         this.totales.deposito += monto;
       } else if (metodo.includes('cheque')) {
         this.totales.cheque += monto;
       } else {
+        // Por defecto, si no se reconoce, se suma a efectivo (comportamiento legacy)
+        // Opcionalmente podríamos tener un 'otros', pero por ahora mantenemos esto.
         this.totales.efectivo += monto; 
       }
     });
 
-    this.totales.total = this.totales.efectivo + this.totales.tarjeta + this.totales.deposito + this.totales.cheque;
+    this.totales.total = this.totales.efectivo + this.totales.tarjeta + this.totales.credito + this.totales.deposito + this.totales.cheque;
   }
 
   generarReporte() {
     const builder = new ReporteCierreBuilder();
     builder.iniciarDocumento('Cierre de Caja')
-           .agregarDatosGenerales(`${this.fechaInicio} al ${this.fechaFin}`, `Última Cuadrada: ${this.ultimaFacturaCuadrada || 'Ninguna'}`)
+           .agregarDatosGenerales(`Desde Factura ${this.inicioFactura} hasta ${this.finFactura}`, `Última Cuadrada: ${this.ultimaFacturaCuadrada || 'Ninguna'}`)
            .agregarTotales(this.totales, this.formatoMoneda)
-           .agregarTablaDetalle(this.facturasFiltradas, this.formatoMoneda)
+           .agregarTablaDetalle(this.facturasFiltradas, this.formatoMoneda, (cod) => this.obtenerDescripcionPago(cod))
            .agregarFirma()
            .build('cierre_caja.pdf');
   }
 
   formatoMoneda(valor: number): string {
-    return new Intl.NumberFormat('es-DO', { style: 'currency', currency: 'DOP' }).format(valor);
+    return new Intl.NumberFormat('es-DO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(valor);
   }
 
   realizarCierre() {

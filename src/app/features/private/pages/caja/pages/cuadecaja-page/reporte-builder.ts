@@ -65,21 +65,24 @@ export class ReporteCierreBuilder {
     return this;
   }
 
-  public agregarTablaDetalle(facturas: any[], formatoMoneda: (val: number) => string): ReporteCierreBuilder {
+  public agregarTablaDetalle(facturas: any[], formatoMoneda: (val: number) => string, formatoPago?: (cod: string) => string): ReporteCierreBuilder {
     const data = facturas.map(f => [
       f.fa_codFact,
-      new Date(f.fa_fecha).toLocaleString(),
+      new Date(f.fa_fecFact).toLocaleString(),
       f.fa_nomClie,
-      f.fa_fpago,
-      formatoMoneda(Number(f.fa_total))
+      formatoMoneda(Number(f.fa_valFact)),
+      formatoPago ? formatoPago(f.fa_fpago) : f.fa_fpago
     ]);
 
     autoTable(this.doc, {
       startY: this.yPos,
-      head: [['Factura', 'Fecha', 'Cliente', 'Forma Pago', 'Total']],
+      head: [['Código Factura', 'Fecha', 'Nombre Cliente', 'Valor Factura', 'Forma Pago']],
       body: data,
       theme: 'grid',
       headStyles: { fillColor: [66, 66, 66] },
+      columnStyles: {
+        3: { halign: 'right' } // Alinear Valor Factura a la derecha
+      }
     });
 
     this.yPos = (this.doc as any).lastAutoTable.finalY + 10;
