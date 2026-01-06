@@ -1,7 +1,6 @@
 export const environment = {
   production: false,
   // backendUrl: 'http://localhost:3390/api',
-
   backendUrl: 'https://grupohierro.duckdns.org/api',
   // backendUrl:"http://190.166.82.95:3390/api"
   // backendUrl: 'https://8h4mmkd8-3390.use2.devtunnels.ms/api',
