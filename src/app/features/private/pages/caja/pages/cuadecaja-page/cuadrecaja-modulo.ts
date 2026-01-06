@@ -1,12 +1,12 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { CuadreCajaComponent } from './cuadrecaja';
+import { CuadreCaja } from './cuadrecaja';
 import { RutaCuadreCaja } from './cuadrecaja-ruta';
 
 @NgModule({
   declarations: [
-    CuadreCajaComponent
+    CuadreCaja
   ],
   imports: [
     CommonModule,
