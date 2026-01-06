@@ -42,47 +42,58 @@
     <!-- fin buscador -->
     <br />
     <!-- Grid -->
-    <div class="table-responsive" style="max-height: 400px; overflow-y: auto">
+    <div class="table-responsive shadow-sm rounded border" style="max-height: 400px; overflow-y: auto">
       <table
-        class="table table-bordered table-hover table-striped table-sm table-class"
+        class="table table-hover table-striped align-middle mb-0"
       >
-        <thead class="table-dark">
-          <tr>
-            <th style="width: 5%">Codigo</th>
-            <th style="width: 8%">Rnc</th>
-            <th style="width: 23%">Empresa</th>
-            <th style="width: 15%">TeleFono</th>
-            <th style="width: 35%">Direccion</th>
-            <th></th>
+        <thead class="table-dark sticky-top">
+          <tr class="text-center">
+            <th class="py-3" style="width: 10%">Código</th>
+            <th class="py-3" style="width: 15%">RNC</th>
+            <th class="py-3" style="width: 25%">Empresa</th>
+            <th class="py-3" style="width: 15%">Teléfono</th>
+            <th class="py-3" style="width: 25%">Dirección</th>
+            <th class="py-3" style="width: 10%">Acciones</th>
           </tr>
         </thead>
         <tbody>
           <tr *ngFor="let empresa of empresaList">
-            <td>{{empresa.cod_empre}}</td>
-            <td>{{empresa.rnc_empre}}</td>
-            <td>{{empresa.nom_empre}}</td>
-            <td>{{empresa.tel_empre}}</td>
-            <td>{{empresa.dir_empre}}</td>
-            <td>
-
-              <i
-              (click)="editarEmpresa(empresa)"
-              class="bi bi-pencil text-primary"
-              style="padding: 10px"
-             >
-            </i>
-            <i
-            (click)="eliminarEmpresa(empresa.cod_empre)"
-            class="bi bi-trash text-danger"
-            style="padding: 10px"
-           > 
-            </i>
-            <i
-             (click)="consultarEmpresa(empresa)"
-             class="bi bi-card-list text-success"
-             style="padding: 10px"
-           >
-         </i>
+            <td class="text-center fw-bold text-secondary">{{empresa.cod_empre}}</td>
+            <td class="text-center">{{empresa.rnc_empre}}</td>
+            <td class="fw-semibold text-primary">{{empresa.nom_empre}}</td>
+            <td class="text-center">{{empresa.tel_empre}}</td>
+            <td class="small text-muted">{{empresa.dir_empre}}</td>
+            <td class="text-center">
+              <div class="btn-group" role="group">
+                <button
+                  (click)="consultarEmpresa(empresa)"
+                  class="btn btn-outline-success btn-sm"
+                  title="Ver Detalles"
+                >
+                  <i class="bi bi-eye"></i>
+                </button>
+                <button
+                  (click)="editarEmpresa(empresa)"
+                  class="btn btn-outline-primary btn-sm"
+                  title="Editar"
+                >
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button
+                  (click)="eliminarEmpresa(empresa.cod_empre)"
+                  class="btn btn-outline-danger btn-sm"
+                  title="Eliminar"
+                >
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+          <!-- Estado vacío -->
+          <tr *ngIf="empresaList.length === 0">
+            <td colspan="6" class="text-center py-5 text-muted">
+              <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+              No se encontraron empresas registradas
             </td>
           </tr>
         </tbody>
@@ -171,7 +182,7 @@
                   <div class="row">
                     <div class="col-10">
                       <h6 class="mb-0">Datos de la Empresa</h6>
-                    </div> 
+                    </div>
                     <div class="col-2  justify-content-end">
                       <button
                         type="submit"
@@ -242,7 +253,7 @@
                         class="form-control form-control-sm"
                         formControlName="tel_empre"
                       />
-                    
+
                     </div>
                     <div class="col-6">
                       <label>Direccion</label>
@@ -256,10 +267,10 @@
                       />
                     </div>
                   </div>
-                 
+
                 </div>
               </div>
-       
+
             </form>
           <!-- </div> -->
         </div>
@@ -293,7 +304,7 @@
                     </tr>
                   </thead>
                   <tbody>
-                    <tr *ngFor="let sucursal of sucursalList" (click)="modoconsultaEmpresa && mostrarDetalleSucursal(sucursal)" style="cursor: {{modoconsultaEmpresa ? 'pointer' : 'default'}};">
+                    <tr *ngFor="let sucursal of sucursalList" (click)="modoconsultaEmpresa && mostrarDetalleSucursal(sucursal)" [style.cursor]="modoconsultaEmpresa ? 'pointer' : 'default'">
                       <td class="text-center">{{sucursal.cod_sucursal}}</td>
                       <td class="text">{{sucursal.nom_sucursal}}</td>
                       <td class="text">{{sucursal.tel_sucursal}}</td>
