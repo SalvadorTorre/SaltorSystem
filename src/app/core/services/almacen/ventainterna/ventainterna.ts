@@ -1,4 +1,3 @@
-import { Ventainterna } from './../../../../features/private/pages/Almacen/pages/ventainterna/ventainterna';
 import { VentainternaModelData } from '.';
 import { ModeloInventarioData } from '../../mantenimientos/inventario';
 
