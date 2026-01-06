@@ -46,7 +46,9 @@ const routes: Routes = [
       {
         path: 'almacen',
         loadChildren: () =>
-          import('./pages/almacen/almacen-modulo').then((m) => m.ModuloAlmacen),
+          import('./pages/almacen2/almacen-modulo').then(
+            (m) => m.ModuloAlmacen
+          ),
       },
       {
         path: 'despacho',
