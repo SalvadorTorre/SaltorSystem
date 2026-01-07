@@ -69,7 +69,7 @@ export class CobroFact implements OnInit {
   totalItems = 1000;
   modoEdicion = false;
   pageSize = 6;
-  fentrega = '';
+  fentrega: any = '';
   ftipoPago = '';
   currentPage = 1;
   maxPagesToShow = 5;
@@ -177,6 +177,13 @@ export class CobroFact implements OnInit {
   get paginatedData() {
     const startIndex = (this.currentPage - 1) * this.pageSize;
     return this.facturacionList.slice(startIndex, startIndex + this.pageSize);
+  }
+
+  getDeliveryMode(value: any): string {
+    const val = String(value).toLowerCase();
+    if (val === '1' || val === 'envio') return 'Envio';
+    if (val === '2' || val === 'retiro') return 'Retiro';
+    return value;
   }
 
   constructor(
@@ -790,9 +797,15 @@ export class CobroFact implements OnInit {
           text: 'Actualizando datos de factura...',
         });
 
+        const payloadBackend = {
+          ...response,
+          fa_impresa: this.chekPagado ? 'S' : 'P',
+          fa_fpago: this.chekPagado ? 'P' : null,
+        };
+
         // Llamar a nuestro backend para guardar los datos DGII
         this.servicioFacturacion
-          .actualizarDatosDgii(facturaData.fa_codFact, response)
+          .actualizarDatosDgii(facturaData.fa_codFact, payloadBackend)
           .subscribe({
             next: (res) => {
               console.log('Datos DGII guardados correctamente', res);
@@ -866,23 +879,26 @@ export class CobroFact implements OnInit {
     this.selectedRow = index;
   }
 
-  marcarImpresa() {
+  marcarImpresa(reset: boolean = true, showNotification: boolean = true) {
     this.formularioFacturacion.get('fa_codFact')?.enable();
     var paylod = {
       fa_codFact: this.formularioFacturacion.get('fa_codFact')?.value,
-      fa_impresa: 'S',
-      fa_envio: this.formularioFacturacion.get('fa_envio')?.value,
-      fa_fpago: this.formularioFacturacion.get('fa_fpago')?.value,
+      fa_impresa: this.chekPagado ? 'S' : 'P',
+      fa_fpago: this.chekPagado ? 'P' : null,
     };
 
     this.servicioFacturacion.marcarFacturaComoImpresa(paylod).subscribe(() => {
-      Swal.fire({
-        icon: 'success',
-        title: 'Guardado',
-        text: 'Factura guardada correctamente',
-        timer: 1500,
-      });
-      this.limpia();
+      if (showNotification) {
+        Swal.fire({
+          icon: 'success',
+          title: 'Guardado',
+          text: 'Factura guardada correctamente',
+          timer: 1500,
+        });
+      }
+      if (reset) {
+        this.limpia();
+      }
     });
   }
 

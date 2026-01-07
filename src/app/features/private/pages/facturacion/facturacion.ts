@@ -1245,10 +1245,9 @@ export class Facturacion implements OnInit {
         //  const nombreEmpresa = response.data[0]?.rason;
         this.formularioFacturacion.patchValue({ fa_nomClie: nombreEmpresa });
 
-        // MANTENIMIENTO: Todas las facturas son E32 por el momento, incluso con RNC.
-        // Se mantiene deshabilitado el dropdown.
-        this.formularioFacturacion.patchValue({ fa_tipoNcf: 32 });
-        this.formularioFacturacion.get('fa_tipoNcf')?.disable();
+        // Si se encuentra RNC, por defecto E31 (Crédito Fiscal) pero habilitado para cambio
+        this.formularioFacturacion.patchValue({ fa_tipoNcf: '31' });
+        this.formularioFacturacion.get('fa_tipoNcf')?.enable();
 
         // this.ncflist = this.ncflist.filter((ncf) => ncf.codNcf !== 1);
 
@@ -1385,7 +1384,10 @@ export class Facturacion implements OnInit {
         this.resultadoFpago.length > 0
       ) {
         this.cargarDatosFpago(this.resultadoFpago[this.selectedIndexfpago]);
-      } else if (this.resultadoFpago.length === 0 && this.formularioFacturacion.get('fa_codfpago')?.value) {
+      } else if (
+        this.resultadoFpago.length === 0 &&
+        this.formularioFacturacion.get('fa_codfpago')?.value
+      ) {
         // Si no hay lista (ya seleccionado) y presiona enter, mover al siguiente
         const nextInput = document.getElementById('input11');
         if (nextInput) nextInput.focus();
@@ -1638,6 +1640,16 @@ export class Facturacion implements OnInit {
         },
         { emitEvent: false }
       );
+
+      // Lógica de NCF según RNC del cliente
+      if (cliente.cl_rnc && String(cliente.cl_rnc).trim() !== '') {
+        this.formularioFacturacion.patchValue({ fa_tipoNcf: '31' });
+        this.formularioFacturacion.get('fa_tipoNcf')?.enable();
+      } else {
+        this.formularioFacturacion.patchValue({ fa_tipoNcf: '32' });
+        this.formularioFacturacion.get('fa_tipoNcf')?.disable();
+      }
+
       console.log(cliente);
       console.log('Formulario actualizado:', this.formularioFacturacion.value);
     }

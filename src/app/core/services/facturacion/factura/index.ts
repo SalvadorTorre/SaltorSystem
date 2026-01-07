@@ -28,6 +28,7 @@ export interface FacturacionModelData {
   fa_desFact: string;
   fa_aboFact: string;
   fa_fpago: string;
+  fa_codfpago?: number | string;
   fa_ncfFact: string;
   fa_fecNcf: string;
   fa_tipoNcf: string;

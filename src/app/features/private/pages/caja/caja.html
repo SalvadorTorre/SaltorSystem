@@ -1,95 +1,55 @@
-<div class="container-fluid p-0">
-  <style>
-    /* Estilos locales para mejorar el look & feel sin tocar la estructura */
-    .sidebar {
-      background: linear-gradient(180deg, #ffffff, #f9fafb);
-      border-radius: 12px;
-      border: 1px solid #eee;
-    }
-    .sidebar-header {
-      border-radius: 12px 12px 0 0;
-      background: linear-gradient(90deg, #dc3545, #f06543);
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-    }
-    .sidebar-nav {
-      padding: 10px;
-      gap: 6px;
-    }
-    .sidebar-nav .nav-link {
-      color: #444;
-      padding: 0.6rem 0.75rem;
-      border-radius: 8px;
-      transition: all 0.15s ease-in-out;
-    }
-    .sidebar-nav .nav-link:hover {
-      background: #f1f3f5;
-      color: #dc3545;
-    }
-    .sidebar-nav .nav-link.active {
-      background: rgba(220, 53, 69, 0.12);
-      color: #dc3545;
-      font-weight: 600;
-      box-shadow: inset 0 0 0 1px rgba(220, 53, 69, 0.15);
-    }
-    .main-content {
-      background: #ffffff;
-      border-radius: 12px;
-      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
-      border: 1px solid #eee;
-    }
-    .offcanvas-header {
-      background: linear-gradient(90deg, #dc3545, #f06543);
-    }
-    .btn-menu-mobile {
-      box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
-      border-radius: 999px;
-    }
-  </style>
-  <div class="row g-0">
-    <!-- Botón para mostrar/ocultar sidebar en dispositivos móviles -->
-    <div class="d-block d-lg-none position-fixed start-0 top-0 p-2 z-index-1000">
+<div class="container-fluid p-0 caja-layout-wrapper">
+
+  <div class="row g-0 caja-row">
+    <!-- Botón Móvil -->
+    <div class="d-block d-lg-none position-fixed start-0 top-0 p-2">
       <button class="btn btn-danger btn-menu-mobile" type="button" data-bs-toggle="offcanvas" data-bs-target="#cajaSidebar" aria-controls="cajaSidebar">
-        <i class="bi bi-list"></i> Menú Caja
+        <i class="bi bi-list"></i>
       </button>
     </div>
 
-    <!-- Sidebar para pantallas grandes (lg y superiores) -->
-    <div class="col-lg-3 col-xl-2 d-none d-lg-block">
-      <div class="sidebar h-100 shadow">
-        <div class="sidebar-header text-white p-3 d-flex align-items-center">
-          <i class="bi bi-cash-coin me-2"></i>
-          <h5 class="mb-0">Módulo de Caja</h5>
+    <!-- Sidebar Desktop -->
+    <div class="col-lg-3 col-xl-2 d-none d-lg-block sidebar-column ps-3 py-3">
+      <div class="sidebar shadow-sm">
+        <div class="sidebar-header text-white p-3 d-flex align-items-center justify-content-between">
+          <div class="d-flex align-items-center">
+             <i class="bi bi-cash-coin fs-4 me-2"></i>
+             <h5 class="mb-0 fw-bold">Caja</h5>
+          </div>
         </div>
         <ul class="nav flex-column sidebar-nav">
           <li class="nav-item">
-            <a class="nav-link d-flex align-items-center" routerLinkActive="active" [routerLink]="['cobrofact']">
-              <i class="bi bi-receipt me-2"></i>
+            <a class="nav-link d-flex align-items-center" routerLinkActive="active" [routerLink]="['CobroFact']">
+              <i class="bi bi-receipt me-3"></i>
               <span>Cobro Factura</span>
             </a>
           </li>
           <li class="nav-item">
             <a class="nav-link d-flex align-items-center" routerLinkActive="active" [routerLink]="['cuadrecaja']">
-              <i class="bi bi-calculator me-2"></i>
+              <i class="bi bi-calculator me-3"></i>
               <span>Cuadre Caja</span>
             </a>
           </li>
           <li class="nav-item">
             <a class="nav-link d-flex align-items-center" routerLinkActive="active" [routerLink]="['reciboingreso']">
-              <i class="bi bi-journal-check me-2"></i>
-              <span>Recibo de Ingreso</span>
+              <i class="bi bi-journal-check me-3"></i>
+              <span>Recibo Ingreso</span>
             </a>
           </li>
           <li class="nav-item">
             <a class="nav-link d-flex align-items-center" routerLinkActive="active" [routerLink]="['cajaenvio']">
-              <i class="bi bi-send me-2"></i>
+              <i class="bi bi-send me-3"></i>
               <span>Caja Envío</span>
             </a>
           </li>
         </ul>
+        <div class="p-3 text-center border-top bg-light rounded-bottom">
+             <small class="text-muted fw-bold" style="font-size: 0.7rem;">SALTOR SYSTEM v1.0</small>
+        </div>
       </div>
     </div>
 
-    <!-- Sidebar para dispositivos móviles (offcanvas) -->
+    <!-- Sidebar Mobile -->
     <div class="offcanvas offcanvas-start" tabindex="-1" id="cajaSidebar" aria-labelledby="cajaSidebarLabel">
       <div class="offcanvas-header text-white">
         <h5 class="offcanvas-title" id="cajaSidebarLabel">Módulo de Caja</h5>
@@ -97,27 +57,28 @@
       </div>
       <div class="offcanvas-body p-0">
         <ul class="nav flex-column sidebar-nav">
-          <li class="nav-item">
+          <!-- Same links as desktop -->
+           <li class="nav-item">
             <a class="nav-link d-flex align-items-center" routerLinkActive="active" [routerLink]="['cobrofact']" data-bs-dismiss="offcanvas">
-              <i class="bi bi-receipt me-2"></i>
+              <i class="bi bi-receipt me-3"></i>
               <span>Cobro Factura</span>
             </a>
           </li>
           <li class="nav-item">
             <a class="nav-link d-flex align-items-center" routerLinkActive="active" [routerLink]="['cuadrecaja']" data-bs-dismiss="offcanvas">
-              <i class="bi bi-calculator me-2"></i>
+              <i class="bi bi-calculator me-3"></i>
               <span>Cuadre Caja</span>
             </a>
           </li>
           <li class="nav-item">
             <a class="nav-link d-flex align-items-center" routerLinkActive="active" [routerLink]="['reciboingreso']" data-bs-dismiss="offcanvas">
-              <i class="bi bi-journal-check me-2"></i>
-              <span>Recibo de Ingreso</span>
+              <i class="bi bi-journal-check me-3"></i>
+              <span>Recibo Ingreso</span>
             </a>
           </li>
           <li class="nav-item">
             <a class="nav-link d-flex align-items-center" routerLinkActive="active" [routerLink]="['cajaenvio']" data-bs-dismiss="offcanvas">
-              <i class="bi bi-send me-2"></i>
+              <i class="bi bi-send me-3"></i>
               <span>Caja Envío</span>
             </a>
           </li>
@@ -125,10 +86,12 @@
       </div>
     </div>
 
-    <!-- Contenido principal -->
-    <div class="col-12 col-lg-9 col-xl-10 main-content">
-      <div class="p-4">
-        <router-outlet></router-outlet>
+    <!-- Main Content -->
+    <div class="col-12 col-lg-9 col-xl-10 main-column p-3">
+      <div class="main-content-card">
+        <div class="router-container">
+            <router-outlet></router-outlet>
+        </div>
       </div>
     </div>
   </div>
