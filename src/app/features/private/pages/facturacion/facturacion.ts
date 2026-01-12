@@ -1191,6 +1191,10 @@ export class Facturacion implements OnInit {
     qty?.select?.();
   }
 
+  abrirModalDetalle() {
+    $('#modalDetalleFactura').modal('show');
+  }
+
   buscarUsuario(event: Event, nextElement: HTMLInputElement | null): void {
     event.preventDefault();
     const claveUsuario = this.formularioFacturacion.get('fa_codVend')?.value;
@@ -1201,7 +1205,7 @@ export class Facturacion implements OnInit {
             this.formularioFacturacion.patchValue({
               fa_nomVend: usuario.data[0].idUsuario,
             });
-            nextElement?.focus();
+            this.abrirModalDetalle();
           } else {
             this.mensagePantalla = true;
             Swal.fire({
