@@ -817,6 +817,7 @@ export class CobroFact implements OnInit {
                 datosParaImprimir,
                 this.items
               );
+              this.limpia();
             },
             error: (err) => {
               console.error('Error guardando datos DGII', err);

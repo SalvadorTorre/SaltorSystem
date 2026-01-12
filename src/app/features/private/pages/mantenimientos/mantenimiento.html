@@ -1,5 +1,5 @@
-<div class="container-fluid p-0">
-  <div class="row g-0">
+<div class="container-fluid p-0 mantenimiento-wrapper">
+  <div class="row g-0 row-full-height">
     <!-- Botón para mostrar/ocultar sidebar en dispositivos móviles -->
     <div class="d-block d-lg-none position-fixed start-0 top-0 p-2 z-index-1000">
       <button class="btn btn-primary" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu">
@@ -9,9 +9,8 @@
 
 
     <!-- Sidebar para pantallas grandes (lg y superiores) -->
-    <div class="col-lg-3 col-xl-2 d-none d-lg-block">
-      <div class="sidebar shadow-sm">
-        <div class="sidebar-header bg-primary text-white p-3 d-flex align-items-center">
+    <div class="col-lg-3 col-xl-2 d-none d-lg-block sidebar-column">
+        <div class="sidebar-header d-flex align-items-center">
           <i class="bi bi-gear-fill me-2"></i>
           <h5 class="mb-0">Mantenimientos</h5>
         </div>
@@ -19,56 +18,56 @@
 
         <!-- <ul class="nav flex-column sidebar-nav"> -->
         <li class="nav-item">
-          <a class="nav-link d-flex align-items-center text-dark" routerLinkActive="active" [routerLink]="['inventario']">
-            <i class="bi bi-box me-2"></i>
+          <a class="nav-link" routerLinkActive="active" [routerLink]="['inventario']">
+            <i class="bi bi-box"></i>
             <span>Productos</span>
           </a>
         </li>
         <li class="nav-item">
-          <a class="nav-link d-flex align-items-center text-dark" routerLinkActive="active" [routerLink]="['cliente']">
-            <i class="bi bi-people me-2"></i>
+          <a class="nav-link" routerLinkActive="active" [routerLink]="['cliente']">
+            <i class="bi bi-people"></i>
             <span>Cliente</span>
           </a>
           </li>
         <li class="nav-item">
-          <a class="nav-link d-flex align-items-center text-dark" routerLinkActive="active" [routerLink]="['suplidor']">
-            <i class="bi bi-truck me-2"></i>
+          <a class="nav-link" routerLinkActive="active" [routerLink]="['suplidor']">
+            <i class="bi bi-truck"></i>
             <span>Suplidor</span>
           </a>
         </li>
         <li class="nav-item">
-          <a class="nav-link d-flex align-items-center text-dark" routerLinkActive="active" [routerLink]="['zona']">
-            <i class="bi bi-geo-alt me-2"></i>
+          <a class="nav-link" routerLinkActive="active" [routerLink]="['zona']">
+            <i class="bi bi-geo-alt"></i>
             <span>Zonas</span>
           </a>
         </li>
         <li class="nav-item">
-          <a class="nav-link d-flex align-items-center text-dark" routerLinkActive="active" [routerLink]="['sector']">
-            <i class="bi bi-map me-2"></i>
+          <a class="nav-link" routerLinkActive="active" [routerLink]="['sector']">
+            <i class="bi bi-map"></i>
             <span>Sector</span>
           </a>
         </li>
         <li class="nav-item">
-          <a class="nav-link d-flex align-items-center text-dark" routerLinkActive="active" [routerLink]="['choferes']">
-            <i class="bi bi-car-front me-2"></i>
+          <a class="nav-link" routerLinkActive="active" [routerLink]="['choferes']">
+            <i class="bi bi-car-front"></i>
             <span>Choferes</span>
           </a>
         </li>
         <li class="nav-item">
-          <a class="nav-link d-flex align-items-center text-dark" routerLinkActive="active" [routerLink]="['despachadores']">
-            <i class="bi bi-send me-2"></i>
+          <a class="nav-link" routerLinkActive="active" [routerLink]="['despachadores']">
+            <i class="bi bi-send"></i>
             <span>Despachadores</span>
           </a>
         </li>
         <li class="nav-item">
-          <a class="nav-link d-flex align-items-center text-dark" routerLinkActive="active" [routerLink]="['grupo-mercancias']">
-            <i class="bi bi-collection me-2"></i>
+          <a class="nav-link" routerLinkActive="active" [routerLink]="['grupo-mercancias']">
+            <i class="bi bi-collection"></i>
             <span>Grupo de Mercancías</span>
           </a>
         </li>
         <li class="nav-item">
-          <a class="nav-link d-flex align-items-center text-dark" routerLinkActive="active" [routerLink]="['Empresas']">
-            <i class="bi bi-building me-2"></i>
+          <a class="nav-link" routerLinkActive="active" [routerLink]="['Empresas']">
+            <i class="bi bi-building"></i>
             <span>Empresa</span>
           </a>
         </li>
@@ -77,10 +76,10 @@
           <li class="nav-item">
             <a
               href="javascript:void(0)"
-              class="nav-link d-flex align-items-center text-dark justify-content-between"
+              class="nav-link justify-content-between"
               (click)="toggleMenu('configuracion')" >
-              <span>
-                <i class="bi bi-sliders me-2"></i> Configuración
+              <span class="d-flex align-items-center">
+                <i class="bi bi-sliders"></i> Configuración
               </span>
               <i
                 class="bi"
@@ -93,54 +92,53 @@
 
             <ul class="nav flex-column ms-4 collapse" [ngClass]="{'show': openMenu === 'configuracion'}">
               <li class="nav-item">
-                <a class="nav-link text-dark" routerLinkActive="active" [routerLink]="['encf']">
+                <a class="nav-link" routerLinkActive="active" [routerLink]="['encf']">
                   <i class="bi bi-file-text me-2"></i> ENCF
                 </a>
               </li>
               <li class="nav-item">
-                <a class="nav-link text-dark" routerLinkActive="active" [routerLink]="['usuario']">
+                <a class="nav-link" routerLinkActive="active" [routerLink]="['usuario']">
                   <i class="bi bi-person me-2"></i> Usuario
                 </a>
               </li>
               <li class="nav-item">
-                <a class="nav-link text-dark" routerLinkActive="active" [routerLink]="['tipousuario']">
+                <a class="nav-link" routerLinkActive="active" [routerLink]="['tipousuario']">
                   <i class="bi bi-person-badge me-2"></i> Tipo de Usuario
                 </a>
               </li>
               <li class="nav-item">
-                <a class="nav-link text-dark" routerLinkActive="active" [routerLink]="['modulo']">
+                <a class="nav-link" routerLinkActive="active" [routerLink]="['modulo']">
                   <i class="bi bi-ui-checks-grid me-2"></i> Modulos
                 </a>
               </li>
               <li class="nav-item">
-                <a class="nav-link text-dark" routerLinkActive="active" [routerLink]="['permiso']">
+                <a class="nav-link" routerLinkActive="active" [routerLink]="['permiso']">
                   <i class="bi bi-shield-lock me-2"></i> Permisos
                 </a>
               </li>
               <li class="nav-item">
-                <a class="nav-link text-dark" routerLinkActive="active" [routerLink]="['fentrega']">
+                <a class="nav-link" routerLinkActive="active" [routerLink]="['fentrega']">
                   <i class="bi bi-truck me-2"></i> Tipo de Entrega
                 </a>
               </li>
               <li class="nav-item">
-                <a class="nav-link text-dark" routerLinkActive="active" [routerLink]="['fpago']">
+                <a class="nav-link" routerLinkActive="active" [routerLink]="['fpago']">
                   <i class="bi bi-credit-card me-2"></i> Forma de Pago
                 </a>
               </li>
               <li class="nav-item">
-                <a class="nav-link text-dark" routerLinkActive="active" [routerLink]="['rnc']">
+                <a class="nav-link" routerLinkActive="active" [routerLink]="['rnc']">
                   <i class="bi bi-card-heading me-2"></i> RNC
                 </a>
               </li>
               <li class="nav-item">
-                <a class="nav-link text-dark" routerLinkActive="active" [routerLink]="['otros']">
+                <a class="nav-link" routerLinkActive="active" [routerLink]="['otros']">
                   <i class="bi bi-gear me-2"></i> Otros
                 </a>
               </li>
             </ul>
           </li>
         </ul>
-      </div>
     </div>
     <!-- Sidebar para dispositivos móviles (offcanvas) -->
     <div class="offcanvas offcanvas-start" tabindex="-1" id="sidebarMenu" aria-labelledby="sidebarMenuLabel">
@@ -272,6 +270,7 @@
                 >
                   <i class="bi bi-shield-lock me-2"></i> Permisos
                 </a>
+              </li>
               <!-- </li>
               <li class="nav-item">
                 <a
@@ -310,7 +309,7 @@
     </div>
 
     <!-- Contenido principal -->
-    <div class="col-12 col-lg-9 col-xl-10 main-content">
+    <div class="col-12 col-lg-9 col-xl-10 main-content-column">
       <div class="p-3">
         <router-outlet></router-outlet>
       </div>

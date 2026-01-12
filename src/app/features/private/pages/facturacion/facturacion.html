@@ -1,66 +1,30 @@
-<div class="container-fluid py-3">
-  <!-- Hero Comercial Compacto -->
-  <div
-    class="rounded-3 px-3 py-2 mb-2"
-    style="background: linear-gradient(90deg, #0d6efd, #6610f2); color: #fff; box-shadow: 0 4px 12px rgba(13, 110, 253, 0.25)"
-  >
-    <div class="d-flex align-items-center justify-content-between">
-      <div class="d-flex align-items-center">
-        <h5 class="mb-0 fw-bold me-3">
-          <i class="bi bi-file-earmark-text me-2"></i>Facturación
-        </h5>
-        <span class="small opacity-75 border-start ps-3 border-light d-none d-sm-inline">Gestión comercial</span>
-      </div>
-      <div class="d-none d-md-block text-end">
-        <span class="badge bg-white bg-opacity-25 text-white fs-7 px-2 py-1" style="border-radius: 8px; font-size: 0.75rem;">Comercial</span>
-      </div>
-    </div>
-  </div>
-  <div class="row g-3">
+<div class="container-fluid p-3 full-height-container">
+  <div class="row g-3 main-row">
     <!-- Columna Izquierda: Datos de Factura -->
-    <div class="col-xl-4 mb-4 mb-xl-0">
-      <div class="card shadow-sm border-0 h-10">
-        <div class="card-header text-white" style="background: linear-gradient(90deg, #0d6efd, #20c997); box-shadow: 0 2px 8px rgba(13,110,253,.2)">
+    <div class="col-xl-4 col-left">
+      <div class="card shadow-sm border-0">
+        <div class="card-header text-white d-flex justify-content-between align-items-center" style="background: linear-gradient(90deg, #0d6efd, #20c997); box-shadow: 0 2px 8px rgba(13,110,253,.2)">
           <h5 class="mb-0 fw-semibold">
             <i class="bi bi-receipt me-2"></i>Datos de Factura
           </h5>
+          <div class="d-flex align-items-center gap-3 small">
+            <div class="d-flex align-items-center" *ngIf="formularioFacturacion.get('fa_codFact')?.value">
+              <span class="opacity-75 me-1">No.</span>
+              <span class="fw-bold bg-white bg-opacity-25 px-2 py-1 rounded">{{formularioFacturacion.get('fa_codFact')?.value}}</span>
+            </div>
+            <div class="d-flex align-items-center" *ngIf="formularioFacturacion.get('fa_fecFact')?.value">
+              <i class="bi bi-calendar-event opacity-75 me-1"></i>
+              <span class="fw-bold">{{formularioFacturacion.get('fa_fecFact')?.value}}</span>
+            </div>
+          </div>
         </div>
         <div class="card-body bg-light">
           <form
             [formGroup]="formularioFacturacion"
             (ngSubmit)="guardarFacturacion()"
           >
-            <!-- Número y Fecha -->
-            <div class="row g-2 mb-2">
-              <div class="col-6"> </div>
-              <div class="col-md-3">
-                <label class="form-label small text-muted fw-semibold"
-                  >No. Factura</label
-                >
-
-                <input
-                  type="text"
-                  class="form-control"
-                  formControlName="fa_codFact"
-                  readonly
-                />
-              </div>
-              <div class="col-md-3">
-                <label class="form-label small text-muted fw-semibold"
-                >Fecha</label>
-                <input
-                  formControlName="fa_fecFact"
-                  type="text"
-                  class="form-control"
-                  readonly
-                />
-              </div>
-            </div>
-            <div class="row g-2 mb-2">
-            <div class="col-6"> </div>
-
-            </div>
             <!-- RNC y Tipo NCF -->
+
             <div class="row g-2 mb-2">
               <div class="col-md-4">
                 <label class="form-label small text-muted fw-semibold"
@@ -377,8 +341,8 @@
     </div>
 
     <!-- Columna Derecha: Detalles de Factura -->
-    <div class="col-xl-8">
-      <div class="card shadow-sm border-0 h-100">
+    <div class="col-xl-8 col-right">
+      <div class="card shadow-sm border-0">
         <div class="card-header text-white" style="background: linear-gradient(90deg, #20c997, #0d6efd); box-shadow: 0 2px 8px rgba(32,201,151,.25)">
           <h5 class="mb-0 fw-semibold">
             <i class="bi bi-list-ul me-2"></i>Detalles de la Factura
