@@ -927,16 +927,25 @@ export class Facturacion implements OnInit {
   }
 
   buscarTodasFacturacion() {
-    this.servicioFacturacion.buscarTodasFacturacion().subscribe((response) => {
-      console.log('buscarTodasFacturacion response:', response);
-      if (response && Array.isArray(response.data)) {
-        this.facturacionList = response.data;
-      } else {
-        console.warn('response.data is not an array:', response?.data);
+    this.txtFactura = '';
+    this.txtdescripcion = '';
+    this.txtFecha = '';
+    this.servicioFacturacion.buscarTodasFacturacion().subscribe(
+      (response) => {
+        console.log('buscarTodasFacturacion response:', response);
+        if (response && Array.isArray(response.data)) {
+          this.facturacionList = response.data;
+        } else {
+          console.warn('response.data is not an array:', response?.data);
+          this.facturacionList = [];
+        }
+        console.log(this.facturacionList.length);
+      },
+      (error) => {
+        console.error('Error cargando facturas:', error);
         this.facturacionList = [];
       }
-      console.log(this.facturacionList.length);
-    });
+    );
   }
 
   buscaNombre(event: Event) {
