@@ -1,13 +1,5 @@
-import { Inventario } from './../mantenimientos/pages/inventario-page/inventario';
-import {
-  Component,
-  NgModule,
-  OnInit,
-  ViewChild,
-  ElementRef,
-  ɵNG_COMP_DEF,
-} from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
+// import { FormsModule } from '@angular/forms';
 import {
   FormBuilder,
   FormControl,
@@ -19,7 +11,6 @@ import {
   debounceTime,
   distinctUntilChanged,
   filter,
-  from,
   switchMap,
   tap,
   catchError,
@@ -27,8 +18,8 @@ import {
   map,
 } from 'rxjs';
 import Swal from 'sweetalert2';
-import { ModeloUsuarioData } from 'src/app/core/services/mantenimientos/usuario';
-import { ModeloRncData } from 'src/app/core/services/mantenimientos/rnc';
+// import { ModeloUsuarioData } from 'src/app/core/services/mantenimientos/usuario';
+// import { ModeloRncData } from 'src/app/core/services/mantenimientos/rnc';
 import { ServicioRnc } from 'src/app/core/services/mantenimientos/rnc/rnc.service';
 import { ServicioUsuario } from 'src/app/core/services/mantenimientos/usuario/usuario.service';
 import { ServicioFacturacion } from 'src/app/core/services/facturacion/factura/factura.service';
@@ -42,20 +33,14 @@ import {
   ModeloCliente,
   ModeloClienteData,
 } from 'src/app/core/services/mantenimientos/clientes';
-import {
-  FacturaDetalleModel,
-  interfaceDetalleModel,
-} from 'src/app/core/services/facturacion/factura/factura';
+import { interfaceDetalleModel } from 'src/app/core/services/facturacion/factura/factura';
 import { ServicioInventario } from 'src/app/core/services/mantenimientos/inventario/inventario.service';
 import { ServicioSector } from 'src/app/core/services/mantenimientos/sector/sector.service';
 import {
   ModeloSector,
   ModeloSectorData,
 } from 'src/app/core/services/mantenimientos/sector';
-import {
-  ModeloFpago,
-  ModeloFpagoData,
-} from 'src/app/core/services/mantenimientos/fpago';
+import { ModeloFpagoData } from 'src/app/core/services/mantenimientos/fpago';
 import { ServicioFpago } from 'src/app/core/services/mantenimientos/fpago/fpago.service';
 import {
   ModeloInventario,
@@ -63,7 +48,7 @@ import {
 } from 'src/app/core/services/mantenimientos/inventario';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { disableDebugTools } from '@angular/platform-browser';
+// import { disableDebugTools } from '@angular/platform-browser';
 import { ServicioNcf } from 'src/app/core/services/mantenimientos/ncf/ncf.service';
 import { ModeloNcfData } from 'src/app/core/services/mantenimientos/ncf';
 declare var $: any;
@@ -176,7 +161,7 @@ export class Facturacion implements OnInit {
     private ServicioRnc: ServicioRnc,
     private ServicioSector: ServicioSector,
     private servicioFpago: ServicioFpago,
-    private servicioNcf: ServicioNcf
+    private servicioNcf: ServicioNcf,
   ) {
     this.form = this.fb.group({
       fa_codVend: ['', Validators.required], // El campo es requerido
@@ -195,9 +180,9 @@ export class Facturacion implements OnInit {
             this.currentPage,
             this.facturacionList.length,
             this.codigo,
-            this.txtdescripcion
+            this.txtdescripcion,
           );
-        })
+        }),
       )
       .subscribe((response) => {
         if (response && Array.isArray(response.data)) {
@@ -207,7 +192,7 @@ export class Facturacion implements OnInit {
         } else {
           console.warn(
             'Respuesta de búsqueda por cliente no es válida:',
-            response
+            response,
           );
           this.facturacionList = [];
           this.totalItems = 0;
@@ -225,9 +210,9 @@ export class Facturacion implements OnInit {
             this.facturacionList.length,
             this.codigo,
             this.txtdescripcion,
-            this.txtFactura
+            this.txtFactura,
           );
-        })
+        }),
       )
       .subscribe((response) => {
         if (response && Array.isArray(response.data)) {
@@ -237,7 +222,7 @@ export class Facturacion implements OnInit {
         } else {
           console.warn(
             'Respuesta de búsqueda por número de factura no es válida:',
-            response
+            response,
           );
           this.facturacionList = [];
           this.totalItems = 0;
@@ -293,14 +278,14 @@ export class Facturacion implements OnInit {
         switchMap((query: string) =>
           this.http
             .GetRequest<ModeloInventario>(
-              `/productos-buscador/${encodeURIComponent(query)}`
+              `/productos-buscador/${encodeURIComponent(query)}`,
             )
             .pipe(
               catchError((error) => {
                 console.error('Error en búsqueda de código:', error);
                 return of({ data: [] } as any); // Retorna estructura vacía válida
-              })
-            )
+              }),
+            ),
         ),
         map((response: any) => {
           if (response && Array.isArray(response.data)) {
@@ -313,7 +298,7 @@ export class Facturacion implements OnInit {
             });
           }
           return response;
-        })
+        }),
       )
       .subscribe((results: ModeloInventario) => {
         console.log(results.data);
@@ -355,7 +340,7 @@ export class Facturacion implements OnInit {
       } else {
         const filterValue = value.toLowerCase();
         this.resultadoFpago = this.listaFpago.filter((option) =>
-          option.fp_descfpago.toLowerCase().includes(filterValue)
+          option.fp_descfpago.toLowerCase().includes(filterValue),
         );
       }
       this.selectedIndexfpago = 0;
@@ -367,7 +352,7 @@ export class Facturacion implements OnInit {
       } else {
         const filterValue = value.toLowerCase();
         this.resultadoEnvio = this.listaEnvio.filter((option) =>
-          option.descripcion.toLowerCase().includes(filterValue)
+          option.descripcion.toLowerCase().includes(filterValue),
         );
       }
       this.selectedIndexEnvio = 0;
@@ -385,14 +370,14 @@ export class Facturacion implements OnInit {
         switchMap((query: string) =>
           this.http
             .GetRequest<ModeloInventario>(
-              `/productos-buscador-desc/${encodeURIComponent(query)}`
+              `/productos-buscador-desc/${encodeURIComponent(query)}`,
             )
             .pipe(
               catchError((error) => {
                 console.error('Error en búsqueda de descripción:', error);
                 return of({ data: [] } as any);
-              })
-            )
+              }),
+            ),
         ),
         map((response: any) => {
           if (response && Array.isArray(response.data)) {
@@ -405,7 +390,7 @@ export class Facturacion implements OnInit {
             });
           }
           return response;
-        })
+        }),
       )
       .subscribe((results: ModeloInventario) => {
         console.log(results.data);
@@ -437,9 +422,9 @@ export class Facturacion implements OnInit {
             catchError((error) => {
               console.error('Error en búsqueda de cliente:', error);
               return of({ data: [] } as any);
-            })
-          )
-        )
+            }),
+          ),
+        ),
       )
       .subscribe((results: ModeloCliente) => {
         console.log(results.data);
@@ -465,9 +450,9 @@ export class Facturacion implements OnInit {
             catchError((error) => {
               console.error('Error en búsqueda de sector:', error);
               return of({ data: [] } as any);
-            })
-          )
-        )
+            }),
+          ),
+        ),
       )
       .subscribe((results: ModeloSector) => {
         console.log(results.data);
@@ -485,16 +470,16 @@ export class Facturacion implements OnInit {
 
     // Sincronizar controles con propiedades (Reemplazo de [(ngModel)])
     this.buscarcodmerc.valueChanges.subscribe(
-      (val) => (this.codmerc = val || '')
+      (val) => (this.codmerc = val || ''),
     );
     this.buscardescripcionmerc.valueChanges.subscribe(
-      (val) => (this.descripcionmerc = val || '')
+      (val) => (this.descripcionmerc = val || ''),
     );
     this.cantidadform.valueChanges.subscribe(
-      (val) => (this.cantidadmerc = Number(val) || 0)
+      (val) => (this.cantidadmerc = Number(val) || 0),
     );
     this.precioform.valueChanges.subscribe(
-      (val) => (this.preciomerc = Number(val) || 0)
+      (val) => (this.preciomerc = Number(val) || 0),
     );
 
     // Asegurar que los campos de búsqueda estén habilitados
@@ -972,7 +957,7 @@ export class Facturacion implements OnInit {
   moveFocuscodmerc(
     event: Event,
     descripcionInput: HTMLInputElement,
-    cantidadInput: HTMLInputElement
+    cantidadInput: HTMLInputElement,
   ) {
     // Enter: buscar por cadena (prefijo). Si coincide o hay selección en grid -> ir a cantidad.
     // Si vacío -> ir a descripción. Si no hay coincidencias -> error y pasar a descripción.
@@ -1006,7 +991,7 @@ export class Facturacion implements OnInit {
 
     // Buscar por prefijo en resultados ya cargados
     const candidatosLocales = this.resultadoCodmerc.filter((r) =>
-      String(r.in_codmerc).toLowerCase().startsWith(queryLower)
+      String(r.in_codmerc).toLowerCase().startsWith(queryLower),
     );
     if (candidatosLocales.length > 0) {
       this.cargarDatosInventario(candidatosLocales[0]);
@@ -1035,7 +1020,7 @@ export class Facturacion implements OnInit {
             });
           }
           return response;
-        })
+        }),
       )
       .subscribe((results: ModeloInventario) => {
         if (results && Array.isArray(results.data) && results.data.length) {
@@ -1050,7 +1035,7 @@ export class Facturacion implements OnInit {
           this.resultadoCodmerc = ordenados;
           this.selectedIndexcodmerc = 0;
           const candidatos = ordenados.filter((r) =>
-            String(r.in_codmerc).toLowerCase().startsWith(queryLower)
+            String(r.in_codmerc).toLowerCase().startsWith(queryLower),
           );
           if (candidatos.length > 0) {
             this.cargarDatosInventario(candidatos[0]);
@@ -1107,10 +1092,10 @@ export class Facturacion implements OnInit {
         this.selectedIndexcodmerc <= maxIndex
       ) {
         this.cargarDatosInventario(
-          this.resultadoCodmerc[this.selectedIndexcodmerc]
+          this.resultadoCodmerc[this.selectedIndexcodmerc],
         );
         const qty = document.getElementById(
-          'input15'
+          'input15',
         ) as HTMLInputElement | null;
         qty?.focus();
         qty?.select?.();
@@ -1203,7 +1188,7 @@ export class Facturacion implements OnInit {
             });
             return;
           }
-        }
+        },
       );
     } else {
       this.mensagePantalla = true;
@@ -1385,7 +1370,10 @@ export class Facturacion implements OnInit {
         this.resultadoFpago.length > 0
       ) {
         this.cargarDatosFpago(this.resultadoFpago[this.selectedIndexfpago]);
-      } else if (this.resultadoFpago.length === 0 && this.formularioFacturacion.get('fa_codfpago')?.value) {
+      } else if (
+        this.resultadoFpago.length === 0 &&
+        this.formularioFacturacion.get('fa_codfpago')?.value
+      ) {
         // Si no hay lista (ya seleccionado) y presiona enter, mover al siguiente
         const nextInput = document.getElementById('input11');
         if (nextInput) nextInput.focus();
@@ -1421,10 +1409,10 @@ export class Facturacion implements OnInit {
         this.selectedIndexdescripcionmerc <= maxIndex
       ) {
         this.cargarDatosInventario(
-          this.resultadodescripcionmerc[this.selectedIndexdescripcionmerc]
+          this.resultadodescripcionmerc[this.selectedIndexdescripcionmerc],
         );
         const qty = document.getElementById(
-          'input15'
+          'input15',
         ) as HTMLInputElement | null;
         qty?.focus();
         qty?.select?.();
@@ -1480,7 +1468,7 @@ export class Facturacion implements OnInit {
 
       // Buscar por prefijo en resultados ya cargados (por descripción)
       const candidatosLocales = this.resultadodescripcionmerc.filter((r) =>
-        String(r.in_desmerc).toLowerCase().startsWith(queryLower)
+        String(r.in_desmerc).toLowerCase().startsWith(queryLower),
       );
       if (candidatosLocales.length > 0) {
         this.cargarDatosInventario(candidatosLocales[0]);
@@ -1494,13 +1482,13 @@ export class Facturacion implements OnInit {
       // Fallback: consultar al backend con la cadena y aplicar startsWith
       this.http
         .GetRequest<ModeloInventario>(
-          `/productos-buscador-desc/${encodeURIComponent(currentInputValue)}`
+          `/productos-buscador-desc/${encodeURIComponent(currentInputValue)}`,
         )
         .pipe(
           catchError((error) => {
             console.error('Error en búsqueda manual de descripción:', error);
             return of({ data: [] } as any);
-          })
+          }),
         )
         .subscribe((results: ModeloInventario) => {
           if (results && Array.isArray(results.data) && results.data.length) {
@@ -1516,12 +1504,12 @@ export class Facturacion implements OnInit {
             const ordenados = normalizedData.sort((a, b) =>
               a.in_desmerc.localeCompare(b.in_desmerc, undefined, {
                 sensitivity: 'base',
-              })
+              }),
             );
             this.resultadodescripcionmerc = ordenados;
             this.selectedIndexdescripcionmerc = 0;
             const candidatos = ordenados.filter((r) =>
-              String(r.in_desmerc).toLowerCase().startsWith(queryLower)
+              String(r.in_desmerc).toLowerCase().startsWith(queryLower),
             );
             if (candidatos.length > 0) {
               this.cargarDatosInventario(candidatos[0]);
@@ -1636,7 +1624,7 @@ export class Facturacion implements OnInit {
           fa_codZona: cliente.cl_codZona,
           fa_sector: cliente.cl_codSect,
         },
-        { emitEvent: false }
+        { emitEvent: false },
       );
       console.log(cliente);
       console.log('Formulario actualizado:', this.formularioFacturacion.value);
@@ -1874,15 +1862,15 @@ export class Facturacion implements OnInit {
     this.totalGral = this.items.reduce((sum, item) => sum + item.total, 0);
     this.totalItbis = this.items.reduce(
       (sum, item) => sum + item.total * 0.18,
-      0
+      0,
     );
     this.subTotal = this.items.reduce(
       (sum, item) => sum + (item.total - item.total * 0.18),
-      0
+      0,
     );
     this.totalcosto = this.items.reduce(
       (sum, item) => sum + this.costotxt * item.cantidad,
-      0
+      0,
     );
     const formatCurrency = (value: number) =>
       value.toLocaleString('es-DO', {
@@ -1910,13 +1898,13 @@ export class Facturacion implements OnInit {
     } as any;
     facturaPayload.fa_codEmpr = localStorage.getItem('codigoempresa');
     facturaPayload.fa_codSucu = parseInt(
-      localStorage.getItem('idSucursal') || '0'
+      localStorage.getItem('idSucursal') || '0',
     );
     // Convertir fa_tipoNcf a entero
     if (facturaPayload.fa_tipoNcf) {
       facturaPayload.fa_tipoNcf = parseInt(
         facturaPayload.fa_tipoNcf.toString(),
-        10
+        10,
       );
     }
     facturaPayload.fa_fecFact = this.toPrismaDate(facturaPayload.fa_fecFact);
@@ -1969,7 +1957,7 @@ export class Facturacion implements OnInit {
             title: 'Error',
             text: 'Hubo un error al guardar la factura.',
           });
-        }
+        },
       );
     } else {
       alert('Esta Factura no fue Guardada');

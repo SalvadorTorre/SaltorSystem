@@ -23,12 +23,9 @@ import {
   detFacturaData,
 } from 'src/app/core/services/facturacion/factura';
 import { ServicioCliente } from 'src/app/core/services/mantenimientos/clientes/cliente.service';
-import { HttpInvokeService } from 'src/app/core/services/http-invoke.service';
+// import { HttpInvokeService } from 'src/app/core/services/http-invoke.service';
 import { ModeloClienteData } from 'src/app/core/services/mantenimientos/clientes';
-import {
-  FacturaDetalleModel,
-  interfaceDetalleModel,
-} from 'src/app/core/services/facturacion/factura/factura';
+import { interfaceDetalleModel } from 'src/app/core/services/facturacion/factura/factura';
 import { ServicioInventario } from 'src/app/core/services/mantenimientos/inventario/inventario.service';
 import { ServicioSector } from 'src/app/core/services/mantenimientos/sector/sector.service';
 import { ModeloSectorData } from 'src/app/core/services/mantenimientos/sector';
@@ -191,7 +188,7 @@ export class CobroFact implements OnInit {
     private servicioFentrega: ServicioFentrega,
     private servicioNcf: ServicioNcf,
     private http: HttpClient,
-    private printingService: PrintingService
+    private printingService: PrintingService,
   ) {
     this.form = this.fb.group({
       fa_codVend: ['', Validators.required], // El campo es requerido
@@ -580,7 +577,7 @@ export class CobroFact implements OnInit {
     // Enfocar el input de cantidad
     setTimeout(() => {
       const input = document.getElementById(
-        'cantidad-' + index
+        'cantidad-' + index,
       ) as HTMLInputElement;
       if (input) {
         input.focus();
@@ -802,7 +799,7 @@ export class CobroFact implements OnInit {
               const datosParaImprimir = { ...facturaData, ...response };
               this.printingService.imprimirFactura80mm(
                 datosParaImprimir,
-                this.items
+                this.items,
               );
             },
             error: (err) => {
@@ -810,14 +807,14 @@ export class CobroFact implements OnInit {
               Swal.fire(
                 'Error',
                 'Se generó el comprobante pero falló al guardar los datos en el sistema.',
-                'warning'
+                'warning',
               ).then(() => {
                 // Opcional: imprimir de todos modos o detenerse
                 // Por seguridad, imprimimos para que no se pierda el comprobante generado
                 const datosParaImprimir = { ...facturaData, ...response };
                 this.printingService.imprimirFactura80mm(
                   datosParaImprimir,
-                  this.items
+                  this.items,
                 );
               });
             },
@@ -828,11 +825,11 @@ export class CobroFact implements OnInit {
         Swal.fire(
           'Error',
           'No se pudo generar el comprobante electrónico.',
-          'error'
+          'error',
         );
         // En caso de error, imprimir solo con datos locales (opcional, comentado por ahora)
         // this.printingService.imprimirFactura80mm(facturaData, this.items);
-      }
+      },
     );
   }
 

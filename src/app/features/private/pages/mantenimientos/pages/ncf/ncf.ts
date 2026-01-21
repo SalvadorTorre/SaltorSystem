@@ -9,9 +9,9 @@
 
 // }
 // import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { ModuloNcf} from './ncf-modulo';
-import { DatePipe } from '@angular/common';
+// import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+// import { ModuloNcf} from './ncf-modulo';
+// import { DatePipe } from '@angular/common';
 //  import { ToastrService } from 'ngx-toastr';
 
 // declare var bootstrap: any;
@@ -32,9 +32,8 @@ interface Ncf {
 @Component({
   selector: 'app-ncf',
   templateUrl: './ncf.html',
-  styleUrls: ['./ncf.css']
+  styleUrls: ['./ncf.css'],
 })
-
 export class NcfComponent {
   ncf: Ncf = this.getNuevoNcf();
   listaNcf: Ncf[] = [];
@@ -60,7 +59,7 @@ export class NcfComponent {
 
   eliminar(item: Ncf) {
     if (confirm('¿Seguro que desea eliminar este registro?')) {
-      this.listaNcf = this.listaNcf.filter(n => n !== item);
+      this.listaNcf = this.listaNcf.filter((n) => n !== item);
     }
   }
 
@@ -73,8 +72,7 @@ export class NcfComponent {
       cantidad: 0,
       fechaVencimiento: '',
       alerta: 0,
-      estado: 'Activo'
+      estado: 'Activo',
     };
   }
 }
-

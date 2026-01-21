@@ -5,17 +5,12 @@
     "outDir": "./out-tsc/app",
     "types": []
   },
-  "files": [
-    "src/main.ts"
-  ],
-  "include": [
-    "src/**/*.d.ts",
-    "src/**/*.ts"
-  ],
+  "files": ["src/main.ts"],
+  "include": ["src/**/*.d.ts"],
   "exclude": [
-      "src/test.ts",
-      "src/**/*.spec.ts",
-      "src/app/features/private/pages/facturacion/factura.reporte.ts",
-      "src/app/features/private/pages/mantenimientos/pages/configuracion/configuracion.ts"
-    ]
+    "src/test.ts",
+    "src/**/*.spec.ts",
+    "src/app/features/private/pages/facturacion/factura.reporte.ts",
+    "src/app/features/private/pages/mantenimientos/pages/configuracion/configuracion.ts"
+  ]
 }
