@@ -13,5 +13,6 @@ import { RutaFentrega } from './fentrega-ruta';
     FormsModule,
   ],
   providers: [],
+  bootstrap: [Fentrega]
 })
 export class ModuloFentrega { }

@@ -1,0 +1,226 @@
+<div class="container-fluid p-4">
+  <div class="row mb-3">
+    <div class="col-12">
+      <div class="card shadow-sm border-0 rounded-3">
+        <div class="card-header bg-primary text-white py-2 d-flex justify-content-between align-items-center">
+          <h5 class="m-0">
+            <i class="bi bi-truck me-2"></i>Control Salida Factura - Cobro a Chofer
+          </h5>
+        </div>
+        <div class="card-body bg-light">
+          <div class="row g-3 align-items-end mb-3">
+            <div class="col-md-2">
+              <label class="form-label fw-bold text-secondary">Cód. Chofer</label>
+              <input
+                type="text"
+                class="form-control text-center fw-bold"
+                [(ngModel)]="codChofer"
+                [disabled]="bloquearChofer"
+                (keyup.enter)="buscarChoferPorCodigo()"
+                placeholder="ID"
+              />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-bold text-secondary">Nombre del Chofer</label>
+              <input
+                type="text"
+                class="form-control form-control-lg bg-light"
+                [(ngModel)]="nomChofer"
+                (ngModelChange)="buscarChoferPorNombre($event)"
+                [disabled]="bloquearChofer"
+                placeholder="Escriba nombre para buscar..."
+                autocomplete="off"
+              />
+            </div>
+            <div class="col-md-4 text-end">
+             
+                <button  class="btn btn-primary me-2"
+                *ngIf="!bloquearChofer"
+                (click)="buscarChoferPorCodigo()"
+                [disabled]="!codChofer.trim()"
+              >
+                <i class="bi bi-search me-1"></i>Buscar por código
+              </button>
+              <button
+                class="btn btn-outline-danger"
+                *ngIf="bloquearChofer"
+                (click)="cambiarChofer()"
+              >
+                <i class="bi bi-person-x me-1"></i> Cambiar Chofer
+              </button>
+            </div>
+          </div>
+
+          <div
+            class="row g-3 mb-3 justify-content-center"
+            *ngIf="mostrarListaChoferes && !bloquearChofer && choferesEncontrados.length"
+          >
+            <div class="col-12 col-md-8 col-lg-6">
+              <div class="card border-primary shadow-sm">
+                <div class="card-header py-1 bg-primary bg-opacity-10">
+                  <span class="fw-bold text-primary">Seleccione un chofer</span>
+                </div>
+                <div class="card-body p-0">
+                  <div class="table-responsive" style="max-height: 220px; overflow-y: auto">
+                    <table class="table table-hover mb-0">
+                      <thead class="table-light">
+                        <tr>
+                          <th style="width: 20%">Código</th>
+                          <th style="width: 80%">Nombre</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr
+                          *ngFor="let c of choferesEncontrados"
+                          (click)="seleccionarChofer(c)"
+                          style="cursor: pointer"
+                        >
+                          <td class="fw-bold text-primary">
+                            {{ c.codChofer || c.id || c.ch_codChofer }}
+                          </td>
+                          <td>
+                            {{
+                              (c.nomChofer || c.nombre || c.ch_nombre || '') +
+                                ' ' +
+                                (c.apellido || c.ch_apellido || '')
+                            }}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="row g-3 mb-3" *ngIf="salidaActual">
+            <div class="col-md-3">
+              <div class="fw-bold text-secondary small">Código Salida</div>
+              <div class="fs-5 fw-bold text-primary">{{ salidaActual.codSalida }}</div>
+            </div>
+            <div class="col-md-3">
+              <div class="fw-bold text-secondary small">Fecha Salida</div>
+              <div class="fs-6">
+                {{ salidaActual.fecSalida | date : 'dd/MM/yyyy' }}
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="fw-bold text-secondary small">Total Salida</div>
+              <div class="fs-5 fw-bold text-dark">
+                {{ totalSalida | currency }}
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="fw-bold text-secondary small">Total Pagado</div>
+              <div class="fs-5 fw-bold text-success">
+                {{ totalPagado | currency }}
+              </div>
+              <div class="small text-danger">
+                Pendiente: {{ totalPendiente | currency }}
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-12">
+              <div
+                class="table-responsive rounded-3 shadow-sm border"
+                style="background: white; min-height: 250px"
+              >
+                <table class="table table-hover align-middle mb-0">
+                  <thead class="table-dark">
+                    <tr>
+                      <th style="width: 10%">Factura</th>
+                      <th style="width: 35%">Cliente</th>
+                      <th style="width: 15%">Fecha</th>
+                      <th class="text-end" style="width: 15%">Valor</th>
+                      <th class="text-center" style="width: 10%">Estado</th>
+                      <th class="text-center" style="width: 15%">Acción</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let d of detalles; let i = index">
+                      <td class="fw-bold text-primary">{{ d.codFact }}</td>
+                      <td>{{ d.nomClie }}</td>
+                      <td>{{ d.fecFact | date : 'dd/MM/yyyy' }}</td>
+                      <td class="text-end fw-bold">{{ d.valFact | currency }}</td>
+                      <td class="text-center">
+                        <!-- Si es mayor al cierre, mostrar Checkbox interactivo -->
+                        <div 
+                          *ngIf="esMayorAlCierre(d.codFact)" 
+                          class="d-flex justify-content-center align-items-center"
+                          style="cursor: pointer;"
+                          (click)="togglePagado(d)"
+                        >
+                             <!-- Checkbox style: Square with check if paid, empty square if not. Or stick to circle but make it clearer. -->
+                             <!-- User asked for 'check'. Let's use a large check icon. -->
+                             <i 
+                               class="bi" 
+                               [ngClass]="d.pagado ? 'bi-check-square-fill text-success' : 'bi-square text-secondary'" 
+                               style="font-size: 1.8rem;" 
+                               title="{{ d.pagado ? 'Pagada' : 'Pendiente' }}"
+                             ></i>
+                        </div>
+
+                        <!-- Si es menor o igual al cierre, mostrar texto PAGADA (solo lectura/histórico) -->
+                        <span
+                          *ngIf="!esMayorAlCierre(d.codFact)"
+                          class="badge"
+                          [ngClass]="d.pagado ? 'bg-success' : 'bg-warning text-dark'"
+                        >
+                          {{ d.pagado ? 'PAGADA' : 'PENDIENTE' }}
+                        </span>
+                      </td>
+                      <td class="text-center">
+                        <button
+                          class="btn btn-sm"
+                          [ngClass]="d.pagado ? 'btn-outline-secondary' : 'btn-outline-success'"
+                          (click)="togglePagado(d)"
+                        >
+                          <i
+                            class="bi"
+                            [ngClass]="d.pagado ? 'bi-x-circle' : 'bi-check-circle'"
+                          ></i>
+                          {{ d.pagado ? 'Quitar pago' : 'Marcar pagada' }}
+                        </button>
+                      </td>
+                    </tr>
+                    <tr *ngIf="detalles.length === 0">
+                      <td colspan="6" class="text-center py-4 text-muted">
+                        <i class="bi bi-inbox display-6 d-block mb-2 opacity-50"></i>
+                        No hay facturas en el control de salida.
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div
+          class="card-footer bg-white py-3 border-top-0 d-flex justify-content-end gap-2"
+        >
+          <button
+            class="btn btn-success btn-lg px-4"
+            (click)="guardarCobro()"
+            [disabled]="!salidaActual || detalles.length === 0"
+          >
+            <i class="bi bi-cash-coin me-2"></i>Guardar Cobro
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div
+    *ngIf="cargando"
+    class="position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center bg-white bg-opacity-75"
+    style="z-index: 1050"
+  >
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Cargando...</span>
+    </div>
+  </div>
+</div>
+

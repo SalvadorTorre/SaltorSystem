@@ -1,4 +1,5 @@
 import { NgModule } from '@angular/core';
+import { BrowserModule } from '@angular/platform-browser';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { GrupoMercancias } from './grupomerc';
@@ -15,5 +16,6 @@ import { RutaGrupoMercancias } from './grupomerc-ruta';
     ReactiveFormsModule,
   ],
   providers: [],
+  bootstrap: [GrupoMercancias]
 })
 export class ModuloGrupoMercancias { }

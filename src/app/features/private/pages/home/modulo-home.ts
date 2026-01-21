@@ -1,4 +1,5 @@
 import { NgModule } from '@angular/core';
+import { BrowserModule } from '@angular/platform-browser';
 import { CommonModule } from '@angular/common';
 import { Home } from './home';
 import { RutaHome } from './ruta-home';
@@ -13,5 +14,6 @@ import { RutaHome } from './ruta-home';
     RutaHome,
   ],
   providers: [],
+  bootstrap: [Home]
 })
 export class ModuloHome { }

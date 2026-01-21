@@ -1,59 +1,28 @@
-import { Injectable } from "@angular/core";
-import { Observable } from "rxjs";
-import { HttpInvokeService } from "../../http-invoke.service";
-import { SalidafacturaModel, SalidafacturaModelData } from ".";
+import { Injectable } from '@angular/core';
+import { Observable } from 'rxjs';
+import { HttpInvokeService } from '../../http-invoke.service';
 
 @Injectable({
-  providedIn: "root"
+  providedIn: 'root'
 })
 export class ServicioSalidafactura {
+
   constructor(private http: HttpInvokeService) { }
 
-  guardarSalidafactura(salidafactura: any): Observable<any> {
-    return this.http.PostRequest<any, any>("/salidafactura", salidafactura);
-  }
-  editarSalidafacturac(codSalida: string, salidafactura: SalidafacturaModel): Observable<any> {
-    return this.http.PutRequest<any, any>(`/salidafactura/${codSalida}`, salidafactura);
+  guardarSalida(payload: any): Observable<any> {
+    return this.http.PostRequest<any, any>('/controlsalida', payload);
   }
 
-  buscarTodasSalidafactura(pageIndex: number, pageSize: number,): Observable<any> {
-    let url = `/salidas`;
-
-    console.log(url);
-    return this.http.GetRequest<any>(url);
+  // Optional: Endpoint specific for validation if backend supports it
+  validarFactura(codFact: string): Observable<any> {
+    return this.http.GetRequest<any>(`/factura-para-salida/${codFact}`);
   }
 
-  eliminarSalidafactura(codSalida: string): Observable<any> {
-    return this.http.DeleteRequest(`/eliminar-salidafactura/${codSalida}`, "");
+  obtenerPorChoferYStatus(codChofer: string, status: string = 'P'): Observable<any> {
+    return this.http.GetRequest<any>(`/controlsalida-chofer/${codChofer}/${status}`);
   }
 
-
-  buscarSalidafacturaPorchofer(currentPage: number, pageSize: number, nomChofer: string,): Observable<any> {
-    return this.http.GetRequest<any>(`/entradamerc/${nomChofer}`);
-  }
-
-
-  buscarSalidafactura(pageIndex: number, pageSize: number, codigo?: string, codFact?: string,): Observable<any> {
-    let url = `/saidafactura?page=${pageIndex}&limit=${pageSize}`;
-    if (codigo) {
-      url += `&codigo=${codigo}`;
-    }
-    if (codFact) {
-      url += `&numFact=${codFact}`;
-    }
-
-    return this.http.GetRequest<any>(url);
-  }
-
-    buscardetSalidafactura(codFact: string,): Observable<any> {
-      console.log(codFact);
-    return this.http.GetRequest<any>(`/detsalidafa/${codFact}`);
-  }
-
-   buscardetSalidaid(codSalida: string,): Observable<any> {
-    return this.http.GetRequest<any>(`/detsalidaid/${codSalida}`);
-  }
-  bucarSalidafacturaid(codSalida: string,): Observable<any> {
-    return this.http.GetRequest<any>(`/salida/${codSalida}`);
+  editarSalida(id: number, payload: any): Observable<any> {
+    return this.http.PutRequest<any, any>(`/controlsalida/${id}`, payload);
   }
 }

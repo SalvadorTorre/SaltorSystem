@@ -17,6 +17,7 @@ interface LoginResponse {
 export class AuthService {
   private loggedIn!: boolean;
 
+
   constructor(private http: HttpInvokeService) {}
 
   isLoggedIn(): boolean {

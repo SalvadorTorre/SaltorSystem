@@ -17,6 +17,10 @@ export class ServicioContFactura {
     return this.http.GetRequest<any>(url);
   }
 
+  buscarPorSucursal(sucursal: number): Observable<any> {
+    return this.buscarTodos(1, 1, sucursal);
+  }
+
   // Lista simple
   obtenerTodos(): Observable<any> {
     return this.http.GetRequest<any>(`/contfactura`);

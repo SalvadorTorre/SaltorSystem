@@ -1,1136 +1,767 @@
-import { Component, NgModule, OnInit, ViewChild, ElementRef, ɵNG_COMP_DEF,} from '@angular/core';
-import { FormsModule, NonNullableFormBuilder } from '@angular/forms';
-import { FormBuilder, FormControl, FormGroup, Validators,} from '@angular/forms';
-import { BehaviorSubject, debounceTime, distinctUntilChanged, filter, switchMap, tap, } from 'rxjs';
-import Swal from 'sweetalert2';
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { ServicioChofer } from 'src/app/core/services/mantenimientos/choferes/choferes.service';
-import { ServicioSalidafactura } from 'src/app/core/services/almacen/salidafactura/salidafactura.service';
 import { ServicioFacturacion } from 'src/app/core/services/facturacion/factura/factura.service';
-import { HttpInvokeService } from 'src/app/core/services/http-invoke.service';
-import { SalidafacturaModelData } from 'src/app/core/services/almacen/salidafactura/index'; // <-- Add this import
-import { DetalleSalidaDataModel } from 'src/app/core/services/almacen/salidafactura/detsalida';
-declare var $: any;
+import { ServicioSalidafactura } from 'src/app/core/services/almacen/salidafactura/salidafactura.service';
+import { ServicioFpago } from 'src/app/core/services/mantenimientos/fpago/fpago.service';
+import { ServicioContFactura } from 'src/app/core/services/mantenimientos/contfactura/contfactura.service';
+import { ServicioSucursal } from 'src/app/core/services/mantenimientos/sucursal/sucursal.service';
+import Swal from 'sweetalert2';
+import { Subject, Subscription, forkJoin } from 'rxjs';
+import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+declare var bootstrap: any;
 
-// Define interfaceDetalleModel if not imported from elsewhere
-interface interfaceDetalleModel {
-  producto: any;
-  cantidad: number;
-  precio: number;
-  total: number;
+interface DetalleSalida {
+  codFact: string;
+  nomClie: string;
+  fecFact: string;
+  valFact: number;
+  codfpago: string;
+  fpago: string;
 }
-
 
 @Component({
-  selector: 'Salidafactua',
+  selector: 'app-salidafactura',
   templateUrl: './salidafactura.html',
-  styleUrls: ['./salidafactura.css'],
+  styleUrls: ['./salidafactura.css']
 })
-export class RutaSalidafactura implements OnInit {
-  codChofer: string = "";
-  factura: string = "";
-  pageSize = 8;
-  currentPage = 1;
-  maxPagesToShow = 5;
-  codigo: string= '';
-  fecha: string = '';
-  txtnumfact: string = '';
-  txtnumsalida: string = '';
-  txtcodSalida: string = '';
-  txtcodFact: string = '';
-  codnotfound: boolean = false;
-  habilitarFormulario: boolean = false;
-  tituloModalSalidafactura!: string;
-  formularioSalidafactura!: FormGroup;
-  formulariodetSalidafactura!: FormGroup;
-  modoedicionSalidafactura: boolean = false;
-  Salidafacturaid!: string;
-  modoconsultaSalidafactura: boolean = false;
-  SalidafacturaList: SalidafacturaModelData[] = [];
-  
-  detSalidafacturaList: { 
-  codFact: string, 
-  nomClie: string, 
-  fecFact: string, 
-  valFact: number 
-}[] = [];
+export class SalidafacturaComponent implements OnInit {
 
-  @ViewChild('nomchoferInput') nomchoferInput!: ElementRef;
-  @ViewChild('facturaInput') facturaInput!: ElementRef;
-  // detSalidafacturaList: detSalidafacturaData[] = [];
-  selectedSalidafactura: any = null;
-  //detSalidafacturaList: DetalleSalidaDataModel[] = []; // Add this line to declare the property
-  Items: interfaceDetalleModel[] = [];
-  // static detSalidafactura: detSalidafacturaData[];
-  codFact: string = '';
+  codChofer: string = '';
+  nomChofer: string = '';
+  cedChofer: string = '';
+  bloquearChofer: boolean = false;
   codSalida: string = '';
-  codchoferVacio: boolean = false;
-  mensagePantalla: boolean = false;
-  habilitarCampos: boolean = false;
-  selectedRow: number = -1; // Para rastrear la fila seleccionada
-  selectedItem: any = null;
-//  chofer: any = null; // Add this line to declare the property
-  mensaje: string = ''; // Fix: declare mensaje property
-  form: FormGroup;
-  chofer: any = { nombre: '' };
+  contFacturaActual: any;
+  
+  txtcodFact: string = '';
+  detallesSalida: DetalleSalida[] = [];
+  mapaFpagos: Map<string, string> = new Map();
+  
+  // Variables para el modal de búsqueda
+  mostrarModalChofer: boolean = false;
+  listaChoferesEncontrados: any[] = [];
+  indiceChoferSeleccionado: number = 0;
+  
+  // Variables para control de impresión
+  mostrarBotonImprimir: boolean = false;
+  datosUltimaSalida: any = null;
+  nombreSucursalActual: string = '';
+  zonaSucursalActual: string = '';
+  esEdicion: boolean = false;
+
+  private searchTerms = new Subject<string>();
+
+  @ViewChild('inputFactura') inputFacturaElement!: ElementRef;
+
   constructor(
-    private fb: FormBuilder,
-    private servicioSalidafactura: ServicioSalidafactura,
     private servicioChofer: ServicioChofer,
     private servicioFacturacion: ServicioFacturacion,
-    private http: HttpInvokeService
-  ) {
-    this.form = this.fb.group({
-      codChofer: ['', Validators.required], // El campo es requerido
-      // Otros campos...
-    });
-    this.formularioSalidafactura = this.fb.group({
-      fecSalida: [{ value: '', disabled: true }],
-      codSalida: [{ value: '', disabled: true }], // 👈 aquí lo deshabilitas
-    });
-    this.crearFormularioSalidafactura();
-  }
+    private servicioSalida: ServicioSalidafactura,
+    private servicioFpago: ServicioFpago,
+    private servicioContFactura: ServicioContFactura,
+    private servicioSucursal: ServicioSucursal
+  ) { }
+
   ngOnInit(): void {
-    // Inicializa la búsqueda de todas las Salidafactura al cargar el componente
-    this.buscarTodasSalidafactura(this.currentPage);
-  }
+    this.obtenerNombreSucursal();
+    this.generarCodSalida();
+    this.cargarFpagos();
+    // Event listener para navegación en el modal
+    window.addEventListener('keydown', this.manejarTecladoModal.bind(this));
 
-  buscarTodasSalidafactura(page: number) {
-    this.servicioSalidafactura
-      .buscarTodasSalidafactura(page, this.pageSize)
-      .subscribe((response) => {
-        this.SalidafacturaList = response.data;
-        // Si hay paginación, puedes actualizar currentPage aquí si es necesario
-      });
-  }
-
-  crearFormularioSalidafactura() {
-    const fechaActual = new Date();
-    const fechaActualStr = this.formatofecha(fechaActual);
-    this.formularioSalidafactura = this.fb.group({
-      codSalida: [''],
-      fecSalida: [''],
-      valSalida: [''],
-      horaSalida: [''],
-      nomChofer: [''],
-      codChofer: [''],
-      canFactura: [''],
-      valPagado: [''],
-      valDevolucion: [''],
-      cedChofer: [''],
-      status: [''],
-      envia: [''],
-      preparado: [''],
-      txtcodFact: ['']
+    // Configurar búsqueda en tiempo real
+    this.searchTerms.pipe(
+      debounceTime(150),
+      distinctUntilChanged()
+    ).subscribe(termino => {
+      if (termino.trim()) {
+        this.ejecutarBusquedaChofer(termino);
+      } else {
+        this.listaChoferesEncontrados = [];
+        this.mostrarModalChofer = false;
+      }
     });
   }
-  habilitarFormularioEmpresa() {
-    this.habilitarFormulario = false;
-  }
-  formatofecha(date: Date): string {
-    const year = date.getFullYear();
-    const month = (date.getMonth() + 1).toString().padStart(2, '0'); // Los meses son 0-indexados, se agrega 1 y se llena con ceros
-    const day = date.getDate().toString().padStart(2, '0'); // Se llena con ceros si es necesario
-    return `${day}/${month}/${year}`;
-  }
-  nuevaSalidafactura() {
-    this.modoedicionSalidafactura = false;
-    this.tituloModalSalidafactura = 'Nueva Entrada Mercancias';
-    $('#modalSalidafactura').modal('show');
-    this.habilitarFormulario = true;
-    this.formularioSalidafactura.get('me_codEntr')!.disable();
-    this.formularioSalidafactura.get('me_fecEntr')!.disable();
-    this.formularioSalidafactura.get('me_nomVend')!.disable();
-    setTimeout(() => {
-      $('#input1').focus();
-    }, 500); // Asegúrate de que el tiempo sea suficiente para que el modal se abra completamente
+
+  ngOnDestroy() {
+    window.removeEventListener('keydown', this.manejarTecladoModal.bind(this));
   }
 
-  limpiaBusqueda() {
-    this.txtnumfact = '';
-    this.txtnumsalida = '';
-    // this.buscarTodasSalidafactura(1);
-  }
-  consultarSalidaFactura(Salidafactura: SalidafacturaModelData) {
-    this.modoconsultaSalidafactura = true;
-    this.formularioSalidafactura.patchValue(Salidafactura);
-    this.formularioSalidafactura.disable();
-    this.tituloModalSalidafactura = 'Consultando Salida Factura';
-    const inputs = document.querySelectorAll('.seccion-productos input');
-    this.servicioSalidafactura
-      .buscardetSalidaid(Salidafactura.codSalida)
-      .subscribe((response) => {
-        this.detSalidafacturaList = response.data;
-      });
-  }
-
-  buscarSalidaFactura(codFact: string) {
-    console.log(codFact);
-    this.servicioSalidafactura.buscardetSalidafactura(codFact).subscribe((response) => {
-      console.log("Resultado", response);
-      this.SalidafacturaList = [];
-       this.SalidafacturaList.push(response.data);
-        this.servicioSalidafactura.buscardetSalidaid(response.data.codSalida).subscribe((res)=>{
-          this.detSalidafacturaList = res.data;
-        });
-      });
-  }
-  buscarSalidaCodigo(codSalida: string) {
-    console.log(codSalida);
-    this.servicioSalidafactura.bucarSalidafacturaid(codSalida).subscribe((response) => {
-      console.log("Resultado", response);
-      this.SalidafacturaList = [];
-       this.SalidafacturaList.push(response.data);
-        // this.servicioSalidafactura.buscardetSalidaid(response.data.codSalida).subscribe((res)=>{
-        //   this.detSalidafacturaList = res.data;
-        // });
-        this.consultarSalidaFactura(response.data);
-      });
-  }
-
-  buscarporCodigo() {
-    const codigo = this.formularioSalidafactura.get('codChofer')?.value;
-  if (!codigo || codigo.trim() === '') {
-    //alert('Debe ingresar el Código del chofer');
-    this.nomchoferInput.nativeElement.focus();
-    return;
-  }
-
-    this.servicioChofer.buscarchoferporCodigo(parseInt(codigo, 10)).subscribe((response)=>{
-      console.log(response.data);
-      if (response.data) {
-          this.chofer = response.data;
-          this.formularioSalidafactura.patchValue( response.data[0] );
-          this.mensaje = '';
-      this.facturaInput.nativeElement.focus();
-        } else {
-          //this.chofer = null;
-           this.chofer = { nombre: '' };
-          this.mensaje = 'No se encontró un despachador con esa cédula';
+  obtenerNombreSucursal() {
+    const idSucursal = localStorage.getItem('idSucursal');
+    if (idSucursal) {
+      this.servicioSucursal.buscarsucursal(idSucursal).subscribe({
+        next: (resp: any) => {
+           // La respuesta puede variar en estructura, intentamos extraer el nombre
+           const data = Array.isArray(resp?.data) ? resp.data[0] : (resp?.data || resp);
+           if (data) {
+             this.nombreSucursalActual = data.nom_sucursal || 'SUCURSAL PRINCIPAL';
+             this.zonaSucursalActual = data.zona || ''; // Asumimos que el campo se llama 'zona' en la respuesta
+           } else {
+             this.nombreSucursalActual = 'SUCURSAL PRINCIPAL';
+             this.zonaSucursalActual = '';
+           }
+        },
+        error: () => {
+          this.nombreSucursalActual = 'SUCURSAL PRINCIPAL';
+          this.zonaSucursalActual = '';
         }
+      });
+    } else {
+      this.nombreSucursalActual = 'SUCURSAL PRINCIPAL';
+      this.zonaSucursalActual = '';
+    }
+  }
+
+  generarCodSalida() {
+    const idSucursal = localStorage.getItem('idSucursal');
+    if (!idSucursal) {
+      console.warn('No se encontró idSucursal en localStorage');
+      return;
+    }
+
+    this.servicioContFactura.buscarPorSucursal(Number(idSucursal)).subscribe({
+      next: (resp: any) => {
+        let data: any[] = [];
+        // La respuesta del backend devuelve los datos en la propiedad 'data'
+        console.log('Respuesta backend:', resp);
+        if (Array.isArray(resp?.data)) {
+           data = resp.data;
+        } else if (Array.isArray(resp)) {
+           data = resp;
+        }
+        
+        const item = data[0];
+        
+        if (item) {
+          this.contFacturaActual = item;
+          const ano = item.ano;
+          // Usar estrictamente contsalida. Si es nulo, asumir 0.
+          // Se suma 1 para obtener el siguiente número disponible.
+          const ultimoContador = item.contsalida !== undefined && item.contsalida !== null ? Number(item.contsalida) : 0;
+          const proximoContador = ultimoContador + 1;
+          
+          if (ano) {
+             // Formato: Ano (4) + Contador (6) = 10 chars
+             // Ejemplo: 2026 + 000001
+             const contadorStr = String(proximoContador).padStart(6, '0');
+             this.codSalida = `${ano}${contadorStr}`;
+          }
+        }
+      },
+      error: (err: any) => {
+        console.error('Error al obtener contador de factura', err);
+      }
+    });
+  }
+
+  manejarTecladoModal(e: KeyboardEvent) {
+    if (!this.mostrarModalChofer) return;
+
+    // Si el foco está en el input y presionan flechas, prevenir scroll default
+    if (document.activeElement?.tagName === 'INPUT' && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
+      e.preventDefault();
+    }
+
+    if (e.key === 'ArrowDown') {
+      this.indiceChoferSeleccionado = (this.indiceChoferSeleccionado + 1) % this.listaChoferesEncontrados.length;
+    } else if (e.key === 'ArrowUp') {
+      this.indiceChoferSeleccionado = (this.indiceChoferSeleccionado - 1 + this.listaChoferesEncontrados.length) % this.listaChoferesEncontrados.length;
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      e.stopPropagation(); // Evitar otros handlers de Enter
+      if (this.listaChoferesEncontrados.length > 0) {
+        this.seleccionarChofer(this.listaChoferesEncontrados[this.indiceChoferSeleccionado]);
+      }
+    } else if (e.key === 'Escape') {
+      this.cerrarModalChofer();
+    }
+  }
+
+  cargarFpagos() {
+    this.servicioFpago.buscarTodosFpago(1, 100).subscribe({
+      next: (resp: any) => {
+        if (resp.data) {
+          resp.data.forEach((fp: any) => {
+            this.mapaFpagos.set(String(fp.fp_codfpago).trim(), fp.fp_descfpago);
+          });
+        }
+      },
+      error: (err) => console.error('Error cargando formas de pago', err)
+    });
+  }
+
+  buscarChofer() {
+    if (!this.codChofer.trim()) return;
+    const termino = this.codChofer.trim();
+
+    this.servicioChofer.buscarchoferporCodigo(parseInt(termino)).subscribe({
+      next: (resp: any) => this.procesarChoferEncontrado(resp.data),
+      error: (err) => this.manejarErrorChofer(err)
+    });
+  }
+
+  buscarChoferPorNombre(termino: string = this.nomChofer) {
+    this.searchTerms.next(termino);
+  }
+
+  ejecutarBusquedaChofer(termino: string) {
+    this.servicioChofer.buscarTodosChofer(1, 20, termino).subscribe({
+      next: (resp: any) => {
+        if (resp.data && resp.data.length > 0) {
+          // Ordenar por nombre alfabéticamente
+          this.listaChoferesEncontrados = resp.data.sort((a: any, b: any) => {
+            const nombreA = (a.nomChofer || '').toLowerCase();
+            const nombreB = (b.nomChofer || '').toLowerCase();
+            return nombreA.localeCompare(nombreB);
+          });
+          
+          this.indiceChoferSeleccionado = 0;
+          this.mostrarModalChofer = true;
+        } else {
+          // No hay resultados: limpiar y cerrar modal
+          this.listaChoferesEncontrados = [];
+          this.mostrarModalChofer = false;
+        }
+      },
+      error: (err) => console.error(err)
+    });
+  }
+
+  cerrarModalChofer() {
+    this.mostrarModalChofer = false;
+    this.listaChoferesEncontrados = [];
+  }
+
+  seleccionarChofer(chofer: any) {
+    this.procesarChoferEncontrado(chofer);
+    this.cerrarModalChofer();
+  }
+
+  procesarChoferEncontrado(data: any) {
+    if (data) {
+      // Intentar obtener propiedades con varios nombres posibles
+      const nombre = data.nomChofer || data.nombre || data.ch_nombre || '';
+      const apellido = data.apellido || data.ch_apellido || '';
+      const id = data.codChofer || data.id || data.ch_codChofer;
+
+      // Construir nombre completo si hay apellido, sino solo nombre
+      this.nomChofer = apellido ? `${nombre} ${apellido}`.trim() : nombre;
+      this.codChofer = String(id);
+      this.cedChofer = data.cedChofer || data.cedula || data.ch_cedula || '';
+      this.bloquearChofer = true;
+      
+      // Consultar si hay salida pendiente (status = ' ')
+      this.servicioSalida.obtenerPorChoferYStatus(this.codChofer).subscribe({
+        next: (resp: any) => {
+           const salidas = Array.isArray(resp) ? resp : (resp.data || []);
+           if (salidas && salidas.length > 0) {
+              const salida = salidas[0]; // Tomamos la primera pendiente
+              this.cargarSalidaPendiente(salida);
+           }
+        },
+        error: (err) => console.error('Error buscando salida pendiente', err)
+      });
+      
+      setTimeout(() => {
+        const input = document.getElementById('inputFactura');
+        if (input) input.focus();
+      }, 100);
+    } else {
+      this.mostrarError('Chofer no encontrado');
+      this.nomChofer = '';
+    }
+  }
+
+  cargarSalidaPendiente(salida: any) {
+      this.esEdicion = true;
+      this.codSalida = salida.codSalida;
+      this.detallesSalida = [];
+      this.datosUltimaSalida = null;
+      this.mostrarBotonImprimir = false;
+      
+      if (salida.detsalida && salida.detsalida.length > 0) {
+          // Necesitamos obtener los detalles completos de las facturas
+          const observables = salida.detsalida.map((d: any) => this.servicioFacturacion.getByNumero(d.codFact));
+          
+          forkJoin(observables).subscribe({
+               next: (respuestas: any) => {
+                   const listaRespuestas = respuestas as any[];
+                   listaRespuestas.forEach((resp: any) => {
+                       const f = resp.data;
+                       if (f && !this.detallesSalida.some(x => x.codFact === f.fa_codFact)) {
+                           this.detallesSalida.push({
+                               codFact: f.fa_codFact,
+                               nomClie: f.fa_nomClie,
+                               fecFact: f.fa_fecFact,
+                               valFact: Number(f.fa_valFact),
+                               codfpago: String(f.fa_codfpago || '').trim(),
+                               fpago: f.fa_fpago
+                           });
+                       }
+                   });
+                   Swal.fire('Información', `Se encontró una salida pendiente. Se cargaron ${this.detallesSalida.length} facturas.`, 'info');
+               },
+               error: (err: any) => console.error('Error cargando detalles de facturas', err)
+           });
+      } else {
+           Swal.fire('Información', `Se encontró una salida pendiente (${this.codSalida}) sin facturas.`, 'info');
+      }
+  }
+
+  manejarErrorChofer(err: any) {
+    console.error(err);
+    this.mostrarError('Error al buscar chofer');
+  }
+
+  cambiarChofer() {
+    this.bloquearChofer = false;
+    this.nomChofer = '';
+    this.cedChofer = '';
+    this.detallesSalida = [];
+    this.codChofer = '';
+    this.esEdicion = false;
+    setTimeout(() => document.querySelector('input')?.focus(), 100);
+  }
+
+  agregarFactura() {
+    const codFact = this.txtcodFact.trim();
+    if (!codFact) return;
+
+    // Verificar si ya está en la lista
+    if (this.detallesSalida.some(d => d.codFact === codFact)) {
+      this.mostrarError('Esta factura ya está en la lista');
+      this.txtcodFact = '';
+      return;
+    }
+
+    // Buscar factura y validar condiciones
+    this.servicioFacturacion.getByNumero(codFact).subscribe({
+      next: (resp: any) => {
+        const factura = resp.data;
+        if (!factura) {
+          this.mostrarError('Factura no encontrada');
+          return;
+        }
+
+        // Validar condiciones: fa_envio=2, fa_impresa='S', fa_salida=' '
+        if (factura.fa_envio != 2) {
+          this.mostrarError(`La factura ${codFact} no está marcada para envío (fa_envio != 2)`);
+          return;
+        }
+        if (factura.fa_impresa !== 'S') {
+          this.mostrarError(`La factura ${codFact} no ha sido impresa (fa_impresa != S)`);
+          return;
+        }
+        if (factura.fa_salida && factura.fa_salida.trim() !== '') {
+          this.mostrarError(`La factura ${codFact} ya tiene salida registrada`);
+          return;
+        }
+
+        // Agregar a la lista
+        this.detallesSalida.push({
+          codFact: factura.fa_codFact,
+          nomClie: factura.fa_nomClie,
+          fecFact: factura.fa_fecFact,
+          valFact: Number(factura.fa_valFact),
+          codfpago: String(factura.fa_codfpago || '').trim(),
+          fpago: factura.fa_fpago
+        });
+
+        this.txtcodFact = ''; // Limpiar input
+      },
+      error: (err) => {
+        console.error(err);
+        this.mostrarError('Error al buscar la factura');
+      }
+    });
+  }
+
+  getDescripcionFpago(codigo: string): string {
+    return this.mapaFpagos.get(codigo) || codigo; // Si no encuentra, muestra el código
+  }
+
+
+  eliminarDetalle(index: number) {
+    this.detallesSalida.splice(index, 1);
+  }
+
+  guardarSalida() {
+    if (!this.bloquearChofer || this.detallesSalida.length === 0) return;
+
+    Swal.fire({
+      title: '¿Procesar Salida?',
+      text: `Se registrarán ${this.detallesSalida.length} facturas para el chofer ${this.nomChofer}`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, procesar',
+      cancelButtonText: 'Cancelar'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.procesarGuardado();
+      }
+    });
+  }
+
+  procesarGuardado() {
+    if (!this.codSalida) {
+      this.mostrarError('No se pudo generar el código de salida. Verifique la configuración de contfactura.');
+      return;
+    }
+
+    const idSucursal = localStorage.getItem('idSucursal');
+    if (!idSucursal) {
+      this.mostrarError('No se encontró idSucursal en localStorage');
+      return;
+    }
+
+    const idUsuarioStr = localStorage.getItem('codigousuario');
+    const idUsuario = idUsuarioStr ? Number(idUsuarioStr) : null;
+
+    const now = new Date();
+     const fechasalida = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+    // const horaSalida = now.toTimeString().split(' ')[0];
+    const horaSalida = new Date(`1970-01-01T${now.toTimeString().split(' ')[0]}`);
+    // Calcular totales
+    const canFactura = this.detallesSalida.length;
+    const valFactura = this.detallesSalida.reduce((sum, item) => sum + (Number(item.valFact) || 0), 0);
+    
+    // Calcular valPagado: sumar solo si fpago es 'P'
+    const valPagado = this.detallesSalida.reduce((sum, item) => {
+         const esPagada = String(item.fpago || '').trim() === 'P';
+         return sum + (esPagada ? (Number(item.valFact) || 0) : 0);
+     }, 0);
+
+    const payload = {
+      codSalida: this.codSalida,
+      idsucursal: Number(idSucursal),
+      idusuario: idUsuario,
+      fecSalida: fechasalida,
+      horaSalida: horaSalida,
+      canFact: canFactura,
+      valFact: valFactura,
+      valPagado: valPagado,
+      codChofer: Number(this.codChofer),
+      // codChofer: this.codChofer,
+      nomChofer: this.nomChofer,
+      cedChofer: this.cedChofer,
+      detalles: this.detallesSalida.map(d => ({
+        codSalida: this.codSalida,
+        idsucursal: Number(idSucursal),
+        codChofer: Number(this.codChofer),
+        fpago: d.fpago,
+        codFact: d.codFact,
+        valFact: d.valFact
+      }))
+    };
+
+    const peticion = this.esEdicion 
+      ? this.servicioSalida.editarSalida(Number(this.codSalida), payload)
+      : this.servicioSalida.guardarSalida(payload);
+
+    peticion.subscribe({
+      next: (resp: any) => {
+        // Actualizar facturas con fa_salida='S' y idsalida=codSalida
+        const actualizaciones = this.detallesSalida.map(detalle => {
+            const updatePayload = {
+                fa_salida: 'S',
+                idsalida: Number(this.codSalida)
+            };
+            return this.servicioFacturacion.actualizarSalidaFactura(detalle.codFact, updatePayload);
+        });
+
+        if (actualizaciones.length > 0) {
+            forkJoin(actualizaciones).subscribe({
+                next: () => {
+                    Swal.fire('Éxito', 'Salida registrada y facturas actualizadas correctamente', 'success');
+                    
+                    // Guardar datos para impresión y habilitar botón
+                    this.datosUltimaSalida = { ...payload, detalles: [...this.detallesSalida] };
+                    this.mostrarBotonImprimir = true;
+                    
+                    this.limpiarTodo(false); // No limpiar completamente para permitir imprimir
+                },
+                error: (err) => {
+                    console.error('Error al actualizar estados de facturas', err);
+                    Swal.fire('Atención', 'Salida registrada pero hubo error actualizando algunas facturas', 'warning');
+                    
+                    // Aún si hubo error en actualizar facturas, permitimos imprimir lo que se intentó guardar
+                    this.datosUltimaSalida = { ...payload, detalles: [...this.detallesSalida] };
+                    this.mostrarBotonImprimir = true;
+                    
+                    this.limpiarTodo(false);
+                }
+            });
+        } else {
+             Swal.fire('Éxito', 'Salida registrada correctamente', 'success');
+             this.datosUltimaSalida = { ...payload, detalles: [...this.detallesSalida] };
+             this.mostrarBotonImprimir = true;
+             this.limpiarTodo(false);
+        }
+      },
+      error: (err) => {
+        console.error(err);
+        if (!this.esEdicion && err.status === 409) {
+           Swal.fire({
+             title: 'Código duplicado',
+             text: 'El código de salida ya existe. Actualizando contador... Intente guardar de nuevo.',
+             icon: 'warning',
+             timer: 3000,
+             showConfirmButton: false
+           });
+           // Si hay conflicto, actualizamos el contador para saltar el número usado
+           this.actualizarContadorSalida(() => {
+               this.generarCodSalida();
+           });
+        } else {
+           Swal.fire('Error', 'No se pudo guardar la salida', 'error');
+        }
+      }
+    });
+  }
+
+  actualizarContadorSalida(callback?: () => void) {
+    if (this.contFacturaActual && (this.contFacturaActual.id || this.contFacturaActual.idContFact)) {
+       const id = this.contFacturaActual.id || this.contFacturaActual.idContFact;
+       const ultimoContador = this.contFacturaActual.contsalida !== undefined && this.contFacturaActual.contsalida !== null ? Number(this.contFacturaActual.contsalida) : 0;
+       const nuevoContador = ultimoContador + 1;
+
+       // Clonar el objeto y actualizar contsalida
+       const payload = { ...this.contFacturaActual, contsalida: nuevoContador };
+
+       this.servicioContFactura.editarContFactura(id, payload).subscribe({
+         next: () => {
+            console.log('Contador de salida actualizado correctamente a', nuevoContador);
+            console.log('Payload enviado:', payload);
+            if (callback) callback();
+         },
+         error: (err) => console.error('Error al actualizar contador de salida', err)
+       });
+    }
+  }
+
+  limpiarTodo(borrarBotonImprimir: boolean = true) {
+    this.codChofer = '';
+    this.nomChofer = '';
+    this.cedChofer = '';
+    this.bloquearChofer = false;
+    this.txtcodFact = '';
+    this.detallesSalida = [];
+    this.esEdicion = false;
+    if (borrarBotonImprimir) {
+        this.mostrarBotonImprimir = false;
+        this.datosUltimaSalida = null;
+    }
+    this.generarCodSalida(); // Regenerar código para la siguiente transacción
+  }
+
+  imprimirControlSalida() {
+    if (!this.datosUltimaSalida) {
+      this.mostrarError('No hay datos para imprimir');
+      return;
+    }
+
+    // Ocultar botón al imprimir
+    this.mostrarBotonImprimir = false;
+
+    const doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: [80, 297] // Ancho 80mm (rollo térmico), Alto suficiente
     });
     
-    }
+    const data = this.datosUltimaSalida;
+    const nombreSucursal = this.nombreSucursalActual || 'SUCURSAL PRINCIPAL'; 
+    const zonaSucursal = this.zonaSucursalActual || '';
 
-  navigateTable(event: KeyboardEvent) {
-    const key = event.key;
-
-    if (key === 'ArrowDown') {
-      // Mueve hacia abajo en la tabla
-      if (this.selectedRow < this.Items.length - 1) {
-        this.selectedRow++;
-        this.selectRow(this.selectedRow);
-      }
-    } else if (key === 'ArrowUp') {
-      // Mueve hacia arriba en la tabla
-      if (this.selectedRow > 0) {
-        this.selectedRow--;
-        this.selectRow(this.selectedRow);
-      }
-    }
-  }
-  selectRow(index: number) {
-    this.selectedRow = index; // Selecciona la fila cuando se hace clic
-    this.selectedItem = this.Items[index];
-    console.log(this.selectedItem);
-  }
-   moveFocus(event: KeyboardEvent, nextElement: HTMLInputElement | HTMLSelectElement) {
-    if (event.key === 'Enter' && nextElement) {
-      event.preventDefault(); // Evita el comportamiento predeterminado del Enter
-      nextElement.focus(); // Enfoca el siguiente campo
-    }
-  }
-moveFocuscodchofer(event: KeyboardEvent, nextInput: HTMLInputElement) {
-    if (event.key === 'Enter' || event.key === 'Tab') {
-      event.preventDefault(); // Previene el comportamiento predeterminado de Enter
-      const currentInputValue = (event.target as HTMLInputElement).value.trim();
-      if (currentInputValue === '') {
-        this.codchoferVacio = true;
-      }
-      else {
-        this.codchoferVacio = false;
-      }
-      if (!this.codnotfound === false) {
-        console.log(this.codnotfound);
-        this.mensagePantalla = true;
-        Swal.fire({
-          icon: "error",
-          title: "A V I S O",
-          text: 'Codigo invalido.',
-          focusConfirm: true,
-          allowEnterKey: true,
-        }).then(() => { this.mensagePantalla = false });
-        this.codchoferVacio = false;
-      }
-      else {
-        if (this.codchoferVacio === true) {
-          nextInput.focus();
-          this.codchoferVacio = false;
-          console.log("vedadero blas");
+    // Helper para formato moneda 999,999,999.99
+    const fmt = (num: any) => Number(num).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    
+    // Helper para formato fecha dd/mm/aaaa
+    const fmtFecha = (fecha: string) => {
+        if (!fecha) return '';
+        let datePart = fecha;
+        // Eliminar parte de hora si existe
+        if (fecha.includes('T')) datePart = fecha.split('T')[0];
+        else if (fecha.includes(' ')) datePart = fecha.split(' ')[0];
+        
+        const partes = datePart.split('-');
+        if (partes.length === 3) {
+            return `${partes[2]}/${partes[1]}/${partes[0]}`;
         }
-        else {
-          $("#facturaInput").focus();
-          $("#facturaInput").select();
+        return fecha;
+    };
+
+    // Helper para formato hora
+    const fmtHora = (hora: any) => {
+        if (!hora) return '';
+        if (hora instanceof Date) {
+            return hora.toTimeString().split(' ')[0];
         }
-        this.codchoferVacio = false;
-      }
+        return String(hora);
+    };
+
+    // Márgenes y configuración
+    const margenIzquierdo = 4;
+    const anchoPagina = 80;
+    const centroPagina = anchoPagina / 2;
+    let y = 10; // Posición vertical inicial
+
+    // Encabezado
+    doc.setFontSize(10);
+    doc.text(nombreSucursal, centroPagina, y, { align: 'center', maxWidth: 70 });
+    y += 4;
+    
+    if (zonaSucursal) {
+        doc.setFontSize(7);
+        doc.text(zonaSucursal, centroPagina, y, { align: 'center', maxWidth: 70 });
+        y += 4;
+    } else {
+        y += 2;
     }
+    
+    doc.setFontSize(7);
+    doc.text('REPORTE DE CONTROL DE SALIDA', centroPagina, y, { align: 'center' });
+    y += 6;
+
+    // Datos Generales
+    doc.setFontSize(8);
+    doc.text(`Código Salida: ${data.codSalida}`, margenIzquierdo, y);
+    y += 3.5;
+    doc.text(`Fecha: ${fmtFecha(data.fecSalida)} ${fmtHora(data.horaSalida)}`, margenIzquierdo, y);
+    y += 3.5;
+    doc.text(`Chofer: ${data.nomChofer}`, margenIzquierdo, y);
+    y += 4.5;
+
+    // Totales cabecera
+    doc.text(`Cant. Facturas: ${data.canFact || data.CanFact}`, margenIzquierdo, y);
+    y += 3.5;
+    doc.text(`Valor Total: $${fmt(data.valFact || data.ValFact)}`, margenIzquierdo, y);
+    y += 3.5;
+    doc.text(`Valor Pagado: $${fmt(data.valPagado || 0)}`, margenIzquierdo, y);
+    y += 5;
+
+    // Tabla de Detalles
+    // Para 80mm, ajustamos columnas para incluir cliente y fecha
+    const columnas = ['Fact.', 'Fecha', 'Cliente', 'Est.', 'Valor'];
+    const filas = data.detalles.map((d: any) => [
+      d.codFact,
+      fmtFecha(d.fecFact), // Usar formato completo dd/mm/aaaa
+      (d.nomClie || '').substring(0, 15), // Truncar nombre cliente para no romper formato
+      d.fpago === 'P' ? 'PAG' : (d.fpago || '').substring(0, 3), // Abreviar más F.Pago
+      `$${fmt(d.valFact)}`
+    ]);
+
+    autoTable(doc, {
+      startY: y,
+      head: [columnas],
+      body: filas,
+      theme: 'plain', // Tema simple para impresoras térmicas
+      styles: { 
+        fontSize: 5, // Reducir un poco más la fuente para que quepa todo
+        cellPadding: 0.5, 
+        overflow: 'linebreak' 
+      },
+      headStyles: { 
+        fontStyle: 'bold',
+        fillColor: [220, 220, 220],
+        textColor: 0,
+        halign: 'center'
+      },
+      columnStyles: {
+        0: { cellWidth: 13 }, // Factura
+        1: { cellWidth: 15 }, // Fecha - un poco más ancho para dd/mm/aaaa
+        2: { cellWidth: 18 }, // Cliente - reducido ligeramente
+        3: { cellWidth: 8 },  // Estado
+        4: { cellWidth: 18, halign: 'right' } // Valor
+      },
+      margin: { left: margenIzquierdo, right: 2 },
+      tableWidth: 72 // Ajustar al ancho disponible (80 - margenes)
+    });
+
+    // Obtener la posición final de la tabla para el pie
+    const finalY = (doc as any).lastAutoTable.finalY + 5;
+
+    // Total final
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Total: $${fmt(data.valFact || data.ValFact)}`, 70, finalY, { align: 'right' });
+    
+    let currentY = finalY + 6;
+
+    // Declaración de Responsabilidad
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'bold');
+    doc.text('DECLARACIÓN DE RESPONSABILIDAD', centroPagina, currentY, { align: 'center' });
+    currentY += 3;
+
+    doc.setFontSize(6); // Fuente pequeña para el texto legal
+    doc.setFont('helvetica', 'normal');
+    
+    // Línea 1: Yo, [Nombre], (subrayado)
+    const textoYo = 'Yo, ';
+    const textoNombre = data.nomChofer || '';
+    const textoComa = ',';
+    
+    const anchoYo = doc.getTextWidth(textoYo);
+    const anchoNombre = doc.getTextWidth(textoNombre);
+    
+    doc.text(textoYo, margenIzquierdo, currentY);
+    doc.text(textoNombre, margenIzquierdo + anchoYo, currentY);
+    doc.line(margenIzquierdo + anchoYo, currentY + 0.5, margenIzquierdo + anchoYo + anchoNombre, currentY + 0.5); // Subrayado
+    doc.text(textoComa, margenIzquierdo + anchoYo + anchoNombre, currentY);
+    
+    currentY += 2.5;
+
+    // Línea 2: portador(a) de la Cédula... (Cédula subrayada)
+    const textoPortador = 'portador(a) de la Cédula de Identidad No. ';
+    const textoCedula = data.cedChofer || '_______________';
+    const textoComa2 = ' ,';
+
+    const anchoPortador = doc.getTextWidth(textoPortador);
+    const anchoCedula = doc.getTextWidth(textoCedula);
+
+    doc.text(textoPortador, margenIzquierdo, currentY);
+    doc.text(textoCedula, margenIzquierdo + anchoPortador, currentY);
+    doc.line(margenIzquierdo + anchoPortador, currentY + 0.5, margenIzquierdo + anchoPortador + anchoCedula, currentY + 0.5); // Subrayado
+    doc.text(textoComa2, margenIzquierdo + anchoPortador + anchoCedula, currentY);
+
+    currentY += 2.5;
+
+    // Resto del texto
+    const textoLegal = `declaro bajo juramento que me responsabilizo plenamente por las mercancías y valores correspondientes a las facturas detalladas anteriormente en este documento. Me comprometo a entregar, dentro de un plazo máximo de veinticuatro (24) horas , el equivalente en pesos dominicanos de los valores consignados, o en su defecto, a realizar la devolución íntegra de las mercancías entregadas a la persona debidamente designada por la empresa. En caso de incumplimiento de lo aquí establecido, AUTORIZO EXPRESAMENTE a la empresa a descontar de mi salario el monto correspondiente a los valores consignados, conforme a las disposiciones legales vigentes. Para los fines legales correspondientes, firmo la presente declaración en la fecha indicada en este documento.`;
+
+    const splitText = doc.splitTextToSize(textoLegal, anchoPagina - (margenIzquierdo * 2));
+    doc.text(splitText, margenIzquierdo, currentY);
+    
+    const textHeight = doc.getTextDimensions(splitText).h;
+    currentY += textHeight + 10;
+
+    // Espacio para firma
+    doc.setLineWidth(0.5);
+    doc.line(10, currentY, 70, currentY);
+    doc.setFontSize(7);
+    doc.text('Firma Recibido', centroPagina, currentY + 4, { align: 'center' });
+    
+    // Abrir diálogo de impresión
+    doc.autoPrint();
+    window.open(doc.output('bloburl'), '_blank');
   }
-buscarFactura() {
-  const codFact = this.formularioSalidafactura.get('txtcodFact')?.value;
-  console.log("Buscando Factura",codFact);
 
-  if (!codFact || codFact.trim() === '') {
-    alert('Debe ingresar un número de factura');
-    return;
+  get totalSalida(): number {
+    return this.detallesSalida.reduce((sum, item) => sum + Number(item.valFact), 0);
   }
 
-  this.servicioFacturacion.getByNumero(codFact).subscribe({
-    next: (response) => {
-      if (response && response.data) {
-        const factura = { 
-          codFact: response.data.codFact,
-          nomClie: response.data.nomClie,
-          fecFact: response.data.fecFact,
-          valFact: response.data.valFact,
-          valAbono: 0
-        };
-        const existe = this.detSalidafacturaList.some(item => item.codFact === factura.codFact);
-        console.log(existe);
-        if (!existe) {
-           this.detSalidafacturaList.push(factura);
-        } else {
-          alert('Esta factura ya fue agregada.');
-        }
-
-        this.txtcodFact = ''; // limpiar input
-      } else {
-        alert('No se encontró factura con ese número');
-      }
-    },
-    error: (err) => {
-      console.error(err);
-      alert('Error al buscar la factura');
-    }
-  });
-}
-eliminarFactura(codFact: string) {
-  this.detSalidafacturaList = this.detSalidafacturaList.filter(f => f.codFact !== codFact);
-}
-
+  mostrarError(msg: string) {
+    Swal.fire({
+      icon: 'error',
+      title: 'Atención',
+      text: msg,
+      timer: 2000,
+      showConfirmButton: false
+    });
+  }
 
 }
-
-// export class RutaSalidafactura implements OnInit {
-//   @ViewChild('inputCodmerc') inputCodmerc!: ElementRef; // Para manejar el foco
-//   @ViewChild('descripcionInput') descripcionInput!: ElementRef; // Para manejar el foco
-//   @ViewChild('Tabladetalle') Tabladetalle!: ElementRef;
-//   totalItems = 0;
-//   pageSize = 8;
-//   currentPage = 1;
-//   maxPagesToShow = 5;
-//   txtdescripcion: string = '';
-//   txtcodigo = '';
-//   txtfecha: string = '';
-//   descripcion: string = '';
-//   codigo: string = '';
-//   fecha: string = '';
-//   private descripcionBuscar = new BehaviorSubject<string>('');
-//   private codigoBuscar = new BehaviorSubject<string>('');
-//   private fechaBuscar = new BehaviorSubject<string>('');
-//   habilitarFormulario: boolean = false;
-//   tituloModalSalidafactura!: string;
-//   formularioSalidafactura!: FormGroup;
-//   formulariodetSalidafactura!: FormGroup;
-//   modoedicionSalidafactura: boolean = false;
-//   Salidafacturaid!: string
-//   modoconsultaSalidafactura: boolean = false;
-//   //  SalidafacturaList: SalidafacturaModelData[] = [];
-//   // detSalidafacturaList: detSalidafacturaData[] = [];
-//   selectedSalidafactura: any = null;
-//   SalidafacturaList: any[] = []; // Add this line to declare the property
-//   // items: interfaceDetalleModel[] = [];
-//   totalGral: number = 0;
-//   totalItbis: number = 0;
-//   subTotal: number = 0;
-//   // static detSalidafactura: detSalidafacturaData[];
-//   codmerc: string = '';
-//   descripcionmerc: string = '';
-//   cantidadmerc: number = 0;
-//   preciomerc: number = 0;
-//   precioform = new FormControl();
-//   cantidadform = new FormControl();
-//   isEditing: boolean = false;
-//   itemToEdit: any = null;
-//   index_item!: number;
-//   codnotfound: boolean = false;
-//   desnotfound: boolean = false;
-//   mensagePantalla: boolean = false;
-//   codmerVacio: boolean = false;
-//   desmerVacio: boolean = false;
-//   habilitarCampos: boolean = false;
-//   sucursales = [];
-//   sucursalSeleccionada: any = null;
-//   habilitarIcono: boolean = true;
-
-//   private codigoSubject = new BehaviorSubject<string>('');
-//   private nomsuplidorSubject = new BehaviorSubject<string>('');
-
-//   isDisabled: boolean = true;
-//   form: FormGroup;
-//   constructor(
-//     private fb: FormBuilder,
-//     private servicioSalidafactura: ServicioSalidafactura,
-//     private servicioChofer: ServicioChofer,
-//     private servicioFacturacion: ServicioFacturacion,
-//     private http: HttpInvokeService,
-//   ) {
-
-//     this.form = this.fb.group({
-//       me_codvend: ['', Validators.required], // El campo es requerido
-//       // Otros campos...
-//     });
-
-//     this.crearFormularioSalidafactura();
-
-//     this.nomsuplidorSubject.pipe(
-//       debounceTime(500),
-//       distinctUntilChanged(),
-//       switchMap(nomsuplidor => {
-//         this.txtdescripcion = nomsuplidor;
-//         return this.servicioSalidafactura.buscarSalidafactura(this.currentPage, this.pageSize, this.codigo, this.txtdescripcion);
-//       })
-//     ).subscribe(response => {
-//       this.SalidafacturaList = response.data;
-//       this.totalItems = response.pagination.total;
-//       this.currentPage = response.pagination.page;
-//     });
-
-//   }
-
-//   agregarSalidafactura() {
-//     this.formularioSalidafactura.disable();
-
-//   }
-
-//   crearformulariodetSalidafactura() {
-//     this.formulariodetSalidafactura = this.fb.group({
-//       codsalida: ['',],
-//       codFact: ['',],
-//       fecFact: [new Date],
-//       valFact: ['',],
-//       valAbono: ['',],
-//       devolucion: ['',],
-//       valDevolucion: ['',],
-//       entregada: ['',],
-//       pagado: ['',],
-//       status: ['',],
-//       imp: ['',],
-//       codChofer: ['',],
-//       nomChofer: ['',],
-
-//     });
-//   }
-//   @ViewChild('buscarcodfacturaInput') buscarcodfacturaElement!: ElementRef;
-//   buscarChofer = new FormControl();
-//   // resultadoChofer: ModeloChoferData[] = [];
-//   selectedIndex = 1;
-//   buscarcodmerc = new FormControl();
-//   buscardescripcionmerc = new FormControl();
-//   // buscarcodmercElement = new FormControl();
-//   nativeElement = new FormControl();
-//   seleccionarSalidafactura(salidafactura: any) { this.selectedSalidafactura = salidafactura; }
-
-//   ngOnInit(): void {
-//     this.buscarTodasSalidafactura(1);
-//     this.buscarcodmerc.valueChanges.pipe(
-//       debounceTime(50),
-//       distinctUntilChanged(),
-//       tap(() => {
-//         this.resultadoCodmerc = [];
-//       }),
-//       filter((query: string) => query.trim() !== '' && !this.cancelarBusquedaCodigo && !this.isEditing),
-//       switchMap((query: string) => this.http.GetRequest<ModeloInventario>(`/productos-buscador/${query}`))
-//     ).subscribe((results: ModeloInventario) => {
-//       console.log(results.data);
-//       if (results) {
-//         if (Array.isArray(results.data) && results.data.length) {
-//           // Aquí ordenamos los resultados por el campo 'nombre' (puedes cambiar el campo según tus necesidades)
-//           this.resultadoCodmerc = results.data.sort((a, b) => {
-//             return a.in_codmerc.localeCompare(b.in_codmerc, undefined, { numeric: true, sensitivity: 'base' });
-//           });
-//           // Aquí seleccionamos automáticamente el primer ítem
-//           this.selectedIndex = -1;
-
-//           this.codnotfound = false;
-//         } else {
-//           this.codnotfound = true;
-//           return;
-//         }
-//       } else {
-//         this.resultadoCodmerc = [];
-//         this.codnotfound = false;
-
-//         console.log("paso blanco")
-//         return;
-//       }
-
-//     });
-
-//     this.buscardescripcionmerc.valueChanges.pipe(
-//       debounceTime(50),
-//       distinctUntilChanged(),
-//       tap(() => {
-//         this.resultadodescripcionmerc = [];
-//       }),
-//       filter((query: string) => query !== '' && !this.cancelarBusquedaDescripcion && !this.isEditing),
-//       switchMap((query: string) => this.http.GetRequest<ModeloInventario>(`/productos-buscador-desc/${query}`))
-//     ).subscribe((results: ModeloInventario) => {
-//       console.log(results.data);
-//       if (results) {
-//         if (Array.isArray(results.data) && results.data.length) {
-//           this.resultadodescripcionmerc = results.data;
-//           this.desnotfound = false;
-//         }
-//         else {
-//           this.desnotfound = true;
-//         }
-//       } else {
-//         this.resultadodescripcionmerc = [];
-//         this.desnotfound = false;
-//         console.log("2")
-//       }
-
-//     });
-
-//     this.buscarNombre.valueChanges.pipe(
-//       debounceTime(500),
-//       distinctUntilChanged(),
-//       tap(() => {
-//         this.resultadoNombre = [];
-//       }),
-//       filter((query: string) => query !== ''),
-//       switchMap((query: string) => this.http.GetRequest<ModeloSuplidor>(`/suplidor-nombre/${query}`))
-//     ).subscribe((results: ModeloSuplidor) => {
-//       console.log(results);
-//       if (results) {
-//         if (Array.isArray(results.data)) {
-//           this.resultadoNombre = results.data;
-//         }
-//       } else {
-//         this.resultadoNombre = [];
-//       }
-
-//     });
-//   }
-
-//   crearFormularioSalidafactura() {
-//     const fechaActual = new Date();
-//     const fechaActualStr = this.formatofecha(fechaActual);
-//     this.formularioSalidafactura = this.fb.group({
-//       me_codEntr: [''],
-//       me_fecEntr: [fechaActualStr],
-//       me_valEntr: [''],
-//       me_codSupl: [''],
-//       me_nomSupl: [''],
-//       me_facSupl: [''],
-//       me_fecSupl: [''],
-//       me_rncSupl: [0],
-//       me_codVend: ['', Validators.required],
-//       me_nomVend: [''],
-//       me_status: [''],
-//       me_nota: [''],
-//       chofer: [''],
-//       vendedor: [''],
-//       despachado: [''],
-//     });
-
-//   }
-//   habilitarFormularioEmpresa() {
-//     this.habilitarFormulario = false;
-//   }
-
-//   nuevaSalidafactura() {
-//     this.modoedicionSalidafactura = false;
-//     this.tituloModalSalidafactura = 'Nueva Entrada Mercancias';
-//     $('#modalSalidafactura').modal('show');
-//     this.habilitarFormulario = true;
-//     this.formularioSalidafactura.get('me_codEntr')!.disable();
-//     this.formularioSalidafactura.get('me_fecEntr')!.disable();
-//     this.formularioSalidafactura.get('me_nomVend')!.disable();
-//     setTimeout(() => {
-//       $('#input1').focus();
-//     }, 500); // Asegúrate de que el tiempo sea suficiente para que el modal se abra completamente
-//   }
-
-//   cerrarModalSalidafactura() {
-//     this.habilitarFormulario = false;
-//     this.formularioSalidafactura.reset();
-//     this.modoedicionSalidafactura = false;
-//     this.modoconsultaSalidafactura = false;
-//     this.mensagePantalla = false;
-//     // this.buscarTodasSalidafactura(1);
-//     this.limpiarTabla()
-//     this.limpiarCampos()
-//     this.crearFormularioSalidafactura();
-//     $('#modalSalidafactura').modal('hide');
-//     this.habilitarIcono = true;
-//     const inputs = document.querySelectorAll('.seccion-productos input');
-//     inputs.forEach((input) => {
-//       (input as HTMLInputElement).disabled = false;
-//     });
-//   }
-
-//   editardetSalidafactura(detSalidafactura: detSalidafacturaData) {
-//     this.Salidafacturaid = detSalidafactura.de_codEntr;
-//   }
-//   editarSalidafactura(Salidafactura: SalidafacturaModelData) {
-//     this.Salidafacturaid = Salidafactura.me_codEntr;
-//     this.modoedicionSalidafactura = true;
-//     this.formularioSalidafactura.patchValue(Salidafactura);
-//     this.tituloModalSalidafactura = 'Editando Entrada Mercancias';
-//     $('#modalSalidafactura').modal('show');
-//     this.habilitarFormulario = true;
-//     const inputs = document.querySelectorAll('.seccion-productos input');
-//     inputs.forEach((input) => {
-//       (input as HTMLInputElement).disabled = true;
-//     });
-//     // Limpiar los items antes de agregar los nuevos
-//     this.items = [];
-//     this.servicioSalidafactura.buscarSalidafacturaDetalle(Salidafactura.me_codEntr).subscribe(response => {
-//       let subtotal = 0;
-//       let itbis = 0;
-//       let totalGeneral = 0;
-//       const itbisRate = 0.18; // Ejemplo: 18% de ITBIS
-//       response.data.forEach((item: any) => {
-//         const producto: ModeloInventarioData = {
-//           in_codmerc: item.dc_codmerc,
-//           in_desmerc: item.dc_descrip,
-//           in_grumerc: '',
-//           in_tipoproduct: '',
-//           in_canmerc: 0,
-//           in_caninve: 0,
-//           in_fecinve: null,
-//           in_eximini: 0,
-//           in_cosmerc: 0,
-//           in_premerc: 0,
-//           in_precmin: 0,
-//           in_costpro: 0,
-//           in_ucosto: 0,
-//           in_porgana: 0,
-//           in_peso: 0,
-//           in_longitud: 0,
-//           in_unidad: 0,
-//           in_medida: 0,
-//           in_longitu: 0,
-//           in_fecmodif: null,
-//           in_amacen: 0,
-//           in_imagen: '',
-//           in_status: '',
-//           in_itbis: false,
-//           in_minvent: 0,
-//         };
-//         const cantidad = item.de_canEntr;
-//         const precio = item.de_preMerc;
-//         const fechamerca = new Date()
-//         const totalItem = cantidad * precio;
-//         this.items.push({
-//           producto: producto,
-//           cantidad: cantidad,
-//           precio: precio,
-//           total: totalItem
-//         });
-//         // Calcular el subtotal
-//         subtotal += totalItem;
-//         // Calcular ITBIS solo si el producto tiene ITBIS
-//         // if (item.dc_itbis) {
-//         this.totalItbis += totalItem * itbisRate;
-//         // }
-//       });
-//       // Calcular el total general (subtotal + ITBIS)
-//       totalGeneral = subtotal + this.totalItbis;
-//       // Asignar los totales a variables o mostrarlos en la interfaz
-//       this.subTotal = subtotal;
-//       this.totalItbis = this.totalItbis;
-//       this.totalGral = totalGeneral;
-//     });
-//   }
-
-//   buscarTodasSalidafactura(page: number) {
-//     this.servicioSalidafactura.buscarTodasSalidafactura(page, this.pageSize).subscribe(response => {
-//       this.SalidafacturaList = response.data;
-//     });
-//   }
-//   consultarSalidafactura(Salidafactura: SalidafacturaModelData) {
-//     this.modoconsultaSalidafactura = true;
-//     this.formularioSalidafactura.patchValue(Salidafactura);
-//     this.tituloModalSalidafactura = 'Consulta Entrada Mercancias';
-//     $('#modalSalidafactura').modal('show');
-//     this.habilitarFormulario = true;
-//     this.formularioSalidafactura.disable();
-//     this.habilitarIcono = false;
-
-//     const inputs = document.querySelectorAll('.seccion-productos input');
-//     inputs.forEach((input) => {
-//       (input as HTMLInputElement).disabled = true;
-//     });
-
-//     // Limpiar los items antes de agregar los nuevos
-//     this.items = [];
-
-//     this.servicioSalidafactura.buscarSalidafacturaDetalle(Salidafactura.me_codEntr).subscribe(response => {
-//       let subtotal = 0;
-//       let itbis = 0;
-//       let totalGeneral = 0;
-//       const itbisRate = 0.18; // Ejemplo: 18% de ITBIS
-
-//       console.log(response);
-
-//       response.data.forEach((item: any) => {
-//         const producto: ModeloInventarioData = {
-//           in_codmerc: item.de_codMerc,
-//           in_desmerc: item.de_desMerc,
-//           in_grumerc: '',
-//           in_tipoproduct: '',
-//           in_canmerc: 0,
-//           in_caninve: 0,
-//           in_fecinve: null,
-//           in_eximini: 0,
-//           in_cosmerc: 0,
-//           in_premerc: item.de_preMerc,
-//           in_precmin: 0,
-//           in_costpro: 0,
-//           in_ucosto: 0,
-//           in_porgana: 0,
-//           in_peso: 0,
-//           in_longitud: 0,
-//           in_unidad: item.de_canEntr,
-//           in_medida: 0,
-//           in_longitu: 0,
-//           in_fecmodif: null,
-//           in_amacen: 0,
-//           in_imagen: '',
-//           in_status: '',
-//           in_itbis: false,
-//           in_minvent: 0,
-//         };
-
-//         const cantidad = item.de_canEntr;
-//         const precio = item.de_preMerc;
-//         const totalItem = cantidad * precio;
-
-//         this.items.push({
-//           producto: producto,
-//           cantidad: cantidad,
-//           precio: precio,
-//           total: totalItem
-//         });
-
-//         // Calcular el subtotal
-//         subtotal += totalItem;
-
-//         // Calcular ITBIS solo si el producto tiene ITBIS
-//         // if (item.dc_itbis) {
-//         this.totalItbis += totalItem * itbisRate;
-//         // }
-//       });
-
-//       // Calcular el total general (subtotal + ITBIS)
-//       totalGeneral = subtotal + this.totalItbis;
-
-//       // Asignar los totales a variables o mostrarlos en la interfaz
-//       this.subTotal = subtotal;
-//       this.totalItbis = this.totalItbis;
-//       this.totalGral = totalGeneral;
-//     });
-//   }
-
-//   eliminarSalidafactura(SalidafacturaId: string) {
-//     Swal.fire({
-//       title: '¿Está seguro de eliminar este Salidafactura?',
-//       text: "¡No podrá revertir esto!",
-//       icon: 'warning',
-//       showCancelButton: true,
-//       confirmButtonColor: '#3085d6',
-//       cancelButtonColor: '#d33',
-//       confirmButtonText: 'Si, eliminar!'
-//     }).then((result) => {
-//       if (result.isConfirmed) {
-//         this.servicioSalidafactura.eliminarSalidafactura(SalidafacturaId).subscribe(response => {
-//           Swal.fire(
-//             {
-//               title: "Excelente!",
-//               text: "Empresa eliminado correctamente.",
-//               icon: "success",
-//               timer: 2000,
-//               showConfirmButton: false,
-//             }
-//           )
-//           this.buscarTodasSalidafactura(this.currentPage);
-//         });
-//       }
-//     })
-//   }
-
-//   descripcionEntra(event: Event) {
-//     const inputElement = event.target as HTMLInputElement;
-//     this.nomsuplidorSubject.next(inputElement.value.toUpperCase());
-//   }
-
-//   codigoEntra(event: Event) {
-//     const inputElement = event.target as HTMLInputElement;
-//     this.codigoBuscar.next(inputElement.value.toUpperCase());
-//   }
-//   fechaEntra(event: Event) {
-//     const inputElement = event.target as HTMLInputElement;
-//     this.codigoBuscar.next(inputElement.value.toUpperCase());
-//   }
-
-//   guardarSalidafactura() {
-//     const date = new Date();
-//     this.formularioSalidafactura.get('me_valEntr')?.patchValue(this.totalGral);
-//     this.formularioSalidafactura.get('me_itbis')?.patchValue(this.totalItbis);
-//     this.formularioSalidafactura.get('me_codEntr')!.enable();
-//     this.formularioSalidafactura.get('me_fecEntr')!.enable();
-//     this.formularioSalidafactura.get('me_nomVend')!.enable();
-//     // this.formularioSalidafactura.patchValue({ me_nomSupl: this.formularioSalidafactura.get('me_nomSupl')?.value })
-//     const payload = {
-//       Salidafacturaancias: this.formularioSalidafactura.value,
-//       detalle: this.items,
-//       idSalidafactura: this.formularioSalidafactura.get('me_codEntr')?.value,
-
-//     };
-
-//     console.log(payload);
-
-//     if (this.formularioSalidafactura.valid) {
-//       if (this.modoedicionSalidafactura) {
-//         this.servicioSalidafactura.editarSalidafactura(this.Salidafacturaid, this.formularioSalidafactura.value).subscribe(response => {
-//           Swal.fire({
-//             title: "Excelente!",
-//             text: "Salidafactura Editada correctamente.",
-//             icon: "success",
-//             timer: 5000,
-//             showConfirmButton: false,
-//           });
-//           this.buscarTodasSalidafactura(1);
-//           this.formularioSalidafactura.reset();
-//           this.crearFormularioSalidafactura();
-//           $('#modalSalidafactura').modal('hide');
-//         });
-//       }
-//       else {
-
-//         if (this.formularioSalidafactura.valid) {
-//           this.servicioSalidafactura.guardarSalidafactura(payload).subscribe(response => {
-//             Swal.fire({
-//               title: "Excelente!",
-//               text: "Entrada Mercancias creada correctamente.",
-//               icon: "success",
-//               timer: 1000,
-//               showConfirmButton: false,
-//             });
-//             this.buscarTodasSalidafactura(1);
-//             this.formularioSalidafactura.reset();
-//             this.crearFormularioSalidafactura();
-//             this.formularioSalidafactura.enable();
-//             $('#modalSalidafactura').modal('hide');
-//           });
-//         } else {
-//           console.log(this.formularioSalidafactura.value);
-//         }
-
-//       }
-//     }
-//     else {
-//       alert("Entrada no fue Guardado");
-//     }
-//   }
-
-//   convertToUpperCase(event: Event): void {
-//     const input = event.target as HTMLInputElement;
-//     const start = input.selectionStart;
-//     const end = input.selectionEnd;
-//     input.value = input.value.toUpperCase();
-//     if (start !== null && end !== null) {
-//       input.setSelectionRange(start, end);
-//     }
-//   }
-//   moveFocus(event: KeyboardEvent, nextElement: HTMLInputElement | null): void {
-//     if (event.key === 'Enter' && nextElement) {
-//       event.preventDefault(); // Evita el comportamiento predeterminado del Enter
-//       nextElement.focus(); // Enfoca el siguiente campo
-//     }
-//   }
-
-//   changePage(page: number) {
-//     this.currentPage = page;
-
-//     this.servicioSalidafactura.buscarTodasSalidafactura(this.currentPage, this.pageSize)
-//       .subscribe(response => {
-//         this.SalidafacturaList = response.data;
-//         this.totalItems = response.pagination.total;
-//         this.currentPage = page;
-//         this.formularioSalidafactura.reset();
-//         console.log(this.currentPage);
-
-//       });
-
-//   }
-
-//   get totalPages() {
-//     // Asegúrate de que totalItems sea un número antes de calcular el total de páginas
-//     return Math.ceil(this.totalItems / this.pageSize);
-//   }
-
-//   get pages(): number[] {
-//     const totalPages = this.totalPages;
-//     const currentPage = this.currentPage;
-//     const maxPagesToShow = this.maxPagesToShow;
-
-//     if (totalPages <= maxPagesToShow) {
-//       return Array.from({ length: totalPages }, (_, i) => i + 1);
-//     }
-
-//     const startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
-//     const endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
-
-//     return Array.from({ length: endPage - startPage + 1 }, (_, i) => startPage + i);
-//   }
-
-//   limpiaBusqueda() {
-//     this.txtdescripcion = '';
-//     this.txtcodigo = '';
-//     this.txtfecha = '';
-//     this.buscarTodasSalidafactura(1);
-//   }
-
-//   // Array para almacenar los datos de la tabla
-
-//   // Función para agregar un nuevo item a la tabla
-//   agregaItem(event: Event) {
-//     event.preventDefault();
-//     if (this.isEditing) {
-//       console.log("editando")
-//       // Actualizar el ítem existente
-//       this.itemToEdit.producto = this.productoselect;
-//       this.itemToEdit.codmerc = this.codmerc;
-//       this.itemToEdit.descripcionmerc = this.descripcionmerc;
-//       this.itemToEdit.precio = this.preciomerc;
-//       this.itemToEdit.cantidad = this.cantidadmerc;
-//       this.itemToEdit.total = this.cantidadmerc * this.preciomerc;
-
-//       // Actualizar los totales
-//       this.actualizarTotales();
-
-//       // Restablecer el estado de edición
-//       this.isEditing = false;
-//       this.itemToEdit = null;
-//     } else {
-
-//       if (!this.productoselect || this.cantidadmerc <= 0 || this.preciomerc <= 0) {
-//         this.mensagePantalla = true;
-//         Swal.fire({
-//           icon: "error",
-//           title: "A V I S O",
-//           text: 'Por favor complete todos los campos requeridos antes de agregar el ítem.',
-//         }).then(() => { this.mensagePantalla = false });
-//         return;
-//       }
-//       const total = this.cantidadmerc * this.preciomerc;
-//       this.totalGral += total;
-//       const itbis = total * 0.18;
-//       this.totalItbis += itbis;
-//       this.subTotal += total - itbis;
-//       this.items.push({
-//         producto: this.productoselect, cantidad: this.cantidadmerc, precio: this.preciomerc, total
-//       })
-
-//       this.cancelarBusquedaDescripcion = false;
-//       this.cancelarBusquedaCodigo = false;
-//     }
-//     this.limpiarCampos();
-//   }
-
-//   limpiarCampos() {
-//     this.productoselect;
-//     this.codmerc = ""
-//     this.descripcionmerc = ""
-//     this.preciomerc = 0;
-//     this.cantidadmerc = 0;
-//     this.isEditing = false;
-//   }
-
-//   limpiarTabla() {
-//     this.items = [];          // Limpiar el array de items
-//     this.totalGral = 0;       // Reiniciar el total general
-//     this.totalItbis = 0;      // Reiniciar el total del ITBIS
-//     this.subTotal = 0;        // Reiniciar el subtotal
-//   }
-//   // (Opcional) Función para eliminar un ítem de la tabla
-//   borarItem(item: any) {
-//     const index = this.items.indexOf(item);
-//     if (index > -1) {
-//       this.totalGral -= item.total;
-
-//       // Calcular el itbis del ítem eliminado y restarlo del total itbis
-//       const itbis = item.total * 0.18;
-//       this.totalItbis -= itbis;
-
-//       // Restar el subtotal del ítem eliminado
-//       this.subTotal -= (item.total - itbis);
-
-//       // Eliminar el ítem de la lista
-//       this.items.splice(index, 1);
-//     }
-//   }
-
-//   editarItem(item: any) {
-//     this.index_item = this.items.indexOf(item);
-
-//     this.isEditing = true;
-//     this.itemToEdit = item;
-
-//     this.productoselect = item.producto;
-//     this.codmerc = item.producto.in_codmerc;
-//     this.descripcionmerc = item.producto.in_desmerc;
-//     this.preciomerc = item.precio
-//     this.cantidadmerc = item.cantidad
-
-//   }
-//   actualizarTotales() {
-//     this.totalGral = this.items.reduce((sum, item) => sum + item.total, 0);
-//     this.totalItbis = this.items.reduce((sum, item) => sum + (item.total * 0.18), 0);
-//     this.subTotal = this.items.reduce((sum, item) => sum + (item.total - (item.total * 0.18)), 0);
-//   }
-
-//   buscarPorCodigo(codigo: string) {
-
-//   }
-
-//   buscarSuplidorporNombre() {
-//     this.servicioSuplidor.buscarporNombre(this.formularioSalidafactura.get("me_nomSupl")!.value).subscribe(response => {
-//       console.log(response);
-//     });
-//   }
-
-//   formatofecha(date: Date): string {
-//     const year = date.getFullYear();
-//     const month = (date.getMonth() + 1).toString().padStart(2, '0'); // Los meses son 0-indexados, se agrega 1 y se llena con ceros
-//     const day = date.getDate().toString().padStart(2, '0'); // Se llena con ceros si es necesario
-//     return `${day}/${month}/${year}`;
-//   }
-
-//   cargarDatosSuplidor(suplidor: ModeloSuplidorData) {
-//     console.log('Entro aquiiiii=--------------')
-//     this.resultadoNombre = [];
-//     this.buscarNombre.reset();
-//     if (suplidor.su_nomSupl !== "") {
-//       this.formularioSalidafactura.patchValue({
-//         me_codSupl: suplidor.su_codSupl,
-//         me_nomSupl: suplidor.su_nomSupl,
-//         me_rncSupl: suplidor.su_rncSupl,
-//       });
-//     }
-
-//   }
-
-//   handleKeydown(event: KeyboardEvent): void {
-//     const key = event.key;
-//     const maxIndex = this.resultadoNombre.length - 1;  // Ajustamos el límite máximo
-
-//     if (key === 'ArrowDown') {
-//       console.log("paso 56");
-
-//       // Mueve la selección hacia abajo
-//       if (this.selectedIndex < maxIndex) {
-//         this.selectedIndex++;
-//       } else {
-//         this.selectedIndex = 0;  // Vuelve al primer ítem
-//       }
-//       event.preventDefault();
-//     } else if (key === 'ArrowUp') {
-//       console.log("paso 677");
-
-//       // Mueve la selección hacia arriba
-//       if (this.selectedIndex > 0) {
-//         this.selectedIndex--;
-//       } else {
-//         this.selectedIndex = maxIndex;  // Vuelve al último ítem
-//       }
-//       event.preventDefault();
-//     } else if (key === 'Enter') {
-//       // Selecciona el ítem actual
-//       if (this.selectedIndex >= 0 && this.selectedIndex <= maxIndex) {
-//         this.cargarDatosSuplidor(this.resultadoNombre[this.selectedIndex]);
-//       }
-//       event.preventDefault();
-//     }
-//   }
-
-//   cancelarBusquedaDescripcion: boolean = false;
-//   cancelarBusquedaCodigo: boolean = false;
-
-//   cargarDatosInventario(inventario: ModeloInventarioData) {
-//     console.log(inventario);
-//     this.resultadoCodmerc = [];
-//     this.resultadodescripcionmerc = [];
-//     this.codmerc = inventario.in_codmerc;
-//     this.preciomerc = inventario.in_premerc
-//     this.descripcionmerc = inventario.in_desmerc;
-//     this.productoselect = inventario;
-//     this.cancelarBusquedaDescripcion = true;
-//     this.cancelarBusquedaCodigo = true;
-//     this.formularioSalidafactura.patchValue({
-//       de_codmerc: inventario.in_codmerc,
-//       de_desmerc: inventario.in_desmerc,
-//       de_canmerc: inventario.in_canmerc,
-//       de_premerc: inventario.in_premerc,
-//       de_cosmerc: inventario.in_cosmerc,
-//       de_unidad: inventario.in_unidad,
-//     });
-//     console.log("si")
-//     $("#input10").focus();
-//     $("#input10").select();
-//   }
-//   handleKeydownInventario(event: KeyboardEvent): void {
-//     const key = event.key;
-//     const maxIndex = this.resultadoCodmerc.length;
-//     if (key === 'ArrowDown') {
-//       console.log("paso");
-//       this.selectedIndexcodmerc = this.selectedIndexcodmerc < maxIndex ? this.selectedIndexcodmerc + 1 : 0;
-//       event.preventDefault();
-//     }
-//     else
-//       if (key === 'ArrowUp') {
-//         console.log("paso2");
-//         this.selectedIndexcodmerc = this.selectedIndexcodmerc > 0 ? this.selectedIndexcodmerc - 1 : maxIndex;
-//         event.preventDefault();
-//       }
-//       else if (key === 'Enter') {
-//         if (this.selectedIndexcodmerc >= 0 && this.selectedIndexcodmerc <= maxIndex) {
-//           this.cargarDatosInventario(this.resultadoCodmerc[this.selectedIndexcodmerc]);
-//         }
-//         event.preventDefault();
-//       }
-//   }
-//   submitForm(): void {
-//     if (this.mensagePantalla && this.form.invalid) {
-//       console.log(this.mensagePantalla);
-//       console.log(this.form.invalid);
-//     } else {
-//       console.log(this.mensagePantalla);
-//       console.log(this.form.invalid);
-//       this.cerrarModalSalidafactura()
-//     }
-//   }
-
-//   onBlur(event: any): void {
-//     const value = event.target.value;
-
-//     // Si el valor no está vacío, lo asignamos al formControl
-//     if (value && value.trim() !== '') {
-//       this.formularioSalidafactura.get('me_nomSupl')!.setValue(value.trim());
-//     }
-//   }
-
-// }

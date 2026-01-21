@@ -1,147 +1,189 @@
-<div class="row g-4">
-  <div class="col-lg-5 col-md-12 mb-4">
-    <div class="card shadow-sm rounded-2 border-0">
-      <div class="card-header py-3" style="background: #343a40; border-radius: 0.5rem 0.5rem 0 0;">
-        <h4 class="card-title m-0 text-white text-center" style="font-weight: 600; letter-spacing: 1px;">CONTROLES SALIDA FACTURA</h4>
-      </div>
-      <div class="card-body bg-light rounded-bottom-2">
-        <div class="mb-3">
-          <label class="form-label fw-bold">Buscar Por</label>
-          <div class="row g-2">
-            <div class="col">
-              <input type="text" [(ngModel)]="txtcodSalida" placeholder="No. de Control" class="form-control form-control-sm rounded-pill shadow-sm" 
-            (keyup.enter)="buscarSalidaCodigo(txtcodSalida)"
-                 /> 
-            </div>
-            <div class="col"> 
-              <input type="text" formControlName="txtnomChofer" placeholder="Nombre Chofer" class="form-control form-control-sm rounded-pill shadow-sm" />
-            </div>
-            <div class="col">
-              <input type="text" [(ngModel)]="txtcodFact" placeholder="No. Factura" class="form-control form-control-sm rounded-pill shadow-sm"
-                    (keyup.enter)="buscarSalidaFactura(txtcodFact)"/>
-            </div> 
-          </div>
-
+<div class="container-fluid p-4">
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card shadow-sm border-0 rounded-3">
+        <div class="card-header bg-dark text-white py-3">
+          <h4 class="card-title m-0 text-center fw-bold text-uppercase">
+            <i class="bi bi-truck me-2"></i>Control de Salida de Facturas
+          </h4>
         </div>
-        <div class="table-responsive" style="height: 400px; overflow-y: auto; border-radius: 0.5rem; border: 1px solid #343a40; background: #fff;">
-          <table class="table table-hover align-middle mb-0">
-            <thead style="background: #495057; color: #fff;">
-              <tr>
-                <th class="text-center text-white" style="width: 20%; text-transform: uppercase;">NO. CONTROL</th>
-                <th class="text-center text-white" style="width: 30%; text-transform: uppercase;">CHOFER</th>
-                <th class="text-center text-white" style="width: 15%; text-transform: uppercase;">FECHA</th>
-                <th class="text-center text-white" style="width: 16%; text-transform: uppercase;">STATUS</th>
-                <th class="text-center text-white" style="text-transform: uppercase;">OPCIONES</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let Items of SalidafacturaList" class="table-row">
-                <td class="text-center">{{Items.codSalida}}</td>
-                <td class="text-center">{{Items.nomChofer}}</td>
-                <td class="text-center">{{Items.fecSalida}}</td>
-                <td class="text-center">{{Items.status}}</td>
-                <td class="text-center">
-                  <button (click)="consultarSalidaFactura(Items)" class="btn btn-outline-primary btn-sm rounded-circle shadow-sm" title="Ver Detalles">
-                    <i class="bi bi-card-list"></i>
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  </div>
-  <div class="col-lg-7 col-md-12 mb-4">
-    <div class="card shadow-sm rounded-2 border-0">
-      <div class="card-header py-3" style="background: #343a40; border-radius: 0.5rem 0.5rem 0 0;">
-        <h4 class="card-title m-0 text-white text-center" style="font-weight: 600; letter-spacing: 1px;">DETALLES CONTROL SALIDA FACTURA</h4>
-      </div>
-      <div class="card-body bg-light rounded-bottom-2">
-        <form [formGroup]="formularioSalidafactura" class="mb-3">
-          <div class="row g-2 mb-2">
-            <div class="col-md-2"></div>
-             <div class="col-md-2">
-              <input type="text" formControlName="status" class="form-control form-control-sm rounded-pill shadow-sm" readonly />
-            </div>
-          <div class="col-md-2"> </div>
-
-          <div class="col-md-2">
-              <label class="form-label">No. Control</label>
-            </div>
-            <div class="col-md-2">  
-              <input type="text" class="form-control form-control-sm rounded-pill shadow-sm" formControlName="codSalida" readonly />
-            </div>
-             <div class="col-md-2">
-              <input type="date" formControlName="fecSalida" class="form-control form-control-sm rounded-pill shadow-sm" readonly />
-            </div> 
-          </div>
-          <div class="row g-2 mb-2">
+        <div class="card-body bg-light">
+          
+          <!-- Sección Chofer -->
+          <div class="row g-3 align-items-end mb-4 p-3 bg-white rounded shadow-sm border">
             <div class="col-md-2">
-              <label class="form-label">Cod Chofer</label>
+              <label class="form-label fw-bold text-secondary">Cód. Chofer</label>
               <input type="text" 
-               formControlName="codChofer"
-               name="codChofer"
-               #codChoferInput
-               class="form-control form-control-sm rounded-pill shadow-sm" 
-               (keyup.enter)="buscarporCodigo()"
-
-              />
+                     class="form-control form-control-lg text-center fw-bold" 
+                     [(ngModel)]="codChofer" 
+                     (keyup.enter)="buscarChofer()"
+                     placeholder="ID"
+                     [disabled]="bloquearChofer"
+                     autofocus>
             </div>
-
-              <div class="col-md-4">
-                <label class="form-label">Chofer</label>
-                <input type="text"
-                class="form-control form-control-sm rounded-pill shadow-sm" 
-                formControlName="nomChofer" 
-                #nomchoferInput />
-               </div>
-               <div class="col-md-2">
-                <label class="form-label">Factura</label>
-              <input
-                type="text"
-                id="facturaInput"
-                formControlName="txtcodFact"
-                placeholder="No. de Factura"
-                class="form-control form-control-sm rounded-pill shadow-sm"
-                (keydown.enter)="buscarFactura()" />
-
-                
-              </div>
+            <div class="col-md-6">
+              <label class="form-label fw-bold text-secondary">Nombre del Chofer</label>
+              <input type="text" 
+                     class="form-control form-control-lg bg-light" 
+                     [(ngModel)]="nomChofer"
+                     (ngModelChange)="buscarChoferPorNombre($event)"
+                     [disabled]="bloquearChofer"
+                     placeholder="Escriba nombre para buscar..."
+                     autocomplete="off">
+            </div>
+            <div class="col-md-4 text-end">
+              <button class="btn btn-outline-danger" *ngIf="bloquearChofer" (click)="cambiarChofer()">
+                <i class="bi bi-person-x me-1"></i> Cambiar Chofer
+              </button>
+            </div>
           </div>
-        </form>
-        <div class="table-responsive" style="height: 350px; overflow-y: auto; border-radius: 0.5rem; border: 1px solid #343a40; background: #fff;">
-          <table class="table table-hover align-middle mb-0">
-            <thead style="background: #495057; color: #fff;">
-              <tr>
-                <th class="text-center text-white" style="width: 15%; text-transform: uppercase;">FACTURA</th>
-                <th class="text-center text-white" style="width: 37%; text-transform: uppercase;">CLIENTE</th>
-                <th class="text-center text-white" style="width: 13%; text-transform: uppercase;">FECHA</th>
-                <th class="text-center text-white" style="width: 20%; text-transform: uppercase;">VALOR</th>
-                <th class="text-center text-white" style="text-transform: uppercase;">OPCIONES</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let detItems of detSalidafacturaList" class="table-row">
-                <td class="text-center">{{detItems.codFact}}</td>
-                <td class="text-center">{{detItems.nomClie}}</td>
-                <td class="text-center">{{detItems.fecFact | date:'dd/MM/yyyy'}}</td>
-                <td class="text-end">{{detItems.valFact}}</td>
-                <td class="text-center">
-                  <button class="btn btn-outline-danger btn-sm rounded-circle shadow-sm"
-                   (click)="eliminarFactura(detItems.codFact)"
-                   title="Eliminar" 
-                  >
-                    <i class="bi bi-trash"></i>
-                  </button>
-                </td>
 
-              </tr>
-            </tbody>
-          </table>
+          <!-- Sección datos de salida existente -->
+          <div class="row g-3 align-items-center mb-3" *ngIf="bloquearChofer">
+            <div class="col-md-3">
+              <div class="fw-bold text-secondary small">Código de Salida</div>
+              <div class="fs-5 fw-bold text-primary">{{ codSalida }}</div>
+            </div>
+            <div class="col-md-3" *ngIf="fechaSalida">
+              <div class="fw-bold text-secondary small">Fecha de Salida</div>
+              <div class="fs-5">{{ fechaSalida | date:'dd/MM/yyyy' }}</div>
+            </div>
+          </div>
+
+          <!-- Sección Facturas -->
+          <div class="row g-3 mb-3" *ngIf="bloquearChofer">
+            <div class="col-md-4">
+              <div class="input-group input-group-lg">
+                <span class="input-group-text bg-primary text-white border-0">
+                  <i class="bi bi-upc-scan"></i>
+                </span>
+                <input type="text" 
+                       class="form-control border-primary" 
+                       [(ngModel)]="txtcodFact" 
+                       (keyup.enter)="agregarFactura()"
+                       id="inputFactura"
+                       placeholder="Escanear / Digitar Factura">
+                <button class="btn btn-primary" (click)="agregarFactura()">
+                  <i class="bi bi-plus-lg"></i>
+                </button>
+              </div>
+              <div class="form-text text-muted mt-2">
+                <i class="bi bi-info-circle"></i> Solo facturas enviadas (S), impresas (S) y sin salida.
+              </div>
+            </div>
+          </div>
+
+          <!-- Tabla de Detalles -->
+          <div class="table-responsive rounded-3 shadow-sm border" style="background: white; min-height: 300px;">
+            <table class="table table-hover align-middle mb-0">
+              <thead>
+                <tr>
+                  <th class="text-center" style="width: 5%">#</th>
+                  <th style="width: 15%">Factura</th>
+                  <th style="width: 30%">Cliente</th>
+                  <th class="text-center" style="width: 10%">Fecha</th>
+                  <th class="text-center" style="width: 10%">Estado</th>
+                  <th class="text-center" style="width: 15%">Forma Pago</th>
+                  <th class="text-end" style="width: 10%">Valor</th>
+                  <th class="text-center" style="width: 5%">Acción</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let item of detallesSalida; let i = index">
+                  <td class="text-center fw-bold text-secondary">{{ i + 1 }}</td>
+                  <td class="fw-bold text-primary">{{ item.codFact }}</td>
+                  <td>{{ item.nomClie }}</td>
+                  <td class="text-center">{{ item.fecFact | date:'dd/MM/yyyy' }}</td>
+                  <td class="text-center">
+                    <button *ngIf="item.fpago === 'P'" class="btn btn-sm btn-success py-0 px-2 rounded-pill fw-bold" style="font-size: 0.75rem;">
+                      <i class="bi bi-check-circle-fill me-1"></i>PAGADA
+                    </button>
+                  </td>
+                  <td class="text-center">
+                    <span class="fw-medium">{{ getDescripcionFpago(item.codfpago) }}</span>
+                  </td>
+                  <td class="text-end fw-bold">{{ item.valFact | currency }}</td>
+                  <td class="text-center">
+                    <button class="btn btn-sm btn-outline-danger border-0" 
+                            (click)="eliminarDetalle(i)"
+                            title="Quitar de la lista">
+                      <i class="bi bi-trash-fill"></i>
+                    </button>
+                  </td>
+                </tr>
+                <tr *ngIf="detallesSalida.length === 0">
+                  <td colspan="8" class="text-center py-5 text-muted">
+                    <i class="bi bi-box-seam display-4 d-block mb-3 opacity-50"></i>
+                    No hay facturas agregadas para esta salida.
+                  </td>
+                </tr>
+              </tbody>
+              <tfoot class="bg-light border-top" *ngIf="detallesSalida.length > 0">
+                <tr>
+                  <td colspan="4" class="text-end fw-bold fs-5 py-3">Total Salida:</td>
+                  <td class="text-end fw-bold fs-5 py-3 text-success">{{ totalSalida | currency }}</td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+
+        </div>
+        <div class="card-footer bg-white py-3 border-top-0 d-flex justify-content-end gap-2">
+          <button class="btn btn-primary btn-lg px-5" *ngIf="mostrarBotonImprimir" (click)="imprimirControlSalida()">
+            <i class="bi bi-printer me-2"></i>Imprimir Control
+          </button>
+          <button class="btn btn-secondary btn-lg px-5" (click)="limpiarTodo()">
+            <i class="bi bi-x-circle me-2"></i>Cancelar
+          </button>
+          <button class="btn btn-success btn-lg px-5" 
+                  (click)="guardarSalida()" 
+                  [disabled]="detallesSalida.length === 0 || !bloquearChofer">
+            <i class="bi bi-save me-2"></i>Procesar Salida
+          </button>
         </div>
       </div>
     </div>
   </div>
+</div>
 
+<!-- Modal de Búsqueda de Choferes -->
+<!-- Backdrop transparente para permitir ver pero bloquear clicks fuera -->
+<div class="modal-backdrop fade show" *ngIf="mostrarModalChofer" style="z-index: 1050; opacity: 0.2;"></div>
+<div class="modal fade show d-block" *ngIf="mostrarModalChofer" tabindex="-1" style="z-index: 1055;">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" style="margin-top: 15%;">
+    <div class="modal-content shadow-lg border-0">
+      <div class="modal-header bg-primary text-white py-2">
+        <h6 class="modal-title fw-bold">
+          <i class="bi bi-search me-2"></i>Resultados de búsqueda
+        </h6>
+        <button type="button" class="btn-close btn-close-white btn-sm" (click)="cerrarModalChofer()"></button>
+      </div>
+      <div class="modal-body p-0">
+        <div class="list-group list-group-flush">
+          <button type="button" 
+                  class="list-group-item list-group-item-action py-2 px-4 border-bottom"
+                  *ngFor="let chofer of listaChoferesEncontrados; let i = index"
+                  [class.active]="i === indiceChoferSeleccionado"
+                  (click)="seleccionarChofer(chofer)"
+                  (mouseenter)="indiceChoferSeleccionado = i">
+            <div class="d-flex w-100 justify-content-between align-items-center">
+              <div>
+                <span class="fw-bold">{{ chofer.nomChofer || chofer.nombre || chofer.ch_nombre }} {{ chofer.apellido || chofer.ch_apellido || '' }}</span>
+                <small class="ms-2" [class.text-white-50]="i === indiceChoferSeleccionado" [class.text-muted]="i !== indiceChoferSeleccionado">
+                  (ID: {{ chofer.codChofer || chofer.id || chofer.ch_codChofer }})
+                </small>
+              </div>
+              <i class="bi bi-check-lg" *ngIf="i === indiceChoferSeleccionado"></i>
+            </div>
+          </button>
+        </div>
+      </div>
+      <div class="modal-footer bg-light py-1">
+        <small class="text-muted w-100 text-center">
+          <i class="bi bi-keyboard me-1"></i><strong>↑ ↓</strong> Navegar &nbsp; <strong>Enter</strong> Seleccionar &nbsp; <strong>Esc</strong> Cerrar
+        </small>
+      </div>
+    </div>
+  </div>
 </div>

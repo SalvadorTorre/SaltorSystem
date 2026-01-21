@@ -1,9 +1,7 @@
-import { Facturacion } from './../../../../features/private/pages/facturacion/facturacion';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { HttpInvokeService } from '../../http-invoke.service';
-import { FacturacionModel, FacturacionModelData } from '.';
 import { HttpParams } from '@angular/common/http';
 import { map } from 'rxjs/operators';
 @Injectable({
@@ -46,6 +44,14 @@ export class ServicioFacturacion {
   editarFacturacion(payload: any) {
     const cod = payload.factura.fa_codFact;
     return this.http.PutRequest(`/facturacion/${cod}`, payload);
+  }
+
+  actualizarSalidaFactura(codFact: string, payload: { fa_salida: string; idsalida: number }) {
+    return this.http.PatchRequest(`/facturacion/actualizar-salida/${codFact}`, payload);
+  }
+
+  actualizarPagoYEntrega(facturas: any[]): Observable<any> {
+    return this.http.PatchRequest('/facturacion/actualizar-pago-entrega', { facturas });
   }
 
   buscarTodasFacturacion(): Observable<any> {
@@ -124,5 +130,9 @@ export class ServicioFacturacion {
       `/facturacion/actualizar-datos-dgii/${fa_codFact}`,
       payload
     );
+  }
+
+  actualizarEntregaFactura(codFact: string, fa_entrega: string): Observable<any> {
+    return this.http.PatchRequest(`/facturacion/actualizar-entrega/${codFact}`, { fa_entrega });
   }
 }

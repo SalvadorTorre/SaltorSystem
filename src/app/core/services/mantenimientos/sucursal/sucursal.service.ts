@@ -29,7 +29,7 @@ export class ServicioSucursal {
   }
 
   buscarsucursal(cod_sucursal: string): Observable<any> {
-    return this.http.GetRequest<any>(`/sucursal/${cod_sucursal}`);
+    return this.http.GetRequest<any>(`/sucursales/${cod_sucursal}`);
   }
 
 

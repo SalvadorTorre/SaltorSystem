@@ -1,8 +1,7 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Caja} from './caja';
+import { Caja } from './caja';
 import { RutaCaja } from './caja-ruta';
-
 
 @NgModule({
   declarations: [
@@ -11,7 +10,6 @@ import { RutaCaja } from './caja-ruta';
   imports: [
     CommonModule,
     RutaCaja
-  ],
-  providers: [],
+  ]
 })
 export class ModuloCaja { }
