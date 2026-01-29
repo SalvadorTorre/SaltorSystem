@@ -19,7 +19,7 @@ export class ServicioSalidafactura {
   }
 
   obtenerPorChoferYStatus(codChofer: string, status: string = 'P'): Observable<any> {
-    return this.http.GetRequest<any>(`/controlsalida-chofer/${codChofer}/${status}`);
+    return this.http.GetRequest<any>(`/controlsalida/chofer-status/${codChofer}?status=${status}`);
   }
 
   editarSalida(id: number, payload: any): Observable<any> {

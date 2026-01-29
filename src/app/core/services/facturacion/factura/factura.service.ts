@@ -60,6 +60,12 @@ export class ServicioFacturacion {
     return this.http.GetRequest<any>(url);
   }
 
+  buscarFacturasParaCierre(limit: number = 10000): Observable<any> {
+    let url = `/facturacion?limit=${limit}`;
+    console.log('FACTURA CIERRE', url);
+    return this.http.GetRequest<any>(url);
+  }
+
   eliminarFacturacion(fa_codFact: string): Observable<any> {
     return this.http.DeleteRequest(`/eliminar-facturacion/${fa_codFact}`, '');
   }

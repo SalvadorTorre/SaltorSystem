@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
-import { forkJoin, Observable } from 'rxjs';
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { forkJoin, Observable, Subject, Subscription } from 'rxjs';
+import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { ServicioChofer } from 'src/app/core/services/mantenimientos/choferes/choferes.service';
 import { ServicioSalidafactura } from 'src/app/core/services/almacen/salidafactura/salidafactura.service';
 import { ServicioFacturacion } from 'src/app/core/services/facturacion/factura/factura.service';
@@ -23,7 +24,7 @@ interface DetalleSalidaCaja {
   templateUrl: './controlsalida.html',
   styleUrls: ['./controlsalida.css'],
 })
-export class ControlSalidaCajaComponent {
+export class ControlSalidaCajaComponent implements OnInit, OnDestroy {
   codChofer: string = '';
   nomChofer: string = '';
   bloquearChofer: boolean = false;
@@ -32,6 +33,8 @@ export class ControlSalidaCajaComponent {
   mostrarModalChofer: boolean = false;
   listaChoferesEncontrados: any[] = [];
   indiceChoferSeleccionado: number = 0;
+  private searchSubject = new Subject<string>();
+  private searchSubscription: Subscription | undefined;
 
   salidaActual: any = null;
   detalles: DetalleSalidaCaja[] = [];
@@ -53,6 +56,17 @@ export class ControlSalidaCajaComponent {
 
   ngOnInit() {
     this.cargarUltimoCierre();
+    this.searchSubscription = this.searchSubject
+      .pipe(debounceTime(300), distinctUntilChanged())
+      .subscribe((termino) => {
+        this.ejecutarBusquedaChofer(termino);
+      });
+  }
+
+  ngOnDestroy() {
+    if (this.searchSubscription) {
+      this.searchSubscription.unsubscribe();
+    }
   }
 
   cargarUltimoCierre() {
@@ -73,6 +87,10 @@ export class ControlSalidaCajaComponent {
   }
 
   buscarChoferPorNombre(valor: string) {
+    this.searchSubject.next(valor);
+  }
+
+  ejecutarBusquedaChofer(valor: string) {
     const termino = (valor || '').trim();
     if (!termino) {
       this.mostrarListaChoferes = false;
@@ -82,14 +100,17 @@ export class ControlSalidaCajaComponent {
       return;
     }
 
-    this.cargando = true;
+    // No activamos cargando global para no bloquear la UI al escribir
+    // this.cargando = true; 
+    
     this.mostrarListaChoferes = false;
     this.choferesEncontrados = [];
     this.servicioChofer.buscarTodosChofer(1, 20, termino).subscribe({
       next: (resp: any) => {
         const lista = resp?.data || resp || [];
         if (!Array.isArray(lista) || lista.length === 0) {
-          this.mostrarMensaje('No se encontraron choferes con ese nombre');
+          // No mostramos mensaje de error en búsqueda iterativa para no molestar
+          // this.mostrarMensaje('No se encontraron choferes con ese nombre');
           this.mostrarModalChofer = false;
           this.listaChoferesEncontrados = [];
           return;
@@ -102,10 +123,10 @@ export class ControlSalidaCajaComponent {
         this.indiceChoferSeleccionado = 0;
       },
       error: () => {
-        this.mostrarMensaje('Error al buscar chofer por nombre');
+        // this.mostrarMensaje('Error al buscar chofer por nombre');
       },
       complete: () => {
-        this.cargando = false;
+        // this.cargando = false;
       },
     });
   }

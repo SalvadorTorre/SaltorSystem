@@ -30,6 +30,7 @@ export class CuadreCaja implements OnInit {
     credito: 0,
     deposito: 0,
     cheque: 0,
+    pendiente: 0,
     total: 0
   };
 
@@ -77,6 +78,37 @@ export class CuadreCaja implements OnInit {
     return codigo; 
   }
 
+  esFacturaAntigua(factura: any): boolean {
+    if (!this.ultimaFacturaCuadrada) return false;
+    
+    const numFact = Number(factura.fa_codFact);
+    const numUltima = Number(this.ultimaFacturaCuadrada);
+
+    if (!isNaN(numFact) && !isNaN(numUltima)) {
+        return numFact <= numUltima;
+    }
+    
+    // Fallback lexicográfico si no son números
+    return String(factura.fa_codFact).localeCompare(String(this.ultimaFacturaCuadrada)) <= 0;
+  }
+
+  obtenerEtiquetaPago(factura: any): string {
+    const descripcion = this.obtenerDescripcionPago(factura.fa_codfpago || factura.fa_fpago);
+    
+    // 1. Si es crédito (no pagada), SIEMPRE es PENDIENTE (sea antigua o nueva)
+    if (descripcion.toLowerCase().includes('credito')) {
+        return 'PENDIENTE';
+    }
+
+    // 2. Si es antigua y NO es crédito (ya pasó el check arriba), entonces está COBRADA
+    if (this.esFacturaAntigua(factura)) {
+        return 'COBRADA';
+    }
+    
+    // 3. Si es actual y pagada, dejar en blanco
+    return '';
+  }
+
   obtenerUltimoCierreYFacturas() {
     this.isLoading = true;
     
@@ -102,11 +134,13 @@ export class CuadreCaja implements OnInit {
   }
 
   cargarFacturasPendientes() {
-    this.facturaService.buscarTodasFacturacion().subscribe({
+    // Usamos el nuevo método específico para cierre que trae un histórico amplio (10000)
+    // usando el endpoint /facturacion que sabemos devuelve lista general.
+    this.facturaService.buscarFacturasParaCierre().subscribe({
       next: (res: any) => {
         this.isLoading = false;
         const todas = res.data || [];
-        console.log('Facturas cargadas:', todas.length > 0 ? todas[0] : 'No hay facturas');
+        console.log('Facturas cargadas para cierre (limit 10000):', todas.length);
         this.facturas = todas; 
         this.aplicarFiltros();
       },
@@ -121,24 +155,26 @@ export class CuadreCaja implements OnInit {
   aplicarFiltros() {
     if (!this.facturas.length) return;
 
-    // Lógica principal: traer TODAS las facturas con código mayor a la última cuadrada,
-    // sin importar la fecha
-    let facturasCandidatas = this.facturas;
-
-    if (this.ultimaFacturaCuadrada) {
-      const last = Number(this.ultimaFacturaCuadrada);
-      facturasCandidatas = this.facturas.filter(f => {
-        const cod = Number(f.fa_codFact);
-        if (!isNaN(last) && !isNaN(cod)) {
-          return cod > last;
-        }
-        return String(f.fa_codFact) > String(this.ultimaFacturaCuadrada);
-      });
-    }
+    // Lógica actualizada: 
+    // Incluir facturas posteriores al último cierre O facturas anteriores que NO estén cerradas (fa_cierre != 'C')
+    // Simplificación: Traer todas las facturas que no tengan fa_cierre == 'C'
+    
+    let facturasCandidatas = this.facturas.filter(f => {
+       const estadoCierre = String(f.fa_cierre || '').trim().toUpperCase();
+       return estadoCierre !== 'C';
+    });
 
     if (facturasCandidatas.length > 0) {
-      // Ordenamos por código para mostrar un rango coherente
-      const ordenadas = [...facturasCandidatas].sort((a, b) => String(a.fa_codFact).localeCompare(String(b.fa_codFact)));
+      // Ordenamos por código numéricamente para consistencia
+      const ordenadas = [...facturasCandidatas].sort((a, b) => {
+          const numA = Number(a.fa_codFact);
+          const numB = Number(b.fa_codFact);
+          if (!isNaN(numA) && !isNaN(numB)) {
+            return numA - numB;
+          }
+          return String(a.fa_codFact).localeCompare(String(b.fa_codFact));
+      });
+
       this.inicioFactura = ordenadas[0].fa_codFact;
       this.finFactura = ordenadas[ordenadas.length - 1].fa_codFact;
       this.facturasFiltradas = ordenadas;
@@ -156,13 +192,22 @@ export class CuadreCaja implements OnInit {
       credito: 0,
       deposito: 0,
       cheque: 0,
+      pendiente: 0,
       total: 0
     };
 
     this.facturasFiltradas.forEach(f => {
       const monto = Number(f.fa_valFact) || 0;
-      // Usar la descripción completa (ej: "2 - Tarjeta") para buscar palabras clave
-      const metodo = this.obtenerDescripcionPago(f.fa_fpago).toLowerCase();
+      // Usamos fa_codfpago preferiblemente para identificar el método, fallback a fa_fpago
+      const codigoPago = f.fa_codfpago || f.fa_fpago;
+      const metodo = this.obtenerDescripcionPago(codigoPago).toLowerCase();
+
+      // Calcular pendiente usando la misma lógica que la tabla
+      if (this.obtenerEtiquetaPago(f) === 'PENDIENTE') {
+        this.totales.pendiente += monto;
+        // Si es pendiente, no sumar a otros totales (como crédito, efectivo, etc.)
+        return; 
+      }
 
       if (metodo.includes('efectivo') || metodo.includes('contado')) {
         this.totales.efectivo += monto;
@@ -175,13 +220,12 @@ export class CuadreCaja implements OnInit {
       } else if (metodo.includes('cheque')) {
         this.totales.cheque += monto;
       } else {
-        // Por defecto, si no se reconoce, se suma a efectivo (comportamiento legacy)
-        // Opcionalmente podríamos tener un 'otros', pero por ahora mantenemos esto.
+        // Por defecto, si no se reconoce, se suma a efectivo
         this.totales.efectivo += monto; 
       }
     });
 
-    this.totales.total = this.totales.efectivo + this.totales.tarjeta + this.totales.credito + this.totales.deposito + this.totales.cheque;
+    this.totales.total = this.totales.efectivo + this.totales.tarjeta + this.totales.credito + this.totales.deposito + this.totales.cheque + this.totales.pendiente;
   }
 
   generarReporte() {
@@ -216,7 +260,7 @@ export class CuadreCaja implements OnInit {
       if (result.isConfirmed) {
         const dataCierre = {
             feccierre: new Date().toISOString(),
-            factfin: ultimaDeEsteCierre, // Guardamos la última factura procesada
+            factfin: String(ultimaDeEsteCierre || '').trim(), // Guardamos la última factura procesada, forzando String
             montocierre: this.totales.total,
             efectivo: this.totales.efectivo,
             tarjeta: this.totales.tarjeta,

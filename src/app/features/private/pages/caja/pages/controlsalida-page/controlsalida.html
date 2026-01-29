@@ -27,6 +27,7 @@
                 class="form-control form-control-lg bg-light"
                 [(ngModel)]="nomChofer"
                 (ngModelChange)="buscarChoferPorNombre($event)"
+                (keydown)="onKeydownNombreChofer($event)"
                 [disabled]="bloquearChofer"
                 placeholder="Escriba nombre para buscar..."
                 autocomplete="off"
@@ -135,8 +136,10 @@
                       <th style="width: 35%">Cliente</th>
                       <th style="width: 15%">Fecha</th>
                       <th class="text-end" style="width: 15%">Valor</th>
-                      <th class="text-center" style="width: 10%">Estado</th>
-                      <th class="text-center" style="width: 15%">Acción</th>
+                      <th class="text-center" style="width: 12%">Pagado</th>
+                      <th class="text-center" style="width: 13%; cursor: pointer;" (click)="toggleTodosEntregada()" title="Click para marcar/desmarcar todas">
+                        Entregada <i class="bi bi-check-all ms-1"></i>
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -153,8 +156,6 @@
                           style="cursor: pointer;"
                           (click)="togglePagado(d)"
                         >
-                             <!-- Checkbox style: Square with check if paid, empty square if not. Or stick to circle but make it clearer. -->
-                             <!-- User asked for 'check'. Let's use a large check icon. -->
                              <i 
                                class="bi" 
                                [ngClass]="d.pagado ? 'bi-check-square-fill text-success' : 'bi-square text-secondary'" 
@@ -173,17 +174,18 @@
                         </span>
                       </td>
                       <td class="text-center">
-                        <button
-                          class="btn btn-sm"
-                          [ngClass]="d.pagado ? 'btn-outline-secondary' : 'btn-outline-success'"
-                          (click)="togglePagado(d)"
+                        <div 
+                          class="d-flex justify-content-center align-items-center"
+                          style="cursor: pointer;"
+                          (click)="toggleEntrega(d)"
                         >
-                          <i
-                            class="bi"
-                            [ngClass]="d.pagado ? 'bi-x-circle' : 'bi-check-circle'"
-                          ></i>
-                          {{ d.pagado ? 'Quitar pago' : 'Marcar pagada' }}
-                        </button>
+                             <i 
+                               class="bi" 
+                               [ngClass]="d.entregada ? 'bi-check-square-fill text-primary' : 'bi-square text-secondary'" 
+                               style="font-size: 1.8rem;" 
+                               title="{{ d.entregada ? 'Entregada' : 'Pendiente de entrega' }}"
+                             ></i>
+                        </div>
                       </td>
                     </tr>
                     <tr *ngIf="detalles.length === 0">

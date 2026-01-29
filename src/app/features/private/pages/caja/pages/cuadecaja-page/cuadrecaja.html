@@ -29,53 +29,61 @@
   </div>
 
   <!-- Cards de Totales -->
-  <div class="sticky-top bg-white pb-3 pt-2" style="z-index: 1020; border-bottom: 1px solid #e3e6f0;">
-    <div class="row row-cols-1 row-cols-md-3 row-cols-xl-6 g-2">
+  <div class="sticky-top bg-white pb-2 pt-2" style="z-index: 1020; border-bottom: 1px solid #e3e6f0;">
+    <div class="row g-1">
       <div class="col">
         <div class="card bg-success text-white shadow-sm h-100">
-          <div class="card-body p-2 text-center">
-            <h6 class="card-title text-uppercase font-weight-bold opacity-75 small mb-1">Efectivo</h6>
-            <h5 class="mb-0">{{ totales.efectivo | number:'1.2-2' }}</h5>
+          <div class="card-body p-1 text-center">
+            <div class="text-uppercase font-weight-bold opacity-75 small" style="font-size: 0.7rem;">Efectivo</div>
+            <h6 class="mb-0 fw-bold">{{ totales.efectivo | number:'1.2-2' }}</h6>
           </div>
         </div>
       </div>
       <div class="col">
         <div class="card bg-info text-white shadow-sm h-100">
-          <div class="card-body p-2 text-center">
-            <h6 class="card-title text-uppercase font-weight-bold opacity-75 small mb-1">Tarjeta</h6>
-            <h5 class="mb-0">{{ totales.tarjeta | number:'1.2-2' }}</h5>
+          <div class="card-body p-1 text-center">
+            <div class="text-uppercase font-weight-bold opacity-75 small" style="font-size: 0.7rem;">Tarjeta</div>
+            <h6 class="mb-0 fw-bold">{{ totales.tarjeta | number:'1.2-2' }}</h6>
           </div>
         </div>
       </div>
       <div class="col">
         <div class="card bg-primary text-white shadow-sm h-100">
-          <div class="card-body p-2 text-center">
-            <h6 class="card-title text-uppercase font-weight-bold opacity-75 small mb-1">Crédito</h6>
-            <h5 class="mb-0">{{ totales.credito | number:'1.2-2' }}</h5>
+          <div class="card-body p-1 text-center">
+            <div class="text-uppercase font-weight-bold opacity-75 small" style="font-size: 0.7rem;">Crédito</div>
+            <h6 class="mb-0 fw-bold">{{ totales.credito | number:'1.2-2' }}</h6>
           </div>
         </div>
       </div>
       <div class="col">
         <div class="card bg-warning text-dark shadow-sm h-100">
-          <div class="card-body p-2 text-center">
-            <h6 class="card-title text-uppercase font-weight-bold opacity-75 small mb-1">Depósito</h6>
-            <h5 class="mb-0">{{ totales.deposito | number:'1.2-2' }}</h5>
+          <div class="card-body p-1 text-center">
+            <div class="text-uppercase font-weight-bold opacity-75 small" style="font-size: 0.7rem;">Depósito</div>
+            <h6 class="mb-0 fw-bold">{{ totales.deposito | number:'1.2-2' }}</h6>
           </div>
         </div>
       </div>
       <div class="col">
         <div class="card bg-secondary text-white shadow-sm h-100">
-          <div class="card-body p-2 text-center">
-            <h6 class="card-title text-uppercase font-weight-bold opacity-75 small mb-1">Cheque</h6>
-            <h5 class="mb-0">{{ totales.cheque | number:'1.2-2' }}</h5>
+          <div class="card-body p-1 text-center">
+            <div class="text-uppercase font-weight-bold opacity-75 small" style="font-size: 0.7rem;">Cheque</div>
+            <h6 class="mb-0 fw-bold">{{ totales.cheque | number:'1.2-2' }}</h6>
+          </div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="card bg-danger text-white shadow-sm h-100">
+          <div class="card-body p-1 text-center">
+            <div class="text-uppercase font-weight-bold opacity-75 small" style="font-size: 0.7rem;">Pendiente</div>
+            <h6 class="mb-0 fw-bold">{{ totales.pendiente | number:'1.2-2' }}</h6>
           </div>
         </div>
       </div>
       <div class="col">
         <div class="card bg-dark text-white shadow-sm h-100">
-          <div class="card-body p-2 text-center">
-            <h6 class="card-title text-uppercase font-weight-bold opacity-75 small mb-1">Total General</h6>
-            <h5 class="mb-0">{{ totales.total | number:'1.2-2' }}</h5>
+          <div class="card-body p-1 text-center">
+            <div class="text-uppercase font-weight-bold opacity-75 small" style="font-size: 0.7rem;">Total</div>
+            <h6 class="mb-0 fw-bold">{{ totales.total | number:'1.2-2' }}</h6>
           </div>
         </div>
       </div>
@@ -106,7 +114,10 @@
           <td>{{ f.fa_fecFact | date:'dd/MM/yyyy HH:mm' }}</td>
           <td>{{ f.fa_nomClie }}</td>
           <td class="fw-bold text-end">{{ f.fa_valFact | number:'1.2-2' }}</td>
-          <td class="text-end pe-4">{{ obtenerDescripcionPago(f.fa_fpago) }}</td>
+          <td class="text-end pe-4" 
+              [ngClass]="{'text-success fw-bold': obtenerEtiquetaPago(f) === 'COBRADA', 'text-danger': obtenerEtiquetaPago(f) === 'PENDIENTE'}">
+              {{ obtenerEtiquetaPago(f) }}
+          </td>
         </tr>
             <tr *ngIf="facturasFiltradas.length === 0">
               <td colspan="5" class="text-center py-5 text-muted">

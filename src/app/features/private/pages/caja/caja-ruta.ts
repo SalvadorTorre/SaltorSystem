@@ -22,6 +22,10 @@ const routes: Routes = [
           path:"ControlSalida",
           loadChildren: () => import('./pages/controlsalida-page/controlsalida-modulo').then(m => m.ModuloControlSalida)
         },
+        {
+          path:"cuadrecaja",
+          loadChildren: () => import('./pages/cuadecaja-page/cuadrecaja-modulo').then(m => m.ModuloCuadreCaja)
+        },
 
         
       ]
