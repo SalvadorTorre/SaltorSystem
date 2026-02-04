@@ -270,12 +270,18 @@ export class CuadreCaja implements OnInit {
         };
 
         this.cierreService.crearCierre(dataCierre).subscribe({
-            next: (res: any) => {
-                Swal.fire('Cerrado!', 'La caja ha sido cerrada correctamente.', 'success');
-                this.generarReporte();
-                this.obtenerUltimoCierreYFacturas(); 
-            },
-            error: (err: any) => {
+                    next: (res: any) => {
+                        // Actualizar facturas con pago 'P' a cierre 'C'
+                        this.facturaService.confirmarCierreFacturas().subscribe({
+                          next: (resp) => console.log('Facturas actualizadas a cierre C', resp),
+                          error: (err) => console.error('Error actualizando facturas cierre', err)
+                        });
+
+                        Swal.fire('Cerrado!', 'La caja ha sido cerrada correctamente.', 'success');
+                        this.generarReporte();
+                        this.obtenerUltimoCierreYFacturas(); 
+                    },
+                    error: (err: any) => {
                 console.error(err);
                 Swal.fire('Error', 'No se pudo registrar el cierre en base de datos', 'error');
             }

@@ -1,0 +1,112 @@
+
+<div class="container-fluid">
+  <div class="row mb-3">
+    <div class="col-12">
+      <div class="card shadow-sm border-0">
+        <div class="card-header bg-white py-3">
+          <h4 class="card-title m-0 text-primary fw-bold">
+            <i class="bi bi-receipt me-2"></i>Recibo de Ingreso
+          </h4>
+        </div>
+        <div class="card-body">
+          <form [formGroup]="reciboForm" (ngSubmit)="guardarRecibo()">
+            <div class="row g-3">
+              <div class="col-md-3">
+                <label for="fecha" class="form-label">Fecha</label>
+                <input type="date" id="fecha" class="form-control" formControlName="fecha" />
+              </div>
+              <div class="col-md-3">
+                <label for="cantidad" class="form-label">Cantidad</label>
+                <div class="input-group">
+                  <span class="input-group-text">$</span>
+                  <input type="number" id="cantidad" class="form-control" formControlName="cantidad" placeholder="0.00" />
+                </div>
+              </div>
+              <div class="col-md-3">
+                <label for="fpago" class="form-label">Forma de Pago</label>
+                <select id="fpago" class="form-select" formControlName="fpago">
+                  <option [ngValue]="null" disabled>Seleccione...</option>
+                  <option *ngFor="let fp of listaFpago" [value]="fp.fp_codfpago">
+                    {{ fp.fp_descfpago }}
+                  </option>
+                </select>
+              </div>
+              <div class="col-md-3">
+                <label for="nombre" class="form-label">Recibido de</label>
+                <input type="text" id="nombre" class="form-control" formControlName="nombre" placeholder="Nombre del cliente o persona" />
+              </div>
+              <div class="col-md-12">
+                <label for="concepto" class="form-label">Concepto</label>
+                <textarea id="concepto" class="form-control" formControlName="concepto" rows="2" placeholder="Detalle del ingreso"></textarea>
+              </div>
+            </div>
+            
+            <div class="d-flex justify-content-end mt-4">
+              <button type="button" class="btn btn-secondary me-2" (click)="limpiarFormulario()">
+                <i class="bi bi-x-circle me-1"></i> Cancelar
+              </button>
+              <button type="submit" class="btn btn-primary" [disabled]="reciboForm.invalid">
+                <i class="bi bi-save me-1"></i> Guardar Recibo
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabla de Recibos Recientes -->
+  <div class="row">
+    <div class="col-12">
+      <div class="card shadow-sm border-0">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+          <h5 class="card-title m-0 fw-bold">Recibos Recientes</h5>
+          <button class="btn btn-sm btn-outline-primary" (click)="cargarRecibos()">
+            <i class="bi bi-arrow-clockwise"></i> Actualizar
+          </button>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="bg-light">
+                <tr>
+                  <th class="ps-4">ID</th>
+                  <th>Fecha</th>
+                  <th>Recibido De</th>
+                  <th>Concepto</th>
+                  <th>Forma Pago</th>
+                  <th class="text-end pe-4">Monto</th>
+                  <th class="text-center">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let recibo of listaRecibos">
+                  <td class="ps-4">#{{ recibo.id }}</td>
+                  <td>{{ recibo.fecha | date:'dd/MM/yyyy' }}</td>
+                  <td>{{ recibo.nombre }}</td>
+                  <td>{{ recibo.concepto }}</td>
+                  <td>
+                    <span class="badge bg-secondary">{{ getNombreFpago(recibo.fpago) }}</span>
+                  </td>
+                  <td class="text-end pe-4 fw-bold text-success">
+                    {{ recibo.cantidad | currency:'DOP':'symbol':'1.2-2' }}
+                  </td>
+                  <td class="text-center">
+                    <button class="btn btn-sm btn-outline-danger" (click)="eliminarRecibo(recibo.id!)" title="Eliminar">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+                <tr *ngIf="listaRecibos.length === 0">
+                  <td colspan="7" class="text-center py-4 text-muted">
+                    No hay recibos registrados recientemente.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -141,4 +141,8 @@ export class ServicioFacturacion {
   actualizarEntregaFactura(codFact: string, fa_entrega: string): Observable<any> {
     return this.http.PatchRequest(`/facturacion/actualizar-entrega/${codFact}`, { fa_entrega });
   }
+
+  confirmarCierreFacturas(): Observable<any> {
+    return this.http.PatchRequest('/facturacion/confirmar-cierre', {});
+  }
 }

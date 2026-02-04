@@ -1,0 +1,14 @@
+/* Estilos para el componente de recibo de ingreso */
+.card {
+  border-radius: 0.5rem;
+}
+
+.table th {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.table td {
+  font-size: 0.9rem;
+}

@@ -26,6 +26,10 @@ const routes: Routes = [
           path:"cuadrecaja",
           loadChildren: () => import('./pages/cuadecaja-page/cuadrecaja-modulo').then(m => m.ModuloCuadreCaja)
         },
+        {
+          path:"reciboingreso",
+          loadChildren: () => import('./pages/reciboingreso-page/reciboingreso-modulo').then(m => m.ModuloReciboIngreso)
+        },
 
         
       ]

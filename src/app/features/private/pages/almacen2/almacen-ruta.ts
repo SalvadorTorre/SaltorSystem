@@ -31,7 +31,7 @@ const routes: Routes = [
         path: 'entradamerc',
         loadChildren: () =>
           import('./pages/entradamerc-page/entradamerc-modulo').then(
-            (m) => m.ModuloEntradamerc
+            (m) => m.ModuloEntradaMerc
           ),
       },
 
