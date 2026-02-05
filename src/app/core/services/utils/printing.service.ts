@@ -352,7 +352,212 @@ export class PrintingService {
     }
   }
 
+  /**
+   * Generates a PDF for an Entrada de Mercancía in 80mm format and prints it.
+   * @param entradaData The entry header data.
+   * @param items The list of items in the entry.
+   */
+  async imprimirEntrada80mm(entradaData: any, items: any[]) {
+    try {
+      const doc = new jsPDF({
+        orientation: 'p',
+        unit: 'mm',
+        format: [80, 297],
+      });
+      const pageWidth = 74;
+      const centerX = pageWidth / 2;
+      const leftMargin = 5;
+      const rightMargin = 5;
+      let yPos = 5;
+
+      const drawDashedLine = (y: number) => {
+        (doc as any).setLineDash([1, 1], 0);
+        doc.line(leftMargin, y, pageWidth - rightMargin, y);
+        (doc as any).setLineDash([], 0);
+      };
+      const centerText = (text: string, y: number, options?: any) => {
+        doc.text(text, centerX, y, { align: 'center', ...options });
+      };
+
+      try {
+        const imgData = 'assets/logo2.png';
+        const imgWidth = 20;
+        const imgHeight = 20;
+        doc.addImage(imgData, 'PNG', centerX - imgWidth / 2, yPos, imgWidth, imgHeight);
+        yPos += imgHeight + 5;
+      } catch {}
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+
+      let empresa = 'CENTRO HIERRO MARCOS SRL';
+      let direccion = 'CALLE 30 DE MARZO NO. 54';
+      let telefono = '809-547-0022';
+      let rncEmpresa = '101-66762-2';
+      try {
+        const empresaStorage = localStorage.getItem('empresa');
+        if (empresaStorage && empresaStorage !== '[object Object]') {
+          let parsedEmpresa = JSON.parse(empresaStorage);
+          if (Array.isArray(parsedEmpresa)) parsedEmpresa = parsedEmpresa[0];
+          if (parsedEmpresa) {
+            if (typeof parsedEmpresa === 'string') {
+              empresa = parsedEmpresa;
+              direccion = localStorage.getItem('direccion_empresa') || direccion;
+              telefono = localStorage.getItem('telefono_empresa') || telefono;
+              rncEmpresa = localStorage.getItem('rnc_empresa') || rncEmpresa;
+            } else {
+              empresa = parsedEmpresa.nom_empre || empresa;
+              direccion = parsedEmpresa.dir_empre || direccion;
+              telefono = parsedEmpresa.tel_empre || telefono;
+              rncEmpresa = parsedEmpresa.rnc_empre || rncEmpresa;
+            }
+          }
+        }
+      } catch {}
+
+      centerText(empresa, yPos);
+      yPos += 4;
+      const dirSplit = doc.splitTextToSize(direccion, pageWidth - (leftMargin + rightMargin));
+      centerText(dirSplit, yPos);
+      yPos += dirSplit.length * 4;
+      centerText(`Tel: ${telefono}`, yPos);
+      yPos += 4;
+      centerText(`RNC: ${rncEmpresa}`, yPos);
+      yPos += 6;
+      drawDashedLine(yPos);
+      yPos += 5;
+
+      const e = entradaData;
+      const fecha = e.me_fecEntr ? new Date(e.me_fecEntr) : new Date();
+      const formatDate = (date: Date) => {
+        const d = new Date(date);
+        const day = d.getDate().toString().padStart(2, '0');
+        const month = (d.getMonth() + 1).toString().padStart(2, '0');
+        const year = d.getFullYear();
+        const hours = d.getHours().toString().padStart(2, '0');
+        const minutes = d.getMinutes().toString().padStart(2, '0');
+        return `${day}/${month}/${year} ${hours}:${minutes}`;
+      };
+
+      const formatDateShort = (date: Date) => {
+        const d = new Date(date);
+        const day = d.getDate().toString().padStart(2, '0');
+        const month = (d.getMonth() + 1).toString().padStart(2, '0');
+        const year = d.getFullYear();
+        return `${day}/${month}/${year}`;
+      };
+      doc.text(`No: ${e.me_codEntr || ''}    ${formatDateShort(fecha)}`, leftMargin, yPos);
+      yPos += 4;
+      doc.text(`${(e.me_nomSupl || '').toString()}`, leftMargin, yPos);
+      yPos += 4;
+      if (e.me_facSupl) {
+        doc.text(`Fact. No: ${e.me_facSupl}`, leftMargin, yPos);
+        yPos += 4;
+      }
+      if (e.me_rncSupl) {
+        doc.text(`RNC: ${e.me_rncSupl}`, leftMargin, yPos);
+        yPos += 4;
+      }
+      doc.setFont('helvetica', 'bold');
+      centerText('ENTRADA DE MERCANCÍAS', yPos);
+      yPos += 6;
+      doc.setFont('helvetica', 'normal');
+
+      drawDashedLine(yPos);
+      yPos += 5;
+
+      doc.setFont('helvetica', 'bold');
+      const xDesc = leftMargin;
+      const xCant = 38;
+      const xPrecio = 52;
+      const xValor = pageWidth - rightMargin;
+      doc.text('Cantidad / Descripción', xDesc, yPos);
+      doc.text('0.00', xValor, yPos, { align: 'right' });
+      yPos += 2;
+      drawDashedLine(yPos);
+      yPos += 4;
+
+      doc.setFont('helvetica', 'normal');
+      const formatoMoneda = new Intl.NumberFormat('es-DO', {
+        style: 'decimal',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+      items.forEach((item: any) => {
+        const desc = item.producto?.in_desmerc || item.de_desMerc || '';
+        const cant = item.cantidad ?? item.de_canEntr ?? 0;
+        const precio = item.precio ?? item.de_preMerc ?? 0;
+        const totalItem = item.total ?? item.de_valEntr ?? (cant * precio) ?? 0;
+        const descLines = doc.splitTextToSize(desc, 30);
+        doc.text(descLines, xDesc, yPos);
+        doc.text(String(cant), xCant, yPos, { align: 'right' });
+        doc.text(formatoMoneda.format(precio), xPrecio, yPos, { align: 'right' });
+        doc.text(formatoMoneda.format(totalItem), xValor, yPos, { align: 'right' });
+        yPos += Math.max(descLines.length * 4, 4) + 2;
+      });
+
+      drawDashedLine(yPos);
+      yPos += 5;
+      const totalGral = e.me_valEntr || items.reduce((acc: number, it: any) => {
+        const t = it.total ?? it.de_valEntr ?? 0;
+        return acc + Number(t);
+      }, 0);
+      doc.setFont('helvetica', 'bold');
+      doc.text('TOTAL', 35, yPos, { align: 'right' });
+      doc.text(formatoMoneda.format(totalGral), pageWidth - rightMargin, yPos, { align: 'right' });
+      yPos += 8;
+      doc.setFont('helvetica', 'normal');
+      doc.text('Nota:', leftMargin, yPos);
+      yPos += 4;
+      if (e.nota) {
+        const notaLines = doc.splitTextToSize(String(e.nota), pageWidth - (leftMargin + rightMargin));
+        doc.text(notaLines, leftMargin, yPos);
+        yPos += notaLines.length * 4;
+      }
+      yPos += 6;
+      doc.setLineWidth(0.3);
+      const lineY = yPos;
+      doc.line(leftMargin, lineY, centerX - 4, lineY);
+      doc.line(centerX + 4, lineY, pageWidth - rightMargin, lineY);
+      doc.setFontSize(7);
+      const prep = (e.vendedor || e.me_nomVend || '').toString();
+      const recv = (e.despachado || e.chofer || '').toString();
+      doc.text(prep ? `Preparado por: ${prep}` : 'Preparado por', (leftMargin + centerX - 4) / 2, lineY + 4, { align: 'center' });
+      doc.text(recv ? `Recibido por: ${recv}` : 'Recibido por', (centerX + 4 + pageWidth - rightMargin) / 2, lineY + 4, { align: 'center' });
+      yPos += 10;
+
+      centerText('*** ENTRADA REGISTRADA ***', yPos);
+      yPos += 15;
+      doc.text('.', leftMargin, yPos, { align: 'left' });
+
+      doc.autoPrint();
+      const pdfBlob = doc.output('blob');
+      const pdfUrl = URL.createObjectURL(pdfBlob);
+      this.printPdf(pdfUrl);
+    } catch (error) {
+      console.error('Error al generar entrada:', error);
+    }
+  }
+
   private printPdf(pdfUrl: string) {
+    // Intento 1: abrir en nueva pestaña y disparar impresión
+    try {
+      const win = window.open(pdfUrl, '_blank');
+      if (win) {
+        win.focus();
+        setTimeout(() => {
+          try {
+            win.print();
+          } catch {}
+        }, 600);
+        return;
+      }
+    } catch {}
+
+    // Intento 2 (fallback): iframe oculto
     const iframe = document.createElement('iframe');
     iframe.style.position = 'fixed';
     iframe.style.right = '0';
@@ -369,7 +574,6 @@ export class PrintingService {
       } catch (e) {
         console.error('Print error', e);
       } finally {
-        // Clean up after a delay
         setTimeout(() => {
           document.body.removeChild(iframe);
           try {

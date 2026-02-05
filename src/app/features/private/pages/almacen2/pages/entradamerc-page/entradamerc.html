@@ -28,7 +28,7 @@
             <label class="form-label">Nombre Suplidor</label>
             <div class="input-group">
               <span class="input-group-text"><i class="bi bi-search"></i></span>
-               <input #inputNombreSupl type="text" class="form-control enter-next" formControlName="me_nomSupl" (input)="buscarSuplidor()" (keydown)="onKeyDown($event)" autocomplete="off" placeholder="Buscar suplidor...">
+               <input #inputNombreSupl type="text" class="form-control enter-next" formControlName="me_nomSupl" (input)="toUpper('me_nomSupl', $event); buscarSuplidor()" (keydown)="onKeyDown($event)" autocomplete="off" placeholder="Buscar suplidor...">
             </div>
             
             <ul class="list-group position-absolute w-100 shadow" style="z-index: 1000; top: 100%;" *ngIf="suplidoresBusqueda.length > 0">
@@ -45,30 +45,38 @@
           </div>
           <div class="col-md-2">
             <label class="form-label">Factura Suplidor</label>
-            <input type="text" class="form-control enter-next" formControlName="me_facSupl" (keydown.enter)="focusNext($event)">
+            <input type="text" class="form-control enter-next" formControlName="me_facSupl" (input)="toUpper('me_facSupl', $event)" (keydown.enter)="focusNext($event)">
           </div>
           <div class="col-md-2">
-            <label class="form-label">Fecha Suplidor</label>
+            <label class="form-label">Fec. Fact. Supl.</label>
             <input type="date" class="form-control enter-next" formControlName="me_fecSupl" (keydown.enter)="focusNext($event)">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Código Usuario</label>
+            <input type="text" class="form-control enter-next" formControlName="me_codVend" (keydown.enter)="buscarVendedorPorCodigo($event)">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Nombre Usuario</label>
+            <input type="text" class="form-control enter-next" formControlName="me_nomVend" readonly (keydown.enter)="focusNext($event)">
           </div>
            <div class="col-md-3">
             <label class="form-label">Vendedor</label>
-            <input type="text" class="form-control enter-next" formControlName="vendedor" (keydown.enter)="focusNext($event)">
+            <input type="text" class="form-control enter-next" formControlName="vendedor" (input)="toUpper('vendedor', $event)" (keydown.enter)="focusNext($event)">
           </div>
            <div class="col-md-3">
             <label class="form-label">Despachado Por</label>
-            <input type="text" class="form-control enter-next" formControlName="despachado" (keydown.enter)="focusNext($event)">
+            <input type="text" class="form-control enter-next" formControlName="despachado" (input)="toUpper('despachado', $event)" (keydown.enter)="focusNext($event)">
           </div>
            <div class="col-md-2">
             <label class="form-label">Chofer</label>
-            <input type="text" class="form-control enter-next" formControlName="chofer" (keydown.enter)="focusNext($event)">
+            <input type="text" class="form-control enter-next" formControlName="chofer" (input)="toUpper('chofer', $event)" (keydown.enter)="focusNext($event)">
           </div>
         </div>
 
         <div class="row mb-3">
              <div class="col-12">
             <label class="form-label">Nota</label>
-            <textarea class="form-control enter-next" formControlName="nota" rows="2" (keydown.enter)="focusNext($event)"></textarea>
+            <textarea class="form-control enter-next" formControlName="nota" rows="2" (input)="toUpper('nota', $event)" (keydown.enter)="focusNext($event)"></textarea>
           </div>
         </div>
 
@@ -80,7 +88,7 @@
           <div class="col-md-2">
             <label class="form-label">Código</label>
             <div class="position-relative">
-              <input #inputCodigo type="text" class="form-control enter-next" formControlName="det_codMerc" (input)="buscarProductoPorCodigo()" (keydown)="onKeyDownCodigo($event)" placeholder="Código producto">
+              <input #inputCodigo type="text" class="form-control enter-next" formControlName="det_codMerc" (input)="toUpper('det_codMerc', $event); buscarProductoPorCodigo()" (keydown)="onKeyDownCodigo($event)" placeholder="Código producto">
               <ul class="list-group position-absolute w-100 shadow" style="z-index: 1000; top: 100%;" *ngIf="productosBusquedaCodigo.length > 0">
                 <li class="list-group-item list-group-item-action" style="cursor: pointer;"
                     *ngFor="let p of productosBusquedaCodigo"
@@ -93,7 +101,7 @@
           <div class="col-md-4">
             <label class="form-label">Descripción</label>
             <div class="position-relative">
-              <input #inputDescripcion type="text" class="form-control enter-next" formControlName="det_desMerc" (input)="buscarProductoPorDescripcion()" (keydown)="onKeyDownDescripcion($event)" placeholder="Descripción producto">
+              <input #inputDescripcion type="text" class="form-control enter-next" formControlName="det_desMerc" (input)="toUpper('det_desMerc', $event); buscarProductoPorDescripcion()" (keydown)="onKeyDownDescripcion($event)" placeholder="Descripción producto">
               <ul class="list-group position-absolute w-100 shadow" style="z-index: 1000; top: 100%;" *ngIf="productosBusquedaDesc.length > 0">
                 <li class="list-group-item list-group-item-action" style="cursor: pointer;"
                     *ngFor="let p of productosBusquedaDesc"
@@ -162,8 +170,11 @@
         </div>
 
         <div class="d-flex justify-content-end">
-          <button type="submit" class="btn btn-primary btn-lg">
+          <button type="submit" class="btn btn-primary btn-lg me-2">
             <i class="bi bi-save me-2"></i> Guardar Entrada
+          </button>
+          <button type="button" class="btn btn-secondary btn-lg" [disabled]="!canPrint" (click)="imprimirEntrada()">
+            <i class="bi bi-printer me-2"></i> Imprimir 80mm
           </button>
         </div>
       </form>

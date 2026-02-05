@@ -7,6 +7,8 @@ import { ServicioInventario } from 'src/app/core/services/mantenimientos/inventa
 import { ServicioEntradamerc } from 'src/app/core/services/almacen/entradamerc/entradamerc.service';
 import { ServiciodetEntradamerc } from 'src/app/core/services/almacen/detentradamerc/detentradamerc.service';
 import { forkJoin } from 'rxjs';
+import { PrintingService } from 'src/app/core/services/utils/printing.service';
+import { ServicioUsuario } from 'src/app/core/services/mantenimientos/usuario/usuario.service';
 import Swal from 'sweetalert2';
 
 export interface DetEntradaMerc {
@@ -75,6 +77,9 @@ export class EntradaMercComponent implements OnInit, AfterViewInit {
     return v.length === 0 ? { whitespace: true } : null;
   };
   selectedProducto: any = null;
+  canPrint: boolean = false;
+  lastSavedEntrada: any = null;
+  lastSavedDetalle: any[] = [];
 
   constructor(
     private fb: FormBuilder,
@@ -82,7 +87,9 @@ export class EntradaMercComponent implements OnInit, AfterViewInit {
     private servicioSuplidor: ServicioSuplidor,
     private servicioInventario: ServicioInventario,
     private servicioEntradamerc: ServicioEntradamerc,
-    private servicioDetEntrada: ServiciodetEntradamerc
+    private servicioDetEntrada: ServiciodetEntradamerc,
+    private printing: PrintingService,
+    private servicioUsuario: ServicioUsuario
   ) {
     this.entradaForm = this.fb.group({
       me_codEntr: [{value: '', disabled: true}, Validators.required],
@@ -104,6 +111,32 @@ export class EntradaMercComponent implements OnInit, AfterViewInit {
       det_desMerc: ['', [Validators.required, this.noWhitespaceValidator]],
       det_canEntr: [0, [Validators.required, Validators.min(0.01)]],
       det_preMerc: [0, [Validators.required, Validators.min(0.01)]]
+    });
+  }
+
+  buscarVendedorPorCodigo(event: Event): void {
+    event.preventDefault();
+    const codVendCtrl = this.entradaForm.get('me_codVend');
+    const codVendRaw = (codVendCtrl?.value ?? '').toString().trim();
+    if (!codVendRaw) {
+      this.Toast.fire({ title: 'Código de vendedor inválido', icon: 'warning' });
+      return;
+    }
+    this.servicioUsuario.buscarUsuarioPorClave(codVendRaw).subscribe({
+      next: (res: any) => {
+        const usuario = Array.isArray(res?.data) ? res.data[0] : (res?.data ?? res);
+        const nombre = usuario?.nombreUsuario || usuario?.idUsuario || '';
+        if (!nombre) {
+          this.Toast.fire({ title: 'Vendedor no encontrado', icon: 'warning' });
+          return;
+        }
+        this.entradaForm.patchValue({ me_nomVend: nombre });
+        const target = event.target as HTMLElement;
+        this.focusNextFrom(target);
+      },
+      error: () => {
+        this.Toast.fire({ title: 'No se pudo buscar el vendedor', icon: 'error' });
+      }
     });
   }
 
@@ -318,6 +351,9 @@ export class EntradaMercComponent implements OnInit, AfterViewInit {
     }));
     this.servicioEntradamerc.guardarEntradamerc({ entradamercancias, detalle }).subscribe({
       next: () => {
+        this.canPrint = true;
+        this.lastSavedEntrada = entradamercancias;
+        this.lastSavedDetalle = detalle;
         const detallesSnapshot = [...this.detalles];
         const ajustes$ = detallesSnapshot.map(d => 
           this.servicioInventario.ajustarExistencia({
@@ -552,6 +588,9 @@ export class EntradaMercComponent implements OnInit, AfterViewInit {
   }
 
   refrescarFormulario() {
+    this.canPrint = false;
+    this.lastSavedEntrada = null;
+    this.lastSavedDetalle = [];
     this.detalles = [];
     this.suplidoresBusqueda = [];
     this.productosBusquedaCodigo = [];
@@ -582,5 +621,26 @@ export class EntradaMercComponent implements OnInit, AfterViewInit {
     this.entradaForm.get('det_desMerc')?.enable();
     this.cargarSecuenciaEntrada();
     this.inputNombreSupl?.nativeElement.focus();
+  }
+
+  imprimirEntrada() {
+    if (!this.canPrint || !this.lastSavedEntrada) {
+      this.Toast.fire({ title: 'No hay entrada para imprimir', icon: 'warning' });
+      return;
+    }
+    this.printing.imprimirEntrada80mm(this.lastSavedEntrada, this.lastSavedDetalle);
+  }
+ 
+  toUpper(controlName: string, event?: Event) {
+    const ctrl = this.entradaForm.get(controlName);
+    const target = event?.target as HTMLInputElement | HTMLTextAreaElement | undefined;
+    const raw = (ctrl?.value ?? '').toString();
+    const upper = raw.toUpperCase();
+    if (target) {
+      target.value = upper;
+    }
+    if (ctrl && raw !== upper) {
+      ctrl.setValue(upper, { emitEvent: false });
+    }
   }
 }
