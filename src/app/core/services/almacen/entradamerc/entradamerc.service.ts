@@ -2,6 +2,7 @@ import { Injectable } from "@angular/core";
 import { Observable } from "rxjs";
 import { HttpInvokeService } from "../../http-invoke.service";
 import { EntradamercModel, EntradamercModelData } from ".";
+import { HttpParams } from "@angular/common/http";
 
 @Injectable({
   providedIn: "root"
@@ -34,6 +35,9 @@ export class ServicioEntradamerc {
   buscarEntradamercDetalle(me_codEntr: string): Observable<any> {
     return this.http.GetRequest<any>(`/detalle-entradamerc/${me_codEntr}`);
   }
+  buscarEntradamercDetalleSilent(me_codEntr: string): Observable<any> {
+    return this.http.GetRequest<any>(`/detalle-entradamerc/${me_codEntr}`, false);
+  }
 
  buscarEntradamerc(pageIndex: number, pageSize: number, codigo?: string, nomcliente?: string, fecha?:string,): Observable<any> {
     let url = `/entradamerc-numero?page=${pageIndex}&limit=${pageSize}`;
@@ -48,6 +52,16 @@ export class ServicioEntradamerc {
       url += `&fecha=${fecha}`;
     }
     return this.http.GetRequest<any>(url);
+  }
+
+  buscarEntradamercSilent(pageIndex: number, pageSize: number, codigo?: string, nomcliente?: string, fecha?: string): Observable<any> {
+    let params = new HttpParams()
+      .set('page', String(pageIndex))
+      .set('limit', String(pageSize));
+    if (codigo) params = params.set('codigo', codigo);
+    if (nomcliente) params = params.set('nomcliente', nomcliente);
+    if (fecha) params = params.set('fecha', fecha);
+    return this.http.get('/entradamerc-numero', params);
   }
 
 }

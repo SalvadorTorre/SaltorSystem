@@ -6,10 +6,11 @@ import { ServicioSuplidor } from 'src/app/core/services/mantenimientos/suplidor/
 import { ServicioInventario } from 'src/app/core/services/mantenimientos/inventario/inventario.service';
 import { ServicioEntradamerc } from 'src/app/core/services/almacen/entradamerc/entradamerc.service';
 import { ServiciodetEntradamerc } from 'src/app/core/services/almacen/detentradamerc/detentradamerc.service';
-import { forkJoin } from 'rxjs';
+import { forkJoin, debounceTime, distinctUntilChanged } from 'rxjs';
 import { PrintingService } from 'src/app/core/services/utils/printing.service';
 import { ServicioUsuario } from 'src/app/core/services/mantenimientos/usuario/usuario.service';
 import Swal from 'sweetalert2';
+declare var $: any;
 
 export interface DetEntradaMerc {
   de_codEntr: string;
@@ -18,7 +19,7 @@ export interface DetEntradaMerc {
   de_canEntr?: number; // Decimal in Prisma -> number in TS
   de_preMerc?: number;
   de_valEntr?: number;
-  de_unidad?: number;
+  de_unidad?: string;
   de_cosMerc?: number;
   de_codSupl?: number;
   de_fecEntr?: Date | string;
@@ -80,6 +81,15 @@ export class EntradaMercComponent implements OnInit, AfterViewInit {
   canPrint: boolean = false;
   lastSavedEntrada: any = null;
   lastSavedDetalle: any[] = [];
+  totalItems = 0;
+  pageSize = 8;
+  currentPage = 1;
+  maxPagesToShow = 5;
+  consultaForm!: FormGroup;
+  entradamercList: any[] = [];
+  tituloModalEntradamerc: string = '';
+  entradaSeleccionada: any = null;
+  detalleConsulta: any[] = [];
 
   constructor(
     private fb: FormBuilder,
@@ -100,7 +110,7 @@ export class EntradaMercComponent implements OnInit, AfterViewInit {
       me_fecSupl: [new Date().toISOString().split('T')[0]],
       me_status: [''],
       me_codVend: [''],
-      me_nomVend: [''],
+      me_nomVend: [{ value: '', disabled: true }],
       nota: [''],
       vendedor: [''],
       despachado: [''],
@@ -112,6 +122,12 @@ export class EntradaMercComponent implements OnInit, AfterViewInit {
       det_canEntr: [0, [Validators.required, Validators.min(0.01)]],
       det_preMerc: [0, [Validators.required, Validators.min(0.01)]]
     });
+    this.consultaForm = this.fb.group({
+      codigo: [''],
+      nomcliente: [''],
+      fecha: ['']
+    });
+    this.setupAutoBuscarConsulta();
   }
 
   buscarVendedorPorCodigo(event: Event): void {
@@ -223,14 +239,13 @@ export class EntradaMercComponent implements OnInit, AfterViewInit {
   }
 
   cargarSecuenciaEntrada() {
-    this.servicioContFactura.buscarPorSucursal(this.idSucursal).subscribe({
+    const sucursalId = Number(localStorage.getItem('idSucursal') ?? this.idSucursal ?? 1);
+    this.servicioContFactura.buscarPorSucursal(sucursalId).subscribe({
       next: (response) => {
         if (response && response.data && response.data.length > 0) {
           const contador = response.data[0];
-          // Asumiendo que el campo es contentrada, si no existe usamos un fallback o lo calculamos
-          // Nota: El usuario indicó que el campo en Prisma se llama 'contentrada'
           const siguienteNumero = (contador.contentrada || 0) + 1;
-          const codigoGenerado = this.generarCodigoEntrada(this.idSucursal, siguienteNumero);
+          const codigoGenerado = this.generarCodigoEntrada(sucursalId, siguienteNumero);
           
           this.entradaForm.patchValue({
             me_codEntr: codigoGenerado
@@ -244,16 +259,11 @@ export class EntradaMercComponent implements OnInit, AfterViewInit {
   }
 
   generarCodigoEntrada(sucursal: number, numero: number): string {
-    // Requisito: Año + contentrada (relleno con ceros, longitud total 10)
-    // Ejemplo: 2026 + 000001 -> 2026000001
-    const anio = new Date().getFullYear().toString(); // 4 chars
-    const longitudTotal = 10;
-    const longitudRelleno = longitudTotal - anio.length - numero.toString().length;
-    
-    // Asegurar que no sea negativo si el número es muy grande
-    const ceros = '0'.repeat(Math.max(0, longitudRelleno));
-    
-    return `${anio}${ceros}${numero}`;
+    const anio = new Date().getFullYear().toString();
+    const sucStrFull = String(sucursal);
+    const sucStr = sucStrFull.length > 2 ? sucStrFull.slice(-2) : sucStrFull.padStart(2, '0');
+    const seqStr = String(numero).padStart(4, '0');
+    return `${anio}${sucStr}${seqStr}`;
   }
 
   agregarDetalle() {
@@ -277,7 +287,7 @@ export class EntradaMercComponent implements OnInit, AfterViewInit {
       de_canEntr: Number(this.entradaForm.get('det_canEntr')?.value),
       de_preMerc: Number(this.entradaForm.get('det_preMerc')?.value),
       de_valEntr: Number(this.entradaForm.get('det_canEntr')?.value) * Number(this.entradaForm.get('det_preMerc')?.value),
-      de_unidad: Number(this.selectedProducto?.in_unidad ?? 0)
+      de_unidad: String(this.selectedProducto?.in_unidad ?? '').trim()
     };
 
     if (detalle.de_codMerc) {
@@ -343,59 +353,137 @@ export class EntradaMercComponent implements OnInit, AfterViewInit {
       producto: {
         in_codmerc: d.de_codMerc,
         in_desmerc: d.de_desMerc || '',
-        in_unidad: Number(d.de_unidad ?? 0)
+        in_unidad: String(d.de_unidad ?? '').trim()
       },
       cantidad: Number(d.de_canEntr || 0),
       precio: Number(d.de_preMerc || 0),
       total: Number(d.de_valEntr || 0)
     }));
-    this.servicioEntradamerc.guardarEntradamerc({ entradamercancias, detalle }).subscribe({
-      next: () => {
-        this.canPrint = true;
-        this.lastSavedEntrada = entradamercancias;
-        this.lastSavedDetalle = detalle;
-        const detallesSnapshot = [...this.detalles];
-        const ajustes$ = detallesSnapshot.map(d => 
-          this.servicioInventario.ajustarExistencia({
-            inv_codsucu: sucursalId,
-            inv_codprod: d.de_codMerc,
-            cantidad: Number(d.de_canEntr || 0),
-            tipo_movimiento: 'entrada'
-          })
-        );
-        if (ajustes$.length > 0) {
-          forkJoin(ajustes$).subscribe({
-            next: () => {
-              this.Toast.fire({ title: 'Entrada guardada y existencias actualizadas', icon: 'success' });
-              this.detalles = [];
-              this.selectedProducto = null;
-              this.entradaForm.patchValue({ det_codMerc: '', det_desMerc: '', det_canEntr: 0, det_preMerc: 0 });
-              this.entradaForm.get('det_codMerc')?.enable();
-              this.entradaForm.get('det_desMerc')?.enable();
-              this.inputCodigo?.nativeElement.focus();
-            },
-            error: () => {
-              this.Toast.fire({ title: 'Entrada guardada, pero no se pudo actualizar existencias', icon: 'warning' });
-              this.detalles = [];
-              this.selectedProducto = null;
-              this.entradaForm.patchValue({ det_codMerc: '', det_desMerc: '', det_canEntr: 0, det_preMerc: 0 });
-              this.entradaForm.get('det_codMerc')?.enable();
-              this.entradaForm.get('det_desMerc')?.enable();
-              this.inputCodigo?.nativeElement.focus();
-            }
-          });
-        } else {
-          this.Toast.fire({ title: 'Entrada guardada', icon: 'success' });
-          this.detalles = [];
-          this.selectedProducto = null;
-          this.entradaForm.patchValue({ det_codMerc: '', det_desMerc: '', det_canEntr: 0, det_preMerc: 0 });
-          this.entradaForm.get('det_codMerc')?.enable();
-          this.entradaForm.get('det_desMerc')?.enable();
-          this.inputCodigo?.nativeElement.focus();
+    this.servicioContFactura.buscarPorSucursal(sucursalId).subscribe({
+      next: (response) => {
+        let contadorActual = 0;
+        const data = Array.isArray(response?.data) ? response.data : Array.isArray(response) ? response : [];
+        if (data.length > 0) {
+          contadorActual = Number(data[0]?.contentrada || 0);
         }
+        const siguienteNumero = contadorActual + 1;
+        const codigoFinal = this.generarCodigoEntrada(sucursalId, siguienteNumero);
+        entradamercancias.me_codEntr = codigoFinal;
+        this.entradaForm.patchValue({ me_codEntr: codigoFinal });
+        this.servicioEntradamerc.guardarEntradamerc({ entradamercancias, detalle }).subscribe({
+          next: (res: any) => {
+            let savedCode = codigoFinal;
+            let savedHeader = null;
+            let savedItems = null;
+            const tryData = res?.data ?? res;
+            if (Array.isArray(tryData) && tryData.length > 0) {
+              savedHeader = tryData[0];
+            } else if (tryData && typeof tryData === 'object') {
+              savedHeader = tryData.entradamercancias ?? tryData.header ?? tryData;
+              savedItems = tryData.detalle ?? tryData.items ?? null;
+            }
+            if (savedHeader) {
+              const c = savedHeader.me_codEntr ?? savedHeader.me_codentr;
+              if (c && String(c).trim().length > 0) savedCode = String(c).trim();
+            }
+            entradamercancias.me_codEntr = savedCode;
+            this.entradaForm.patchValue({ me_codEntr: savedCode });
+            this.canPrint = true;
+            const headerNormalized = savedHeader ? this.normalizarEntradaParaImpresion(savedHeader) : entradamercancias;
+            headerNormalized.me_codEntr = savedCode;
+            this.lastSavedEntrada = headerNormalized;
+            this.lastSavedDetalle = Array.isArray(savedItems) ? savedItems : detalle;
+            const detallesSnapshot = [...this.detalles];
+            const ajustes$ = detallesSnapshot.map(d => 
+              this.servicioInventario.ajustarExistencia({
+                inv_codsucu: sucursalId,
+                inv_codprod: d.de_codMerc,
+                cantidad: Number(d.de_canEntr || 0),
+                tipo_movimiento: 'entrada'
+              })
+            );
+            if (ajustes$.length > 0) {
+              forkJoin(ajustes$).subscribe({
+                next: () => {
+                  this.Toast.fire({ title: 'Entrada guardada y existencias actualizadas', icon: 'success' });
+                  this.detalles = [];
+                  this.selectedProducto = null;
+                  this.entradaForm.patchValue({ det_codMerc: '', det_desMerc: '', det_canEntr: 0, det_preMerc: 0 });
+                  this.entradaForm.get('det_codMerc')?.enable();
+                  this.entradaForm.get('det_desMerc')?.enable();
+                  this.inputCodigo?.nativeElement.focus();
+                  this.servicioEntradamerc.buscarEntradamercSilent(1, 1, savedCode).subscribe({
+                    next: (hresp: any) => {
+                      const harr = Array.isArray(hresp?.data) ? hresp.data : (Array.isArray(hresp) ? hresp : []);
+                      if (harr.length > 0) {
+                        const header = this.normalizarEntradaParaImpresion(harr[0]);
+                        header.me_codEntr = String(harr[0]?.me_codEntr ?? harr[0]?.me_codentr ?? savedCode);
+                        this.lastSavedEntrada = header;
+                      }
+                    }
+                  });
+                  this.servicioEntradamerc.buscarEntradamercDetalleSilent(savedCode).subscribe({
+                    next: (resp: any) => {
+                      const raw = Array.isArray(resp?.data) ? resp.data : (Array.isArray(resp) ? resp : []);
+                      this.lastSavedDetalle = raw.map((d: any) => ({
+                        de_codMerc: d.dc_codmerc ?? d.de_codMerc ?? d.in_codmerc ?? '',
+                        de_desMerc: d.dc_descrip ?? d.de_desMerc ?? d.in_desmerc ?? '',
+                        de_canEntr: Number(d.dc_cantidad ?? d.de_canEntr ?? 0),
+                        de_preMerc: Number(d.dc_precio ?? d.de_preMerc ?? 0),
+                        de_valEntr: Number(d.dc_total ?? d.de_valEntr ?? 0)
+                      }));
+                    }
+                  });
+                },
+                error: () => {
+                  this.Toast.fire({ title: 'Entrada guardada, pero no se pudo actualizar existencias', icon: 'warning' });
+                  this.detalles = [];
+                  this.selectedProducto = null;
+                  this.entradaForm.patchValue({ det_codMerc: '', det_desMerc: '', det_canEntr: 0, det_preMerc: 0 });
+                  this.entradaForm.get('det_codMerc')?.enable();
+                  this.entradaForm.get('det_desMerc')?.enable();
+                  this.inputCodigo?.nativeElement.focus();
+                }
+              });
+            } else {
+              this.Toast.fire({ title: 'Entrada guardada', icon: 'success' });
+              this.detalles = [];
+              this.selectedProducto = null;
+              this.entradaForm.patchValue({ det_codMerc: '', det_desMerc: '', det_canEntr: 0, det_preMerc: 0 });
+              this.entradaForm.get('det_codMerc')?.enable();
+              this.entradaForm.get('det_desMerc')?.enable();
+              this.inputCodigo?.nativeElement.focus();
+              this.servicioEntradamerc.buscarEntradamercSilent(1, 1, savedCode).subscribe({
+                next: (hresp: any) => {
+                  const harr = Array.isArray(hresp?.data) ? hresp.data : (Array.isArray(hresp) ? hresp : []);
+                  if (harr.length > 0) {
+                    const header = this.normalizarEntradaParaImpresion(harr[0]);
+                    header.me_codEntr = String(harr[0]?.me_codEntr ?? harr[0]?.me_codentr ?? savedCode);
+                    this.lastSavedEntrada = header;
+                  }
+                }
+              });
+              this.servicioEntradamerc.buscarEntradamercDetalleSilent(savedCode).subscribe({
+                next: (resp: any) => {
+                  const raw = Array.isArray(resp?.data) ? resp.data : (Array.isArray(resp) ? resp : []);
+                  this.lastSavedDetalle = raw.map((d: any) => ({
+                    de_codMerc: d.dc_codmerc ?? d.de_codMerc ?? d.in_codmerc ?? '',
+                    de_desMerc: d.dc_descrip ?? d.de_desMerc ?? d.in_desmerc ?? '',
+                    de_canEntr: Number(d.dc_cantidad ?? d.de_canEntr ?? 0),
+                    de_preMerc: Number(d.dc_precio ?? d.de_preMerc ?? 0),
+                    de_valEntr: Number(d.dc_total ?? d.de_valEntr ?? 0)
+                  }));
+                }
+              });
+            }
+          },
+          error: () => {
+            this.Toast.fire({ title: 'Error guardando entrada', icon: 'error' });
+          }
+        });
       },
       error: () => {
-        this.Toast.fire({ title: 'Error guardando entrada', icon: 'error' });
+        this.Toast.fire({ title: 'No se pudo obtener la secuencia. Intente nuevamente.', icon: 'error' });
       }
     });
   }
@@ -628,7 +716,49 @@ export class EntradaMercComponent implements OnInit, AfterViewInit {
       this.Toast.fire({ title: 'No hay entrada para imprimir', icon: 'warning' });
       return;
     }
-    this.printing.imprimirEntrada80mm(this.lastSavedEntrada, this.lastSavedDetalle);
+    const codigo = this.lastSavedEntrada?.me_codEntr || this.lastSavedEntrada?.me_codentr || '';
+    if (codigo) {
+      this.servicioEntradamerc.buscarEntradamercSilent(1, 1, codigo).subscribe((resp: any) => {
+        const arr = Array.isArray(resp?.data) ? resp.data : (Array.isArray(resp) ? resp : []);
+        const header = arr.length > 0 ? this.normalizarEntradaParaImpresion(arr[0]) : this.lastSavedEntrada;
+        header.me_codEntr = String(arr[0]?.me_codEntr ?? arr[0]?.me_codentr ?? codigo);
+        this.servicioEntradamerc.buscarEntradamercDetalleSilent(codigo).subscribe({
+          next: (dres: any) => {
+            const raw = Array.isArray(dres?.data) ? dres.data : (Array.isArray(dres) ? dres : []);
+            const items = raw.map((d: any) => ({
+              de_codMerc: d.dc_codmerc ?? d.de_codMerc ?? d.in_codmerc ?? '',
+              de_desMerc: d.dc_descrip ?? d.de_desMerc ?? d.in_desmerc ?? '',
+              de_canEntr: Number(d.dc_cantidad ?? d.de_canEntr ?? 0),
+              de_preMerc: Number(d.dc_precio ?? d.de_preMerc ?? 0),
+              de_valEntr: Number(d.dc_total ?? d.de_valEntr ?? 0)
+            }));
+            this.printing.imprimirEntrada80mm(header, items);
+          },
+          error: () => {
+            this.printing.imprimirEntrada80mm(header, this.lastSavedDetalle || []);
+          }
+        });
+      }, () => {
+        this.servicioEntradamerc.buscarEntradamercDetalleSilent(codigo).subscribe({
+          next: (dres: any) => {
+            const raw = Array.isArray(dres?.data) ? dres.data : (Array.isArray(dres) ? dres : []);
+            const items = raw.map((d: any) => ({
+              de_codMerc: d.dc_codmerc ?? d.de_codMerc ?? d.in_codmerc ?? '',
+              de_desMerc: d.dc_descrip ?? d.de_desMerc ?? d.in_desmerc ?? '',
+              de_canEntr: Number(d.dc_cantidad ?? d.de_canEntr ?? 0),
+              de_preMerc: Number(d.dc_precio ?? d.de_preMerc ?? 0),
+              de_valEntr: Number(d.dc_total ?? d.de_valEntr ?? 0)
+            }));
+            this.printing.imprimirEntrada80mm(this.lastSavedEntrada, items);
+          },
+          error: () => {
+            this.printing.imprimirEntrada80mm(this.lastSavedEntrada, this.lastSavedDetalle);
+          }
+        });
+      });
+    } else {
+      this.printing.imprimirEntrada80mm(this.lastSavedEntrada, this.lastSavedDetalle);
+    }
   }
  
   toUpper(controlName: string, event?: Event) {
@@ -642,5 +772,186 @@ export class EntradaMercComponent implements OnInit, AfterViewInit {
     if (ctrl && raw !== upper) {
       ctrl.setValue(upper, { emitEvent: false });
     }
+  }
+
+  abrirConsultaEntradas() {
+    this.tituloModalEntradamerc = 'Consulta Entradas';
+    this.cargarEntradasListado(1);
+    $('#modalEntradamerc').modal('show');
+  }
+
+  cargarEntradas(page: number) {
+    this.currentPage = page;
+    const { codigo, nomcliente, fecha } = this.consultaForm.getRawValue();
+    this.servicioEntradamerc.buscarEntradamercSilent(this.currentPage, this.pageSize, (codigo || '').trim() || undefined, (nomcliente || '').trim() || undefined, (fecha || '').trim() || undefined)
+      .subscribe((response: any) => {
+        const data = Array.isArray(response?.data) ? response.data : [];
+        this.entradamercList = data;
+        this.totalItems = Number(response?.totalItems ?? data.length);
+      }, () => {
+        // Fallback: listar y filtrar localmente si el backend devolvió error con filtros
+        this.servicioEntradamerc.buscarTodasEntradamerc(this.currentPage, this.pageSize).subscribe((resp: any) => {
+          const base = Array.isArray(resp?.data) ? resp.data : [];
+          this.entradamercList = this.aplicarFiltroLocal(base, (codigo || '').trim(), (nomcliente || '').trim(), (fecha || '').trim());
+          this.totalItems = this.entradamercList.length;
+        }, () => {
+          this.entradamercList = [];
+          this.totalItems = 0;
+        });
+      });
+  }
+
+  cargarEntradasListado(page: number) {
+    this.currentPage = page;
+    this.servicioEntradamerc.buscarTodasEntradamerc(this.currentPage, this.pageSize)
+      .subscribe((response: any) => {
+        const data = Array.isArray(response?.data) ? response.data : [];
+        this.entradamercList = data;
+        this.totalItems = Number(response?.totalItems ?? data.length);
+      }, () => {
+        this.entradamercList = [];
+        this.totalItems = 0;
+      });
+  }
+
+  buscarEntradas() {
+    const { codigo, nomcliente, fecha } = this.consultaForm.getRawValue();
+    if ((codigo && codigo.trim()) || (nomcliente && nomcliente.trim()) || (fecha && fecha.trim())) {
+      this.cargarEntradas(1);
+    } else {
+      this.cargarEntradasListado(1);
+    }
+  }
+
+  private tieneFiltroConsulta(): boolean {
+    const { codigo, nomcliente, fecha } = this.consultaForm.getRawValue();
+    return !!((codigo && codigo.trim()) || (nomcliente && nomcliente.trim()) || (fecha && fecha.trim()));
+  }
+
+  get totalPages(): number {
+    const pages = Math.ceil((this.totalItems || 0) / (this.pageSize || 1));
+    return Math.max(1, pages);
+  }
+
+  get pagesToShow(): number[] {
+    const total = this.totalPages;
+    const maxShow = Math.max(1, this.maxPagesToShow || 5);
+    let start = Math.max(1, this.currentPage - Math.floor(maxShow / 2));
+    let end = Math.min(total, start + maxShow - 1);
+    if ((end - start + 1) < maxShow) {
+      start = Math.max(1, end - maxShow + 1);
+    }
+    const pages: number[] = [];
+    for (let p = start; p <= end; p++) pages.push(p);
+    return pages;
+  }
+
+  irAPagina(page: number) {
+    const p = Math.min(Math.max(1, page), this.totalPages);
+    this.currentPage = p;
+    if (this.tieneFiltroConsulta()) {
+      this.cargarEntradas(p);
+    } else {
+      this.cargarEntradasListado(p);
+    }
+  }
+
+  paginaAnterior() {
+    if (this.currentPage > 1) this.irAPagina(this.currentPage - 1);
+  }
+
+  paginaSiguiente() {
+    if (this.currentPage < this.totalPages) this.irAPagina(this.currentPage + 1);
+  }
+
+  private aplicarFiltroLocal(items: any[], codigo: string, nomcliente: string, fecha: string): any[] {
+    const c = (codigo || '').toLowerCase();
+    const n = (nomcliente || '').toLowerCase();
+    const f = (fecha || '');
+    return items.filter((e: any) => {
+      const cod = String(e.me_codEntr ?? e.me_codentr ?? '').toLowerCase();
+      const nom = String(e.me_nomSupl ?? e.me_nomsupl ?? '').toLowerCase();
+      const fec = String(e.me_fecEntr ?? e.me_fecentr ?? '');
+      const byCod = c ? cod.includes(c) : true;
+      const byNom = n ? nom.includes(n) : true;
+      const byFec = f ? fec.startsWith(f) : true;
+      return byCod && byNom && byFec;
+    });
+  }
+
+  refrescarModalConsulta() {
+    this.consultaForm.reset({ codigo: '', nomcliente: '', fecha: '' });
+    this.entradaSeleccionada = null;
+    this.detalleConsulta = [];
+    this.cargarEntradasListado(1);
+  }
+
+  private setupAutoBuscarConsulta() {
+    const codigoCtrl = this.consultaForm.get('codigo');
+    const nomCtrl = this.consultaForm.get('nomcliente');
+    codigoCtrl?.valueChanges.pipe(debounceTime(300), distinctUntilChanged()).subscribe((v) => {
+      const s = String(v || '').trim();
+      if (s.length >= 2) {
+        this.cargarEntradas(1);
+      } else {
+        this.cargarEntradasListado(1);
+      }
+    });
+    nomCtrl?.valueChanges.pipe(debounceTime(300), distinctUntilChanged()).subscribe((v) => {
+      const s = String(v || '').trim();
+      if (s.length >= 2) {
+        this.cargarEntradas(1);
+      } else {
+        this.cargarEntradasListado(1);
+      }
+    });
+  }
+
+  verDetalleEntrada(entrada: any) {
+    this.entradaSeleccionada = entrada;
+    const codigo = entrada?.me_codEntr || entrada?.me_codentr || '';
+    if (!codigo) {
+      this.detalleConsulta = [];
+      return;
+    }
+    this.servicioEntradamerc.buscarEntradamercDetalle(codigo).subscribe((res: any) => {
+      const raw = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : (Array.isArray(res?.detalle) ? res.detalle : []));
+      this.detalleConsulta = raw.map((d: any) => ({
+        de_codMerc: d.dc_codmerc ?? d.DC_CODMERC ?? d.de_codMerc ?? d.DE_CODMERC ?? d.in_codmerc ?? '',
+        de_desMerc: d.dc_descrip ?? d.DC_DESCRIP ?? d.de_desMerc ?? d.DE_DESMERC ?? d.in_desmerc ?? '',
+        de_canEntr: Number(d.dc_cantidad ?? d.DC_CANTIDAD ?? d.de_canEntr ?? d.DE_CANENTR ?? 0),
+        de_preMerc: Number(d.dc_precio ?? d.DC_PRECIO ?? d.de_preMerc ?? d.DE_PREMERC ?? 0),
+        de_valEntr: Number(d.dc_total ?? d.DC_TOTAL ?? d.de_valEntr ?? d.DE_VALENTR ?? (((d.dc_cantidad ?? d.DC_CANTIDAD ?? 0) * (d.dc_precio ?? d.DC_PRECIO ?? 0)) || 0))
+      }));
+    }, () => {
+      this.detalleConsulta = [];
+    });
+  }
+
+  private normalizarEntradaParaImpresion(e: any) {
+    return {
+      me_codEntr: e?.me_codEntr ?? e?.me_codentr ?? '',
+      me_fecEntr: e?.me_fecEntr ?? e?.me_fecentr ?? null,
+      me_nomSupl: e?.me_nomSupl ?? e?.me_nomsupl ?? '',
+      me_facSupl: e?.me_facSupl ?? e?.me_facsupl ?? '',
+      me_fecSupl: e?.me_fecSupl ?? e?.me_fecsupl ?? null,
+      me_rncSupl: e?.me_rncSupl ?? e?.me_rncsupl ?? null,
+      me_status: e?.me_status ?? e?.ME_STATUS ?? '',
+      me_nomVend: e?.me_nomVend ?? e?.ME_NOMVEND ?? e?.me_nomvend ?? '',
+      vendedor: e?.me_vendedor ?? e?.ME_VENDEDOR ?? e?.vendedor ?? '',
+      despachado: e?.me_despachado ?? e?.ME_DESPACHADO ?? e?.despachado ?? '',
+      chofer: e?.me_chofer ?? e?.ME_CHOFER ?? e?.chofer ?? '',
+      nota: e?.nota ?? e?.ME_NOTA ?? e?.me_nota ?? ''
+    };
+  }
+
+  imprimirEntradaConsulta() {
+    if (!this.entradaSeleccionada) {
+      this.Toast.fire({ title: 'Seleccione una entrada para imprimir', icon: 'warning' });
+      return;
+    }
+    const header = this.normalizarEntradaParaImpresion(this.entradaSeleccionada);
+    const items = this.detalleConsulta || [];
+    this.printing.imprimirEntrada80mm(header, items);
   }
 }

@@ -449,18 +449,24 @@ export class PrintingService {
         const year = d.getFullYear();
         return `${day}/${month}/${year}`;
       };
-      doc.text(`No: ${e.me_codEntr || ''}    ${formatDateShort(fecha)}`, leftMargin, yPos);
+      const xLeft = leftMargin;
+      const xRight = pageWidth - rightMargin;
+      doc.text(`Código Entrada: ${e.me_codEntr || e.me_codentr || ''}`, xLeft, yPos);
+      doc.text(`Fecha Entrada: ${formatDateShort(fecha)}`, xRight, yPos, { align: 'right' });
       yPos += 4;
-      doc.text(`${(e.me_nomSupl || '').toString()}`, leftMargin, yPos);
+      doc.text(`Nombre Suplidor: ${(e.me_nomSupl || '').toString()}`, xLeft, yPos);
       yPos += 4;
-      if (e.me_facSupl) {
-        doc.text(`Fact. No: ${e.me_facSupl}`, leftMargin, yPos);
-        yPos += 4;
-      }
-      if (e.me_rncSupl) {
-        doc.text(`RNC: ${e.me_rncSupl}`, leftMargin, yPos);
-        yPos += 4;
-      }
+      const fecSuplTxt = e.me_fecSupl ? formatDateShort(new Date(e.me_fecSupl)) : '';
+      doc.text(`Factura del Suplidor: ${e.me_facSupl || ''}`, xLeft, yPos);
+      doc.text(`Fecha Suplidor: ${fecSuplTxt}`, xRight, yPos, { align: 'right' });
+      yPos += 4;
+      doc.text(`Vendedor: ${(e.vendedor || '').toString()}`, xLeft, yPos);
+      doc.text(`Chofer: ${(e.chofer || '').toString()}`, xRight, yPos, { align: 'right' });
+      yPos += 4;
+      const usuario = (e.me_nomVend || '').toString();
+      doc.text(`Despachador: ${(e.despachado || '').toString()}`, xLeft, yPos);
+      doc.text(`Usuario: ${usuario}`, xRight, yPos, { align: 'right' });
+      yPos += 6;
       doc.setFont('helvetica', 'bold');
       centerText('ENTRADA DE MERCANCÍAS', yPos);
       yPos += 6;
@@ -475,7 +481,9 @@ export class PrintingService {
       const xPrecio = 52;
       const xValor = pageWidth - rightMargin;
       doc.text('Cantidad / Descripción', xDesc, yPos);
-      doc.text('0.00', xValor, yPos, { align: 'right' });
+      doc.text('Cant', xCant, yPos, { align: 'right' });
+      doc.text('Precio', xPrecio, yPos, { align: 'right' });
+      doc.text('Valor', xValor, yPos, { align: 'right' });
       yPos += 2;
       drawDashedLine(yPos);
       yPos += 4;

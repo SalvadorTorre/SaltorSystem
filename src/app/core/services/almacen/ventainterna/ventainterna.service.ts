@@ -24,21 +24,26 @@ export class ServicioVentainterna {
     return this.http.GetRequest<any>(url);
   }
 
-  eliminarVentainterna(fa_codFact: string): Observable<any> {
-    return this.http.DeleteRequest(`/eliminar-ventainterna/${fa_codFact}`, "");
+  // Búsqueda exacta por número de venta interna
+  buscarVentainternaPorNumero(fa_codFact: string): Observable<any> {
+    return this.http.GetRequest<any>(`/ventainterna/${fa_codFact}`);
   }
-
 
   buscarVentainternaPorNombre(currentPage: number, pageSize: number, fa_nomfact: string, ): Observable<any> {
     return this.http.GetRequest<any>(`/ventainterna/${fa_nomfact}`);
+  }
+  // Buscar por nombre de cliente (ruta específica del backend)
+  buscarVentainternaPorNombreCliente(fa_nomClie: string): Observable<any> {
+    return this.http.GetRequest<any>(`/ventainterna-buscador-cliente/${fa_nomClie}`);
   }
   buscarVentainternaDetalle(df_codFact: string): Observable<any> {
     return this.http.GetRequest<any>(`/detalle-ventainterna/${df_codFact}`);
   }
 
 
- buscarVentainterna(pageIndex: number, pageSize: number, codigo?: string, nomcliente?: string, fecha?:string,): Observable<any> {
-    let url = `/ventainterna-numero?page=${pageIndex}&limit=${pageSize}`;
+  buscarVentainterna(pageIndex: number, pageSize: number, codigo?: string, nomcliente?: string, fecha?:string,): Observable<any> {
+    // Alinear con las rutas del backend: GET /api/ventainterna
+    let url = `/ventainterna?page=${pageIndex}&limit=${pageSize}`;
 
     if (codigo) {
       url += `&codigo=${codigo}`;
@@ -50,6 +55,10 @@ export class ServicioVentainterna {
       url += `&fecha=${fecha}`;
     }
     return this.http.GetRequest<any>(url);
+  }
+
+  eliminarVentainterna(fa_codFact: string): Observable<any> {
+    return this.http.DeleteRequest(`/eliminar-ventainterna/${fa_codFact}`, "");
   }
 
 }

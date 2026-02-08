@@ -17,9 +17,10 @@
               <label for="">No.</label>
               <input
                 type="text"
-                class="form-control form-control-sm"
-                placeholder="No. Cotización"
-                class="form-control"
+                class="form-control form-control-sm uppercase"
+                placeholder="No. Venta Interna"
+                [(ngModel)]="txtcodigo"
+                (input)="codigoEntra($event)"
               />
             </div>
             <div class="col-5">
@@ -38,7 +39,8 @@
               <input
                 type="date"
                 class="form-control form-control-sm"
-                placeholder="Fecha..."
+                [(ngModel)]="txtfecha"
+                (input)="fechaEntra($event)"
               />
             </div>
 
@@ -77,10 +79,10 @@
                   <td style="width: 10%">{{ventainterna.fa_codFact}}</td>
                   <td style="width: 45%">{{ventainterna.fa_nomClie}}</td>
                   <td class="text-center" style="width: 10%">
-                    {{ventainterna.fa_fecFact}}
+                    {{ventainterna.fa_fecFact | date:'dd/MM/yyyy' }}
                   </td>
                   <td class="text-end" tyle="width: 12%">
-                    {{ventainterna.fa_valFact}}
+                    {{ventainterna.fa_valFact | number:'1.2-2':'en-US' }}
                   </td>
                   <td>
                     <i
@@ -283,8 +285,7 @@
                               "
                               class="px-3 cp"
                             >
-                              <i class="far fa-user-circle mr-5"></i
-                              >&nbsp;&nbsp;{{ result.cl_nomClie }}
+                              <i class="far fa-user-circle mr-5"></i>&nbsp;&nbsp;{{ result.cl_nomClie }}
                             </a>
                           </div>
                         </div>
@@ -438,8 +439,7 @@
                         "
                         class="px-3 cp"
                       >
-                        <i class="far fa-user-circle mr-5"></i>&nbsp;&nbsp;{{
-                        result.in_codmerc }}
+                        <i class="far fa-user-circle mr-5"></i>&nbsp;&nbsp;{{ result.in_codmerc }} - {{ result.in_desmerc }}
                       </a>
                     </div>
                   </div>
@@ -491,8 +491,7 @@
                         "
                         class="px-3 cp"
                       >
-                        <i class="far fa-user-circle mr-5"></i>&nbsp;&nbsp;{{
-                        result.in_desmerc }}
+                        <i class="far fa-user-circle mr-5"></i>&nbsp;&nbsp;{{ result.in_desmerc }} ({{ result.in_codmerc }})
                       </a>
                     </div>
                   </div>

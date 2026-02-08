@@ -130,12 +130,88 @@ export class Ventainterna implements OnInit {
         debounceTime(500),
         distinctUntilChanged(),
         switchMap((nomcliente) => {
-          this.txtdescripcion = nomcliente;
+          const trimmed = (nomcliente || '').toString().trim().toUpperCase();
+          this.txtdescripcion = trimmed;
+          if (trimmed.length > 0) {
+            // Usa la ruta específica de cliente
+            this.currentPage = 1;
+            return this.servicioVentainterna.buscarVentainternaPorNombreCliente(trimmed);
+          }
+          // Sin valor: vuelve a la lista paginada sin filtros
+          this.currentPage = 1;
+          return this.servicioVentainterna.buscarTodasVentainterna(
+            this.currentPage,
+            this.pageSize
+          );
+        })
+      )
+      .subscribe((response) => {
+        const data = response?.data;
+        if (Array.isArray(data)) {
+          this.ventainternaList = data;
+          this.totalItems = response?.pagination?.total ?? data.length;
+          this.currentPage = response?.pagination?.page ?? 1;
+        } else if (data) {
+          this.ventainternaList = [data];
+          this.totalItems = this.ventainternaList.length;
+          this.currentPage = 1;
+        } else {
+          this.ventainternaList = [];
+          this.totalItems = 0;
+          this.currentPage = 1;
+        }
+      });
+    // (removida suscripción previa de nomcliente; ahora usamos la ruta específica de cliente)
+
+
+    // Filtro reactivo por número (código) - usa lista con filtro "codigo"
+      this.codigoBuscar
+        .pipe(
+          debounceTime(500),
+          distinctUntilChanged(),
+          switchMap((codigo) => {
+            const trimmed = (codigo || '').toString().trim().toUpperCase();
+            this.codigo = trimmed;
+            if (trimmed.length > 0) {
+              // Reinicia a la primera página al filtrar
+              this.currentPage = 1;
+              return this.servicioVentainterna.buscarVentainterna(
+                this.currentPage,
+                this.pageSize,
+                this.codigo,
+                this.txtdescripcion,
+                this.fecha
+              );
+            }
+            // Sin valor: vuelve a la lista paginada sin filtros
+            this.currentPage = 1;
+            return this.servicioVentainterna.buscarTodasVentainterna(
+              this.currentPage,
+              this.pageSize
+            );
+          })
+        )
+        .subscribe((response) => {
+          const data = response?.data ?? [];
+          this.ventainternaList = Array.isArray(data) ? data : [];
+          this.totalItems = response?.pagination?.total ?? this.ventainternaList.length;
+          this.currentPage = response?.pagination?.page ?? 1;
+        });
+    // (removed duplicate codigoBuscar subscription after adding exact-number search)
+
+    // Filtro reactivo por fecha
+    this.fechaBuscar
+      .pipe(
+        debounceTime(500),
+        distinctUntilChanged(),
+        switchMap((fecha) => {
+          this.fecha = fecha;
           return this.servicioVentainterna.buscarVentainterna(
             this.currentPage,
             this.pageSize,
             this.codigo,
-            this.txtdescripcion
+            this.txtdescripcion,
+            this.fecha
           );
         })
       )
@@ -195,23 +271,32 @@ export class Ventainterna implements OnInit {
             !this.cancelarBusquedaCodigo &&
             !this.isEditing
         ),
-        switchMap((query: string) =>
-          this.http.GetRequest<ModeloInventario>(`/productos-buscador/${query}`)
-        )
+        switchMap((query: string) => {
+          const q = query.trim().toUpperCase();
+          return this.http.GetRequest<ModeloInventario>(`/productos-buscador/${q}`);
+        })
       )
       .subscribe((results: ModeloInventario) => {
         console.log(results.data);
         if (results) {
           if (Array.isArray(results.data) && results.data.length) {
-            // Aquí ordenamos los resultados por el campo 'nombre' (puedes cambiar el campo según tus necesidades)
+            // Ordenar por código
             this.resultadoCodmerc = results.data.sort((a, b) => {
               return a.in_codmerc.localeCompare(b.in_codmerc, undefined, {
                 numeric: true,
                 sensitivity: 'base',
               });
             });
-            // Aquí seleccionamos automáticamente el primer ítem
-            this.selectedIndex = -1;
+            // Priorizar coincidencia exacta si existe
+            const qUpper = String(this.buscarcodmerc.value || '').trim().toUpperCase();
+            const exactIdx = this.resultadoCodmerc.findIndex((item) => String(item.in_codmerc || '').trim().toUpperCase() === qUpper);
+            if (exactIdx >= 0) {
+              // Solo selecciona el índice, espera Enter para cargar
+              this.selectedIndexcodmerc = exactIdx;
+            } else {
+              // Seleccionar el primer elemento por defecto
+              this.selectedIndexcodmerc = 0;
+            }
 
             this.codnotfound = false;
           } else {
@@ -236,13 +321,12 @@ export class Ventainterna implements OnInit {
         }),
         filter(
           (query: string) =>
-            query !== '' && !this.cancelarBusquedaDescripcion && !this.isEditing
+            query.trim() !== '' && !this.cancelarBusquedaDescripcion && !this.isEditing
         ),
-        switchMap((query: string) =>
-          this.http.GetRequest<ModeloInventario>(
-            `/productos-buscador-desc/${query}`
-          )
-        )
+        switchMap((query: string) => {
+          const q = query.trim().toUpperCase();
+          return this.http.GetRequest<ModeloInventario>(`/productos-buscador-desc/${q}`);
+        })
       )
       .subscribe((results: ModeloInventario) => {
         console.log(results.data);
@@ -528,7 +612,7 @@ export class Ventainterna implements OnInit {
   }
   fechaEntra(event: Event) {
     const inputElement = event.target as HTMLInputElement;
-    this.codigoBuscar.next(inputElement.value.toUpperCase());
+    this.fechaBuscar.next(inputElement.value.trim());
   }
 
   guardarVentainterna() {
@@ -1086,3 +1170,4 @@ export class Ventainterna implements OnInit {
     }
   }
 }
+

@@ -1,4 +1,3 @@
-
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ServicioRecibo, ReciboData } from 'src/app/core/services/caja/recibo/recibo.service';
