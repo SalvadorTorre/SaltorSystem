@@ -161,7 +161,7 @@ export class EntradaMercComponent implements OnInit, AfterViewInit {
   }
 
   ngOnInit(): void {
-    this.cargarSecuenciaEntrada();
+    // no generar el código de entrada automáticamente al iniciar
   }
 
   ngAfterViewInit(): void {
@@ -315,11 +315,10 @@ export class EntradaMercComponent implements OnInit, AfterViewInit {
       this.inputCodigo?.nativeElement.focus();
       return;
     }
-    const meCodEntr = String(this.entradaForm.get('me_codEntr')?.value || '').trim();
     const meFecEntr = String(this.entradaForm.get('me_fecEntr')?.value || '').trim();
     const meNomSuplCtrl = this.entradaForm.get('me_nomSupl');
     const meNomSupl = String(meNomSuplCtrl?.value || '').trim();
-    if (!meCodEntr || !meFecEntr || !meNomSupl) {
+    if (!meFecEntr || !meNomSupl) {
       this.Toast.fire({ title: 'Complete los datos obligatorios del encabezado', icon: 'warning' });
       if (!meNomSupl) {
         this.inputNombreSupl?.nativeElement.focus();
@@ -377,75 +376,56 @@ export class EntradaMercComponent implements OnInit, AfterViewInit {
           this.Toast.fire({ title: `Producto(s) no encontrados: ${missing.join(', ')}`, icon: 'error' });
           return;
         }
-        this.servicioContFactura.buscarPorSucursal(sucursalId).subscribe({
-          next: (secResp) => {
-            let contadorActual = 0;
-            const data = Array.isArray(secResp?.data) ? secResp.data : Array.isArray(secResp) ? secResp : [];
-            if (data.length > 0) contadorActual = Number(data[0]?.contentrada || 0);
-            const siguienteNumero = contadorActual + 1;
-            const codigoFinal = this.generarCodigoEntrada(sucursalId, siguienteNumero);
-            entradamercancias.me_codEntr = codigoFinal;
-            this.entradaForm.patchValue({ me_codEntr: codigoFinal });
-            this.servicioEntradamerc.guardarEntradamerc({ entradamercancias, detalle }).subscribe({
-              next: (res: any) => {
-                let savedCode = codigoFinal;
-                let savedHeader = null;
-                let savedItems = null;
-                const tryData = res?.data ?? res;
-                if (Array.isArray(tryData) && tryData.length > 0) {
-                  savedHeader = tryData[0];
-                } else if (tryData && typeof tryData === 'object') {
-                  savedHeader = tryData.entradamercancias ?? tryData.header ?? tryData;
-                  savedItems = tryData.detalle ?? tryData.items ?? null;
-                }
-                if (savedHeader) {
-                  const c = savedHeader.me_codEntr ?? savedHeader.me_codentr;
-                  if (c && String(c).trim().length > 0) savedCode = String(c).trim();
-                }
-                entradamercancias.me_codEntr = savedCode;
-                this.entradaForm.patchValue({ me_codEntr: savedCode });
-                this.canPrint = true;
-                const headerNormalized = savedHeader ? this.normalizarEntradaParaImpresion(savedHeader) : entradamercancias;
-                headerNormalized.me_codEntr = savedCode;
-                this.lastSavedEntrada = headerNormalized;
-                this.lastSavedDetalle = Array.isArray(savedItems) ? savedItems : detalle;
+        this.servicioEntradamerc.guardarEntradamerc({ entradamercancias, detalle }).subscribe({
+          next: (res: any) => {
+            let savedCode = '';
+            let savedHeader = null;
+            let savedItems = null;
+            const tryData = res?.data ?? res;
+            if (Array.isArray(tryData) && tryData.length > 0) {
+              savedHeader = tryData[0];
+            } else if (tryData && typeof tryData === 'object') {
+              savedHeader = tryData.entradamercancias ?? tryData.header ?? tryData;
+              savedItems = tryData.detalle ?? tryData.items ?? null;
+            }
+            if (savedHeader) {
+              const c = savedHeader.me_codEntr ?? savedHeader.me_codentr;
+              if (c && String(c).trim().length > 0) savedCode = String(c).trim();
+            }
+            this.entradaForm.patchValue({ me_codEntr: savedCode });
+            this.canPrint = true;
+            const headerNormalized = savedHeader ? this.normalizarEntradaParaImpresion(savedHeader) : entradamercancias;
+            headerNormalized.me_codEntr = savedCode;
+            this.lastSavedEntrada = headerNormalized;
+            this.lastSavedDetalle = Array.isArray(savedItems) ? savedItems : detalle;
                 this.Toast.fire({ title: 'Entrada guardada', icon: 'success' });
-                this.detalles = [];
-                this.selectedProducto = null;
-                this.entradaForm.patchValue({ det_codMerc: '', det_desMerc: '', det_canEntr: 0, det_preMerc: 0 });
-                this.entradaForm.get('det_codMerc')?.enable();
-                this.entradaForm.get('det_desMerc')?.enable();
-                this.inputCodigo?.nativeElement.focus();
-                this.servicioEntradamerc.buscarEntradamercSilent(1, 1, savedCode).subscribe({
-                  next: (hresp: any) => {
-                    const harr = Array.isArray(hresp?.data) ? hresp.data : (Array.isArray(hresp) ? hresp : []);
-                    if (harr.length > 0) {
-                      const header = this.normalizarEntradaParaImpresion(harr[0]);
-                      header.me_codEntr = String(harr[0]?.me_codEntr ?? harr[0]?.me_codentr ?? savedCode);
-                      this.lastSavedEntrada = header;
-                    }
+            if (savedCode) {
+              this.servicioEntradamerc.buscarEntradamercSilent(1, 1, savedCode).subscribe({
+                next: (hresp: any) => {
+                  const harr = Array.isArray(hresp?.data) ? hresp.data : (Array.isArray(hresp) ? hresp : []);
+                  if (harr.length > 0) {
+                    const header = this.normalizarEntradaParaImpresion(harr[0]);
+                    header.me_codEntr = String(harr[0]?.me_codEntr ?? harr[0]?.me_codentr ?? savedCode);
+                    this.lastSavedEntrada = header;
                   }
-                });
-                this.servicioEntradamerc.buscarEntradamercDetalleSilent(savedCode).subscribe({
-                  next: (resp: any) => {
-                    const raw = Array.isArray(resp?.data) ? resp.data : (Array.isArray(resp) ? resp : []);
-                    this.lastSavedDetalle = raw.map((d: any) => ({
-                      de_codMerc: d.dc_codmerc ?? d.de_codMerc ?? d.in_codmerc ?? '',
-                      de_desMerc: d.dc_descrip ?? d.de_desMerc ?? d.in_desmerc ?? '',
-                      de_canEntr: Number(d.dc_cantidad ?? d.de_canEntr ?? 0),
-                      de_preMerc: Number(d.dc_precio ?? d.de_preMerc ?? 0),
-                      de_valEntr: Number(d.dc_total ?? d.de_valEntr ?? 0)
-                    }));
-                  }
-                });
-              },
-              error: () => {
-                this.Toast.fire({ title: 'Error guardando entrada', icon: 'error' });
-              }
-            });
+                }
+              });
+              this.servicioEntradamerc.buscarEntradamercDetalleSilent(savedCode).subscribe({
+                next: (resp: any) => {
+                  const raw = Array.isArray(resp?.data) ? resp.data : (Array.isArray(resp) ? resp : []);
+                  this.lastSavedDetalle = raw.map((d: any) => ({
+                    de_codMerc: d.dc_codmerc ?? d.de_codMerc ?? d.in_codmerc ?? '',
+                    de_desMerc: d.dc_descrip ?? d.de_desMerc ?? d.in_desmerc ?? '',
+                    de_canEntr: Number(d.dc_cantidad ?? d.de_canEntr ?? 0),
+                    de_preMerc: Number(d.dc_precio ?? d.de_preMerc ?? 0),
+                    de_valEntr: Number(d.dc_total ?? d.de_valEntr ?? 0)
+                  }));
+                }
+              });
+            }
           },
           error: () => {
-            this.Toast.fire({ title: 'No se pudo obtener la secuencia. Intente nuevamente.', icon: 'error' });
+            this.Toast.fire({ title: 'Error guardando entrada', icon: 'error' });
           }
         });
       },
@@ -700,9 +680,11 @@ export class EntradaMercComponent implements OnInit, AfterViewInit {
               de_valEntr: Number(d.dc_total ?? d.de_valEntr ?? 0)
             }));
             this.printing.imprimirEntrada80mm(header, items);
+              this.refrescarPantalla();
           },
           error: () => {
             this.printing.imprimirEntrada80mm(header, this.lastSavedDetalle || []);
+              this.refrescarPantalla();
           }
         });
       }, () => {
@@ -717,15 +699,36 @@ export class EntradaMercComponent implements OnInit, AfterViewInit {
               de_valEntr: Number(d.dc_total ?? d.de_valEntr ?? 0)
             }));
             this.printing.imprimirEntrada80mm(this.lastSavedEntrada, items);
+              this.refrescarPantalla();
           },
           error: () => {
             this.printing.imprimirEntrada80mm(this.lastSavedEntrada, this.lastSavedDetalle);
+              this.refrescarPantalla();
           }
         });
       });
     } else {
       this.printing.imprimirEntrada80mm(this.lastSavedEntrada, this.lastSavedDetalle);
+        this.refrescarPantalla();
     }
+  }
+
+  private refrescarPantalla() {
+    this.canPrint = false;
+    this.lastSavedEntrada = null;
+    this.lastSavedDetalle = [];
+    this.selectedProducto = null;
+    this.detalles = [];
+    this.entradaForm.patchValue({
+      me_codEntr: '',
+      det_codMerc: '',
+      det_desMerc: '',
+      det_canEntr: 0,
+      det_preMerc: 0
+    });
+    this.entradaForm.get('det_codMerc')?.enable();
+    this.entradaForm.get('det_desMerc')?.enable();
+    this.inputCodigo?.nativeElement.focus();
   }
  
   toUpper(controlName: string, event?: Event) {
