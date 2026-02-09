@@ -15,7 +15,7 @@
     <div class="card-body">
       <form [formGroup]="entradaForm" (ngSubmit)="guardarEntrada()">
         <!-- Encabezado -->
-        <div class="row g-3 mb-4">
+        <div class="row g-3 mb-1">
           <div class="col-md-2">
             <label class="form-label">Código Entrada</label>
             <input type="text" class="form-control" formControlName="me_codEntr" readonly>
@@ -50,16 +50,16 @@
             <label class="form-label">Factura Suplidor</label>
             <input type="text" class="form-control enter-next" formControlName="me_facSupl" (input)="toUpper('me_facSupl', $event)" (keydown.enter)="focusNext($event)">
           </div>
-          <div class="col-md-2">
+          <div class="col-md-1">
             <label class="form-label">Fec. Fact. Supl.</label>
             <input type="date" class="form-control enter-next" formControlName="me_fecSupl" (keydown.enter)="focusNext($event)">
           </div>
           
-           <div class="col-md-3">
+           <div class="col-md-2">
             <label class="form-label">Vendedor</label>
             <input type="text" class="form-control enter-next" formControlName="vendedor" (input)="toUpper('vendedor', $event)" (keydown.enter)="focusNext($event)">
           </div>
-           <div class="col-md-3">
+           <div class="col-md-2">
             <label class="form-label">Despachado Por</label>
             <input type="text" class="form-control enter-next" formControlName="despachado" (input)="toUpper('despachado', $event)" (keydown.enter)="focusNext($event)">
           </div>
@@ -67,11 +67,11 @@
             <label class="form-label">Chofer</label>
             <input type="text" class="form-control enter-next" formControlName="chofer" (input)="toUpper('chofer', $event)" (keydown.enter)="focusNext($event)">
           </div>
-          <div class="col-md-2">
+          <div class="col-md-1">
             <label class="form-label">Código Usuario</label>
             <input type="password" class="form-control enter-next" formControlName="me_codVend" (keydown.enter)="buscarVendedorPorCodigo($event)" autocomplete="off">
           </div>
-          <div class="col-md-3">
+          <div class="col-md-2">
             <label class="form-label">Nombre Usuario</label>
             <input type="text" class="form-control" formControlName="me_nomVend" [disabled]="true">
           </div>
@@ -84,11 +84,11 @@
           </div>
         </div>
 
-        <hr>
+        <!-- <hr> -->
 
         <!-- Agregar Detalle -->
         <h5 class="mb-3">Agregar Productos</h5>
-        <div class="row g-3 align-items-end mb-4 bg-light p-3 rounded">
+        <div class="row g-3  mb-1 bg-light p-3 rounded">
           <div class="col-md-2">
             <label class="form-label">Código</label>
             <div class="position-relative">
@@ -131,8 +131,8 @@
         </div>
 
         <!-- Tabla de Detalles -->
-        <div class="table-responsive mb-4">
-          <table class="table table-bordered table-hover">
+        <div class="table-responsive mb-2 tabla-scroll-6">
+          <table class="table table-bordered table-hover table-sm tabla-detalle">
             <thead class="table-light">
               <tr>
                 <th>Código</th>
@@ -252,8 +252,8 @@
               <i class="bi bi-printer me-1"></i> Imprimir 80mm
             </button>
           </div>
-          <div class="table-responsive">
-            <table class="table table-bordered table-hover">
+          <div class="table-responsive tabla-scroll-6">
+            <table class="table table-bordered table-hover table-sm tabla-detalle">
               <thead class="table-light">
                 <tr>
                   <th>Código</th>

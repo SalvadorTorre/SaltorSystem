@@ -53,3 +53,24 @@ tr:hover {
   color: white;              /* Color del texto */
   z-index: 1;                /* Asegura que esté por encima de las filas */
 }
+
+/* Tabla de detalle más fina y compacta */
+.tabla-detalle th,
+.tabla-detalle td {
+  border-width: 0.5px !important;
+  border-color: #cfd3da !important;
+  padding: 0.35rem 0.5rem !important;
+}
+.tabla-detalle tbody tr {
+  height: 36px;
+}
+.tabla-detalle thead th {
+  border-width: 0.5px !important;
+}
+.tabla-detalle {
+  border-color: #cfd3da !important;
+}
+.tabla-scroll-6 {
+  max-height: 260px;
+  overflow-y: auto;
+}

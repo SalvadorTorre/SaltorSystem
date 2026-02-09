@@ -654,7 +654,6 @@ export class EntradaMercComponent implements OnInit, AfterViewInit {
     this.entradaForm.get('me_codEntr')?.disable();
     this.entradaForm.get('det_codMerc')?.enable();
     this.entradaForm.get('det_desMerc')?.enable();
-    this.cargarSecuenciaEntrada();
     this.inputNombreSupl?.nativeElement.focus();
   }
 
@@ -680,11 +679,11 @@ export class EntradaMercComponent implements OnInit, AfterViewInit {
               de_valEntr: Number(d.dc_total ?? d.de_valEntr ?? 0)
             }));
             this.printing.imprimirEntrada80mm(header, items);
-              this.refrescarPantalla();
+              this.refrescarFormulario();
           },
           error: () => {
             this.printing.imprimirEntrada80mm(header, this.lastSavedDetalle || []);
-              this.refrescarPantalla();
+              this.refrescarFormulario();
           }
         });
       }, () => {
@@ -699,17 +698,17 @@ export class EntradaMercComponent implements OnInit, AfterViewInit {
               de_valEntr: Number(d.dc_total ?? d.de_valEntr ?? 0)
             }));
             this.printing.imprimirEntrada80mm(this.lastSavedEntrada, items);
-              this.refrescarPantalla();
+              this.refrescarFormulario();
           },
           error: () => {
             this.printing.imprimirEntrada80mm(this.lastSavedEntrada, this.lastSavedDetalle);
-              this.refrescarPantalla();
+              this.refrescarFormulario();
           }
         });
       });
     } else {
       this.printing.imprimirEntrada80mm(this.lastSavedEntrada, this.lastSavedDetalle);
-        this.refrescarPantalla();
+        this.refrescarFormulario();
     }
   }
 
