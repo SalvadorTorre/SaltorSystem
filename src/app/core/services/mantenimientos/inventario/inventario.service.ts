@@ -45,4 +45,8 @@ export class ServicioInventario {
   ajustarExistencia(payload: { inv_codsucu: number; inv_codprod: string; cantidad: number; tipo_movimiento: 'entrada' | 'salida'; }): Observable<any> {
     return this.http.PatchRequest<any, any>(`/inventario/ajustar-existencia`, payload);
   }
+
+  crearInventario(payload: { inv_codsucu: number; inv_codprod: string; inv_existencia: number; inv_desprod?: string | null; inv_cosprod?: number | null; inv_preprod?: number | null; }): Observable<any> {
+    return this.http.PostRequest<any, any>(`/inventario`, payload);
+  }
 }
