@@ -76,6 +76,9 @@ export class EntradaMercComponent implements OnInit, AfterViewInit {
     timer: 5000,
     timerProgressBar: false
   });
+//   page = 1;
+// limit = 10;
+// totalPages = 0;
   noWhitespaceValidator: ValidatorFn = (control: AbstractControl) => {
     const v = (control.value ?? '').toString().trim();
     return v.length === 0 ? { whitespace: true } : null;
@@ -309,131 +312,154 @@ export class EntradaMercComponent implements OnInit, AfterViewInit {
     }
   }
 
-  guardarEntrada() {
-    if (!this.detalles.length) {
-      this.Toast.fire({ title: 'Debe agregar al menos un producto', icon: 'warning' });
-      this.inputCodigo?.nativeElement.focus();
-      return;
-    }
-    const meFecEntr = String(this.entradaForm.get('me_fecEntr')?.value || '').trim();
-    const meNomSuplCtrl = this.entradaForm.get('me_nomSupl');
-    const meNomSupl = String(meNomSuplCtrl?.value || '').trim();
-    if (!meFecEntr || !meNomSupl) {
-      this.Toast.fire({ title: 'Complete los datos obligatorios del encabezado', icon: 'warning' });
-      if (!meNomSupl) {
-        this.inputNombreSupl?.nativeElement.focus();
-      }
-      return;
-    }
-    const formValue = this.entradaForm.getRawValue();
-    const sucursalId = Number(localStorage.getItem('idSucursal') || this.idSucursal || 1);
-    const sucursalIdStr = (localStorage.getItem('idSucursal') ?? String(this.idSucursal ?? 1)).toString().trim();
-    const empresaCod = String(localStorage.getItem('codigoempresa') || '').trim();
-    const meFecEntrIso = this.toIsoDate(formValue.me_fecEntr);
-    const meFecSuplIso = this.toIsoDate(formValue.me_fecSupl);
-    const rncInt = this.toIntOrNull(formValue.me_rncSupl);
-    const codSuplInt = this.toIntOrNull(formValue.me_codSupl);
-    const entradamercancias = {
-      me_codEntr: formValue.me_codEntr,
-      me_fecEntr: meFecEntrIso,
-      me_valEntr: this.calcularTotal(),
-      me_codSupl: codSuplInt,
-      me_nomSupl: formValue.me_nomSupl,
-      me_facSupl: formValue.me_facSupl,
-      me_fecSupl: meFecSuplIso,
-      me_status: formValue.me_status,
-      me_codVend: formValue.me_codVend,
-      me_nomVend: formValue.me_nomVend,
-      nota: formValue.nota,
-      vendedor: formValue.vendedor,
-      despachado: formValue.despachado,
-      chofer: formValue.chofer,
-      me_rncSupl: rncInt,
-      me_codSucu: sucursalId,
-      me_codEmpr: empresaCod
-    };
-    const detalle = this.detalles.map((d) => ({
-      producto: {
-        in_codmerc: d.de_codMerc,
-        in_desmerc: d.de_desMerc || '',
-        in_unidad: String(d.de_unidad ?? '').trim()
-      },
-      cantidad: Number(d.de_canEntr || 0),
-      precio: Number(d.de_preMerc || 0),
-      total: Number(d.de_valEntr || 0)
-    }));
-    const cods = Array.from(new Set(detalle.map(it => String(it.producto?.in_codmerc || '').trim()))).filter(c => c.length > 0);
-    forkJoin(cods.map(c => this.servicioProducto.buscarProductosPorCodigo(c))).subscribe({
-      next: (response) => {
-        const missing: string[] = [];
-        const list = Array.isArray(response) ? response : [response];
-        for (let i = 0; i < list.length; i++) {
-          const r = list[i] as any;
-          const arr = Array.isArray(r?.data) ? r.data : (Array.isArray(r) ? r : []);
-          if (!arr || arr.length === 0) missing.push(cods[i]);
-        }
-        if (missing.length > 0) {
-          this.Toast.fire({ title: `Producto(s) no encontrados: ${missing.join(', ')}`, icon: 'error' });
+guardarEntrada() {
+
+  /* =====================================================
+     1️⃣ VALIDACIONES BÁSICAS
+  ===================================================== */
+  if (!this.detalles.length) {
+    this.Toast.fire({
+      title: 'Debe agregar al menos un producto',
+      icon: 'warning'
+    });
+    this.inputCodigo?.nativeElement.focus();
+    return;
+  }
+
+  const meNomSupl = String(this.entradaForm.get('me_nomSupl')?.value || '').trim();
+  if (!meNomSupl) {
+    this.Toast.fire({
+      title: 'El nombre del suplidor es obligatorio',
+      icon: 'warning'
+    });
+    this.inputNombreSupl?.nativeElement.focus();
+    return;
+  }
+
+  /* =====================================================
+     2️⃣ ARMAR CABECERA
+  ===================================================== */
+  const formValue = this.entradaForm.getRawValue();
+
+  const sucursalId = Number(localStorage.getItem('idSucursal') || this.idSucursal || 1);
+  const empresaCod = String(localStorage.getItem('codigoempresa') || '').trim();
+
+  const entradamercancias = {
+    me_codEntr: null, // ⛔ se genera en backend
+    me_fecEntr: this.toIsoDate(formValue.me_fecEntr),
+    me_valEntr: this.calcularTotal(),
+    me_codSupl: this.toIntOrNull(formValue.me_codSupl),
+    me_nomSupl: formValue.me_nomSupl,
+    me_facSupl: formValue.me_facSupl,
+    me_fecSupl: this.toIsoDate(formValue.me_fecSupl),
+    me_status: formValue.me_status,
+    me_codVend: formValue.me_codVend,
+    me_nomVend: formValue.me_nomVend,
+    nota: formValue.nota,
+    vendedor: formValue.vendedor,
+    despachado: formValue.despachado,
+    chofer: formValue.chofer,
+    me_rncSupl: this.toIntOrNull(formValue.me_rncSupl),
+    me_codSucu: sucursalId,
+    me_codEmpr: empresaCod
+  };
+
+  /* =====================================================
+     3️⃣ ARMAR DETALLE
+  ===================================================== */
+  const detalle = this.detalles.map(d => ({
+    producto: {
+      in_codmerc: d.de_codMerc,
+      in_desmerc: d.de_desMerc || '',
+      in_unidad: String(d.de_unidad ?? '').trim()
+    },
+    cantidad: Number(d.de_canEntr || 0),
+    precio: Number(d.de_preMerc || 0),
+    total: Number(d.de_valEntr || 0)
+  }));
+
+  /* =====================================================
+     4️⃣ VALIDAR PRODUCTOS EN CATÁLOGO
+  ===================================================== */
+  const codigos = [...new Set(detalle.map(d => d.producto.in_codmerc))];
+
+  forkJoin(codigos.map(c => this.servicioProducto.buscarProductosPorCodigo(c)))
+    .subscribe({
+      next: (resp) => {
+
+        const faltantes: string[] = [];
+
+        resp.forEach((r: any, i: number) => {
+          const data = Array.isArray(r?.data) ? r.data : [];
+          if (!data.length) faltantes.push(codigos[i]);
+        });
+
+        if (faltantes.length) {
+          this.Toast.fire({
+            title: `Productos no encontrados: ${faltantes.join(', ')}`,
+            icon: 'error'
+          });
           return;
         }
-        this.servicioEntradamerc.guardarEntradamerc({ entradamercancias, detalle }).subscribe({
-          next: (res: any) => {
-            let savedCode = '';
-            let savedHeader = null;
-            let savedItems = null;
-            const tryData = res?.data ?? res;
-            if (Array.isArray(tryData) && tryData.length > 0) {
-              savedHeader = tryData[0];
-            } else if (tryData && typeof tryData === 'object') {
-              savedHeader = tryData.entradamercancias ?? tryData.header ?? tryData;
-              savedItems = tryData.detalle ?? tryData.items ?? null;
-            }
-            if (savedHeader) {
-              const c = savedHeader.me_codEntr ?? savedHeader.me_codentr;
-              if (c && String(c).trim().length > 0) savedCode = String(c).trim();
-            }
-            this.entradaForm.patchValue({ me_codEntr: savedCode });
-            this.canPrint = true;
-            const headerNormalized = savedHeader ? this.normalizarEntradaParaImpresion(savedHeader) : entradamercancias;
-            headerNormalized.me_codEntr = savedCode;
-            this.lastSavedEntrada = headerNormalized;
-            this.lastSavedDetalle = Array.isArray(savedItems) ? savedItems : detalle;
-                this.Toast.fire({ title: 'Entrada guardada', icon: 'success' });
-            if (savedCode) {
-              this.servicioEntradamerc.buscarEntradamercSilent(1, 1, savedCode).subscribe({
-                next: (hresp: any) => {
-                  const harr = Array.isArray(hresp?.data) ? hresp.data : (Array.isArray(hresp) ? hresp : []);
-                  if (harr.length > 0) {
-                    const header = this.normalizarEntradaParaImpresion(harr[0]);
-                    header.me_codEntr = String(harr[0]?.me_codEntr ?? harr[0]?.me_codentr ?? savedCode);
-                    this.lastSavedEntrada = header;
-                  }
-                }
+
+        /* =====================================================
+           5️⃣ GUARDAR EN BACKEND
+        ===================================================== */
+        this.servicioEntradamerc
+          .guardarEntradamerc({ entradamercancias, detalle })
+          .subscribe({
+            next: (res: any) => {
+
+              const codigoGenerado = res?.data?.nuevoCodigo;
+
+              if (!codigoGenerado) {
+                this.Toast.fire({
+                  title: 'No se recibió el código de entrada',
+                  icon: 'warning'
+                });
+                return;
+              }
+
+              /* =====================================================
+                 6️⃣ MOSTRAR CÓDIGO EN FRONTEND
+              ===================================================== */
+              this.entradaForm.patchValue({
+                me_codEntr: codigoGenerado
               });
-              this.servicioEntradamerc.buscarEntradamercDetalleSilent(savedCode).subscribe({
-                next: (resp: any) => {
-                  const raw = Array.isArray(resp?.data) ? resp.data : (Array.isArray(resp) ? resp : []);
-                  this.lastSavedDetalle = raw.map((d: any) => ({
-                    de_codMerc: d.dc_codmerc ?? d.de_codMerc ?? d.in_codmerc ?? '',
-                    de_desMerc: d.dc_descrip ?? d.de_desMerc ?? d.in_desmerc ?? '',
-                    de_canEntr: Number(d.dc_cantidad ?? d.de_canEntr ?? 0),
-                    de_preMerc: Number(d.dc_precio ?? d.de_preMerc ?? 0),
-                    de_valEntr: Number(d.dc_total ?? d.de_valEntr ?? 0)
-                  }));
-                }
+
+              /* =====================================================
+                 7️⃣ PREPARAR IMPRESIÓN
+              ===================================================== */
+              this.canPrint = true;
+
+              this.lastSavedEntrada = {
+                ...entradamercancias,
+                me_codEntr: codigoGenerado
+              };
+
+              this.lastSavedDetalle = detalle;
+
+              this.Toast.fire({
+                title: 'Entrada guardada correctamente',
+                icon: 'success'
+              });
+            },
+            error: () => {
+              this.Toast.fire({
+                title: 'Error guardando la entrada',
+                icon: 'error'
               });
             }
-          },
-          error: () => {
-            this.Toast.fire({ title: 'Error guardando entrada', icon: 'error' });
-          }
-        });
+          });
       },
       error: () => {
-        this.Toast.fire({ title: 'No se pudo validar productos', icon: 'error' });
+        this.Toast.fire({
+          title: 'Error validando productos',
+          icon: 'error'
+        });
       }
     });
-  }
+}
 
   calcularTotal(): number {
     return this.detalles.reduce((acc, curr) => acc + (curr.de_valEntr || 0), 0);
@@ -664,11 +690,11 @@ export class EntradaMercComponent implements OnInit, AfterViewInit {
     }
     const codigo = this.lastSavedEntrada?.me_codEntr || this.lastSavedEntrada?.me_codentr || '';
     if (codigo) {
-      this.servicioEntradamerc.buscarEntradamercSilent(1, 1, codigo).subscribe((resp: any) => {
+      this.servicioEntradamerc.buscarEntradamerc(1, 1, codigo).subscribe((resp: any) => {
         const arr = Array.isArray(resp?.data) ? resp.data : (Array.isArray(resp) ? resp : []);
         const header = arr.length > 0 ? this.normalizarEntradaParaImpresion(arr[0]) : this.lastSavedEntrada;
         header.me_codEntr = String(arr[0]?.me_codEntr ?? arr[0]?.me_codentr ?? codigo);
-        this.servicioEntradamerc.buscarEntradamercDetalleSilent(codigo).subscribe({
+        this.servicioEntradamerc.buscarEntradamercDetalle(codigo).subscribe({
           next: (dres: any) => {
             const raw = Array.isArray(dres?.data) ? dres.data : (Array.isArray(dres) ? dres : []);
             const items = raw.map((d: any) => ({
@@ -687,7 +713,7 @@ export class EntradaMercComponent implements OnInit, AfterViewInit {
           }
         });
       }, () => {
-        this.servicioEntradamerc.buscarEntradamercDetalleSilent(codigo).subscribe({
+        this.servicioEntradamerc.buscarEntradamercDetalle(codigo).subscribe({
           next: (dres: any) => {
             const raw = Array.isArray(dres?.data) ? dres.data : (Array.isArray(dres) ? dres : []);
             const items = raw.map((d: any) => ({
@@ -750,38 +776,91 @@ export class EntradaMercComponent implements OnInit, AfterViewInit {
   }
 
   cargarEntradas(page: number) {
-    this.currentPage = page;
-    const { codigo, nomcliente, fecha } = this.consultaForm.getRawValue();
-    this.servicioEntradamerc.buscarEntradamercSilent(this.currentPage, this.pageSize, (codigo || '').trim() || undefined, (nomcliente || '').trim() || undefined, (fecha || '').trim() || undefined)
-      .subscribe((response: any) => {
-        const data = Array.isArray(response?.data) ? response.data : [];
-        this.entradamercList = data;
-        this.totalItems = Number(response?.totalItems ?? data.length);
-      }, () => {
-        // Fallback: listar y filtrar localmente si el backend devolvió error con filtros
-        this.servicioEntradamerc.buscarTodasEntradamerc(this.currentPage, this.pageSize).subscribe((resp: any) => {
-          const base = Array.isArray(resp?.data) ? resp.data : [];
-          this.entradamercList = this.aplicarFiltroLocal(base, (codigo || '').trim(), (nomcliente || '').trim(), (fecha || '').trim());
-          this.totalItems = this.entradamercList.length;
-        }, () => {
-          this.entradamercList = [];
-          this.totalItems = 0;
-        });
-      });
+  const { codigo, nomcliente, fecha } = this.consultaForm.getRawValue();
+
+  const cod = String(codigo || '').trim();
+  const nom = String(nomcliente || '').trim();
+  const fec = String(fecha || '').trim();
+
+  // ⛔ Protección total: no llamar backend si no hay filtros válidos
+  if (
+    (!cod || cod.length < 3) &&
+    (!nom || nom.length < 3) &&
+    !fec
+  ) {
+    this.cargarEntradasListado(1);
+    return;
   }
 
-  cargarEntradasListado(page: number) {
-    this.currentPage = page;
-    this.servicioEntradamerc.buscarTodasEntradamerc(this.currentPage, this.pageSize)
-      .subscribe((response: any) => {
-        const data = Array.isArray(response?.data) ? response.data : [];
-        this.entradamercList = data;
-        this.totalItems = Number(response?.totalItems ?? data.length);
-      }, () => {
+  this.currentPage = page;
+
+  this.servicioEntradamerc
+    .buscarEntradamerc(
+      this.currentPage,
+      100, // cuando hay filtro traemos más
+      cod || undefined,
+      nom || undefined,
+      fec || undefined
+    )
+    .subscribe({
+      next: (response: any) => {
+        this.entradamercList = Array.isArray(response?.data) ? response.data : [];
+        this.totalItems =
+          response?.pagination?.total ?? this.entradamercList.length;
+      },
+      error: () => {
+        // ⛔ nunca romper la UI
         this.entradamercList = [];
         this.totalItems = 0;
-      });
-  }
+      }
+    });
+}
+
+
+//   cargarEntradas(page: number) {
+//   this.currentPage = page;
+
+//   const { codigo, nomcliente, fecha } = this.consultaForm.getRawValue();
+//   const hasFilter = !!((codigo && codigo.trim()) || (nomcliente && nomcliente.trim()) || (fecha && fecha.trim()));
+//   const effectiveLimit = hasFilter ? 100 : this.pageSize;
+
+//   this.servicioEntradamerc
+//     .buscarEntradamerc(
+//       this.currentPage,
+//       effectiveLimit,
+//       codigo?.trim() || undefined,
+//       nomcliente?.trim() || undefined,
+//       fecha?.trim() || undefined
+//     )
+//     .subscribe(
+//       (response: any) => {
+//         this.entradamercList = response.data || [];
+//         this.totalItems = response.pagination?.total ?? this.entradamercList.length; // ✅ FIX
+//       },
+//       () => {
+//         this.cargarEntradasListado(1);
+//       }
+//     );
+// }
+
+
+ cargarEntradasListado(page: number) {
+  this.currentPage = page;
+
+  this.servicioEntradamerc
+    .buscarTodasEntradamerc(this.currentPage, this.pageSize)
+    .subscribe(
+      (response: any) => {
+        this.entradamercList = response.data || [];
+        this.totalItems = response.pagination?.total ?? 0; // ✅ FIX
+      },
+      () => {
+        this.entradamercList = [];
+        this.totalItems = 0;
+      }
+    );
+}
+
 
   buscarEntradas() {
     const { codigo, nomcliente, fecha } = this.consultaForm.getRawValue();
@@ -797,10 +876,13 @@ export class EntradaMercComponent implements OnInit, AfterViewInit {
     return !!((codigo && codigo.trim()) || (nomcliente && nomcliente.trim()) || (fecha && fecha.trim()));
   }
 
-  get totalPages(): number {
-    const pages = Math.ceil((this.totalItems || 0) / (this.pageSize || 1));
-    return Math.max(1, pages);
-  }
+  // get totalPages(): number {
+  //   const pages = Math.ceil((this.totalItems || 0) / (this.pageSize || 1));
+  //   return Math.max(1, pages);
+  // }
+get totalPages(): number {
+  return Math.max(1, Math.ceil(this.totalItems / this.pageSize));
+}
 
   get pagesToShow(): number[] {
     const total = this.totalPages;
@@ -829,6 +911,7 @@ export class EntradaMercComponent implements OnInit, AfterViewInit {
     if (this.currentPage > 1) this.irAPagina(this.currentPage - 1);
   }
 
+
   paginaSiguiente() {
     if (this.currentPage < this.totalPages) this.irAPagina(this.currentPage + 1);
   }
@@ -848,6 +931,7 @@ export class EntradaMercComponent implements OnInit, AfterViewInit {
     });
   }
 
+  
   refrescarModalConsulta() {
     this.consultaForm.reset({ codigo: '', nomcliente: '', fecha: '' });
     this.entradaSeleccionada = null;
@@ -856,25 +940,72 @@ export class EntradaMercComponent implements OnInit, AfterViewInit {
   }
 
   private setupAutoBuscarConsulta() {
-    const codigoCtrl = this.consultaForm.get('codigo');
-    const nomCtrl = this.consultaForm.get('nomcliente');
-    codigoCtrl?.valueChanges.pipe(debounceTime(300), distinctUntilChanged()).subscribe((v) => {
-      const s = String(v || '').trim();
-      if (s.length >= 2) {
-        this.cargarEntradas(1);
-      } else {
-        this.cargarEntradasListado(1);
-      }
-    });
-    nomCtrl?.valueChanges.pipe(debounceTime(300), distinctUntilChanged()).subscribe((v) => {
-      const s = String(v || '').trim();
-      if (s.length >= 2) {
-        this.cargarEntradas(1);
-      } else {
-        this.cargarEntradasListado(1);
-      }
-    });
-  }
+  const codigoCtrl = this.consultaForm.get('codigo');
+  const nomCtrl = this.consultaForm.get('nomcliente');
+  const fechaCtrl = this.consultaForm.get('fecha');
+
+  const ejecutarBusqueda = () => {
+    const { codigo, nomcliente, fecha } = this.consultaForm.getRawValue();
+
+    const cod = String(codigo || '').trim();
+    const nom = String(nomcliente || '').trim();
+    const fec = String(fecha || '').trim();
+
+    const hayFiltro =
+      (cod && cod.length >= 3) ||
+      (nom && nom.length >= 3) ||
+      !!fec;
+
+    if (hayFiltro) {
+      this.cargarEntradas(1);
+    } else {
+      this.cargarEntradasListado(1);
+    }
+  };
+
+  codigoCtrl?.valueChanges
+    .pipe(debounceTime(400), distinctUntilChanged())
+    .subscribe(() => ejecutarBusqueda());
+
+  nomCtrl?.valueChanges
+    .pipe(debounceTime(400), distinctUntilChanged())
+    .subscribe(() => ejecutarBusqueda());
+
+  fechaCtrl?.valueChanges
+    .pipe(debounceTime(400), distinctUntilChanged())
+    .subscribe(() => ejecutarBusqueda());
+}
+
+
+  // private setupAutoBuscarConsulta() {
+  //   const codigoCtrl = this.consultaForm.get('codigo');
+  //   const nomCtrl = this.consultaForm.get('nomcliente');
+  //   const fechaCtrl = this.consultaForm.get('fecha');
+  //   codigoCtrl?.valueChanges.pipe(debounceTime(300), distinctUntilChanged()).subscribe((v) => {
+  //     const s = String(v || '').trim();
+  //     if (s.length >= 3) {
+  //       this.cargarEntradas(1);
+  //     } else {
+  //       this.cargarEntradasListado(1);
+  //     }
+  //   });
+  //   nomCtrl?.valueChanges.pipe(debounceTime(300), distinctUntilChanged()).subscribe((v) => {
+  //     const s = String(v || '').trim();
+  //     if (s.length >= 3) {
+  //       this.cargarEntradas(1);
+  //     } else {
+  //       this.cargarEntradasListado(1);
+  //     }
+  //   });
+  //   fechaCtrl?.valueChanges.pipe(debounceTime(300), distinctUntilChanged()).subscribe((v) => {
+  //     const s = String(v || '').trim();
+  //     if (s) {
+  //       this.cargarEntradas(1);
+  //     } else {
+  //       this.cargarEntradasListado(1);
+  //     }
+  //   });
+  // }
 
   verDetalleEntrada(entrada: any) {
     this.entradaSeleccionada = entrada;
@@ -883,7 +1014,7 @@ export class EntradaMercComponent implements OnInit, AfterViewInit {
       this.detalleConsulta = [];
       return;
     }
-    this.servicioEntradamerc.buscarEntradamercDetalle(codigo).subscribe((res: any) => {
+    this.servicioEntradamerc.buscarEntradamercDetalle(`${codigo}?limit=9999`).subscribe((res: any) => {
       const raw = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : (Array.isArray(res?.detalle) ? res.detalle : []));
       this.detalleConsulta = raw.map((d: any) => ({
         de_codMerc: d.dc_codmerc ?? d.DC_CODMERC ?? d.de_codMerc ?? d.DE_CODMERC ?? d.in_codmerc ?? '',

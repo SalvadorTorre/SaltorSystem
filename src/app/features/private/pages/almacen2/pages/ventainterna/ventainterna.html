@@ -89,23 +89,36 @@
                       (click)="editarVentainterna(ventainterna)"
                       class="bi bi-pencil text-primary"
                       style="padding: 10px"
+                      data-bs-toggle="tooltip"
+                      data-bs-placement="top"
+                      title="Editar venta Intena"
                     >
                     </i>
                     <i
                       class="bi bi-trash text-danger"
                       style="padding: 10px"
                       (click)="eliminarVentainterna(ventainterna.fa_codFact)"
+                      data-bs-toggle="tooltip"
+                      data-bs-placement="top"
+                      title="Anular venta Intena"
                     ></i>
                     <i
                       (click)="consultarVentainterna(ventainterna)"
                       class="bi bi-card-list text-success"
                       style="padding: 10px"
+                      data-bs-toggle="tooltip"
+                      data-bs-placement="top"
+                      title="Consultar venta Intena"
                     >
                     </i>
-                    <a class="btn-link" style="padding: 10px">
-                      <i class="bi bi-file-earmark-pdf text-danger"></i>
+                    <a class="btn-link" 
+                    style="padding: 10px" 
+                    data-bs-toggle="tooltip" 
+                    data-bs-placement="top" 
+                    title="Descargar PDF">
+                    <i class="bi bi-file-earmark-pdf text-danger"></i>
                     </a>
-                    <a class="btn-link" style="padding: 10px">
+                    <a class="btn-link" style="padding: 10px" data-bs-toggle="tooltip" data-bs-placement="top" title="Imprimir" (click)="imprimirVentainterna(ventainterna)">
                       <i class="bi bi-printer"></i>
 
                       <!-- <i class="bi bi-file-earmark-pdf text-info"></i>-->
@@ -192,13 +205,19 @@
         <h1 class="modal-title fs-5" id="tituloModalVentainterna">
           {{tituloModalVentainterna}}
         </h1>
-        <button
-          type="button"
-          class="btn-close"
-          (click)="submitForm()"
-          aria-label="Close"
-          aria-label="Close"
-        ></button>
+        <div class="ms-auto">
+          <button
+            type="button"
+            class="btn btn-outline-secondary btn-sm"
+            (click)="submitForm()"
+            aria-label="Cerrar"
+            data-bs-toggle="tooltip"
+            data-bs-placement="left"
+            title="Cerrar"
+          >
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
       </div>
       <div class="modal-body">
         <form
@@ -334,7 +353,7 @@
                     <div class="col-1">
                       <label for="">No. </label>
                     </div>
-                    <div class="col-4">
+                    <div class="col-6">
                       <input
                         type="text"
                         formControlName="fa_codFact"
@@ -344,7 +363,7 @@
                     <div class="col-2">
                       <label for="">Fecha</label>
                     </div>
-                    <div class="col-4">
+                    <div class="col-3">
                       <input
                         formControlName="fa_fecFact"
                         type="text"
@@ -568,6 +587,9 @@
                           class="bi bi-pencil text-primary"
                           style="padding: 10px"
                           *ngIf="habilitarIcono"
+                          data-bs-toggle="tooltip"
+                          data-bs-placement="top"
+                          title="Editar línea"
                         >
                         </i>
                         <i
@@ -575,6 +597,9 @@
                           class="bi bi-trash text-danger"
                           style="padding: 10px"
                           *ngIf="habilitarIcono"
+                          data-bs-toggle="tooltip"
+                          data-bs-placement="top"
+                          title="Eliminar línea"
                         >
                         </i>
                       </td>
@@ -648,6 +673,13 @@
                 [disabled]="items.length === 0"
               >
                 Guardar
+              </button>
+              <button
+                class="btn btn-secondary btn-xs ms-2"
+                type="button"
+                (click)="refrescarVentainterna()"
+              >
+                Refrescar
               </button>
             </div>
           </div>

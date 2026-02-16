@@ -35,6 +35,10 @@ export class ServicioFacturacion {
     const params = new HttpParams(); // Si no vas a enviar parámetros, pon uno vacío
     return this.http.get(endpoint, params);
   }
+  buscarMercanciaPorFactura(fa_codFact: string): Observable<any> {
+    const safe = encodeURIComponent(fa_codFact);
+    return this.http.GetRequest<any>(`/facturacion/${safe}/buscar-mercancia`);
+  }
 
   marcarFacturaComoImpresa(payload: any) {
     const cod = payload.fa_codFact;

@@ -13,8 +13,8 @@ export class ServicioVentainterna {
     return this.http.PostRequest<any, any>("/ventainterna", ventainterna);
   }
 
-  editarVentainterna(fa_codFact: string, ventainterna: VentainternaModel): Observable<any> {
-    return this.http.PutRequest<any, any>(`/ventainterna/${fa_codFact}`, ventainterna);
+  editarVentainterna(fa_codFact: string, payload: any): Observable<any> {
+    return this.http.PutRequest<any, any>(`/ventainterna/${fa_codFact}`, payload);
   }
 
   buscarTodasVentainterna(pageIndex: number, pageSize: number, ): Observable<any> {
@@ -29,9 +29,7 @@ export class ServicioVentainterna {
     return this.http.GetRequest<any>(`/ventainterna/${fa_codFact}`);
   }
 
-  buscarVentainternaPorNombre(currentPage: number, pageSize: number, fa_nomfact: string, ): Observable<any> {
-    return this.http.GetRequest<any>(`/ventainterna/${fa_nomfact}`);
-  }
+  // s
   // Buscar por nombre de cliente (ruta específica del backend)
   buscarVentainternaPorNombreCliente(fa_nomClie: string): Observable<any> {
     return this.http.GetRequest<any>(`/ventainterna-buscador-cliente/${fa_nomClie}`);
@@ -58,7 +56,7 @@ export class ServicioVentainterna {
   }
 
   eliminarVentainterna(fa_codFact: string): Observable<any> {
-    return this.http.DeleteRequest(`/eliminar-ventainterna/${fa_codFact}`, "");
+    return this.http.PatchRequest(`/ventainterna-anular/${fa_codFact}`, {});
   }
 
 }

@@ -1,0 +1,3 @@
+/* Ajustes simples para tablas compactas */
+.table td, .table th { padding: 0.4rem; }
+.btn-group .btn.active { background-color: #0d6efd; color: #fff; }

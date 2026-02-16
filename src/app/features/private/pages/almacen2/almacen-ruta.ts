@@ -58,6 +58,13 @@ const routes: Routes = [
             (m) => m.ModuloSalidafactura
           ),
       },
+      {
+        path: 'devoluciones',
+        loadChildren: () =>
+          import('./pages/devoluciones/devoluciones-modulo').then(
+            (m) => m.ModuloDevoluciones
+          ),
+      },
       //   {
       //     path:"Conduce",
       //     loadChildren: () => import('./pages/usuario-page/usuario-modulo').then(m => m.ModuloUsuario)

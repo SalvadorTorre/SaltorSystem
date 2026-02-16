@@ -35,7 +35,9 @@ export class ServicioUsuario {
   }
 
   buscarUsuario(claveUsuario: number): Observable<any> {
-    return this.http.GetRequest<any>(`/usuario/${claveUsuario}`, false);
+    // return this.http.GetRequest<any>(`/usuario/${claveUsuario}`, false);
+    return this.http.GetRequest<any>(`/usuario/${claveUsuario}`);
+
   }
 
   buscartodoUsuario(claveUsuario: number): Observable<ModeloUsuario> {
@@ -43,10 +45,10 @@ export class ServicioUsuario {
   }
 
   buscarUsuarioPorClave(claveUsuario: string): Observable<any> {
-    return this.http.GetRequest<any>(`/usuario-clave/${claveUsuario}`, false);
+    return this.http.GetRequest<any>(`/usuario-clave/${claveUsuario}`);
   }
 
   buscarUsuarioPorId(idUsuario: string): Observable<any> {
-    return this.http.GetRequest<any>(`/usuario-id/${encodeURIComponent(idUsuario)}`, false);
+    return this.http.GetRequest<any>(`/usuario-id/${encodeURIComponent(idUsuario)}`);
   }
 }

@@ -42,6 +42,11 @@ export class ServicioInventario {
     return this.http.GetRequest<any>(`/productos-buscador-desc/${safe}`);
   }
  
+  obtenerProductoPorId(codigo: string): Observable<any> {
+    const safe = encodeURIComponent(codigo);
+    return this.http.GetRequest<any>(`/productos/${safe}`);
+  }
+
   ajustarExistencia(payload: { inv_codsucu: number; inv_codprod: string; cantidad: number; tipo_movimiento: 'entrada' | 'salida'; }): Observable<any> {
     return this.http.PatchRequest<any, any>(`/inventario/ajustar-existencia`, payload);
   }
