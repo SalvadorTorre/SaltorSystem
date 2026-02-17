@@ -8,9 +8,13 @@ import { map } from 'rxjs/operators';
   providedIn: 'root',
 })
 export class ServicioFacturacion {
-  private baseUrl = '/api'; // Ajusta la URL base según sea necesario
+  // private apiUrl = 'http://localhost:3390/api'; // o el puerto de tu backend
+  // private baseUrl = '/api'; // Ajusta la URL base según sea necesario
   constructor(private http: HttpInvokeService) {}
 
+// getByNumero(numero: string) {
+//   return this.http.GetRequest(`${this.apiUrl}/factura-numero/${numero}`);
+// }
   getByNumero(numero: string): Observable<any> {
     return this.http.GetRequest<any>(`/factura-numero/${numero}`);
   }

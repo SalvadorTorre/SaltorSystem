@@ -1,9 +1,14 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, AfterViewInit, ViewChild, ElementRef } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ServicioEntradamerc } from 'src/app/core/services/almacen/entradamerc/entradamerc.service';
 import { ServicioInventario } from 'src/app/core/services/mantenimientos/inventario/inventario.service';
+import { ServicioProducto } from 'src/app/core/services/mantenimientos/producto/producto.service';
 import { ServicioVentainterna } from 'src/app/core/services/almacen/ventainterna/ventainterna.service';
 import { ServicioFacturacion } from 'src/app/core/services/facturacion/factura/factura.service';
+import { ServiciodetEntradamerc } from 'src/app/core/services/almacen/detentradamerc/detentradamerc.service';
+import { PrintingService } from 'src/app/core/services/utils/printing.service';
+import { ServicioUsuario } from 'src/app/core/services/mantenimientos/usuario/usuario.service';
+import { ServicioContFactura } from 'src/app/core/services/mantenimientos/contfactura/contfactura.service';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -12,7 +17,8 @@ import Swal from 'sweetalert2';
   styleUrls: ['./devoluciones.css'],
 })
 export class DevolucionesComponent implements OnInit {
-  modo: 'factura' | 'productos' = 'factura';
+  
+modo: 'factura' | 'productos' = 'factura';
   facturaForm!: FormGroup;
   productosForm!: FormGroup;
   resultadoFactura: any[] = [];
@@ -26,15 +32,36 @@ export class DevolucionesComponent implements OnInit {
   destinoForm!: FormGroup;
   seleccionDestino: any[] = [];
   totalDestino = 0;
+  productosBusquedaCodigo: any[] = [];
+  productosBusquedaDesc: any[] = [];
+  selectedProducto: any = null;
+  highlightedIndex: number = -1;
 
-  constructor(
-    private fb: FormBuilder,
-    private entradaSrv: ServicioEntradamerc,
+ @ViewChild('inputNombreSupl') inputNombreSupl!: ElementRef<HTMLInputElement>;
+   @ViewChild('inputCantidad') inputCantidad!: ElementRef<HTMLInputElement>;
+   @ViewChild('inputCodigo') inputCodigo!: ElementRef<HTMLInputElement>;
+   @ViewChild('inputDescripcion') inputDescripcion!: ElementRef<HTMLInputElement>;
+   @ViewChild('inputPrecio') inputPrecio!: ElementRef<HTMLInputElement>;
+   Toast = (Swal as any).mixin({
+       toast: true,
+       position: 'bottom-start',
+       showConfirmButton: false,
+       timer: 5000,
+       timerProgressBar: false
+     });
+ constructor(
+ private fb: FormBuilder,
+    private contFacturaSrv: ServicioContFactura,
     private inventarioSrv: ServicioInventario,
+    private productoSrv: ServicioProducto,
+    private servicioEntradamerc: ServicioEntradamerc,
+    private servicioDetEntrada: ServiciodetEntradamerc,
+    private printing: PrintingService,
+    private servicioUsuario: ServicioUsuario,
+    private facturaSrv:ServicioFacturacion,
     private ventainternaSrv: ServicioVentainterna,
-    private facturaSrv: ServicioFacturacion
-  ) {}
 
+  ) {}
   ngOnInit(): void {
     this.facturaForm = this.fb.group({
       fa_codFact: ['', [Validators.required]],
@@ -67,9 +94,49 @@ export class DevolucionesComponent implements OnInit {
     setTimeout(() => this.focusNext('fa-codFact'), 0);
   }
 
-  cambiarModo(m: 'factura' | 'productos') {
+cambiarModo(m: 'factura' | 'productos') {
     this.modo = m;
+}
+buscarFactura() {
+  const cod = String(this.facturaForm.get('fa_codFact')?.value || '').trim();
+  console.log('Código digitado:', cod);
+  if (!cod) {
+    Swal.fire({
+      title: 'Falta el número de factura',
+      icon: 'warning'
+    });
+    return;
   }
+  this.facturaSrv.getByNumero(cod).subscribe({
+    next: (resp: any) => {
+      console.log('Respuesta factura:', resp);
+      const data = resp?.data ?? resp;
+      if (!data || (Array.isArray(data) && data.length === 0)) {
+        Swal.fire({
+          title: 'Factura no encontrada',
+          text: 'Verifique el número e intente de nuevo',
+          icon: 'info'
+        });
+        return;
+      }
+      const factura = Array.isArray(data) ? data[0] : data;
+      this.clienteNombre = factura?.fa_nomClie || factura?.cliente || '';
+      this.fechaFactura = this.formatearFecha(
+        factura?.fa_fecFact || factura?.fecha
+      );
+      // 👇 Aquí llamas a la función que carga el detalle
+      this.buscarMercanciaFactura();
+    },
+    error: (error) => {
+      console.error(error);
+      Swal.fire({
+        title: 'Error',
+        text: 'No se pudo obtener la factura',
+        icon: 'error'
+      });
+    }
+  });
+}
 
   buscarMercanciaFactura() {
     const cod = String(this.facturaForm.get('fa_codFact')?.value || '').trim();
@@ -124,45 +191,10 @@ export class DevolucionesComponent implements OnInit {
   });
 }
 
-      // next: (info: any) => {
-      //   const arr = Array.isArray(info?.data) ? info.data : undefined;
-      //   const f = arr ? arr[0] : (info?.data || info);
-      //   if (!f || (arr && !arr.length)) {
-      //     Swal.fire({ title: 'Factura no encontrada', text: 'Verifique el número e intente de nuevo', icon: 'info' });
-      //     return;
-      //   }
-      //   const nom = f?.fa_nomClie || f?.cliente || '';
-      //   const fec = f?.fa_fecFact || f?.fecha || '';
-      //   this.clienteNombre = String(nom || '');
-      //   this.fechaFactura = this.formatearFecha(fec);
-      //   this.facturaSrv
-      //     .buscarMercanciaPorFactura(cod)
-      //     .subscribe({
-      //       next: (resp: any) => {
-      //         const data = Array.isArray(resp?.data) ? resp.data : (Array.isArray(resp) ? resp : []);
-      //         this.resultadoFactura = data.map((d: any) => ({
-      //           cod: d.df_codMerc ?? d.codmerc ?? d.codigo ?? '',
-      //           des: d.df_desMerc ?? d.desmerc ?? d.descripcion ?? '',
-      //           cantidad: Number(d.df_canMerc ?? d.cantidad ?? 0),
-      //           precio: Number(d.df_preMerc ?? d.precio ?? 0),
-      //           total: Number(d.df_valMerc ?? d.total ?? (Number(d.df_canMerc ?? d.cantidad ?? 0) * Number(d.df_preMerc ?? d.precio ?? 0))),
-      //         }));
-      //         this.facturaForm.get('fa_codFact')?.disable();
-      //       },
-      //       error: () => {
-      //         this.resultadoFactura = [];
-      //         this.facturaForm.get('fa_codFact')?.disable();
-      //       }
-      //     });
-      // },
- 
- 
-      // error: () => {
-      //   Swal.fire({ title: 'Factura no encontrada', text: 'Verifique el número e intente de nuevo', icon: 'info' });
-      // }
     });
   }
   deshacerFactura() {
+     console.log('SE EJECUTA');
     this.facturaForm.get('fa_codFact')?.enable();
     this.facturaForm.get('fa_codFact')?.reset();
     this.facturaForm.patchValue({ fa_codFact: '', buscarTexto: '' });
@@ -175,6 +207,29 @@ export class DevolucionesComponent implements OnInit {
     this.productosForm.get('codigo')?.enable();
     this.productosForm.get('descripcion')?.enable();
     setTimeout(() => this.focusNext('fa-codFact'), 0);
+  }
+  buscarProductoSalidaCodigo() {
+    const cod = String(this.destinoForm.get('codigo')?.value || '').trim();
+    if (!cod) return;
+    this.productoSrv.obtenerProductoPorId(cod).subscribe({
+      next: (resp: any) => {
+        const data = resp?.data ?? resp;
+        if (!data || (Array.isArray(data) && data.length === 0)) {
+          Swal.fire({ title: 'Producto no encontrado', icon: 'info' });
+          return;
+        }
+        const p = Array.isArray(data) ? data[0] : data;
+        const des = p.in_desmerc ?? p.descripcion ?? '';
+        const precio = Number(p.in_premerc ?? p.precio ?? 0);
+        const cantidad = Number(this.destinoForm.get('cantidad')?.value || 0);
+        this.destinoForm.patchValue({ descripcion: des, precio });
+        this.destinoForm.get('valor')?.setValue(Number(cantidad * precio));
+        setTimeout(() => this.focusNext('dest-cantidad'), 0);
+      },
+      error: () => {
+        Swal.fire({ title: 'Producto no encontrado', icon: 'info' });
+      }
+    });
   }
   seleccionarItemFactura(it: any) {
     const codSel = String(it.cod || '').trim();
@@ -389,7 +444,7 @@ export class DevolucionesComponent implements OnInit {
       de_codSucu: sucursalId
     }));
 
-    this.entradaSrv.guardarEntradamerc({ entradamercancias, detalle }).subscribe({
+    this.facturaSrv.guardarFacturacion({ entradamercancias, detalle }).subscribe({
       next: (res: any) => {
         const codGenerado = res?.data?.nuevoCodigo || res?.data?.me_codEntr || res?.nuevoCodigo;
         Swal.fire({
@@ -408,13 +463,54 @@ export class DevolucionesComponent implements OnInit {
     });
   }
 
-  focusNext(id: string) {
-    const el = document.getElementById(id) as HTMLInputElement | null;
-    if (el) {
-      el.focus();
-      try { el.select(); } catch {}
+//   focusNext(event: KeyboardEvent) {
+//   if (event.key === 'Enter') {
+//     const input = event.target as HTMLElement;
+//     const form = input.closest('form');
+//     const focusable = form?.querySelectorAll<HTMLElement>('input, select, textarea, button');
+
+//     if (!focusable) return;
+
+//     const index = Array.from(focusable).indexOf(input);
+//     if (index > -1 && index + 1 < focusable.length) {
+//       focusable[index + 1].focus();
+//     }
+//   }
+// }
+focusNext(param: KeyboardEvent | string) {
+
+  if (typeof param === 'string') {
+    const element = document.getElementById(param);
+    element?.focus();
+  }
+
+  if (param instanceof KeyboardEvent) {
+    if (param.key === 'Enter') {
+      const input = param.target as HTMLElement;
+      const form = input.closest('form');
+      const focusable = form?.querySelectorAll<HTMLElement>(
+        'input, select, textarea, button'
+      );
+
+      if (!focusable) return;
+
+      const index = Array.from(focusable).indexOf(input);
+
+      if (index > -1 && index + 1 < focusable.length) {
+        focusable[index + 1].focus();
+      }
     }
   }
+}
+
+
+  // focusNext(id: string) {
+  //   const el = document.getElementById(id) as HTMLInputElement | null;
+  //   if (el) {
+  //     el.focus();
+  //     try { el.select(); } catch {}
+  //   }
+  // }
 
   disponibleActualParaCodigo(): number {
     const codSel = String(this.productosForm.get('codigo')?.value || '').trim();
@@ -510,4 +606,244 @@ export class DevolucionesComponent implements OnInit {
       }
     });
   }
+onKeyDownCodigo(event: KeyboardEvent) {
+ console.log('Tecla presionada:', event.key);
+  if (!this.productosBusquedaCodigo.length) return;
+
+  if (event.key === 'ArrowDown') {
+    event.preventDefault();
+    this.highlightedIndex =
+      (this.highlightedIndex + 1) % this.productosBusquedaCodigo.length;
+  }
+
+  else if (event.key === 'ArrowUp') {
+    event.preventDefault();
+    this.highlightedIndex =
+      (this.highlightedIndex - 1 + this.productosBusquedaCodigo.length) %
+      this.productosBusquedaCodigo.length;
+  }
+
+  else if (event.key === 'Enter') {
+    event.preventDefault();
+
+    console.log('ENTER PRESIONADO');
+    console.log('Index actual:', this.highlightedIndex);
+
+    if (this.highlightedIndex >= 0) {
+      const producto =
+        this.productosBusquedaCodigo[this.highlightedIndex];
+
+      this.seleccionarProducto(producto);
+    }
+  }
+
+  else if (event.key === 'Escape') {
+    this.productosBusquedaCodigo = [];
+    this.highlightedIndex = -1;
+  }
+}
+
+
+// onKeyDownCodigo(event: KeyboardEvent) {
+
+//   if (this.productosBusquedaCodigo.length === 0) return;
+
+//   switch (event.key) {
+
+//     case 'ArrowDown':
+//       event.preventDefault();
+//       this.highlightedIndex =
+//         (this.highlightedIndex + 1) % this.productosBusquedaCodigo.length;
+//       break;
+
+//     case 'ArrowUp':
+//       event.preventDefault();
+//       this.highlightedIndex =
+//         (this.highlightedIndex - 1 + this.productosBusquedaCodigo.length) %
+//         this.productosBusquedaCodigo.length;
+//       break;
+
+//     case 'Enter':
+//       event.preventDefault();
+//       if (this.highlightedIndex >= 0) {
+//         const producto =
+//           this.productosBusquedaCodigo[this.highlightedIndex];
+//         this.seleccionarProducto(producto);
+//       }
+//       break;
+
+//     case 'Escape':
+//       this.productosBusquedaCodigo = [];
+//       this.highlightedIndex = -1;
+//       break;
+//   }
+// }
+
+
+  //   onKeyDownCodigo(event: KeyboardEvent) {
+  //   if (event.key === 'Enter') {
+  //     event.preventDefault();
+  //     const codigo = (this.facturaForm.get('det_codMerc')?.value || '').trim();
+  //     if (codigo.length === 0) {
+  //       this.productosBusquedaCodigo = [];
+  //       this.facturaForm.get('det_desMerc')?.enable();
+  //       this.focusNext(event);
+  //       return;
+  //     }
+  //     this.productoSrv.buscarProductosPorCodigo(codigo).subscribe({
+  //       next: (response: any) => {
+  //         const lista = (response && response.data) ? response.data : [];
+  //         this.productosBusquedaCodigo = lista;
+  //         if (lista.length === 0) {
+  //           this.Toast.fire({ title: 'Código no encontrado', icon: 'warning' });
+  //           this.facturaForm.get('det_desMerc')?.enable();
+  //           this.inputCodigo?.nativeElement.focus();
+  //           return;
+  //         }
+  //         if (lista.length === 1) {
+  //           this.seleccionarProducto(lista[0]);
+  //           this.productosBusquedaCodigo = [];
+  //           this.inputCantidad?.nativeElement.focus();
+  //         } else {
+  //           const exact = lista.find((p: any) => String(p.in_codmerc).toLowerCase() === codigo.toLowerCase());
+  //           if (exact) {
+  //             this.seleccionarProducto(exact);
+  //             this.productosBusquedaCodigo = [];
+  //             this.inputCantidad?.nativeElement.focus();
+  //           }
+  //         }
+  //       },
+  //       error: () => {
+  //         this.productosBusquedaCodigo = [];
+  //         this.Toast.fire({ title: 'No se pudo buscar el producto por código', icon: 'error' });
+  //         this.inputCodigo?.nativeElement.focus();
+  //       }
+  //     });
+  //   }
+  // }
+
+  onKeyDownDescripcion(event: KeyboardEvent) {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      const desc = (this.facturaForm.get('det_desMerc')?.value || '').trim();
+      if (desc.length === 0) {
+        this.productosBusquedaDesc = [];
+        this.focusNext(event);
+        return;
+      }
+      this.productoSrv.buscarProductosPorDescripcion(desc).subscribe({
+        next: (response: any) => {
+          const lista = (response && response.data) ? response.data : [];
+          this.productosBusquedaDesc = lista;
+          if (lista.length > 0) {
+            const lower = desc.toLowerCase();
+            const exact = lista.find((p: any) => String(p.in_desmerc).toLowerCase() === lower);
+            const starts = lista.find((p: any) => String(p.in_desmerc).toLowerCase().startsWith(lower));
+            const elegido = exact || starts || lista[0];
+            this.seleccionarProducto(elegido);
+            this.productosBusquedaDesc = [];
+            this.inputCantidad?.nativeElement.focus();
+          }
+        },
+        error: () => {
+          this.productosBusquedaDesc = [];
+          this.focusNext(event);
+        }
+      });
+    }
+  }
+toUpper(controlName: string, event: any) {
+  const value = event.target.value.toUpperCase();
+  this.productosForm.get(controlName)?.setValue(value, { emitEvent: false });
+}
+buscarProductoPorCodigo() {
+  const codigo = (this.facturaForm.get('det_codMerc')?.value || '').trim();
+    if (codigo.length > 1) {
+      this.productoSrv.buscarProductosPorCodigo(codigo).subscribe({
+        next: (response: any) => {
+          const lista = (response && response.data) ? response.data : [];
+          this.productosBusquedaCodigo = lista;
+        },
+        error: () => {
+          this.productosBusquedaCodigo = [];
+        }
+      });
+    } else {
+      this.productosBusquedaCodigo = [];
+      this.facturaForm.get('det_desMerc')?.enable();
+  }
+}
+  //  seleccionarProducto(producto: any, source: 'codigo' | 'descripcion' = 'codigo') {
+  //   this.facturaForm.patchValue({
+  //     det_codMerc: producto.in_codmerc,
+  //     det_desMerc: producto.in_desmerc,
+  //     det_preMerc: Number(producto.in_premerc || 0)
+  //   });
+  //   this.selectedProducto = producto;
+  //   if (source === 'codigo') {
+  //     this.facturaForm.get('det_desMerc')?.disable();
+  //     this.inputCantidad?.nativeElement.focus();
+  //   }
+  // }
+seleccionarProducto(producto: any) {
+  this.facturaForm.patchValue({
+    det_codMerc: producto.in_codmerc,
+    det_desMerc: producto.in_desmerc,
+    det_preMerc: Number(producto.in_premerc || 0)
+  });
+
+  this.selectedProducto = producto;
+  this.productosBusquedaCodigo = [];
+  this.facturaForm.get('det_desMerc')?.disable();
+
+  this.inputCantidad?.nativeElement.focus();
+}
+
+onInputCodigo(event: any) {
+
+  const codigo = (event.target.value || '').trim();
+
+  if (codigo.length < 2) {
+    this.productosBusquedaCodigo = [];
+    this.highlightedIndex = -1;
+    return;
+  }
+
+  this.productoSrv.buscarProductosPorCodigo(codigo).subscribe({
+    next: (response: any) => {
+      this.productosBusquedaCodigo = response?.data ?? [];
+      this.highlightedIndex = this.productosBusquedaCodigo.length > 0 ? 0 : -1;
+    },
+    error: () => {
+      this.productosBusquedaCodigo = [];
+      this.highlightedIndex = -1;
+    }
+  });
+}
+
+
+//   onInputCodigo(event: any) {
+
+//   const codigo = (event.target.value || '').trim();
+
+//   if (codigo.length < 2) {
+//     this.productosBusquedaCodigo = [];
+//     return;
+//   }
+
+//   this.productoSrv.buscarProductosPorCodigo(codigo).subscribe({
+//     next: (response: any) => {
+//       this.productosBusquedaCodigo = response?.data ?? [];
+//     },
+//     error: () => {
+//       this.productosBusquedaCodigo = [];
+//     }
+//   });
+// }
+
+onEnterCodigo(event: Event) {
+  const keyboardEvent = event as KeyboardEvent;
+  keyboardEvent.preventDefault();
+}
+
 }

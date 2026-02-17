@@ -44,14 +44,19 @@ this.handleError = handleError;
 return this.filterRequest(this.http.delete(`${this.backendUrl}${request}`, { body }));
 };
 
-GetRequest<T>(url: string): Observable<T> {
-  return this.http.get<T>(url).pipe(
-    catchError((error) => {
-      console.error('HTTP Error:', error);
-      return throwError(() => error);
-    })
-  );
-}
+// GetRequest<T>(url: string): Observable<T> {
+//   return this.http.get<T>(url).pipe(
+//     catchError((error) => {
+//       console.error('HTTP Error:', error);
+//       return throwError(() => error);
+//     })
+//   );
+// }
+
+GetRequest = <TResult>(request: string, handleError: boolean = true): Observable<TResult> => {
+this.handleError = handleError;
+return this.filterRequest(this.http.get(`${this.backendUrl}${request}`));
+};
 
 // GetRequest = <TResult>(request: string, handleError: boolean = true): Observable<TResult> => {
 // this.handleError = handleError;

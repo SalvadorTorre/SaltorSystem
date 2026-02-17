@@ -1,20 +1,4 @@
-// /* To learn more about this file see: https://angular.io/config/tsconfig. */
-// {
-//   "extends": "./tsconfig.json",
-//   "compilerOptions": {
-//     "outDir": "./out-tsc/app",
-//     "types": []
-//   },
-//   "files": ["src/main.ts"],
-//   "include": ["src/**/*.d.ts"],
-//   "exclude": [
-//     "src/test.ts",
-//     "src/**/*.spec.ts",
-//     "src/app/features/private/pages/facturacion/factura.reporte.ts",
-//     "src/app/features/private/pages/mantenimientos/pages/configuracion/configuracion.ts"
-//   ]
-// }
-
+/* To learn more about this file see: https://angular.io/config/tsconfig. */
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
@@ -30,3 +14,22 @@
     "src/app/features/private/pages/mantenimientos/pages/configuracion/configuracion.ts"
   ]
 }
+
+
+
+// {
+//   "extends": "./tsconfig.json",
+//   "compilerOptions": {
+//     "outDir": "./out-tsc/app",
+//     "types": []
+//   },
+
+//   "files": [
+//     "src/main.ts",
+//     "src/polyfills.ts"
+//   ],
+//   "include": [
+//     "src/**/*.d.ts",
+//     "src/**/*.ts"
+//   ]
+// }
