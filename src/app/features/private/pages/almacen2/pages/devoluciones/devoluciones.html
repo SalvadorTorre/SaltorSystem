@@ -26,13 +26,7 @@
                 <label class="form-label">Fecha</label>
                 <input type="text" class="form-control" [value]="fechaFactura" disabled />
               </div>
-              <!-- <div class="col-md-1 d-flex align-items-end">
-                <button type="button"
-                        class="btn btn-success w-100"
-                        (click)="buscarFactura()">
-                  <i class="bi bi-search"></i> Buscar
-                </button>
-              </div> -->
+              <div class="col-1"></div>
               <div class="col-md-1 d-flex align-items-end">
                 <button type="button"
                         class="btn btn-outline-secondary w-100"
@@ -40,6 +34,7 @@
                   <i class="bi bi-arrow-counterclockwise"></i> Deshacer
                 </button>
               </div>
+              <div class="col-3"></div>
               <div class="col-md-2 d-flex align-items-end">
                 <button type="button"
                         class="btn btn-primary"
@@ -58,12 +53,12 @@
       </div>
       </div>
       <div class="col-md-6">
-      <div class="d-flex align-items-center mb-0">
+      <div class="d-flex align-items-center mt-6">
            <h5 class="mb-0">Productos Recibido</h5>
       </div>
       </div>
       <div class="col-md-6">
-        <div class="table-responsive">
+        <div class="tabla-detalle2">
           <table class="table table-sm table-hover">
             <thead class="table-light">
               <tr>
@@ -123,7 +118,7 @@
       
       <div class="col-md-6">
         <!-- tabla producto recivido -->
-        <div class="table-responsive">
+        <div class="tabla-detalle">
           <table class="table table-sm table-bordered">
             <thead class="table-light">
               <tr>
@@ -169,115 +164,163 @@
         <div class="d-flex align-items-center mb-0">
           <h5 class="mb-0">Productos Saliente</h5>
         </div>
-        <div class="card mt-0" [formGroup]="destinoForm">
-       
-          <div class="card-body">
+        <!-- <div class="card p-3"> -->
+          <form [formGroup]="entraForm" (ngSubmit)="$event.preventDefault()">
             <div class="row g-2">
-              <div class="col-2">
-                <label class="form-label">Código</label>
-                <!-- <input type="text" class="form-control" formControlName="codigo" (keydown.enter)="buscarProductoSalidaCodigo()" (blur)="buscarProductoSalidaCodigo()" /> -->
-              <div class="position-relative">
-                <!-- <input #inputCodigo type="text" class="form-control enter-next" formControlName="det_codMerc" (input)="toUpper('det_codMerc', $event); buscarProductoPorCodigo()" (keydown)="onKeyDownCodigo($event)" placeholder="Código producto">
-                <ul class="list-group position-absolute w-100 shadow" style="z-index: 1000; top: 100%;" *ngIf="productosBusquedaCodigo.length > 0">
-                  <li class="list-group-item list-group-item-action" style="cursor: pointer;"
-                    *ngFor="let p of productosBusquedaCodigo"
-                    (click)="seleccionarProducto(p, 'codigo')">
-                    {{ p.in_codmerc }} - {{ p.in_desmerc }}
-                  </li>
-                </ul> -->
-                <input 
-                  #inputCodigo
+              <!-- CODIGO -->
+              <div class="col-md-3 position-relative">
+                <label>Código</label>
+                <input
+                  #codigoInput
                   type="text"
                   class="form-control"
-                  formControlName="det_codMerc"
-                  (input)="onInputCodigo($event)"
-                  (keydown.enter)="onInputCodigo($event)"
-                  placeholder="Código producto"
+                  formControlName="codigo"
+                  [readonly]="productoSeleccionado"
+                  (input)="onInputCodigo()"
+                  (keydown)="onKeyDownCodigo($event)"
                 />
-                <ul class="list-group position-absolute w-100 shadow"
-                    style="z-index: 1000; top: 100%;"
-                    *ngIf="productosBusquedaCodigo.length > 0">
-                    <li
-                      class="list-group-item list-group-item-action"
-                      style="cursor: pointer;"
-                      *ngFor="let p of productosBusquedaCodigo; let i = index"
-                      [class.active]="i === highlightedIndex"
-                      (mouseenter)="highlightedIndex = i"
-                      (click)="seleccionarProducto(p)">
-                      {{ p.in_codmerc }} - {{ p.in_desmerc }}
-                     </li>
-                  <!-- <li class="list-group-item list-group-item-action"
-                      style="cursor: pointer;"
-                      *ngFor="let p of productosBusquedaCodigo"
-                      (click)="seleccionarProducto(p)">
-
-                    {{ p.in_codmerc }} - {{ p.in_desmerc }}
-
-                  </li> -->
+                <!-- LISTA AUTOCOMPLETE -->
+                <ul 
+                  *ngIf="productosBusqueda.length > 0"
+                  class="list-group lista-productos"
+                >
+                  <li
+                    *ngFor="let prod of productosBusqueda; let i = index"
+                    class="list-group-item"
+                    [class.active]="i === highlightedIndex"
+                    (click)="seleccionarProducto(prod)"
+                  >
+                    {{ prod.in_codmerc }} - {{ prod.in_desmerc }}
+                  </li>
                 </ul>
+              </div>
+              <!-- DESCRIPCION -->
+              <div class="col-md-5 position-relative">
+                <label>Descripción</label>
+                <input
+                  #descripcionInput
+                  type="text"
+                  class="form-control"
+                  formControlName="descripcion"
+                  [readonly]="productoSeleccionado"
+                  (input)="onInputDescripcion()"
+                  (keydown)="onKeyDownDescripcion($event)"
+                />
+              </div>
+              <!-- CANTIDAD -->
+              <div class="col-md-2">
+                <label>Cantidad</label>
+                <input
+                  #cantidadInput
+                  type="number"
+                  class="form-control"
+                  formControlName="cantidad"
+                  (keydown)="onEnterCantidad($event)"
+                />
+              </div>
 
-            
+              <!-- PRECIO -->
+              <div class="col-md-2">
+                <label>Precio</label>
+                <input
+                  #precioInput
+                  type="number"
+                  class="form-control"
+                  formControlName="precio"
+                  (keydown.enter)="onEnterPrecio($event)"
+                />
               </div>
+
             </div>
-              <div class="col-3">
-                <label class="form-label">Descripción</label>
-                <input type="text" class="form-control" formControlName="descripcion" />
-              </div>
-              <div class="col-2">
-                <label class="form-label">Cantidad</label>
-                <input id="dest-cantidad" type="number" class="form-control text-end" [value]="destinoForm.get('cantidad')?.value" (focus)="selectInput($event)" (input)="actualizarDestinoCampo('cantidad',$any($event.target).value)" (keydown.enter)="focusNext('dest-precio')" />
-              </div>
-              <div class="col-2">
-                <label class="form-label">Precio</label>
-                <input id="dest-precio" type="number" class="form-control text-end" [value]="destinoForm.get('precio')?.value" (focus)="selectInput($event)" (input)="actualizarDestinoCampo('precio',$any($event.target).value)" (keydown.enter)="agregarLineaDestino()" />
-              </div>
-              <div class="col-2 text-end">
-                <label class="form-label">Valor</label>
-                <input type="number" class="form-control text-end" [value]="destinoForm.get('valor')?.value" disabled />
-              </div>
-              <div class="col-1 text-end">
-                <button class="btn btn-outline-primary" (click)="agregarLineaDestino()">
-                  <i class="bi bi-plus-circle"></i> Agregar
-                </button>
-              </div>
+
+          </form>
+
+        <!-- </div> -->
+        <!-- TABLA -->
+        <!-- <div class="card mt-3"> -->
+          <div class="card-body p-2">
+            <!-- <table class="table table-sm table-bordered">
+              <thead>
+                <tr>
+                  <th>Código</th>
+                  <th>Descripción</th>
+                  <th class="text-end">Cantidad</th>
+                  <th class="text-end">Precio</th>
+                  <th class="text-end">Total</th>
+                  <th class="text-center">Acción</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                <tr *ngFor="let item of detalle; let i = index">
+                  <td>{{ item.codigo }}</td>
+                  <td>{{ item.descripcion }}</td>
+                  <td class="text-end">{{ item.cantidad }}</td>
+                  <td class="text-end">{{ item.precio | number:'1.2-2' }}</td>
+                  <td class="text-end">{{ item.total | number:'1.2-2' }}</td>
+
+                  <td class="text-center">
+                    <button type="button"
+                            class="btn btn-sm btn-danger"
+                            (click)="eliminarItem(i)">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+              <tfoot>
+                <tr>
+                  <th colspan="4" class="text-end">TOTAL</th>
+                  <th class="text-end">{{total | currency}}</th>
+                  <th></th>
+                </tr>
+              </tfoot>
+            </table> -->
+            <div class="tabla-detalle">
+              <table class="table table-sm table-bordered mb-0">
+                <thead>
+                  <tr>
+                    <th>Código</th>
+                    <th>Descripción</th>
+                    <th class="text-end">Cantidad</th>
+                    <th class="text-end">Precio</th>
+                    <th class="text-end">Total</th>
+                    <th></th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  <tr *ngFor="let item of detalle; let i = index">
+                    <td>{{ item.codigo }}</td>
+                    <td>{{ item.descripcion }}</td>
+                    <td class="text-end">{{ item.cantidad }}</td>
+                    <td class="text-end">{{ item.precio }}</td>
+                    <td class="text-end">{{ item.total }}</td>
+                    <td class="text-center">
+                      <button type="button"
+                        class="btn btn-sm btn-danger"
+                        (click)="eliminarItem(i)">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </td>
+                  </tr>
+                   <tr *ngIf="detalle.length===0">
+                      <td colspan="6" class="text-center text-muted">Sin registro</td>
+                    </tr>
+                </tbody>
+                <tfoot>
+                <tr>
+                  <th colspan="4" class="text-end">TOTAL</th>
+                  <th class="text-end">{{total | currency}}</th>
+                  <th></th>
+                </tr>
+              </tfoot>
+              </table>
             </div>
+
+
           </div>
-        </div>
-        <div class="table-responsive mt-2" *ngIf="seleccionDestino.length">
-          <table class="table table-sm table-bordered">
-            <thead class="table-light">
-              <tr>
-                <th>Código</th>
-                <th>Descripción</th>
-                <th class="text-end">Cant.</th>
-                <th class="text-end">Precio</th>
-                <th class="text-end">Valor</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let it of seleccionDestino; let i=index">
-                <td>{{it.cod}}</td>
-                <td>{{it.des}}</td>
-                <td class="text-end">{{it.cantidad}}</td>
-                <td class="text-end">{{it.precio | currency}}</td>
-                <td class="text-end">{{it.valor | currency}}</td>
-                <td class="text-center">
-                  <button class="btn btn-sm btn-danger" (click)="eliminarLineaDestino(i)">
-                    <i class="bi bi-trash"></i>
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-            <tfoot>
-              <tr>
-                <th colspan="4" class="text-end">TOTAL</th>
-                <th class="text-end">{{totalDestino | currency}}</th>
-                <th></th>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
+        <!-- </div> -->
       </div>
     </div>
   </div>

@@ -31,7 +31,9 @@ export class ServicioProducto {
     const safe = encodeURIComponent(in_codmerc);
     return this.http.GetRequest<any>(`/productos-buscador/${safe}`);
   }
-
+buscarProductos(codigo: string) {
+  return this.http.GetRequest<any[]>(`/api/productos2?buscar=${codigo}`);
+}
   buscarProductosPorDescripcion(in_desmerc: string): Observable<any> {
     const safe = encodeURIComponent(in_desmerc);
     return this.http.GetRequest<any>(`/productos-buscador-desc/${safe}`);

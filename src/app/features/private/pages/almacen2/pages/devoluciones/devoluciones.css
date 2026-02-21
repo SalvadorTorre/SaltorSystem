@@ -1,3 +1,35 @@
 /* Ajustes simples para tablas compactas */
 .table td, .table th { padding: 0.4rem; }
 .btn-group .btn.active { background-color: #0d6efd; color: #fff; }
+.lista-productos {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 440px;          /* 🔥 aquí controlas el ancho */
+  max-height: 250px;
+  overflow-y: auto;
+  z-index: 1050;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  border-radius: 6px;
+}
+.tabla-detalle2 {
+  height: 400px;
+  max-height: 400px;   
+  overflow-y: auto;
+  border: 1px solid #dee2e6; 
+}
+  
+
+.tabla-detalle {
+  height: 300px;
+  max-height: 300px;   /* 5 filas aprox */
+  overflow-y: auto;
+   border: 1px solid #dee2e6; 
+}
+.tabla-detalle tfoot th {
+  position: sticky;
+  bottom: 0;
+  background: #f8f9fa;
+  z-index: 3;
+  font-weight: bold;
+}

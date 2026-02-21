@@ -17,9 +17,9 @@ import Swal from 'sweetalert2';
   styleUrls: ['./devoluciones.css'],
 })
 export class DevolucionesComponent implements OnInit {
-  
-modo: 'factura' | 'productos' = 'factura';
+  modo: 'factura' | 'productos' = 'factura';
   facturaForm!: FormGroup;
+  entraForm!: FormGroup;
   productosForm!: FormGroup;
   resultadoFactura: any[] = [];
   seleccionFactura: any[] = [];
@@ -36,21 +36,30 @@ modo: 'factura' | 'productos' = 'factura';
   productosBusquedaDesc: any[] = [];
   selectedProducto: any = null;
   highlightedIndex: number = -1;
+  productosBusqueda: any[] = [];
+  detalle: any[] = [];
+  productoSeleccionado: boolean = false;
+  subtotal: number = 0;
+  total: number = 0;
 
- @ViewChild('inputNombreSupl') inputNombreSupl!: ElementRef<HTMLInputElement>;
-   @ViewChild('inputCantidad') inputCantidad!: ElementRef<HTMLInputElement>;
-   @ViewChild('inputCodigo') inputCodigo!: ElementRef<HTMLInputElement>;
-   @ViewChild('inputDescripcion') inputDescripcion!: ElementRef<HTMLInputElement>;
-   @ViewChild('inputPrecio') inputPrecio!: ElementRef<HTMLInputElement>;
-   Toast = (Swal as any).mixin({
-       toast: true,
-       position: 'bottom-start',
-       showConfirmButton: false,
-       timer: 5000,
-       timerProgressBar: false
-     });
- constructor(
- private fb: FormBuilder,
+  @ViewChild('cantidadInput') cantidadInput!: ElementRef;
+  @ViewChild('precioInput') precioInput!: ElementRef;
+  @ViewChild('descripcionInput') descripcionInput!: ElementRef;
+  @ViewChild('codigoInput') codigoInput!: ElementRef<HTMLInputElement>;
+  @ViewChild('inputNombreSupl') inputNombreSupl!: ElementRef;
+  @ViewChild('inputCantidad') inputCantidad!: ElementRef<HTMLInputElement>;
+  @ViewChild('inputCodigo') inputCodigo!: ElementRef<HTMLInputElement>;
+ 
+  @ViewChild('inputPrecio') inputPrecio!: ElementRef<HTMLInputElement>;
+  Toast = (Swal as any).mixin({
+    toast: true,
+    position: 'bottom-start',
+    showConfirmButton: false,
+    timer: 5000,
+    timerProgressBar: false
+  });
+  constructor(
+    private fb: FormBuilder,
     private contFacturaSrv: ServicioContFactura,
     private inventarioSrv: ServicioInventario,
     private productoSrv: ServicioProducto,
@@ -59,9 +68,18 @@ modo: 'factura' | 'productos' = 'factura';
     private printing: PrintingService,
     private servicioUsuario: ServicioUsuario,
     private facturaSrv:ServicioFacturacion,
-    private ventainternaSrv: ServicioVentainterna,
+    private ventainternaSrv: ServicioVentainterna
 
-  ) {}
+  )
+  {
+    this.entraForm = this.fb.group({
+      codigo: ['', Validators.required],
+      descripcion: ['', Validators.required],
+      cantidad: [0, [Validators.required, Validators.min(0.5)]],
+      precio: [0, Validators.required],
+      costo:[0]
+      });
+  }
   ngOnInit(): void {
     this.facturaForm = this.fb.group({
       fa_codFact: ['', [Validators.required]],
@@ -93,6 +111,7 @@ modo: 'factura' | 'productos' = 'factura';
     });
     setTimeout(() => this.focusNext('fa-codFact'), 0);
   }
+
 
 cambiarModo(m: 'factura' | 'productos') {
     this.modo = m;
@@ -194,7 +213,7 @@ buscarFactura() {
     });
   }
   deshacerFactura() {
-     console.log('SE EJECUTA');
+    console.log('SE EJECUTA');
     this.facturaForm.get('fa_codFact')?.enable();
     this.facturaForm.get('fa_codFact')?.reset();
     this.facturaForm.patchValue({ fa_codFact: '', buscarTexto: '' });
@@ -204,6 +223,8 @@ buscarFactura() {
     this.seleccionFactura = [];
     this.totalFactura = 0;
     this.productosForm.reset({ codigo: '', descripcion: '', cantidad: 0, precio: 0 }, { emitEvent: false });
+    this.resetFormulario();
+     this.detalle = [];
     this.productosForm.get('codigo')?.enable();
     this.productosForm.get('descripcion')?.enable();
     setTimeout(() => this.focusNext('fa-codFact'), 0);
@@ -419,7 +440,7 @@ buscarFactura() {
       me_valEntr: Number(this.totalFactura || 0),
       me_codSupl: null,
       me_nomSupl: 'DEVOLUCIÓN POR FACTURA',
-      me_facSupl: this.facturaForm.get('fa_codFact')?.value,
+      me_facSupl: this.entraForm.get('fa_codFact')?.value,
       me_fecSupl: new Date().toISOString().split('T')[0],
       me_status: 'DEVOLUCION',
       me_codVend: null,
@@ -463,54 +484,31 @@ buscarFactura() {
     });
   }
 
-//   focusNext(event: KeyboardEvent) {
-//   if (event.key === 'Enter') {
-//     const input = event.target as HTMLElement;
-//     const form = input.closest('form');
-//     const focusable = form?.querySelectorAll<HTMLElement>('input, select, textarea, button');
+  focusNext(param: KeyboardEvent | string) {
 
-//     if (!focusable) return;
+    if (typeof param === 'string') {
+      const element = document.getElementById(param);
+      element?.focus();
+    }
 
-//     const index = Array.from(focusable).indexOf(input);
-//     if (index > -1 && index + 1 < focusable.length) {
-//       focusable[index + 1].focus();
-//     }
-//   }
-// }
-focusNext(param: KeyboardEvent | string) {
+    if (param instanceof KeyboardEvent) {
+      if (param.key === 'Enter') {
+        const input = param.target as HTMLElement;
+        const form = input.closest('form');
+        const focusable = form?.querySelectorAll<HTMLElement>(
+          'input, select, textarea, button'
+        );
 
-  if (typeof param === 'string') {
-    const element = document.getElementById(param);
-    element?.focus();
-  }
+        if (!focusable) return;
 
-  if (param instanceof KeyboardEvent) {
-    if (param.key === 'Enter') {
-      const input = param.target as HTMLElement;
-      const form = input.closest('form');
-      const focusable = form?.querySelectorAll<HTMLElement>(
-        'input, select, textarea, button'
-      );
+        const index = Array.from(focusable).indexOf(input);
 
-      if (!focusable) return;
-
-      const index = Array.from(focusable).indexOf(input);
-
-      if (index > -1 && index + 1 < focusable.length) {
-        focusable[index + 1].focus();
+        if (index > -1 && index + 1 < focusable.length) {
+          focusable[index + 1].focus();
+        }
       }
     }
   }
-}
-
-
-  // focusNext(id: string) {
-  //   const el = document.getElementById(id) as HTMLInputElement | null;
-  //   if (el) {
-  //     el.focus();
-  //     try { el.select(); } catch {}
-  //   }
-  // }
 
   disponibleActualParaCodigo(): number {
     const codSel = String(this.productosForm.get('codigo')?.value || '').trim();
@@ -606,244 +604,293 @@ focusNext(param: KeyboardEvent | string) {
       }
     });
   }
-onKeyDownCodigo(event: KeyboardEvent) {
- console.log('Tecla presionada:', event.key);
-  if (!this.productosBusquedaCodigo.length) return;
-
-  if (event.key === 'ArrowDown') {
-    event.preventDefault();
-    this.highlightedIndex =
-      (this.highlightedIndex + 1) % this.productosBusquedaCodigo.length;
-  }
-
-  else if (event.key === 'ArrowUp') {
-    event.preventDefault();
-    this.highlightedIndex =
-      (this.highlightedIndex - 1 + this.productosBusquedaCodigo.length) %
-      this.productosBusquedaCodigo.length;
-  }
-
-  else if (event.key === 'Enter') {
-    event.preventDefault();
-
-    console.log('ENTER PRESIONADO');
-    console.log('Index actual:', this.highlightedIndex);
-
-    if (this.highlightedIndex >= 0) {
-      const producto =
-        this.productosBusquedaCodigo[this.highlightedIndex];
-
-      this.seleccionarProducto(producto);
-    }
-  }
-
-  else if (event.key === 'Escape') {
-    this.productosBusquedaCodigo = [];
-    this.highlightedIndex = -1;
-  }
-}
-
-
-// onKeyDownCodigo(event: KeyboardEvent) {
-
-//   if (this.productosBusquedaCodigo.length === 0) return;
-
-//   switch (event.key) {
-
-//     case 'ArrowDown':
-//       event.preventDefault();
-//       this.highlightedIndex =
-//         (this.highlightedIndex + 1) % this.productosBusquedaCodigo.length;
-//       break;
-
-//     case 'ArrowUp':
-//       event.preventDefault();
-//       this.highlightedIndex =
-//         (this.highlightedIndex - 1 + this.productosBusquedaCodigo.length) %
-//         this.productosBusquedaCodigo.length;
-//       break;
-
-//     case 'Enter':
-//       event.preventDefault();
-//       if (this.highlightedIndex >= 0) {
-//         const producto =
-//           this.productosBusquedaCodigo[this.highlightedIndex];
-//         this.seleccionarProducto(producto);
-//       }
-//       break;
-
-//     case 'Escape':
-//       this.productosBusquedaCodigo = [];
-//       this.highlightedIndex = -1;
-//       break;
-//   }
-// }
-
-
-  //   onKeyDownCodigo(event: KeyboardEvent) {
-  //   if (event.key === 'Enter') {
-  //     event.preventDefault();
-  //     const codigo = (this.facturaForm.get('det_codMerc')?.value || '').trim();
-  //     if (codigo.length === 0) {
-  //       this.productosBusquedaCodigo = [];
-  //       this.facturaForm.get('det_desMerc')?.enable();
-  //       this.focusNext(event);
-  //       return;
-  //     }
-  //     this.productoSrv.buscarProductosPorCodigo(codigo).subscribe({
-  //       next: (response: any) => {
-  //         const lista = (response && response.data) ? response.data : [];
-  //         this.productosBusquedaCodigo = lista;
-  //         if (lista.length === 0) {
-  //           this.Toast.fire({ title: 'Código no encontrado', icon: 'warning' });
-  //           this.facturaForm.get('det_desMerc')?.enable();
-  //           this.inputCodigo?.nativeElement.focus();
-  //           return;
-  //         }
-  //         if (lista.length === 1) {
-  //           this.seleccionarProducto(lista[0]);
-  //           this.productosBusquedaCodigo = [];
-  //           this.inputCantidad?.nativeElement.focus();
-  //         } else {
-  //           const exact = lista.find((p: any) => String(p.in_codmerc).toLowerCase() === codigo.toLowerCase());
-  //           if (exact) {
-  //             this.seleccionarProducto(exact);
-  //             this.productosBusquedaCodigo = [];
-  //             this.inputCantidad?.nativeElement.focus();
-  //           }
-  //         }
-  //       },
-  //       error: () => {
-  //         this.productosBusquedaCodigo = [];
-  //         this.Toast.fire({ title: 'No se pudo buscar el producto por código', icon: 'error' });
-  //         this.inputCodigo?.nativeElement.focus();
-  //       }
-  //     });
-  //   }
-  // }
-
-  onKeyDownDescripcion(event: KeyboardEvent) {
-    if (event.key === 'Enter') {
-      event.preventDefault();
-      const desc = (this.facturaForm.get('det_desMerc')?.value || '').trim();
-      if (desc.length === 0) {
-        this.productosBusquedaDesc = [];
-        this.focusNext(event);
-        return;
-      }
-      this.productoSrv.buscarProductosPorDescripcion(desc).subscribe({
-        next: (response: any) => {
-          const lista = (response && response.data) ? response.data : [];
-          this.productosBusquedaDesc = lista;
-          if (lista.length > 0) {
-            const lower = desc.toLowerCase();
-            const exact = lista.find((p: any) => String(p.in_desmerc).toLowerCase() === lower);
-            const starts = lista.find((p: any) => String(p.in_desmerc).toLowerCase().startsWith(lower));
-            const elegido = exact || starts || lista[0];
-            this.seleccionarProducto(elegido);
-            this.productosBusquedaDesc = [];
-            this.inputCantidad?.nativeElement.focus();
-          }
-        },
-        error: () => {
-          this.productosBusquedaDesc = [];
-          this.focusNext(event);
-        }
-      });
-    }
-  }
-toUpper(controlName: string, event: any) {
-  const value = event.target.value.toUpperCase();
-  this.productosForm.get(controlName)?.setValue(value, { emitEvent: false });
-}
-buscarProductoPorCodigo() {
-  const codigo = (this.facturaForm.get('det_codMerc')?.value || '').trim();
-    if (codigo.length > 1) {
-      this.productoSrv.buscarProductosPorCodigo(codigo).subscribe({
-        next: (response: any) => {
-          const lista = (response && response.data) ? response.data : [];
-          this.productosBusquedaCodigo = lista;
-        },
-        error: () => {
-          this.productosBusquedaCodigo = [];
-        }
-      });
-    } else {
-      this.productosBusquedaCodigo = [];
-      this.facturaForm.get('det_desMerc')?.enable();
-  }
-}
-  //  seleccionarProducto(producto: any, source: 'codigo' | 'descripcion' = 'codigo') {
-  //   this.facturaForm.patchValue({
-  //     det_codMerc: producto.in_codmerc,
-  //     det_desMerc: producto.in_desmerc,
-  //     det_preMerc: Number(producto.in_premerc || 0)
-  //   });
-  //   this.selectedProducto = producto;
-  //   if (source === 'codigo') {
-  //     this.facturaForm.get('det_desMerc')?.disable();
-  //     this.inputCantidad?.nativeElement.focus();
-  //   }
-  // }
-seleccionarProducto(producto: any) {
-  this.facturaForm.patchValue({
-    det_codMerc: producto.in_codmerc,
-    det_desMerc: producto.in_desmerc,
-    det_preMerc: Number(producto.in_premerc || 0)
-  });
-
-  this.selectedProducto = producto;
-  this.productosBusquedaCodigo = [];
-  this.facturaForm.get('det_desMerc')?.disable();
-
-  this.inputCantidad?.nativeElement.focus();
-}
-
-onInputCodigo(event: any) {
-
-  const codigo = (event.target.value || '').trim();
-
-  if (codigo.length < 2) {
-    this.productosBusquedaCodigo = [];
+    // 🔎 BUSCAR PRODUCTO
+onInputCodigo() {
+  const codigo = this.entraForm.get('codigo')?.value?.trim();
+  if (!codigo || codigo.length < 1) {
+    this.productosBusqueda = [];
     this.highlightedIndex = -1;
     return;
   }
-
   this.productoSrv.buscarProductosPorCodigo(codigo).subscribe({
-    next: (response: any) => {
-      this.productosBusquedaCodigo = response?.data ?? [];
-      this.highlightedIndex = this.productosBusquedaCodigo.length > 0 ? 0 : -1;
+    next: (resp: any) => {
+      console.log('RESPUESTA BACKEND:', resp);
+      this.productosBusqueda = resp.data ?? []; // 🔥 ESTA ES LA LÍNEA CLAVE
+      console.log('ARRAY REAL:', this.productosBusqueda);
+      this.highlightedIndex =
+      this.productosBusqueda.length > 0 ? 0 : -1;
     },
     error: () => {
-      this.productosBusquedaCodigo = [];
+      this.productosBusqueda = [];
       this.highlightedIndex = -1;
     }
   });
 }
+  // ⌨ NAVEGACIÓN TECLADO
+onKeyDownCodigo(event: KeyboardEvent) {
 
+  const codigo = this.entraForm.get('codigo')?.value?.trim();
 
-//   onInputCodigo(event: any) {
+  // 🔴 PRIMERO validar Enter en vacío
+  if (event.key === 'Enter' && !codigo) {
+    event.preventDefault();
 
-//   const codigo = (event.target.value || '').trim();
+    setTimeout(() => {
+      this.descripcionInput.nativeElement.focus();
+    }, 0);
 
-//   if (codigo.length < 2) {
-//     this.productosBusquedaCodigo = [];
-//     return;
-//   }
+    return;
+  }
 
-//   this.productoSrv.buscarProductosPorCodigo(codigo).subscribe({
-//     next: (response: any) => {
-//       this.productosBusquedaCodigo = response?.data ?? [];
-//     },
-//     error: () => {
-//       this.productosBusquedaCodigo = [];
-//     }
-//   });
-// }
+  // 🔵 DESPUÉS validar lista
+  if (!this.productosBusqueda || this.productosBusqueda.length === 0) {
+    return;
+  }
 
-onEnterCodigo(event: Event) {
-  const keyboardEvent = event as KeyboardEvent;
-  keyboardEvent.preventDefault();
+  if (event.key === 'ArrowDown') {
+    event.preventDefault();
+    this.highlightedIndex =
+      (this.highlightedIndex + 1) % this.productosBusqueda.length;
+  }
+
+  if (event.key === 'ArrowUp') {
+    event.preventDefault();
+    this.highlightedIndex =
+      (this.highlightedIndex - 1 + this.productosBusqueda.length) %
+      this.productosBusqueda.length;
+  }
+
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    const producto = this.productosBusqueda[this.highlightedIndex];
+    if (producto) {
+      this.seleccionarProducto(producto);
+    }
+  }
 }
 
+
+  seleccionarProducto(producto: any) {
+
+  console.log('Producto seleccionado:', producto); // 👈 verifica
+
+  this.entraForm.patchValue({
+    codigo: producto.in_codmerc,
+    descripcion: producto.in_desmerc,
+    precio: producto.in_premerc ?? 0,
+    costo: producto.in_costmer,
+  });
+  this.productoSeleccionado = true;
+  this.productosBusqueda = [];
+  this.highlightedIndex = -1;
+
+  setTimeout(() => {
+    this.cantidadInput.nativeElement.focus();
+  });
+}
+
+  // ⌨ ENTER EN CANTIDAD
+  onEnterCantidad(event: KeyboardEvent) {
+    if (event.key === 'Enter') {
+      
+      const cantidad = Number(this.entraForm.get('cantidad')?.value);
+      if (!cantidad || cantidad <= 0) {
+        event.preventDefault(); // 🔥 evita que siga el flujo
+        Swal.fire({
+          icon: 'warning',
+          title: 'Cantidad inválida',
+          text: 'La cantidad debe ser mayor que cero'
+        });
+        setTimeout(() => {
+          this.cantidadInput.nativeElement.focus();
+          this.cantidadInput.nativeElement.select();
+        });
+        return;
+      }
+      // 🔥 Si es válida, agregar producto
+      event.preventDefault();
+      setTimeout(() => {
+        this.precioInput.nativeElement.focus();
+        this.precioInput.nativeElement.select();
+      });
+    }
+  };
+  
+
+  // ⌨ ENTER EN PRECIO
+onEnterPrecio(event: Event) {
+
+  const precio = Number(this.entraForm.get('precio')?.value);
+  const costo  = Number(this.entraForm.get('costo')?.value);
+
+  if (!precio || precio <= 0) {
+
+    event.preventDefault();
+
+    Swal.fire({
+      icon: 'warning',
+      title: 'Precio inválido',
+      text: 'El precio debe ser mayor que cero'
+    });
+
+    return;
+  }
+
+  if (precio <= costo) {
+
+    event.preventDefault();
+
+    Swal.fire({
+      icon: 'error',
+      title: 'Precio incorrecto',
+      text: 'El precio debe ser mayor que el costo'
+    });
+
+    setTimeout(() => {
+      this.precioInput.nativeElement.focus();
+      this.precioInput.nativeElement.select();
+    });
+
+    return;
+  }
+
+  // 🔥 Si todo está bien, agregar producto
+  this.agregarItem();
+}
+
+  // ➕ AGREGAR A TABLA
+agregarItem() {
+const cantidad = Number(this.entraForm.get('cantidad')?.value);
+
+  if (!cantidad || cantidad <= 0) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Cantidad inválida',
+      text: 'La cantidad debe ser mayor que cero'
+    });
+    return;
+  }
+  const item = this.entraForm.getRawValue();
+
+  const nuevoItem = {
+    ...item,
+    total: item.cantidad * item.precio
+  };
+
+//   const existe = this.detalle.find(
+//   d => d.producto.in_codmerc === item.in_codmerc
+// );
+
+// if (existe) {
+//   existe.cantidad += cantidad;
+//   existe.total = existe.cantidad * existe.precio;
+//   return;
+// }
+
+
+
+  this.detalle.push(nuevoItem);
+
+  this.calcularTotales();
+  this.resetFormulario();
+  setTimeout(() => {
+  this.codigoInput.nativeElement.focus();
+  });
+}
+
+  onInputDescripcion() {
+    const descripcion = this.entraForm.get('descripcion')?.value?.trim();
+    if (!descripcion || descripcion.length < 2) {
+      this.productosBusqueda = [];
+      this.highlightedIndex = -1;
+      return;
+    }
+    this.productoSrv.buscarProductosPorDescripcion(descripcion).subscribe({
+      next: (resp: any) => {
+        this.productosBusqueda = resp.data ?? [];
+        this.highlightedIndex =
+        this.productosBusqueda.length > 0 ? 0 : -1;
+      },
+      error: () => {
+        this.productosBusqueda = [];
+        this.highlightedIndex = -1;
+      }
+    });
+  }
+  resetFormulario() {
+
+    this.productoSeleccionado = false;
+
+    this.entraForm.patchValue({
+      codigo: '',
+      descripcion: '',
+      cantidad: 0,
+      precio: 0
+    });
+
+    setTimeout(() => {
+      this.codigoInput.nativeElement.focus();
+    });
+  }
+
+ 
+  async eliminarItem(index: number) {
+
+  const result = await Swal.fire({
+    title: '¿Eliminar este producto?',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Sí',
+    cancelButtonText: 'Cancelar'
+  });
+
+  if (result.isConfirmed) {
+
+    this.detalle.splice(index, 1);
+    this.calcularTotales();
+  }
+  setTimeout(() => {
+    this.codigoInput.nativeElement.focus();
+  });
+}
+
+
+  calcularTotales() {
+    this.total = this.detalle.reduce((acc, item) => acc + item.total, 0);
+    this.subtotal = this.detalle.reduce((acc, item) => acc + item.total, 0 );
+
+    this.total = this.subtotal; // aquí puedes agregar ITBIS luego
+  }
+  onKeyDownDescripcion(event: KeyboardEvent) {
+    if (this.productosBusqueda.length === 0) return;
+
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      this.highlightedIndex =
+        (this.highlightedIndex + 1) % this.productosBusqueda.length;
+    }
+
+    if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      this.highlightedIndex =
+        (this.highlightedIndex - 1 + this.productosBusqueda.length) %
+        this.productosBusqueda.length;
+    }
+if (event.key === 'Escape') {
+  event.preventDefault();
+  this.codigoInput.nativeElement.focus();
+  return;
+}
+
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      const producto = this.productosBusqueda[this.highlightedIndex];
+      if (producto) {
+        this.seleccionarProducto(producto);
+      }
+    }
+  }
+evitarScrollNumero(event: WheelEvent) {
+  (event.target as HTMLElement).blur();
+}
 }
