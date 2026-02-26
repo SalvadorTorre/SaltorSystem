@@ -9,6 +9,7 @@ import { ServiciodetEntradamerc } from 'src/app/core/services/almacen/detentrada
 import { PrintingService } from 'src/app/core/services/utils/printing.service';
 import { ServicioUsuario } from 'src/app/core/services/mantenimientos/usuario/usuario.service';
 import { ServicioContFactura } from 'src/app/core/services/mantenimientos/contfactura/contfactura.service';
+import { DevolucionService } from 'src/app/core/services/almacen/devolucion/devolucion.service';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -68,8 +69,8 @@ export class DevolucionesComponent implements OnInit {
     private printing: PrintingService,
     private servicioUsuario: ServicioUsuario,
     private facturaSrv:ServicioFacturacion,
-    private ventainternaSrv: ServicioVentainterna
-
+    private ventainternaSrv: ServicioVentainterna,
+    private devolucionSrv: DevolucionService
   )
   {
     this.entraForm = this.fb.group({
@@ -187,9 +188,9 @@ buscarFactura() {
 
   this.facturaSrv.buscarMercanciaPorFactura(cod).subscribe({
     next: (resp: any) => {
-      const detalle = resp?.data ?? resp ?? [];
-
-      this.resultadoFactura = detalle.map((d: any) => ({
+      const seleccionDestino = resp?.data ?? resp ?? [];
+console.log("seleccionDestino antes de map:", this.seleccionDestino);
+      this.resultadoFactura = seleccionDestino.map((d: any) => ({
         cod: d.df_codMerc ?? d.codmerc ?? d.codigo ?? '',
         des: d.df_desMerc ?? d.desmerc ?? d.descripcion ?? '',
         cantidad: Number(d.df_canMerc ?? d.cantidad ?? 0),
@@ -224,7 +225,7 @@ buscarFactura() {
     this.totalFactura = 0;
     this.productosForm.reset({ codigo: '', descripcion: '', cantidad: 0, precio: 0 }, { emitEvent: false });
     this.resetFormulario();
-     this.detalle = [];
+     //this.detalle = [];
     this.productosForm.get('codigo')?.enable();
     this.productosForm.get('descripcion')?.enable();
     setTimeout(() => this.focusNext('fa-codFact'), 0);
@@ -340,27 +341,36 @@ buscarFactura() {
     this.destinoForm.get('valor')?.setValue(valor);
   }
 
-  agregarLineaDestino() {
-    const v = this.destinoForm.getRawValue();
-    const cantidad = Number(v.cantidad || 0);
-    const precio = Number(v.precio || 0);
-    const valor = Number(v.valor || cantidad * precio);
-    if (!cantidad || cantidad <= 0) {
-      Swal.fire({ title: 'Cantidad inválida', icon: 'warning' });
-      return;
-    }
-    const item = {
-      cod: String(v.codigo || ''),
-      des: String(v.descripcion || ''),
-      cantidad,
-      precio,
-      valor
-    };
-    this.seleccionDestino.push(item);
-    this.recalcularTotalDestino();
-    this.destinoForm.reset({ codigo: '', descripcion: '', cantidad: 0, precio: 0, valor: 0 });
+agregarLineaDestino() {
+  const v = this.destinoForm.getRawValue();
+  
+  const cantidad = Number(v.cantidad) || 0;
+  if (cantidad <= 0) {
+    Swal.fire({ title: 'Ingrese una cantidad válida', icon: 'warning' });
+    return;
   }
 
+  const precio = Number(v.precio) || 0;
+  const valor = Number(v.valor) || cantidad * precio;
+
+  const nuevoItem = {
+    cod: String(v.codigo || '').trim(),
+    des: String(v.descripcion || '').trim(),
+    cantidad,
+    precio,
+    valor
+  };
+
+  this.seleccionDestino.push(nuevoItem);
+  
+  // Fuerza actualización (elige UNA de estas)
+  this.seleccionDestino = [...this.seleccionDestino];           // más simple
+  // this.cdr.detectChanges();                                  // si usas OnPush
+
+  this.recalcularTotalDestino();
+  
+  this.destinoForm.reset({ codigo: '', descripcion: '', cantidad: 0, precio: 0, valor: 0 });
+}
   eliminarLineaDestino(idx: number) {
     this.seleccionDestino.splice(idx, 1);
     this.recalcularTotalDestino();
@@ -424,66 +434,107 @@ buscarFactura() {
   recalcularTotalFactura() {
     this.totalFactura = this.seleccionFactura.reduce((acc, it) => acc + (Number(it.total) || 0), 0);
   }
+guardarDevolucionFactura() {
 
-  guardarDevolucionFactura() {
-    if (!this.seleccionFactura.length) {
-      Swal.fire({ title: 'Agrega al menos un renglón', icon: 'warning' });
-      return;
-    }
-    const sucursalId = Number(localStorage.getItem('idSucursal') || 1);
-    const codEmp = String(localStorage.getItem('codigoempresa') || '');
-    const vendedor = String(localStorage.getItem('username') || '');
 
-    const entradamercancias = {
-      me_codEntr: null,
-      me_fecEntr: new Date().toISOString().split('T')[0],
-      me_valEntr: Number(this.totalFactura || 0),
-      me_codSupl: null,
-      me_nomSupl: 'DEVOLUCIÓN POR FACTURA',
-      me_facSupl: this.entraForm.get('fa_codFact')?.value,
-      me_fecSupl: new Date().toISOString().split('T')[0],
-      me_status: 'DEVOLUCION',
-      me_codVend: null,
-      me_nomVend: vendedor,
-      me_rncSupl: null,
-      me_codEmpr: codEmp,
-      me_codSucu: sucursalId
-    };
+ // 🔴 VALIDAR ENTRADA
+  if (!this.seleccionFactura || this.seleccionFactura.length === 0) {
 
-    const detalle = this.seleccionFactura.map((it) => ({
-      de_codEntr: '',
-      de_codMerc: it.cod,
-      de_desMerc: it.des,
-      de_canEntr: Number(it.cantidad || 0),
-      de_preMerc: Number(it.precio || 0),
-      de_valEntr: Number(it.total || 0),
-      de_unidad: 'UND',
-      de_cosMerc: Number(it.precio || 0),
-      de_codSupl: null,
-      de_fecEntr: new Date().toISOString().split('T')[0],
-      de_codEmpr: codEmp,
-      de_codSucu: sucursalId
-    }));
-
-    this.facturaSrv.guardarFacturacion({ entradamercancias, detalle }).subscribe({
-      next: (res: any) => {
-        const codGenerado = res?.data?.nuevoCodigo || res?.data?.me_codEntr || res?.nuevoCodigo;
-        Swal.fire({
-          title: 'Devolución guardada',
-          text: codGenerado ? `Entrada: ${codGenerado}` : '',
-          icon: 'success',
-          timer: 3000,
-          showConfirmButton: false,
-        });
-        this.seleccionFactura = [];
-        this.totalFactura = 0;
-      },
-      error: () => {
-        Swal.fire({ title: 'Error al guardar', icon: 'error' });
-      }
-    });
+    Swal.fire({
+        title: 'Debe seleccionar productos para la entrada',
+        icon: 'success'
+      });
+       return;
+    
   }
 
+  // 🔴 VALIDAR SALIDA
+  if (!this.seleccionDestino || this.seleccionDestino.length === 0) {
+     Swal.fire({
+        title: 'Debe seleccionar productos para la salida',
+        icon: 'success'
+      });
+       return;
+    }
+  const sucursalId = Number(localStorage.getItem('idSucursal') || 1);
+  const codEmp = String(localStorage.getItem('codigoempresa') || '');
+  const vendedor = String(localStorage.getItem('username') || '');
+
+  // =========================
+  // ENTRADA
+  // =========================
+  const entradamercancia = {
+    me_fecEntr: new Date(),
+    me_valEntr: Number(this.totalFactura || 0),
+    me_nomSupl: this.clienteNombre,
+    me_facSupl: this.facturaForm.get('fa_codFact')?.value,
+    me_tipo: 'DEVOLUCION',
+    me_nomVend: vendedor,
+    me_codEmpr: codEmp,
+    me_codSucu: sucursalId
+  };
+
+  const detalleEntrada = this.seleccionFactura.map((it) => ({
+    producto: {
+      in_codmerc: it.cod,
+      in_desmerc: it.des,
+    },
+    cantidad: Number(it.cantidad || 0),
+    precio: Number(it.precio || 0),
+    total: Number(it.total || 0),
+  }));
+console.log("ANTES DE ENVIAR - seleccionDestino:", this.seleccionDestino);
+console.log("Cantidad elementos:", this.seleccionDestino?.length);
+  // =========================
+  // SALIDA
+  // =========================
+  const ventainterna = {
+    fa_codSucu: sucursalId,
+    fa_codEmpr: codEmp,
+    fa_fecFact: new Date(),
+    fa_valFact: Number(this.totalDestino || 0),
+    fa_nomVend: vendedor,
+    fa_nomClie: this.clienteNombre || null,
+  };
+
+  const detalleSalida = (this.seleccionDestino || []).map((it) => ({
+    producto: {
+      in_codmerc: it.cod,
+      in_desmerc: it.des,
+    },
+    cantidad: Number(it.cantidad || 0),
+    precio: Number(it.precio || 0),
+    total: Number(it.valor || 0),
+  }));
+
+  const payload = {
+    entradamercancia,
+    detalleEntrada,
+    ventainterna,
+    detalleSalida
+  };
+  console.log("Payload que estoy enviando:", payload);
+  this.devolucionSrv.guardarDevolucion(payload).subscribe({
+    next: () => {
+      Swal.fire({
+        title: 'Devolución guardada correctamente',
+        icon: 'success'
+      });
+
+      this.seleccionFactura = [];
+      this.seleccionDestino = [];
+      this.totalFactura = 0;
+      this.totalDestino = 0;
+    },
+    error: (err) => {
+      console.error(err);
+      Swal.fire({
+        title: 'Error al guardar devolución',
+        icon: 'error'
+      });
+    }
+  });
+}
   focusNext(param: KeyboardEvent | string) {
 
     if (typeof param === 'string') {
@@ -777,19 +828,10 @@ const cantidad = Number(this.entraForm.get('cantidad')?.value);
     total: item.cantidad * item.precio
   };
 
-//   const existe = this.detalle.find(
-//   d => d.producto.in_codmerc === item.in_codmerc
-// );
-
-// if (existe) {
-//   existe.cantidad += cantidad;
-//   existe.total = existe.cantidad * existe.precio;
-//   return;
-// }
 
 
 
-  this.detalle.push(nuevoItem);
+  this.seleccionDestino.push(nuevoItem);
 
   this.calcularTotales();
   this.resetFormulario();
@@ -846,7 +888,7 @@ const cantidad = Number(this.entraForm.get('cantidad')?.value);
 
   if (result.isConfirmed) {
 
-    this.detalle.splice(index, 1);
+    this.seleccionDestino.splice(index, 1);
     this.calcularTotales();
   }
   setTimeout(() => {
@@ -856,8 +898,8 @@ const cantidad = Number(this.entraForm.get('cantidad')?.value);
 
 
   calcularTotales() {
-    this.total = this.detalle.reduce((acc, item) => acc + item.total, 0);
-    this.subtotal = this.detalle.reduce((acc, item) => acc + item.total, 0 );
+    this.total = this.seleccionDestino.reduce((acc, item) => acc + item.total, 0);
+    this.subtotal = this.seleccionDestino.reduce((acc, item) => acc + item.total, 0 );
 
     this.total = this.subtotal; // aquí puedes agregar ITBIS luego
   }
