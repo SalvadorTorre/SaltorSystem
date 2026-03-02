@@ -39,7 +39,8 @@ export class DevolucionesComponent implements OnInit {
   highlightedIndex: number = -1;
   productosBusqueda: any[] = [];
   detalle: any[] = [];
-  productoSeleccionado: boolean = false;
+  productoSeleccionado: any = null;
+  // productoSelecciosnado: boolean = false;
   subtotal: number = 0;
   total: number = 0;
 
@@ -721,9 +722,29 @@ onKeyDownCodigo(event: KeyboardEvent) {
 }
 
 
+//   seleccionarProducto(producto: any) {
+
+//   console.log('Producto seleccionado:', producto); // 👈 verifica
+
+//   this.entraForm.patchValue({
+//     codigo: producto.in_codmerc,
+//     descripcion: producto.in_desmerc,
+//     precio: producto.in_premerc ?? 0,
+//     costo: producto.in_costmer,
+//   });
+//   this.productoSeleccionado = true;
+//   this.productosBusqueda = [];
+//   this.highlightedIndex = -1;
+
+//   setTimeout(() => {
+//     this.cantidadInput.nativeElement.focus();
+//   });
+// }
+
+  // ⌨ ENTER EN CANTIDAD
   seleccionarProducto(producto: any) {
 
-  console.log('Producto seleccionado:', producto); // 👈 verifica
+  console.log('Producto seleccionado:', producto);
 
   this.entraForm.patchValue({
     codigo: producto.in_codmerc,
@@ -731,7 +752,9 @@ onKeyDownCodigo(event: KeyboardEvent) {
     precio: producto.in_premerc ?? 0,
     costo: producto.in_costmer,
   });
-  this.productoSeleccionado = true;
+
+  this.productoSeleccionado = producto; // ✅ GUARDAMOS EL OBJETO REAL
+
   this.productosBusqueda = [];
   this.highlightedIndex = -1;
 
@@ -739,8 +762,7 @@ onKeyDownCodigo(event: KeyboardEvent) {
     this.cantidadInput.nativeElement.focus();
   });
 }
-
-  // ⌨ ENTER EN CANTIDAD
+  
   onEnterCantidad(event: KeyboardEvent) {
     if (event.key === 'Enter') {
       
@@ -810,8 +832,37 @@ onEnterPrecio(event: Event) {
 }
 
   // ➕ AGREGAR A TABLA
+// agregarItem() {
+// const cantidad = Number(this.entraForm.get('cantidad')?.value);
+
+//   if (!cantidad || cantidad <= 0) {
+//     Swal.fire({
+//       icon: 'warning',
+//       title: 'Cantidad inválida',
+//       text: 'La cantidad debe ser mayor que cero'
+//     });
+//     return;
+//   }
+//   const item = this.entraForm.getRawValue();
+
+//   const nuevoItem = {
+//     ...item,
+//     total: item.cantidad * item.precio
+//   };
+
+
+
+
+//   this.seleccionDestino.push(nuevoItem);
+
+//   this.calcularTotales();
+//   this.resetFormulario();
+//   setTimeout(() => {
+//   this.codigoInput.nativeElement.focus();
+//   });
+// }
 agregarItem() {
-const cantidad = Number(this.entraForm.get('cantidad')?.value);
+  const cantidad = Number(this.entraForm.get('cantidad')?.value);
 
   if (!cantidad || cantidad <= 0) {
     Swal.fire({
@@ -821,23 +872,22 @@ const cantidad = Number(this.entraForm.get('cantidad')?.value);
     });
     return;
   }
-  const item = this.entraForm.getRawValue();
+
+  const productoSeleccionado = this.productoSeleccionado; // 👈 asegúrate que exista
+  const precio = Number(this.entraForm.get('precio')?.value || 0);
 
   const nuevoItem = {
-    ...item,
-    total: item.cantidad * item.precio
+    cod: productoSeleccionado.in_codmerc,
+    des: productoSeleccionado.in_desmerc,
+    cantidad: cantidad,
+    precio: precio,
+    total: cantidad * precio
   };
-
-
-
 
   this.seleccionDestino.push(nuevoItem);
 
   this.calcularTotales();
   this.resetFormulario();
-  setTimeout(() => {
-  this.codigoInput.nativeElement.focus();
-  });
 }
 
   onInputDescripcion() {
