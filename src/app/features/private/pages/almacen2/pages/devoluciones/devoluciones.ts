@@ -224,6 +224,9 @@ console.log("seleccionDestino antes de map:", this.seleccionDestino);
     this.resultadoFactura = [];
     this.seleccionFactura = [];
     this.totalFactura = 0;
+    this.seleccionDestino = [];
+    this.totalDestino = 0;
+
     this.productosForm.reset({ codigo: '', descripcion: '', cantidad: 0, precio: 0 }, { emitEvent: false });
     this.resetFormulario();
      //this.detalle = [];
@@ -436,31 +439,32 @@ agregarLineaDestino() {
     this.totalFactura = this.seleccionFactura.reduce((acc, it) => acc + (Number(it.total) || 0), 0);
   }
 guardarDevolucionFactura() {
-
-
  // 🔴 VALIDAR ENTRADA
   if (!this.seleccionFactura || this.seleccionFactura.length === 0) {
-
     Swal.fire({
-        title: 'Debe seleccionar productos para la entrada',
-        icon: 'success'
-      });
-       return;
-    
+      title: 'Debe seleccionar productos para la entrada',
+      icon: 'success'
+    });
+    return;
   }
-
   // 🔴 VALIDAR SALIDA
   if (!this.seleccionDestino || this.seleccionDestino.length === 0) {
-     Swal.fire({
-        title: 'Debe seleccionar productos para la salida',
-        icon: 'success'
-      });
-       return;
-    }
+    Swal.fire({
+      title: 'Debe seleccionar productos para la salida',
+      icon: 'success'
+    });
+    return;
+  }
+  if (!this.totalDestino || this.totalDestino <= 0) {
+  Swal.fire({
+    title: 'El total de salida es inválido',
+    icon: 'warning'
+  });
+  return;
+}
   const sucursalId = Number(localStorage.getItem('idSucursal') || 1);
   const codEmp = String(localStorage.getItem('codigoempresa') || '');
   const vendedor = String(localStorage.getItem('username') || '');
-
   // =========================
   // ENTRADA
   // =========================
@@ -474,7 +478,6 @@ guardarDevolucionFactura() {
     me_codEmpr: codEmp,
     me_codSucu: sucursalId
   };
-
   const detalleEntrada = this.seleccionFactura.map((it) => ({
     producto: {
       in_codmerc: it.cod,
@@ -484,8 +487,9 @@ guardarDevolucionFactura() {
     precio: Number(it.precio || 0),
     total: Number(it.total || 0),
   }));
-console.log("ANTES DE ENVIAR - seleccionDestino:", this.seleccionDestino);
-console.log("Cantidad elementos:", this.seleccionDestino?.length);
+  console.log("TOTAL DESTINO:", this.totalDestino);
+  console.log("ANTES DE ENVIAR - seleccionDestino:", this.seleccionDestino);
+  console.log("Cantidad elementos:", this.seleccionDestino?.length);
   // =========================
   // SALIDA
   // =========================
@@ -494,10 +498,18 @@ console.log("Cantidad elementos:", this.seleccionDestino?.length);
     fa_codEmpr: codEmp,
     fa_fecFact: new Date(),
     fa_valFact: Number(this.totalDestino || 0),
+    fa_codVend: localStorage.getItem('codVendedor')
+  ? Number(localStorage.getItem('codVendedor'))
+  : null,
+
+fa_codClie: this.facturaForm.get('fa_codClie')?.value
+  ? Number(this.facturaForm.get('fa_codClie')?.value)
+  : null,
+    // fa_codVend: Number(localStorage.getItem('codVendedor') || 0), // 👈 AGREGAR
+    // fa_codClie: Number(this.facturaForm.get('fa_codClie')?.value || 0), // 👈 AGREGAR
     fa_nomVend: vendedor,
     fa_nomClie: this.clienteNombre || null,
   };
-
   const detalleSalida = (this.seleccionDestino || []).map((it) => ({
     producto: {
       in_codmerc: it.cod,
@@ -507,7 +519,6 @@ console.log("Cantidad elementos:", this.seleccionDestino?.length);
     precio: Number(it.precio || 0),
     total: Number(it.valor || 0),
   }));
-
   const payload = {
     entradamercancia,
     detalleEntrada,
@@ -524,8 +535,21 @@ console.log("Cantidad elementos:", this.seleccionDestino?.length);
 
       this.seleccionFactura = [];
       this.seleccionDestino = [];
+      this.resultadoFactura = [];
       this.totalFactura = 0;
       this.totalDestino = 0;
+
+    this.facturaForm.get('fa_codFact')?.enable();
+    this.facturaForm.get('fa_codFact')?.reset();
+    this.facturaForm.patchValue({ fa_codFact: '', buscarTexto: '' });
+    this.clienteNombre = '';
+    this.fechaFactura = '';
+    this.productosForm.reset({ codigo: '', descripcion: '', cantidad: 0, precio: 0 }, { emitEvent: false });
+    this.resetFormulario();
+    this.productosForm.get('codigo')?.enable();
+    this.productosForm.get('descripcion')?.enable();
+    setTimeout(() => this.focusNext('fa-codFact'), 0);
+
     },
     error: (err) => {
       console.error(err);
@@ -722,30 +746,10 @@ onKeyDownCodigo(event: KeyboardEvent) {
 }
 
 
-//   seleccionarProducto(producto: any) {
-
-//   console.log('Producto seleccionado:', producto); // 👈 verifica
-
-//   this.entraForm.patchValue({
-//     codigo: producto.in_codmerc,
-//     descripcion: producto.in_desmerc,
-//     precio: producto.in_premerc ?? 0,
-//     costo: producto.in_costmer,
-//   });
-//   this.productoSeleccionado = true;
-//   this.productosBusqueda = [];
-//   this.highlightedIndex = -1;
-
-//   setTimeout(() => {
-//     this.cantidadInput.nativeElement.focus();
-//   });
-// }
-
-  // ⌨ ENTER EN CANTIDAD
   seleccionarProducto(producto: any) {
 
   console.log('Producto seleccionado:', producto);
-
+console.log('Producto en agregarItem:', this.productoSeleccionado);
   this.entraForm.patchValue({
     codigo: producto.in_codmerc,
     descripcion: producto.in_desmerc,
@@ -762,7 +766,43 @@ onKeyDownCodigo(event: KeyboardEvent) {
     this.cantidadInput.nativeElement.focus();
   });
 }
-  
+agregarItem() {
+  if (!this.productoSeleccionado) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Seleccione un producto',
+      text: 'Debe seleccionar un producto válido'
+    });
+    return;
+  }
+  const cantidad = Number(this.entraForm.get('cantidad')?.value);
+  if (!cantidad || cantidad <= 0) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Cantidad inválida',
+      text: 'La cantidad debe ser mayor que cero'
+    });
+    return;
+  }
+
+  // const productoSeleccionado = this.productoSeleccionado; // 👈 asegúrate que exista
+  const precio = Number(this.entraForm.get('precio')?.value || 0);
+
+  const nuevoItem = {
+    cod: this.productoSeleccionado.in_codmerc,
+    des: this.productoSeleccionado.in_desmerc,
+    cantidad: cantidad,
+    precio: precio,
+    total: cantidad * precio
+  };
+
+  this.seleccionDestino.push(nuevoItem);
+
+  this.calcularTotales();
+  this.resetFormulario();
+}
+ 
+
   onEnterCantidad(event: KeyboardEvent) {
     if (event.key === 'Enter') {
       
@@ -861,34 +901,6 @@ onEnterPrecio(event: Event) {
 //   this.codigoInput.nativeElement.focus();
 //   });
 // }
-agregarItem() {
-  const cantidad = Number(this.entraForm.get('cantidad')?.value);
-
-  if (!cantidad || cantidad <= 0) {
-    Swal.fire({
-      icon: 'warning',
-      title: 'Cantidad inválida',
-      text: 'La cantidad debe ser mayor que cero'
-    });
-    return;
-  }
-
-  const productoSeleccionado = this.productoSeleccionado; // 👈 asegúrate que exista
-  const precio = Number(this.entraForm.get('precio')?.value || 0);
-
-  const nuevoItem = {
-    cod: productoSeleccionado.in_codmerc,
-    des: productoSeleccionado.in_desmerc,
-    cantidad: cantidad,
-    precio: precio,
-    total: cantidad * precio
-  };
-
-  this.seleccionDestino.push(nuevoItem);
-
-  this.calcularTotales();
-  this.resetFormulario();
-}
 
   onInputDescripcion() {
     const descripcion = this.entraForm.get('descripcion')?.value?.trim();
@@ -947,12 +959,18 @@ agregarItem() {
 }
 
 
-  calcularTotales() {
-    this.total = this.seleccionDestino.reduce((acc, item) => acc + item.total, 0);
-    this.subtotal = this.seleccionDestino.reduce((acc, item) => acc + item.total, 0 );
+  // calcularTotales2() {
+  //   this.total = this.seleccionDestino.reduce((acc, item) => acc + item.total, 0);
+  //   this.subtotal = this.seleccionDestino.reduce((acc, item) => acc + item.total, 0 );
 
-    this.total = this.subtotal; // aquí puedes agregar ITBIS luego
-  }
+  //   this.total = this.subtotal; // aquí puedes agregar ITBIS luego
+  // }
+
+calcularTotales() {
+  this.totalDestino = this.seleccionDestino
+    .reduce((acc, item) => acc + Number(item.total || 0), 0);
+}
+
   onKeyDownDescripcion(event: KeyboardEvent) {
     if (this.productosBusqueda.length === 0) return;
 
