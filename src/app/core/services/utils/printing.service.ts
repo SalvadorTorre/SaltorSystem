@@ -672,6 +672,187 @@ export class PrintingService {
     } catch {}
   }
 
+  async imprimirDevolucion80mm(entradaData: any, entradaItems: any[], salidaData: any, salidaItems: any[], extras?: { facturaNumero?: string, cliente?: string, fechaFactura?: any, entradaCodigo?: string, salidaCodigo?: string }) {
+    try {
+      const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: [80, 297] });
+      const pageWidth = 74;
+      const centerX = pageWidth / 2;
+      const leftMargin = 5;
+      const rightMargin = 5;
+      let yPos = 5;
+      const drawDashedLine = (y: number) => {
+        (doc as any).setLineDash([1, 1], 0);
+        doc.line(leftMargin, y, pageWidth - rightMargin, y);
+        (doc as any).setLineDash([], 0);
+      };
+      const centerText = (text: any, y: number, options?: any) => {
+        doc.text(String(text), centerX, y, { align: 'center', ...options });
+      };
+      try {
+        const imgData = 'assets/logo2.png';
+        const imgWidth = 20;
+        const imgHeight = 20;
+        doc.addImage(imgData, 'PNG', centerX - imgWidth / 2, yPos, imgWidth, imgHeight);
+        yPos += imgHeight + 5;
+      } catch {}
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      let empresa = 'CENTRO HIERRO MARCOS SRL';
+      let direccion = 'CALLE 30 DE MARZO NO. 54';
+      let telefono = '809-547-0022';
+      let rncEmpresa = '101-66762-2';
+      try {
+        const empresaStorage = localStorage.getItem('empresa');
+        if (empresaStorage && empresaStorage !== '[object Object]') {
+          let parsedEmpresa = JSON.parse(empresaStorage);
+          if (Array.isArray(parsedEmpresa)) parsedEmpresa = parsedEmpresa[0];
+          if (parsedEmpresa) {
+            if (typeof parsedEmpresa === 'string') {
+              empresa = parsedEmpresa;
+              direccion = localStorage.getItem('direccion_empresa') || direccion;
+              telefono = localStorage.getItem('telefono_empresa') || telefono;
+              rncEmpresa = localStorage.getItem('rnc_empresa') || rncEmpresa;
+            } else {
+              empresa = parsedEmpresa.nom_empre || empresa;
+              direccion = parsedEmpresa.dir_empre || direccion;
+              telefono = parsedEmpresa.tel_empre || telefono;
+              rncEmpresa = parsedEmpresa.rnc_empre || rncEmpresa;
+            }
+          }
+        }
+      } catch {}
+      centerText(empresa, yPos);
+      yPos += 4;
+      const dirSplit = doc.splitTextToSize(direccion, pageWidth - (leftMargin + rightMargin));
+      centerText(dirSplit, yPos);
+      yPos += dirSplit.length * 4;
+      centerText(`Tel: ${telefono}`, yPos);
+      yPos += 4;
+      centerText(`RNC: ${rncEmpresa}`, yPos);
+      yPos += 6;
+      drawDashedLine(yPos);
+      yPos += 5;
+      const formatDateShort = (date: Date) => {
+        const d = new Date(date);
+        const day = d.getDate().toString().padStart(2, '0');
+        const month = (d.getMonth() + 1).toString().padStart(2, '0');
+        const year = d.getFullYear();
+        return `${day}/${month}/${year}`;
+      };
+      const xLeft = leftMargin;
+      const xRight = pageWidth - rightMargin;
+      const fechaImpresion = new Date();
+      const codEntrada = (extras?.entradaCodigo || entradaData?.me_codEntr || '').toString();
+      const codSalida = (extras?.salidaCodigo || salidaData?.fa_codFact || '').toString();
+      const facturaNo = extras?.facturaNumero || entradaData?.me_facSupl || '';
+      const cliente = extras?.cliente || entradaData?.me_nomSupl || salidaData?.fa_nomClie || '';
+      const fechaFacturaTxt = extras?.fechaFactura ? formatDateShort(new Date(extras?.fechaFactura)) : (entradaData?.me_fecSupl ? formatDateShort(new Date(entradaData?.me_fecSupl)) : '');
+      doc.text(`Entrada: ${codEntrada}`, xLeft, yPos);
+      doc.text(`Salida: ${codSalida}`, xRight, yPos, { align: 'right' });
+      yPos += 4;
+      doc.text(`Fecha: ${formatDateShort(fechaImpresion)}`, xLeft, yPos);
+      yPos += 4;
+      doc.text(`Factura: ${facturaNo}`, xLeft, yPos);
+      doc.text(`Fecha Fact.: ${fechaFacturaTxt}`, xRight, yPos, { align: 'right' });
+      yPos += 4;
+      doc.text(`Cliente: ${String(cliente)}`, xLeft, yPos);
+      yPos += 6;
+      doc.setFont('helvetica', 'bold');
+      centerText('ENTRADA DE MERCANCÍAS', yPos);
+      yPos += 6;
+      doc.setFont('helvetica', 'normal');
+      drawDashedLine(yPos);
+      yPos += 5;
+      const formatoMoneda = new Intl.NumberFormat('es-DO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      const xDesc = leftMargin;
+      const xCant = 38;
+      const xPrecio = 52;
+      const xValor = pageWidth - rightMargin;
+      doc.setFont('helvetica', 'bold');
+      doc.text('Cantidad / Descripción', xDesc, yPos);
+      doc.text('Cant', xCant, yPos, { align: 'right' });
+      doc.text('Precio', xPrecio, yPos, { align: 'right' });
+      doc.text('Valor', xValor, yPos, { align: 'right' });
+      yPos += 2;
+      drawDashedLine(yPos);
+      yPos += 4;
+      doc.setFont('helvetica', 'normal');
+      let totalEntrada = 0;
+      (entradaItems || []).forEach((it: any) => {
+        const cantidad = Number(it.de_canEntr ?? it.cantidad ?? 0);
+        const des = String(it.de_desMerc ?? it.producto?.in_desmerc ?? it.descripcion ?? '');
+        const precio = Number(it.de_preMerc ?? it.precio ?? 0);
+        const val = Number(it.de_valEntr ?? it.total ?? (cantidad * precio) ?? 0);
+        totalEntrada += val;
+        const descLines = doc.splitTextToSize(des, 30);
+        doc.text(descLines, xDesc, yPos);
+        doc.text(String(cantidad), xCant, yPos, { align: 'right' });
+        doc.text(formatoMoneda.format(precio), xPrecio, yPos, { align: 'right' });
+        doc.text(formatoMoneda.format(val), xValor, yPos, { align: 'right' });
+        yPos += Math.max(descLines.length * 4, 4) + 2;
+      });
+      drawDashedLine(yPos);
+      yPos += 5;
+      doc.setFont('helvetica', 'bold');
+      doc.text('TOTAL ENTRADA', xDesc, yPos);
+      doc.text(formatoMoneda.format(totalEntrada), xValor, yPos, { align: 'right' });
+      yPos += 8;
+      doc.setFont('helvetica', 'bold');
+      centerText('SALIDA (VENTA INTERNA)', yPos);
+      yPos += 6;
+      doc.setFont('helvetica', 'normal');
+      drawDashedLine(yPos);
+      yPos += 5;
+      doc.setFont('helvetica', 'bold');
+      doc.text('Cantidad / Descripción', xDesc, yPos);
+      doc.text('Cant', xCant, yPos, { align: 'right' });
+      doc.text('Precio', xPrecio, yPos, { align: 'right' });
+      doc.text('Valor', xValor, yPos, { align: 'right' });
+      yPos += 2;
+      drawDashedLine(yPos);
+      yPos += 4;
+      doc.setFont('helvetica', 'normal');
+      let totalSalida = 0;
+      (salidaItems || []).forEach((it: any) => {
+        // const cantidad = Number(it.df_canMerc ?? it.cantidad ?? 0);
+        // const des = String(it.df_desMerc ?? it.descripcion ?? '');
+        // const precio = Number(it.df_preMerc ?? it.precio ?? 0);
+        // const val = Number(it.df_valMerc ?? it.total ?? (cantidad * precio) ?? 0);
+        const cantidad = Number(it.cantidad ?? it.df_canMerc ?? 0);
+        const des = String(  it.producto?.in_desmerc ?? it.df_desMerc ?? it.descripcion ??'');  
+        const precio = Number(it.precio ?? it.df_preMerc ?? 0);
+        const val = Number(it.total ?? it.de_valEntr ?? (cantidad * precio) ?? 0);
+        totalSalida += val;
+        const descLines = doc.splitTextToSize(des, 30);
+        doc.text(descLines, xDesc, yPos);
+        doc.text(String(cantidad), xCant, yPos, { align: 'right' });
+        doc.text(formatoMoneda.format(precio), xPrecio, yPos, { align: 'right' });
+        doc.text(formatoMoneda.format(val), xValor, yPos, { align: 'right' });
+        yPos += Math.max(descLines.length * 4, 4) + 2;
+      });
+      drawDashedLine(yPos);
+      yPos += 5;
+      doc.setFont('helvetica', 'bold');
+      doc.text('TOTAL SALIDA', xDesc, yPos);
+      doc.text(formatoMoneda.format(totalSalida), xValor, yPos, { align: 'right' });
+      yPos += 10;
+      doc.setLineWidth(0.3);
+      const lineY = yPos;
+      doc.line(leftMargin, lineY, centerX - 4, lineY);
+      doc.line(centerX + 4, lineY, pageWidth - rightMargin, lineY);
+      doc.setFontSize(7);
+      const preparado = (entradaData?.me_nomVend || salidaData?.fa_nomVend || '') || '';
+      doc.text(preparado ? `Realizado por: ${preparado}` : 'Realizado por', (leftMargin + centerX - 4) / 2, lineY + 4, { align: 'center' });
+      doc.text('Despachador', (centerX + 4 + pageWidth - rightMargin) / 2, lineY + 4, { align: 'center' });
+      yPos += 15;
+      doc.text('.', leftMargin, yPos, { align: 'left' });
+      doc.autoPrint();
+      const pdfBlob = doc.output('blob');
+      const pdfUrl = URL.createObjectURL(pdfBlob);
+      this.printPdf(pdfUrl);
+    } catch {}
+  }
+
   private printPdf(pdfUrl: string) {
     // Intento 1: abrir en nueva pestaña y disparar impresión
     try {

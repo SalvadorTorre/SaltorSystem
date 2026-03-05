@@ -34,14 +34,21 @@
                   <i class="bi bi-arrow-counterclockwise"></i> Deshacer
                 </button>
               </div>
-              <div class="col-3"></div>
+              <div class="col-1"></div>
               <div class="col-md-2 d-flex align-items-end">
                 <button type="button"
                         class="btn btn-primary"
                         (click)="guardarDevolucionFactura()">
-                  <i class="bi bi-save"></i> Guardar devolución
+                  <i class="bi bi-save"></i> Guardar
                 </button>
               </div>
+              <div class="col-md-2 d-flex align-items-end " *ngIf="imprimirDisponible">
+                 <button type="button" class="btn btn-primary" (click)="imprimirEntradaSalida()">
+                    <i class="bi bi-printer"></i> Imprimir 
+                  </button>
+              </div>
+
+
           </div>
         </div>
       </div>
@@ -105,11 +112,16 @@
               </div>
               <div class="col-md-2">
                 <label class="form-label">Cantidad</label>
-                <input id="pf-cantidad" type="number" class="form-control text-end" formControlName="cantidad" [attr.max]="disponibleActualParaCodigo()" [attr.min]="0.01" (focus)="selectInput($event)" (keydown.enter)="focusNext('pf-precio')" />
+                <input id="pf-cantidad" type="number" class="form-control text-end" 
+                  formControlName="cantidad" 
+                  [attr.max]="disponibleActualParaCodigo()" [attr.min]="0.01" (focus)="selectInput($event)" 
+                  (keydown.enter)="focusNext('pf-precio')" />
               </div>
               <div class="col-md-2">
                 <label class="form-label">Precio</label>
-                <input id="pf-precio" type="number" class="form-control text-end" formControlName="precio" [attr.min]="0" (focus)="selectInput($event)" (keydown.enter)="agregarLineaFacturaDesdeForm()" />
+                <input id="pf-precio" type="number"
+                 class="form-control text-end" formControlName="precio" [attr.min]="0" (focus)="selectInput($event)"
+                 (keydown.enter)="agregarLineaFacturaDesdeForm()" />
               </div>
             </div>
           </div>
@@ -175,6 +187,7 @@
                   type="text"
                   class="form-control"
                   formControlName="codigo"
+                   #inputCodigoSalida
                   [readonly]="productoSeleccionado"
                   (input)="onInputCodigo()"
                   (keydown)="onKeyDownCodigo($event)"
@@ -311,13 +324,14 @@
                 <tfoot>
                 <tr>
                   <th colspan="4" class="text-end">TOTAL</th>
-                  <th class="text-end">{{total | currency}}</th>
+                  <th class="text-end">{{totalDestino | currency}}</th>
                   <th></th>
                 </tr>
               </tfoot>
               </table>
             </div>
 
+          
 
           </div>
         <!-- </div> -->
