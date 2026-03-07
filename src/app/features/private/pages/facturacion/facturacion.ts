@@ -923,6 +923,14 @@ export class Facturacion implements OnInit {
     });
   }
 
+  onOpenBuscarFacturaModal(): void {
+    // Siempre reinicia filtros y recarga para mostrar todas las facturas al abrir el modal.
+    this.txtFactura = '';
+    this.txtdescripcion = '';
+    this.txtFecha = '';
+    this.buscarTodasFacturacion();
+  }
+
   buscaNombre(event: Event) {
     const inputElement = event.target as HTMLInputElement;
     this.nomclienteSubject.next(inputElement.value.toUpperCase());
