@@ -16,7 +16,7 @@ export class ServicioFacturacion {
 //   return this.http.GetRequest(`${this.apiUrl}/factura-numero/${numero}`);
 // }
   getByNumero(numero: string): Observable<any> {
-    return this.http.GetRequest<any>(`/factura-numero/${numero}`);
+    return this.http.GetRequest<any>(`/factura-numero/${numero}`, false);
   }
 
   // marcarImpresa(numero: string, body: { fa_envio?: string; fa_fpago?: string }) {

@@ -64,7 +64,17 @@ export class SalidafacturaComponent implements OnInit {
     private servicioContFactura: ServicioContFactura,
     private servicioSucursal: ServicioSucursal
   ) { }
+// En el componente
 
+private mostrarError(msg: string) {
+  Swal.fire({
+    title: 'Atención',
+    text: msg,
+    icon: 'warning',
+    confirmButtonText: 'Aceptar',
+    confirmButtonColor: '#d33',
+  });
+}
   ngOnInit(): void {
     this.obtenerNombreSucursal();
     this.generarCodSalida();
@@ -327,58 +337,200 @@ export class SalidafacturaComponent implements OnInit {
     setTimeout(() => document.querySelector('input')?.focus(), 100);
   }
 
-  agregarFactura() {
-    const codFact = this.txtcodFact.trim();
-    if (!codFact) return;
+  // agregarFactura() {
+  //   const codFact = this.txtcodFact.trim();
+  //   if (!codFact) return;
+  //   error: (err) => {
+  //    if (err.status === 404) {
+  //       Swal.fire({
+  //         title: 'Factura no encontrada',
+  //         icon: 'warning'
+  //       });
+  //     }
+  //   }
+  //   // Verificar si ya está en la lista
+  //   if (this.detallesSalida.some(d => d.codFact === codFact)) {
+  //     this.mostrarError('Esta factura ya está en la lista');
+  //     this.txtcodFact = '';
+  //     return;
+  //   }
 
-    // Verificar si ya está en la lista
-    if (this.detallesSalida.some(d => d.codFact === codFact)) {
-      this.mostrarError('Esta factura ya está en la lista');
-      this.txtcodFact = '';
-      return;
-    }
+  //   // Buscar factura y validar condiciones
+  //   this.servicioFacturacion.getByNumero(codFact).subscribe({
+  //     next: (resp: any) => {
+  //       const factura = resp.data;
+  //       if (!factura) {
+  //         this.mostrarError('Factura no encontrada');
+  //         return;
+  //       }
+  //       // Validar condiciones: fa_envio=2, fa_impresa='S', fa_salida=' '
+  //       if (factura.fa_envio != 2) {
+  //         this.mostrarError(`La factura ${codFact} no está marcada para envío (fa_envio != 2)`);
+  //         return;
+  //       }
+  //       if (factura.fa_impresa !== 'S') {
+  //         this.mostrarError(`La factura ${codFact} no ha sido impresa (fa_impresa != S)`);
+  //         return;
+  //       }
+  //       if (factura.fa_salida && factura.fa_salida.trim() !== '') {
+  //         this.mostrarError(`La factura ${codFact} ya tiene salida registrada`);
+  //         return;
+  //       }
 
-    // Buscar factura y validar condiciones
-    this.servicioFacturacion.getByNumero(codFact).subscribe({
-      next: (resp: any) => {
-        const factura = resp.data;
-        if (!factura) {
-          this.mostrarError('Factura no encontrada');
-          return;
-        }
+  //       // Agregar a la lista
+  //       this.detallesSalida.push({
+  //         codFact: factura.fa_codFact,
+  //         nomClie: factura.fa_nomClie,
+  //         fecFact: factura.fa_fecFact,
+  //         valFact: Number(factura.fa_valFact),
+  //         codfpago: String(factura.fa_codfpago || '').trim(),
+  //         fpago: factura.fa_fpago
+  //       });
 
-        // Validar condiciones: fa_envio=2, fa_impresa='S', fa_salida=' '
-        if (factura.fa_envio != 2) {
-          this.mostrarError(`La factura ${codFact} no está marcada para envío (fa_envio != 2)`);
-          return;
-        }
-        if (factura.fa_impresa !== 'S') {
-          this.mostrarError(`La factura ${codFact} no ha sido impresa (fa_impresa != S)`);
-          return;
-        }
-        if (factura.fa_salida && factura.fa_salida.trim() !== '') {
-          this.mostrarError(`La factura ${codFact} ya tiene salida registrada`);
-          return;
-        }
+  //       this.txtcodFact = ''; // Limpiar input
+  //     },
+  //     error: (err) => {
+  //       console.error(err);
+  //       this.mostrarError('Error al buscar la factura');
+  //     }
+  //   });
+  // }
+// agregarFactura() {
+//   const codFact = this.txtcodFact.trim();
+//   if (!codFact) return;
 
-        // Agregar a la lista
-        this.detallesSalida.push({
-          codFact: factura.fa_codFact,
-          nomClie: factura.fa_nomClie,
-          fecFact: factura.fa_fecFact,
-          valFact: Number(factura.fa_valFact),
-          codfpago: String(factura.fa_codfpago || '').trim(),
-          fpago: factura.fa_fpago
-        });
+//   // Verificar si ya está en la lista
+//   if (this.detallesSalida.some(d => d.codFact === codFact)) {
+//     this.mostrarError('Esta factura ya está en la lista');
+//     this.txtcodFact = '';
+//     return;
+//   }
 
-        this.txtcodFact = ''; // Limpiar input
-      },
-      error: (err) => {
-        console.error(err);
+//   // Buscar factura
+//   this.servicioFacturacion.getByNumero(codFact).subscribe({
+
+//     next: (resp: any) => {
+//       const factura = resp.data;
+
+//       if (!factura) {
+//         this.mostrarError('Factura no encontrada');
+//         return;
+//       }
+
+//       // Validar condiciones
+//       if (factura.fa_envio != 2) {
+//         this.mostrarError(`La factura ${codFact} no está marcada para envío (fa_envio != 2)`);
+//         return;
+//       }
+
+//       if (factura.fa_impresa !== 'S') {
+//         this.mostrarError(`La factura ${codFact} no ha sido impresa`);
+//         return;
+//       }
+
+//       if (factura.fa_salida && factura.fa_salida.trim() !== '') {
+//         this.mostrarError(`La factura ${codFact} ya tiene salida registrada`);
+//         return;
+//       }
+
+//       // Agregar a la lista
+//       this.detallesSalida.push({
+//         codFact: factura.fa_codFact,
+//         nomClie: factura.fa_nomClie,
+//         fecFact: factura.fa_fecFact,
+//         valFact: Number(factura.fa_valFact),
+//         codfpago: String(factura.fa_codfpago || '').trim(),
+//         fpago: factura.fpago
+//       });
+
+//       this.txtcodFact = ''; // limpiar
+//     },
+
+//     error: (err) => {
+//       console.error(err);
+
+//       if (err.status === 404) {
+//         Swal.fire({
+//           title: 'Factura no encontrada',
+//           icon: 'warning'
+//         });
+//       } else {
+//         this.mostrarError('Error al buscar la factura');
+//       }
+//     }
+
+//   });
+// }
+
+agregarFactura() {
+  const codFact = this.txtcodFact.trim();
+  if (!codFact) return;
+
+  // Verificar si ya está en la lista
+  if (this.detallesSalida.some(d => d.codFact === codFact)) {
+    this.mostrarError('Esta factura ya está en la lista');
+    this.txtcodFact = '';
+    return;
+  }
+
+  this.servicioFacturacion.getByNumero(codFact).subscribe({
+    next: (resp: any) => {
+      const factura = resp.data;
+
+      if (!factura) {
+        this.mostrarError('Factura no encontrada');
+        return;
+      }
+
+      // Validar condiciones
+      if (factura.fa_envio != 2) {
+        this.mostrarError(`La factura ${codFact} no está marcada para envío (fa_envio != 2)`);
+        return;
+      }
+
+      if (factura.fa_impresa !== 'S') {
+        this.mostrarError(`La factura ${codFact} no ha sido impresa`);
+        return;
+      }
+
+      if (factura.fa_salida && factura.fa_salida.trim() !== '') {
+        this.mostrarError(`La factura ${codFact} ya tiene salida registrada`);
+        return;
+      }
+
+      // Agregar a la lista
+      this.detallesSalida.push({
+        codFact: factura.fa_codFact,
+        nomClie: factura.fa_nomClie,
+        fecFact: factura.fa_fecFact,
+        valFact: Number(factura.fa_valFact),
+        codfpago: String(factura.fa_codfpago || '').trim(),
+        fpago: factura.fpago
+      });
+
+      this.txtcodFact = ''; // limpiar
+    },
+
+    error: (err) => {
+      console.error('Error al consultar factura:', err);
+
+      // ← Aquí estaba el problema
+      if (err.status === 404) {
+        // Opción 1: usar tu método existente (recomendado para consistencia)
+        this.mostrarError('Factura no encontrada');
+
+        // Opción 2: si de verdad quieres Swal aquí
+        // Swal.fire({
+        //   title: 'Factura no encontrada',
+        //   icon: 'warning',
+        //   confirmButtonText: 'Aceptar'
+        // });
+      } else {
         this.mostrarError('Error al buscar la factura');
       }
-    });
-  }
+    }
+  });
+}
 
   getDescripcionFpago(codigo: string): string {
     return this.mapaFpagos.get(codigo) || codigo; // Si no encuentra, muestra el código
@@ -755,14 +907,14 @@ export class SalidafacturaComponent implements OnInit {
     return this.detallesSalida.reduce((sum, item) => sum + Number(item.valFact), 0);
   }
 
-  mostrarError(msg: string) {
-    Swal.fire({
-      icon: 'error',
-      title: 'Atención',
-      text: msg,
-      timer: 2000,
-      showConfirmButton: false
-    });
-  }
+  // mostrarError(msg: string) {
+  //   Swal.fire({
+  //     icon: 'error',
+  //     title: 'Atención',
+  //     text: msg,
+  //     timer: 2000,
+  //     showConfirmButton: false
+  //   });
+  // }
 
 }

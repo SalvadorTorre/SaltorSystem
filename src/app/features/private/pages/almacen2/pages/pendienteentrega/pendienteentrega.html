@@ -1,0 +1,237 @@
+<div class="container-fluid">
+  <div class="card shadow-sm border-0">
+    <div class="card-header bg-danger text-white py-3">
+      <div class="d-flex justify-content-between align-items-center">
+        <h4 class="card-title m-0">Pendiente de Entrega</h4>
+        <div class="d-flex gap-2">
+          <button type="button" class="btn btn-light btn-sm" (click)="limpiar()">
+            <i class="bi bi-arrow-clockwise me-1"></i> Limpiar
+          </button>
+          <button type="button" class="btn btn-secondary btn-sm" (click)="buscar()">
+            <i class="bi bi-search me-1"></i> Consultar
+          </button>
+          <button type="button" class="btn btn-primary btn-sm" (click)="abrirModalNuevoPendiente()">
+            <i class="bi bi-plus-lg me-1"></i> Nuevo Pendiente
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <form [formGroup]="filtroForm">
+        <div class="row g-3 mb-3">
+          <div class="col-md-2">
+            <label class="form-label">No.</label>
+            <input type="text" class="form-control" formControlName="numero" placeholder="NO. FACTURA">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Cliente</label>
+            <input type="text" class="form-control" formControlName="cliente" placeholder="NOMBRE CLIENTE">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Fecha</label>
+            <input type="date" class="form-control" formControlName="fecha" placeholder="dd/mm/aaaa">
+          </div>
+          <div class="col-md-2 d-flex align-items-end">
+            <button type="button" class="btn btn-primary w-100" (click)="buscar()">
+              <i class="bi bi-search"></i> Buscar
+            </button>
+          </div>
+        </div>
+      </form>
+
+      <div class="table-responsive rounded-3 shadow-sm border" style="background: white; min-height: 300px;">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th style="width: 15%">Numero</th>
+              <th style="width: 35%">Nombre</th>
+              <th class="text-center" style="width: 15%">Fecha</th>
+              <th class="text-end" style="width: 15%">Valor</th>
+              <th class="text-center" style="width: 20%">Opciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of listaPendientes">
+              <td class="fw-bold text-primary">{{ item.fa_codFact }}</td>
+              <td>{{ item.fa_nomClie }}</td>
+              <td class="text-center">{{ item.fa_fecFact }}</td>
+              <td class="text-end">{{ item.fa_valFact | currency:'DOP':'symbol-narrow' }}</td>
+              <td class="text-center">
+                <button class="btn btn-sm btn-success me-1" title="Marcar entregada" (click)="marcarEntregada(item)">
+                  <i class="bi bi-check2-circle"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-primary me-1" title="Imprimir" (click)="imprimir(item)">
+                  <i class="bi bi-printer"></i>
+                </button>
+                <button class="btn btn-sm btn-info" title="Consultar" (click)="abrirModalConsulta(item)">
+                  <i class="bi bi-eye"></i>
+                </button>
+              </td>
+            </tr>
+            <tr *ngIf="listaPendientes.length === 0">
+              <td colspan="5" class="text-center text-muted">Sin resultados</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="d-flex justify-content-end mt-3" *ngIf="totalPages > 1">
+        <nav>
+          <ul class="pagination pagination-sm mb-0">
+            <li class="page-item" [class.disabled]="currentPage === 1">
+              <a class="page-link" (click)="changePage(1)">&laquo;&laquo;</a>
+            </li>
+            <li class="page-item" [class.disabled]="currentPage === 1">
+              <a class="page-link" (click)="changePage(currentPage - 1)">&laquo;</a>
+            </li>
+            <li class="page-item" *ngFor="let p of pages" [class.active]="p === currentPage">
+              <a class="page-link" (click)="changePage(p)">{{ p }}</a>
+            </li>
+            <li class="page-item" [class.disabled]="currentPage === totalPages">
+              <a class="page-link" (click)="changePage(currentPage + 1)">&raquo;</a>
+            </li>
+            <li class="page-item" [class.disabled]="currentPage === totalPages">
+              <a class="page-link" (click)="changePage(totalPages)">&raquo;&raquo;</a>
+            </li>
+          </ul>
+        </nav>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Consulta -->
+<div
+  class="modal fade"
+  id="modalConsultaPendiente"
+  tabindex="-1"
+  aria-labelledby="tituloModalConsultaPendiente"
+  aria-hidden="true"
+  data-bs-backdrop="static"
+  data-bs-keyboard="false">
+  <div class="modal-dialog modal-dialog-centered modal-xl" style="margin: 2px auto">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="tituloModalConsultaPendiente">{{ tituloModalConsulta }}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row mb-2">
+          <div class="col">
+            <div class="d-flex flex-wrap gap-3">
+              <div><strong>No.:</strong> {{ facturaConsulta?.fa_codFact }}</div>
+              <div><strong>Cliente:</strong> {{ facturaConsulta?.fa_nomClie }}</div>
+              <div><strong>Fecha:</strong> {{ facturaConsulta?.fa_fecFact }}</div>
+              <div><strong>Valor:</strong> {{ facturaConsulta?.fa_valFact | currency:'DOP':'symbol-narrow' }}</div>
+              <div><strong>Vendedor:</strong> {{ facturaConsulta?.fa_nomVend }}</div>
+            </div>
+          </div>
+        </div>
+        <div class="table-responsive tabla-scroll-6">
+          <table class="table table-bordered table-hover table-sm">
+            <thead class="table-light">
+              <tr>
+                <th>Código</th>
+                <th>Descripción</th>
+                <th class="text-end">Cantidad</th>
+                <th class="text-end">Precio</th>
+                <th class="text-end">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let d of detalleConsulta">
+                <td>{{ d.cod }}</td>
+                <td>{{ d.des }}</td>
+                <td class="text-end">{{ d.cantidad }}</td>
+                <td class="text-end">{{ d.precio | number:'1.2-2' }}</td>
+                <td class="text-end">{{ d.total | number:'1.2-2' }}</td>
+              </tr>
+              <tr *ngIf="detalleConsulta.length === 0">
+                <td colspan="5" class="text-center text-muted">Sin detalles</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+      </div>
+    </div>
+  </div>
+  </div>
+
+<!-- Modal Nuevo Pendiente -->
+<div
+  class="modal fade"
+  id="modalNuevoPendiente"
+  tabindex="-1"
+  aria-labelledby="tituloModalNuevoPendiente"
+  aria-hidden="true"
+  data-bs-backdrop="static"
+  data-bs-keyboard="false">
+  <div class="modal-dialog modal-dialog-centered modal-xl" style="margin: 2px auto">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="tituloModalNuevoPendiente">Nuevo Pendiente</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-3 mb-3">
+          <div class="col-md-4">
+            <label class="form-label">No. Factura</label>
+            <div class="input-group">
+              <input type="text" class="form-control" [(ngModel)]="nuevoPendienteNumero" placeholder="Ingrese el número de factura" />
+              <button class="btn btn-primary" type="button" (click)="buscarNuevoPendiente()">Buscar</button>
+            </div>
+          </div>
+          <div class="col-md-8" *ngIf="nuevoPendienteFactura">
+            <div class="d-flex flex-wrap gap-3">
+              <div><strong>No.:</strong> {{ nuevoPendienteFactura?.fa_codFact }}</div>
+              <div><strong>Cliente:</strong> {{ nuevoPendienteFactura?.fa_nomClie }}</div>
+              <div><strong>Fecha:</strong> {{ nuevoPendienteFactura?.fa_fecFact }}</div>
+              <div><strong>Valor:</strong> {{ nuevoPendienteFactura?.fa_valFact | currency:'DOP':'symbol-narrow' }}</div>
+              <div><strong>Vendedor:</strong> {{ nuevoPendienteFactura?.fa_nomVend }}</div>
+            </div>
+          </div>
+        </div>
+        <div class="d-flex justify-content-end mb-2" *ngIf="nuevoPendienteDetalle.length">
+          <button class="btn btn-sm btn-outline-secondary me-2" (click)="seleccionarTodo(true)">Seleccionar todo</button>
+          <button class="btn btn-sm btn-outline-secondary" (click)="seleccionarTodo(false)">Quitar todo</button>
+        </div>
+        <div class="table-responsive tabla-scroll-6">
+          <table class="table table-bordered table-hover table-sm">
+            <thead class="table-light">
+              <tr>
+                <th style="width: 12%">Código</th>
+                <th>Descripción</th>
+                <th class="text-end" style="width: 12%">Cantidad</th>
+                <th class="text-end" style="width: 12%">Precio</th>
+                <th class="text-end" style="width: 12%">Total</th>
+                <th class="text-center" style="width: 10%">Pendiente</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let d of nuevoPendienteDetalle">
+                <td>{{ d.cod }}</td>
+                <td>{{ d.des }}</td>
+                <td class="text-end">{{ d.cantidad }}</td>
+                <td class="text-end">{{ d.precio | number:'1.2-2' }}</td>
+                <td class="text-end">{{ d.total | number:'1.2-2' }}</td>
+                <td class="text-center">
+                  <input type="checkbox" [ngModel]="seleccionPendiente[d.cod]" (ngModelChange)="toggleSeleccion(d.cod, $event)" />
+                </td>
+              </tr>
+              <tr *ngIf="nuevoPendienteDetalle.length === 0">
+                <td colspan="6" class="text-center text-muted">Sin productos</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" (click)="crearNuevoPendiente()">Crear</button>
+      </div>
+    </div>
+  </div>
+  </div>

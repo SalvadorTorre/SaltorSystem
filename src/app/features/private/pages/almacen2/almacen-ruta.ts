@@ -46,8 +46,8 @@ const routes: Routes = [
       {
         path: 'pendiente',
         loadChildren: () =>
-          import('./pages/pendiente/pendiente-modulo').then(
-            (m) => m.ModuloPendiente
+          import('./pages/pendienteentrega/pendienteentrega-modulo').then(
+            (m) => m.ModuloPendienteEntrega
           ),
       },
 

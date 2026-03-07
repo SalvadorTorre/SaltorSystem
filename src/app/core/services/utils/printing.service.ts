@@ -821,7 +821,10 @@ export class PrintingService {
         const cantidad = Number(it.cantidad ?? it.df_canMerc ?? 0);
         const des = String(  it.producto?.in_desmerc ?? it.df_desMerc ?? it.descripcion ??'');  
         const precio = Number(it.precio ?? it.df_preMerc ?? 0);
-        const val = Number(it.total ?? it.de_valEntr ?? (cantidad * precio) ?? 0);
+        const val = Number(it.total !== undefined && it.total !== null 
+        ? it.total  : it.de_valEntr !== undefined && it.de_valEntr !== null
+        ? it.de_valEntr
+        : cantidad * precio);
         totalSalida += val;
         const descLines = doc.splitTextToSize(des, 30);
         doc.text(descLines, xDesc, yPos);
