@@ -1,10 +1,4 @@
 <style>
-  .page-hero {
-    background: linear-gradient(135deg,  #0247af, #ec0404);
-    border-radius: 0.75rem;
-    padding: 16px 20px;
-    color: #fff;
-  }
   .sticky-header thead th {
     position: sticky;
     top: 0;
@@ -18,19 +12,7 @@
   .cursor-pointer { cursor: pointer; }
 </style>
 
-<div class="container-fluid px-3 py-2">
-  <div class="page-hero mb-3">
-    <div class="d-flex justify-content-between align-items-center">
-      <div>
-        <h3 class="m-0"><i class="bi bi-receipt me-2"></i>Gestión de Cobro de Facturas</h3>
-        <p class="m-0 text-white-50">Administra pagos y emite comprobantes rápidamente</p>
-      </div>
-      <div class="text-end">
-        <span class="badge bg-light text-dark">Comercial</span>
-      </div>
-    </div>
-  </div>
-
+<div class="container-fluid px-3 py-1 compact-form">
   <div class="row">
     <div class="col-lg-7 col-md-12 mb-3">
       <div class="card shadow-sm">
@@ -49,7 +31,7 @@
               class="table-responsive"
               style="
                 position: relative;
-                height: 300px;
+                height: 250px;
                 overflow-y: auto;
                 border: 1px solid #dee2e6;
                 border-radius: 0.25rem;
@@ -139,7 +121,7 @@
         </div>
 
         <!-- Panel de Cobro -->
-        <div class="row mt-3">
+        <div class="row mt-2">
           <div class="col-12">
             <div class="card shadow-sm">
               <div
@@ -150,10 +132,10 @@
                 </h5>
                 <span class="badge bg-light text-dark">Factura #{{ formularioFacturacion.get('fa_codFact')?.value }}</span>
               </div>
-              <div class="card-body bg-light p-3">
-                <div class="row g-3">
+              <div class="card-body bg-light p-2">
+                <div class="row g-2">
                   <div class="col-md-6">
-                    <div class="form-check form-switch mb-3">
+                    <div class="form-check form-switch mb-2">
                       <input
                         [disabled]="chekpagada"
                         type="checkbox"
@@ -165,7 +147,7 @@
                       <label for="chk1" class="form-check-label fw-bold">Factura Pagada</label>
                     </div>
 
-                    <div class="mb-3">
+                    <div class="mb-2">
                       <label class="form-label">Tipo de pago</label>
                       <select
                         #input9
@@ -183,7 +165,7 @@
                       </select>
                     </div>
 
-                    <div class="mb-3">
+                    <div class="mb-2">
                       <label class="form-label">Forma de entrega</label>
                       <select
                         class="form-select"
@@ -196,7 +178,7 @@
                   </div>
 
                   <div class="col-md-6">
-                    <div class="mb-3">
+                    <div class="mb-2">
                       <label class="form-label fw-bold">Valor a pagar</label>
                       <div class="input-group">
                         <span class="input-group-text">$</span>
@@ -209,7 +191,7 @@
                       </div>
                     </div>
 
-                    <div class="mb-3">
+                    <div class="mb-2">
                       <label class="form-label fw-bold">Valor pagado</label>
                       <div class="input-group">
                         <span class="input-group-text">$</span>
@@ -229,7 +211,7 @@
                       </div>
                     </div>
 
-                    <div class="mb-3">
+                    <div class="mb-2">
                       <label class="form-label fw-bold">Cambio</label>
                       <div class="input-group">
                         <span class="input-group-text">$</span>
@@ -244,8 +226,8 @@
                   </div>
                 </div>
                 <!-- jhsfjghfdsjhj -->
-                <div class="row mt-3">
-                <div class="action-bar d-flex justify-content-between gap-2 mt-3"
+                <div class="row mt-2">
+                <div class="action-bar d-flex justify-content-between gap-2 mt-2"
                 >
                 <button
                   class="btn btn-secondary flex-fill"
@@ -276,7 +258,7 @@
       <!-- Detalles de la factura -->
 
    <div class="col-lg-5 col-md-12 mb-3">
-      <div class="row mt-3">
+      <div class="row mt-2">
         <div class="col-lg-12 col-md-12 mb-3">
           <div class="card shadow-sm">
             <div class="card-header card-header-brand py-2">
@@ -289,9 +271,9 @@
                 </span>
               </div>
             </div>
-            <div class="card-body bg-light p-3">
+            <div class="card-body bg-light p-2">
               <form [formGroup]="formularioFacturacion">
-                <div class="row g-3">
+                <div class="row g-2">
                   <!-- Primera fila -->
                   <div class="col-md-3">
                     <div class="form-floating">
@@ -422,7 +404,7 @@
                       class="table-responsive"
                       style="
                         position: relative;
-                        height: 250px;
+                        height: 220px;
                         overflow-y: auto;
                         border: 1px solid #dee2e6;
                         border-radius: 0.25rem;

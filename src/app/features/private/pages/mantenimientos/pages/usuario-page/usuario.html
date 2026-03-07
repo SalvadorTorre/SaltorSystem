@@ -60,59 +60,203 @@
 
 <!-- Modal: Consulta Usuario -->
 <div class="modal fade" id="modalConsultaUsuario" tabindex="-1" aria-labelledby="modalConsultaUsuarioLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="modalConsultaUsuarioLabel">Detalle del Usuario</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content modal-consulta-usuario">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title d-flex align-items-center" id="modalConsultaUsuarioLabel">
+          <i class="bi bi-person-vcard me-2"></i>
+          Ver usuario: {{ selectedUsuario?.nombreUsuario || selectedUsuario?.idUsuario }}
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-  <div class="modal-body">
-    <div class="mb-2"><strong>Código:</strong> {{ selectedUsuario?.codUsuario }}</div>
-    <div class="mb-2"><strong>Usuario:</strong> {{ selectedUsuario?.idUsuario }}</div>
-    <div class="mb-2"><strong>Nombre:</strong> {{ selectedUsuario?.nombreUsuario }}</div>
-    <div class="mb-2"><strong>Nivel:</strong> {{ selectedUsuario?.nivel }}</div>
+      <div class="modal-body" *ngIf="selectedUsuario as user">
+        <div class="consulta-resumen mb-3">
+          <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+            <div>
+              <h6 class="mb-1">{{ user.nombreUsuario || '-' }}</h6>
+              <div class="text-muted small">
+                Usuario: <strong>{{ user.idUsuario || '-' }}</strong> | Cód: <strong>{{ user.codUsuario || '-' }}</strong>
+              </div>
+            </div>
+            <div class="text-end">
+              <span class="badge text-bg-info me-1">Nivel {{ user.nivel }}</span>
+              <span class="badge text-bg-primary">{{ descTipoUsuario(user.idtipoUsuario) }}</span>
+            </div>
+          </div>
+        </div>
 
-    <hr>
-    <div class="d-flex justify-content-between align-items-center mb-2">
-      <h6 class="mb-0">Permisos</h6>
-      <button class="btn btn-primary btn-sm" (click)="abrirNuevoPermiso()" data-bs-toggle="modal" data-bs-target="#permisoUsuarioFormModal">
-        <i class="bi bi-plus-circle me-1"></i> Agregar permiso
-      </button>
-    </div>
+        <div class="row g-3 mb-3">
+          <div class="col-12 col-lg-6">
+            <div class="card h-100 shadow-sm">
+              <div class="card-header bg-light fw-semibold">
+                <i class="bi bi-person-lines-fill me-2"></i>Datos de cuenta
+              </div>
+              <div class="card-body py-2">
+                <ul class="list-group list-group-flush small">
+                  <li class="list-group-item d-flex justify-content-between"><span>ID usuario</span><strong>{{ user.idUsuario || '-' }}</strong></li>
+                  <li class="list-group-item d-flex justify-content-between"><span>Nombre</span><strong>{{ user.nombreUsuario || '-' }}</strong></li>
+                  <li class="list-group-item d-flex justify-content-between"><span>Nivel</span><strong>{{ user.nivel }}</strong></li>
+                  <li class="list-group-item d-flex justify-content-between"><span>Nivel 2</span><strong>{{ user.nivel2 || '-' }}</strong></li>
+                  <li class="list-group-item d-flex justify-content-between"><span>Meta de venta</span><strong>{{ user.metaVenta || '-' }}</strong></li>
+                  <li class="list-group-item d-flex justify-content-between">
+                    <span>Clave usuario</span>
+                    <span [class]="claseEstadoConfigurado(user.claveUsuario)">{{ estadoConfigurado(user.claveUsuario) }}</span>
+                  </li>
+                  <li class="list-group-item d-flex justify-content-between">
+                    <span>Clave correo</span>
+                    <span [class]="claseEstadoConfigurado(user.claveCorreo)">{{ estadoConfigurado(user.claveCorreo) }}</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
 
-    <div class="table-responsive">
-      <table class="table table-sm table-hover">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Módulo</th>
-            <th>Acceso</th>
-            <th>Lectura</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let p of permisos; let i = index">
-            <td>{{ p.idpermiso }}</td>
-            <td>{{ descModulo(p.idmodulo) }}</td>
-            <td>{{ p.acceso }}</td>
-            <td>{{ p.lectura }}</td>
-            <td>
-              <button class="btn btn-danger btn-sm" (click)="eliminarPermiso(p)" title="Eliminar">
-                <i class="bi bi-trash"></i>
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
+          <div class="col-12 col-lg-6">
+            <div class="card h-100 shadow-sm">
+              <div class="card-header bg-light fw-semibold">
+                <i class="bi bi-building me-2"></i>Organización y contacto
+              </div>
+              <div class="card-body py-2">
+                <ul class="list-group list-group-flush small">
+                  <li class="list-group-item d-flex justify-content-between"><span>Correo</span><strong>{{ user.correo || '-' }}</strong></li>
+                  <li class="list-group-item d-flex justify-content-between"><span>Empresa</span><strong>{{ descEmpresaUsuario(user) }}</strong></li>
+                  <li class="list-group-item d-flex justify-content-between"><span>Código empresa</span><strong>{{ user.cod_empre || '-' }}</strong></li>
+                  <li class="list-group-item d-flex justify-content-between"><span>Sucursal</span><strong>{{ descSucursalUsuario(user) }}</strong></li>
+                  <li class="list-group-item d-flex justify-content-between"><span>ID permiso</span><strong>{{ user.idpermiso || '-' }}</strong></li>
+                  <li class="list-group-item d-flex justify-content-between">
+                    <span>Vendedor</span>
+                    <span [class]="claseEstadoBooleano(user.vendedor)">{{ estadoBooleano(user.vendedor) }}</span>
+                  </li>
+                  <li class="list-group-item d-flex justify-content-between">
+                    <span>Despacho</span>
+                    <span [class]="claseEstadoBooleano(user.despacho)">{{ estadoBooleano(user.despacho) }}</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card shadow-sm mb-3">
+          <div class="card-header bg-light fw-semibold">
+            <i class="bi bi-shield-check me-2"></i>Accesos del perfil
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-sm table-hover mb-0 align-middle">
+                <thead class="table-light">
+                  <tr>
+                    <th>Módulo</th>
+                    <th>Acceso</th>
+                    <th>Lectura</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Facturación</td>
+                    <td><span [class]="claseEstadoBooleano(user.facturacion)">{{ estadoBooleano(user.facturacion) }}</span></td>
+                    <td><span [class]="claseEstadoBooleano(user.factLectura)">{{ estadoBooleano(user.factLectura) }}</span></td>
+                  </tr>
+                  <tr>
+                    <td>Compras</td>
+                    <td><span [class]="claseEstadoBooleano(user.compra)">{{ estadoBooleano(user.compra) }}</span></td>
+                    <td><span [class]="claseEstadoBooleano(user.compLectura)">{{ estadoBooleano(user.compLectura) }}</span></td>
+                  </tr>
+                  <tr>
+                    <td>Reportes</td>
+                    <td><span [class]="claseEstadoBooleano(user.reporte)">{{ estadoBooleano(user.reporte) }}</span></td>
+                    <td><span [class]="claseEstadoBooleano(user.repLectura)">{{ estadoBooleano(user.repLectura) }}</span></td>
+                  </tr>
+                  <tr>
+                    <td>Mantenimiento</td>
+                    <td><span [class]="claseEstadoBooleano(user.mantenimiento)">{{ estadoBooleano(user.mantenimiento) }}</span></td>
+                    <td><span [class]="claseEstadoBooleano(user.mantLectura)">{{ estadoBooleano(user.mantLectura) }}</span></td>
+                  </tr>
+                  <tr>
+                    <td>Caja</td>
+                    <td><span [class]="claseEstadoBooleano(user.caja)">{{ estadoBooleano(user.caja) }}</span></td>
+                    <td><span [class]="claseEstadoBooleano(user.caja_Lectura)">{{ estadoBooleano(user.caja_Lectura) }}</span></td>
+                  </tr>
+                  <tr>
+                    <td>Almacén</td>
+                    <td><span [class]="claseEstadoBooleano(user.almacen)">{{ estadoBooleano(user.almacen) }}</span></td>
+                    <td><span [class]="claseEstadoBooleano(user.almLectura)">{{ estadoBooleano(user.almLectura) }}</span></td>
+                  </tr>
+                  <tr>
+                    <td>Contabilidad</td>
+                    <td><span [class]="claseEstadoBooleano(user.contabilidad)">{{ estadoBooleano(user.contabilidad) }}</span></td>
+                    <td><span [class]="claseEstadoBooleano(user.contLectura)">{{ estadoBooleano(user.contLectura) }}</span></td>
+                  </tr>
+                  <tr>
+                    <td>Mercadeo</td>
+                    <td><span [class]="claseEstadoBooleano(user.mercadeo)">{{ estadoBooleano(user.mercadeo) }}</span></td>
+                    <td><span class="text-muted small">N/A</span></td>
+                  </tr>
+                  <tr>
+                    <td>Usuarios</td>
+                    <td><span [class]="claseEstadoBooleano(user.usuario)">{{ estadoBooleano(user.usuario) }}</span></td>
+                    <td><span class="text-muted small">N/A</span></td>
+                  </tr>
+                  <tr>
+                    <td>Crédito</td>
+                    <td><span [class]="claseEstadoBooleano(user.credito)">{{ estadoBooleano(user.credito) }}</span></td>
+                    <td><span class="text-muted small">N/A</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="card shadow-sm">
+          <div class="card-header bg-light d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <h6 class="mb-0">
+              <i class="bi bi-list-check me-1"></i>Permisos específicos
+              <span class="badge text-bg-secondary ms-2">{{ permisos.length }}</span>
+            </h6>
+            <button class="btn btn-primary btn-sm" (click)="abrirNuevoPermiso()" data-bs-toggle="modal" data-bs-target="#permisoUsuarioFormModal">
+              <i class="bi bi-plus-circle me-1"></i> Agregar permiso
+            </button>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-sm table-hover mb-0 align-middle">
+                <thead class="table-light">
+                  <tr>
+                    <th>#</th>
+                    <th>Módulo</th>
+                    <th>Acceso</th>
+                    <th>Lectura</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let p of permisos; let i = index">
+                    <td>{{ p.idpermiso }}</td>
+                    <td>{{ descModulo(p.idmodulo) }}</td>
+                    <td><span [class]="claseEstadoBooleano(p.acceso)">{{ estadoBooleano(p.acceso) }}</span></td>
+                    <td><span [class]="claseEstadoBooleano(p.lectura)">{{ estadoBooleano(p.lectura) }}</span></td>
+                    <td>
+                      <button class="btn btn-danger btn-sm" (click)="eliminarPermiso(p)" title="Eliminar">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </td>
+                  </tr>
+                  <tr *ngIf="!permisos?.length">
+                    <td colspan="5" class="text-center text-muted py-3">Este usuario no tiene permisos específicos asignados.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button>
       </div>
     </div>
   </div>
-  </div>
+</div>
 
 <!-- Modal: Permisos del Usuario -->
 <div class="modal fade" id="modalPermisosUsuario" tabindex="-1" aria-labelledby="modalPermisosUsuarioLabel" aria-hidden="true">

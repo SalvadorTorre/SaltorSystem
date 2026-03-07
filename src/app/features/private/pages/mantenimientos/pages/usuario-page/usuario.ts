@@ -129,6 +129,71 @@ export class Usuario implements OnInit {
     return m?.descmodulo || '-';
   }
 
+  descTipoUsuario(id?: number): string {
+    if (!id) return '-';
+    const tipo = this.tipousuarios.find((t: any) => Number(t?.id ?? t?.idtipoUsuario ?? t?.codigo) === Number(id));
+    return tipo?.descripcion || tipo?.desc || `Tipo ${id}`;
+  }
+
+  descSucursalUsuario(usuario?: Partial<ModeloUsuarioData> | null): string {
+    if (!usuario) return '-';
+    const sucId = Number((usuario as any)?.sucursalid ?? usuario?.sucursal);
+    const sucursal = this.sucursales.find((s: any) => Number(s?.cod_sucursal) === sucId);
+    if (sucursal) {
+      return `${sucursal?.nom_sucursal || 'Sucursal'} (${sucursal?.cod_sucursal})`;
+    }
+    const info = (usuario as any)?.sucursalInfo;
+    if (Array.isArray(info) && info.length) {
+      const first = info[0];
+      return first?.nom_sucursal || first?.descripcion || (sucId ? `Sucursal ${sucId}` : '-');
+    }
+    if (info && typeof info === 'object') {
+      return info?.nom_sucursal || info?.descripcion || (sucId ? `Sucursal ${sucId}` : '-');
+    }
+    return sucId ? `Sucursal ${sucId}` : '-';
+  }
+
+  descEmpresaUsuario(usuario?: Partial<ModeloUsuarioData> | null): string {
+    if (!usuario) return '-';
+    const empresa = String((usuario as any)?.empresa || '').trim();
+    if (empresa) return empresa;
+    const info = (usuario as any)?.empresaInfo;
+    if (Array.isArray(info) && info.length) {
+      const first = info[0];
+      return first?.nom_empre || first?.descripcion || first?.nombre || ((usuario as any)?.cod_empre ? `Empresa ${(usuario as any)?.cod_empre}` : '-');
+    }
+    if (info && typeof info === 'object') {
+      return info?.nom_empre || info?.descripcion || info?.nombre || ((usuario as any)?.cod_empre ? `Empresa ${(usuario as any)?.cod_empre}` : '-');
+    }
+    return (usuario as any)?.cod_empre ? `Empresa ${(usuario as any)?.cod_empre}` : '-';
+  }
+
+  estadoBooleano(valor: any): string {
+    return this.esVerdadero(valor) ? 'Sí' : 'No';
+  }
+
+  claseEstadoBooleano(valor: any): string {
+    return this.esVerdadero(valor) ? 'badge text-bg-success' : 'badge text-bg-secondary';
+  }
+
+  estadoConfigurado(valor: any): string {
+    return String(valor || '').trim() ? 'Configurada' : 'No definida';
+  }
+
+  claseEstadoConfigurado(valor: any): string {
+    return String(valor || '').trim() ? 'badge text-bg-success' : 'badge text-bg-warning';
+  }
+
+  private esVerdadero(valor: any): boolean {
+    if (typeof valor === 'boolean') return valor;
+    if (typeof valor === 'number') return valor === 1;
+    if (typeof valor === 'string') {
+      const v = valor.trim().toUpperCase();
+      return ['S', 'SI', 'TRUE', '1', 'Y', 'YES'].includes(v);
+    }
+    return false;
+  }
+
   abrirPermisosUsuario(u: ModeloUsuarioData): void {
     this.selectedUsuario = u;
     this.actual = new PermisoModel({ codusuario: Number(u.codUsuario) || undefined });

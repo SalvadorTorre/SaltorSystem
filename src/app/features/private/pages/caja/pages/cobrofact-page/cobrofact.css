@@ -29,3 +29,38 @@ color: #000;
   border-color: #dc3545 !important;
   box-shadow: 0 0 0 0.15rem rgba(220, 53, 69, 0.25);
 }
+
+.compact-form .form-label {
+  margin-bottom: 0.2rem;
+  font-size: 0.84rem;
+}
+
+.compact-form .form-control,
+.compact-form .form-select,
+.compact-form .input-group-text {
+  min-height: calc(2rem + 2px);
+  padding: 0.32rem 0.65rem;
+  font-size: 0.9rem;
+}
+
+.compact-form .form-control-lg {
+  min-height: calc(2.2rem + 2px);
+  padding: 0.38rem 0.7rem;
+  font-size: 1rem;
+}
+
+.compact-form .form-floating > .form-control,
+.compact-form .form-floating > .form-select {
+  height: calc(2.75rem + 2px);
+  min-height: calc(2.75rem + 2px);
+  padding: 1rem 0.7rem 0.35rem;
+}
+
+.compact-form .form-floating > label {
+  padding: 0.62rem 0.7rem;
+  font-size: 0.82rem;
+}
+
+.compact-form .card-title {
+  font-size: 1rem;
+}
