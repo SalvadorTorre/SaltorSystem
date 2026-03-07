@@ -160,6 +160,41 @@
   </div>
   </div>
 
+<!-- Modal Cantidad Pendiente -->
+<div
+  class="modal fade"
+  id="modalCantidadPendiente"
+  tabindex="-1"
+  aria-labelledby="tituloModalCantidadPendiente"
+  aria-hidden="true"
+  data-bs-backdrop="static"
+  data-bs-keyboard="false">
+  <div class="modal-dialog modal-dialog-centered" style="margin: 2px auto">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="tituloModalCantidadPendiente">Cantidad pendiente</h5>
+        <button type="button" class="btn-close" (click)="cancelarCantidadDialog()" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-2">
+          <div class="small text-muted">Máximo: {{ cantidadDlgMax }}</div>
+        </div>
+        <input id="inputCantidadPendiente"
+               type="text"
+               class="form-control form-control-lg text-end"
+               [(ngModel)]="cantidadDlgValue"
+               [ngModelOptions]="{standalone: true}"
+               (keydown.enter)="confirmarCantidadDialog()"
+               inputmode="numeric"
+               placeholder="0" />
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="cancelarCantidadDialog()">Cancelar</button>
+        <button type="button" class="btn btn-primary" (click)="confirmarCantidadDialog()">Aceptar</button>
+      </div>
+    </div>
+  </div>
+  </div>
 <!-- Modal Nuevo Pendiente -->
 <div
   class="modal fade"
@@ -208,6 +243,7 @@
                 <th class="text-end" style="width: 12%">Precio</th>
                 <th class="text-end" style="width: 12%">Total</th>
                 <th class="text-center" style="width: 10%">Pendiente</th>
+                <th class="text-end" style="width: 12%">Cant. Pendiente</th>
               </tr>
             </thead>
             <tbody>
@@ -218,11 +254,25 @@
                 <td class="text-end">{{ d.precio | number:'1.2-2' }}</td>
                 <td class="text-end">{{ d.total | number:'1.2-2' }}</td>
                 <td class="text-center">
-                  <input type="checkbox" [ngModel]="seleccionPendiente[d.cod]" (ngModelChange)="toggleSeleccion(d.cod, $event)" />
+                  <input type="checkbox"
+                         [disabled]="initialPendiente[d.cod]"
+                         [ngModel]="seleccionPendiente[d.cod]"
+                         [ngModelOptions]="{standalone: true}"
+                         (ngModelChange)="toggleSeleccion(d.cod, $event)" />
+                </td>
+                <td class="text-end">
+                  <input type="number"
+                         class="form-control form-control-sm text-end"
+                         [(ngModel)]="cantidadPendiente[d.cod]"
+                         [ngModelOptions]="{standalone: true}"
+                         (ngModelChange)="clampCantidad(d.cod)"
+                         [min]="0"
+                         [max]="d.cantidad"
+                         [disabled]="seleccionPendiente[d.cod]" />
                 </td>
               </tr>
               <tr *ngIf="nuevoPendienteDetalle.length === 0">
-                <td colspan="6" class="text-center text-muted">Sin productos</td>
+                <td colspan="7" class="text-center text-muted">Sin productos</td>
               </tr>
             </tbody>
           </table>

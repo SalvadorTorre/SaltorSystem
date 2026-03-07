@@ -23,6 +23,11 @@ export class PendienteEntregaComponent implements OnInit {
   nuevoPendienteFactura: any = null;
   nuevoPendienteDetalle: any[] = [];
   seleccionPendiente: { [key: string]: boolean } = {};
+  cantidadPendiente: { [key: string]: number } = {};
+  initialPendiente: { [key: string]: boolean } = {};
+  cantidadDlgCod: string = '';
+  cantidadDlgMax: number = 0;
+  cantidadDlgValue: number = 0;
 
   constructor(
     private fb: FormBuilder,
@@ -133,8 +138,11 @@ export class PendienteEntregaComponent implements OnInit {
           const total = Number(d.df_valMerc ?? d.df_valmerc ?? d.dc_valor ?? d.total ?? 0);
           const unidad = String(d.df_unidad ?? d.unidad ?? '');
           const canpend = Number(d.df_canpend ?? d.canpend ?? 0);
-          const pendiente = String(d.df_pendiente ?? d.pendiente ?? '').toUpperCase() === 'S' || canpend > 0;
+          const pendienteFlag = String(d.df_pendiente ?? d.pendiente ?? '').toUpperCase();
+          const pendiente = pendienteFlag === 'P' || canpend > 0;
+          this.initialPendiente[codm] = pendiente;
           this.seleccionPendiente[codm] = pendiente;
+          this.cantidadPendiente[codm] = pendiente ? (canpend > 0 ? canpend : cantidad) : (canpend > 0 ? canpend : 0);
           return { cod: codm, des, cantidad, precio, total, unidad, canpend, pendiente };
         });
       },
@@ -145,11 +153,69 @@ export class PendienteEntregaComponent implements OnInit {
   }
 
   toggleSeleccion(cod: string, checked: boolean): void {
-    this.seleccionPendiente[cod] = checked;
+    // No permitir editar líneas que ya están pendientes inicialmente
+    if (this.initialPendiente[cod]) {
+      this.seleccionPendiente[cod] = true;
+      return;
+    }
+    const item = this.nuevoPendienteDetalle.find((x) => x.cod === cod);
+    const max = Number(item?.cantidad || 0);
+    if (checked) {
+      this.cantidadDlgCod = cod;
+      this.cantidadDlgMax = max;
+      const def = this.cantidadPendiente[cod] ?? max;
+      this.cantidadDlgValue = def > max ? max : def;
+      setTimeout(() => {
+        (window as any).$?.('#modalCantidadPendiente')?.modal('show');
+        setTimeout(() => {
+          const el = document.getElementById('inputCantidadPendiente') as HTMLInputElement | null;
+          if (el) { el.focus(); el.select(); }
+        }, 80);
+      }, 0);
+      return;
+    }
+    // Al desmarcar una línea no inicial, simplemente dejar en 0
+    this.seleccionPendiente[cod] = false;
+    this.cantidadPendiente[cod] = 0;
   }
 
   seleccionarTodo(valor: boolean): void {
-    this.nuevoPendienteDetalle.forEach((d) => this.seleccionPendiente[d.cod] = valor);
+    this.nuevoPendienteDetalle.forEach((d) => {
+      if (this.initialPendiente[d.cod]) {
+        this.seleccionPendiente[d.cod] = true;
+        this.cantidadPendiente[d.cod] = Number(d.canpend || d.cantidad || 0);
+      } else {
+        this.seleccionPendiente[d.cod] = valor;
+        this.cantidadPendiente[d.cod] = valor ? Number(d.cantidad || 0) : 0;
+      }
+    });
+  }
+  
+  clampCantidad(cod: string): void {
+    const item = this.nuevoPendienteDetalle.find((x) => x.cod === cod);
+    const max = Number(item?.cantidad || 0);
+    let val = Number(this.cantidadPendiente[cod] || 0);
+    if (isNaN(val) || val < 0) val = 0;
+    if (val > max) val = max;
+    this.cantidadPendiente[cod] = val;
+  }
+
+  confirmarCantidadDialog(): void {
+    const max = this.cantidadDlgMax;
+    const val = Number(this.cantidadDlgValue);
+    if (isNaN(val) || val < 0 || val > max) {
+      Swal.fire({ title: 'Valor inválido', text: `Debe ser entre 0 y ${max}`, icon: 'error' });
+      return;
+    }
+    this.seleccionPendiente[this.cantidadDlgCod] = true;
+    this.cantidadPendiente[this.cantidadDlgCod] = val;
+    (window as any).$?.('#modalCantidadPendiente')?.modal('hide');
+  }
+
+  cancelarCantidadDialog(): void {
+    this.seleccionPendiente[this.cantidadDlgCod] = false;
+    this.cantidadPendiente[this.cantidadDlgCod] = 0;
+    (window as any).$?.('#modalCantidadPendiente')?.modal('hide');
   }
 
   crearNuevoPendiente(): void {
