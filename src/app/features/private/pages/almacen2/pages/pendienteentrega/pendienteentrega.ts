@@ -25,6 +25,9 @@ export class PendienteEntregaComponent implements OnInit {
   seleccionPendiente: { [key: string]: boolean } = {};
   cantidadPendiente: { [key: string]: number } = {};
   initialPendiente: { [key: string]: boolean } = {};
+  cantidadDlgCod: string = '';
+  cantidadDlgMax: number = 0;
+  cantidadDlgValue: number = 0;
 
   constructor(
     private fb: FormBuilder,
@@ -158,30 +161,17 @@ export class PendienteEntregaComponent implements OnInit {
     const item = this.nuevoPendienteDetalle.find((x) => x.cod === cod);
     const max = Number(item?.cantidad || 0);
     if (checked) {
-      Swal.fire({
-        title: 'Cantidad pendiente',
-        input: 'number',
-        inputValue: this.cantidadPendiente[cod] ?? max,
-        inputAttributes: { min: '0', max: String(max), step: '1' },
-        showCancelButton: true,
-        confirmButtonText: 'Aceptar',
-        cancelButtonText: 'Cancelar'
-      }).then((r) => {
-        if (!r.isConfirmed) {
-          this.seleccionPendiente[cod] = false;
-          this.cantidadPendiente[cod] = 0;
-          return;
-        }
-        const val = Number(r.value || 0);
-        if (isNaN(val) || val < 0 || val > max) {
-          Swal.fire({ title: 'Valor inválido', text: `Debe ser entre 0 y ${max}`, icon: 'error' });
-          this.seleccionPendiente[cod] = false;
-          this.cantidadPendiente[cod] = 0;
-          return;
-        }
-        this.seleccionPendiente[cod] = true;
-        this.cantidadPendiente[cod] = val;
-      });
+      this.cantidadDlgCod = cod;
+      this.cantidadDlgMax = max;
+      const def = this.cantidadPendiente[cod] ?? max;
+      this.cantidadDlgValue = def > max ? max : def;
+      setTimeout(() => {
+        (window as any).$?.('#modalCantidadPendiente')?.modal('show');
+        setTimeout(() => {
+          const el = document.getElementById('inputCantidadPendiente') as HTMLInputElement | null;
+          if (el) { el.focus(); el.select(); }
+        }, 80);
+      }, 0);
       return;
     }
     // Al desmarcar una línea no inicial, simplemente dejar en 0
@@ -208,6 +198,24 @@ export class PendienteEntregaComponent implements OnInit {
     if (isNaN(val) || val < 0) val = 0;
     if (val > max) val = max;
     this.cantidadPendiente[cod] = val;
+  }
+
+  confirmarCantidadDialog(): void {
+    const max = this.cantidadDlgMax;
+    const val = Number(this.cantidadDlgValue);
+    if (isNaN(val) || val < 0 || val > max) {
+      Swal.fire({ title: 'Valor inválido', text: `Debe ser entre 0 y ${max}`, icon: 'error' });
+      return;
+    }
+    this.seleccionPendiente[this.cantidadDlgCod] = true;
+    this.cantidadPendiente[this.cantidadDlgCod] = val;
+    (window as any).$?.('#modalCantidadPendiente')?.modal('hide');
+  }
+
+  cancelarCantidadDialog(): void {
+    this.seleccionPendiente[this.cantidadDlgCod] = false;
+    this.cantidadPendiente[this.cantidadDlgCod] = 0;
+    (window as any).$?.('#modalCantidadPendiente')?.modal('hide');
   }
 
   crearNuevoPendiente(): void {
