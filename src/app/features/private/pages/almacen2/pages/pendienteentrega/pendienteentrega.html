@@ -40,7 +40,7 @@
       </form>
 
       <div class="table-responsive rounded-3 shadow-sm border" style="background: white; min-height: 300px;">
-        <table class="table table-hover align-middle mb-0">
+        <table class="table table-hover table-sm mb-0">
           <thead>
             <tr>
               <th style="width: 15%">Numero</th>
@@ -54,7 +54,7 @@
             <tr *ngFor="let item of listaPendientes">
               <td class="fw-bold text-primary">{{ item.fa_codFact }}</td>
               <td>{{ item.fa_nomClie }}</td>
-              <td class="text-center">{{ item.fa_fecFact }}</td>
+              <td class="text-center">{{ formatearFecha(item.fa_fecFact) }}</td>
               <td class="text-end">{{ item.fa_valFact | currency:'DOP':'symbol-narrow' }}</td>
               <td class="text-center">
                 <button class="btn btn-sm btn-success me-1" title="Marcar entregada" (click)="marcarEntregada(item)">
@@ -121,7 +121,7 @@
             <div class="d-flex flex-wrap gap-3">
               <div><strong>No.:</strong> {{ facturaConsulta?.fa_codFact }}</div>
               <div><strong>Cliente:</strong> {{ facturaConsulta?.fa_nomClie }}</div>
-              <div><strong>Fecha:</strong> {{ facturaConsulta?.fa_fecFact }}</div>
+              <div><strong>Fecha:</strong> {{ formatearFecha(facturaConsulta?.fa_fecFact) }}</div>
               <div><strong>Valor:</strong> {{ facturaConsulta?.fa_valFact | currency:'DOP':'symbol-narrow' }}</div>
               <div><strong>Vendedor:</strong> {{ facturaConsulta?.fa_nomVend }}</div>
             </div>
@@ -136,6 +136,7 @@
                 <th class="text-end">Cantidad</th>
                 <th class="text-end">Precio</th>
                 <th class="text-end">Total</th>
+                    <th class="text-end">Cant. Pend.</th>
               </tr>
             </thead>
             <tbody>
@@ -145,9 +146,10 @@
                 <td class="text-end">{{ d.cantidad }}</td>
                 <td class="text-end">{{ d.precio | number:'1.2-2' }}</td>
                 <td class="text-end">{{ d.total | number:'1.2-2' }}</td>
+                    <td class="text-end">{{ d.canpend | number:'1.0-0' }}</td>
               </tr>
               <tr *ngIf="detalleConsulta.length === 0">
-                <td colspan="5" class="text-center text-muted">Sin detalles</td>
+                    <td colspan="6" class="text-center text-muted">Sin detalles</td>
               </tr>
             </tbody>
           </table>
@@ -168,7 +170,8 @@
   aria-labelledby="tituloModalCantidadPendiente"
   aria-hidden="true"
   data-bs-backdrop="static"
-  data-bs-keyboard="false">
+  data-bs-keyboard="false"
+  style="z-index: 2000">
   <div class="modal-dialog modal-dialog-centered" style="margin: 2px auto">
     <div class="modal-content">
       <div class="modal-header">
@@ -223,7 +226,7 @@
             <div class="d-flex flex-wrap gap-3">
               <div><strong>No.:</strong> {{ nuevoPendienteFactura?.fa_codFact }}</div>
               <div><strong>Cliente:</strong> {{ nuevoPendienteFactura?.fa_nomClie }}</div>
-              <div><strong>Fecha:</strong> {{ nuevoPendienteFactura?.fa_fecFact }}</div>
+              <div><strong>Fecha:</strong> {{ formatearFecha(nuevoPendienteFactura?.fa_fecFact) }}</div>
               <div><strong>Valor:</strong> {{ nuevoPendienteFactura?.fa_valFact | currency:'DOP':'symbol-narrow' }}</div>
               <div><strong>Vendedor:</strong> {{ nuevoPendienteFactura?.fa_nomVend }}</div>
             </div>

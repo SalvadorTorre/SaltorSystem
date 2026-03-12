@@ -4,6 +4,7 @@ import { ServicioRecibo, ReciboData } from 'src/app/core/services/caja/recibo/re
 import { ServicioFpago } from 'src/app/core/services/mantenimientos/fpago/fpago.service';
 import { ModeloFpagoData } from 'src/app/core/services/mantenimientos/fpago';
 import Swal from 'sweetalert2';
+import { PrintingService } from 'src/app/core/services/utils/printing.service';
 
 @Component({
   selector: 'app-recibo-ingreso',
@@ -18,7 +19,8 @@ export class ReciboIngresoComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private reciboService: ServicioRecibo,
-    private fpagoService: ServicioFpago
+    private fpagoService: ServicioFpago,
+    private printing: PrintingService
   ) {
     this.reciboForm = this.fb.group({
       fecha: [new Date().toISOString().split('T')[0], Validators.required],
@@ -123,5 +125,15 @@ export class ReciboIngresoComponent implements OnInit {
   getNombreFpago(id: number): string {
     const fp = this.listaFpago.find(f => f.fp_codfpago === id);
     return fp ? fp.fp_descfpago : 'Desconocido';
+  }
+
+  imprimirRecibo(recibo: ReciboData): void {
+    try {
+      const fpName = this.getNombreFpago(Number(recibo.fpago));
+      this.printing.imprimirReciboIngreso80mm(recibo, fpName);
+    } catch (e) {
+      console.error(e);
+      Swal.fire('Error', 'No se pudo imprimir el recibo', 'error');
+    }
   }
 }

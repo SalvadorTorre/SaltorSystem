@@ -626,30 +626,77 @@ export class PrintingService {
       doc.text(formatDateShort(fechaTxt), xRight, yPos, { align: 'right' });
       yPos += 4;
       doc.text(String(v.fa_nomClie || ''), xLeft, yPos);
-      yPos += 6;
+      doc.text(String(v.fa_nomVend || ''), xRight, yPos, { align: 'right' });
+      yPos += 4;
       doc.setFont('helvetica', 'bold');
-      centerText('CONDUCE', yPos);
-      yPos += 6;
+      centerText('PENDIENTE', yPos);
+      yPos += 4;
       doc.setFont('helvetica', 'normal');
       drawDashedLine(yPos);
-      yPos += 5;
+      yPos += 4;
       const formatoMoneda = new Intl.NumberFormat('es-DO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       const xDesc = leftMargin;
       const xValor = pageWidth - rightMargin;
       doc.setFont('helvetica', 'bold');
       doc.text('Cantidad / Descripción', xDesc, yPos);
       doc.setFont('helvetica', 'normal');
-      yPos += 5;
+      yPos += 4;
+      drawDashedLine(yPos);
+      yPos += 4;
       let totalGral = 0;
-      items.forEach((it: any) => {
-        const cantidad = Number(it.df_canMerc ?? it.cantidad ?? 0);
-        const des = String(it.df_desMerc ?? it.descripcion ?? '');
-        const val = Number(it.df_valMerc ?? it.total ?? 0);
-        totalGral += val;
-        doc.text(`-${cantidad}  ${des}`, xDesc, yPos);
-        doc.text(formatoMoneda.format(val), xValor, yPos, { align: 'right' });
-        yPos += 5;
-      });
+      // items.forEach((it: any) => {
+      //   const cantidad = Number(it.df_canPend ?? it.cantidad ?? 0);
+      //   const des = String(it.df_desMerc ?? it.descripcion ?? '');
+      //   const val = Number(it.df_valMerc ?? it.total ?? 0);
+      //   const precio = Number(it.df_preMerc ?? it.precio ?? 0);
+      //   totalGral += val;
+      //   const descLines = doc.splitTextToSize(`${cantidad}  ${des}`, 40);
+      //   descLines.forEach((line: string) => {doc.text(line, xDesc, yPos);
+      //   yPos += 4;
+      // });
+      //   // doc.text(`-${cantidad}  ${des}`, xDesc, yPos);
+      //   doc.text(formatoMoneda.format(precio), xRight - 20, yPos, { align: 'right' });
+      //   doc.text(formatoMoneda.format(val), xValor, yPos, { align: 'right' });
+      //   yPos += 5;
+      // });
+const colCantidad = leftMargin;
+const colDesc = leftMargin + 6;
+const colPrecio = pageWidth - 22;
+const colTotal = pageWidth - rightMargin;
+
+items.forEach((it: any) => {
+
+  const cantidad = Number(it.df_canPend ?? it.cantidad ?? 0);
+  const des = String(it.df_desMerc ?? it.descripcion ?? '');
+  const precio = Number(it.df_preMerc ?? it.precio ?? 0);
+  const val = Number(it.df_valMerc ?? it.total ?? 0);
+
+  totalGral += val;
+
+  // 🔹 dividir descripción en varias líneas
+  const descLines = doc.splitTextToSize(des, 34);
+
+  descLines.forEach((line: string, i: number) => {
+
+    // cantidad solo en la primera línea
+    if (i === 0) {
+      doc.text(String(cantidad), colCantidad, yPos);
+    }
+
+    // descripción
+    doc.text(line, colDesc, yPos);
+
+    // precio y total solo primera línea
+    if (i === 0) {
+      doc.text(formatoMoneda.format(precio), colPrecio, yPos, { align: 'right' });
+      doc.text(formatoMoneda.format(val), colTotal, yPos, { align: 'right' });
+    }
+
+    yPos += 4;
+
+  });
+
+});
       drawDashedLine(yPos);
       yPos += 5;
       doc.setFont('helvetica', 'bold');
@@ -856,6 +903,139 @@ export class PrintingService {
     } catch {}
   }
 
+  async imprimirReciboIngreso80mm(recibo: any, fpagoNombre?: string) {
+    try {
+      const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: [80, 297] });
+      const pageWidth = 74;
+      const centerX = pageWidth / 2;
+      const leftMargin = 5;
+      const rightMargin = 5;
+      let yPos = 5;
+      const drawDashedLine = (y: number) => {
+        (doc as any).setLineDash([1, 1], 0);
+        doc.line(leftMargin, y, pageWidth - rightMargin, y);
+        (doc as any).setLineDash([], 0);
+      };
+      const centerText = (text: any, y: number, options?: any) => {
+        if (Array.isArray(text)) {
+          text.forEach((t, i) => doc.text(String(t), centerX, y + i * 4, { align: 'center', ...options }));
+          return;
+        }
+        doc.text(String(text), centerX, y, { align: 'center', ...options });
+      };
+      try {
+        const imgData = 'assets/logo2.png';
+        const imgWidth = 20;
+        const imgHeight = 20;
+        doc.addImage(imgData, 'PNG', centerX - imgWidth / 2, yPos, imgWidth, imgHeight);
+        yPos += imgHeight + 5;
+      } catch {}
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      let empresa = 'CENTRO HIERRO MARCOS SRL';
+      let direccion = 'CALLE 30 DE MARZO NO. 54';
+      let telefono = '809-547-0022';
+      let rncEmpresa = '101-66762-2';
+      try {
+        const empresaStorage = localStorage.getItem('empresa');
+        if (empresaStorage && empresaStorage !== '[object Object]') {
+          let parsedEmpresa = JSON.parse(empresaStorage);
+          if (Array.isArray(parsedEmpresa)) parsedEmpresa = parsedEmpresa[0];
+          if (parsedEmpresa) {
+            if (typeof parsedEmpresa === 'string') {
+              empresa = parsedEmpresa;
+              direccion = localStorage.getItem('direccion_empresa') || direccion;
+              telefono = localStorage.getItem('telefono_empresa') || telefono;
+              rncEmpresa = localStorage.getItem('rnc_empresa') || rncEmpresa;
+            } else {
+              empresa = parsedEmpresa.nom_empre || empresa;
+              direccion = parsedEmpresa.dir_empre || direccion;
+              telefono = parsedEmpresa.tel_empre || telefono;
+              rncEmpresa = parsedEmpresa.rnc_empre || rncEmpresa;
+            }
+          }
+        }
+      } catch {}
+      centerText(empresa, yPos);
+      yPos += 4;
+      const dirSplit = doc.splitTextToSize(direccion, pageWidth - (leftMargin + rightMargin));
+      centerText(dirSplit, yPos);
+      yPos += dirSplit.length * 4;
+      centerText(`Tel: ${telefono}`, yPos);
+      yPos += 4;
+      centerText(`RNC: ${rncEmpresa}`, yPos);
+      yPos += 6;
+      doc.setFont('helvetica', 'bold');
+      centerText('RECIBO DE INGRESO', yPos);
+      yPos += 6;
+      doc.setFont('helvetica', 'normal');
+      drawDashedLine(yPos);
+      yPos += 4;
+      const r = recibo || {};
+      const formatDateShort = (date: Date) => {
+        const dd = String(date.getDate()).padStart(2, '0');
+        const mm = String(date.getMonth() + 1).padStart(2, '0');
+        const yy = String(date.getFullYear()).slice(-2);
+        return `${dd}/${mm}/${yy}`;
+      };
+      const xLeft = leftMargin;
+      const xRight = pageWidth - rightMargin;
+      const fechaTxt = r.fecha ? formatDateShort(new Date(r.fecha)) : formatDateShort(new Date());
+      doc.text(`No.: ${r.id ?? ''}`, xLeft, yPos);
+      doc.text(fechaTxt, xRight, yPos, { align: 'right' });
+      yPos += 6;
+       doc.setFont('helvetica', 'bold');
+      doc.text("Hemos Recibido de:", xLeft, yPos);
+       doc.setFont('helvetica', 'normal');
+      doc.text(String(r.nombre || ''), leftMargin + 28, yPos);
+      yPos += 6;
+      //const totalLetras = this.numeroALetras(recibo.cantidad);
+      const total = Number(recibo.cantidad);
+      const totalLetras = this.numeroALetras(total);
+       doc.setFont('helvetica', 'bold');
+      doc.text("La suma de:", leftMargin, yPos);
+       doc.setFont('helvetica', 'normal');
+      yPos += 4;
+      const lineas = doc.splitTextToSize(totalLetras, 65);
+      lineas.forEach((linea: string) => {
+        doc.text(linea, leftMargin, yPos); 
+        yPos += 4;
+      });
+      const formatoMoneda = new Intl.NumberFormat('es-DO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      doc.setFont('helvetica', 'bold');
+      doc.text('(', leftMargin, yPos);
+      doc.text(formatoMoneda.format(Number(r.cantidad || 0)),leftMargin + 1, yPos);
+      doc.text(')', xRight - 10, yPos);
+      doc.setFont('helvetica', 'normal');
+      yPos += 6;
+      if (fpagoNombre || r.fpago !== undefined) {
+        doc.setFont('helvetica', 'bold');
+        doc.text(`Forma de pago: ${String(fpagoNombre || r.fpago)}`, xLeft, yPos);
+        doc.setFont('helvetica', 'normal');
+        yPos += 6;
+      }
+      
+      doc.setFont('helvetica', 'bold');
+      doc.text('Concepto', xLeft, yPos);
+      yPos += 4;
+      doc.setFont('helvetica', 'normal');
+      const conceptoLines = doc.splitTextToSize(String(r.concepto || ''), pageWidth - (leftMargin + rightMargin));
+      doc.text(conceptoLines, xLeft, yPos);
+      yPos += Math.max(conceptoLines.length * 4, 4) + 4;
+      doc.setLineWidth(0.3);
+      const lineY = yPos;
+      doc.line(leftMargin, lineY, pageWidth - rightMargin, lineY);
+      yPos += 6;
+      centerText('Recibido Conforme', yPos);
+      yPos += 12;
+      doc.text('.', leftMargin, yPos, { align: 'left' });
+      doc.autoPrint();
+      const pdfBlob = doc.output('blob');
+      const pdfUrl = URL.createObjectURL(pdfBlob);
+      this.printPdf(pdfUrl);
+    } catch {}
+  }
+
   private printPdf(pdfUrl: string) {
     // Intento 1: abrir en nueva pestaña y disparar impresión
     try {
@@ -898,4 +1078,78 @@ export class PrintingService {
     };
     iframe.src = pdfUrl;
   }
+numeroALetras(numero: number): string {
+
+  const unidades = ["","UNO","DOS","TRES","CUATRO","CINCO","SEIS","SIETE","OCHO","NUEVE"];
+  const decenas = ["","DIEZ","VEINTE","TREINTA","CUARENTA","CINCUENTA","SESENTA","SETENTA","OCHENTA","NOVENTA"];
+  const especiales = ["DIEZ","ONCE","DOCE","TRECE","CATORCE","QUINCE","DIECISEIS","DIECISIETE","DIECIOCHO","DIECINUEVE"];
+  const centenas = ["","CIENTO","DOSCIENTOS","TRESCIENTOS","CUATROCIENTOS","QUINIENTOS","SEISCIENTOS","SETECIENTOS","OCHOCIENTOS","NOVECIENTOS"];
+
+  const convertirMenorMil = (num:number):string => {
+
+    if(num === 0) return "";
+    if(num === 100) return "CIEN";
+
+    let letras = "";
+
+    if(num >= 100){
+      letras += centenas[Math.floor(num/100)] + " ";
+      num = num % 100;
+    }
+
+    if(num >= 10 && num < 20){
+      letras += especiales[num-10];
+      return letras;
+    }
+
+    if(num >= 20){
+      letras += decenas[Math.floor(num/10)];
+      num = num % 10;
+
+      if(num > 0){
+        letras += " Y " + unidades[num];
+      }
+
+      return letras;
+    }
+
+    if(num > 0){
+      letras += unidades[num];
+    }
+
+    return letras;
+  }
+
+  const entero = Math.floor(numero);
+  const centavos = Math.round((numero - entero) * 100);
+
+  const millones = Math.floor(entero / 1000000);
+  const miles = Math.floor((entero - millones * 1000000) / 1000);
+  const resto = entero % 1000;
+
+  let letras = "";
+
+  // MILLONES
+  if(millones > 0){
+    if(millones === 1){
+      letras += "UN MILLON ";
+    }else{
+      letras += convertirMenorMil(millones) + " MILLONES ";
+    }
+  }
+
+  // MILES
+  if(miles > 0){
+    if(miles === 1){
+      letras += "MIL ";
+    }else{
+      letras += convertirMenorMil(miles) + " MIL ";
+    }
+  }
+
+  // RESTO
+  letras += convertirMenorMil(resto);
+
+  return `${letras.trim()} PESOS CON ${centavos.toString().padStart(2,'0')}/100`;
+}
 }

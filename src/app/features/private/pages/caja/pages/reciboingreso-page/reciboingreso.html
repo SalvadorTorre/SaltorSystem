@@ -1,5 +1,5 @@
 <div class="container-fluid">
-  <div class="row mb-3">
+  <div class="row mb-1">
     <div class="col-12">
       <div class="card shadow-sm border-0">
         <div class="card-header bg-white py-3">
@@ -9,10 +9,10 @@
         </div>
         <div class="card-body">
           <form [formGroup]="reciboForm" (ngSubmit)="guardarRecibo()">
-            <div class="row g-3">
+            <div class="row g-1">
               <div class="col-md-3">
-                <label for="fecha" class="form-label">Fecha</label>
-                <input type="date" id="fecha" class="form-control" formControlName="fecha" />
+                <label for="nombre" class="form-label">Recibido de</label>
+                <input type="text" id="nombre" class="form-control" formControlName="nombre" placeholder="Nombre del cliente o persona" />
               </div>
               <div class="col-md-3">
                 <label for="cantidad" class="form-label">Cantidad</label>
@@ -21,6 +21,7 @@
                   <input type="number" id="cantidad" class="form-control" formControlName="cantidad" placeholder="0.00" />
                 </div>
               </div>
+              
               <div class="col-md-3">
                 <label for="fpago" class="form-label">Forma de Pago</label>
                 <select id="fpago" class="form-select" formControlName="fpago">
@@ -31,16 +32,15 @@
                 </select>
               </div>
               <div class="col-md-3">
-                <label for="nombre" class="form-label">Recibido de</label>
-                <input type="text" id="nombre" class="form-control" formControlName="nombre" placeholder="Nombre del cliente o persona" />
+                <label for="fecha" class="form-label">Fecha</label>
+                <input type="date" id="fecha" class="form-control" formControlName="fecha" />
               </div>
               <div class="col-md-12">
                 <label for="concepto" class="form-label">Concepto</label>
                 <textarea id="concepto" class="form-control" formControlName="concepto" rows="2" placeholder="Detalle del ingreso"></textarea>
               </div>
             </div>
-            
-            <div class="d-flex justify-content-end mt-4">
+            <div class="d-flex justify-content-end mt-2">
               <button type="button" class="btn btn-secondary me-2" (click)="limpiarFormulario()">
                 <i class="bi bi-x-circle me-1"></i> Cancelar
               </button>
@@ -67,7 +67,7 @@
         <div class="card-body p-0">
           <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
-              <thead class="bg-light">
+              <thead class="bg-primary text-white">
                 <tr>
                   <th class="ps-4">ID</th>
                   <th>Fecha</th>
@@ -91,9 +91,14 @@
                     {{ recibo.cantidad | currency:'DOP':'symbol':'1.2-2' }}
                   </td>
                   <td class="text-center">
-                    <button class="btn btn-sm btn-outline-danger" (click)="eliminarRecibo(recibo.id!)" title="Eliminar">
-                      <i class="bi bi-trash"></i>
-                    </button>
+                    <div class="btn-group btn-group-sm" role="group">
+                      <button class="btn btn-outline-secondary" (click)="imprimirRecibo(recibo)" title="Imprimir">
+                        <i class="bi bi-printer"></i>
+                      </button>
+                      <button class="btn btn-outline-danger" (click)="eliminarRecibo(recibo.id!)" title="Eliminar">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </div>
                   </td>
                 </tr>
                 <tr *ngIf="listaRecibos.length === 0">

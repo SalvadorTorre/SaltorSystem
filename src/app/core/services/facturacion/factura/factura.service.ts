@@ -91,9 +91,9 @@ export class ServicioFacturacion {
   buscarFacturaDetallePendiente(df_codFact: string): Observable<any> {
     return this.http.GetRequest<any>(`/facturacion-detpendiente/${df_codFact}`);
   }
-  actutalizarPendienteNuevo(fa_codFact: string) {
-    return this.http.PutRequest(`/crea-pendiente/${fa_codFact}`, '');
-  }
+actutalizarPendienteNuevo(payload: any) {
+  return this.http.PutRequest(`/factura/pendiente`, payload);
+}
   actutalizarPendienteModficado(
     fa_codFact: string,
     accion: 'poner' | 'quitar'
@@ -146,10 +146,9 @@ export class ServicioFacturacion {
     );
   }
 
-  actualizarEntregaFactura(codFact: string, fa_entrega: string): Observable<any> {
-    return this.http.PatchRequest(`/facturacion/actualizar-entrega/${codFact}`, { fa_entrega });
-  }
-
+actualizarEntregaFactura(cod: string) {
+  return this.http.PutRequest(`/factura/entregada/${cod}`, {});
+}
   confirmarCierreFacturas(): Observable<any> {
     return this.http.PatchRequest('/facturacion/confirmar-cierre', {});
   }

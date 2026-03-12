@@ -231,9 +231,11 @@ export class Ventainterna implements OnInit {
       const items = raw.map((d: any) => {
         const cantidad = Number(d.df_canMerc ?? d.df_canmerc ?? d.DF_CANMERC ?? d.dc_canmerc ?? d.DC_CANMERC ?? d.cantidad ?? 0);
         const precio = Number(d.df_preMerc ?? d.df_premerc ?? d.DF_PREMERC ?? d.dc_premerc ?? d.DC_PREMERC ?? d.precio ?? 0);
-        const totalItem = Number(d.df_valMerc ?? d.df_valmerc ?? d.DF_VALMERC ?? d.dc_total ?? d.DC_TOTAL ?? (cantidad * precio));
+        const totalItem = Number(cantidad * precio);
         const des = d.df_desMerc ?? d.df_desmerc ?? d.DF_DESMERC ?? d.dc_descrip ?? d.DC_DESCRIP ?? d.in_desmerc ?? '';
-        return { df_canMerc: cantidad, df_desMerc: des, df_valMerc: totalItem };
+        return { df_canPend: cantidad, df_desMerc: des, df_valMerc: totalItem, df_preMerc: precio };
+   
+
       });
       this.printing.imprimirVentainterna80mm(fa, items);
     });

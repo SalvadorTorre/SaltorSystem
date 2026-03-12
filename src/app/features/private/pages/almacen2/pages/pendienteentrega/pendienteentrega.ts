@@ -89,7 +89,8 @@ export class PendienteEntregaComponent implements OnInit {
           cantidad: Number(d.df_canMerc ?? d.df_canmerc ?? d.dc_cantida ?? d.cantidad ?? 0),
           precio: Number(d.df_preMerc ?? d.df_premerc ?? d.dc_precio ?? d.precio ?? 0),
           total: Number(d.df_valMerc ?? d.df_valmerc ?? d.dc_valor ?? d.total ?? 0),
-          unidad: String(d.df_unidad ?? d.unidad ?? '')
+          unidad: String(d.df_unidad ?? d.unidad ?? ''),
+          canpend: Number(d.df_canpend ?? d.canpend ?? 0)
         }));
         setTimeout(() => { (window as any).$?.('#modalConsultaPendiente')?.modal('show'); }, 50);
       },
@@ -125,7 +126,7 @@ export class PendienteEntregaComponent implements OnInit {
         this.nuevoPendienteFactura = { fa_codFact: cod };
       }
     });
-    this.facturacionSrv.buscarFacturaDetallePendiente(cod).subscribe({
+    this.facturacionSrv.buscarFacturaDetalle(cod).subscribe({
       next: (resp: any) => {
         const rows = Array.isArray(resp?.data?.rows) ? resp.data.rows :
                      Array.isArray(resp?.data) ? resp.data :
@@ -167,6 +168,11 @@ export class PendienteEntregaComponent implements OnInit {
       this.cantidadDlgValue = def > max ? max : def;
       setTimeout(() => {
         (window as any).$?.('#modalCantidadPendiente')?.modal('show');
+        const $jq = (window as any).$;
+        if ($jq) {
+          $jq('#modalCantidadPendiente').css('z-index', 2000);
+          $jq('.modal-backdrop').last().css('z-index', 1990);
+        }
         setTimeout(() => {
           const el = document.getElementById('inputCantidadPendiente') as HTMLInputElement | null;
           if (el) { el.focus(); el.select(); }
@@ -218,21 +224,44 @@ export class PendienteEntregaComponent implements OnInit {
     (window as any).$?.('#modalCantidadPendiente')?.modal('hide');
   }
 
-  crearNuevoPendiente(): void {
-    const cod = String(this.nuevoPendienteNumero || '').trim();
-    if (!cod) return;
-    this.facturacionSrv.actutalizarPendienteNuevo(cod).subscribe({
-      next: () => {
-        (window as any).$?.('#modalNuevoPendiente')?.modal('hide');
-        Swal.fire({ title: 'Creado', text: `Se agregó ${cod} a pendientes`, icon: 'success', timer: 1800, showConfirmButton: false });
-        this.cargarPendientesListado(this.currentPage);
-      },
-      error: () => {
-        Swal.fire({ title: 'Error', text: 'No se pudo crear el pendiente', icon: 'error' });
-      }
-    });
-  }
+  // crearNuevoPendiente(): void {
+  //   const cod = String(this.nuevoPendienteNumero || '').trim();
+  //   if (!cod) return;
+  //   this.facturacionSrv.actutalizarPendienteNuevo(cod).subscribe({
+  //     next: () => {
+  //       (window as any).$?.('#modalNuevoPendiente')?.modal('hide');
+  //       Swal.fire({ title: 'Creado', text: `Se agregó ${cod} a pendientes`, icon: 'success', timer: 1800, showConfirmButton: false });
+  //       this.cargarPendientesListado(this.currentPage);
+  //     },
+  //     error: () => {
+  //       Swal.fire({ title: 'Error', text: 'No se pudo crear el pendiente', icon: 'error' });
+  //     }
+  //   });
+  // }
+crearNuevoPendiente(): void {
 
+  const detalle = this.nuevoPendienteDetalle
+    .filter(d => this.seleccionPendiente[d.cod])
+    .map(d => ({
+      cod: d.cod,
+      cantidad: this.cantidadPendiente[d.cod] || 0
+    }));
+
+  const payload = {
+    fa_codFact: this.nuevoPendienteNumero,
+    detalle
+  };
+
+  this.facturacionSrv.actutalizarPendienteNuevo(payload).subscribe({
+    next: () => {
+      Swal.fire({
+        title: 'Creado',
+        text: `Pendiente creado`,
+        icon: 'success'
+      });
+    }
+  });
+}
   cargarPendientes(page: number): void {
     this.currentPage = page;
     // Para este listado usamos el endpoint de pendientes del backend
@@ -253,6 +282,22 @@ export class PendienteEntregaComponent implements OnInit {
         this.totalItems = 0;
       }
     });
+  }
+
+  formatearFecha(v: any): string {
+    if (v === null || v === undefined) return '';
+    const s = String(v).trim();
+    if (!s) return '';
+    const m1 = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if (m1) return `${m1[1]}/${m1[2]}/${m1[3]}`;
+    const m2 = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (m2) return `${m2[3]}/${m2[2]}/${m2[1]}`;
+    const d = new Date(s);
+    if (isNaN(d.getTime())) return s;
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yyyy = String(d.getFullYear());
+    return `${dd}/${mm}/${yyyy}`;
   }
 
   cargarPendientesListado(page: number): void {
@@ -290,31 +335,50 @@ export class PendienteEntregaComponent implements OnInit {
     });
   }
 
-  marcarEntregada(item: any): void {
-    const cod = String(item.fa_codFact || item.codigo || '').trim();
-    if (!cod) return;
-    Swal.fire({
-      title: '¿Marcar como entregada?',
-      text: `Factura ${cod}`,
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonText: 'Sí, marcar',
-      cancelButtonText: 'Cancelar'
-    }).then((r) => {
-      if (r.isConfirmed) {
-        this.facturacionSrv.actualizarEntregaFactura(cod, 'E').subscribe({
-          next: () => {
-            Swal.fire({ title: 'Actualizada', text: `Factura ${cod} marcada como entregada`, icon: 'success', timer: 1800, showConfirmButton: false });
-            this.cargarPendientesListado(this.currentPage);
-          },
-          error: () => Swal.fire({ title: 'Error', text: 'No se pudo actualizar', icon: 'error' })
-        });
-      }
-    });
-  }
+ marcarEntregada(item: any): void {
+
+  const cod = String(item.fa_codFact || item.codigo || '').trim();
+  if (!cod) return;
+
+  Swal.fire({
+    title: '¿Marcar como entregada?',
+    text: `Factura ${cod}`,
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonText: 'Sí, marcar',
+    cancelButtonText: 'Cancelar'
+  }).then((r) => {
+
+    if (r.isConfirmed) {
+
+      this.facturacionSrv.actualizarEntregaFactura(cod).subscribe({
+        next: () => {
+
+          Swal.fire({
+            title: 'Actualizada',
+            text: `Factura ${cod} marcada como entregada`,
+            icon: 'success',
+            timer: 1800,
+            showConfirmButton: false
+          });
+
+          this.cargarPendientesListado(this.currentPage);
+
+        },
+        error: () => Swal.fire({
+          title: 'Error',
+          text: 'No se pudo actualizar',
+          icon: 'error'
+        })
+      });
+
+    }
+
+  });
+
+}
 
   imprimir(item: any): void {
-    // Usa el formato tipo conduce con cliente y valor
     const ventaData = {
       fa_codFact: item.fa_codFact,
       fa_fecFact: item.fa_fecFact,
@@ -322,8 +386,37 @@ export class PendienteEntregaComponent implements OnInit {
       fa_valFact: item.fa_valFact,
       fa_nomVend: item.fa_nomVend
     };
-    // Para simplificar, imprimimos sin detalle. Puedes cargar detalle si deseas.
-    this.printing.imprimirVentainterna80mm(ventaData, []);
+    const cod = String(item.fa_codFact || '').trim();
+    if (!cod) {
+      Swal.fire({ title: 'Error', text: 'Factura inválida', icon: 'error' });
+      return;
+    }
+    this.facturacionSrv.buscarFacturaDetallePendiente(cod).subscribe({
+      next: (resp: any) => {
+        const rows = Array.isArray(resp?.data?.rows) ? resp.data.rows :
+                     Array.isArray(resp?.data) ? resp.data :
+                     (Array.isArray(resp) ? resp : []);
+        const items = rows
+       
+        .filter((d: any) => String(d.df_pendiente ?? d.pendiente ?? '').toUpperCase() === 'P')
+          .map((d: any) => {
+            const canpend = Number(d.df_canpend ?? d.canpend ?? 0);
+            const precio = Number(d.df_preMerc ?? d.df_premerc ?? d.precio ?? 0);
+            const total = Number(canpend * precio);
+            const des = String(d.df_desMerc ?? d.df_desmerc ?? d.descripcion ?? '');
+            return {
+              df_canPend: canpend,
+              df_desMerc: des,
+              df_preMerc: precio,
+              df_valMerc: total
+            };
+          });
+        this.printing.imprimirVentainterna80mm(ventaData, items);
+      },
+      error: () => {
+        Swal.fire({ title: 'Error', text: 'No se pudo cargar el detalle para imprimir', icon: 'error' });
+      }
+    });
   }
 
   get totalPages(): number {
