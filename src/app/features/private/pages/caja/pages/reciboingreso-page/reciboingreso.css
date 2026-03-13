@@ -12,3 +12,9 @@
 .table td {
   font-size: 0.9rem;
 }
+
+/* Mostrar y capturar en mayúsculas en textos */
+input[type="text"].text-uppercase,
+textarea.text-uppercase {
+  text-transform: uppercase;
+}

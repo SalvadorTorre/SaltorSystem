@@ -1,5 +1,5 @@
 <div class="container-fluid">
-  <div class="row mb-1">
+  <div class="row mb-0">
     <div class="col-12">
       <div class="card shadow-sm border-0">
         <div class="card-header bg-white py-3">
@@ -12,19 +12,23 @@
             <div class="row g-1">
               <div class="col-md-3">
                 <label for="nombre" class="form-label">Recibido de</label>
-                <input type="text" id="nombre" class="form-control" formControlName="nombre" placeholder="Nombre del cliente o persona" />
+                <input type="text" id="nombre" class="form-control text-uppercase" formControlName="nombre" placeholder="Nombre del cliente o persona"
+                       (input)="toUpperInput($event, 'nombre')"
+                       (keydown.enter)="onEnterFocusNext($event)"/>
               </div>
               <div class="col-md-3">
                 <label for="cantidad" class="form-label">Cantidad</label>
                 <div class="input-group">
                   <span class="input-group-text">$</span>
-                  <input type="number" id="cantidad" class="form-control" formControlName="cantidad" placeholder="0.00" />
+                  <input type="number" id="cantidad" class="form-control" formControlName="cantidad" placeholder="0.00"
+                         (keydown.enter)="onEnterFocusNext($event)"/>
                 </div>
               </div>
               
               <div class="col-md-3">
                 <label for="fpago" class="form-label">Forma de Pago</label>
-                <select id="fpago" class="form-select" formControlName="fpago">
+                <select id="fpago" class="form-select" formControlName="fpago"
+                        (keydown.enter)="onEnterFocusNext($event)">
                   <option [ngValue]="null" disabled>Seleccione...</option>
                   <option *ngFor="let fp of listaFpago" [value]="fp.fp_codfpago">
                     {{ fp.fp_descfpago }}
@@ -33,11 +37,14 @@
               </div>
               <div class="col-md-3">
                 <label for="fecha" class="form-label">Fecha</label>
-                <input type="date" id="fecha" class="form-control" formControlName="fecha" />
+                <input type="date" id="fecha" class="form-control" formControlName="fecha"
+                       (keydown.enter)="onEnterFocusNext($event)"/>
               </div>
               <div class="col-md-12">
                 <label for="concepto" class="form-label">Concepto</label>
-                <textarea id="concepto" class="form-control" formControlName="concepto" rows="2" placeholder="Detalle del ingreso"></textarea>
+                <textarea id="concepto" class="form-control text-uppercase" formControlName="concepto" rows="2" placeholder="Detalle del ingreso"
+                          (input)="toUpperInput($event, 'concepto')"
+                          ></textarea>
               </div>
             </div>
             <div class="d-flex justify-content-end mt-2">
@@ -60,7 +67,7 @@
       <div class="card shadow-sm border-0">
         <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
           <h5 class="card-title m-0 fw-bold">Recibos Recientes</h5>
-          <button class="btn btn-sm btn-outline-primary" (click)="cargarRecibos()">
+          <button class="btn btn-sm btn-outline-primary" (click)="actualizar()">
             <i class="bi bi-arrow-clockwise"></i> Actualizar
           </button>
         </div>
