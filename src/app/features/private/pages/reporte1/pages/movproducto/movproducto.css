@@ -2,3 +2,11 @@ h2 {
   color: #af3d2c;
   font-weight: bold;
 }
+
+.dropdown-suggest {
+  left: 0;
+  right: auto;
+  min-width: 24rem;
+  max-height: 260px;
+  overflow-y: auto;
+}

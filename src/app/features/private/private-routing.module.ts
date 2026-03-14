@@ -128,6 +128,12 @@ const routes: Routes = [
         loadChildren: () =>
           import('./pages/contabilidad/contabilidad-modulo')
             .then(m => m.ModuloContabilidad),
+      },
+      {
+        path: 'reporte',
+        loadChildren: () =>
+          import('./pages/reporte1/reporte-modulo')
+            .then(m => m.ModuloReporte),
       }
     ]
   }
