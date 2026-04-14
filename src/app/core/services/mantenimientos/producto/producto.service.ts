@@ -38,4 +38,7 @@ buscarProductos(codigo: string) {
     const safe = encodeURIComponent(in_desmerc);
     return this.http.GetRequest<any>(`/productos-buscador-desc/${safe}`);
   }
+
+
+  
 }

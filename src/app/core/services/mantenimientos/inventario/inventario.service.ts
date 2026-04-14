@@ -54,4 +54,18 @@ export class ServicioInventario {
   crearInventario(payload: { inv_codsucu: number; inv_codprod: string; inv_existencia: number; inv_desprod?: string | null; inv_cosprod?: number | null; inv_preprod?: number | null; }): Observable<any> {
     return this.http.PostRequest<any, any>(`/inventario`, payload);
   }
+
+  obtenerExistenciaPorProductoSucursal(codigo: string, sucursal: number | string): Observable<any> {
+    const cod = encodeURIComponent(codigo);
+    const suc = encodeURIComponent(String(sucursal));
+    const url = `/inventario?inv_codprod=${cod}&inv_codsucu=${suc}`;
+    return this.http.GetRequest<any>(url);
+  }
+  buscarInventario(codsucu: number, buscar: string) {
+
+  const url = `/inventario/buscar/${codsucu}?buscar=${buscar}`;
+
+  return this.http.GetRequest<any>(url);
+
+}
 }

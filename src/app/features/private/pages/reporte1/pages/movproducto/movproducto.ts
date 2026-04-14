@@ -47,9 +47,15 @@ export class MovimientoProducto {
     const mm = String(hoy.getMonth() + 1).padStart(2, '0');
     const dd = String(hoy.getDate()).padStart(2, '0');
     const hoyStr = `${yyyy}-${mm}-${dd}`;
+    const d10 = new Date(hoy);
+    d10.setDate(hoy.getDate() - 10);
+    const yyyyIni = d10.getFullYear();
+    const mmIni = String(d10.getMonth() + 1).padStart(2, '0');
+    const ddIni = String(d10.getDate()).padStart(2, '0');
+    const inicioStr = `${yyyyIni}-${mmIni}-${ddIni}`;
 
     this.filtroForm = this.fb.group({
-      fechaInicio: [''],
+      fechaInicio: [inicioStr],
       fechaFin: [hoyStr],
       codigo: [''],
       producto: [''],
@@ -129,9 +135,15 @@ filtrar() {
     const mm = String(hoy.getMonth() + 1).padStart(2, '0');
     const dd = String(hoy.getDate()).padStart(2, '0');
     const hoyStr = `${yyyy}-${mm}-${dd}`;
+    const d10 = new Date(hoy);
+    d10.setDate(hoy.getDate() - 10);
+    const yyyyIni = d10.getFullYear();
+    const mmIni = String(d10.getMonth() + 1).padStart(2, '0');
+    const ddIni = String(d10.getDate()).padStart(2, '0');
+    const inicioStr = `${yyyyIni}-${mmIni}-${ddIni}`;
 
     this.filtroForm.reset({
-      fechaInicio: '',
+      fechaInicio: inicioStr,
       fechaFin: hoyStr,
       codigo: '',
       producto: '',
