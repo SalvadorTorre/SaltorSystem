@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewInit, ViewChild, ElementRef } from '@angular/core';
 // import { FormsModule } from '@angular/forms';
 import {
   FormBuilder,
@@ -58,7 +58,7 @@ declare var $: any;
   templateUrl: './facturacion.html',
   styleUrls: ['./facturacion.css'],
 })
-export class Facturacion implements OnInit {
+export class Facturacion implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('inputCodmerc') inputCodmerc!: ElementRef; // Para manejar el foco
   @ViewChild('descripcionInput') descripcionInput!: ElementRef; // Para manejar el foco
   @ViewChild('Tabladetalle') Tabladetalle!: ElementRef;
@@ -151,6 +151,7 @@ export class Facturacion implements OnInit {
   selectedRow: number = -1; // Para rastrear la fila seleccionada
 
   form: FormGroup;
+  private readonly onShowBuscarFacturaModal = () => this.onOpenBuscarFacturaModal();
   constructor(
     private fb: FormBuilder,
     private servicioFacturacion: ServicioFacturacion,
@@ -701,6 +702,10 @@ export class Facturacion implements OnInit {
         this.totalItbis = this.totalItbis;
         this.totalGral = totalGeneral;
       });
+  }
+
+  ngOnDestroy(): void {
+    $('#modalBuscarFactura').off('show.bs.modal', this.onShowBuscarFacturaModal);
   }
 
   buscarTodasFactura(page: number) {
@@ -2004,6 +2009,8 @@ export class Facturacion implements OnInit {
   }
 
   ngAfterViewInit() {
+    // Refresca siempre al abrir el modal de búsqueda, incluso si se abre desde otra acción.
+    $('#modalBuscarFactura').on('show.bs.modal', this.onShowBuscarFacturaModal);
     // Establece el foco en la tabla cuando se cargue la vista
     this.Tabladetalle.nativeElement.focus();
   }

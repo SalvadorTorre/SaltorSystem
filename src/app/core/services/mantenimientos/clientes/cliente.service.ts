@@ -1,45 +1,253 @@
 import { Injectable } from "@angular/core";
+import { Observable, from } from "rxjs";
+import { map } from "rxjs/operators";
 import { ModeloCliente, ModeloClienteData } from ".";
-import { Observable } from "rxjs";
-import { HttpInvokeService } from "../../http-invoke.service";
+import { SupabaseService } from "../../supabase/supabase.service";
 
 @Injectable({
   providedIn: "root"
 })
 export class ServicioCliente {
-  constructor(private http:HttpInvokeService) {}
+  constructor(private supabase: SupabaseService) {}
 
-  buscarTodosCliente(pageIndex: number, pageSize: number,  codigo?:string, descripcion?: string): Observable<any> {
-    let url = `/cliente?page=${pageIndex}&limit=${pageSize}`;
-    if (codigo) {
-      url += `&codigo=${codigo}`;
+  private get db(): any {
+    const client = this.supabase.client;
+    if (!client) {
+      throw new Error("Supabase no está configurado");
     }
-    if (descripcion) {
-      url += `&descripcion=${descripcion}`;
+    const anyClient = client as any;
+    if (typeof anyClient?.schema === "function") {
+      try {
+        return anyClient.schema(this.supabase.schema);
+      } catch {
+        return anyClient;
+      }
     }
-console.log(url);
-    return this.http.GetRequest<any>(url);
+    return anyClient;
   }
 
-  guardarCliente(cliente:ModeloClienteData): Observable<any>{
-    return this.http.PostRequest<any,any>("/cliente",cliente);
+  private toBoolean(value: any): boolean {
+    if (typeof value === "boolean") return value;
+    if (typeof value === "number") return value === 1;
+    const normalized = String(value ?? "").trim().toLowerCase();
+    return ["true", "1", "s", "si", "y", "yes"].includes(normalized);
   }
 
-  editarCliente(cl_codClie:number,cliente:ModeloCliente): Observable<any>{
-    return this.http.PutRequest<any,any>(`/cliente/${cl_codClie}`,cliente);
+  private normalizarCliente(row: any): ModeloClienteData {
+    return {
+      cl_codClie: Number(row?.cl_codclie ?? row?.cl_codClie ?? 0),
+      cl_nomClie: row?.cl_nomclie ?? row?.cl_nomClie ?? "",
+      cl_dirClie: row?.cl_dirclie ?? row?.cl_dirClie ?? "",
+      cl_codSect: row?.cl_codsect ?? row?.cl_codSect ?? null,
+      cl_codZona: row?.cl_codzona ?? row?.cl_codZona ?? null,
+      cl_telClie: row?.cl_telclie ?? row?.cl_telClie ?? "",
+      cl_tipo: row?.cl_tipo ?? "",
+      cl_status: this.toBoolean(row?.cl_status),
+      cl_rnc: row?.cl_rnc ?? null,
+    } as ModeloClienteData;
   }
 
-  eliminarCliente(cl_codClie:number): Observable<any>{
-    return this.http.DeleteRequest(`/cliente/${cl_codClie}`, "");
+  private mapPayloadToDb(cliente: any): any {
+    const payload: any = {
+      cl_nomclie: cliente?.cl_nomClie ?? cliente?.cl_nomclie ?? undefined,
+      cl_dirclie: cliente?.cl_dirClie ?? cliente?.cl_dirclie ?? undefined,
+      cl_codsect: cliente?.cl_codSect ?? cliente?.cl_codsect ?? undefined,
+      cl_codzona: cliente?.cl_codZona ?? cliente?.cl_codzona ?? undefined,
+      cl_telclie: cliente?.cl_telClie ?? cliente?.cl_telclie ?? undefined,
+      cl_tipo: cliente?.cl_tipo ?? undefined,
+      cl_status:
+        cliente?.cl_status !== undefined
+          ? this.toBoolean(cliente?.cl_status)
+          : undefined,
+      cl_rnc: cliente?.cl_rnc ?? undefined,
+      cl_codsucursal:
+        cliente?.cl_codSucursal ?? cliente?.cl_codsucursal ?? undefined,
+    };
+
+    Object.keys(payload).forEach((key: string) => {
+      if (payload[key] === undefined) {
+        delete payload[key];
+      }
+    });
+
+    return payload;
   }
 
-  buscarCliente(cl_codClie:number): Observable<any>{
-    return this.http.GetRequest<any>(`/cliente/${cl_codClie}`);
+  buscarTodosCliente(
+    pageIndex: number,
+    pageSize: number,
+    codigo?: string,
+    descripcion?: string
+  ): Observable<any> {
+    const page = Math.max(Number(pageIndex || 1), 1);
+    const limit = Math.max(Number(pageSize || 10), 1);
+    const offset = (page - 1) * limit;
+
+    return from(
+      (async () => {
+        let query = this.db
+          .from("clientes")
+          .select("*", { count: "exact" })
+          .order("cl_codclie", { ascending: true })
+          .range(offset, offset + limit - 1);
+
+        const codigoTxt = String(codigo || "").trim();
+        if (codigoTxt) {
+          const codigoNum = Number(codigoTxt);
+          if (!Number.isNaN(codigoNum)) {
+            query = query.eq("cl_codclie", codigoNum);
+          }
+        }
+
+        const descTxt = String(descripcion || "").trim();
+        if (descTxt) {
+          query = query.ilike("cl_nomclie", `%${descTxt}%`);
+        }
+
+        const { data, error, count } = await query;
+        if (error) throw error;
+
+        return {
+          rows: (data || []).map((row: any) => this.normalizarCliente(row)),
+          total: Number(count ?? 0),
+          page,
+          limit,
+        };
+      })()
+    ).pipe(
+      map((result: any) => ({
+        status: "success",
+        code: 200,
+        message: "Clientes obtenidos",
+        data: result.rows,
+        pagination: {
+          total: result.total,
+          page: result.page,
+          limit: result.limit,
+          totalPages: Math.max(1, Math.ceil(result.total / result.limit)),
+        },
+      }))
+    );
   }
 
-  buscarporNombre(nombre:string): Observable<ModeloCliente>{
-    return this.http.GetRequest<ModeloCliente>(`/cliente-nombre/${nombre}`);
+  guardarCliente(cliente: ModeloClienteData): Observable<any> {
+    const payload = this.mapPayloadToDb(cliente);
+
+    return from(
+      (async () => {
+        const { data, error } = await this.db
+          .from("clientes")
+          .insert(payload)
+          .select("*")
+          .single();
+        if (error) throw error;
+        return this.normalizarCliente(data);
+      })()
+    ).pipe(
+      map((row: ModeloClienteData) => ({
+        status: "success",
+        code: 200,
+        message: "Cliente guardado",
+        data: row,
+      }))
+    );
+  }
+
+  editarCliente(cl_codClie: number, cliente: ModeloClienteData): Observable<any> {
+    const payload = this.mapPayloadToDb(cliente);
+
+    return from(
+      (async () => {
+        const { data, error } = await this.db
+          .from("clientes")
+          .update(payload)
+          .eq("cl_codclie", Number(cl_codClie))
+          .select("*")
+          .maybeSingle();
+        if (error) throw error;
+        return data ? this.normalizarCliente(data) : null;
+      })()
+    ).pipe(
+      map((row: ModeloClienteData | null) => ({
+        status: "success",
+        code: 200,
+        message: "Cliente actualizado",
+        data: row,
+      }))
+    );
+  }
+
+  eliminarCliente(cl_codClie: number): Observable<any> {
+    return from(
+      (async () => {
+        const { error } = await this.db
+          .from("clientes")
+          .delete()
+          .eq("cl_codclie", Number(cl_codClie));
+        if (error) throw error;
+        return true;
+      })()
+    ).pipe(
+      map(() => ({
+        status: "success",
+        code: 200,
+        message: "Cliente eliminado",
+      }))
+    );
+  }
+
+  buscarCliente(cl_codClie: number): Observable<any> {
+    return from(
+      (async () => {
+        const { data, error } = await this.db
+          .from("clientes")
+          .select("*")
+          .eq("cl_codclie", Number(cl_codClie))
+          .maybeSingle();
+        if (error) throw error;
+        return data ? this.normalizarCliente(data) : null;
+      })()
+    ).pipe(
+      map((row: ModeloClienteData | null) => ({
+        status: "success",
+        code: 200,
+        message: "Cliente encontrado",
+        data: row,
+      }))
+    );
+  }
+
+  buscarporNombre(nombre: string): Observable<ModeloCliente> {
+    const term = String(nombre || "").trim();
+
+    return from(
+      (async () => {
+        if (!term) return [];
+
+        const { data, error } = await this.db
+          .from("clientes")
+          .select("*")
+          .ilike("cl_nomclie", `%${term}%`)
+          .order("cl_nomclie", { ascending: true })
+          .limit(50);
+
+        if (error) throw error;
+
+        return (data || []).map((row: any) => this.normalizarCliente(row));
+      })()
+    ).pipe(
+      map((rows: ModeloClienteData[]) => ({
+        status: "success",
+        code: 200,
+        message: "Clientes encontrados",
+        data: rows,
+        pagination: {
+          total: rows.length,
+          page: 1,
+          limit: rows.length,
+          totalPages: 1,
+        },
+      }))
+    );
   }
 }
-
-

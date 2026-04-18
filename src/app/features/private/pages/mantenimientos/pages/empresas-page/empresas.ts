@@ -1,5 +1,5 @@
-import { Component, OnInit, ɵNG_COMP_DEF } from '@angular/core';
-import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
+import { Component, OnInit } from '@angular/core';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { BehaviorSubject, debounceTime, distinctUntilChanged, switchMap } from 'rxjs';
 import Swal from 'sweetalert2';
 import { ServicioEmpresa } from 'src/app/core/services/mantenimientos/empresas/empresas.service';
@@ -200,83 +200,72 @@ export class Empresas implements OnInit {
     this.activaformularioSucursal = false;
 
   }
+
+  private cargarDetalleEmpresa(codEmpresa: string, fallbackEmpresa?: EmpresaModelData): void {
+    const cod = String(codEmpresa || '').trim().toUpperCase();
+    if (!cod) {
+      return;
+    }
+
+    this.servicioEmpresa.buscarEmpres(cod).subscribe({
+      next: (resp) => {
+        const data = resp?.data;
+        const empresaFull = Array.isArray(data) ? data[0] : data;
+        if (empresaFull) {
+          this.formularioEmpresa.patchValue(empresaFull);
+          this.sucursalList = Array.isArray(empresaFull.sucursales) ? empresaFull.sucursales : [];
+        } else {
+          this.formularioEmpresa.patchValue(fallbackEmpresa || {});
+          this.sucursalList = fallbackEmpresa?.sucursales || [];
+        }
+        this.cargarContadoresSucursales();
+        this.cargarEncfEmpresa(cod);
+      },
+      error: () => {
+        this.formularioEmpresa.patchValue(fallbackEmpresa || {});
+        this.sucursalList = fallbackEmpresa?.sucursales || [];
+        this.cargarContadoresSucursales();
+        this.cargarEncfEmpresa(cod);
+      }
+    });
+  }
+
   editarEmpresa(Empresa: EmpresaModelData) {
     this.empresaid = Empresa.cod_empre;
     this.modoedicionEmpresa = true;
-    this.activatablaSucursal = true;
-    this.formularioEmpresa.patchValue(Empresa);
+    this.modoconsultaEmpresa = false;
+    this.formularioEmpresa.enable();
+    this.formularioEmpresa.reset();
     this.tituloModalEmpresa = 'Editando Empresa';
     $('#modalempresa').modal('show');
     this.habilitarFormulario = true;
     this.activaformularioSucursal = false; // gestionar sucursales en modal independiente
     this.activatablaSucursal = true;
-    this.sucursalList = Empresa.sucursales || [];
-    this.cargarContadoresSucursales();
-    // Cargar ENCF de la empresa
-    this.cargarEncfEmpresa(this.empresaid);
-    // Refrescar datos desde backend para asegurar sucursales
-    this.servicioEmpresa.buscarEmpres(this.empresaid).subscribe({
-      next: (resp) => {
-        const data = resp?.data;
-        const empresaFull = Array.isArray(data) ? data[0] : data;
-        if (empresaFull) {
-          // Backend puede devolver 'sucursales' o 'sucursal'
-          this.sucursalList = (empresaFull.sucursales || empresaFull.sucursal || []);
-          this.formularioEmpresa.patchValue(empresaFull);
-          this.cargarContadoresSucursales();
-          this.cargarEncfEmpresa(this.empresaid);
-        }
-      },
-      error: () => {
-        // Mantener lo que vino en la lista si falla
-        this.sucursalList = Empresa.sucursales || [];
-        this.cargarContadoresSucursales();
-        this.cargarEncfEmpresa(this.empresaid);
-      }
-    });
+    this.sucursalList = [];
+    this.cargarDetalleEmpresa(this.empresaid, Empresa);
   }
 
   buscarTodasEmpresa(page: number) {
     this.servicioEmpresa.buscarTodasEmpresa(page, this.pageSize).subscribe(response => {
-      this.empresaList = response.data;
+      this.empresaList = response?.data || [];
+      this.totalItems = Number(response?.pagination?.total ?? this.empresaList.length);
+      this.currentPage = Number(response?.pagination?.page ?? page);
     });
   }
   consultarEmpresa(Empresa: EmpresaModelData) {
+    this.empresaid = Empresa.cod_empre;
     this.tituloModalEmpresa = 'Consulta Empresa';
-    this.formularioEmpresa.patchValue(Empresa);
+    this.formularioEmpresa.reset();
     $('#modalempresa').modal('show');
     this.habilitarFormulario = true;
+    this.modoedicionEmpresa = false;
     this.modoconsultaEmpresa = true;
     this.formularioEmpresa.disable();
     // Alta/edición de sucursales se hará con modal aparte
-    this.empresaid = Empresa.cod_empre;
     this.activaformularioSucursal = false;
     this.activatablaSucursal = true;
-    this.sucursalList = Empresa.sucursales || [];
-    this.cargarContadoresSucursales();
-    // Cargar ENCF de la empresa para la consulta
-    this.cargarEncfEmpresa(this.empresaid);
-    // Cargar sucursales desde backend para consulta
-    this.servicioEmpresa.buscarEmpres(this.empresaid).subscribe({
-      next: (resp) => {
-        const data = resp?.data;
-        const empresaFull = Array.isArray(data) ? data[0] : data;
-        if (empresaFull) {
-          // Backend puede devolver 'sucursales' o 'sucursal'
-          this.sucursalList = (empresaFull.sucursales || empresaFull.sucursal || []);
-          // No habilitamos el formulario empresa en consulta, solo refrescamos datos
-          this.formularioEmpresa.patchValue(empresaFull);
-          this.cargarContadoresSucursales();
-          this.cargarEncfEmpresa(this.empresaid);
-        }
-      },
-      error: () => {
-        // Si falla, dejamos lo que venía de la lista
-        this.sucursalList = Empresa.sucursales || [];
-        this.cargarContadoresSucursales();
-        this.cargarEncfEmpresa(this.empresaid);
-      }
-    });
+    this.sucursalList = [];
+    this.cargarDetalleEmpresa(this.empresaid, Empresa);
   };
 
   // Abrir modal de control de factura para una sucursal
@@ -778,12 +767,13 @@ export class Empresas implements OnInit {
   changePage(page: number) {
     this.currentPage = page;
     // Trigger a new search with the current codigo and descripcion
+    const codigo = this.codigoBuscar.getValue();
     const nomempresa = this.descripcionBuscar.getValue();
-    this.servicioEmpresa.buscarEmpresa(this.currentPage, this.pageSize, nomempresa)
+    this.servicioEmpresa.buscarEmpresa(this.currentPage, this.pageSize, codigo, nomempresa)
       .subscribe(response => {
-        this.empresaList = response.data;
-        this.totalItems = response.pagination.total;
-        this.currentPage = page;
+        this.empresaList = response?.data || [];
+        this.totalItems = Number(response?.pagination?.total ?? this.empresaList.length);
+        this.currentPage = Number(response?.pagination?.page ?? page);
       });
   }
 
@@ -813,7 +803,6 @@ export class Empresas implements OnInit {
     this.buscarTodasEmpresa(1);
   }
 }
-
 
 
 

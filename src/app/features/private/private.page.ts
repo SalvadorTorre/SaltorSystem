@@ -178,7 +178,9 @@ export class PrivatePage implements OnInit {
 
   private resolveRoleName(): string {
     const raw = (localStorage.getItem('dashboardRole') || localStorage.getItem('role') || '').toLowerCase();
-    return raw.includes('admin') ? 'Administrador' : 'Vendedor';
+    if (raw.includes('root')) return 'ROOT';
+    if (raw.includes('admin')) return 'Administrador';
+    return 'Vendedor';
   }
 
   private buildFakeSalesReport(): {

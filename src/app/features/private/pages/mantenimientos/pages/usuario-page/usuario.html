@@ -1,68 +1,133 @@
-<div class="container-fluid">
-  <div class="card shadow-sm">
-    <div class="card-header bg-primary text-white d-flex align-items-center">
-      <i class="bi bi-people me-2"></i>
-      <h5 class="mb-0">Usuarios</h5>
+<div class="container-fluid usuarios-page">
+  <section class="card shadow-sm border-0 usuarios-hero">
+    <div class="card-body p-4">
+      <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+        <div>
+          <p class="usuarios-eyebrow mb-1">MANTENIMIENTO</p>
+          <h4 class="mb-1">Gestión de usuarios</h4>
+          <p class="mb-0 text-white-75">Administra cuentas, permisos y perfiles de acceso por sucursal.</p>
+        </div>
+        <button
+          class="btn btn-light btn-sm usuarios-btn-primary"
+          (click)="abrirNuevoUsuario()"
+          data-bs-toggle="modal"
+          data-bs-target="#modalNuevoUsuario"
+        >
+          <i class="bi bi-person-plus me-1"></i> Nuevo usuario
+        </button>
+      </div>
+
+      <div class="row g-2 mt-3 usuarios-metrics">
+        <div class="col-6 col-lg-3">
+          <article class="usuarios-metric-card">
+            <span>Total usuarios</span>
+            <strong>{{ usuarios.length }}</strong>
+          </article>
+        </div>
+        <div class="col-6 col-lg-3">
+          <article class="usuarios-metric-card">
+            <span>Resultado filtro</span>
+            <strong>{{ usuariosFiltrados.length }}</strong>
+          </article>
+        </div>
+        <div class="col-6 col-lg-3">
+          <article class="usuarios-metric-card">
+            <span>Tipos de usuario</span>
+            <strong>{{ tipousuarios.length }}</strong>
+          </article>
+        </div>
+        <div class="col-6 col-lg-3">
+          <article class="usuarios-metric-card">
+            <span>Sucursales</span>
+            <strong>{{ sucursales.length }}</strong>
+          </article>
+        </div>
+      </div>
     </div>
+  </section>
+
+  <section class="card shadow-sm border-0 usuarios-panel mt-3">
     <div class="card-body">
-      <div class="row g-3 mb-3 align-items-center">
-        <div class="col-12 col-md-6">
-          <div class="input-group">
+      <div class="row g-2 align-items-center usuarios-toolbar mb-3">
+        <div class="col-12 col-lg-7">
+          <div class="input-group usuarios-search">
             <span class="input-group-text"><i class="bi bi-search"></i></span>
-            <input type="text" class="form-control" placeholder="Buscar usuario..." [(ngModel)]="filtroUsuario">
+            <input
+              type="text"
+              class="form-control"
+              placeholder="Buscar por usuario, nombre o código..."
+              [(ngModel)]="filtroUsuario"
+            >
           </div>
         </div>
-        <div class="col-12 col-md-6 text-md-end">
-          <button class="btn btn-success" (click)="abrirNuevoUsuario()" data-bs-toggle="modal" data-bs-target="#modalNuevoUsuario">
-            <i class="bi bi-person-plus me-1"></i> Nuevo usuario
-          </button>
+        <div class="col-12 col-lg-5 text-lg-end">
+          <span class="usuarios-results-pill">
+            <i class="bi bi-funnel me-1"></i>
+            {{ usuariosFiltrados.length }} resultado(s)
+          </span>
         </div>
       </div>
 
-      <div class="table-responsive">
-        <table class="table table-sm table-hover">
+      <div class="table-responsive usuarios-table-wrap">
+        <table class="table table-hover align-middle mb-0 usuarios-table">
           <thead>
             <tr>
               <th>#</th>
               <th>Usuario</th>
               <th>Nombre</th>
+              <th>Tipo</th>
+              <th>Sucursal</th>
               <th>Nivel</th>
-              <th>Acciones</th>
+              <th class="text-end">Acciones</th>
             </tr>
           </thead>
           <tbody>
             <tr *ngFor="let u of usuariosFiltrados; let i = index">
               <td>{{ u.codUsuario }}</td>
-              <td>{{ u.idUsuario }}</td>
-              <td>{{ u.nombreUsuario }}</td>
-              <td>{{ u.nivel }}</td>
               <td>
-                <button class="btn btn-info btn-sm me-2" (click)="consultarUsuario(u)" title="Consulta">
+                <div class="fw-semibold">{{ u.idUsuario }}</div>
+                <small class="text-muted">{{ u.correo || 'Sin correo' }}</small>
+              </td>
+              <td>{{ u.nombreUsuario || '-' }}</td>
+              <td>
+                <span class="badge text-bg-primary-subtle text-primary-emphasis">
+                  {{ descTipoUsuario(u.idtipoUsuario) }}
+                </span>
+              </td>
+              <td>{{ descSucursalUsuario(u) }}</td>
+              <td><span class="badge text-bg-light">Nivel {{ u.nivel }}</span></td>
+              <td class="text-end usuarios-actions-cell">
+                <button class="btn btn-outline-info btn-sm" (click)="consultarUsuario(u)" title="Consulta">
                   <i class="bi bi-eye"></i>
                 </button>
-                <button class="btn btn-primary btn-sm me-2" (click)="abrirEditarUsuario(u)" title="Editar">
+                <button class="btn btn-outline-primary btn-sm" (click)="abrirEditarUsuario(u)" title="Editar">
                   <i class="bi bi-pencil"></i>
                 </button>
-                <button class="btn btn-danger btn-sm me-2" (click)="eliminarUsuario(u)" title="Eliminar">
+                <button class="btn btn-outline-danger btn-sm" (click)="eliminarUsuario(u)" title="Eliminar">
                   <i class="bi bi-trash"></i>
                 </button>
-                <button class="btn btn-secondary btn-sm" (click)="abrirPermisosUsuario(u)" title="Permisos">
+                <button class="btn btn-outline-secondary btn-sm" (click)="abrirPermisosUsuario(u)" title="Permisos">
                   <i class="bi bi-shield-lock"></i>
                 </button>
+              </td>
+            </tr>
+            <tr *ngIf="!usuariosFiltrados.length">
+              <td colspan="7" class="text-center py-4 text-muted">
+                No hay usuarios para mostrar con el filtro actual.
               </td>
             </tr>
           </tbody>
         </table>
       </div>
     </div>
-  </div>
+  </section>
 </div>
 
 <!-- Modal: Consulta Usuario -->
 <div class="modal fade" id="modalConsultaUsuario" tabindex="-1" aria-labelledby="modalConsultaUsuarioLabel" aria-hidden="true">
   <div class="modal-dialog modal-xl modal-dialog-scrollable">
-    <div class="modal-content modal-consulta-usuario">
-      <div class="modal-header bg-primary text-white">
+    <div class="modal-content modal-modern modal-consulta-usuario">
+      <div class="modal-header modal-header-degradado text-white">
         <h5 class="modal-title d-flex align-items-center" id="modalConsultaUsuarioLabel">
           <i class="bi bi-person-vcard me-2"></i>
           Ver usuario: {{ selectedUsuario?.nombreUsuario || selectedUsuario?.idUsuario }}
@@ -87,7 +152,7 @@
 
         <div class="row g-3 mb-3">
           <div class="col-12 col-lg-6">
-            <div class="card h-100 shadow-sm">
+            <div class="card h-100 shadow-sm border-0">
               <div class="card-header bg-light fw-semibold">
                 <i class="bi bi-person-lines-fill me-2"></i>Datos de cuenta
               </div>
@@ -112,7 +177,7 @@
           </div>
 
           <div class="col-12 col-lg-6">
-            <div class="card h-100 shadow-sm">
+            <div class="card h-100 shadow-sm border-0">
               <div class="card-header bg-light fw-semibold">
                 <i class="bi bi-building me-2"></i>Organización y contacto
               </div>
@@ -137,12 +202,12 @@
           </div>
         </div>
 
-        <div class="card shadow-sm mb-3">
+        <div class="card shadow-sm border-0 mb-3">
           <div class="card-header bg-light fw-semibold">
             <i class="bi bi-shield-check me-2"></i>Accesos del perfil
           </div>
           <div class="card-body p-0">
-            <div class="table-responsive">
+            <div class="table-responsive modal-table-wrap">
               <table class="table table-sm table-hover mb-0 align-middle">
                 <thead class="table-light">
                   <tr>
@@ -208,7 +273,7 @@
           </div>
         </div>
 
-        <div class="card shadow-sm">
+        <div class="card shadow-sm border-0">
           <div class="card-header bg-light d-flex justify-content-between align-items-center flex-wrap gap-2">
             <h6 class="mb-0">
               <i class="bi bi-list-check me-1"></i>Permisos específicos
@@ -219,7 +284,7 @@
             </button>
           </div>
           <div class="card-body p-0">
-            <div class="table-responsive">
+            <div class="table-responsive modal-table-wrap">
               <table class="table table-sm table-hover mb-0 align-middle">
                 <thead class="table-light">
                   <tr>
@@ -260,19 +325,18 @@
 
 <!-- Modal: Permisos del Usuario -->
 <div class="modal fade" id="modalPermisosUsuario" tabindex="-1" aria-labelledby="modalPermisosUsuarioLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg">
-    <div class="modal-content">
-      <div class="modal-header">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content modal-modern">
+      <div class="modal-header modal-header-degradado text-white">
         <h5 class="modal-title" id="modalPermisosUsuarioLabel">
+          <i class="bi bi-shield-lock me-2"></i>
           Permisos de {{ selectedUsuario?.nombreUsuario }} ({{ selectedUsuario?.idUsuario }})
         </h5>
-        <button type="button" class="btn-close" (click)="cerrarModalPermisosUsuario()" data-bs-dismiss="modal" aria-label="Close"></button>
+        <button type="button" class="btn-close btn-close-white" (click)="cerrarModalPermisosUsuario()" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-        <!-- Se omite el botón de "Agregar permiso" cuando se abre desde Permisos -->
-
-        <div class="table-responsive">
-          <table class="table table-sm table-hover">
+        <div class="table-responsive modal-table-wrap">
+          <table class="table table-sm table-hover align-middle">
             <thead>
               <tr>
                 <th>#</th>
@@ -286,20 +350,34 @@
               <tr *ngFor="let p of permisos; let i = index">
                 <td>{{ p.idpermiso }}</td>
                 <td>{{ descModulo(p.idmodulo) }}</td>
-                <td>{{ p.acceso }}</td>
-                <td>{{ p.lectura }}</td>
+                <td><span [class]="claseEstadoBooleano(p.acceso)">{{ estadoBooleano(p.acceso) }}</span></td>
+                <td><span [class]="claseEstadoBooleano(p.lectura)">{{ estadoBooleano(p.lectura) }}</span></td>
                 <td>
-                  <button class="btn btn-primary btn-sm me-2" (click)="abrirEditarPermiso(p, i)" data-bs-toggle="modal" data-bs-target="#permisoUsuarioFormModal" title="Editar">
+                  <button
+                    class="btn btn-outline-primary btn-sm me-2"
+                    (click)="abrirEditarPermiso(p, i)"
+                    data-bs-toggle="modal"
+                    data-bs-target="#permisoUsuarioFormModal"
+                    title="Editar"
+                  >
                     <i class="bi bi-pencil"></i>
                   </button>
-                  <button class="btn btn-danger btn-sm" (click)="eliminarPermiso(p)" title="Eliminar">
+                  <button class="btn btn-outline-danger btn-sm" (click)="eliminarPermiso(p)" title="Eliminar">
                     <i class="bi bi-trash"></i>
                   </button>
                 </td>
               </tr>
+              <tr *ngIf="!permisos?.length">
+                <td colspan="5" class="text-center py-3 text-muted">No hay permisos asignados para este usuario.</td>
+              </tr>
             </tbody>
           </table>
         </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline-primary" (click)="abrirNuevoPermiso()" data-bs-toggle="modal" data-bs-target="#permisoUsuarioFormModal">
+          <i class="bi bi-plus-circle me-1"></i> Nuevo permiso
+        </button>
       </div>
     </div>
   </div>
@@ -308,10 +386,13 @@
 <!-- Submodal: Crear/Editar permiso -->
 <div class="modal fade" id="permisoUsuarioFormModal" tabindex="-1" aria-labelledby="permisoUsuarioFormModalLabel" aria-hidden="true">
   <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="permisoUsuarioFormModalLabel">{{ editIndex >= 0 ? 'Editar permiso' : 'Nuevo permiso' }}</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    <div class="modal-content modal-modern">
+      <div class="modal-header modal-header-degradado text-white">
+        <h5 class="modal-title" id="permisoUsuarioFormModalLabel">
+          <i class="bi bi-sliders me-2"></i>
+          {{ editIndex >= 0 ? 'Editar permiso' : 'Nuevo permiso' }}
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <form #permisoForm="ngForm" (ngSubmit)="guardarPermiso(permisoForm)">
         <div class="modal-body">
@@ -349,34 +430,41 @@
     </div>
   </div>
 </div>
+
 <!-- Modal: Editar Usuario -->
 <div class="modal fade" id="modalEditarUsuario" tabindex="-1" aria-labelledby="modalEditarUsuarioLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="modalEditarUsuarioLabel">Editar usuario</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content modal-modern">
+      <div class="modal-header modal-header-degradado text-white">
+        <h5 class="modal-title" id="modalEditarUsuarioLabel">
+          <i class="bi bi-pencil-square me-2"></i>
+          Editar usuario
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <form #editarUsuarioForm="ngForm" (ngSubmit)="guardarEdicionUsuario(editarUsuarioForm)">
         <div class="modal-body">
-          <div class="mb-3">
-            <label class="form-label">Usuario</label>
-            <input type="text" class="form-control" name="idUsuario" [(ngModel)]="editableUsuario.idUsuario" required>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Nombre</label>
-            <input type="text" class="form-control" name="nombreUsuario" [(ngModel)]="editableUsuario.nombreUsuario" required>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Clave</label>
-            <input type="password" class="form-control" name="claveUsuario" [(ngModel)]="editableUsuario.claveUsuario">
-          </div>
           <div class="row g-3">
-            <div class="col-6">
+            <div class="col-md-4">
+              <label class="form-label">Usuario</label>
+              <input type="text" class="form-control" name="idUsuario" [(ngModel)]="editableUsuario.idUsuario" required>
+            </div>
+            <div class="col-md-8">
+              <label class="form-label">Nombre</label>
+              <input type="text" class="form-control" name="nombreUsuario" [(ngModel)]="editableUsuario.nombreUsuario" required>
+            </div>
+          </div>
+
+          <div class="row g-3 mt-0">
+            <div class="col-md-4">
+              <label class="form-label">Clave</label>
+              <input type="password" class="form-control" name="claveUsuario" [(ngModel)]="editableUsuario.claveUsuario">
+            </div>
+            <div class="col-md-2">
               <label class="form-label">Nivel</label>
               <input type="number" class="form-control" name="nivel" [(ngModel)]="editableUsuario.nivel" required>
             </div>
-            <div class="col-6">
+            <div class="col-md-6">
               <label class="form-label">Sucursal</label>
               <select class="form-select" name="sucursal" [(ngModel)]="editableUsuario.sucursal" required>
                 <option [ngValue]="undefined">Seleccione una sucursal</option>
@@ -384,12 +472,13 @@
               </select>
             </div>
           </div>
+
           <div class="row g-3 mt-0">
-            <div class="col-6">
+            <div class="col-md-6">
               <label class="form-label">Correo</label>
               <input type="email" class="form-control" name="correo" [(ngModel)]="editableUsuario.correo">
             </div>
-            <div class="col-6">
+            <div class="col-md-6">
               <label class="form-label">Empresa</label>
               <input type="text" class="form-control" name="empresa" [(ngModel)]="editableUsuario.empresa">
             </div>
@@ -405,98 +494,103 @@
     </div>
   </div>
 </div>
+
 <!-- Modal: Nuevo Usuario -->
 <div class="modal fade" id="modalNuevoUsuario" tabindex="-1" aria-labelledby="modalNuevoUsuarioLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg">
-    <div class="modal-content">
-      <div class="modal-header modal-header-degradado">
-        <h5 class="modal-title" id="modalNuevoUsuarioLabel">Nuevo usuario</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content modal-modern">
+      <div class="modal-header modal-header-degradado text-white">
+        <h5 class="modal-title" id="modalNuevoUsuarioLabel">
+          <i class="bi bi-person-plus-fill me-2"></i>
+          Nuevo usuario
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <form #nuevoUsuarioForm="ngForm" (ngSubmit)="guardarNuevoUsuario(nuevoUsuarioForm)">
         <div class="modal-body">
-          <!-- <div class="mb-3">
-            <label class="form-label">Código (codUsuario)</label>
-            <input type="number" class="form-control" name="codUsuario" [(ngModel)]="nuevoUsuario.codUsuario" placeholder="Autogenerado" disabled>
-          </div> -->
-          <div class="row">
-            <div class="col-4">
-             <label class="form-label">Usuario</label>
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label">Usuario</label>
               <input type="text" class="form-control" name="idUsuario" [(ngModel)]="nuevoUsuario.idUsuario" required>
             </div>
-            <div class="col-8">
-             <label class="form-label">Nombre</label>
+            <div class="col-md-8">
+              <label class="form-label">Nombre</label>
               <input type="text" class="form-control" name="nombreUsuario" [(ngModel)]="nuevoUsuario.nombreUsuario" required>
             </div>
           </div>
-          <div class="row  g-2">
-            <div class="col-2">
+
+          <div class="row g-3 mt-0">
+            <div class="col-md-3 col-lg-2">
               <label class="form-label">Clave</label>
               <input type="password" class="form-control" name="claveUsuario" [(ngModel)]="nuevoUsuario.claveUsuario" required>
             </div>
-            <div class="col-1">
+            <div class="col-md-3 col-lg-2">
               <label class="form-label">Nivel</label>
               <input type="number" class="form-control" name="nivel" [(ngModel)]="nuevoUsuario.nivel" required>
             </div>
-            <div class="col-5">
+            <div class="col-md-6 col-lg-4">
               <label class="form-label">Sucursal (sucursalid)</label>
               <select class="form-select" name="sucursalid" [(ngModel)]="nuevoUsuario.sucursalid" (ngModelChange)="onSucursalChange($event)" required>
                 <option [ngValue]="undefined">Seleccione una sucursal</option>
                 <option *ngFor="let s of sucursales" [ngValue]="s.cod_sucursal">{{ s.nom_sucursal }} ({{ s.cod_empre }})</option>
               </select>
             </div>
-            <div class="col-4">
+            <div class="col-md-6 col-lg-4">
               <label class="form-label">Empresa</label>
               <input type="text" class="form-control" name="empresaNombre" [(ngModel)]="nuevoUsuario.empresa" readonly placeholder="Seleccione una sucursal">
             </div>
           </div>
+
           <div class="row g-3 mt-0">
-            <div class="col-6">
+            <div class="col-md-6">
               <label class="form-label">Correo</label>
               <input type="email" class="form-control" name="correo" [(ngModel)]="nuevoUsuario.correo">
             </div>
-            <div class="col-6">
+            <div class="col-md-6">
               <label class="form-label">Clave de correo (claveCorreo)</label>
               <input type="password" class="form-control" name="claveCorreo" [(ngModel)]="nuevoUsuario.claveCorreo">
             </div>
           </div>
+
           <div class="row g-3 mt-0">
-            <div class="col-6">
+            <div class="col-md-6">
               <label class="form-label">Tipo de usuario (idtipoUsuario)</label>
               <select class="form-select" name="idtipoUsuario" [(ngModel)]="nuevoUsuario.idtipoUsuario" (ngModelChange)="onTipoUsuarioChange($event)">
                 <option [ngValue]="undefined">Seleccione un tipo</option>
                 <option *ngFor="let t of tipousuarios" [ngValue]="t.id">{{ t.descripcion || t.id }}</option>
               </select>
             </div>
-            <div class="col-6">
+            <div class="col-md-6">
               <label class="form-label">ID Permiso (idpermiso)</label>
               <input type="number" class="form-control" name="idpermiso" [(ngModel)]="nuevoUsuario.idpermiso">
             </div>
           </div>
 
-          <!-- Tabla de módulos del tipo de usuario seleccionado -->
           <div class="mt-3" *ngIf="detallesTipoSeleccionado?.length">
-            <h6 class="mb-2">Módulos del tipo seleccionado</h6>
-            <div class="table-responsive">
-              <table class="table table-sm table-hover">
+            <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+              <h6 class="mb-0">Módulos del tipo seleccionado</h6>
+              <span class="badge text-bg-light">{{ detallesTipoSeleccionado.length }} módulo(s)</span>
+            </div>
+            <div class="table-responsive modal-table-wrap">
+              <table class="table table-sm table-hover align-middle mb-0">
                 <thead>
                   <tr>
                     <th>Módulo</th>
-                    <th>acceso</th>
-                    <th>lectura</th>
+                    <th>Acceso</th>
+                    <th>Lectura</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr *ngFor="let d of detallesTipoSeleccionado; let i = index">
                     <td>{{ descModulo(d.idmodulo) }}</td>
                     <td>
-                      <select class="form-select" [(ngModel)]="d.acceso" name="detalle-{{i}}-acceso">
+                      <select class="form-select form-select-sm" [(ngModel)]="d.acceso" name="detalle-{{i}}-acceso">
                         <option value="S">Sí</option>
                         <option value="N">No</option>
                       </select>
                     </td>
                     <td>
-                      <select class="form-select" [(ngModel)]="d.lectura" name="detalle-{{i}}-lectura">
+                      <select class="form-select form-select-sm" [(ngModel)]="d.lectura" name="detalle-{{i}}-lectura">
                         <option value="S">Sí</option>
                         <option value="N">No</option>
                       </select>
@@ -506,7 +600,6 @@
               </table>
             </div>
           </div>
-       
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>

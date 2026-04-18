@@ -7,6 +7,7 @@ import { ServicioEncf } from 'src/app/core/services/mantenimientos/encf/encf.ser
 import { ServicioTiponcf, TiponcfData } from 'src/app/core/services/mantenimientos/tiponcf/tiponcf.service';
 import { ServicioEmpresa } from 'src/app/core/services/mantenimientos/empresas/empresas.service';
 import { EmpresaModelData } from 'src/app/core/services/mantenimientos/empresas';
+declare var bootstrap: any;
 
 @Component({
   selector: 'app-encf',
@@ -38,6 +39,31 @@ export class EncfComponent implements OnInit {
     this.cargarEncf();
     this.cargarTiposNcf();
     this.cargarEmpresas();
+  }
+
+  private get modalEncfElement(): HTMLElement | null {
+    return (typeof document !== 'undefined')
+      ? document.getElementById('modalEncfForm')
+      : null;
+  }
+
+  private abrirModalEncf(): void {
+    const el = this.modalEncfElement;
+    if (!el || !bootstrap?.Modal) { return; }
+    const modal = bootstrap.Modal.getOrCreateInstance(el);
+    modal.show();
+  }
+
+  cerrarModalEncf(): void {
+    const el = this.modalEncfElement;
+    if (!el || !bootstrap?.Modal) { return; }
+    const modal = bootstrap.Modal.getInstance(el);
+    modal?.hide();
+  }
+
+  abrirNuevoEncf(): void {
+    this.limpiarFormulario();
+    this.abrirModalEncf();
   }
 
   cargarEncf(): void {
@@ -74,7 +100,10 @@ export class EncfComponent implements OnInit {
     this.servicioTiponcf.obtenerTodos().subscribe({
       next: (resp) => {
         const data = Array.isArray(resp) ? resp : (resp as any)?.data;
-        this.tiposNcf = data ?? [];
+        const rows: TiponcfData[] = (data ?? []) as TiponcfData[];
+        this.tiposNcf = rows
+          .filter((t) => /^E\d{2}$/.test(String(t?.tipo || '').toUpperCase()))
+          .sort((a, b) => Number(a.codigo || 0) - Number(b.codigo || 0));
       },
       error: (err) => {
         console.error('Error cargando tipos NCF', err);
@@ -96,8 +125,21 @@ export class EncfComponent implements OnInit {
 
   tipoDescripcion(code?: string): string {
     if (!code) { return ''; }
-    const t = this.tiposNcf.find(x => x.tipo === code);
+    const value = String(code).trim().toUpperCase();
+    const valueCodigo = value.startsWith('E') ? value.slice(1) : value;
+    const t = this.tiposNcf.find((x) => {
+      const tipo = String(x?.tipo || '').trim().toUpperCase();
+      const codigo = String(x?.codigo ?? '').trim().toUpperCase();
+      return tipo === value || codigo === valueCodigo;
+    });
     return t?.desNcf ?? code;
+  }
+
+  empresaNombre(codempr?: string): string {
+    const code = String(codempr || '').trim().toUpperCase();
+    if (!code) { return ''; }
+    const emp = this.empresas.find((e) => String(e?.cod_empre || '').trim().toUpperCase() === code);
+    return emp?.nom_empre || '';
   }
 
   private existeDuplicado(codempr: string, tipoencf: string, currentId?: number): Observable<boolean> {
@@ -176,6 +218,7 @@ export class EncfComponent implements OnInit {
         next: () => {
           this.limpiarFormulario();
           this.cargarEncf();
+          this.cerrarModalEncf();
           const esEdicion = this.editIndex < 0 ? false : true;
           Swal.fire({
             title: 'Excelente!',
@@ -210,6 +253,7 @@ export class EncfComponent implements OnInit {
     const idx = this.listaEncf.findIndex(n => n === item);
     this.editIndex = idx;
     this.encf = { ...item };
+    this.abrirModalEncf();
   }
 
   eliminar(item: Encf) {

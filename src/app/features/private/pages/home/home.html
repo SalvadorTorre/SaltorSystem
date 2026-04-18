@@ -6,8 +6,8 @@
       <p class="hero-subtitle">
         {{ empresaNombre }} | {{ sucursalNombre }} | {{ periodoActual }}
       </p>
-      <span class="role-chip" [ngClass]="{ 'admin': role === 'admin' }">
-        Vista {{ role === 'admin' ? 'Administrador' : 'Vendedor' }}
+      <span class="role-chip" [ngClass]="{ 'admin': role !== 'vendedor' }">
+        Vista {{ role === 'root' ? 'ROOT' : role === 'admin' ? 'Administrador' : 'Vendedor' }}
       </span>
     </div>
     <div class="hero-logo-orb">

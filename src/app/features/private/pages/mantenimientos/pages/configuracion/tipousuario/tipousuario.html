@@ -39,6 +39,9 @@
                     </button>
                   </td>
                 </tr>
+                <tr *ngIf="tiposFiltrados.length === 0">
+                  <td colspan="3" class="text-muted text-center">No hay tipos visibles</td>
+                </tr>
               </tbody>
             </table>
           </div>
@@ -110,7 +113,7 @@
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
-            <button type="submit" class="btn btn-primary" [disabled]="!tipoForm.valid" data-bs-dismiss="modal">{{ editTipoIndex >= 0 ? 'Guardar cambios' : 'Agregar' }}</button>
+            <button type="submit" class="btn btn-primary" [disabled]="!tipoForm.valid">{{ editTipoIndex >= 0 ? 'Guardar cambios' : 'Agregar' }}</button>
           </div>
         </form>
       </div>
@@ -153,7 +156,7 @@
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
-            <button type="submit" class="btn btn-primary" [disabled]="!detForm.valid" data-bs-dismiss="modal">{{ editDetIndex >= 0 ? 'Guardar cambios' : 'Agregar' }}</button>
+            <button type="submit" class="btn btn-primary" [disabled]="!detForm.valid">{{ editDetIndex >= 0 ? 'Guardar cambios' : 'Agregar' }}</button>
           </div>
         </form>
       </div>

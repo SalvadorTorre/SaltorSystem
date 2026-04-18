@@ -6,18 +6,13 @@ import { Component } from '@angular/core';
   styleUrls: ['./mantenimiento.css']
 })
 export class Mantenimiento {
-  openSubmenu: string | null = null;
+  openMenu: string | null = null;
 
-toggleSubmenu(menu: string) {
-  this.openSubmenu = this.openSubmenu === menu ? null : menu;
-}
+  toggleMenu(menu: string) {
+    this.openMenu = this.openMenu === menu ? null : menu;
+  }
 
-openMenu: string | null = null;
-
-toggleMenu(menu: string) {
-  this.openMenu = this.openMenu === menu ? null : menu;
-}
-closeMenu() {
-  this.openMenu = null;
-}
+  closeMenu() {
+    this.openMenu = null;
+  }
 }

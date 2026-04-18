@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup } from '@angular/forms';
 import { BehaviorSubject, debounceTime, distinctUntilChanged, switchMap } from 'rxjs';
 import { ModeloGrupoMercanciasData } from 'src/app/core/services/mantenimientos/grupomerc';
 import { ServicioGrupoMercancias } from 'src/app/core/services/mantenimientos/grupomerc/grupomerc.service';
@@ -31,6 +31,9 @@ export class Inventario implements OnInit {
   codigo: string = '';
   descripcion: string = '';
   codigoInput: string = '';
+  modoEdicionProducto = false;
+  modoConsultaProducto = false;
+  productoEditId: number | null = null;
 
   private codigoSubject = new BehaviorSubject<string>('');
   private descripcionSubject = new BehaviorSubject<string>('');
@@ -45,9 +48,9 @@ export class Inventario implements OnInit {
         return this.servicioInventario.obtenerTodosInventario(this.currentPage, this.pageSize, this.codigo, this.descripcion);
       })
     ).subscribe(response => {
-      this.invenarioList = response.data;
-      this.totalItems = response.pagination.total;
-      this.currentPage = response.pagination.page;
+      this.invenarioList = response?.data || [];
+      this.totalItems = Number(response?.pagination?.total ?? this.invenarioList.length);
+      this.currentPage = Number(response?.pagination?.page ?? this.currentPage);
     });
 
     this.descripcionSubject.pipe(
@@ -59,11 +62,12 @@ export class Inventario implements OnInit {
         return this.servicioInventario.obtenerTodosInventario(this.currentPage, this.pageSize, this.codigo, this.descripcion);
       })
     ).subscribe(response => {
-      this.invenarioList = response.data;
-      this.totalItems = response.pagination.total;
-      this.currentPage = response.pagination.page;
+      this.invenarioList = response?.data || [];
+      this.totalItems = Number(response?.pagination?.total ?? this.invenarioList.length);
+      this.currentPage = Number(response?.pagination?.page ?? this.currentPage);
     });
   }
+
   ngOnInit(): void {
     this.obtenerTodosInventario(1);
     this.obtenerTodosGrupoMercancias();
@@ -87,13 +91,14 @@ export class Inventario implements OnInit {
   }
 
   updateCharCount() {
-    const currentLength = this.formularioInventario.get('in_desmerc')!.value.length;
+    const currentLength = String(this.formularioInventario.get('in_desmerc')?.value || '').length;
     this.remainingChars = this.maxChars - currentLength;
   }
 
 
   crearFormularioInventario() {
     this.formularioInventario = this.fb.group({
+      id: [null],
       in_codmerc: [""],
       in_desmerc: [""],
       in_grumerc: [""],
@@ -126,35 +131,91 @@ export class Inventario implements OnInit {
 
   nuevoProducto() {
     this.tituloModalProducto = 'Agregar Producto';
+    this.modoEdicionProducto = false;
+    this.modoConsultaProducto = false;
+    this.productoEditId = null;
+    this.formularioInventario.enable();
+    this.formularioInventario.reset({
+      id: null,
+      in_status: 'A',
+      in_tipoproduct: 'H'
+    });
+    this.updateCharCount();
     $('#modalProducto').modal('show');
   }
 
   editarProducto(invetario: ModeloInventarioData) {
-    console.log(invetario);
     this.tituloModalProducto = 'Editar Producto';
+    this.modoEdicionProducto = true;
+    this.modoConsultaProducto = false;
+    this.formularioInventario.enable();
+    this.productoEditId = Number((invetario as any)?.id || 0) || null;
     this.formularioInventario.patchValue(invetario);
+    this.updateCharCount();
     $('#modalProducto').modal('show');
   }
+
   consultarProducto(Inventario: ModeloInventarioData) {
     this.tituloModalProducto = 'Consulta Inventario';
+    this.modoEdicionProducto = false;
+    this.modoConsultaProducto = true;
+    this.productoEditId = Number((Inventario as any)?.id || 0) || null;
     this.formularioInventario.patchValue(Inventario);
-    $('#modalproducto').modal('show');
+    this.formularioInventario.disable();
+    this.updateCharCount();
+    $('#modalProducto').modal('show');
   };
+
+  cerrarModalProducto(): void {
+    this.formularioInventario.reset({
+      id: null,
+      in_status: 'A',
+      in_tipoproduct: 'H'
+    });
+    this.formularioInventario.enable();
+    this.modoEdicionProducto = false;
+    this.modoConsultaProducto = false;
+    this.productoEditId = null;
+    this.updateCharCount();
+    $('#modalProducto').modal('hide');
+  }
+
   onSubmitInventario() {
+    if (this.modoConsultaProducto) {
+      return;
+    }
+
     if (this.formularioInventario.valid) {
-      console.log(this.formularioInventario.value);
-      this.servicioInventario.guardarInventario(this.formularioInventario.value).subscribe(response => {
-        Swal.fire({
-          title: "Excelente!",
-          text: "Producto guardado correctamente.",
-          icon: "success",
-          timer: 3000,
-          showConfirmButton: false,
-        });
-        this.obtenerTodosInventario(1);
-        this.formularioInventario.reset();
-        $('#modalProducto').modal('hide');
-        this.crearFormularioInventario();
+      const payload = this.formularioInventario.getRawValue();
+      const codigo = String(payload?.in_codmerc || '').trim();
+      if (!codigo) {
+        Swal.fire({ title: 'Código requerido', text: 'Debe ingresar el código del producto.', icon: 'warning' });
+        return;
+      }
+
+      const request$ = this.modoEdicionProducto
+        ? this.servicioInventario.editarInventario(codigo, {
+            ...payload,
+            id: this.productoEditId
+          } as any)
+        : this.servicioInventario.guardarInventario(payload);
+
+      request$.subscribe({
+        next: () => {
+          Swal.fire({
+            title: "Excelente!",
+            text: this.modoEdicionProducto ? "Producto actualizado correctamente." : "Producto guardado correctamente.",
+            icon: "success",
+            timer: 3000,
+            showConfirmButton: false,
+          });
+          this.obtenerTodosInventario(1);
+          this.cerrarModalProducto();
+        },
+        error: (err) => {
+          const msg = (err?.message || err?.error?.message || 'No se pudo guardar el producto').toString();
+          Swal.fire({ title: 'Error', text: msg, icon: 'error' });
+        }
       });
     } else {
       alert("Formulario invalido");
@@ -163,20 +224,24 @@ export class Inventario implements OnInit {
 
   obtenerTodosInventario(page: number) {
     this.servicioInventario.obtenerTodosInventario(page, this.pageSize).subscribe(response => {
-      this.invenarioList = response.data.rows;
-      this.totalItems = response.data.pagination.total;
-      this.currentPage = page;
+      this.invenarioList = response?.data || [];
+      this.totalItems = Number(response?.pagination?.total ?? this.invenarioList.length);
+      this.currentPage = Number(response?.pagination?.page ?? page);
     }
     );
   }
 
   obtenerTodosGrupoMercancias() {
     this.servicioGrupmerc.obtenerTodosGrupoMercancias().subscribe(response => {
-      this.grupomercList = response.data;
+      this.grupomercList = response?.data || [];
     });
   }
 
   eliminarProducto(choferId: any) {
+    const codigo = String(choferId || '').trim();
+    if (!codigo) {
+      return;
+    }
     Swal.fire({
       title: '¿Está seguro de eliminar este producto?',
       text: "¡No podrá revertir esto!",
@@ -187,7 +252,7 @@ export class Inventario implements OnInit {
       confirmButtonText: 'Si, eliminar!'
     }).then((result) => {
       if (result.isConfirmed) {
-        this.servicioInventario.borrarDeInventario(choferId).subscribe(response => {
+        this.servicioInventario.borrarDeInventario(codigo).subscribe(response => {
           Swal.fire(
             {
               title: "Excelente!",
@@ -204,22 +269,25 @@ export class Inventario implements OnInit {
   }
 
   changePage(page: number) {
+    const maxPage = this.totalPages;
+    if (page < 1 || page > maxPage || page === this.currentPage) {
+      return;
+    }
     this.currentPage = page;
     // Trigger a new search with the current codigo and descripcion
     const codigo = this.codigoSubject.getValue();
     const descripcion = this.descripcionSubject.getValue();
     this.servicioInventario.obtenerTodosInventario(this.currentPage, this.pageSize, codigo, descripcion)
       .subscribe(response => {
-        this.invenarioList = response.data;
-        this.totalItems = response.pagination.total;
-        this.currentPage = page;
+        this.invenarioList = response?.data || [];
+        this.totalItems = Number(response?.pagination?.total ?? this.invenarioList.length);
+        this.currentPage = Number(response?.pagination?.page ?? page);
       });
   }
 
 
   get totalPages() {
-    // Asegúrate de que totalItems sea un número antes de calcular el total de páginas
-    return Math.ceil(this.totalItems / this.pageSize);
+    return Math.max(1, Math.ceil(this.totalItems / this.pageSize));
   }
 
   get pages(): number[] {

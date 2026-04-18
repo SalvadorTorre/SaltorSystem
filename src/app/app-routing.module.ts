@@ -2,6 +2,7 @@ import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth/auth.guard';
 import { noAuthGuard } from './core/guards/no-auth/no-auth.guard';
+import { environment } from '@env/environment';
 
 const routes: Routes = [
   {
@@ -20,7 +21,7 @@ const routes: Routes = [
   },
   {
     path: '',
-    redirectTo: 'public',
+    redirectTo: environment.bypassAuth ? 'private' : 'public',
     pathMatch: 'full'
   }
 ];

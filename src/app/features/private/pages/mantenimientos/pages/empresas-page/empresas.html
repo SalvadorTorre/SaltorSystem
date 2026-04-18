@@ -1,149 +1,151 @@
-<div class="card" style="height: 87vh">
-  <div class="card-header">
-    <h1>Empresas</h1>
-  </div>
-  <div class="card-body">
-    <!-- buscador -->
-
-    <div class="row">
-      <div class="col-2">
-        <label for="">Buscar Rnc Empresa</label>
-        <input
-          [(ngModel)]="txtcodigo"
-          type="text"
-          placeholder="Digite RNC"
-          class="form-control"
-          (input)="codigoEntra($event)"
-        />
-      </div>
-
-      <div class="col-3">
-        <label for="">Buscar Nombre</label>
-        <input
-          [(ngModel)]="txtdescripcion"
-          type="text"
-          placeholder="Digite Nombre..."
-          class="form-control uppercase"
-          (input)="descripcionEntra($event)"
-        />
-      </div>
-      <div class="col-2">
-        <button class="btn btn-danger mt-4" (click)="limpiaBusqueda()">
-          <i class="bi bi-arrow-counterclockwise"></i>
+<div class="container-fluid empresas-page">
+  <section class="card shadow-sm border-0 empresas-hero">
+    <div class="card-body p-4">
+      <div class="d-flex align-items-start justify-content-between flex-wrap gap-3">
+        <div>
+          <p class="empresas-eyebrow mb-1">MANTENIMIENTO</p>
+          <h4 class="mb-1">Empresas y estructura comercial</h4>
+          <p class="mb-0 text-white-75">Gestiona empresas, sucursales y configuración de comprobantes fiscales.</p>
+        </div>
+        <button class="btn btn-light btn-sm empresas-btn-primary" (click)="nuevaEmpresa()">
+          <i class="bi bi-building-add me-1"></i> Nueva empresa
         </button>
       </div>
-      <div class="col-3"></div>
-      <div class="col-2">
-        <button class="btn btn-primary mt-4 justify-content-end" (click)="nuevaEmpresa()">
-          Nueva Empresa
-        </button>
+      <div class="row g-2 mt-3">
+        <div class="col-6 col-lg-3">
+          <article class="empresas-metric-card">
+            <span>Total empresas</span>
+            <strong>{{ totalItems || empresaList.length }}</strong>
+          </article>
+        </div>
+        <div class="col-6 col-lg-3">
+          <article class="empresas-metric-card">
+            <span>Página actual</span>
+            <strong>{{ currentPage }}</strong>
+          </article>
+        </div>
+        <div class="col-6 col-lg-3">
+          <article class="empresas-metric-card">
+            <span>Registros visibles</span>
+            <strong>{{ empresaList.length }}</strong>
+          </article>
+        </div>
+        <div class="col-6 col-lg-3">
+          <article class="empresas-metric-card">
+            <span>Total páginas</span>
+            <strong>{{ totalPages }}</strong>
+          </article>
+        </div>
       </div>
     </div>
-    <!-- fin buscador -->
-    <br />
-    <!-- Grid -->
-    <div class="table-responsive shadow-sm rounded border" style="max-height: 400px; overflow-y: auto">
-      <table
-        class="table table-hover table-striped align-middle mb-0"
-      >
-        <thead class="table-dark sticky-top">
-          <tr class="text-center">
-            <th class="py-3" style="width: 10%">Código</th>
-            <th class="py-3" style="width: 15%">RNC</th>
-            <th class="py-3" style="width: 25%">Empresa</th>
-            <th class="py-3" style="width: 15%">Teléfono</th>
-            <th class="py-3" style="width: 25%">Dirección</th>
-            <th class="py-3" style="width: 10%">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let empresa of empresaList">
-            <td class="text-center fw-bold text-secondary">{{empresa.cod_empre}}</td>
-            <td class="text-center">{{empresa.rnc_empre}}</td>
-            <td class="fw-semibold text-primary">{{empresa.nom_empre}}</td>
-            <td class="text-center">{{empresa.tel_empre}}</td>
-            <td class="small text-muted">{{empresa.dir_empre}}</td>
-            <td class="text-center">
-              <div class="btn-group" role="group">
-                <button
-                  (click)="consultarEmpresa(empresa)"
-                  class="btn btn-outline-success btn-sm"
-                  title="Ver Detalles"
-                >
+  </section>
+
+  <section class="card shadow-sm border-0 empresas-panel mt-3">
+    <div class="card-body">
+      <div class="row g-3 align-items-end mb-3">
+        <div class="col-12 col-md-4 col-xl-3">
+          <label class="form-label mb-1">Buscar RNC</label>
+          <div class="input-group empresas-search">
+            <span class="input-group-text"><i class="bi bi-upc-scan"></i></span>
+            <input
+              [(ngModel)]="txtcodigo"
+              type="text"
+              placeholder="Digite RNC"
+              class="form-control"
+              (input)="codigoEntra($event)"
+            />
+          </div>
+        </div>
+        <div class="col-12 col-md-5 col-xl-4">
+          <label class="form-label mb-1">Buscar nombre</label>
+          <div class="input-group empresas-search">
+            <span class="input-group-text"><i class="bi bi-search"></i></span>
+            <input
+              [(ngModel)]="txtdescripcion"
+              type="text"
+              placeholder="Digite nombre..."
+              class="form-control uppercase"
+              (input)="descripcionEntra($event)"
+            />
+          </div>
+        </div>
+        <div class="col-6 col-md-2 col-xl-2">
+          <button class="btn btn-outline-danger w-100 empresas-btn-clear" (click)="limpiaBusqueda()">
+            <i class="bi bi-arrow-counterclockwise me-1"></i> Limpiar
+          </button>
+        </div>
+      </div>
+
+      <div class="table-responsive empresas-grid-wrap">
+        <table class="table table-hover align-middle mb-0 empresas-table">
+          <thead>
+            <tr>
+              <th style="width: 10%">Código</th>
+              <th style="width: 14%">RNC</th>
+              <th style="width: 24%">Empresa</th>
+              <th style="width: 14%">Teléfono</th>
+              <th style="width: 28%">Dirección</th>
+              <th class="text-end" style="width: 10%">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let empresa of empresaList">
+              <td class="text-center fw-bold text-secondary">{{ empresa.cod_empre }}</td>
+              <td>{{ empresa.rnc_empre }}</td>
+              <td class="fw-semibold text-primary">{{ empresa.nom_empre }}</td>
+              <td>{{ empresa.tel_empre }}</td>
+              <td class="small text-muted">{{ empresa.dir_empre }}</td>
+              <td class="text-end empresas-actions-cell">
+                <button (click)="consultarEmpresa(empresa)" class="btn btn-outline-success btn-sm" title="Ver Detalles">
                   <i class="bi bi-eye"></i>
                 </button>
-                <button
-                  (click)="editarEmpresa(empresa)"
-                  class="btn btn-outline-primary btn-sm"
-                  title="Editar"
-                >
+                <button (click)="editarEmpresa(empresa)" class="btn btn-outline-primary btn-sm" title="Editar">
                   <i class="bi bi-pencil"></i>
                 </button>
-                <button
-                  (click)="eliminarEmpresa(empresa.cod_empre)"
-                  class="btn btn-outline-danger btn-sm"
-                  title="Eliminar"
-                >
+                <button (click)="eliminarEmpresa(empresa.cod_empre)" class="btn btn-outline-danger btn-sm" title="Eliminar">
                   <i class="bi bi-trash"></i>
                 </button>
-              </div>
-            </td>
-          </tr>
-          <!-- Estado vacío -->
-          <tr *ngIf="empresaList.length === 0">
-            <td colspan="6" class="text-center py-5 text-muted">
-              <i class="bi bi-inbox fs-1 d-block mb-2"></i>
-              No se encontraron empresas registradas
-            </td>
-          </tr>
-        </tbody>
-      </table>
+              </td>
+            </tr>
+            <tr *ngIf="empresaList.length === 0">
+              <td colspan="6" class="text-center py-5 text-muted">
+                <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                No se encontraron empresas registradas
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <nav aria-label="Paginacion empresas" class="mt-3">
+        <ul class="pagination justify-content-center empresas-pagination">
+          <li class="page-item" [class.disabled]="currentPage === 1">
+            <a class="page-link" (click)="changePage(1)" aria-label="First">
+              <span aria-hidden="true">««</span>
+            </a>
+          </li>
+          <li class="page-item" [class.disabled]="currentPage === 1">
+            <a class="page-link" (click)="changePage(currentPage - 1)" aria-label="Previous">
+              <span aria-hidden="true">«</span>
+            </a>
+          </li>
+          <li *ngFor="let page of pages" class="page-item" [class.active]="currentPage === page">
+            <a class="page-link" (click)="changePage(page)">{{ page }}</a>
+          </li>
+          <li class="page-item" [class.disabled]="currentPage === totalPages">
+            <a class="page-link" (click)="changePage(currentPage + 1)" aria-label="Next">
+              <span aria-hidden="true">»</span>
+            </a>
+          </li>
+          <li class="page-item" [class.disabled]="currentPage === totalPages">
+            <a class="page-link" (click)="changePage(totalPages)" aria-label="Last">
+              <span aria-hidden="true">»»</span>
+            </a>
+          </li>
+        </ul>
+      </nav>
     </div>
-    <nav aria-label="Page navigation">
-      <ul class="pagination justify-content-center">
-        <li class="page-item" [class.disabled]="currentPage === 1">
-          <a class="page-link" (click)="changePage(1)" aria-label="First">
-            <span aria-hidden="true">««</span>
-          </a>
-        </li>
-        <li class="page-item" [class.disabled]="currentPage === 1">
-          <a
-            class="page-link"
-            (click)="changePage(currentPage - 1)"
-            aria-label="Previous"
-          >
-            <span aria-hidden="true">«</span>
-          </a>
-        </li>
-        <li
-          *ngFor="let page of pages"
-          class="page-item"
-          [class.active]="currentPage === page"
-        >
-          <a class="page-link" (click)="changePage(page)">{{ page }}</a>
-        </li>
-        <li class="page-item" [class.disabled]="currentPage === totalPages">
-          <a
-            class="page-link"
-            (click)="changePage(currentPage + 1)"
-            aria-label="Next"
-          >
-            <span aria-hidden="true">»</span>
-          </a>
-        </li>
-        <li class="page-item" [class.disabled]="currentPage === totalPages">
-          <a
-            class="page-link"
-            (click)="changePage(totalPages)"
-            aria-label="Last"
-          >
-            <span aria-hidden="true">»»</span>
-          </a>
-        </li>
-      </ul>
-    </nav>
-    <!-- Fin grid -->
-  </div>
+  </section>
 </div>
 
 <!-- Formulario de cliente -->
@@ -155,14 +157,14 @@
   aria-hidden="true"
 >
   <div class="modal-dialog modal-dialog-centered modal-xl emp-modal">
-    <div class="modal-content">
-      <div class="modal-header">
+    <div class="modal-content modal-modern">
+      <div class="modal-header modal-header-degradado">
         <h1 class="modal-title fs-5" id="modalEmpresaLabel">
           {{tituloModalEmpresa}}
         </h1>
         <button
           type="button"
-          class="btn-close"
+          class="btn-close btn-close-white"
           (click)="cerrarModalEmpresa()"
           aria-label="Close"
         ></button>
@@ -274,117 +276,146 @@
             </form>
           <!-- </div> -->
         </div>
-        <div class="row g-3">
-          <!-- Columna: Sucursales -->
-          <div class="col-lg-12">
-            <!-- Se eliminó el formulario inline de sucursales en modo consulta. Se gestionará con un modal aparte. -->
-            <div class="row mt-3" *ngIf="activatablaSucursal">
-              <!-- *ngIf="activatablaSucursal">-->
-              <!--  && modoconsultaEmpresa && modoedicionEmpresa">-->
-              <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                  <h6 class="mb-0">Sucursales</h6>
-                  <button *ngIf="modoedicionEmpresa" type="button" class="btn btn-primary btn-sm" (click)="abrirModalNuevaSucursal()">
-                    <i class="bi bi-plus-circle"></i> Agregar sucursal
-                  </button>
+        <div class="row g-3 mt-3" *ngIf="activatablaSucursal">
+          <div class="col-12 col-xl-7">
+            <div class="card emp-section-card h-100">
+              <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <h6 class="mb-0">
+                  <i class="bi bi-diagram-3 me-1"></i>
+                  Sucursales
+                  <span class="badge text-bg-light ms-2">{{ sucursalList.length }}</span>
+                </h6>
+                <button *ngIf="modoedicionEmpresa" type="button" class="btn btn-primary btn-sm" (click)="abrirModalNuevaSucursal()">
+                  <i class="bi bi-plus-circle me-1"></i> Agregar sucursal
+                </button>
+              </div>
+              <div class="card-body p-0">
+                <div class="sucursal-list" *ngIf="sucursalList.length; else emptySucursales">
+                  <article
+                    class="sucursal-item"
+                    *ngFor="let sucursal of sucursalList"
+                    (click)="modoconsultaEmpresa && mostrarDetalleSucursal(sucursal)"
+                    [class.consulta-click]="modoconsultaEmpresa"
+                  >
+                    <div class="sucursal-item-top">
+                      <div>
+                        <p class="mb-0 fw-semibold">{{ sucursal.nom_sucursal }}</p>
+                        <small class="text-muted">Cod. {{ sucursal.cod_sucursal }}</small>
+                      </div>
+                      <span class="badge text-bg-primary-subtle text-primary-emphasis">
+                        {{ contfacturaPorSucursal[sucursal.cod_sucursal]?.ano ?? 'Sin año' }}
+                      </span>
+                    </div>
+
+                    <p class="mb-2 sucursal-address">{{ sucursal.dir_sucursal || 'Dirección no definida' }}</p>
+
+                    <div class="sucursal-metrics">
+                      <span><i class="bi bi-telephone me-1"></i>{{ sucursal.tel_sucursal || 'N/D' }}</span>
+                      <span><i class="bi bi-hash me-1"></i>Secuencia: {{ contfacturaPorSucursal[sucursal.cod_sucursal]?.contador ?? '-' }}</span>
+                    </div>
+
+                    <div class="sucursal-actions" *ngIf="modoedicionEmpresa">
+                      <button
+                        class="btn btn-outline-secondary btn-sm"
+                        (click)="$event.stopPropagation(); abrirModalEditarSucursal(sucursal)"
+                        title="Editar sucursal"
+                      >
+                        <i class="bi bi-pencil"></i>
+                      </button>
+                      <button
+                        class="btn btn-outline-primary btn-sm"
+                        (click)="$event.stopPropagation(); abrirContFacturaModal(sucursal)"
+                        title="Editar control de factura"
+                      >
+                        <i class="bi bi-pencil-square"></i>
+                      </button>
+                      <button
+                        class="btn btn-outline-danger btn-sm"
+                        (click)="$event.stopPropagation(); eliminarSucursal(sucursal.cod_sucursal)"
+                        title="Eliminar sucursal"
+                      >
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </div>
+                  </article>
                 </div>
-                <div class="table-responsive" style="max-height: 380px; overflow-y: auto">
-                <table
-                  class="table table-bordered table-hover table-striped table-sm"
-                >
-                  <thead class="table-dark">
-                    <tr>
-                      <th style="width: 4%">Codigo</th>
-                      <th style="width: 20%">Sucursal</th>
-                      <th style="width: 10%">Telefono</th>
-                      <th style="width: 31%">Dirección</th>
-                      <th style="width: 10%">Año</th>
-                      <th style="width: 10%">Secuencia</th>
-                      <th style="width: 15%">Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr *ngFor="let sucursal of sucursalList" (click)="modoconsultaEmpresa && mostrarDetalleSucursal(sucursal)" [style.cursor]="modoconsultaEmpresa ? 'pointer' : 'default'">
-                      <td class="text-center">{{sucursal.cod_sucursal}}</td>
-                      <td class="text">{{sucursal.nom_sucursal}}</td>
-                      <td class="text">{{sucursal.tel_sucursal}}</td>
-                      <td class="text">{{sucursal.dir_sucursal}}</td>
-                      <td class="text-center">{{ contfacturaPorSucursal[sucursal.cod_sucursal]?.ano ?? '-' }}</td>
-                      <td class="text-end">{{ contfacturaPorSucursal[sucursal.cod_sucursal]?.contador ?? '-' }}</td>
-                      <td>
-                        <ng-container *ngIf="modoedicionEmpresa; else accionesConsulta">
-                          <button
-                            class="btn btn-link"
-                            (click)="$event.stopPropagation(); abrirModalEditarSucursal(sucursal)"
-                            title="Editar sucursal"
-                          >
-                            <i class="bi bi-pencil text-secondary"></i>
-                          </button>
-                          <button
-                            class="btn btn-link"
-                            (click)="$event.stopPropagation(); abrirContFacturaModal(sucursal)"
-                            title="Editar control de factura"
-                          >
-                            <i class="bi bi-pencil-square text-primary"></i>
-                          </button>
-                          <button
-                            class="btn btn-link"
-                            (click)="$event.stopPropagation(); eliminarSucursal(sucursal.cod_sucursal)"
-                          >
-                            <i class="bi bi-trash text-danger"></i>
-                          </button>
-                        </ng-container>
-                        <ng-template #accionesConsulta>
-                          <!-- sin acciones en modo consulta -->
-                        </ng-template>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
+
+                <ng-template #emptySucursales>
+                  <div class="empty-panel text-center py-4">
+                    <i class="bi bi-diagram-3 fs-3 d-block mb-2 text-muted"></i>
+                    <p class="mb-0 text-muted">No hay sucursales registradas para esta empresa.</p>
+                  </div>
+                </ng-template>
               </div>
             </div>
-            <!-- ENCF por Empresa -->
-            <div class="row mt-3">
-              <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                  <h6 class="mb-0">ENC-F de la Empresa</h6>
-                  <button *ngIf="modoedicionEmpresa" type="button" class="btn btn-primary btn-sm" (click)="agregarEncfEmpresa()">
-                    <i class="bi bi-plus-circle"></i> Agregar ENCF
-                  </button>
+          </div>
+
+          <div class="col-12 col-xl-5">
+            <div class="card emp-section-card h-100">
+              <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <h6 class="mb-0">
+                  <i class="bi bi-receipt-cutoff me-1"></i>
+                  ENC-F de la empresa
+                </h6>
+                <button *ngIf="modoedicionEmpresa" type="button" class="btn btn-primary btn-sm" (click)="agregarEncfEmpresa()">
+                  <i class="bi bi-plus-circle me-1"></i> Agregar ENCF
+                </button>
+              </div>
+              <div class="card-body p-0 d-flex flex-column">
+                <div class="encf-summary">
+                  <div class="encf-chip">
+                    <span>Registros</span>
+                    <strong>{{ encfList.length }}</strong>
+                  </div>
+                  <div class="encf-chip">
+                    <span>Tipo principal</span>
+                    <strong>{{ encfList.length ? tipoDescripcion(encfList[0]?.tipoencf) : 'N/D' }}</strong>
+                  </div>
                 </div>
-                <div class="card-body p-0">
-                  <div class="table-responsive" style="max-height: 300px; overflow-y: auto">
-                    <table class="table table-bordered table-hover table-striped table-sm">
-                      <thead class="table-dark">
-                        <tr>
-                          <th style="width: 20%">Tipo</th>
-                          <th style="width: 18%">Rango</th>
-                          <th style="width: 10%">Cantidad</th>
-                          <th style="width: 12%">Contador</th>
-                          <th style="width: 10%">Fecha</th>
-                          <th style="width: 10%">Alerta (%)</th>
-                          <th style="width: 20%">Acciones</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr *ngFor="let item of encfList">
-                          <td>{{ tipoDescripcion(item?.tipoencf) }}</td>
-                          <td>{{ item?.desdeencf }} - {{ item?.hastaencf }}</td>
-                          <td class="text-end">{{ item?.cantencf }}</td>
-                          <td class="text-end">{{ item?.countencf }}</td>
-                          <td>{{ item?.fechaencf | date:'dd/MM/yyyy' }}</td>
-                          <td class="text-end">{{ item?.alertaencf }}</td>
-                          <td>
-                            <button class="btn btn-link" (click)="abrirDetalleEncf(item)"><i class="bi bi-eye"></i> Ver</button>
-                        <button *ngIf="modoedicionEmpresa" class="btn btn-link" (click)="abrirEditarEncf(item)"><i class="bi bi-pencil-square"></i> Editar</button>
-                          </td>
-                        </tr>
-                        <tr *ngIf="encfList.length === 0">
-                          <td colspan="7" class="text-center text-muted py-3">No hay registros ENC-F para esta empresa</td>
-                        </tr>
-                      </tbody>
-                </table>
+
+                <div class="encf-list" *ngIf="encfList.length; else emptyEncf">
+                  <article class="encf-item" *ngFor="let item of encfList">
+                    <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                      <span class="fw-semibold">{{ tipoDescripcion(item?.tipoencf) }}</span>
+                      <span class="badge text-bg-light">{{ item?.fechaencf | date:'dd/MM/yyyy' }}</span>
+                    </div>
+
+                    <div class="encf-meta">
+                      <small>Rango: {{ item?.desdeencf }} - {{ item?.hastaencf }}</small>
+                      <small>Alerta: {{ item?.alertaencf }}%</small>
+                    </div>
+
+                    <div class="encf-progress-wrap mt-2">
+                      <div class="progress encf-progress">
+                        <div
+                          class="progress-bar"
+                          role="progressbar"
+                          [style.width.%]="item?.cantencf ? (((item?.countencf || 0) * 100 / item?.cantencf) > 100 ? 100 : ((item?.countencf || 0) * 100 / item?.cantencf)) : 0"
+                        ></div>
+                      </div>
+                      <small class="text-muted d-block mt-1">
+                        Consumido: {{ item?.countencf || 0 }} de {{ item?.cantencf || 0 }}
+                        ({{ item?.cantencf ? (((item?.countencf || 0) * 100 / item?.cantencf) | number:'1.0-1') : '0.0' }}%)
+                      </small>
+                    </div>
+
+                    <div class="encf-actions mt-2">
+                      <button class="btn btn-outline-secondary btn-sm" (click)="abrirDetalleEncf(item)">
+                        <i class="bi bi-eye me-1"></i> Ver
+                      </button>
+                      <button *ngIf="modoedicionEmpresa" class="btn btn-outline-primary btn-sm" (click)="abrirEditarEncf(item)">
+                        <i class="bi bi-pencil-square me-1"></i> Editar
+                      </button>
+                    </div>
+                  </article>
                 </div>
+
+                <ng-template #emptyEncf>
+                  <div class="empty-panel text-center py-4">
+                    <i class="bi bi-receipt fs-3 d-block mb-2 text-muted"></i>
+                    <p class="mb-0 text-muted">No hay registros ENC-F para esta empresa.</p>
+                  </div>
+                </ng-template>
               </div>
             </div>
           </div>
@@ -393,16 +424,13 @@
     </div>
   </div>
 </div>
-  </div>
-</div>
-
 <!-- Modal: Control de Factura por Sucursal -->
 <div class="modal fade" id="contFacModalEmpresa" tabindex="-1" aria-labelledby="contFacModalEmpresaLabel" aria-hidden="true">
   <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
+    <div class="modal-content modal-modern">
+      <div class="modal-header modal-header-degradado">
         <h5 class="modal-title" id="contFacModalEmpresaLabel">{{contfacturaEditId ? 'Editar Control de Factura' : 'Nuevo Control de Factura'}}</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <form #contEmpresaForm="ngForm" (ngSubmit)="guardarContFacturaEmpresa(contEmpresaForm)">
         <div class="modal-body">
@@ -431,10 +459,10 @@
 <!-- Modal: Detalle de Sucursal (solo lectura en consulta) -->
 <div class="modal fade" id="detalleSucursalModal" tabindex="-1" aria-labelledby="detalleSucursalModalLabel" aria-hidden="true">
   <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
+    <div class="modal-content modal-modern">
+      <div class="modal-header modal-header-degradado">
         <h5 class="modal-title" id="detalleSucursalModalLabel">Detalle de Sucursal</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body" *ngIf="sucursalDetalle as s">
         <div class="mb-2"><strong>Código:</strong> {{ s.cod_sucursal }}</div>
@@ -454,10 +482,10 @@
 <!-- Modal: Crear/Editar Sucursal -->
 <div class="modal fade" id="modalSucursal" tabindex="-1" aria-labelledby="modalSucursalLabel" aria-hidden="true">
   <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
+    <div class="modal-content modal-modern">
+      <div class="modal-header modal-header-degradado">
         <h5 class="modal-title" id="modalSucursalLabel">{{ modoedicionSucursal ? 'Editar Sucursal' : 'Nueva Sucursal' }}</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <form [formGroup]="formularioSucursal" (ngSubmit)="guardarSucursal()">
         <div class="modal-body">
@@ -486,10 +514,10 @@
 <!-- Modal: Detalle ENCF -->
 <div class="modal fade" id="detalleEncfModal" tabindex="-1" aria-labelledby="detalleEncfModalLabel" aria-hidden="true">
   <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
+    <div class="modal-content modal-modern">
+      <div class="modal-header modal-header-degradado">
         <h5 class="modal-title" id="detalleEncfModalLabel">Detalle ENC-F</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body" *ngIf="encfSeleccionado as e">
         <div class="mb-2"><strong>Tipo:</strong> {{ tipoDescripcion(e?.tipoencf) }}</div>
@@ -509,10 +537,10 @@
 <!-- Modal: Editar/Crear ENCF -->
 <div class="modal fade" id="editarEncfModal" tabindex="-1" aria-labelledby="editarEncfModalLabel" aria-hidden="true">
   <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
+    <div class="modal-content modal-modern">
+      <div class="modal-header modal-header-degradado">
         <h5 class="modal-title" id="editarEncfModalLabel">{{ encfEditId ? 'Editar ENCF' : 'Nuevo ENCF' }}</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <form [formGroup]="formEncf" (ngSubmit)="guardarEncfEmpresa()">
         <div class="modal-body">

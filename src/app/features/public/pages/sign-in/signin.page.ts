@@ -3,6 +3,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from 'src/app/core/services/auth/auth.service';
 import { ProfileService } from 'src/app/core/services/profile/profile.service';
+import Swal from 'sweetalert2';
 
 declare var $: any;
 
@@ -48,16 +49,31 @@ export class SignInPage implements OnInit {
   onSubmit() {
     if (this.myFormCreate.valid) {
       this.isLoading = true;
-      this.authService.login(this.myFormCreate.value).subscribe(response => {
-        if (response.code === 200) {
-          this.router.navigate(['/private']);
-        } else {
+      this.authService.login(this.myFormCreate.value).subscribe({
+        next: (response) => {
+          if (response?.code === 200) {
+            this.router.navigate(['/private']);
+            return;
+          }
           this.isLoading = false;
-          alert("Error al iniciar sesión");
-        }
-        //this.router.navigate(['/private']);
-        console.log(response);
-
+          Swal.fire({
+            icon: 'error',
+            title: 'Acceso denegado',
+            text: response?.message || 'Credenciales inválidas.',
+          });
+        },
+        error: (error) => {
+          this.isLoading = false;
+          const message =
+            error?.message ||
+            error?.error?.message ||
+            'No fue posible iniciar sesión. Verifica usuario y contraseña.';
+          Swal.fire({
+            icon: 'error',
+            title: 'Error de inicio de sesión',
+            text: message,
+          });
+        },
       });
     }
   }

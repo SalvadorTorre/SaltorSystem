@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth/auth.service';
 import { CanActivateFn } from '@angular/router';
 import { inject } from '@angular/core';
+import { environment } from '@env/environment';
 
 @Injectable({
   providedIn: 'root'
@@ -11,6 +12,9 @@ export class NoAuthGuardService {
   constructor(private authService: AuthService, private router: Router) {}
 
   canActivate(): boolean {
+    if (environment.bypassAuth) {
+      return true;
+    }
     console.log(this.authService.isLoggedIn());
     if (this.authService.isLoggedIn()) {
       this.router.navigate(['/private']);

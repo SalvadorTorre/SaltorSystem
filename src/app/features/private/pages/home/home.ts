@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import Swal from 'sweetalert2';
 
-type DashboardRole = 'admin' | 'vendedor';
+type DashboardRole = 'root' | 'admin' | 'vendedor';
 
 interface CanalVenta {
   nombre: string;
@@ -468,8 +468,18 @@ export class Home implements OnInit {
     const sucRaw = this.parseStorage(localStorage.getItem('sucursal'));
     this.sucursalNombre = sucRaw?.nom_sucursal || sucRaw?.descripcion || 'Sucursal principal';
 
-    const roleRaw = (localStorage.getItem('dashboardRole') || localStorage.getItem('role') || '').toLowerCase();
-    this.role = roleRaw.includes('admin') ? 'admin' : 'vendedor';
+    const roleRaw = (
+      localStorage.getItem('role') ||
+      localStorage.getItem('dashboardRole') ||
+      ''
+    ).toLowerCase();
+    if (roleRaw.includes('root')) {
+      this.role = 'root';
+    } else if (roleRaw.includes('admin')) {
+      this.role = 'admin';
+    } else {
+      this.role = 'vendedor';
+    }
   }
 
   private buildVendedorDashboard(): void {
