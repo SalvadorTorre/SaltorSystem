@@ -142,4 +142,21 @@ export class ServicioSector {
       map((rows: any[]) => ({ status: "success", code: 200, message: "", data: rows }))
     );
   }
+
+  buscarPorNombre(nombre: string): Observable<ModeloSector> {
+    const term = String(nombre || "").trim();
+    return from((async () => {
+      if (!term) return [];
+      const { data, error } = await this.db
+        .from("sector")
+        .select("*")
+        .ilike("se_dessect", `%${term}%`)
+        .order("se_dessect", { ascending: true })
+        .limit(50);
+      if (error) throw error;
+      return (data || []).map((row: any) => this.mapRow(row));
+    })()).pipe(
+      map((rows: any[]) => ({ status: "success", code: 200, message: "", data: rows }))
+    );
+  }
 }

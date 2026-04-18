@@ -1,5 +1,15 @@
-import { Component, OnInit, OnDestroy, AfterViewInit, ViewChild, ElementRef } from '@angular/core';
-// import { FormsModule } from '@angular/forms';
+import { Inventario } from './../mantenimientos/pages/inventario-page/inventario';
+import {
+  Component,
+  NgModule,
+  OnInit,
+  OnDestroy,
+  AfterViewInit,
+  ViewChild,
+  ElementRef,
+  ɵNG_COMP_DEF,
+} from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import {
   FormBuilder,
   FormControl,
@@ -18,8 +28,8 @@ import {
   map,
 } from 'rxjs';
 import Swal from 'sweetalert2';
-// import { ModeloUsuarioData } from 'src/app/core/services/mantenimientos/usuario';
-// import { ModeloRncData } from 'src/app/core/services/mantenimientos/rnc';
+import { ModeloUsuarioData } from 'src/app/core/services/mantenimientos/usuario';
+import { ModeloRncData } from 'src/app/core/services/mantenimientos/rnc';
 import { ServicioRnc } from 'src/app/core/services/mantenimientos/rnc/rnc.service';
 import { ServicioUsuario } from 'src/app/core/services/mantenimientos/usuario/usuario.service';
 import { ServicioFacturacion } from 'src/app/core/services/facturacion/factura/factura.service';
@@ -28,19 +38,24 @@ import {
   detFacturaData,
 } from 'src/app/core/services/facturacion/factura';
 import { ServicioCliente } from 'src/app/core/services/mantenimientos/clientes/cliente.service';
-import { HttpInvokeService } from 'src/app/core/services/http-invoke.service';
 import {
   ModeloCliente,
   ModeloClienteData,
 } from 'src/app/core/services/mantenimientos/clientes';
-import { interfaceDetalleModel } from 'src/app/core/services/facturacion/factura/factura';
+import {
+  FacturaDetalleModel,
+  interfaceDetalleModel,
+} from 'src/app/core/services/facturacion/factura/factura';
 import { ServicioInventario } from 'src/app/core/services/mantenimientos/inventario/inventario.service';
 import { ServicioSector } from 'src/app/core/services/mantenimientos/sector/sector.service';
 import {
   ModeloSector,
   ModeloSectorData,
 } from 'src/app/core/services/mantenimientos/sector';
-import { ModeloFpagoData } from 'src/app/core/services/mantenimientos/fpago';
+import {
+  ModeloFpago,
+  ModeloFpagoData,
+} from 'src/app/core/services/mantenimientos/fpago';
 import { ServicioFpago } from 'src/app/core/services/mantenimientos/fpago/fpago.service';
 import {
   ModeloInventario,
@@ -48,7 +63,7 @@ import {
 } from 'src/app/core/services/mantenimientos/inventario';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-// import { disableDebugTools } from '@angular/platform-browser';
+import { disableDebugTools } from '@angular/platform-browser';
 import { ServicioNcf } from 'src/app/core/services/mantenimientos/ncf/ncf.service';
 import { ModeloNcfData } from 'src/app/core/services/mantenimientos/ncf';
 declare var $: any;
@@ -151,18 +166,18 @@ export class Facturacion implements OnInit, AfterViewInit, OnDestroy {
   selectedRow: number = -1; // Para rastrear la fila seleccionada
 
   form: FormGroup;
-  private readonly onShowBuscarFacturaModal = () => this.onOpenBuscarFacturaModal();
+  private readonly onShowBuscarFacturaModal = () =>
+    this.onOpenBuscarFacturaModal();
   constructor(
     private fb: FormBuilder,
     private servicioFacturacion: ServicioFacturacion,
     private servicioCliente: ServicioCliente,
-    private http: HttpInvokeService,
     private ServicioInventario: ServicioInventario,
     private ServicioUsuario: ServicioUsuario,
     private ServicioRnc: ServicioRnc,
     private ServicioSector: ServicioSector,
     private servicioFpago: ServicioFpago,
-    private servicioNcf: ServicioNcf,
+    private servicioNcf: ServicioNcf
   ) {
     this.form = this.fb.group({
       fa_codVend: ['', Validators.required], // El campo es requerido
@@ -181,9 +196,9 @@ export class Facturacion implements OnInit, AfterViewInit, OnDestroy {
             this.currentPage,
             this.facturacionList.length,
             this.codigo,
-            this.txtdescripcion,
+            this.txtdescripcion
           );
-        }),
+        })
       )
       .subscribe((response) => {
         if (response && Array.isArray(response.data)) {
@@ -193,7 +208,7 @@ export class Facturacion implements OnInit, AfterViewInit, OnDestroy {
         } else {
           console.warn(
             'Respuesta de búsqueda por cliente no es válida:',
-            response,
+            response
           );
           this.facturacionList = [];
           this.totalItems = 0;
@@ -211,9 +226,9 @@ export class Facturacion implements OnInit, AfterViewInit, OnDestroy {
             this.facturacionList.length,
             this.codigo,
             this.txtdescripcion,
-            this.txtFactura,
+            this.txtFactura
           );
-        }),
+        })
       )
       .subscribe((response) => {
         if (response && Array.isArray(response.data)) {
@@ -223,7 +238,7 @@ export class Facturacion implements OnInit, AfterViewInit, OnDestroy {
         } else {
           console.warn(
             'Respuesta de búsqueda por número de factura no es válida:',
-            response,
+            response
           );
           this.facturacionList = [];
           this.totalItems = 0;
@@ -277,16 +292,12 @@ export class Facturacion implements OnInit, AfterViewInit, OnDestroy {
         filter((query: any) => (query || '').toString().trim() !== ''),
         tap((q) => console.log('DEBUG: Searching Code:', q)),
         switchMap((query: string) =>
-          this.http
-            .GetRequest<ModeloInventario>(
-              `/productos-buscador/${encodeURIComponent(query)}`,
-            )
-            .pipe(
-              catchError((error) => {
-                console.error('Error en búsqueda de código:', error);
-                return of({ data: [] } as any); // Retorna estructura vacía válida
-              }),
-            ),
+          this.ServicioInventario.buscarporCodigoMerc(query).pipe(
+            catchError((error) => {
+              console.error('Error en búsqueda de código:', error);
+              return of({ data: [] } as any); // Retorna estructura vacía válida
+            })
+          )
         ),
         map((response: any) => {
           if (response && Array.isArray(response.data)) {
@@ -299,7 +310,7 @@ export class Facturacion implements OnInit, AfterViewInit, OnDestroy {
             });
           }
           return response;
-        }),
+        })
       )
       .subscribe((results: ModeloInventario) => {
         console.log(results.data);
@@ -341,7 +352,7 @@ export class Facturacion implements OnInit, AfterViewInit, OnDestroy {
       } else {
         const filterValue = value.toLowerCase();
         this.resultadoFpago = this.listaFpago.filter((option) =>
-          option.fp_descfpago.toLowerCase().includes(filterValue),
+          option.fp_descfpago.toLowerCase().includes(filterValue)
         );
       }
       this.selectedIndexfpago = 0;
@@ -353,7 +364,7 @@ export class Facturacion implements OnInit, AfterViewInit, OnDestroy {
       } else {
         const filterValue = value.toLowerCase();
         this.resultadoEnvio = this.listaEnvio.filter((option) =>
-          option.descripcion.toLowerCase().includes(filterValue),
+          option.descripcion.toLowerCase().includes(filterValue)
         );
       }
       this.selectedIndexEnvio = 0;
@@ -369,16 +380,12 @@ export class Facturacion implements OnInit, AfterViewInit, OnDestroy {
         filter((query: any) => (query || '').toString().trim() !== ''),
         tap((q) => console.log('DEBUG: Searching Desc:', q)),
         switchMap((query: string) =>
-          this.http
-            .GetRequest<ModeloInventario>(
-              `/productos-buscador-desc/${encodeURIComponent(query)}`,
-            )
-            .pipe(
-              catchError((error) => {
-                console.error('Error en búsqueda de descripción:', error);
-                return of({ data: [] } as any);
-              }),
-            ),
+          this.ServicioInventario.buscarPorDescripcionMerc(query).pipe(
+            catchError((error) => {
+              console.error('Error en búsqueda de descripción:', error);
+              return of({ data: [] } as any);
+            })
+          )
         ),
         map((response: any) => {
           if (response && Array.isArray(response.data)) {
@@ -391,7 +398,7 @@ export class Facturacion implements OnInit, AfterViewInit, OnDestroy {
             });
           }
           return response;
-        }),
+        })
       )
       .subscribe((results: ModeloInventario) => {
         console.log(results.data);
@@ -419,13 +426,13 @@ export class Facturacion implements OnInit, AfterViewInit, OnDestroy {
         }),
         filter((query: string) => query !== ''),
         switchMap((query: string) =>
-          this.http.GetRequest<ModeloCliente>(`/cliente-nombre/${query}`).pipe(
+          this.servicioCliente.buscarporNombre(query).pipe(
             catchError((error) => {
               console.error('Error en búsqueda de cliente:', error);
               return of({ data: [] } as any);
-            }),
-          ),
-        ),
+            })
+          )
+        )
       )
       .subscribe((results: ModeloCliente) => {
         console.log(results.data);
@@ -447,13 +454,13 @@ export class Facturacion implements OnInit, AfterViewInit, OnDestroy {
         }),
         filter((query: string) => query !== ''),
         switchMap((query: string) =>
-          this.http.GetRequest<ModeloSector>(`/sector-nombre/${query}`).pipe(
+          this.ServicioSector.buscarPorNombre(query).pipe(
             catchError((error) => {
               console.error('Error en búsqueda de sector:', error);
               return of({ data: [] } as any);
-            }),
-          ),
-        ),
+            })
+          )
+        )
       )
       .subscribe((results: ModeloSector) => {
         console.log(results.data);
@@ -471,16 +478,16 @@ export class Facturacion implements OnInit, AfterViewInit, OnDestroy {
 
     // Sincronizar controles con propiedades (Reemplazo de [(ngModel)])
     this.buscarcodmerc.valueChanges.subscribe(
-      (val) => (this.codmerc = val || ''),
+      (val) => (this.codmerc = val || '')
     );
     this.buscardescripcionmerc.valueChanges.subscribe(
-      (val) => (this.descripcionmerc = val || ''),
+      (val) => (this.descripcionmerc = val || '')
     );
     this.cantidadform.valueChanges.subscribe(
-      (val) => (this.cantidadmerc = Number(val) || 0),
+      (val) => (this.cantidadmerc = Number(val) || 0)
     );
     this.precioform.valueChanges.subscribe(
-      (val) => (this.preciomerc = Number(val) || 0),
+      (val) => (this.preciomerc = Number(val) || 0)
     );
 
     // Asegurar que los campos de búsqueda estén habilitados
@@ -548,8 +555,10 @@ export class Facturacion implements OnInit, AfterViewInit, OnDestroy {
     this.servicioFpago.obtenerTodosFpago().subscribe((response) => {
       this.listaFpago = response.data; // Guardamos la lista completa
       // Si hay un valor seleccionado, intentamos setear el nombre en el input
-      const currentId = this.formularioFacturacion.get('fa_codfpago')?.value;
-      if (currentId) {
+      const currentId = Number(
+        this.formularioFacturacion.get('fa_codfpago')?.value || 0
+      );
+      if (currentId > 0) {
         const found = this.listaFpago.find((f) => f.fp_codfpago === currentId);
         if (found) {
           this.buscarFpago.setValue(found.fp_descfpago, { emitEvent: false });
@@ -585,7 +594,7 @@ export class Facturacion implements OnInit, AfterViewInit, OnDestroy {
       fa_sector: [''],
       fa_codZona: [null],
       fa_desZona: [''],
-      fa_fpago: [''],
+      fa_fpago: ['1'],
       fa_codfpago: ['1'],
       fa_envio: [''],
       fa_ncfFact: [{ value: '', disabled: true }],
@@ -702,10 +711,6 @@ export class Facturacion implements OnInit, AfterViewInit, OnDestroy {
         this.totalItbis = this.totalItbis;
         this.totalGral = totalGeneral;
       });
-  }
-
-  ngOnDestroy(): void {
-    $('#modalBuscarFactura').off('show.bs.modal', this.onShowBuscarFacturaModal);
   }
 
   buscarTodasFactura(page: number) {
@@ -916,23 +921,28 @@ export class Facturacion implements OnInit, AfterViewInit, OnDestroy {
   }
 
   buscarTodasFacturacion() {
-    this.servicioFacturacion.buscarTodasFacturacion().subscribe((response) => {
-      console.log('buscarTodasFacturacion response:', response);
-      if (response && Array.isArray(response.data)) {
-        this.facturacionList = response.data;
-      } else {
-        console.warn('response.data is not an array:', response?.data);
-        this.facturacionList = [];
-      }
-      console.log(this.facturacionList.length);
-    });
-  }
-
-  onOpenBuscarFacturaModal(): void {
-    // Siempre reinicia filtros y recarga para mostrar todas las facturas al abrir el modal.
     this.txtFactura = '';
     this.txtdescripcion = '';
     this.txtFecha = '';
+    this.servicioFacturacion.buscarTodasFacturacion().subscribe(
+      (response) => {
+        console.log('buscarTodasFacturacion response:', response);
+        if (response && Array.isArray(response.data)) {
+          this.facturacionList = response.data;
+        } else {
+          console.warn('response.data is not an array:', response?.data);
+          this.facturacionList = [];
+        }
+        console.log(this.facturacionList.length);
+      },
+      (error) => {
+        console.error('Error cargando facturas:', error);
+        this.facturacionList = [];
+      }
+    );
+  }
+
+  onOpenBuscarFacturaModal(): void {
     this.buscarTodasFacturacion();
   }
 
@@ -970,7 +980,7 @@ export class Facturacion implements OnInit, AfterViewInit, OnDestroy {
   moveFocuscodmerc(
     event: Event,
     descripcionInput: HTMLInputElement,
-    cantidadInput: HTMLInputElement,
+    cantidadInput: HTMLInputElement
   ) {
     // Enter: buscar por cadena (prefijo). Si coincide o hay selección en grid -> ir a cantidad.
     // Si vacío -> ir a descripción. Si no hay coincidencias -> error y pasar a descripción.
@@ -1004,7 +1014,7 @@ export class Facturacion implements OnInit, AfterViewInit, OnDestroy {
 
     // Buscar por prefijo en resultados ya cargados
     const candidatosLocales = this.resultadoCodmerc.filter((r) =>
-      String(r.in_codmerc).toLowerCase().startsWith(queryLower),
+      String(r.in_codmerc).toLowerCase().startsWith(queryLower)
     );
     if (candidatosLocales.length > 0) {
       this.cargarDatosInventario(candidatosLocales[0]);
@@ -1015,8 +1025,8 @@ export class Facturacion implements OnInit, AfterViewInit, OnDestroy {
     }
 
     // Fallback: consultar al backend con la cadena y aplicar startsWith
-    this.http
-      .GetRequest<ModeloInventario>(`/productos-buscador/${currentInputValue}`)
+    this.ServicioInventario
+      .buscarporCodigoMerc(currentInputValue)
       .pipe(
         catchError((error) => {
           console.error('Error en búsqueda manual de código:', error);
@@ -1033,7 +1043,7 @@ export class Facturacion implements OnInit, AfterViewInit, OnDestroy {
             });
           }
           return response;
-        }),
+        })
       )
       .subscribe((results: ModeloInventario) => {
         if (results && Array.isArray(results.data) && results.data.length) {
@@ -1048,7 +1058,7 @@ export class Facturacion implements OnInit, AfterViewInit, OnDestroy {
           this.resultadoCodmerc = ordenados;
           this.selectedIndexcodmerc = 0;
           const candidatos = ordenados.filter((r) =>
-            String(r.in_codmerc).toLowerCase().startsWith(queryLower),
+            String(r.in_codmerc).toLowerCase().startsWith(queryLower)
           );
           if (candidatos.length > 0) {
             this.cargarDatosInventario(candidatos[0]);
@@ -1105,10 +1115,10 @@ export class Facturacion implements OnInit, AfterViewInit, OnDestroy {
         this.selectedIndexcodmerc <= maxIndex
       ) {
         this.cargarDatosInventario(
-          this.resultadoCodmerc[this.selectedIndexcodmerc],
+          this.resultadoCodmerc[this.selectedIndexcodmerc]
         );
         const qty = document.getElementById(
-          'input15',
+          'input15'
         ) as HTMLInputElement | null;
         qty?.focus();
         qty?.select?.();
@@ -1179,6 +1189,10 @@ export class Facturacion implements OnInit, AfterViewInit, OnDestroy {
     qty?.select?.();
   }
 
+  abrirModalDetalle() {
+    $('#modalDetalleFactura').modal('show');
+  }
+
   buscarUsuario(event: Event, nextElement: HTMLInputElement | null): void {
     event.preventDefault();
     const claveUsuario = this.formularioFacturacion.get('fa_codVend')?.value;
@@ -1189,7 +1203,7 @@ export class Facturacion implements OnInit, AfterViewInit, OnDestroy {
             this.formularioFacturacion.patchValue({
               fa_nomVend: usuario.data[0].idUsuario,
             });
-            nextElement?.focus();
+            this.abrirModalDetalle();
           } else {
             this.mensagePantalla = true;
             Swal.fire({
@@ -1201,7 +1215,7 @@ export class Facturacion implements OnInit, AfterViewInit, OnDestroy {
             });
             return;
           }
-        },
+        }
       );
     } else {
       this.mensagePantalla = true;
@@ -1243,10 +1257,9 @@ export class Facturacion implements OnInit, AfterViewInit, OnDestroy {
         //  const nombreEmpresa = response.data[0]?.rason;
         this.formularioFacturacion.patchValue({ fa_nomClie: nombreEmpresa });
 
-        // MANTENIMIENTO: Todas las facturas son E32 por el momento, incluso con RNC.
-        // Se mantiene deshabilitado el dropdown.
-        this.formularioFacturacion.patchValue({ fa_tipoNcf: 32 });
-        this.formularioFacturacion.get('fa_tipoNcf')?.disable();
+        // Si se encuentra RNC, por defecto E31 (Crédito Fiscal) pero habilitado para cambio
+        this.formularioFacturacion.patchValue({ fa_tipoNcf: '31' });
+        this.formularioFacturacion.get('fa_tipoNcf')?.enable();
 
         // this.ncflist = this.ncflist.filter((ncf) => ncf.codNcf !== 1);
 
@@ -1422,10 +1435,10 @@ export class Facturacion implements OnInit, AfterViewInit, OnDestroy {
         this.selectedIndexdescripcionmerc <= maxIndex
       ) {
         this.cargarDatosInventario(
-          this.resultadodescripcionmerc[this.selectedIndexdescripcionmerc],
+          this.resultadodescripcionmerc[this.selectedIndexdescripcionmerc]
         );
         const qty = document.getElementById(
-          'input15',
+          'input15'
         ) as HTMLInputElement | null;
         qty?.focus();
         qty?.select?.();
@@ -1481,7 +1494,7 @@ export class Facturacion implements OnInit, AfterViewInit, OnDestroy {
 
       // Buscar por prefijo en resultados ya cargados (por descripción)
       const candidatosLocales = this.resultadodescripcionmerc.filter((r) =>
-        String(r.in_desmerc).toLowerCase().startsWith(queryLower),
+        String(r.in_desmerc).toLowerCase().startsWith(queryLower)
       );
       if (candidatosLocales.length > 0) {
         this.cargarDatosInventario(candidatosLocales[0]);
@@ -1493,15 +1506,13 @@ export class Facturacion implements OnInit, AfterViewInit, OnDestroy {
       }
 
       // Fallback: consultar al backend con la cadena y aplicar startsWith
-      this.http
-        .GetRequest<ModeloInventario>(
-          `/productos-buscador-desc/${encodeURIComponent(currentInputValue)}`,
-        )
+      this.ServicioInventario
+        .buscarPorDescripcionMerc(currentInputValue)
         .pipe(
           catchError((error) => {
             console.error('Error en búsqueda manual de descripción:', error);
             return of({ data: [] } as any);
-          }),
+          })
         )
         .subscribe((results: ModeloInventario) => {
           if (results && Array.isArray(results.data) && results.data.length) {
@@ -1517,12 +1528,12 @@ export class Facturacion implements OnInit, AfterViewInit, OnDestroy {
             const ordenados = normalizedData.sort((a, b) =>
               a.in_desmerc.localeCompare(b.in_desmerc, undefined, {
                 sensitivity: 'base',
-              }),
+              })
             );
             this.resultadodescripcionmerc = ordenados;
             this.selectedIndexdescripcionmerc = 0;
             const candidatos = ordenados.filter((r) =>
-              String(r.in_desmerc).toLowerCase().startsWith(queryLower),
+              String(r.in_desmerc).toLowerCase().startsWith(queryLower)
             );
             if (candidatos.length > 0) {
               this.cargarDatosInventario(candidatos[0]);
@@ -1637,8 +1648,18 @@ export class Facturacion implements OnInit, AfterViewInit, OnDestroy {
           fa_codZona: cliente.cl_codZona,
           fa_sector: cliente.cl_codSect,
         },
-        { emitEvent: false },
+        { emitEvent: false }
       );
+
+      // Lógica de NCF según RNC del cliente
+      if (cliente.cl_rnc && String(cliente.cl_rnc).trim() !== '') {
+        this.formularioFacturacion.patchValue({ fa_tipoNcf: '31' });
+        this.formularioFacturacion.get('fa_tipoNcf')?.enable();
+      } else {
+        this.formularioFacturacion.patchValue({ fa_tipoNcf: '32' });
+        this.formularioFacturacion.get('fa_tipoNcf')?.disable();
+      }
+
       console.log(cliente);
       console.log('Formulario actualizado:', this.formularioFacturacion.value);
     }
@@ -1664,7 +1685,7 @@ export class Facturacion implements OnInit, AfterViewInit, OnDestroy {
 
     if (fpago.fp_descfpago !== '') {
       this.formularioFacturacion.patchValue({
-        // fa_fpago: fpago.fp_descfpago, // Ya no se usa para el ID
+        fa_fpago: String(fpago.fp_codfpago),
         fa_codfpago: fpago.fp_codfpago,
       });
 
@@ -1875,15 +1896,15 @@ export class Facturacion implements OnInit, AfterViewInit, OnDestroy {
     this.totalGral = this.items.reduce((sum, item) => sum + item.total, 0);
     this.totalItbis = this.items.reduce(
       (sum, item) => sum + item.total * 0.18,
-      0,
+      0
     );
     this.subTotal = this.items.reduce(
       (sum, item) => sum + (item.total - item.total * 0.18),
-      0,
+      0
     );
     this.totalcosto = this.items.reduce(
       (sum, item) => sum + this.costotxt * item.cantidad,
-      0,
+      0
     );
     const formatCurrency = (value: number) =>
       value.toLocaleString('es-DO', {
@@ -1911,13 +1932,13 @@ export class Facturacion implements OnInit, AfterViewInit, OnDestroy {
     } as any;
     facturaPayload.fa_codEmpr = localStorage.getItem('codigoempresa');
     facturaPayload.fa_codSucu = parseInt(
-      localStorage.getItem('idSucursal') || '0',
+      localStorage.getItem('idSucursal') || '0'
     );
     // Convertir fa_tipoNcf a entero
     if (facturaPayload.fa_tipoNcf) {
       facturaPayload.fa_tipoNcf = parseInt(
         facturaPayload.fa_tipoNcf.toString(),
-        10,
+        10
       );
     }
     facturaPayload.fa_fecFact = this.toPrismaDate(facturaPayload.fa_fecFact);
@@ -1970,7 +1991,7 @@ export class Facturacion implements OnInit, AfterViewInit, OnDestroy {
             title: 'Error',
             text: 'Hubo un error al guardar la factura.',
           });
-        },
+        }
       );
     } else {
       alert('Esta Factura no fue Guardada');
@@ -2009,10 +2030,20 @@ export class Facturacion implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit() {
-    // Refresca siempre al abrir el modal de búsqueda, incluso si se abre desde otra acción.
-    $('#modalBuscarFactura').on('show.bs.modal', this.onShowBuscarFacturaModal);
+    // Refresca listado completo cuando el modal de búsqueda se abre.
+    $('#modalBuscarFactura').on(
+      'show.bs.modal',
+      this.onShowBuscarFacturaModal
+    );
     // Establece el foco en la tabla cuando se cargue la vista
-    this.Tabladetalle.nativeElement.focus();
+    this.Tabladetalle?.nativeElement?.focus();
+  }
+
+  ngOnDestroy(): void {
+    $('#modalBuscarFactura').off(
+      'show.bs.modal',
+      this.onShowBuscarFacturaModal
+    );
   }
 
   formatNumber(value: any): string {

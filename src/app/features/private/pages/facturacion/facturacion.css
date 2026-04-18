@@ -1,3 +1,40 @@
+/* Layout Fixes */
+:host {
+  display: block;
+  height: calc(100vh - 65px);
+  overflow: hidden;
+}
+
+.full-height-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 0.5rem;
+}
+
+.main-row {
+  flex: 1;
+  overflow: hidden;
+}
+
+.col-left {
+  height: 100%;
+  overflow-y: auto;
+}
+
+.col-right {
+  height: 100%;
+  overflow-y: auto;
+}
+
+.card-header {
+  padding: 0.5rem 1rem !important;
+}
+
+.card-header h5, .card-header h6 {
+  font-size: 1rem;
+}
+
 /* Estilos generales */
 .container-fluid {
   background-color: #f8f9fa;

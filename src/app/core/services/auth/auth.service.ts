@@ -11,7 +11,7 @@ interface LoginResponseData {
   sucursal: any;
   empresa: any;
   role?: string;
-  source?: 'legacy' | 'supabase';
+  source?: 'legacy' | 'supabase' | 'supabase-table';
 }
 
 interface LoginResponse {
@@ -72,60 +72,118 @@ export class AuthService {
   }
 
   private async loginWithSupabase(loginData: any): Promise<LoginResponse> {
-    const client = this.supabaseService.client;
-    if (!client) {
-      throw new Error('Supabase no está configurado');
+    try {
+      const client = this.supabaseService.client;
+      if (!client) {
+        throw new Error('Supabase no está configurado');
+      }
+
+      const identifier = String(loginData?.username || '')
+        .trim()
+        .toLowerCase();
+      const password = String(loginData?.userpassword || '');
+      if (!identifier || !password) {
+        throw new Error('Credenciales incompletas');
+      }
+
+      const email = await this.resolveEmailForSupabase(client, identifier);
+      const { data: authData, error: authError } =
+        await client.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+      let usuarioRaw: any | null = null;
+      let token = '';
+      let source: 'supabase' | 'supabase-table' = 'supabase';
+
+      if (!authError && authData?.session?.access_token) {
+        token = authData.session.access_token;
+        usuarioRaw = await this.fetchSupabaseUsuario(client, email, identifier);
+        source = 'supabase';
+      } else {
+        // Fallback temporal: permite iniciar con usuarios creados desde mantenimiento
+        // que aún no existen en auth.users.
+        usuarioRaw = await this.validateUsuarioCredentials(
+          client,
+          identifier,
+          password
+        );
+        if (!usuarioRaw) {
+          throw authError || new Error('No fue posible iniciar sesión');
+        }
+        token = `local-${Date.now()}-${usuarioRaw?.codusuario ?? usuarioRaw?.codUsuario ?? 'user'}`;
+        source = 'supabase-table';
+      }
+
+      if (!usuarioRaw) {
+        throw new Error('No se encontró el usuario en myappdb.usuario');
+      }
+
+      const usuario = this.normalizeUsuarioPayload(usuarioRaw);
+      const [sucursal, empresa, roleDesc] = await Promise.all([
+        this.fetchSupabaseSucursal(client, usuario.sucursalid),
+        this.fetchSupabaseEmpresa(client, usuario.cod_empre),
+        this.fetchRoleDescription(client, usuario.idtipoUsuario),
+      ]);
+
+      const role = this.resolveRoleFromUsuario(usuario, roleDesc);
+      const payload: LoginResponseData = {
+        usuario,
+        token,
+        sucursal: sucursal || null,
+        empresa: empresa || null,
+        role,
+        source,
+      };
+
+      this.persistSession(payload);
+
+      return {
+        status: 'success',
+        code: 200,
+        message: 'Inicio de sesión correcto',
+        data: payload,
+      };
+    } catch (error: any) {
+      throw new Error(this.translateAuthError(error));
     }
+  }
 
-    const identifier = String(loginData?.username || '')
-      .trim()
-      .toLowerCase();
-    const password = String(loginData?.userpassword || '');
-    if (!identifier || !password) {
-      throw new Error('Credenciales incompletas');
-    }
+  private async validateUsuarioCredentials(
+    client: SupabaseClient,
+    identifier: string,
+    password: string
+  ): Promise<any | null> {
+    const id = String(identifier || '').trim();
+    const pass = String(password || '');
+    if (!id || !pass) return null;
 
-    const email = await this.resolveEmailForSupabase(client, identifier);
-    const { data: authData, error: authError } =
-      await client.auth.signInWithPassword({
-        email,
-        password,
-      });
+    const table = this.table(client, 'usuario');
 
-    if (authError || !authData?.session) {
-      throw authError || new Error('No fue posible iniciar sesión');
-    }
+    const { data: byUser, error: byUserError } = await table
+      .select('*')
+      .ilike('idusuario', id)
+      .limit(5);
+    if (byUserError) throw byUserError;
 
-    const usuarioRaw = await this.fetchSupabaseUsuario(client, email, identifier);
-    if (!usuarioRaw) {
-      throw new Error('No se encontró el usuario en myappdb.usuario');
-    }
+    const { data: byMail, error: byMailError } = await this.table(client, 'usuario')
+      .select('*')
+      .ilike('correo', id)
+      .limit(5);
+    if (byMailError) throw byMailError;
 
-    const usuario = this.normalizeUsuarioPayload(usuarioRaw);
-    const [sucursal, empresa, roleDesc] = await Promise.all([
-      this.fetchSupabaseSucursal(client, usuario.sucursalid),
-      this.fetchSupabaseEmpresa(client, usuario.cod_empre),
-      this.fetchRoleDescription(client, usuario.idtipoUsuario),
-    ]);
+    const candidates = [...(byUser || []), ...(byMail || [])];
+    if (!candidates.length) return null;
 
-    const role = this.resolveRoleFromUsuario(usuario, roleDesc);
-    const payload: LoginResponseData = {
-      usuario,
-      token: authData.session.access_token,
-      sucursal: sucursal || null,
-      empresa: empresa || null,
-      role,
-      source: 'supabase',
-    };
+    const match = candidates.find((u: any) => {
+      const stored = String(
+        u?.claveusuario ?? u?.claveUsuario ?? ''
+      );
+      return stored === pass;
+    });
 
-    this.persistSession(payload);
-
-    return {
-      status: 'success',
-      code: 200,
-      message: 'Inicio de sesión correcto',
-      data: payload,
-    };
+    return match || null;
   }
 
   private async resolveEmailForSupabase(
@@ -286,7 +344,7 @@ export class AuthService {
 
     const appRole = this.resolveRoleFromUsuario(usuario, payload.role);
     localStorage.setItem('role', appRole);
-    localStorage.setItem('dashboardRole', appRole === 'vendedor' ? 'vendedor' : 'admin');
+    localStorage.setItem('dashboardRole', appRole);
 
     this.loggedIn = true;
   }
@@ -331,6 +389,36 @@ export class AuthService {
     if (value.includes('admin')) return 'admin';
     if (value.includes('vendedor') || value.includes('venta')) return 'vendedor';
     return null;
+  }
+
+  private translateAuthError(error: any): string {
+    const raw = String(
+      error?.message ||
+      error?.error_description ||
+      error?.details ||
+      error?.hint ||
+      error?.error?.message ||
+      ''
+    ).trim();
+    if (!raw) return 'No fue posible iniciar sesión. Verifica usuario y contraseña.';
+
+    const msg = raw.toLowerCase();
+    if (msg.includes('invalid login credentials')) {
+      return 'Usuario o clave inválidos.';
+    }
+    if (msg.includes('email not confirmed')) {
+      return 'La cuenta no está confirmada.';
+    }
+    if (msg.includes('invalid api key')) {
+      return 'Configuración inválida de Supabase.';
+    }
+    if (msg.includes('fetch failed') || msg.includes('network')) {
+      return 'No se pudo conectar con el servidor.';
+    }
+    if (msg.includes('credentials') && msg.includes('incomplete')) {
+      return 'Debes completar usuario y clave.';
+    }
+    return raw;
   }
 
   logout(): void {

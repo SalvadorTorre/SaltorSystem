@@ -64,10 +64,11 @@ export class SignInPage implements OnInit {
         },
         error: (error) => {
           this.isLoading = false;
-          const message =
+          const message = this.translateError(
             error?.message ||
             error?.error?.message ||
-            'No fue posible iniciar sesión. Verifica usuario y contraseña.';
+            'No fue posible iniciar sesión. Verifica usuario y contraseña.'
+          );
           Swal.fire({
             icon: 'error',
             title: 'Error de inicio de sesión',
@@ -76,6 +77,30 @@ export class SignInPage implements OnInit {
         },
       });
     }
+  }
+
+  private translateError(rawMessage: string): string {
+    const raw = String(rawMessage || '').trim();
+    if (!raw) return 'No fue posible iniciar sesión. Verifica usuario y contraseña.';
+    const msg = raw.toLowerCase();
+
+    if (msg.includes('invalid login credentials')) {
+      return 'Usuario o clave inválidos.';
+    }
+    if (msg.includes('email not confirmed')) {
+      return 'La cuenta no está confirmada.';
+    }
+    if (msg.includes('fetch failed') || msg.includes('network')) {
+      return 'No se pudo conectar con el servidor.';
+    }
+    if (msg.includes('invalid api key')) {
+      return 'Configuración inválida de Supabase.';
+    }
+    if (msg.includes('password should be at least') || msg.includes('password must be at least')) {
+      return 'La clave no cumple con la longitud requerida.';
+    }
+
+    return raw;
   }
 
 
