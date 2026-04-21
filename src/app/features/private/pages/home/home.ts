@@ -50,6 +50,41 @@ interface DashboardVendedor {
   agenda: TareaAgenda[];
 }
 
+interface SucursalGlobal {
+  nombre: string;
+  vendedores: number;
+  facturas: number;
+  facturado: number;
+  margenPct: number;
+}
+
+interface VendedorGlobal {
+  nombre: string;
+  sucursal: string;
+  facturas: number;
+  facturado: number;
+  cumplimientoPct: number;
+}
+
+interface FormaPagoGlobal {
+  nombre: string;
+  monto: number;
+}
+
+interface DashboardGlobal {
+  metaMensual: number;
+  facturadoGeneral: number;
+  cumplimientoGeneralPct: number;
+  totalFacturas: number;
+  ticketPromedio: number;
+  vendedoresActivos: number;
+  sucursalesActivas: number;
+  sucursales: SucursalGlobal[];
+  topVendedores: VendedorGlobal[];
+  formasPago: FormaPagoGlobal[];
+  alertas: string[];
+}
+
 @Component({
   selector: 'home',
   templateUrl: './home.html',
@@ -81,11 +116,25 @@ export class Home implements OnInit {
     facturasRecientes: [],
     agenda: [],
   };
+  global: DashboardGlobal = {
+    metaMensual: 22000000,
+    facturadoGeneral: 0,
+    cumplimientoGeneralPct: 0,
+    totalFacturas: 0,
+    ticketPromedio: 0,
+    vendedoresActivos: 0,
+    sucursalesActivas: 0,
+    sucursales: [],
+    topVendedores: [],
+    formasPago: [],
+    alertas: [],
+  };
 
   ngOnInit(): void {
     this.periodoActual = new Intl.DateTimeFormat('es-DO', { month: 'long', year: 'numeric' }).format(new Date());
     this.loadSession();
     this.buildVendedorDashboard();
+    this.buildGlobalDashboard();
   }
 
   get agendaDelDia(): TareaAgenda[] {
@@ -268,6 +317,16 @@ export class Home implements OnInit {
       currency: 'DOP',
       maximumFractionDigits: 2,
     }).format(value);
+  }
+
+  sucursalPctFacturado(facturado: number): number {
+    if (!this.global.facturadoGeneral) return 0;
+    return (facturado / this.global.facturadoGeneral) * 100;
+  }
+
+  formaPagoPct(monto: number): number {
+    if (!this.global.facturadoGeneral) return 0;
+    return (monto / this.global.facturadoGeneral) * 100;
   }
 
   private renderAgendaModalHtml(): string {
@@ -569,6 +628,91 @@ export class Home implements OnInit {
         { titulo: 'Visita comercial Zona Norte', hora: '02:00 PM', fechaISO: this.todayISO(), completada: false },
         { titulo: 'Actualizar pipeline de cierre semanal', hora: '04:30 PM', fechaISO: this.todayISO(), completada: false },
         { titulo: 'Revisión de pedidos quincenales', hora: '10:00 AM', fechaISO: '2026-03-09', completada: false },
+      ],
+    };
+  }
+
+  private buildGlobalDashboard(): void {
+    const facturas = this.loadFacturasFromStorage();
+    const totalFacturas = facturas.length || 3054;
+    const facturadoGeneral = facturas.length
+      ? facturas.reduce((acc, f) => acc + Number(f.monto || 0), 0)
+      : 25790000;
+
+    const ticketPromedio = totalFacturas ? facturadoGeneral / totalFacturas : 0;
+    const metaMensual = 22000000;
+    const cumplimientoGeneralPct = metaMensual ? (facturadoGeneral / metaMensual) * 100 : 0;
+
+    this.global = {
+      metaMensual,
+      facturadoGeneral,
+      cumplimientoGeneralPct,
+      totalFacturas,
+      ticketPromedio,
+      vendedoresActivos: 4,
+      sucursalesActivas: 3,
+      sucursales: [
+        {
+          nombre: 'Canal Hierro',
+          vendedores: 2,
+          facturas: 1450,
+          facturado: 12040000,
+          margenPct: 18.4,
+        },
+        {
+          nombre: 'Zona Norte',
+          vendedores: 1,
+          facturas: 980,
+          facturado: 7740000,
+          margenPct: 17.6,
+        },
+        {
+          nombre: 'Santo Domingo Oeste',
+          vendedores: 1,
+          facturas: 624,
+          facturado: 6010000,
+          margenPct: 16.9,
+        },
+      ],
+      topVendedores: [
+        {
+          nombre: 'NANI',
+          sucursal: 'Canal Hierro',
+          facturas: 1120,
+          facturado: 11200000,
+          cumplimientoPct: 50.9,
+        },
+        {
+          nombre: 'NATALIA',
+          sucursal: 'Canal Hierro',
+          facturas: 1304,
+          facturado: 11400000,
+          cumplimientoPct: 51.8,
+        },
+        {
+          nombre: 'SONIA',
+          sucursal: 'Zona Norte',
+          facturas: 628,
+          facturado: 3190000,
+          cumplimientoPct: 14.5,
+        },
+        {
+          nombre: 'VICTOR',
+          sucursal: 'Santo Domingo Oeste',
+          facturas: 2,
+          facturado: 0,
+          cumplimientoPct: 0,
+        },
+      ],
+      formasPago: [
+        { nombre: 'Contado', monto: facturadoGeneral * 0.58 },
+        { nombre: 'Crédito 30 días', monto: facturadoGeneral * 0.27 },
+        { nombre: 'Transferencia', monto: facturadoGeneral * 0.15 },
+      ],
+      alertas: [
+        '2 vendedores por debajo del 20% de cumplimiento.',
+        'La sucursal Santo Domingo Oeste tiene margen menor al 17%.',
+        'Hay 17 facturas pendientes de cobro en el corte actual.',
       ],
     };
   }

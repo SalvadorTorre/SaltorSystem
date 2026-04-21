@@ -21,6 +21,7 @@ import {
   debounceTime,
   distinctUntilChanged,
   filter,
+  firstValueFrom,
   switchMap,
   tap,
   catchError,
@@ -57,6 +58,8 @@ import {
   ModeloFpagoData,
 } from 'src/app/core/services/mantenimientos/fpago';
 import { ServicioFpago } from 'src/app/core/services/mantenimientos/fpago/fpago.service';
+import { ModeloFentregaData } from 'src/app/core/services/mantenimientos/fentrega';
+import { ServicioFentrega } from 'src/app/core/services/mantenimientos/fentrega/fentrega.service';
 import {
   ModeloInventario,
   ModeloInventarioData,
@@ -66,6 +69,7 @@ import autoTable from 'jspdf-autotable';
 import { disableDebugTools } from '@angular/platform-browser';
 import { ServicioNcf } from 'src/app/core/services/mantenimientos/ncf/ncf.service';
 import { ModeloNcfData } from 'src/app/core/services/mantenimientos/ncf';
+import { ServicioEmpresa } from 'src/app/core/services/mantenimientos/empresas/empresas.service';
 declare var $: any;
 
 @Component({
@@ -75,6 +79,7 @@ declare var $: any;
 })
 export class Facturacion implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('inputCodmerc') inputCodmerc!: ElementRef; // Para manejar el foco
+  @ViewChild('codigoInput') codigoInput!: ElementRef<HTMLInputElement>; // Input codigo en modal de productos
   @ViewChild('descripcionInput') descripcionInput!: ElementRef; // Para manejar el foco
   @ViewChild('Tabladetalle') Tabladetalle!: ElementRef;
   isDisabled: boolean = true;
@@ -168,6 +173,21 @@ export class Facturacion implements OnInit, AfterViewInit, OnDestroy {
   form: FormGroup;
   private readonly onShowBuscarFacturaModal = () =>
     this.onOpenBuscarFacturaModal();
+  private readonly onShownDetalleFacturaModal = () => {
+    setTimeout(() => {
+      const input = this.codigoInput?.nativeElement;
+      if (input) {
+        input.focus();
+        input.select?.();
+        return;
+      }
+      const fallback = document.querySelector(
+        '#modalDetalleFactura input[placeholder="Código"]'
+      ) as HTMLInputElement | null;
+      fallback?.focus();
+      fallback?.select?.();
+    }, 0);
+  };
   constructor(
     private fb: FormBuilder,
     private servicioFacturacion: ServicioFacturacion,
@@ -177,7 +197,9 @@ export class Facturacion implements OnInit, AfterViewInit, OnDestroy {
     private ServicioRnc: ServicioRnc,
     private ServicioSector: ServicioSector,
     private servicioFpago: ServicioFpago,
-    private servicioNcf: ServicioNcf
+    private servicioFentrega: ServicioFentrega,
+    private servicioNcf: ServicioNcf,
+    private servicioEmpresa: ServicioEmpresa
   ) {
     this.form = this.fb.group({
       fa_codVend: ['', Validators.required], // El campo es requerido
@@ -257,11 +279,10 @@ export class Facturacion implements OnInit, AfterViewInit, OnDestroy {
 
   // Entrega
   buscarEnvio = new FormControl();
-  listaEnvio = [
-    { codigo: '1', descripcion: 'Envío' },
-    { codigo: '2', descripcion: 'Retiro Cliente' },
-  ];
-  resultadoEnvio: any[] = [];
+  listaEnvio: Array<{ codigo: string; descripcion: string }> = [];
+  resultadoEnvio: Array<{ codigo: string; descripcion: string }> = [];
+  mostrarDropdownFpago = false;
+  mostrarDropdownEnvio = false;
   selectedIndexEnvio = 0;
 
   selectedIndex = 1;
@@ -344,30 +365,15 @@ export class Facturacion implements OnInit, AfterViewInit, OnDestroy {
     $('#input1').select();
     this.obtenerNcf();
     this.obtenerfpago();
+    this.obtenerFentrega();
 
     // Subscripciones para buscadores locales
     this.buscarFpago.valueChanges.subscribe((value) => {
-      if (!value) {
-        this.resultadoFpago = this.listaFpago;
-      } else {
-        const filterValue = value.toLowerCase();
-        this.resultadoFpago = this.listaFpago.filter((option) =>
-          option.fp_descfpago.toLowerCase().includes(filterValue)
-        );
-      }
-      this.selectedIndexfpago = 0;
+      this.aplicarFiltroFpago(value);
     });
 
     this.buscarEnvio.valueChanges.subscribe((value) => {
-      if (!value) {
-        this.resultadoEnvio = this.listaEnvio;
-      } else {
-        const filterValue = value.toLowerCase();
-        this.resultadoEnvio = this.listaEnvio.filter((option) =>
-          option.descripcion.toLowerCase().includes(filterValue)
-        );
-      }
-      this.selectedIndexEnvio = 0;
+      this.aplicarFiltroEnvio(value);
     });
     this.buscardescripcionmerc.valueChanges
       .pipe(
@@ -551,21 +557,153 @@ export class Facturacion implements OnInit, AfterViewInit, OnDestroy {
     // Estado inicial
     updateState();
   }
+
+  private esFlagActivo(valor: any): boolean {
+    if (valor === true || valor === 1) return true;
+    const txt = String(valor ?? '').trim().toLowerCase();
+    return txt === 'true' || txt === '1' || txt === 's' || txt === 'si' || txt === 'y';
+  }
+
+  private esFormaPagoValidaParaFactura(fpago: ModeloFpagoData): boolean {
+    const codigo = Number((fpago as any)?.dgii_codigo ?? fpago?.fp_codfpago ?? 0);
+    if (!Number.isFinite(codigo) || codigo <= 0) return false;
+
+    const esDgiiRaw = (fpago as any)?.es_dgii;
+    if (esDgiiRaw !== undefined && esDgiiRaw !== null && !this.esFlagActivo(esDgiiRaw)) {
+      return false;
+    }
+
+    const activoRaw = (fpago as any)?.activo;
+    if (activoRaw !== undefined && activoRaw !== null && !this.esFlagActivo(activoRaw)) {
+      return false;
+    }
+
+    // Por ahora el sistema solo manejara:
+    // 1 Efectivo, 2 Cheque/Transferencia/Deposito, 3 Tarjeta
+    // 4..8 se mantienen en BD pero ocultos en UI.
+    const codigosVisibles = new Set([1, 2, 3]);
+    return codigosVisibles.has(codigo);
+  }
+
+  private aplicarFiltroFpago(value: any): void {
+    const term = String(value ?? '').trim().toLowerCase();
+    if (!term) {
+      this.resultadoFpago = [...this.listaFpago];
+    } else {
+      this.resultadoFpago = this.listaFpago.filter((option) =>
+        String(option?.fp_descfpago || '').toLowerCase().includes(term)
+      );
+    }
+    this.selectedIndexfpago = 0;
+  }
+
+  private aplicarFiltroEnvio(value: any): void {
+    const term = String(value ?? '').trim().toLowerCase();
+    if (!term) {
+      this.resultadoEnvio = [...this.listaEnvio];
+    } else {
+      this.resultadoEnvio = this.listaEnvio.filter((option) =>
+        String(option?.descripcion || '').toLowerCase().includes(term)
+      );
+    }
+    this.selectedIndexEnvio = 0;
+  }
+
+  onFocusFpago(): void {
+    this.mostrarDropdownFpago = true;
+    // Al enfocar, mostrar todo el catalogo visible para evitar
+    // quedarse filtrado solo por el valor actual (ej. "Efectivo").
+    this.resultadoFpago = [...this.listaFpago];
+    this.selectedIndexfpago = 0;
+  }
+
+  onBlurFpago(): void {
+    setTimeout(() => {
+      this.mostrarDropdownFpago = false;
+    }, 150);
+  }
+
+  onFocusEnvio(): void {
+    this.mostrarDropdownEnvio = true;
+    // Al enfocar, mostrar todas las formas de entrega disponibles.
+    this.resultadoEnvio = [...this.listaEnvio];
+    this.selectedIndexEnvio = 0;
+  }
+
+  onBlurEnvio(): void {
+    setTimeout(() => {
+      this.mostrarDropdownEnvio = false;
+    }, 150);
+  }
+
   obtenerfpago() {
     this.servicioFpago.obtenerTodosFpago().subscribe((response) => {
-      this.listaFpago = response.data; // Guardamos la lista completa
-      // Si hay un valor seleccionado, intentamos setear el nombre en el input
-      const currentId = Number(
-        this.formularioFacturacion.get('fa_codfpago')?.value || 0
-      );
-      if (currentId > 0) {
-        const found = this.listaFpago.find((f) => f.fp_codfpago === currentId);
-        if (found) {
-          this.buscarFpago.setValue(found.fp_descfpago, { emitEvent: false });
-        }
+      const lista = Array.isArray(response?.data) ? response.data : [];
+      this.listaFpago = lista
+        .filter((fp: ModeloFpagoData) => this.esFormaPagoValidaParaFactura(fp))
+        .sort((a: ModeloFpagoData, b: ModeloFpagoData) => {
+          const ca = Number((a as any)?.dgii_codigo ?? a?.fp_codfpago ?? 0);
+          const cb = Number((b as any)?.dgii_codigo ?? b?.fp_codfpago ?? 0);
+          return ca - cb;
+        });
+      this.resultadoFpago = [...this.listaFpago];
+
+      const currentId = Number(this.formularioFacturacion.get('fa_codfpago')?.value || 0);
+      const found = this.listaFpago.find((f) => Number(f.fp_codfpago) === currentId);
+      const selected = found || this.listaFpago[0];
+      if (selected) {
+        this.buscarFpago.setValue(selected.fp_descfpago, { emitEvent: false });
+        this.formularioFacturacion.patchValue(
+          {
+            fa_fpago: String(selected.fp_codfpago),
+            fa_codfpago: selected.fp_codfpago,
+          },
+          { emitEvent: false }
+        );
+      } else {
+        this.buscarFpago.setValue('', { emitEvent: false });
+        this.formularioFacturacion.patchValue(
+          { fa_fpago: '', fa_codfpago: null },
+          { emitEvent: false }
+        );
       }
     });
   }
+
+  obtenerFentrega() {
+    this.servicioFentrega.obtenerTodosFentrega().subscribe({
+      next: (response) => {
+        const lista = Array.isArray(response?.data) ? response.data : [];
+        this.listaEnvio = lista
+          .filter((fe: ModeloFentregaData) => Number(fe?.idfentrega) > 0)
+          .map((fe: ModeloFentregaData) => ({
+            codigo: String(fe.idfentrega),
+            descripcion: String(fe.desentrega || '').trim(),
+          }))
+          .filter((fe) => fe.descripcion !== '');
+        this.resultadoEnvio = [...this.listaEnvio];
+
+        const current = String(this.formularioFacturacion.get('fa_envio')?.value || '').trim();
+        const found = this.listaEnvio.find((fe) => fe.codigo === current);
+        const selected = found || this.listaEnvio[0];
+        if (selected) {
+          this.buscarEnvio.setValue(selected.descripcion, { emitEvent: false });
+          this.formularioFacturacion.patchValue({ fa_envio: selected.codigo }, { emitEvent: false });
+        } else {
+          this.buscarEnvio.setValue('', { emitEvent: false });
+          this.formularioFacturacion.patchValue({ fa_envio: null }, { emitEvent: false });
+        }
+      },
+      error: (error) => {
+        console.error('No se pudieron cargar formas de entrega:', error);
+        this.listaEnvio = [];
+        this.resultadoEnvio = [];
+        this.buscarEnvio.setValue('', { emitEvent: false });
+        this.formularioFacturacion.patchValue({ fa_envio: null }, { emitEvent: false });
+      },
+    });
+  }
+
   obtenerNcf() {
     this.servicioNcf.buscarTodosNcf().subscribe((response) => {
       this.ncflist = response.data;
@@ -596,7 +734,7 @@ export class Facturacion implements OnInit, AfterViewInit, OnDestroy {
       fa_desZona: [''],
       fa_fpago: ['1'],
       fa_codfpago: ['1'],
-      fa_envio: [''],
+      fa_envio: [null],
       fa_ncfFact: [{ value: '', disabled: true }],
       fa_tipoNcf: [{ value: '32', disabled: true }],
       fa_contacto: [''],
@@ -1193,41 +1331,78 @@ export class Facturacion implements OnInit, AfterViewInit, OnDestroy {
     $('#modalDetalleFactura').modal('show');
   }
 
+  private normalizarUsuarioRespuesta(payload: any): any | null {
+    const data = payload?.data;
+    if (Array.isArray(data)) return data.length ? data[0] : null;
+    if (data && typeof data === 'object') return data;
+    return null;
+  }
+
+  private limitarTexto(valor: any, maximo: number): string {
+    const limpio = String(valor ?? '').trim();
+    if (!limpio) return '';
+    return limpio.slice(0, maximo);
+  }
+
+  private asignarVendedor(usuario: any, fallbackCodigo: string): void {
+    const codigo = this.limitarTexto(fallbackCodigo, 10).toUpperCase();
+    const nombre = String(
+      usuario?.nombreUsuario ??
+      usuario?.nombreusuario ??
+      usuario?.idUsuario ??
+      usuario?.idusuario ??
+      ''
+    ).trim();
+    const nombreGuardado = this.limitarTexto(nombre, 15).toUpperCase();
+
+    this.formularioFacturacion.patchValue({
+      fa_codVend: codigo || this.limitarTexto(fallbackCodigo, 10).toUpperCase(),
+      fa_nomVend: nombreGuardado,
+    });
+  }
+
+  private mostrarErrorVendedorInvalido(): void {
+    this.mensagePantalla = true;
+    Swal.fire({
+      icon: 'error',
+      title: 'A V I S O',
+      text: 'Código de vendedor inválido.',
+    }).then(() => {
+      this.mensagePantalla = false;
+    });
+  }
+
   buscarUsuario(event: Event, nextElement: HTMLInputElement | null): void {
     event.preventDefault();
-    const claveUsuario = this.formularioFacturacion.get('fa_codVend')?.value;
-    if (claveUsuario) {
-      this.ServicioUsuario.buscarUsuarioPorClave(claveUsuario).subscribe(
-        (usuario) => {
-          if (usuario.data.length) {
-            this.formularioFacturacion.patchValue({
-              fa_nomVend: usuario.data[0].idUsuario,
-            });
-            this.abrirModalDetalle();
-          } else {
-            this.mensagePantalla = true;
-            Swal.fire({
-              icon: 'error',
-              title: 'A V I S O',
-              text: 'Codigo de usuario invalido.',
-            }).then(() => {
-              this.mensagePantalla = false;
-            });
-            return;
-          }
-        }
-      );
-    } else {
-      this.mensagePantalla = true;
-      Swal.fire({
-        icon: 'error',
-        title: 'A V I S O',
-        text: 'Codigo de usuario invalido.',
-      }).then(() => {
-        this.mensagePantalla = false;
-      });
+    const codigoIngresado = String(this.formularioFacturacion.get('fa_codVend')?.value || '').trim();
+    if (!codigoIngresado) {
+      this.mostrarErrorVendedorInvalido();
       return;
     }
+
+    const abrirDetalle = () => {
+      this.abrirModalDetalle();
+      if (nextElement) {
+        nextElement.focus();
+      }
+    };
+
+    this.ServicioUsuario.buscarUsuarioPorCodigoVendedor(codigoIngresado).subscribe({
+      next: (response) => {
+        const usuario = this.normalizarUsuarioRespuesta(response);
+        if (!usuario) {
+          this.formularioFacturacion.patchValue({ fa_nomVend: '' });
+          this.mostrarErrorVendedorInvalido();
+          return;
+        }
+        this.asignarVendedor(usuario, codigoIngresado);
+        abrirDetalle();
+      },
+      error: () => {
+        this.formularioFacturacion.patchValue({ fa_nomVend: '' });
+        this.mostrarErrorVendedorInvalido();
+      },
+    });
   }
   buscarRnc(event: Event, nextElement: HTMLInputElement | null): void {
     event.preventDefault();
@@ -1680,6 +1855,7 @@ export class Facturacion implements OnInit, AfterViewInit, OnDestroy {
   }
   cargarDatosFpago(fpago: ModeloFpagoData) {
     this.resultadoFpago = []; // Ocultar lista
+    this.mostrarDropdownFpago = false;
     // this.buscarFpago.reset(); // No resetear, poner la descripción
     this.buscarFpago.setValue(fpago.fp_descfpago, { emitEvent: false });
 
@@ -1702,6 +1878,7 @@ export class Facturacion implements OnInit, AfterViewInit, OnDestroy {
 
   cargarDatosEnvio(envio: any) {
     this.resultadoEnvio = [];
+    this.mostrarDropdownEnvio = false;
     this.buscarEnvio.setValue(envio.descripcion, { emitEvent: false });
     this.formularioFacturacion.patchValue({ fa_envio: envio.codigo });
 
@@ -1916,7 +2093,29 @@ export class Facturacion implements OnInit, AfterViewInit, OnDestroy {
     this.totalgraltxt = formatCurrency(this.totalGral);
   }
   guardarFacturacion() {
-    const date = new Date();
+    const ejecutarGuardado = async () => {
+      const tenantListo = await this.ensureTenantActivoAntesDeGuardar();
+      if (!tenantListo) {
+        return;
+      }
+
+    const codFpagoSeleccionado = Number(this.formularioFacturacion.get('fa_codfpago')?.value || 0);
+    const fpagoValido = this.listaFpago.some((fp) => Number(fp.fp_codfpago) === codFpagoSeleccionado);
+    if (!fpagoValido) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Tipo de pago inválido',
+        text: 'Debes seleccionar un método de pago válido para facturación.',
+      });
+      return;
+    }
+
+    const envioActual = String(this.formularioFacturacion.get('fa_envio')?.value || '').trim();
+    if (envioActual && !this.listaEnvio.some((op) => op.codigo === envioActual)) {
+      this.formularioFacturacion.patchValue({ fa_envio: null }, { emitEvent: false });
+      this.buscarEnvio.setValue('', { emitEvent: false });
+    }
+
     this.formularioFacturacion.get('fa_valFact')?.patchValue(this.totalGral);
     this.formularioFacturacion.get('fa_itbiFact')?.patchValue(this.totalItbis);
     this.formularioFacturacion.get('fa_cosFact')?.patchValue(this.totalcosto);
@@ -1930,10 +2129,16 @@ export class Facturacion implements OnInit, AfterViewInit, OnDestroy {
     const facturaPayload = {
       ...this.formularioFacturacion.getRawValue(),
     } as any;
-    facturaPayload.fa_codEmpr = localStorage.getItem('codigoempresa');
-    facturaPayload.fa_codSucu = parseInt(
-      localStorage.getItem('idSucursal') || '0'
-    );
+    facturaPayload.fa_codEmpr =
+      localStorage.getItem('codigoempresa') ||
+      localStorage.getItem('cod_empre') ||
+      '';
+    const tenantSucursal = Number(localStorage.getItem('idSucursal') || '0');
+    if (Number.isFinite(tenantSucursal) && tenantSucursal > 0) {
+      facturaPayload.fa_codSucu = tenantSucursal;
+    } else {
+      facturaPayload.fa_codSucu = null;
+    }
     // Convertir fa_tipoNcf a entero
     if (facturaPayload.fa_tipoNcf) {
       facturaPayload.fa_tipoNcf = parseInt(
@@ -1989,13 +2194,126 @@ export class Facturacion implements OnInit, AfterViewInit, OnDestroy {
           Swal.fire({
             icon: 'error',
             title: 'Error',
-            text: 'Hubo un error al guardar la factura.',
+            text:
+              error?.error?.message ||
+              error?.message ||
+              'Hubo un error al guardar la factura.',
           });
         }
       );
     } else {
       alert('Esta Factura no fue Guardada');
     }
+    };
+
+    ejecutarGuardado().catch((error) => {
+      console.error('Error preparando tenant para facturación:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'No se pudo preparar el tenant para guardar la factura.',
+      });
+    });
+  }
+
+  private currentRole(): string {
+    return String(localStorage.getItem('role') || '').trim().toLowerCase();
+  }
+
+  private currentTenantCodEmpre(): string {
+    return String(
+      localStorage.getItem('codigoempresa') ||
+        localStorage.getItem('cod_empre') ||
+        ''
+    )
+      .trim()
+      .toUpperCase();
+  }
+
+  private applyTenantEmpresa(empresa: any): void {
+    const cod = String(empresa?.cod_empre || '').trim().toUpperCase();
+    if (!cod) return;
+
+    localStorage.setItem('codigoempresa', cod);
+    localStorage.setItem('cod_empre', cod);
+    localStorage.setItem('empresa', JSON.stringify(empresa || {}));
+    localStorage.setItem('nombre_empresa', String(empresa?.nom_empre || ''));
+    localStorage.setItem('rnc_empresa', String(empresa?.rnc_empre || ''));
+    localStorage.setItem('direccion_empresa', String(empresa?.dir_empre || ''));
+    localStorage.setItem('telefono_empresa', String(empresa?.tel_empre || ''));
+    localStorage.setItem('letra_empre', String(empresa?.letra_empre || ''));
+    // Para admin/root dejamos sucursal sin fijar hasta que el usuario la seleccione en su flujo.
+    localStorage.setItem('idSucursal', '0');
+    localStorage.setItem('sucursal', JSON.stringify({}));
+  }
+
+  private async ensureTenantActivoAntesDeGuardar(): Promise<boolean> {
+    const codActual = this.currentTenantCodEmpre();
+    if (codActual) return true;
+
+    const role = this.currentRole();
+    const esAdminGlobal = role.includes('root') || role.includes('admin');
+    if (!esAdminGlobal) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Tenant requerido',
+        text: 'No tienes empresa activa para facturar. Contacta a Cómputos.',
+      });
+      return false;
+    }
+
+    const empresasResp = await firstValueFrom(
+      this.servicioEmpresa.buscarTodasEmpresa(1, 500)
+    );
+    const empresas = Array.isArray(empresasResp?.data) ? empresasResp.data : [];
+    if (!empresas.length) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Sin empresas',
+        text: 'No hay empresas disponibles para seleccionar.',
+      });
+      return false;
+    }
+
+    const options = empresas.reduce((acc: Record<string, string>, e: any) => {
+      const cod = String(e?.cod_empre || '').trim();
+      if (!cod) return acc;
+      const nombre = String(e?.nom_empre || cod).trim();
+      const rnc = String(e?.rnc_empre || '').trim();
+      acc[cod] = rnc ? `${nombre} (${cod}) - RNC ${rnc}` : `${nombre} (${cod})`;
+      return acc;
+    }, {});
+
+    const { isConfirmed, value } = await Swal.fire({
+      title: 'Selecciona empresa para facturar',
+      input: 'select',
+      inputOptions: options,
+      inputPlaceholder: 'Elige una empresa',
+      showCancelButton: true,
+      confirmButtonText: 'Usar empresa',
+      cancelButtonText: 'Cancelar',
+      inputValidator: (selected) => {
+        if (!selected) return 'Debes seleccionar una empresa.';
+        return null;
+      },
+    });
+
+    if (!isConfirmed || !value) return false;
+
+    const empresaSeleccionada = empresas.find(
+      (e: any) => String(e?.cod_empre || '').trim() === String(value).trim()
+    );
+    if (!empresaSeleccionada) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Empresa inválida',
+        text: 'No se encontró la empresa seleccionada.',
+      });
+      return false;
+    }
+
+    this.applyTenantEmpresa(empresaSeleccionada);
+    return !!this.currentTenantCodEmpre();
   }
 
   navigateTable(event: KeyboardEvent) {
@@ -2035,6 +2353,11 @@ export class Facturacion implements OnInit, AfterViewInit, OnDestroy {
       'show.bs.modal',
       this.onShowBuscarFacturaModal
     );
+    // Al abrir el modal de productos, enfoca automáticamente el código.
+    $('#modalDetalleFactura').on(
+      'shown.bs.modal',
+      this.onShownDetalleFacturaModal
+    );
     // Establece el foco en la tabla cuando se cargue la vista
     this.Tabladetalle?.nativeElement?.focus();
   }
@@ -2043,6 +2366,10 @@ export class Facturacion implements OnInit, AfterViewInit, OnDestroy {
     $('#modalBuscarFactura').off(
       'show.bs.modal',
       this.onShowBuscarFacturaModal
+    );
+    $('#modalDetalleFactura').off(
+      'shown.bs.modal',
+      this.onShownDetalleFacturaModal
     );
   }
 

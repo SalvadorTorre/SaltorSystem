@@ -45,6 +45,7 @@
   border-bottom: 1px solid #e5edf7;
   background: linear-gradient(145deg, #163f88 0%, #2b60b9 80%);
   color: #ffffff;
+  flex-shrink: 0;
 }
 
 .maintenance-badge {
@@ -73,9 +74,12 @@
 .maintenance-nav {
   display: flex;
   flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
   gap: 0.28rem;
   padding: 0.75rem;
   overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .maintenance-link,
@@ -142,7 +146,8 @@
 }
 
 .maintenance-submenu.show {
-  max-height: 520px;
+  max-height: 2000px;
+  overflow: visible;
   opacity: 1;
   pointer-events: auto;
   margin: 0.2rem 0 0.4rem;
@@ -180,6 +185,10 @@
 }
 
 .maintenance-offcanvas .offcanvas-body {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
   padding: 0.8rem;
   background: #f8faff;
 }

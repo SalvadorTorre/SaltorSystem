@@ -1,33 +1,85 @@
-.sticky-header th {
-  position: sticky;
-  top: 0;
-  background-color: #343a40;
-  /* color de fondo oscuro como table-dark */
-  color: white;
-  z-index: 10;
+.cobrofact-page {
+  color: #0f172a;
 }
 
-/* .selected-row {
-  background-color: #d0e7ff !important;
-  /* Verde claro
-color: #000;
-}*/
+.cobrofact-page .cobrofact-card {
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+  overflow: hidden;
+}
+
+.cobrofact-page .card-header-brand {
+  background: linear-gradient(135deg, #d32f2f, #2563eb);
+  color: #fff;
+}
+
+.cobrofact-page .cobro-payment-header {
+  background: linear-gradient(135deg, #0f9d58, #16a34a) !important;
+}
+
+.cobrofact-page .card-title {
+  font-size: 0.98rem;
+  letter-spacing: 0.01em;
+}
+
+.cobrofact-page .cursor-pointer {
+  cursor: pointer;
+}
+
+.cobrofact-page .sticky-header thead th {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background-color: #0f172a;
+  color: #fff;
+  border-bottom: 0;
+}
+
+.cobrofact-page .table-hover tbody tr:hover {
+  background-color: rgba(37, 99, 235, 0.07);
+}
+
+.cobrofact-page .facturas-table-wrap,
+.cobrofact-page .detalle-table-wrap {
+  position: relative;
+  overflow-y: auto;
+  border: 1px solid #dbe2ea;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.cobrofact-page .facturas-table-wrap {
+  height: 260px;
+}
+
+.cobrofact-page .detalle-table-wrap {
+  height: 240px;
+}
+
+.cobrofact-page .action-bar {
+  position: sticky;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid #e2e8f0;
+  backdrop-filter: blur(6px);
+  border-radius: 10px;
+  padding: 0.5rem;
+}
 
 .selected-row td {
-  background-color: #f0b27a !important;
-  color: black;
+  background-color: #fde4cf !important;
+  color: #111827;
 }
 
 .input-destacado {
-  font-weight: bold;
-  /* Negrita */
-  font-size: 1.2rem;
-  /* Tamaño más grande, puedes subirlo si quieres */
+  font-weight: 700;
+  font-size: 1.1rem;
 }
 
 .is-invalid {
-  border-color: #dc3545 !important;
-  box-shadow: 0 0 0 0.15rem rgba(220, 53, 69, 0.25);
+  border-color: #dc2626 !important;
+  box-shadow: 0 0 0 0.15rem rgba(220, 38, 38, 0.2);
 }
 
 .compact-form .form-label {
@@ -44,9 +96,9 @@ color: #000;
 }
 
 .compact-form .form-control-lg {
-  min-height: calc(2.2rem + 2px);
-  padding: 0.38rem 0.7rem;
-  font-size: 1rem;
+  min-height: calc(2.18rem + 2px);
+  padding: 0.36rem 0.7rem;
+  font-size: 0.98rem;
 }
 
 .compact-form .form-floating > .form-control,
@@ -61,6 +113,38 @@ color: #000;
   font-size: 0.82rem;
 }
 
-.compact-form .card-title {
-  font-size: 1rem;
+@media (max-width: 991.98px) {
+  .cobrofact-page .facturas-table-wrap,
+  .cobrofact-page .detalle-table-wrap {
+    height: 230px;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .cobrofact-page .card-title {
+    font-size: 0.92rem;
+  }
+
+  .cobrofact-page .action-bar {
+    position: static;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    backdrop-filter: none;
+  }
+
+  .cobrofact-page .action-bar .btn {
+    padding: 0.5rem;
+    font-size: 0.88rem;
+  }
+}
+
+@media print {
+  #factura {
+    display: block !important;
+  }
+
+  body > *:not(#factura) {
+    display: none;
+  }
 }

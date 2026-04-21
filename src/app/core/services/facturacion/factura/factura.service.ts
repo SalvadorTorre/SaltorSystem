@@ -5,6 +5,16 @@ import { map } from 'rxjs/operators';
 import { HttpInvokeService } from '../../http-invoke.service';
 import { SupabaseService } from '../../supabase/supabase.service';
 
+interface EncfReservation {
+  encfId: number;
+  codempr: string;
+  tipoencf: string;
+  tipoNumero: number | null;
+  ncf: string;
+  oldCount: number;
+  newCount: number;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -49,6 +59,12 @@ export class ServicioFacturacion {
     if (value === null || value === undefined) return null;
     const s = String(value).trim();
     return s ? s : null;
+  }
+
+  private toStringMax(value: any, max: number): string | null {
+    const s = this.toStringOrNull(value);
+    if (!s) return null;
+    return s.length > max ? s.slice(0, max) : s;
   }
 
   private normalizeDate(input: any): string | null {
@@ -293,9 +309,9 @@ export class ServicioFacturacion {
 
   private mapFacturaUiToDb(input: any): any {
     const payload: any = {
-      fa_codfact: this.toStringOrNull(input?.fa_codFact),
-      fa_ncffact: this.toStringOrNull(input?.fa_ncfFact),
-      fa_rncfact: this.toStringOrNull(input?.fa_rncFact),
+      fa_codfact: this.toStringMax(input?.fa_codFact, 12),
+      fa_ncffact: this.toStringMax(input?.fa_ncfFact, 19),
+      fa_rncfact: this.toStringMax(input?.fa_rncFact, 13),
       fa_fecncf: this.normalizeDate(input?.fa_fecNcf),
       fa_tiponcf: this.toNumberOrNull(input?.fa_tipoNcf),
       fa_fecfact: this.normalizeDate(input?.fa_fecFact),
@@ -309,46 +325,46 @@ export class ServicioFacturacion {
       fa_abofact: this.toNumberOrNull(input?.fa_aboFact),
       fa_expfact: this.normalizeDate(input?.fa_expFact),
       fa_codclie: this.toNumberOrNull(input?.fa_codClie),
-      fa_nomclie: this.toStringOrNull(input?.fa_nomClie),
-      fa_telclie: this.toStringOrNull(input?.fa_telClie),
-      fa_dirclie: this.toStringOrNull(input?.fa_dirClie),
-      fa_contacto: this.toStringOrNull(input?.fa_contacto),
+      fa_nomclie: this.toStringMax(input?.fa_nomClie, 39),
+      fa_telclie: this.toStringMax(input?.fa_telClie, 26),
+      fa_dirclie: this.toStringMax(input?.fa_dirClie, 40),
+      fa_contacto: this.toStringMax(input?.fa_contacto, 30),
       fa_codzona: this.toNumberOrNull(input?.fa_codZona),
-      fa_deszona: this.toStringOrNull(input?.fa_desZona),
+      fa_deszona: this.toStringMax(input?.fa_desZona, 25),
       fa_codsect: this.toNumberOrNull(input?.fa_codSect),
-      fa_sector: this.toStringOrNull(input?.fa_sector),
-      fa_codvend: this.toStringOrNull(input?.fa_codVend),
-      fa_nomvend: this.toStringOrNull(input?.fa_nomVend),
+      fa_sector: this.toStringMax(input?.fa_sector, 35),
+      fa_codvend: this.toStringMax(input?.fa_codVend, 10),
+      fa_nomvend: this.toStringMax(input?.fa_nomVend, 15),
       fa_notafact: this.toStringOrNull(input?.fa_notaFact),
-      fa_usuario: this.toStringOrNull(input?.fa_usuario),
+      fa_usuario: this.toStringMax(input?.fa_usuario, 30),
       fa_envio: this.toNumberOrNull(input?.fa_envio),
-      fa_fpago: this.toStringOrNull(input?.fa_fpago),
+      fa_fpago: this.toStringMax(input?.fa_fpago, 20),
       fa_codfpago: this.toNumberOrNull(input?.fa_codfpago),
-      fa_status: this.toStringOrNull(input?.fa_status),
+      fa_status: this.toStringMax(input?.fa_status, 3),
       fa_tipofact: this.toNumberOrNull(input?.fa_tipoFact),
-      fa_imp: this.toStringOrNull(input?.fa_imp),
+      fa_imp: this.toStringMax(input?.fa_imp, 1),
       fa_tipornc: this.toNumberOrNull(input?.fa_tipoRnc),
-      fa_fecha: this.toStringOrNull(input?.fa_fecha),
+      fa_fecha: this.toStringMax(input?.fa_fecha, 8),
       fa_codsucu: this.toNumberOrNull(input?.fa_codSucu),
-      fa_correo: this.toStringOrNull(input?.fa_correo),
-      fa_codempr: this.toStringOrNull(input?.fa_codEmpr),
-      fa_impresa: this.toStringOrNull(input?.fa_impresa),
-      fa_reimpresa: this.toStringOrNull(input?.fa_reimpresa),
-      fa_entrega: this.toStringOrNull(input?.fa_entrega),
-      fa_impalmaf: this.toStringOrNull(input?.fa_impalmaf),
-      fa_impalmap: this.toStringOrNull(input?.fa_impalmap),
-      fa_facturada: this.toStringOrNull(input?.fa_facturada),
-      fa_pendiente: this.toStringOrNull(input?.fa_pendiente),
-      fa_despacho: this.toStringOrNull(input?.fa_despacho),
+      fa_correo: this.toStringMax(input?.fa_correo, 30),
+      fa_codempr: this.toStringMax(input?.fa_codEmpr, 6),
+      fa_impresa: this.toStringMax(input?.fa_impresa, 1),
+      fa_reimpresa: this.toStringMax(input?.fa_reimpresa, 1),
+      fa_entrega: this.toStringMax(input?.fa_entrega, 1),
+      fa_impalmaf: this.toStringMax(input?.fa_impalmaf, 1),
+      fa_impalmap: this.toStringMax(input?.fa_impalmap, 1),
+      fa_facturada: this.toStringMax(input?.fa_facturada, 1),
+      fa_pendiente: this.toStringMax(input?.fa_pendiente, 1),
+      fa_despacho: this.toStringMax(input?.fa_despacho, 1),
       estado_dgii: this.toStringOrNull(input?.estado_dgii),
       codseguridad: this.toStringOrNull(input?.codseguridad),
       qr_link: this.toStringOrNull(input?.qr_link),
       fec_firma: this.toStringOrNull(input?.fec_firma),
       ecf: this.toStringOrNull(input?.ecf),
       rfce: this.toStringOrNull(input?.rfce),
-      estado_envio_dgii: this.toStringOrNull(input?.estado_envio_dgii),
-      fa_cierre: this.toStringOrNull(input?.fa_cierre),
-      fa_salida: this.toStringOrNull(input?.fa_salida),
+      estado_envio_dgii: this.toStringMax(input?.estado_envio_dgii, 50),
+      fa_cierre: this.toStringMax(input?.fa_cierre, 1),
+      fa_salida: this.toStringMax(input?.fa_salida, 1),
       idsalida: this.toStringOrNull(input?.idsalida),
     };
 
@@ -390,6 +406,145 @@ export class ServicioFacturacion {
     }
 
     return `${year}${String(nextNumber).padStart(6, '0')}`;
+  }
+
+  private normalizeTipoEncfFromTipoNcf(tipoNcf: any): { tipoNumero: number | null; tipoencf: string } {
+    const raw = String(tipoNcf ?? '').trim().toUpperCase();
+    if (!raw) return { tipoNumero: null, tipoencf: '' };
+
+    if (/^[A-Z]\d{1,3}$/.test(raw)) {
+      const tipoNumero = this.toNumberOrNull(raw.slice(1));
+      if (tipoNumero !== null) {
+        return {
+          tipoNumero,
+          tipoencf: `${raw[0]}${String(tipoNumero).padStart(2, '0')}`,
+        };
+      }
+    }
+
+    const tipoNumero = this.toNumberOrNull(raw);
+    if (tipoNumero !== null && tipoNumero > 0) {
+      const prefijo = tipoNumero >= 31 ? 'E' : 'B';
+      return {
+        tipoNumero,
+        tipoencf: `${prefijo}${String(tipoNumero).padStart(2, '0')}`,
+      };
+    }
+
+    return { tipoNumero: null, tipoencf: raw };
+  }
+
+  private buildEncfNumber(tipoencf: string, secuencia: number): string {
+    const prefijo = String(tipoencf || '').trim().toUpperCase();
+    const correlativo = Math.max(1, Math.trunc(Number(secuencia) || 1));
+    return `${prefijo}${String(correlativo).padStart(10, '0')}`;
+  }
+
+  private async reserveNextEncf(codempr: string, tipoNcf: any): Promise<EncfReservation> {
+    const codEmpresa = String(codempr || '').trim().toUpperCase();
+    if (!codEmpresa) {
+      throw new Error('No hay empresa activa para asignar ENCF.');
+    }
+
+    const { tipoNumero, tipoencf } = this.normalizeTipoEncfFromTipoNcf(tipoNcf);
+    if (!tipoencf && tipoNumero === null) {
+      throw new Error('Tipo de comprobante inválido para asignar ENCF.');
+    }
+
+    for (let intento = 0; intento < 5; intento++) {
+      let queryByTipo = this.db
+        .from('encf')
+        .select('id,codempr,tipo,tipoencf,desdeencf,hastaencf,cantencf,countencf')
+        .eq('codempr', codEmpresa)
+        .order('id', { ascending: false })
+        .limit(1);
+
+      if (tipoNumero !== null) {
+        queryByTipo = queryByTipo.eq('tipo', tipoNumero);
+      } else {
+        queryByTipo = queryByTipo.eq('tipoencf', tipoencf);
+      }
+
+      const { data: byTipo, error: byTipoError } = await queryByTipo.maybeSingle();
+      if (byTipoError) throw byTipoError;
+
+      let encfRow = byTipo;
+      if (!encfRow && tipoencf) {
+        const { data: byText, error: byTextError } = await this.db
+          .from('encf')
+          .select('id,codempr,tipo,tipoencf,desdeencf,hastaencf,cantencf,countencf')
+          .eq('codempr', codEmpresa)
+          .eq('tipoencf', tipoencf)
+          .order('id', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (byTextError) throw byTextError;
+        encfRow = byText;
+      }
+
+      if (!encfRow) {
+        throw new Error(`No hay secuencia ENCF configurada para ${codEmpresa} (${tipoencf || tipoNumero}).`);
+      }
+
+      const desde = this.toNumber(encfRow?.desdeencf);
+      const base = desde > 0 ? desde : 1;
+      const oldCount = Math.max(0, this.toNumber(encfRow?.countencf));
+      const nextSecuencia = base + oldCount;
+      const hasta = this.toNumber(encfRow?.hastaencf);
+      const cant = this.toNumber(encfRow?.cantencf);
+
+      if (hasta > 0 && nextSecuencia > hasta) {
+        throw new Error(`La secuencia ${encfRow?.tipoencf || tipoencf} alcanzó su límite (${hasta}).`);
+      }
+
+      if (cant > 0 && oldCount >= cant) {
+        throw new Error(`La secuencia ${encfRow?.tipoencf || tipoencf} no tiene disponibilidad.`);
+      }
+
+      const newCount = oldCount + 1;
+      let updateQuery = this.db
+        .from('encf')
+        .update({ countencf: newCount })
+        .eq('id', Number(encfRow?.id))
+        .select('id,countencf');
+
+      if (encfRow?.countencf === null || encfRow?.countencf === undefined || encfRow?.countencf === '') {
+        updateQuery = updateQuery.is('countencf', null);
+      } else {
+        updateQuery = updateQuery.eq('countencf', oldCount);
+      }
+
+      const { data: updated, error: updateError } = await updateQuery.maybeSingle();
+      if (updateError) throw updateError;
+      if (!updated) continue;
+
+      const tipoFinal = String(encfRow?.tipoencf || tipoencf || '').trim().toUpperCase();
+      const ncf = this.buildEncfNumber(tipoFinal, nextSecuencia);
+      return {
+        encfId: Number(encfRow?.id),
+        codempr: codEmpresa,
+        tipoencf: tipoFinal,
+        tipoNumero: this.toNumberOrNull(encfRow?.tipo) ?? tipoNumero,
+        ncf,
+        oldCount,
+        newCount,
+      };
+    }
+
+    throw new Error('No se pudo reservar la secuencia ENCF. Intenta nuevamente.');
+  }
+
+  private async rollbackEncfReservation(reservation: EncfReservation | null): Promise<void> {
+    if (!reservation) return;
+    try {
+      await this.db
+        .from('encf')
+        .update({ countencf: reservation.oldCount })
+        .eq('id', reservation.encfId)
+        .eq('countencf', reservation.newCount);
+    } catch {
+      // Best-effort rollback.
+    }
   }
 
   getByNumero(numero: string): Observable<any> {
@@ -445,102 +600,114 @@ export class ServicioFacturacion {
     }
 
     return from((async () => {
-      const facturaRaw = { ...(datosParaGuardar?.factura || {}) };
-      const detalleRaw = Array.isArray(datosParaGuardar?.detalle)
-        ? datosParaGuardar.detalle
-        : [];
-      const tenantCodEmpre = await this.ensureTenantCodEmpre();
-      const tenantSucursal = this.currentTenant().sucursal;
-      if (!tenantCodEmpre) {
-        throw new Error('No hay tenant activo para registrar facturas.');
-      }
-
-      let codigo = String(facturaRaw?.fa_codFact || '').trim();
-      if (!codigo) {
-        codigo = await this.nextFacturaCode();
-      }
-      facturaRaw.fa_codFact = codigo;
-      facturaRaw.fa_codEmpr = tenantCodEmpre;
-      if (Number.isFinite(tenantSucursal) && tenantSucursal > 0) {
-        facturaRaw.fa_codSucu = tenantSucursal;
-      }
-
-      const facturaPayload = this.mapFacturaUiToDb(facturaRaw);
-      facturaPayload.fa_codfact = codigo;
-      facturaPayload.fa_codempr = tenantCodEmpre;
-      facturaPayload.tenant_rnc = this.toStringOrNull(this.currentTenant().rncEmpre);
-      if (Number.isFinite(tenantSucursal) && tenantSucursal > 0) {
-        facturaPayload.fa_codsucu = tenantSucursal;
-      }
-      facturaPayload.fa_status = facturaPayload.fa_status || 'A';
-      facturaPayload.fa_impresa = facturaPayload.fa_impresa || 'N';
-      facturaPayload.fa_reimpresa = facturaPayload.fa_reimpresa || 'N';
-      facturaPayload.fa_entrega = facturaPayload.fa_entrega || 'N';
-      facturaPayload.fa_salida = facturaPayload.fa_salida || 'N';
-
-      const { data: insertedFactura, error: facturaError } = await this.db
-        .from('factura')
-        .insert(facturaPayload)
-        .select('*')
-        .single();
-
-      if (facturaError) throw facturaError;
-
+      let encfReservation: EncfReservation | null = null;
       try {
-        if (detalleRaw.length > 0) {
-          const detallePayload = detalleRaw.map((item: any) => {
-            const producto = item?.producto || {};
-            const cantidad = this.toNumber(item?.cantidad ?? item?.df_canMerc);
-            const precio = this.toNumber(item?.precio ?? item?.df_preMerc);
-            const total = this.toNumber(item?.total ?? item?.df_valMerc) || cantidad * precio;
-
-            return {
-              df_codfact: codigo,
-              df_fecfact: this.normalizeDate(facturaRaw?.fa_fecFact),
-              df_codmerc: this.toStringOrNull(producto?.in_codmerc ?? item?.df_codMerc) || '',
-              df_tipomerc: this.toStringOrNull(item?.df_tipoMerc),
-              df_codgrupo: this.toStringOrNull(item?.df_codGrupo),
-              df_desmerc: this.toStringOrNull(producto?.in_desmerc ?? item?.df_desMerc),
-              df_canmerc: cantidad,
-              df_premerc: precio,
-              df_valmerc: total,
-              df_unidad: this.toStringOrNull(producto?.in_unidad ?? item?.df_unidad),
-              df_cosmerc: this.toNumberOrNull(item?.costo ?? item?.df_cosMerc ?? producto?.in_cosmerc),
-              df_codclie: this.toNumberOrNull(facturaRaw?.fa_codClie),
-              df_imp: this.toStringOrNull(item?.df_imp),
-              df_status: this.toStringOrNull(item?.df_status) || 'A',
-              enviado: this.toNumberOrNull(item?.enviado),
-              reimpresa: this.toNumberOrNull(item?.reimpresa),
-              df_nomclie: this.toStringOrNull(facturaRaw?.fa_nomClie),
-              df_codepr: tenantCodEmpre,
-              tenant_rnc: this.toStringOrNull(this.currentTenant().rncEmpre),
-              df_codsucu: this.toStringOrNull(facturaRaw?.fa_codSucu ?? tenantSucursal),
-              df_pendiente: this.toStringOrNull(item?.df_pendiente),
-              df_canpend: this.toNumberOrNull(item?.df_canpend),
-            };
-          });
-
-          const { error: detalleError } = await this.db
-            .from('detfactura')
-            .insert(detallePayload);
-          if (detalleError) throw detalleError;
+        const facturaRaw = { ...(datosParaGuardar?.factura || {}) };
+        const detalleRaw = Array.isArray(datosParaGuardar?.detalle)
+          ? datosParaGuardar.detalle
+          : [];
+        const tenantCodEmpre = await this.ensureTenantCodEmpre();
+        const tenantSucursal = this.currentTenant().sucursal;
+        if (!tenantCodEmpre) {
+          throw new Error('No hay tenant activo para registrar facturas.');
         }
+
+        let codigo = String(facturaRaw?.fa_codFact || '').trim();
+        if (!codigo) {
+          codigo = await this.nextFacturaCode();
+        }
+
+        encfReservation = await this.reserveNextEncf(tenantCodEmpre, facturaRaw?.fa_tipoNcf);
+        facturaRaw.fa_ncfFact = encfReservation.ncf;
+        facturaRaw.fa_tipoNcf = encfReservation.tipoNumero ?? facturaRaw.fa_tipoNcf;
+        facturaRaw.fa_fecNcf = this.normalizeDate(facturaRaw?.fa_fecFact) || this.normalizeDate(new Date());
+
+        facturaRaw.fa_codFact = codigo;
+        facturaRaw.fa_codEmpr = tenantCodEmpre;
+        if (Number.isFinite(tenantSucursal) && tenantSucursal > 0) {
+          facturaRaw.fa_codSucu = tenantSucursal;
+        }
+
+        const facturaPayload = this.mapFacturaUiToDb(facturaRaw);
+        facturaPayload.fa_codfact = codigo;
+        facturaPayload.fa_codempr = tenantCodEmpre;
+        facturaPayload.tenant_rnc = this.toStringOrNull(this.currentTenant().rncEmpre);
+        if (Number.isFinite(tenantSucursal) && tenantSucursal > 0) {
+          facturaPayload.fa_codsucu = tenantSucursal;
+        }
+        facturaPayload.fa_status = facturaPayload.fa_status || 'A';
+        facturaPayload.fa_impresa = facturaPayload.fa_impresa || 'N';
+        facturaPayload.fa_reimpresa = facturaPayload.fa_reimpresa || 'N';
+        facturaPayload.fa_entrega = facturaPayload.fa_entrega || 'N';
+        facturaPayload.fa_salida = facturaPayload.fa_salida || 'N';
+
+        const { data: insertedFactura, error: facturaError } = await this.db
+          .from('factura')
+          .insert(facturaPayload)
+          .select('*')
+          .single();
+
+        if (facturaError) throw facturaError;
+
+        try {
+          if (detalleRaw.length > 0) {
+            const detallePayload = detalleRaw.map((item: any) => {
+              const producto = item?.producto || {};
+              const cantidad = this.toNumber(item?.cantidad ?? item?.df_canMerc);
+              const precio = this.toNumber(item?.precio ?? item?.df_preMerc);
+              const total = this.toNumber(item?.total ?? item?.df_valMerc) || cantidad * precio;
+
+              return {
+                df_codfact: this.toStringMax(codigo, 12) || '',
+                df_fecfact: this.normalizeDate(facturaRaw?.fa_fecFact),
+                df_codmerc: this.toStringMax(producto?.in_codmerc ?? item?.df_codMerc, 15) || '',
+                df_tipomerc: this.toStringMax(item?.df_tipoMerc, 1),
+                df_codgrupo: this.toStringMax(item?.df_codGrupo, 10),
+                df_desmerc: this.toStringMax(producto?.in_desmerc ?? item?.df_desMerc, 30),
+                df_canmerc: cantidad,
+                df_premerc: precio,
+                df_valmerc: total,
+                df_unidad: this.toStringMax(producto?.in_unidad ?? item?.df_unidad, 8),
+                df_cosmerc: this.toNumberOrNull(item?.costo ?? item?.df_cosMerc ?? producto?.in_cosmerc),
+                df_codclie: this.toNumberOrNull(facturaRaw?.fa_codClie),
+                df_imp: this.toStringMax(item?.df_imp, 1),
+                df_status: this.toStringMax(item?.df_status, 3) || 'A',
+                enviado: this.toNumberOrNull(item?.enviado),
+                reimpresa: this.toNumberOrNull(item?.reimpresa),
+                df_nomclie: this.toStringMax(facturaRaw?.fa_nomClie, 10),
+                df_codepr: this.toStringMax(tenantCodEmpre, 6),
+                tenant_rnc: this.toStringOrNull(this.currentTenant().rncEmpre),
+                df_codsucu: this.toStringMax(facturaRaw?.fa_codSucu ?? tenantSucursal, 10),
+                df_pendiente: this.toStringMax(item?.df_pendiente, 1),
+                df_canpend: this.toNumberOrNull(item?.df_canpend),
+              };
+            });
+
+            const { error: detalleError } = await this.db
+              .from('detfactura')
+              .insert(detallePayload);
+            if (detalleError) throw detalleError;
+          }
+        } catch (error) {
+          let rollback = this.db.from('factura').delete().eq('fa_codfact', codigo);
+          rollback = this.applyTenantFilter(rollback);
+          await rollback;
+          throw error;
+        }
+
+        return {
+          status: 'success',
+          code: 200,
+          message: 'Facturación creada correctamente.',
+          data: {
+            factura: this.mapFacturaDbToUi(insertedFactura),
+            detalle: detalleRaw,
+          },
+        };
       } catch (error) {
-        let rollback = this.db.from('factura').delete().eq('fa_codfact', codigo);
-        rollback = this.applyTenantFilter(rollback);
-        await rollback;
+        await this.rollbackEncfReservation(encfReservation);
         throw error;
       }
-
-      return {
-        status: 'success',
-        code: 200,
-        message: 'Facturación creada correctamente.',
-        data: {
-          factura: this.mapFacturaDbToUi(insertedFactura),
-          detalle: detalleRaw,
-        },
-      };
     })());
   }
 

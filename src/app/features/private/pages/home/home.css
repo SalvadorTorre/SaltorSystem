@@ -300,6 +300,125 @@
   white-space: nowrap;
 }
 
+.kpi-grid-admin {
+  margin-top: 1rem;
+}
+
+.panels-admin-main {
+  margin-top: 0.9rem;
+  grid-template-columns: 1.2fr 0.8fr;
+}
+
+.admin-sucursal-list {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.admin-sucursal-item {
+  border: 1px solid #e8edf4;
+  border-radius: 12px;
+  padding: 0.6rem 0.65rem;
+  background: #fbfdff;
+}
+
+.admin-sucursal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  margin-bottom: 0.35rem;
+}
+
+.admin-sucursal-head strong {
+  color: #10233e;
+  font-size: 0.86rem;
+}
+
+.admin-sucursal-head span {
+  font-size: 0.78rem;
+  color: #1c4da0;
+  font-weight: 700;
+}
+
+.admin-sucursal-meta {
+  margin-top: 0.45rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.2rem 0.6rem;
+}
+
+.admin-sucursal-meta small {
+  color: #5f6f81;
+  font-size: 0.73rem;
+}
+
+.admin-alert-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.admin-alert-list li {
+  display: grid;
+  grid-template-columns: 12px 1fr;
+  gap: 0.55rem;
+  align-items: start;
+  padding: 0.35rem 0.4rem;
+  border-radius: 10px;
+  background: #fff8e6;
+}
+
+.admin-alert-list .dot {
+  width: 10px;
+  height: 10px;
+  margin-top: 0.3rem;
+  border-radius: 50%;
+  background: #f59f00;
+}
+
+.admin-alert-list li div {
+  font-size: 0.8rem;
+  color: #6a5505;
+}
+
+.admin-subtitle {
+  margin-top: 0.9rem;
+}
+
+.admin-forma-pago-list {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.admin-forma-item {
+  border: 1px solid #e8edf4;
+  border-radius: 10px;
+  padding: 0.5rem 0.55rem;
+  background: #fff;
+}
+
+.admin-forma-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.45rem;
+  font-size: 0.78rem;
+  color: #2d425b;
+  margin-bottom: 0.2rem;
+}
+
+.admin-forma-head strong {
+  color: #0f3f86;
+}
+
+.admin-forma-item small {
+  display: block;
+  margin-top: 0.28rem;
+  font-size: 0.72rem;
+  color: #5f6f81;
+}
+
 
 .channel-head {
   display: flex;
@@ -403,6 +522,10 @@
     grid-template-columns: 1fr;
   }
 
+  .panels-admin-main {
+    grid-template-columns: 1fr;
+  }
+
   .distribution-grid {
     grid-template-columns: 1fr;
   }
@@ -440,6 +563,10 @@
   }
 
   .distribution-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-sucursal-meta {
     grid-template-columns: 1fr;
   }
 

@@ -1,14 +1,57 @@
 import { Injectable } from '@angular/core';
 import { ModeloRnc, ModeloRncData } from '.';
-import { Observable, from } from 'rxjs';
+import { BehaviorSubject, Observable, firstValueFrom, from } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { SupabaseService } from '../../supabase/supabase.service';
+import { unzipSync } from 'fflate';
+
+type ImportPhase =
+  | 'descargando'
+  | 'descomprimiendo'
+  | 'parseando'
+  | 'limpiando'
+  | 'insertando'
+  | 'completado';
+
+export interface ImportProgress {
+  phase: ImportPhase;
+  processed: number;
+  total: number;
+  inserted: number;
+  errors: number;
+}
+
+export interface ImportTaskState extends ImportProgress {
+  running: boolean;
+  success: boolean | null;
+  startedAt: number | null;
+  finishedAt: number | null;
+  message: string;
+}
 
 @Injectable({
   providedIn: 'root',
 })
 export class ServicioRnc {
   constructor(private supabase: SupabaseService) {}
+  private readonly dgiiZipUrl =
+    'https://dgii.gov.do/app/WebApps/Consultas/RNC/RNC_CONTRIBUYENTES.zip';
+  private readonly edgeProxyFunctionName = 'proxy-rnc-dgii';
+  private readonly importStateSubject = new BehaviorSubject<ImportTaskState>({
+    running: false,
+    success: null,
+    startedAt: null,
+    finishedAt: null,
+    message: '',
+    phase: 'descargando',
+    processed: 0,
+    total: 0,
+    inserted: 0,
+    errors: 0,
+  });
+  private importPromise: Promise<any> | null = null;
+
+  readonly importState$ = this.importStateSubject.asObservable();
 
   private get db(): any {
     const client = this.supabase.client;
@@ -43,6 +86,422 @@ export class ServicioRnc {
       pageSize: limit,
       totalPages: limit > 0 ? Math.ceil(total / limit) : 0,
     };
+  }
+
+  private normalizeText(input: string): string {
+    return String(input || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .trim();
+  }
+
+  private detectDelimiter(sampleLine: string): string {
+    const candidates = [',', ';', '|', '\t'];
+    let best = ',';
+    let maxCount = -1;
+
+    for (const c of candidates) {
+      const count = sampleLine.split(c).length - 1;
+      if (count > maxCount) {
+        maxCount = count;
+        best = c;
+      }
+    }
+    return best;
+  }
+
+  private parseDelimitedLine(line: string, delimiter: string): string[] {
+    const out: string[] = [];
+    let current = '';
+    let inQuotes = false;
+
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      const next = line[i + 1];
+      if (ch === '"') {
+        if (inQuotes && next === '"') {
+          current += '"';
+          i++;
+        } else {
+          inQuotes = !inQuotes;
+        }
+        continue;
+      }
+      if (!inQuotes && ch === delimiter) {
+        out.push(current.trim());
+        current = '';
+        continue;
+      }
+      current += ch;
+    }
+    out.push(current.trim());
+    return out;
+  }
+
+  private pickColumn(
+    headers: string[],
+    candidates: string[],
+    fallback: number
+  ): number {
+    const normalized = headers.map((h) => this.normalizeText(h));
+    for (let i = 0; i < normalized.length; i++) {
+      const h = normalized[i];
+      if (candidates.some((c) => h.includes(c))) return i;
+    }
+    return fallback;
+  }
+
+  private decodeBytes(bytes: Uint8Array): string {
+    const utf8 = new TextDecoder('utf-8', { fatal: false }).decode(bytes);
+    if (utf8.includes('\uFFFD')) {
+      return new TextDecoder('windows-1252', { fatal: false }).decode(bytes);
+    }
+    return utf8;
+  }
+
+  private extractRncTextFromZip(zipBytes: Uint8Array): string {
+    const entries = unzipSync(zipBytes);
+    const fileNames = Object.keys(entries);
+    if (!fileNames.length) {
+      throw new Error('El ZIP de DGII está vacío.');
+    }
+
+    const preferred =
+      fileNames.find((name) =>
+        /rnc/i.test(name) && /\.(csv|txt)$/i.test(name)
+      ) ||
+      fileNames.find((name) => /\.(csv|txt)$/i.test(name)) ||
+      fileNames[0];
+
+    const bytes = entries[preferred];
+    if (!bytes || !bytes.length) {
+      throw new Error('No se pudo leer el archivo de RNC dentro del ZIP.');
+    }
+
+    return this.decodeBytes(bytes);
+  }
+
+  private parseRncRows(rawText: string): Array<{
+    rnc: string;
+    rason: string;
+    status: string;
+  }> {
+    const lines = rawText
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .filter((l) => !!l);
+
+    if (!lines.length) return [];
+
+    const delimiter = this.detectDelimiter(lines[0]);
+    const firstRow = this.parseDelimitedLine(lines[0], delimiter);
+    const firstNorm = firstRow.map((f) => this.normalizeText(f));
+    const hasHeader =
+      firstNorm.some((f) => f.includes('rnc') || f.includes('cedula')) &&
+      firstNorm.some(
+        (f) =>
+          f.includes('razon') ||
+          f.includes('nombre') ||
+          f.includes('social')
+      );
+
+    const headerRow = hasHeader ? firstRow : [];
+    const startIndex = hasHeader ? 1 : 0;
+
+    const rncIdx = hasHeader
+      ? this.pickColumn(headerRow, ['rnc', 'cedula', 'documento'], 0)
+      : 0;
+    const razonIdx = hasHeader
+      ? this.pickColumn(
+          headerRow,
+          ['razon social', 'razon', 'nombre', 'social'],
+          1
+        )
+      : 1;
+    const statusIdx = hasHeader
+      ? this.pickColumn(headerRow, ['status', 'estado', 'situacion'], 2)
+      : 2;
+
+    const seen = new Set<string>();
+    const rows: Array<{ rnc: string; rason: string; status: string }> = [];
+
+    for (let i = startIndex; i < lines.length; i++) {
+      const cols = this.parseDelimitedLine(lines[i], delimiter);
+      if (!cols.length) continue;
+
+      const rawRnc = String(cols[rncIdx] ?? cols[0] ?? '').trim();
+      const cleanRnc = rawRnc.replace(/[^\d]/g, '');
+      if (!cleanRnc || cleanRnc.length < 8) continue;
+
+      const rason = String(cols[razonIdx] ?? cols[1] ?? '').trim();
+      if (!rason) continue;
+
+      if (seen.has(cleanRnc)) continue;
+      seen.add(cleanRnc);
+
+      const statusRaw = String(cols[statusIdx] ?? '').trim();
+      const status = statusRaw ? statusRaw.toUpperCase() : 'ACTIVO';
+
+      rows.push({
+        rnc: cleanRnc,
+        rason,
+        status,
+      });
+    }
+
+    return rows;
+  }
+
+  private async clearRncTable(): Promise<void> {
+    const { error } = await this.db.from('rnc').delete().neq('id', 0);
+    if (error) throw error;
+  }
+
+  private async importFromZipBytes(
+    zipBytes: Uint8Array,
+    onProgress?: (progress: ImportProgress) => void
+  ): Promise<any> {
+    const report = (progress: ImportProgress) => {
+      if (typeof onProgress === 'function') onProgress(progress);
+    };
+
+    report({
+      phase: 'descomprimiendo',
+      processed: 0,
+      total: 0,
+      inserted: 0,
+      errors: 0,
+    });
+
+    const rawText = this.extractRncTextFromZip(zipBytes);
+
+    report({
+      phase: 'parseando',
+      processed: 0,
+      total: 0,
+      inserted: 0,
+      errors: 0,
+    });
+
+    const rows = this.parseRncRows(rawText);
+    const total = rows.length;
+    if (!total) {
+      throw new Error('No se encontraron registros válidos en el archivo de DGII.');
+    }
+
+    report({
+      phase: 'limpiando',
+      processed: 0,
+      total,
+      inserted: 0,
+      errors: 0,
+    });
+    await this.clearRncTable();
+
+    let inserted = 0;
+    let errors = 0;
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const { error } = await this.db.from('rnc').upsert(
+        {
+          rnc: row.rnc,
+          rason: row.rason,
+          status: row.status,
+        },
+        { onConflict: 'rnc' }
+      );
+      if (error) {
+        errors++;
+      } else {
+        inserted++;
+      }
+
+      if ((i + 1) % 100 === 0 || i === rows.length - 1) {
+        report({
+          phase: 'insertando',
+          processed: i + 1,
+          total,
+          inserted,
+          errors,
+        });
+      }
+    }
+
+    report({
+      phase: 'completado',
+      processed: total,
+      total,
+      inserted,
+      errors,
+    });
+
+    return {
+      status: 'success',
+      code: 200,
+      message: 'Importación completada',
+      data: {
+        totalFuente: total,
+        insertados: inserted,
+        errores: errors,
+      },
+    };
+  }
+
+  private async descargarZipViaEdgeProxy(): Promise<Uint8Array> {
+    const baseUrl = String(this.supabase.url || '').trim().replace(/\/$/, '');
+    if (!baseUrl) {
+      throw new Error('URL de Supabase no configurada.');
+    }
+
+    const proxyUrl = `${baseUrl}/functions/v1/${this.edgeProxyFunctionName}`;
+    const response = await fetch(proxyUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        url: this.dgiiZipUrl,
+      }),
+    });
+
+    if (!response.ok) {
+      let details = '';
+      try {
+        details = await response.text();
+      } catch {
+        details = '';
+      }
+      throw new Error(
+        `Proxy DGII respondió HTTP ${response.status}${details ? `: ${details}` : ''}`
+      );
+    }
+
+    return new Uint8Array(await response.arrayBuffer());
+  }
+
+  private updateImportState(patch: Partial<ImportTaskState>): void {
+    this.importStateSubject.next({
+      ...this.importStateSubject.value,
+      ...patch,
+    });
+  }
+
+  private notifyCompletion(
+    success: boolean,
+    summary: { inserted: number; errors: number; message?: string }
+  ): void {
+    if (typeof window === 'undefined' || typeof Notification === 'undefined') {
+      return;
+    }
+
+    if (Notification.permission !== 'granted') {
+      return;
+    }
+
+    const title = success
+      ? 'Importación de RNC completada'
+      : 'Importación de RNC con errores';
+    const body = success
+      ? `Insertados: ${summary.inserted.toLocaleString()} | Errores: ${summary.errors.toLocaleString()}`
+      : summary.message || 'Revisa el resultado en la pantalla de RNC.';
+
+    try {
+      new Notification(title, { body });
+    } catch {
+      // Ignorar fallos del navegador al crear notificación.
+    }
+  }
+
+  solicitarPermisoNotificaciones(): void {
+    if (typeof window === 'undefined' || typeof Notification === 'undefined') {
+      return;
+    }
+    if (Notification.permission === 'default') {
+      Notification.requestPermission().catch(() => undefined);
+    }
+  }
+
+  iniciarImportacionDgiiEnSegundoPlano(): boolean {
+    if (this.importPromise) {
+      return false;
+    }
+
+    const startedAt = Date.now();
+    this.updateImportState({
+      running: true,
+      success: null,
+      startedAt,
+      finishedAt: null,
+      message: 'Importación iniciada en segundo plano.',
+      phase: 'descargando',
+      processed: 0,
+      total: 0,
+      inserted: 0,
+      errors: 0,
+    });
+
+    this.importPromise = (async () => {
+      try {
+        const result = await firstValueFrom(
+          this.importarDgii((progress) => {
+            this.updateImportState({
+              running: true,
+              success: null,
+              phase: progress.phase,
+              processed: progress.processed,
+              total: progress.total,
+              inserted: progress.inserted,
+              errors: progress.errors,
+              message: 'Importando datos de DGII...',
+            });
+          })
+        );
+
+        const inserted = Number(result?.data?.insertados || 0);
+        const errors = Number(result?.data?.errores || 0);
+        const finishedAt = Date.now();
+
+        this.updateImportState({
+          running: false,
+          success: true,
+          finishedAt,
+          phase: 'completado',
+          processed: Number(result?.data?.totalFuente || 0),
+          total: Number(result?.data?.totalFuente || 0),
+          inserted,
+          errors,
+          message: 'Importación completada.',
+        });
+
+        this.notifyCompletion(true, {
+          inserted,
+          errors,
+        });
+      } catch (error: any) {
+        const finishedAt = Date.now();
+        const message =
+          String(error?.message || '').trim() ||
+          'No se pudo completar la importación de RNC.';
+
+        this.updateImportState({
+          running: false,
+          success: false,
+          finishedAt,
+          message,
+        });
+
+        this.notifyCompletion(false, {
+          inserted: this.importStateSubject.value.inserted,
+          errors: this.importStateSubject.value.errors,
+          message,
+        });
+      } finally {
+        this.importPromise = null;
+      }
+    })();
+
+    return true;
   }
 
   buscarTodosRnc(
@@ -182,11 +641,64 @@ export class ServicioRnc {
     );
   }
 
-  importarDgii(): Observable<any> {
+  importarDgii(onProgress?: (progress: ImportProgress) => void): Observable<any> {
     return from((async () => {
-      throw new Error('importarDgii no está disponible en Supabase');
-    })()).pipe(
-      map(() => ({ status: 'error', code: 501 }))
-    );
+      const report = (progress: ImportProgress) => {
+        if (typeof onProgress === 'function') onProgress(progress);
+      };
+
+      report({
+        phase: 'descargando',
+        processed: 0,
+        total: 0,
+        inserted: 0,
+        errors: 0,
+      });
+
+      let zipBytes: Uint8Array;
+      try {
+        zipBytes = await this.descargarZipViaEdgeProxy();
+      } catch (proxyError: any) {
+        console.warn(
+          'No fue posible descargar ZIP usando proxy Edge. Se intentará descarga directa.',
+          proxyError
+        );
+        try {
+          const response = await fetch(this.dgiiZipUrl, {
+            method: 'GET',
+            cache: 'no-store',
+          });
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+          }
+          zipBytes = new Uint8Array(await response.arrayBuffer());
+        } catch (error: any) {
+          const msg = String(error?.message || '').toLowerCase();
+          if (msg.includes('failed to fetch') || msg.includes('network')) {
+            throw new Error(
+              'No se pudo descargar el archivo de DGII. Verifica conexión o CORS del navegador.'
+            );
+          }
+          throw new Error(`Error descargando archivo DGII: ${error?.message || error}`);
+        }
+      }
+      return this.importFromZipBytes(zipBytes, onProgress);
+    })());
+  }
+
+  importarDgiiDesdeArchivo(
+    file: File,
+    onProgress?: (progress: ImportProgress) => void
+  ): Observable<any> {
+    return from((async () => {
+      if (!file) {
+        throw new Error('No se seleccionó archivo ZIP.');
+      }
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      if (!bytes.length) {
+        throw new Error('El archivo ZIP está vacío.');
+      }
+      return this.importFromZipBytes(bytes, onProgress);
+    })());
   }
 }

@@ -8,6 +8,10 @@ import { createClient } from '@supabase/supabase-js';
 export class SupabaseService {
   private clientInstance: ReturnType<typeof createClient> | null = null;
 
+  get url(): string {
+    return environment?.supabase?.url || '';
+  }
+
   get schema(): string {
     return environment?.supabase?.schema || 'public';
   }
@@ -36,7 +40,7 @@ export class SupabaseService {
         },
       };
       this.clientInstance = createClient(
-        environment.supabase.url,
+        this.url,
         environment.supabase.anonKey,
         options
       );

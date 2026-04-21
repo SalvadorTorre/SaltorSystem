@@ -29,7 +29,12 @@ export class ServicioFpago {
   private mapRow(row: any): ModeloFpagoData {
     return {
       fp_codfpago: Number(row?.fp_codfpago ?? 0),
-      fp_descfpago: String(row?.fp_descfpago ?? "").trim()
+      fp_descfpago: String(row?.fp_descfpago ?? "").trim(),
+      dgii_codigo: row?.dgii_codigo !== undefined && row?.dgii_codigo !== null
+        ? Number(row.dgii_codigo)
+        : undefined,
+      es_dgii: row?.es_dgii !== undefined ? !!row.es_dgii : undefined,
+      activo: row?.activo !== undefined ? !!row.activo : undefined
     };
   }
 

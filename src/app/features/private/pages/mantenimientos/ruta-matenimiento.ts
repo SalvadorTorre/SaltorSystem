@@ -131,6 +131,13 @@ const routes: Routes = [
         loadChildren: () =>
           import('./pages/rnc-page/rnc-modulo').then((m) => m.ModuloRnc),
       },
+      {
+        path: 'configuracion-global',
+        loadChildren: () =>
+          import(
+            './pages/configuracion-global/configuracion-global-modulo'
+          ).then((m) => m.ModuloConfiguracionGlobal),
+      },
     ],
   },
 ];

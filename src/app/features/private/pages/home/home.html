@@ -217,12 +217,128 @@
   </ng-container>
 
   <ng-template #adminDashboard>
-    <section class="panel">
-      <h4>Vista Administrador</h4>
-      <p class="text-muted mb-0">
-        Esta base ya está lista para pintar métricas globales por sucursal,
-        equipo y facturación general.
-      </p>
+    <section class="kpi-grid kpi-grid-admin">
+      <article class="kpi-card">
+        <p>Meta mensual empresa</p>
+        <h3>{{ (global.metaMensual / 1000000) | number:'1.2-2' }} MM</h3>
+      </article>
+      <article class="kpi-card">
+        <p>Facturado general</p>
+        <h3>{{ currency(global.facturadoGeneral) }}</h3>
+      </article>
+      <article class="kpi-card">
+        <p>Cumplimiento general</p>
+        <h3>{{ global.cumplimientoGeneralPct | number:'1.1-2' }}%</h3>
+      </article>
+      <article class="kpi-card">
+        <p>Total facturas</p>
+        <h3>{{ global.totalFacturas | number }}</h3>
+      </article>
+      <article class="kpi-card">
+        <p>Ticket promedio</p>
+        <h3>{{ currency(global.ticketPromedio) }}</h3>
+      </article>
+      <article class="kpi-card">
+        <p>Sucursales / Vendedores</p>
+        <h3>{{ global.sucursalesActivas }} / {{ global.vendedoresActivos }}</h3>
+      </article>
+    </section>
+
+    <section class="panels panels-admin-main">
+      <article class="panel">
+        <div class="panel-title-row">
+          <h4>Rendimiento por sucursal</h4>
+          <small>Participación sobre facturación general</small>
+        </div>
+
+        <div class="admin-sucursal-list">
+          <div class="admin-sucursal-item" *ngFor="let suc of global.sucursales">
+            <div class="admin-sucursal-head">
+              <strong>{{ suc.nombre }}</strong>
+              <span>{{ sucursalPctFacturado(suc.facturado) | number:'1.1-1' }}%</span>
+            </div>
+            <div class="channel-track">
+              <div class="channel-fill" [style.width.%]="sucursalPctFacturado(suc.facturado)"></div>
+            </div>
+            <div class="admin-sucursal-meta">
+              <small>Facturas: {{ suc.facturas }}</small>
+              <small>Vendedores: {{ suc.vendedores }}</small>
+              <small>Margen: {{ suc.margenPct | number:'1.1-2' }}%</small>
+              <small>Facturado: {{ currency(suc.facturado) }}</small>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article class="panel">
+        <div class="panel-title-row">
+          <h4>Alertas comerciales</h4>
+          <small>Seguimiento diario</small>
+        </div>
+        <ul class="admin-alert-list">
+          <li *ngFor="let alerta of global.alertas">
+            <span class="dot"></span>
+            <div>{{ alerta }}</div>
+          </li>
+        </ul>
+
+        <div class="panel-title-row admin-subtitle">
+          <h4>Distribución por forma de pago</h4>
+          <small>DGII / control interno</small>
+        </div>
+        <div class="admin-forma-pago-list">
+          <div class="admin-forma-item" *ngFor="let forma of global.formasPago">
+            <div class="admin-forma-head">
+              <span>{{ forma.nombre }}</span>
+              <strong>{{ formaPagoPct(forma.monto) | number:'1.1-1' }}%</strong>
+            </div>
+            <div class="channel-track">
+              <div class="channel-fill" [style.width.%]="formaPagoPct(forma.monto)"></div>
+            </div>
+            <small>{{ currency(forma.monto) }}</small>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <section class="panel panel-facturas-full">
+      <div class="panel-title-row">
+        <h4>Top vendedores (global)</h4>
+        <small>Vista consolidada por equipo</small>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0 table-facturas-reales">
+          <thead>
+            <tr>
+              <th>Vendedor</th>
+              <th>Sucursal</th>
+              <th>Facturas</th>
+              <th class="text-end">Facturado</th>
+              <th>Cumplimiento</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let vend of global.topVendedores">
+              <td>{{ vend.nombre }}</td>
+              <td>{{ vend.sucursal }}</td>
+              <td>{{ vend.facturas | number }}</td>
+              <td class="text-end">{{ currency(vend.facturado) }}</td>
+              <td>
+                <span
+                  class="status-pill"
+                  [ngClass]="{
+                    'ok': vend.cumplimientoPct >= 50,
+                    'pending': vend.cumplimientoPct >= 20 && vend.cumplimientoPct < 50,
+                    'route': vend.cumplimientoPct < 20
+                  }"
+                >
+                  {{ vend.cumplimientoPct | number:'1.1-1' }}%
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </section>
   </ng-template>
 </div>

@@ -1,0 +1,187 @@
+<div class="config-global-page">
+  <div class="card border-0 shadow-sm config-global-card">
+    <div class="card-header config-global-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+      <div>
+        <h1 class="h4 mb-1">
+          <i class="bi bi-shield-lock me-2"></i>Firma Digital y DGII
+        </h1>
+        <p class="mb-0 small opacity-75">
+          Configuración global para todas las empresas del sistema
+        </p>
+      </div>
+      <div class="d-flex gap-2 align-items-center">
+        <button
+          *ngIf="hasDatosCargados && !isEditMode"
+          class="btn btn-warning btn-sm fw-semibold text-dark"
+          type="button"
+          (click)="activarEdicion()"
+          [disabled]="isLoading || isSaving"
+        >
+          <i class="bi bi-pencil-square me-1"></i>Editar información
+        </button>
+        <button
+          class="btn btn-light btn-sm fw-semibold"
+          type="button"
+          (click)="cargarConfiguracion()"
+          [disabled]="isLoading || isSaving"
+        >
+          <i class="bi bi-arrow-clockwise me-1"></i>Recargar
+        </button>
+      </div>
+    </div>
+
+    <div class="card-body" [class.opacity-50]="isLoading">
+      <div
+        *ngIf="hasDatosCargados && !isEditMode"
+        class="alert alert-info d-flex align-items-start gap-2 py-2 px-3 mb-3"
+      >
+        <i class="bi bi-info-circle mt-1"></i>
+        <div>
+          Ya existe una configuración guardada. Para cambiarla, pulsa
+          <strong>Editar información</strong>.
+        </div>
+      </div>
+
+      <form [formGroup]="formulario" (ngSubmit)="guardar()">
+        <div class="row g-3">
+          <div class="col-12 col-xl-4">
+            <div class="config-block h-100">
+              <h2 class="h6 mb-3">
+                <i class="bi bi-image me-2"></i>Logo Global
+              </h2>
+
+              <div class="logo-preview-wrap mb-3">
+                <img [src]="logoPreview" alt="Logo empresa" class="logo-preview" />
+              </div>
+
+              <div class="small text-muted mb-2">Logo actual</div>
+              <input class="form-control form-control-sm mb-3" formControlName="logoNombre" readonly />
+
+              <div class="d-flex flex-wrap gap-2">
+                <label class="btn btn-outline-primary btn-sm mb-0" [class.disabled]="hasDatosCargados && !isEditMode">
+                  <i class="bi bi-upload me-1"></i>Subir logo
+                  <input type="file" accept="image/*" class="d-none" (change)="onLogoSeleccionado($event)" [disabled]="hasDatosCargados && !isEditMode" />
+                </label>
+                <button type="button" class="btn btn-outline-secondary btn-sm" (click)="usarLogoPredeterminado()" [disabled]="hasDatosCargados && !isEditMode">
+                  <i class="bi bi-arrow-counterclockwise me-1"></i>Usar por defecto
+                </button>
+              </div>
+              <small class="text-muted d-block mt-2">Máximo 4MB. Si no subes uno, se usa el logo actual del sistema.</small>
+            </div>
+          </div>
+
+          <div class="col-12 col-xl-8">
+            <div class="config-block h-100">
+              <h2 class="h6 mb-3">
+                <i class="bi bi-file-earmark-lock2 me-2"></i>Certificado Digital (.p12)
+              </h2>
+
+              <div class="row g-3">
+                <div class="col-12 col-lg-6">
+                  <label class="form-label small fw-semibold text-muted">Archivo del certificado</label>
+                  <label class="btn btn-outline-primary w-100 text-start">
+                    <i class="bi bi-file-earmark-arrow-up me-2"></i>Seleccionar .p12 / .pfx
+                    <input type="file" accept=".p12,.pfx,application/x-pkcs12" class="d-none" (change)="onCertificadoSeleccionado($event)" [disabled]="hasDatosCargados && !isEditMode" />
+                  </label>
+                  <input class="form-control form-control-sm mt-2" formControlName="certificadoNombre" readonly />
+                </div>
+
+                <div class="col-12 col-lg-6">
+                  <label class="form-label small fw-semibold text-muted">Contraseña del certificado</label>
+                  <input
+                    type="password"
+                    class="form-control"
+                    formControlName="certificadoPassword"
+                    autocomplete="new-password"
+                    placeholder="Contraseña del .p12"
+                    [readonly]="hasDatosCargados && !isEditMode"
+                  />
+                </div>
+
+                <div class="col-12 d-flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    class="btn btn-outline-success btn-sm"
+                    (click)="validarCertificado()"
+                    [disabled]="isValidatingCert || (hasDatosCargados && !isEditMode)"
+                  >
+                    <span *ngIf="isValidatingCert" class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+                    <i *ngIf="!isValidatingCert" class="bi bi-patch-check me-1"></i>
+                    Validar certificado
+                  </button>
+
+                  <button type="button" class="btn btn-outline-danger btn-sm" (click)="quitarCertificado()" [disabled]="hasDatosCargados && !isEditMode">
+                    <i class="bi bi-trash me-1"></i>Quitar certificado
+                  </button>
+                </div>
+
+                <div class="col-12 col-md-4">
+                  <label class="form-label small fw-semibold text-muted">Fecha de vencimiento</label>
+                  <input class="form-control" formControlName="certificadoVence" readonly />
+                </div>
+
+                <div class="col-12 col-md-4">
+                  <label class="form-label small fw-semibold text-muted">Titular (CN)</label>
+                  <input class="form-control" formControlName="subjectCn" readonly />
+                </div>
+
+                <div class="col-12 col-md-4">
+                  <label class="form-label small fw-semibold text-muted">Emisor (CN)</label>
+                  <input class="form-control" formControlName="issuerCn" readonly />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12">
+            <div class="config-block">
+              <h2 class="h6 mb-3">
+                <i class="bi bi-link-45deg me-2"></i>Endpoint Base DGII
+              </h2>
+
+              <div class="row g-3">
+                <div class="col-12 col-lg-8">
+                  <label class="form-label small fw-semibold text-muted">Base URL para envío de e-CF</label>
+                  <input
+                    type="url"
+                    class="form-control"
+                    formControlName="dgiiBaseUrl"
+                    placeholder="https://recepcion.grupohierro.net/ecf/api"
+                    [readonly]="hasDatosCargados && !isEditMode"
+                  />
+                  <div class="invalid-note" *ngIf="formulario.get('dgiiBaseUrl')?.invalid && formulario.get('dgiiBaseUrl')?.touched">
+                    Debes colocar una URL válida (http:// o https://).
+                  </div>
+                </div>
+                <div class="col-12 col-lg-4">
+                  <label class="form-label small fw-semibold text-muted">Ambiente DGII</label>
+                  <select class="form-select" formControlName="dgiiAmbiente" [disabled]="hasDatosCargados && !isEditMode">
+                    <option value="test">Test</option>
+                    <option value="prod">Producción</option>
+                  </select>
+                </div>
+                <div class="col-12">
+                  <label class="form-label small fw-semibold text-muted">Endpoint final (direct cert)</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    [value]="endpointDirectCertPreview"
+                    readonly
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-end mt-3">
+          <button class="btn btn-primary px-4" type="submit" [disabled]="isSaving || isLoading || isValidatingCert || (hasDatosCargados && !isEditMode)">
+            <span *ngIf="isSaving" class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+            <i *ngIf="!isSaving" class="bi bi-save me-1"></i>
+            {{ hasDatosCargados ? 'Actualizar configuración global' : 'Guardar configuración global' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

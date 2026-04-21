@@ -210,14 +210,15 @@
                   id="input9"
                   [formControl]="buscarFpago"
                   (keydown)="handleKeydownFpago($event)"
-                  (focus)="resultadoFpago = listaFpago"
+                  (focus)="onFocusFpago()"
+                  (blur)="onBlurFpago()"
                   class="form-control"
                   placeholder="Seleccionar Pago"
                   autocomplete="off"
                 />
                 <div
-                  class="dropdown-menu show w-100"
-                  [style.display]="resultadoFpago.length > 0 ? 'block' : 'none'"
+                  class="dropdown-menu w-100"
+                  [style.display]="mostrarDropdownFpago && resultadoFpago.length > 0 ? 'block' : 'none'"
                   style="max-height: 200px; overflow-y: auto; position: absolute; z-index: 1000;"
                 >
                   <a
@@ -239,14 +240,15 @@
                   id="input11"
                   [formControl]="buscarEnvio"
                   (keydown)="handleKeydownEnvio($event)"
-                  (focus)="resultadoEnvio = listaEnvio"
+                  (focus)="onFocusEnvio()"
+                  (blur)="onBlurEnvio()"
                   class="form-control"
                   placeholder="Seleccionar Entrega"
                   autocomplete="off"
                 />
                 <div
-                  class="dropdown-menu show w-100"
-                  [style.display]="resultadoEnvio.length > 0 ? 'block' : 'none'"
+                  class="dropdown-menu w-100"
+                  [style.display]="mostrarDropdownEnvio && resultadoEnvio.length > 0 ? 'block' : 'none'"
                   style="max-height: 200px; overflow-y: auto; position: absolute; z-index: 1000;"
                 >
                   <a
@@ -263,7 +265,7 @@
               <div class="col-md-2">
                 <label class="form-label small text-muted fw-semibold">Vend.</label>
                 <input
-                  type="password"
+                  type="text"
                   (keydown.enter)="buscarUsuario($event, input13)"
                   formControlName="fa_codVend"
                   #input12

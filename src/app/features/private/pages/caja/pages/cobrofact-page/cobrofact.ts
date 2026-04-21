@@ -13,7 +13,7 @@ import {
   FormGroup,
   Validators,
 } from '@angular/forms';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, firstValueFrom } from 'rxjs';
 import Swal from 'sweetalert2';
 import { ServicioRnc } from 'src/app/core/services/mantenimientos/rnc/rnc.service';
 import { ServicioUsuario } from 'src/app/core/services/mantenimientos/usuario/usuario.service';
@@ -38,6 +38,8 @@ import { HttpClient } from '@angular/common/http';
 import { ServicioNcf } from 'src/app/core/services/mantenimientos/ncf/ncf.service';
 import { ModeloNcfData } from 'src/app/core/services/mantenimientos/ncf';
 import { PrintingService } from 'src/app/core/services/utils/printing.service';
+import { ServicioConfiguracionGlobal } from 'src/app/core/services/mantenimientos/configuracion-global/configuracion-global.service';
+import { ConfiguracionGlobalData } from 'src/app/core/services/mantenimientos/configuracion-global';
 
 declare var $: any;
 
@@ -166,6 +168,7 @@ export class CobroFact implements OnInit {
   form: FormGroup;
   facturaElement: any;
   formasPago: any;
+  dgiiConfig: ConfiguracionGlobalData | null = null;
 
   get totalPages() {
     return Math.ceil(this.facturacionList.length / this.pageSize);
@@ -187,6 +190,7 @@ export class CobroFact implements OnInit {
     private servicioFpago: ServicioFpago,
     private servicioFentrega: ServicioFentrega,
     private servicioNcf: ServicioNcf,
+    private servicioConfiguracionGlobal: ServicioConfiguracionGlobal,
     private http: HttpClient,
     private printingService: PrintingService,
   ) {
@@ -223,6 +227,19 @@ export class CobroFact implements OnInit {
     this.obtenerNcf();
     this.obtenerfpago();
     this.obtenerFentrega();
+    this.cargarConfiguracionDgii();
+  }
+
+  private cargarConfiguracionDgii(): void {
+    this.servicioConfiguracionGlobal.obtenerConfiguracionGlobal().subscribe({
+      next: (resp) => {
+        this.dgiiConfig = resp?.data || null;
+      },
+      error: (err) => {
+        console.error('No se pudo cargar configuración DGII global:', err);
+        this.dgiiConfig = null;
+      },
+    });
   }
   obtenerfpago() {
     this.servicioFpago.obtenerTodosFpago().subscribe((response) => {
@@ -680,6 +697,89 @@ export class CobroFact implements OnInit {
     console.log('Guardando facturación...');
   }
 
+  private normalizarAmbienteDgii(value: any): 'test' | 'prod' {
+    const raw = String(value || 'test').trim().toLowerCase();
+    return raw === 'prod' ? 'prod' : 'test';
+  }
+
+  private construirEndpointDirectCert(config: ConfiguracionGlobalData | null): string {
+    const baseRaw = String(
+      config?.dgiiBaseUrl || 'https://recepcion.grupohierro.net/ecf/api'
+    )
+      .trim()
+      .replace(/\/+$/, '');
+    const ambiente = this.normalizarAmbienteDgii(config?.dgiiAmbiente);
+    return `${baseRaw}/${ambiente}/api/test-body-direct-cert`;
+  }
+
+  private formatearFechaDgii(input: any): string {
+    if (!input) {
+      const now = new Date();
+      const d = String(now.getDate()).padStart(2, '0');
+      const m = String(now.getMonth() + 1).padStart(2, '0');
+      const y = now.getFullYear();
+      return `${d}-${m}-${y}`;
+    }
+
+    const source = String(input).trim();
+    const onlyDate = source.length >= 10 ? source.substring(0, 10) : source;
+    const iso = onlyDate.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (iso) {
+      return `${iso[3]}-${iso[2]}-${iso[1]}`;
+    }
+    const dmy = onlyDate.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if (dmy) {
+      return `${dmy[1]}-${dmy[2]}-${dmy[3]}`;
+    }
+    const dt = new Date(source);
+    if (!isNaN(dt.getTime())) {
+      const d = String(dt.getDate()).padStart(2, '0');
+      const m = String(dt.getMonth() + 1).padStart(2, '0');
+      const y = dt.getFullYear();
+      return `${d}-${m}-${y}`;
+    }
+    return onlyDate;
+  }
+
+  private normalizarRespuestaDgii(raw: any): any {
+    const root = raw?.data && typeof raw.data === 'object' ? raw.data : raw;
+    const nested = root?.result && typeof root.result === 'object' ? root.result : root;
+    const xmls = nested?.xmls && typeof nested.xmls === 'object' ? nested.xmls : {};
+
+    return {
+      ...nested,
+      estado_dgii:
+        nested?.estado_dgii ??
+        nested?.estado ??
+        nested?.status ??
+        nested?.estadoEnvio ??
+        null,
+      codseguridad:
+        nested?.codseguridad ??
+        nested?.codigoSeguridad ??
+        nested?.securityCode ??
+        null,
+      qr_link:
+        nested?.qr_link ??
+        nested?.qrLink ??
+        nested?.urlQr ??
+        nested?.qr ??
+        null,
+      fec_firma:
+        nested?.fec_firma ??
+        nested?.fechaFirma ??
+        nested?.fecha_firma ??
+        null,
+      ecf: nested?.ecf ?? xmls?.ecf ?? null,
+      rfce: nested?.rfce ?? xmls?.rfce ?? null,
+      estado_envio_dgii:
+        nested?.estado_envio_dgii ??
+        nested?.estadoEnvio ??
+        nested?.status ??
+        null,
+    };
+  }
+
   /**
    * Construye el payload para el servicio de DGII (QR/eCF)
    * basado en la factura seleccionada y los items cargados.
@@ -696,14 +796,17 @@ export class CobroFact implements OnInit {
     const razonSocialEmisor = localStorage.getItem('nombre_empresa') || '';
 
     // Normalizar fecha
-    const fechaEmision = factura.fa_fecFact
-      ? String(factura.fa_fecFact).substring(0, 10)
-      : new Date().toISOString().split('T')[0];
+    const fechaEmision = this.formatearFechaDgii(factura.fa_fecFact);
+    const montoTotal = Number(factura.fa_valFact || 0);
+    const totalItbis = Number(factura.fa_itbiFact || 0);
+    const montoGravado = Number(factura.fa_subFact || 0);
+    const montoExento = Math.max(0, montoTotal - montoGravado - totalItbis);
+    const rncEmisorLimpio = rncEmisor.replace(/-/g, '');
 
     // 2. Construir el escenario base
     const scenario: any = {
       Version: '1.0',
-      RNCEmisor: rncEmisor.replace(/-/g, ''),
+      RNCEmisor: rncEmisorLimpio,
       RazonSocialEmisor: razonSocialEmisor,
       RncComprador: String(factura.fa_rncFact || '')
         .trim()
@@ -712,13 +815,15 @@ export class CobroFact implements OnInit {
       ENCF: encf,
       TipoeCF: tipoeCF,
       FechaEmision: fechaEmision,
-      MontoTotal: factura.fa_valFact,
-      TotalITBIS: factura.fa_itbiFact,
-      MontoGravadoTotal: factura.fa_subFact,
+      MontoExento: montoExento.toFixed(2),
+      MontoGravadoTotal: montoGravado.toFixed(2),
+      TotalITBIS: totalItbis.toFixed(2),
+      MontoTotal: montoTotal.toFixed(2),
       TipoIngresos: '01',
       TipoPago: String(factura.fa_fpago || '1'),
       RegimenPagos: '0',
       IndicadorMontoGravado: '1',
+      CasoPrueba: `${rncEmisorLimpio}${encf}`,
     };
 
     // 3. Agregar items
@@ -734,6 +839,7 @@ export class CobroFact implements OnInit {
 
       scenario[`NumeroLinea[${i}]`] = i;
       scenario[`NombreItem[${i}]`] = nombre;
+      scenario[`IndicadorBienoServicio[${i}]`] = '1';
       scenario[`CantidadItem[${i}]`] = cantidad.toFixed(2);
       scenario[`PrecioUnitarioItem[${i}]`] = precio.toFixed(2);
       scenario[`MontoItem[${i}]`] = total.toFixed(2);
@@ -742,11 +848,14 @@ export class CobroFact implements OnInit {
       scenario[`IndicadorFacturacion[${i}]`] = '1';
     });
 
+    scenario['FormaPago[1]'] = String(factura.fa_fpago || '1');
+    scenario['MontoPago[1]'] = montoTotal.toFixed(2);
+
     // Retornar el objeto escenario directamente, sin envolverlo en un array
     return scenario;
   }
 
-  imprimirFactura() {
+  async imprimirFactura() {
     this.formularioFacturacion.get('fa_codFact')?.enable();
 
     // Preparar datos de la factura
@@ -763,6 +872,37 @@ export class CobroFact implements OnInit {
       return;
     }
 
+    let configDgii: ConfiguracionGlobalData | null = this.dgiiConfig;
+    if (!configDgii) {
+      try {
+        const responseConfig = await firstValueFrom(
+          this.servicioConfiguracionGlobal.obtenerConfiguracionGlobal()
+        );
+        configDgii = responseConfig?.data || null;
+        this.dgiiConfig = configDgii;
+      } catch (error) {
+        console.error('Error cargando configuración DGII', error);
+      }
+    }
+
+    const certB64 = String(configDgii?.certificadoP12Base64 || '').trim();
+    const certPassword = String(configDgii?.certificadoPassword || '').trim();
+    const rncEmisor = String(localStorage.getItem('rnc_empresa') || '')
+      .trim()
+      .replace(/-/g, '');
+    if (!certB64 || !certPassword || !rncEmisor) {
+      Swal.fire(
+        'Configuración incompleta',
+        'Debes configurar certificado digital, contraseña y RNC emisor en Mantenimiento > Firma digital DGII.',
+        'warning'
+      );
+      return;
+    }
+
+    const requestBody = {
+      scenarios: [dgiiData],
+    };
+
     // Mostrar Loading
     Swal.fire({
       title: 'Procesando...',
@@ -773,14 +913,19 @@ export class CobroFact implements OnInit {
       },
     });
 
-    // URL del endpoint externo
-    const url =
-      'https://ecfrecepcion.starsoftdominicana.com/ecf/api/test/api/generate-xml-no-send';
+    const url = this.construirEndpointDirectCert(configDgii);
+    const headers = {
+      'Content-Type': 'application/json',
+      'x-cert-p12-b64': certB64,
+      'x-cert-password': certPassword,
+      'x-cert-rnc': rncEmisor,
+    };
 
     // Realizar POST
-    this.http.post(url, dgiiData).subscribe(
+    this.http.post(url, requestBody, { headers }).subscribe(
       (response: any) => {
         console.log('Respuesta DGII:', response);
+        const payloadDgii = this.normalizarRespuestaDgii(response);
 
         // Actualizar mensaje de loading
         Swal.update({
@@ -789,14 +934,17 @@ export class CobroFact implements OnInit {
 
         // Llamar a nuestro backend para guardar los datos DGII
         this.servicioFacturacion
-          .actualizarDatosDgii(facturaData.fa_codFact, response)
+          .actualizarDatosDgii(facturaData.fa_codFact, payloadDgii)
           .subscribe({
             next: (res) => {
               console.log('Datos DGII guardados correctamente', res);
               Swal.close();
 
               // Combinar respuesta con datos de factura para impresión
-              const datosParaImprimir = { ...facturaData, ...response };
+              const datosParaImprimir = {
+                ...facturaData,
+                ...payloadDgii,
+              };
               this.printingService.imprimirFactura80mm(
                 datosParaImprimir,
                 this.items,
@@ -811,7 +959,10 @@ export class CobroFact implements OnInit {
               ).then(() => {
                 // Opcional: imprimir de todos modos o detenerse
                 // Por seguridad, imprimimos para que no se pierda el comprobante generado
-                const datosParaImprimir = { ...facturaData, ...response };
+                const datosParaImprimir = {
+                  ...facturaData,
+                  ...payloadDgii,
+                };
                 this.printingService.imprimirFactura80mm(
                   datosParaImprimir,
                   this.items,
