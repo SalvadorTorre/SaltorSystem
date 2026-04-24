@@ -222,6 +222,23 @@ export class Rnc implements OnInit {
   }
 
   importarDesdeDgii() {
+    if (this.isLoadingImport) {
+      Swal.fire({
+        title: 'Importación en curso',
+        text: 'Hay una importación ejecutándose o pegada. ¿Quieres reintentar ahora?',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, reintentar',
+        cancelButtonText: 'No',
+      }).then((result) => {
+        if (result.isConfirmed) {
+          this.servicioRnc.reiniciarSeguimientoImportacion();
+          this.importarDesdeDgii();
+        }
+      });
+      return;
+    }
+
     Swal.fire({
       title: '¿Estás seguro?',
       text: 'Esta acción borrará todos los datos existentes y los reemplazará con la nueva importación. ¿Deseas continuar?',

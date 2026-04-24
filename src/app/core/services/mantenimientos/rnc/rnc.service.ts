@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { ModeloRnc, ModeloRncData } from '.';
-import { BehaviorSubject, Observable, from } from 'rxjs';
+import { BehaviorSubject, Observable, firstValueFrom, from } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { SupabaseService } from '../../supabase/supabase.service';
 import { unzipSync } from 'fflate';
@@ -500,6 +500,8 @@ export class ServicioRnc {
 
   private startServerJobTracking(jobId: string, startedAt: number): void {
     this.importPromise = (async () => {
+      let unchangedPolls = 0;
+      let lastFingerprint = '';
       try {
         while (true) {
           const statusData = await this.invokeImportJob({
@@ -512,6 +514,33 @@ export class ServicioRnc {
           if (!job) {
             await this.sleep(this.importPollMs);
             continue;
+          }
+
+          const fingerprint = [
+            job.status,
+            job.phase,
+            Number(job.processed || 0),
+            Number(job.inserted || 0),
+            Number(job.errors || 0),
+          ].join('|');
+          if (fingerprint === lastFingerprint) {
+            unchangedPolls += 1;
+          } else {
+            unchangedPolls = 0;
+            lastFingerprint = fingerprint;
+          }
+
+          // Si el job servidor se queda congelado, hacemos fallback local.
+          if (
+            unchangedPolls >= 10 &&
+            (job.phase === 'descomprimiendo' ||
+              job.phase === 'parseando' ||
+              job.phase === 'limpiando' ||
+              job.phase === 'insertando')
+          ) {
+            throw new Error(
+              'El job servidor quedó detenido sin avanzar. Se cambiará al modo local.'
+            );
           }
 
           this.updateImportState(this.mapServerJobToState(job, startedAt));
@@ -533,6 +562,18 @@ export class ServicioRnc {
           await this.sleep(this.importPollMs);
         }
       } catch (error: any) {
+        const msg = String(error?.message || '').trim().toLowerCase();
+        const serverStall =
+          msg.includes('quedó detenido') ||
+          msg.includes('job servidor') ||
+          msg.includes('worker_resource_limit') ||
+          msg.includes('not having enough compute resources');
+
+        if (serverStall) {
+          await this.ejecutarImportacionLocal(startedAt, error?.message);
+          return;
+        }
+
         const finishedAt = Date.now();
         const message =
           String(error?.message || '').trim() ||
@@ -558,6 +599,62 @@ export class ServicioRnc {
     })();
   }
 
+  private async ejecutarImportacionLocal(
+    startedAt: number,
+    motivo?: string
+  ): Promise<void> {
+    this.updateImportState({
+      running: true,
+      success: null,
+      startedAt,
+      finishedAt: null,
+      phase: 'descargando',
+      processed: 0,
+      total: 0,
+      inserted: 0,
+      errors: 0,
+      message: motivo
+        ? `${motivo} Reintentando en modo local...`
+        : 'Reintentando en modo local...',
+    });
+
+    const result = await firstValueFrom(
+      this.importarDgii((progress) => {
+        this.updateImportState({
+          running: true,
+          success: null,
+          phase: progress.phase,
+          processed: progress.processed,
+          total: progress.total,
+          inserted: progress.inserted,
+          errors: progress.errors,
+          message: 'Importando datos de DGII (modo local)...',
+        });
+      })
+    );
+
+    const inserted = Number(result?.data?.insertados || 0);
+    const errors = Number(result?.data?.errores || 0);
+    const finishedAt = Date.now();
+
+    this.updateImportState({
+      running: false,
+      success: true,
+      finishedAt,
+      phase: 'completado',
+      processed: Number(result?.data?.totalFuente || 0),
+      total: Number(result?.data?.totalFuente || 0),
+      inserted,
+      errors,
+      message: 'Importación completada.',
+    });
+
+    this.notifyCompletion(true, {
+      inserted,
+      errors,
+    });
+  }
+
   async sincronizarImportacionServidorActiva(): Promise<void> {
     if (this.importPromise) return;
 
@@ -580,6 +677,17 @@ export class ServicioRnc {
     } catch {
       // Si no se puede sincronizar, no bloqueamos la pantalla.
     }
+  }
+
+  reiniciarSeguimientoImportacion(): void {
+    this.importPromise = null;
+    this.currentJobId = null;
+    this.updateImportState({
+      running: false,
+      success: null,
+      finishedAt: null,
+      message: 'Reiniciando seguimiento de importación...',
+    });
   }
 
   private notifyCompletion(
