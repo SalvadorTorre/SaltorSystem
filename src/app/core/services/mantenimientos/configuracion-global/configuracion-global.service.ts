@@ -47,6 +47,18 @@ export class ServicioConfiguracionGlobal {
     return `${y}-${m}-${d}`;
   }
 
+  private isMissingColumnError(error: any, column: string): boolean {
+    const hay = String(column || '').trim();
+    if (!hay) return false;
+    const msg = String(error?.message || error?.error_description || '')
+      .toLowerCase();
+    return (
+      msg.includes(`could not find the '${hay.toLowerCase()}' column`) ||
+      msg.includes(`column "${hay.toLowerCase()}"`) ||
+      msg.includes(`'${hay.toLowerCase()}'`)
+    );
+  }
+
   private mapRow(row: any): ConfiguracionGlobalData {
     return {
       id: Number(row?.id || 1),
@@ -66,27 +78,47 @@ export class ServicioConfiguracionGlobal {
   }
 
   private mapPayload(data: Partial<ConfiguracionGlobalData>): any {
+    const has = (key: keyof ConfiguracionGlobalData): boolean =>
+      Object.prototype.hasOwnProperty.call(data, key);
+
     const payload: any = {
-      id: 1,
-      logo_data_url: data?.logoDataUrl,
-      logo_nombre: this.toStringOrNull(data?.logoNombre),
-      certificado_nombre: this.toStringOrNull(data?.certificadoNombre),
-      certificado_p12_base64: data?.certificadoP12Base64,
-      certificado_password: this.toStringOrNull(data?.certificadoPassword),
-      certificado_vence: this.normalizeDate(data?.certificadoVence),
-      certificado_subject_cn: this.toStringOrNull(data?.certificadoSubjectCn),
-      certificado_issuer_cn: this.toStringOrNull(data?.certificadoIssuerCn),
-      dgii_base_url: this.toStringOrNull(data?.dgiiBaseUrl),
-      dgii_ambiente: this.toStringOrNull(data?.dgiiAmbiente) || 'test',
-      updated_by: this.toStringOrNull(data?.updatedBy),
+      id: Number(data?.id || 1),
       updated_at: new Date().toISOString(),
     };
 
-    Object.keys(payload).forEach((k) => {
-      if (payload[k] === undefined) {
-        delete payload[k];
-      }
-    });
+    if (has('logoDataUrl')) {
+      payload.logo_data_url = data?.logoDataUrl ?? null;
+    }
+    if (has('logoNombre')) {
+      payload.logo_nombre = this.toStringOrNull(data?.logoNombre);
+    }
+    if (has('certificadoNombre')) {
+      payload.certificado_nombre = this.toStringOrNull(data?.certificadoNombre);
+    }
+    if (has('certificadoP12Base64')) {
+      payload.certificado_p12_base64 = data?.certificadoP12Base64 ?? null;
+    }
+    if (has('certificadoPassword')) {
+      payload.certificado_password = this.toStringOrNull(data?.certificadoPassword);
+    }
+    if (has('certificadoVence')) {
+      payload.certificado_vence = this.normalizeDate(data?.certificadoVence);
+    }
+    if (has('certificadoSubjectCn')) {
+      payload.certificado_subject_cn = this.toStringOrNull(data?.certificadoSubjectCn);
+    }
+    if (has('certificadoIssuerCn')) {
+      payload.certificado_issuer_cn = this.toStringOrNull(data?.certificadoIssuerCn);
+    }
+    if (has('dgiiBaseUrl')) {
+      payload.dgii_base_url = this.toStringOrNull(data?.dgiiBaseUrl);
+    }
+    if (has('dgiiAmbiente')) {
+      payload.dgii_ambiente = this.toStringOrNull(data?.dgiiAmbiente) || 'test';
+    }
+    if (has('updatedBy')) {
+      payload.updated_by = this.toStringOrNull(data?.updatedBy);
+    }
 
     return payload;
   }
@@ -129,11 +161,28 @@ export class ServicioConfiguracionGlobal {
 
     return from(
       (async () => {
-        const { data: updated, error } = await this.db
+        let { data: updated, error } = await this.db
           .from('configuracion_global')
           .upsert(payload, { onConflict: 'id', ignoreDuplicates: false })
           .select('*')
           .maybeSingle();
+
+        if (error && this.isMissingColumnError(error, 'dgii_ambiente')) {
+          const legacyPayload = { ...payload };
+          delete legacyPayload.dgii_ambiente;
+
+          const retry = await this.db
+            .from('configuracion_global')
+            .upsert(legacyPayload, {
+              onConflict: 'id',
+              ignoreDuplicates: false,
+            })
+            .select('*')
+            .maybeSingle();
+
+          updated = retry.data;
+          error = retry.error;
+        }
 
         if (error) throw error;
         return this.mapRow(updated || payload);
@@ -192,6 +241,68 @@ export class ServicioConfiguracionGlobal {
         code: 200,
         message: 'Certificado validado',
         data: info,
+      }))
+    );
+  }
+
+  enviarDgiiDirectCert(
+    scenarios: any[],
+    rncEmisor?: string
+  ): Observable<any> {
+    return from(
+      (async () => {
+        const client: any = this.supabase.client;
+        if (!client?.functions?.invoke) {
+          throw new Error('No se pudo invocar la función send-dgii-direct-cert.');
+        }
+
+        const { data, error } = await client.functions.invoke(
+          'send-dgii-direct-cert',
+          {
+            body: {
+              scenarios,
+              rncEmisor: this.toStringOrNull(rncEmisor),
+            },
+          }
+        );
+
+        if (error) {
+          const e: any = error;
+          let details =
+            e?.context?.statusText || e?.message || 'Error enviando a DGII';
+
+          const ctx = e?.context;
+          if (ctx && typeof ctx?.json === 'function') {
+            try {
+              const body = await ctx.json();
+              const bodyMsg =
+                body?.message ||
+                body?.error?.message ||
+                body?.details ||
+                null;
+              if (bodyMsg) {
+                details = String(bodyMsg);
+              }
+            } catch {
+              // Ignorar parse del body; se conserva details por defecto.
+            }
+          }
+
+          throw new Error(String(details));
+        }
+
+        if (!data?.ok) {
+          throw new Error(String(data?.message || 'Error enviando a DGII'));
+        }
+
+        return data?.data;
+      })()
+    ).pipe(
+      map((resp: any) => ({
+        status: 'success',
+        code: 200,
+        message: 'Factura enviada a DGII',
+        data: resp,
       }))
     );
   }

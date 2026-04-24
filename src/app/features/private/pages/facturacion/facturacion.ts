@@ -1406,8 +1406,12 @@ export class Facturacion implements OnInit, AfterViewInit, OnDestroy {
   }
   buscarRnc(event: Event, nextElement: HTMLInputElement | null): void {
     event.preventDefault();
-    const rnc = this.formularioFacturacion.get('fa_rncFact')?.value;
-    if (!rnc || rnc.trim() === '') {
+    const rncRaw = this.formularioFacturacion.get('fa_rncFact')?.value;
+    const rnc = String(rncRaw ?? '')
+      .trim()
+      .replace(/[^\d]/g, '');
+
+    if (!rnc) {
       // Si no se ha ingresado un RNC, por defecto Tipo NCF = 32 (Consumidor Final)
       this.formularioFacturacion.patchValue({ fa_tipoNcf: '32' });
       this.formularioFacturacion.get('fa_tipoNcf')?.disable();
@@ -1416,39 +1420,40 @@ export class Facturacion implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
+    // Normalizar el valor en pantalla para evitar errores por guiones/espacios
+    this.formularioFacturacion.patchValue({ fa_rncFact: rnc }, { emitEvent: false });
+
     // Validar longitud del RNC
     if (rnc.length !== 9 && rnc.length !== 11) {
       this.mostrarMensajeError('RNC inválido.');
-      console.log(rnc.length);
       return;
     }
     // Buscar RNC en el servicio
-    this.ServicioRnc.buscarRncPorrncId(rnc).subscribe((response) => {
-      if (response?.data) {
-        console.log(response.data);
-        // Si se encuentra el RNC, asignar el nombre del cliente
-        const nombreEmpresa = response.data.rason;
+    this.ServicioRnc.buscarRncPorrncId(rnc).subscribe({
+      next: (response) => {
+        if (response?.data) {
+          // Si se encuentra el RNC, asignar el nombre del cliente
+          const nombreEmpresa = response.data.rason;
+          this.formularioFacturacion.patchValue({ fa_nomClie: nombreEmpresa });
 
-        //  const nombreEmpresa = response.data[0]?.rason;
-        this.formularioFacturacion.patchValue({ fa_nomClie: nombreEmpresa });
+          // Si se encuentra RNC, por defecto E31 (Crédito Fiscal) pero habilitado para cambio
+          this.formularioFacturacion.patchValue({ fa_tipoNcf: '31' });
+          this.formularioFacturacion.get('fa_tipoNcf')?.enable();
 
-        // Si se encuentra RNC, por defecto E31 (Crédito Fiscal) pero habilitado para cambio
-        this.formularioFacturacion.patchValue({ fa_tipoNcf: '31' });
-        this.formularioFacturacion.get('fa_tipoNcf')?.enable();
+          // Habilitar campos
+          this.isDisabled = false;
 
-        // this.ncflist = this.ncflist.filter((ncf) => ncf.codNcf !== 1);
-
-        // Habilitar campos
-        this.isDisabled = false;
-
-        $('#input3').focus();
-        $('#input3').select();
-      } else {
-        // Si no se encuentra el RNC, mostrar error
-        this.mostrarMensajeError('RNC inválido.');
-        console.log('RNC no encontrado.');
-        this.isDisabled = true;
-      }
+          $('#input3').focus();
+          $('#input3').select();
+        } else {
+          // Si no se encuentra el RNC, mostrar error
+          this.mostrarMensajeError('RNC inválido.');
+          this.isDisabled = true;
+        }
+      },
+      error: () => {
+        this.mostrarMensajeError('No se pudo validar el RNC. Intenta de nuevo.');
+      },
     });
   }
 

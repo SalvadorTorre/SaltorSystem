@@ -327,6 +327,29 @@ export class ConfiguracionGlobal implements OnInit {
     }
 
     const raw = this.formulario.getRawValue();
+    const passwordActual = String(this.configActual?.certificadoPassword || '').trim();
+    const passwordFormulario = String(raw.certificadoPassword || '').trim();
+    const hayCertificadoActual = Boolean(
+      String(this.configActual?.certificadoP12Base64 || '').trim()
+    );
+    const quitandoCertificado = this.pendingCertBase64 === null;
+    const subiendoNuevoCertificado = typeof this.pendingCertBase64 === 'string';
+    const certificadoQuedaraActivo =
+      !quitandoCertificado && (subiendoNuevoCertificado || hayCertificadoActual);
+    const passwordFinal =
+      subiendoNuevoCertificado || passwordFormulario !== passwordActual
+        ? passwordFormulario
+        : passwordActual;
+
+    if (certificadoQuedaraActivo && !passwordFinal) {
+      Swal.fire(
+        'Contraseña requerida',
+        'El certificado está cargado, pero falta la contraseña. Debes completarla para guardar.',
+        'warning'
+      );
+      return;
+    }
+
     const payload: Partial<ConfiguracionGlobalData> = {
       id: 1,
       dgiiBaseUrl: String(raw.dgiiBaseUrl || '').trim(),

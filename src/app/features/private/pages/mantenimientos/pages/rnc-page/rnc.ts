@@ -41,6 +41,7 @@ export class Rnc implements OnInit {
       this.isLoadingImport = state.running;
       this.gestionarNotificacionFinal(state);
     });
+    this.servicioRnc.sincronizarImportacionServidorActiva();
     this.obtenerRnc();
   }
 
@@ -232,25 +233,35 @@ export class Rnc implements OnInit {
       cancelButtonText: 'Cancelar',
     }).then((result) => {
       if (result.isConfirmed) {
-        this.servicioRnc.solicitarPermisoNotificaciones();
-        const started = this.servicioRnc.iniciarImportacionDgiiEnSegundoPlano();
-        if (!started) {
-          Swal.fire(
-            'Importación en curso',
-            'Ya hay una importación de RNC ejecutándose en segundo plano.',
-            'info'
-          );
-          return;
-        }
-        Swal.fire({
-          icon: 'info',
-          title: 'Importación iniciada',
-          text: 'La importación se está ejecutando en segundo plano. Te notificaremos al finalizar.',
-          toast: true,
-          position: 'top-end',
-          timer: 4000,
-          showConfirmButton: false,
-        });
+        (async () => {
+          try {
+            this.servicioRnc.solicitarPermisoNotificaciones();
+            const started = await this.servicioRnc.iniciarImportacionDgiiEnSegundoPlano();
+            if (!started) {
+              Swal.fire(
+                'Importación en curso',
+                'Ya hay una importación de RNC ejecutándose en servidor.',
+                'info'
+              );
+              return;
+            }
+            Swal.fire({
+              icon: 'info',
+              title: 'Importación iniciada',
+              text: 'La importación se está ejecutando en servidor. Te notificaremos al finalizar.',
+              toast: true,
+              position: 'top-end',
+              timer: 4000,
+              showConfirmButton: false,
+            });
+          } catch (error: any) {
+            Swal.fire(
+              'Error',
+              error?.message || 'No se pudo iniciar la importación en servidor.',
+              'error'
+            );
+          }
+        })();
       }
     });
   }

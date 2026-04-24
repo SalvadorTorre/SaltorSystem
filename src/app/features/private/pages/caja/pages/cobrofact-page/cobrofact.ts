@@ -13,7 +13,7 @@ import {
   FormGroup,
   Validators,
 } from '@angular/forms';
-import { BehaviorSubject, firstValueFrom } from 'rxjs';
+import { BehaviorSubject } from 'rxjs';
 import Swal from 'sweetalert2';
 import { ServicioRnc } from 'src/app/core/services/mantenimientos/rnc/rnc.service';
 import { ServicioUsuario } from 'src/app/core/services/mantenimientos/usuario/usuario.service';
@@ -34,12 +34,10 @@ import { ServicioFpago } from 'src/app/core/services/mantenimientos/fpago/fpago.
 import { ModeloFentregaData } from 'src/app/core/services/mantenimientos/fentrega';
 import { ServicioFentrega } from 'src/app/core/services/mantenimientos/fentrega/fentrega.service';
 import { ModeloInventarioData } from 'src/app/core/services/mantenimientos/inventario';
-import { HttpClient } from '@angular/common/http';
 import { ServicioNcf } from 'src/app/core/services/mantenimientos/ncf/ncf.service';
 import { ModeloNcfData } from 'src/app/core/services/mantenimientos/ncf';
 import { PrintingService } from 'src/app/core/services/utils/printing.service';
 import { ServicioConfiguracionGlobal } from 'src/app/core/services/mantenimientos/configuracion-global/configuracion-global.service';
-import { ConfiguracionGlobalData } from 'src/app/core/services/mantenimientos/configuracion-global';
 
 declare var $: any;
 
@@ -168,7 +166,6 @@ export class CobroFact implements OnInit {
   form: FormGroup;
   facturaElement: any;
   formasPago: any;
-  dgiiConfig: ConfiguracionGlobalData | null = null;
 
   get totalPages() {
     return Math.ceil(this.facturacionList.length / this.pageSize);
@@ -191,7 +188,6 @@ export class CobroFact implements OnInit {
     private servicioFentrega: ServicioFentrega,
     private servicioNcf: ServicioNcf,
     private servicioConfiguracionGlobal: ServicioConfiguracionGlobal,
-    private http: HttpClient,
     private printingService: PrintingService,
   ) {
     this.form = this.fb.group({
@@ -227,19 +223,6 @@ export class CobroFact implements OnInit {
     this.obtenerNcf();
     this.obtenerfpago();
     this.obtenerFentrega();
-    this.cargarConfiguracionDgii();
-  }
-
-  private cargarConfiguracionDgii(): void {
-    this.servicioConfiguracionGlobal.obtenerConfiguracionGlobal().subscribe({
-      next: (resp) => {
-        this.dgiiConfig = resp?.data || null;
-      },
-      error: (err) => {
-        console.error('No se pudo cargar configuración DGII global:', err);
-        this.dgiiConfig = null;
-      },
-    });
   }
   obtenerfpago() {
     this.servicioFpago.obtenerTodosFpago().subscribe((response) => {
@@ -697,21 +680,6 @@ export class CobroFact implements OnInit {
     console.log('Guardando facturación...');
   }
 
-  private normalizarAmbienteDgii(value: any): 'test' | 'prod' {
-    const raw = String(value || 'test').trim().toLowerCase();
-    return raw === 'prod' ? 'prod' : 'test';
-  }
-
-  private construirEndpointDirectCert(config: ConfiguracionGlobalData | null): string {
-    const baseRaw = String(
-      config?.dgiiBaseUrl || 'https://recepcion.grupohierro.net/ecf/api'
-    )
-      .trim()
-      .replace(/\/+$/, '');
-    const ambiente = this.normalizarAmbienteDgii(config?.dgiiAmbiente);
-    return `${baseRaw}/${ambiente}/api/test-body-direct-cert`;
-  }
-
   private formatearFechaDgii(input: any): string {
     if (!input) {
       const now = new Date();
@@ -742,42 +710,109 @@ export class CobroFact implements OnInit {
   }
 
   private normalizarRespuestaDgii(raw: any): any {
+    const pick = (...values: any[]): string | null => {
+      for (const value of values) {
+        if (value === null || value === undefined) continue;
+        const text = String(value).trim();
+        if (text) return text;
+      }
+      return null;
+    };
+
     const root = raw?.data && typeof raw.data === 'object' ? raw.data : raw;
-    const nested = root?.result && typeof root.result === 'object' ? root.result : root;
+    const payload =
+      root?.data && typeof root.data === 'object' ? root.data : root;
+    const firstResult =
+      Array.isArray(payload?.results) && payload.results.length
+        ? payload.results[0]
+        : null;
+    const nested =
+      (firstResult && typeof firstResult === 'object' && firstResult) ||
+      (payload?.result && typeof payload.result === 'object' && payload.result) ||
+      payload;
+
     const xmls = nested?.xmls && typeof nested.xmls === 'object' ? nested.xmls : {};
+    const rfceInfo =
+      nested?.rfceInfo && typeof nested.rfceInfo === 'object' ? nested.rfceInfo : {};
+    const ecfInfo =
+      nested?.ecfInfo && typeof nested.ecfInfo === 'object' ? nested.ecfInfo : {};
+    const responseRFCE =
+      nested?.responseRFCE && typeof nested.responseRFCE === 'object'
+        ? nested.responseRFCE
+        : {};
+    const dgiiResponse =
+      responseRFCE?.dgiiResponse && typeof responseRFCE.dgiiResponse === 'object'
+        ? responseRFCE.dgiiResponse
+        : {};
+
+    const qrLink = pick(
+      nested?.qr_link,
+      nested?.qrUrl,
+      nested?.qrLink,
+      nested?.urlQr,
+      nested?.qr,
+      nested?.link_original,
+      rfceInfo?.link_original,
+      rfceInfo?.qrUrl,
+      ecfInfo?.qrUrl,
+      responseRFCE?.qrUrl
+    );
+    const codigoSeguridad = pick(
+      nested?.codseguridad,
+      nested?.codigoSeguridadeCF,
+      nested?.codigoSeguridad,
+      nested?.securityCode,
+      rfceInfo?.codigoSeguridad,
+      rfceInfo?.codigoSeguridadeCF,
+      responseRFCE?.codigoSeguridad,
+      responseRFCE?.codigoSeguridadeCF
+    );
+    const fechaFirma = pick(
+      nested?.fec_firma,
+      nested?.fechaHoraFirmaRFCE,
+      nested?.fechaHoraFirma,
+      nested?.fechaFirma,
+      nested?.fecha_firma,
+      rfceInfo?.fechaHoraFirma
+    );
+    const estadoDgii = pick(
+      nested?.estado_dgii,
+      nested?.rfceEstado,
+      nested?.estado,
+      dgiiResponse?.estado,
+      nested?.status,
+      nested?.estadoEnvio
+    );
 
     return {
       ...nested,
-      estado_dgii:
-        nested?.estado_dgii ??
-        nested?.estado ??
-        nested?.status ??
-        nested?.estadoEnvio ??
-        null,
-      codseguridad:
-        nested?.codseguridad ??
-        nested?.codigoSeguridad ??
-        nested?.securityCode ??
-        null,
-      qr_link:
-        nested?.qr_link ??
-        nested?.qrLink ??
-        nested?.urlQr ??
-        nested?.qr ??
-        null,
-      fec_firma:
-        nested?.fec_firma ??
-        nested?.fechaFirma ??
-        nested?.fecha_firma ??
-        null,
+      estado_dgii: estadoDgii,
+      codseguridad: codigoSeguridad,
+      qr_link: qrLink,
+      qrUrl: qrLink,
+      link_original: qrLink,
+      fec_firma: fechaFirma,
+      signatureDateTime: fechaFirma,
       ecf: nested?.ecf ?? xmls?.ecf ?? null,
       rfce: nested?.rfce ?? xmls?.rfce ?? null,
-      estado_envio_dgii:
-        nested?.estado_envio_dgii ??
-        nested?.estadoEnvio ??
-        nested?.status ??
-        null,
+      estado_envio_dgii: pick(
+        nested?.estado_envio_dgii,
+        nested?.estadoEnvio,
+        nested?.rfceEstado,
+        dgiiResponse?.estado,
+        nested?.status
+      ),
     };
+  }
+
+  private extraerMensajeError(error: any): string {
+    const msg =
+      error?.error?.message ||
+      error?.error?.details ||
+      error?.message ||
+      error?.statusText ||
+      'No se pudo generar el comprobante electrónico.';
+    return String(msg);
   }
 
   /**
@@ -820,7 +855,7 @@ export class CobroFact implements OnInit {
       TotalITBIS: totalItbis.toFixed(2),
       MontoTotal: montoTotal.toFixed(2),
       TipoIngresos: '01',
-      TipoPago: String(factura.fa_fpago || '1'),
+      TipoPago: String((factura as any).fa_codfpago || factura.fa_fpago || '1'),
       RegimenPagos: '0',
       IndicadorMontoGravado: '1',
       CasoPrueba: `${rncEmisorLimpio}${encf}`,
@@ -848,7 +883,7 @@ export class CobroFact implements OnInit {
       scenario[`IndicadorFacturacion[${i}]`] = '1';
     });
 
-    scenario['FormaPago[1]'] = String(factura.fa_fpago || '1');
+    scenario['FormaPago[1]'] = String((factura as any).fa_codfpago || factura.fa_fpago || '1');
     scenario['MontoPago[1]'] = montoTotal.toFixed(2);
 
     // Retornar el objeto escenario directamente, sin envolverlo en un array
@@ -872,36 +907,17 @@ export class CobroFact implements OnInit {
       return;
     }
 
-    let configDgii: ConfiguracionGlobalData | null = this.dgiiConfig;
-    if (!configDgii) {
-      try {
-        const responseConfig = await firstValueFrom(
-          this.servicioConfiguracionGlobal.obtenerConfiguracionGlobal()
-        );
-        configDgii = responseConfig?.data || null;
-        this.dgiiConfig = configDgii;
-      } catch (error) {
-        console.error('Error cargando configuración DGII', error);
-      }
-    }
-
-    const certB64 = String(configDgii?.certificadoP12Base64 || '').trim();
-    const certPassword = String(configDgii?.certificadoPassword || '').trim();
     const rncEmisor = String(localStorage.getItem('rnc_empresa') || '')
       .trim()
       .replace(/-/g, '');
-    if (!certB64 || !certPassword || !rncEmisor) {
+    if (!rncEmisor) {
       Swal.fire(
         'Configuración incompleta',
-        'Debes configurar certificado digital, contraseña y RNC emisor en Mantenimiento > Firma digital DGII.',
+        'No se encontró el RNC emisor activo en la sesión.',
         'warning'
       );
       return;
     }
-
-    const requestBody = {
-      scenarios: [dgiiData],
-    };
 
     // Mostrar Loading
     Swal.fire({
@@ -913,19 +929,13 @@ export class CobroFact implements OnInit {
       },
     });
 
-    const url = this.construirEndpointDirectCert(configDgii);
-    const headers = {
-      'Content-Type': 'application/json',
-      'x-cert-p12-b64': certB64,
-      'x-cert-password': certPassword,
-      'x-cert-rnc': rncEmisor,
-    };
-
-    // Realizar POST
-    this.http.post(url, requestBody, { headers }).subscribe(
+    // Envío server-side (Edge Function) para evitar CORS en navegador.
+    this.servicioConfiguracionGlobal.enviarDgiiDirectCert([dgiiData], rncEmisor).subscribe(
       (response: any) => {
         console.log('Respuesta DGII:', response);
-        const payloadDgii = this.normalizarRespuestaDgii(response);
+        const payloadDgii = this.normalizarRespuestaDgii(
+          response?.data ?? response
+        );
 
         // Actualizar mensaje de loading
         Swal.update({
@@ -975,7 +985,7 @@ export class CobroFact implements OnInit {
         console.error('Error obteniendo datos DGII:', error);
         Swal.fire(
           'Error',
-          'No se pudo generar el comprobante electrónico.',
+          this.extraerMensajeError(error),
           'error',
         );
         // En caso de error, imprimir solo con datos locales (opcional, comentado por ahora)

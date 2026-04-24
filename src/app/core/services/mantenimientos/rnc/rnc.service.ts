@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { ModeloRnc, ModeloRncData } from '.';
-import { BehaviorSubject, Observable, firstValueFrom, from } from 'rxjs';
+import { BehaviorSubject, Observable, from } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { SupabaseService } from '../../supabase/supabase.service';
 import { unzipSync } from 'fflate';
@@ -29,6 +29,21 @@ export interface ImportTaskState extends ImportProgress {
   message: string;
 }
 
+interface ServerImportJob {
+  id: string;
+  status: 'pending' | 'running' | 'success' | 'error';
+  phase: ImportPhase;
+  processed: number;
+  total: number;
+  inserted: number;
+  errors: number;
+  message: string;
+  startedAt: string | null;
+  finishedAt: string | null;
+  running: boolean;
+  success: boolean | null;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -37,6 +52,8 @@ export class ServicioRnc {
   private readonly dgiiZipUrl =
     'https://dgii.gov.do/app/WebApps/Consultas/RNC/RNC_CONTRIBUYENTES.zip';
   private readonly edgeProxyFunctionName = 'proxy-rnc-dgii';
+  private readonly importJobFunctionName = 'rnc-import-job';
+  private readonly importPollMs = 2000;
   private readonly importStateSubject = new BehaviorSubject<ImportTaskState>({
     running: false,
     success: null,
@@ -50,6 +67,7 @@ export class ServicioRnc {
     errors: 0,
   });
   private importPromise: Promise<any> | null = null;
+  private currentJobId: string | null = null;
 
   readonly importState$ = this.importStateSubject.asObservable();
 
@@ -94,6 +112,12 @@ export class ServicioRnc {
       .replace(/[\u0300-\u036f]/g, '')
       .toLowerCase()
       .trim();
+  }
+
+  private normalizeRncCodigo(input: unknown): string {
+    return String(input ?? '')
+      .trim()
+      .replace(/[^\d]/g, '');
   }
 
   private detectDelimiter(sampleLine: string): string {
@@ -387,6 +411,177 @@ export class ServicioRnc {
     });
   }
 
+  private sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  private async invokeImportJob(body: Record<string, any>): Promise<any> {
+    const client: any = this.supabase.client;
+    if (!client?.functions?.invoke) {
+      throw new Error('No se pudo invocar la función rnc-import-job.');
+    }
+
+    const { data, error } = await client.functions.invoke(
+      this.importJobFunctionName,
+      { body }
+    );
+
+    if (error) {
+      const e: any = error;
+      let details =
+        e?.context?.statusText || e?.message || 'Error en job de importación RNC';
+      const ctx = e?.context;
+      if (ctx && typeof ctx?.json === 'function') {
+        try {
+          const bodyJson = await ctx.json();
+          const bodyMessage = String(bodyJson?.message || '').trim();
+          const bodyDetails = String(
+            bodyJson?.details || bodyJson?.error?.message || ''
+          ).trim();
+
+          if (bodyMessage && bodyDetails) {
+            details =
+              bodyMessage === bodyDetails
+                ? bodyMessage
+                : `${bodyMessage} ${bodyDetails}`;
+          } else if (bodyMessage) {
+            details = bodyMessage;
+          } else if (bodyDetails) {
+            details = bodyDetails;
+          }
+        } catch {
+          // Ignorar parse del body y usar details por defecto.
+        }
+      }
+      throw new Error(String(details));
+    }
+
+    if (!data?.ok) {
+      throw new Error(
+        String(data?.message || 'No se pudo ejecutar el job de importación RNC.')
+      );
+    }
+
+    return data?.data || {};
+  }
+
+  private mapServerJobToState(job: ServerImportJob, fallbackStartedAt: number): ImportTaskState {
+    const startedAtCandidate = job?.startedAt
+      ? new Date(job.startedAt).getTime()
+      : fallbackStartedAt;
+    const startedAtMs = Number.isFinite(startedAtCandidate)
+      ? startedAtCandidate
+      : fallbackStartedAt;
+
+    const finishedAtCandidate = job?.finishedAt
+      ? new Date(job.finishedAt).getTime()
+      : NaN;
+    const finishedAtMs = Number.isFinite(finishedAtCandidate)
+      ? finishedAtCandidate
+      : null;
+    return {
+      running: Boolean(job?.running || job?.success === null),
+      success:
+        job?.success === true
+          ? true
+          : job?.success === false
+          ? false
+          : null,
+      startedAt: startedAtMs,
+      finishedAt: finishedAtMs,
+      message: String(job?.message || 'Importando datos de DGII...'),
+      phase: (job?.phase || 'descargando') as ImportPhase,
+      processed: Number(job?.processed || 0),
+      total: Number(job?.total || 0),
+      inserted: Number(job?.inserted || 0),
+      errors: Number(job?.errors || 0),
+    };
+  }
+
+  private startServerJobTracking(jobId: string, startedAt: number): void {
+    this.importPromise = (async () => {
+      try {
+        while (true) {
+          const statusData = await this.invokeImportJob({
+            action: 'status',
+            schema: this.supabase.schema,
+            jobId,
+          });
+
+          const job = (statusData?.job || null) as ServerImportJob | null;
+          if (!job) {
+            await this.sleep(this.importPollMs);
+            continue;
+          }
+
+          this.updateImportState(this.mapServerJobToState(job, startedAt));
+
+          if (job.success === true || job.status === 'success') {
+            this.notifyCompletion(true, {
+              inserted: Number(job.inserted || 0),
+              errors: Number(job.errors || 0),
+            });
+            break;
+          }
+
+          if (job.success === false || job.status === 'error') {
+            throw new Error(
+              String(job.message || 'No se pudo completar la importación de RNC.')
+            );
+          }
+
+          await this.sleep(this.importPollMs);
+        }
+      } catch (error: any) {
+        const finishedAt = Date.now();
+        const message =
+          String(error?.message || '').trim() ||
+          'No se pudo completar la importación de RNC.';
+
+        this.updateImportState({
+          running: false,
+          success: false,
+          finishedAt,
+          message,
+          phase: 'completado',
+        });
+
+        this.notifyCompletion(false, {
+          inserted: this.importStateSubject.value.inserted,
+          errors: this.importStateSubject.value.errors,
+          message,
+        });
+      } finally {
+        this.importPromise = null;
+        this.currentJobId = null;
+      }
+    })();
+  }
+
+  async sincronizarImportacionServidorActiva(): Promise<void> {
+    if (this.importPromise) return;
+
+    try {
+      const statusData = await this.invokeImportJob({
+        action: 'status',
+        schema: this.supabase.schema,
+      });
+      const job = (statusData?.job || null) as ServerImportJob | null;
+      if (!job) return;
+      if (!(job.running || job.success === null)) return;
+      if (!job.id) return;
+
+      const startedAt = job.startedAt
+        ? new Date(job.startedAt).getTime()
+        : Date.now();
+      this.currentJobId = job.id;
+      this.updateImportState(this.mapServerJobToState(job, startedAt));
+      this.startServerJobTracking(job.id, startedAt);
+    } catch {
+      // Si no se puede sincronizar, no bloqueamos la pantalla.
+    }
+  }
+
   private notifyCompletion(
     success: boolean,
     summary: { inserted: number; errors: number; message?: string }
@@ -422,7 +617,7 @@ export class ServicioRnc {
     }
   }
 
-  iniciarImportacionDgiiEnSegundoPlano(): boolean {
+  async iniciarImportacionDgiiEnSegundoPlano(): Promise<boolean> {
     if (this.importPromise) {
       return false;
     }
@@ -441,67 +636,68 @@ export class ServicioRnc {
       errors: 0,
     });
 
-    this.importPromise = (async () => {
-      try {
-        const result = await firstValueFrom(
-          this.importarDgii((progress) => {
-            this.updateImportState({
-              running: true,
-              success: null,
-              phase: progress.phase,
-              processed: progress.processed,
-              total: progress.total,
-              inserted: progress.inserted,
-              errors: progress.errors,
-              message: 'Importando datos de DGII...',
-            });
-          })
-        );
+    try {
+      const requestedBy = String(
+        localStorage.getItem('username') ||
+          localStorage.getItem('usuario') ||
+          'sistema'
+      ).trim() || 'sistema';
 
-        const inserted = Number(result?.data?.insertados || 0);
-        const errors = Number(result?.data?.errores || 0);
-        const finishedAt = Date.now();
+      const startData = await this.invokeImportJob({
+        action: 'start',
+        schema: this.supabase.schema,
+        requestedBy,
+      });
 
-        this.updateImportState({
-          running: false,
-          success: true,
-          finishedAt,
-          phase: 'completado',
-          processed: Number(result?.data?.totalFuente || 0),
-          total: Number(result?.data?.totalFuente || 0),
-          inserted,
-          errors,
-          message: 'Importación completada.',
-        });
+      const started = Boolean(startData?.started);
+      const job = (startData?.job || null) as ServerImportJob | null;
+      const jobId = String(startData?.jobId || job?.id || '').trim();
 
-        this.notifyCompletion(true, {
-          inserted,
-          errors,
-        });
-      } catch (error: any) {
-        const finishedAt = Date.now();
-        const message =
-          String(error?.message || '').trim() ||
-          'No se pudo completar la importación de RNC.';
-
-        this.updateImportState({
-          running: false,
-          success: false,
-          finishedAt,
-          message,
-        });
-
-        this.notifyCompletion(false, {
-          inserted: this.importStateSubject.value.inserted,
-          errors: this.importStateSubject.value.errors,
-          message,
-        });
-      } finally {
-        this.importPromise = null;
+      if (!jobId) {
+        throw new Error('No se recibió jobId del servidor para importar RNC.');
       }
-    })();
 
-    return true;
+      this.currentJobId = jobId;
+
+      if (job) {
+        this.updateImportState(this.mapServerJobToState(job, startedAt));
+      }
+
+      if (!started) {
+        this.updateImportState({
+          running: true,
+          success: null,
+          startedAt,
+          finishedAt: null,
+          message:
+            'Ya había una importación ejecutándose en servidor. Conectando al seguimiento...',
+        });
+      }
+
+      this.startServerJobTracking(jobId, startedAt);
+      return started;
+    } catch (error: any) {
+      const finishedAt = Date.now();
+      const message =
+        String(error?.message || '').trim() ||
+        'No se pudo iniciar la importación de RNC en servidor.';
+
+      this.updateImportState({
+        running: false,
+        success: false,
+        finishedAt,
+        phase: 'completado',
+        message,
+      });
+
+      this.notifyCompletion(false, {
+        inserted: this.importStateSubject.value.inserted,
+        errors: this.importStateSubject.value.errors,
+        message,
+      });
+
+      throw new Error(message);
+    }
   }
 
   buscarTodosRnc(
@@ -613,8 +809,9 @@ export class ServicioRnc {
   }
 
   buscarRncPorId(rnc: string): Observable<any> {
-    const codigo = String(rnc ?? '').trim();
+    const codigo = this.normalizeRncCodigo(rnc);
     return from((async () => {
+      if (!codigo) return [];
       const { data, error } = await this.db
         .from('rnc')
         .select('*')
@@ -627,8 +824,9 @@ export class ServicioRnc {
     );
   }
   buscarRncPorrncId(rnc: string): Observable<any> {
-    const codigo = String(rnc ?? '').trim();
+    const codigo = this.normalizeRncCodigo(rnc);
     return from((async () => {
+      if (!codigo) return null;
       const { data, error } = await this.db
         .from('rnc')
         .select('*')

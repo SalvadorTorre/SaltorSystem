@@ -271,11 +271,45 @@ export class PrintingService {
 
       // --- DGII INFO & EXTRAS ---
       // Intentar buscar en la raíz o en facturaData.data
-      const securityCode =
-        facturaData.securityCode || f.securityCode || f.CodigoSeguridad;
-      const qrUrl = facturaData.qrUrl || f.qrUrl;
-      const signatureDateTime =
-        facturaData.signatureDateTime || f.signatureDateTime;
+      const pickText = (...values: any[]): string | null => {
+        for (const value of values) {
+          if (value === null || value === undefined) continue;
+          const text = String(value).trim();
+          if (text) return text;
+        }
+        return null;
+      };
+
+      const securityCode = pickText(
+        facturaData.codseguridad,
+        facturaData.codigoSeguridad,
+        facturaData.codigoSeguridadeCF,
+        facturaData.securityCode,
+        f.codseguridad,
+        f.codigoSeguridad,
+        f.codigoSeguridadeCF,
+        f.securityCode,
+        f.CodigoSeguridad
+      );
+      const qrUrl = pickText(
+        facturaData.qr_link,
+        facturaData.link_original,
+        facturaData.qrUrl,
+        facturaData.qrLink,
+        f.qr_link,
+        f.link_original,
+        f.qrUrl,
+        f.qrLink,
+        f.urlQr
+      );
+      const signatureDateTime = pickText(
+        facturaData.fec_firma,
+        facturaData.fechaHoraFirmaRFCE,
+        facturaData.signatureDateTime,
+        f.fec_firma,
+        f.fechaHoraFirmaRFCE,
+        f.signatureDateTime
+      );
 
       // 1. BARCODE (Primero)
       if (codFact) {
