@@ -110,6 +110,9 @@ export class ServicioUsuario {
     if (msg.includes('password should be at least') || msg.includes('password must be at least')) {
       return 'La clave no cumple los requisitos internos de seguridad.';
     }
+    if (msg.includes('email rate limit')) {
+      return 'Límite de correos alcanzado en Auth. Intenta de nuevo en unos minutos.';
+    }
     if (msg.includes('duplicate key value') || msg.includes('already exists')) {
       if (msg.includes('idusuario') || msg.includes('usuario')) return 'Ese nombre de usuario ya existe.';
       if (msg.includes('claveusuario') || msg.includes('clave')) return 'Esa clave ya existe.';
@@ -173,8 +176,8 @@ export class ServicioUsuario {
 
   private async crearAuthUser(input: any): Promise<{ authUserId: string; authEmail: string }> {
     const client = this.client;
-    if (!client?.auth) {
-      throw new Error('Cliente Supabase Auth no disponible');
+    if (!client?.functions?.invoke) {
+      throw new Error('Cliente Supabase Functions no disponible');
     }
 
     const authEmail = this.buildAuthEmail(input);
@@ -185,6 +188,69 @@ export class ServicioUsuario {
     if (!authEmail) {
       throw new Error('No se pudo generar un correo para Supabase Auth');
     }
+    const { data, error } = await client.functions.invoke(
+      'create-confirmed-platform-user',
+      {
+        body: {
+          email: authEmail,
+          password,
+          idUsuario,
+          nombreUsuario,
+        },
+      }
+    );
+
+    if (error) {
+      const e: any = error;
+      let details =
+        e?.context?.statusText || e?.message || 'No se pudo crear el usuario en Supabase Auth';
+      const ctx = e?.context;
+      if (ctx && typeof ctx?.json === 'function') {
+        try {
+          const body = await ctx.json();
+          const bodyMsg =
+            body?.message ||
+            body?.details ||
+            body?.error?.message ||
+            null;
+          if (bodyMsg) details = String(bodyMsg);
+        } catch {
+          // Sin parse de body, usamos details por defecto.
+        }
+      }
+      throw new Error(this.traducirError(details, 'No se pudo crear el usuario en Supabase Auth'));
+    }
+
+    if (!data?.ok) {
+      throw new Error(
+        this.traducirError(
+          data?.message || data?.details || 'No se pudo crear el usuario en Supabase Auth',
+          'No se pudo crear el usuario en Supabase Auth'
+        )
+      );
+    }
+
+    const authUserId = String(data?.data?.authUserId || '').trim();
+    const resolvedEmail = String(data?.data?.authEmail || authEmail).trim();
+    if (!authUserId) {
+      throw new Error('Supabase Auth no devolvió id de usuario');
+    }
+
+    return { authUserId, authEmail: resolvedEmail };
+  }
+
+  // Fallback legacy (no recomendado): dispara envío de email y puede topar rate limit.
+  private async crearAuthUserLegacySignUp(input: any): Promise<{ authUserId: string; authEmail: string }> {
+    const client = this.client;
+    if (!client?.auth) {
+      throw new Error('Cliente Supabase Auth no disponible');
+    }
+
+    const authEmail = this.buildAuthEmail(input);
+    const password = this.buildAuthPassword(input);
+    const idUsuario = String(input?.idUsuario ?? input?.idusuario ?? '').trim();
+    const nombreUsuario = String(input?.nombreUsuario ?? input?.nombreusuario ?? '').trim();
+
     const { data, error } = await client.auth.signUp({
       email: authEmail,
       password,
