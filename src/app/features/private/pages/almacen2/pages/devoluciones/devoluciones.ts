@@ -67,6 +67,20 @@ export class DevolucionesComponent implements OnInit {
     timer: 5000,
     timerProgressBar: false
   });
+
+  private extraerMensajeError(err: any): string {
+    if (!err) return 'Error desconocido';
+    if (typeof err === 'string') return err;
+    if (err?.message) return String(err.message);
+    if (typeof err?.error === 'string') return err.error;
+    if (err?.error?.message) return String(err.error.message);
+    if (err?.error?.error) return String(err.error.error);
+    try {
+      return JSON.stringify(err.error || err);
+    } catch {
+      return 'Error desconocido';
+    }
+  }
   constructor(
     private fb: FormBuilder,
     private contFacturaSrv: ServicioContFactura,
@@ -369,7 +383,8 @@ agregarLineaDestino() {
     des: String(v.descripcion || '').trim(),
     cantidad,
     precio,
-    valor
+    valor,
+    total: valor
   };
 
   this.seleccionDestino.push(nuevoItem);
@@ -388,7 +403,10 @@ agregarLineaDestino() {
   }
 
   recalcularTotalDestino() {
-    this.totalDestino = this.seleccionDestino.reduce((acc, it) => acc + (Number(it.valor) || 0), 0);
+    this.totalDestino = this.seleccionDestino.reduce(
+      (acc, it) => acc + (Number(it.total ?? it.valor) || 0),
+      0,
+    );
   }
 
   agregarLineaFactura(item: any) {
@@ -532,7 +550,7 @@ fa_codClie: this.facturaForm.get('fa_codClie')?.value
     },
     cantidad: Number(it.cantidad || 0),
     precio: Number(it.precio || 0),
-    total: Number(it.valor || 0),
+    total: Number(it.total ?? it.valor ?? 0),
   }));
   const payload = {
     entradamercancia,
@@ -597,6 +615,7 @@ fa_codClie: this.facturaForm.get('fa_codClie')?.value
       console.error(err);
       Swal.fire({
         title: 'Error al guardar devolución',
+        text: this.extraerMensajeError(err),
         icon: 'error'
       });
     }
@@ -850,7 +869,8 @@ agregarItem() {
     des: this.productoSeleccionado.in_desmerc,
     cantidad: cantidad,
     precio: precio,
-    total: cantidad * precio
+    total: cantidad * precio,
+    valor: cantidad * precio
   };
 
   this.seleccionDestino.push(nuevoItem);

@@ -636,6 +636,9 @@ export class ServicioFacturacion {
           facturaPayload.fa_codsucu = tenantSucursal;
         }
         facturaPayload.fa_status = facturaPayload.fa_status || 'A';
+        // Al grabar facturas: siempre quedan pendientes de pago
+        // (la forma de pago vive en fa_codfpago; fa_fpago se usa como flag/estado).
+        facturaPayload.fa_fpago = 'N';
         facturaPayload.fa_impresa = facturaPayload.fa_impresa || 'N';
         facturaPayload.fa_reimpresa = facturaPayload.fa_reimpresa || 'N';
         facturaPayload.fa_entrega = facturaPayload.fa_entrega || 'N';
@@ -722,7 +725,9 @@ export class ServicioFacturacion {
       let query = this.db
         .from('factura')
         .select('*')
-        .or('fa_impresa.is.null,fa_impresa.eq.N')
+        // Caja: facturas pendientes de pago (fa_fpago='N') tanto impresas como no impresas.
+        .eq('fa_fpago', 'N')
+        .in('fa_impresa', ['N', 'S'])
         .order('fa_fecfact', { ascending: false })
         .limit(500);
       query = this.applyTenantFilter(query);

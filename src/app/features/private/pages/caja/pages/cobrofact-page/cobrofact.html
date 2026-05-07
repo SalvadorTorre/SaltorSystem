@@ -22,6 +22,7 @@
                     <th class="col-2">Número</th>
                     <th class="col-6">Cliente / Fecha</th>
                     <th class="col-2 text-end">Valor</th>
+                    <th class="col-2 text-center">Status</th>
                     <th class="col-2 text-center">Opciones</th>
                   </tr>
                 </thead>
@@ -53,6 +54,13 @@
                     <div class="fw-bold fs-5 text-success">
                       ${{ factura.fa_valFact | number: '1.2-2' }}
                     </div>
+                  </td>
+
+                  <!-- Status -->
+                  <td class="text-center align-middle">
+                    <span *ngIf="factura.caja_status" class="badge bg-danger">
+                      {{ factura.caja_status }}
+                    </span>
                   </td>
 
                   <!-- Opciones -->
@@ -112,11 +120,14 @@
                 <span class="badge bg-light text-dark">Factura #{{ formularioFacturacion.get('fa_codFact')?.value }}</span>
               </div>
               <div class="card-body bg-light p-2">
+                <div *ngIf="bloquearReimpresion" class="alert alert-danger py-2 mb-2">
+                  Factura pendiente de pago: gestión de pago deshabilitada.
+                </div>
                 <div class="row g-2">
                   <div class="col-md-6">
                     <div class="form-check form-switch mb-2">
                       <input
-                        [disabled]="chekpagada"
+                        [disabled]="chekpagada || bloquearReimpresion"
                         type="checkbox"
                         id="chk1"
                         class="form-check-input"
@@ -133,7 +144,7 @@
                         name="formapago"
                         [(ngModel)]="ftipoPago"
                         class="form-select"
-                        [disabled]="!chekPagado"
+                        [disabled]="!chekPagado || bloquearReimpresion"
                       >
                         <option
                           [value]="fpago.fp_codfpago"
@@ -149,7 +160,7 @@
                       <select
                         class="form-select"
                         [(ngModel)]="fentrega"
-                        [disabled]="!chekPagado"
+                        [disabled]="!chekPagado || bloquearReimpresion"
                       >
                         <option [value]="fe.idfentrega" *ngFor="let fe of resultadoFentrega">{{ fe.desentrega }}</option>
                       </select>
@@ -181,7 +192,7 @@
                           [ngClass]="{ 'is-invalid': valorPagado < formularioFacturacion.get('fa_valFact')?.value }"
                           style="font-weight: bold"
                           [value]="valorPagado"
-                          [disabled]="txtvalPagado"
+                          [disabled]="txtvalPagado || bloquearReimpresion"
                           (input)="onValorPagadoChange($event)"
                         />
                       </div>
@@ -209,18 +220,20 @@
                 <div class="action-bar d-flex justify-content-between gap-2 mt-2">
                 <button
                   class="btn btn-secondary flex-fill"
-                  [disabled]="!chekPagado || valorPagado < formularioFacturacion.get('fa_valFact')?.value"
+                  [disabled]="bloquearReimpresion || !chekPagado || valorPagado < formularioFacturacion.get('fa_valFact')?.value"
                   (click)="marcarImpresa()"  >
                   <i class="bi bi-arrow-counterclockwise me-1"></i>Guardar
                 </button>
                 <button
                   class="btn btn-success flex-fill"
+                  [disabled]="bloquearReimpresion"
                   (click)="limpia()" >
                   <i class="bi bi-check-circle me-1"></i>Deshacer
                 </button>
                 <button
                   class="btn btn-primary flex-fill"
-                  [disabled]="!chekPagado"
+                  [disabled]="(!chekPagado && !permitirImpresion) || bloquearReimpresion"
+                  [title]="bloquearReimpresion ? 'Pendiente de pago: impresión deshabilitada' : ''"
                   (click)="buscarFactura()">
                   <i class="bi bi-cash-stack me-1"></i> Cobrar y enviar DGII
                 </button>
@@ -368,6 +381,66 @@
                   </div>
                 </div>
               </form>
+
+              <!-- Estado de salida / entrega -->
+              <div class="row g-2 mt-2">
+                <div class="col-md-3 d-flex align-items-center">
+                  <div class="form-check">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      [checked]="formularioFacturacion.get('fa_salida')?.value === 'S'"
+                      disabled
+                      id="chkSalida"
+                    />
+                    <label class="form-check-label fw-bold" for="chkSalida">
+                      Salida
+                    </label>
+                  </div>
+                </div>
+
+                <div class="col-md-3">
+                  <div class="form-floating">
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="idsalida"
+                      formControlName="idsalida"
+                      readonly
+                    />
+                    <label for="idsalida">Id Salida</label>
+                  </div>
+                </div>
+
+                <div class="col-md-4">
+                  <div class="form-floating">
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="choferSalida"
+                      [value]="nomChoferSalida"
+                      readonly
+                    />
+                    <label for="choferSalida">Chofer</label>
+                  </div>
+                </div>
+
+                <div class="col-md-2 d-flex align-items-center">
+                  <div class="form-check">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      [checked]="formularioFacturacion.get('fa_entrega')?.value === 'S'"
+                      disabled
+                      id="chkEntrega"
+                    />
+                    <label class="form-check-label fw-bold" for="chkEntrega">
+                      Entregada
+                    </label>
+                  </div>
+                </div>
+              </div>
+
               <div class="row">
                 <div class="card-header card-header-brand d-flex align-items-center py-2">
                   <h5 class="card-title m-0">Detalles de Productos</h5>

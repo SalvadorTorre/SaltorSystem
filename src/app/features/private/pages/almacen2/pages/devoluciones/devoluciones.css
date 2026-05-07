@@ -1,6 +1,17 @@
 /* Ajustes simples para tablas compactas */
 .table td, .table th { padding: 0.4rem; }
 .btn-group .btn.active { background-color: #0d6efd; color: #fff; }
+
+/* Compactar la pantalla para reducir scroll */
+.devoluciones-page .card { margin-bottom: 0.5rem; }
+.devoluciones-page .card-body { padding: 0.6rem; }
+.devoluciones-page .row.g-2 { --bs-gutter-y: 0.35rem; }
+.devoluciones-page .form-label,
+.devoluciones-page label { margin-bottom: 0.15rem; font-size: 0.82rem; }
+.devoluciones-page .form-control { padding: 0.25rem 0.45rem; }
+.devoluciones-page .btn { padding: 0.35rem 0.6rem; }
+.devoluciones-page h4 { font-size: 1.1rem; }
+.devoluciones-page h5 { font-size: 0.95rem; }
 .lista-productos {
   position: absolute;
   top: 100%;
@@ -13,16 +24,16 @@
   border-radius: 6px;
 }
 .tabla-detalle2 {
-  height: 400px;
-  max-height: 400px;   
+  height: 280px;
+  max-height: 280px;
   overflow-y: auto;
   border: 1px solid #dee2e6; 
 }
   
 
 .tabla-detalle {
-  height: 300px;
-  max-height: 300px;   /* 5 filas aprox */
+  height: 220px;
+  max-height: 220px;   /* 4-5 filas aprox */
   overflow-y: auto;
    border: 1px solid #dee2e6; 
 }

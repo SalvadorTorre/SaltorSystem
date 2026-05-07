@@ -38,8 +38,14 @@ import { ServicioNcf } from 'src/app/core/services/mantenimientos/ncf/ncf.servic
 import { ModeloNcfData } from 'src/app/core/services/mantenimientos/ncf';
 import { PrintingService } from 'src/app/core/services/utils/printing.service';
 import { ServicioConfiguracionGlobal } from 'src/app/core/services/mantenimientos/configuracion-global/configuracion-global.service';
+import { ServicioSalidafactura } from 'src/app/core/services/almacen/salidafactura/salidafactura.service';
 
 declare var $: any;
+
+type FacturaCajaRow = FacturacionModelData & {
+  caja_status?: string;
+  caja_pendiente_pago?: boolean;
+};
 
 @Component({
   selector: 'cobrofact',
@@ -74,6 +80,9 @@ export class CobroFact implements OnInit {
   valCambio: number = 0;
   facturaSelecionada: any = null;
   DatosSeleccionado!: FacturacionModelData;
+  bloquearReimpresion = false;
+  permitirImpresion = false;
+  nomChoferSalida: string = '';
   codFacturaselecte = ' ';
   txtdescripcion: string = '';
   descripcionFormaPago: string = '';
@@ -92,7 +101,7 @@ export class CobroFact implements OnInit {
   modoedicionFacturacion: boolean = false;
   facturacionid!: string;
   modoconsultaFacturacion: boolean = false;
-  facturacionList: FacturacionModelData[] = [];
+  facturacionList: FacturaCajaRow[] = [];
   factura!: FacturacionModelData;
 
   detFacturaList: detFacturaData[] = [];
@@ -167,6 +176,17 @@ export class CobroFact implements OnInit {
   facturaElement: any;
   formasPago: any;
 
+  private getIdSalidaFromFactura(factura: any): string {
+    const raw =
+      factura?.idsalida ??
+      factura?.idSalida ??
+      factura?.IdSalida ??
+      factura?.fa_idsalida ??
+      factura?.fa_idSalida ??
+      '';
+    return String(raw ?? '').trim();
+  }
+
   get totalPages() {
     return Math.ceil(this.facturacionList.length / this.pageSize);
   }
@@ -189,6 +209,7 @@ export class CobroFact implements OnInit {
     private servicioNcf: ServicioNcf,
     private servicioConfiguracionGlobal: ServicioConfiguracionGlobal,
     private printingService: PrintingService,
+    private servicioSalidaFactura: ServicioSalidafactura,
   ) {
     this.form = this.fb.group({
       fa_codVend: ['', Validators.required], // El campo es requerido
@@ -274,6 +295,8 @@ export class CobroFact implements OnInit {
       fa_entrega: [{ value: '', disabled: true }],
       fa_impresa: [{ value: '', disabled: true }],
       fa_facturada: [{ value: '', disabled: true }],
+      fa_salida: [{ value: '', disabled: true }],
+      idsalida: [{ value: '', disabled: true }],
     });
   }
   limpia(): void {
@@ -307,6 +330,9 @@ export class CobroFact implements OnInit {
     this.valCambio = 0;
     this.fentrega = '';
     this.ftipoPago = '';
+    this.bloquearReimpresion = false;
+    this.permitirImpresion = false;
+    this.nomChoferSalida = '';
     // volver a ejecutar la lógica de inicio
     this.buscarFacturasNoImpresas();
     this.obtenerNcf();
@@ -323,6 +349,24 @@ export class CobroFact implements OnInit {
     this.facturacionid = Factura.fa_codFact;
     this.modoedicionFacturacion = true;
     this.formularioFacturacion.patchValue(Factura);
+    this.DatosSeleccionado = Factura;
+    const idSalida = this.getIdSalidaFromFactura(Factura);
+    this.formularioFacturacion.patchValue(
+      { idsalida: idSalida },
+      { emitEvent: false },
+    );
+    this.bloquearReimpresion = this.esPendientePago(Factura);
+    this.permitirImpresion =
+      !this.bloquearReimpresion &&
+      Number((Factura as any)?.fa_envio) === 2 &&
+      this.normalizeImpresa((Factura as any)?.fa_impresa) === 'N';
+    this.cargarChoferDeSalida(idSalida);
+    if (this.bloquearReimpresion) {
+      this.chekPagado = false;
+      this.txtvalPagado = true;
+      this.valorPagado = 0;
+      this.valCambio = 0;
+    }
     this.tituloModalFacturacion = 'Editando Facturacion';
     $('#modalfacturacion').modal('show');
     this.habilitarFormulario = true;
@@ -404,7 +448,14 @@ export class CobroFact implements OnInit {
   buscarFacturasNoImpresas() {
     this.servicioFacturacion.obtenerFacturasNoImpresas().subscribe((resp) => {
       console.log('Facturas recibidas:', resp.data);
-      this.facturacionList = resp.data;
+      const rows = Array.isArray(resp?.data) ? resp.data : [];
+      this.facturacionList = rows
+        .filter((row: any) => this.cumpleFiltroListaCaja(row))
+        .map((row: any) => ({
+          ...(row as any),
+          caja_pendiente_pago: this.esPendientePago(row),
+          caja_status: this.statusCaja(row),
+        }));
     });
   }
 
@@ -413,6 +464,11 @@ export class CobroFact implements OnInit {
     this.formularioFacturacion.reset();
     this.crearFormularioFacturacion();
     this.formularioFacturacion.patchValue(factura);
+    const idSalida = this.getIdSalidaFromFactura(factura);
+    this.formularioFacturacion.patchValue(
+      { idsalida: idSalida },
+      { emitEvent: false },
+    );
     this.tituloModalFacturacion = 'Consulta Factura';
     // $('#modalfacturacion').modal('show');
     this.habilitarFormulario = true;
@@ -424,6 +480,18 @@ export class CobroFact implements OnInit {
     this.chekpagada = false; // Habilita el botón
     this.fentrega = factura.fa_envio || '';
     this.DatosSeleccionado = factura;
+    this.bloquearReimpresion = this.esPendientePago(factura);
+    this.permitirImpresion =
+      !this.bloquearReimpresion &&
+      Number((factura as any)?.fa_envio) === 2 &&
+      this.normalizeImpresa((factura as any)?.fa_impresa) === 'N';
+    this.cargarChoferDeSalida(idSalida);
+    if (this.bloquearReimpresion) {
+      this.chekPagado = false;
+      this.txtvalPagado = true;
+      this.valorPagado = 0;
+      this.valCambio = 0;
+    }
     // Usa el código numérico de forma de pago, pero almacénalo como string
     // para mantener el tipo declarado de ftipoPago.
     this.ftipoPago = String((factura as any).fa_codfpago ?? 1);
@@ -949,6 +1017,7 @@ export class CobroFact implements OnInit {
             next: (res) => {
               console.log('Datos DGII guardados correctamente', res);
               Swal.close();
+              this.buscarFacturasNoImpresas();
 
               // Combinar respuesta con datos de factura para impresión
               const datosParaImprimir = {
@@ -1044,7 +1113,80 @@ export class CobroFact implements OnInit {
     });
   }
 
+  private isBlankField(value: any): boolean {
+    return value === null || value === undefined || String(value).trim() === '';
+  }
+
+  private normalizeImpresa(value: any): string {
+    return String(value ?? '').trim().toUpperCase();
+  }
+
+  private esPendientePago(factura: any): boolean {
+    return (
+      this.normalizeImpresa(factura?.fa_impresa) === 'S' &&
+      this.normalizeImpresa(factura?.fa_fpago) === 'N'
+    );
+  }
+
+  private statusCaja(factura: any): string {
+    return this.esPendientePago(factura) ? 'Pendiente de pago' : '';
+  }
+
+  private cumpleFiltroListaCaja(factura: any): boolean {
+    const fpago = this.normalizeImpresa(factura?.fa_fpago);
+    if (fpago !== 'N') return false;
+
+    const impresa = this.normalizeImpresa(factura?.fa_impresa);
+    // Requerimiento: (fa_impresa='N' y fa_fpago='N') o (fa_impresa='S' y fa_fpago='N')
+    return impresa === 'N' || impresa === 'S';
+  }
+
+  private cargarChoferDeSalida(idsalida: any) {
+    const cod = String(idsalida ?? '').trim();
+    if (!cod) {
+      this.nomChoferSalida = '';
+      return;
+    }
+
+    this.servicioSalidaFactura.obtenerPorCodigoSalida(cod).subscribe({
+      next: (resp: any) => {
+        const data = resp?.data ?? resp;
+        this.nomChoferSalida = String(data?.nomChofer ?? data?.nomchofer ?? '').trim();
+      },
+      error: () => {
+        this.nomChoferSalida = '';
+      },
+    });
+  }
+
   buscarFactura() {
-    this.imprimirFactura();
+    if (this.bloquearReimpresion) return;
+
+    const cod = this.formularioFacturacion.get('fa_codFact')?.value;
+    if (!cod) {
+      Swal.fire('Aviso', 'Seleccione una factura primero.', 'warning');
+      return;
+    }
+
+    // Guardar estado antes de imprimir:
+    // - fa_impresa siempre 'S'
+    // - fa_fpago 'S' si se marcó Factura Pagada, si no 'N'
+    const payload: any = {
+      fa_codFact: cod,
+      fa_impresa: 'S',
+      fa_fpago: this.chekPagado ? 'S' : 'N',
+      fa_envio: this.formularioFacturacion.get('fa_envio')?.value,
+    };
+
+    this.servicioFacturacion.marcarFacturaComoImpresa(payload).subscribe({
+      next: () => {
+        this.buscarFacturasNoImpresas();
+        this.imprimirFactura();
+      },
+      error: (err) => {
+        console.error('Error guardando factura antes de imprimir:', err);
+        Swal.fire('Error', this.extraerMensajeError(err), 'error');
+      },
+    });
   }
 }

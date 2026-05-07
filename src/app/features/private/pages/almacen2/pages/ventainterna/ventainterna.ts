@@ -1092,27 +1092,37 @@ export class Ventainterna implements OnInit {
     event.preventDefault();
     const claveUsuario = this.formularioVentainterna.get('fa_codVend')?.value;
     if (claveUsuario) {
-      this.ServicioUsuario.buscarUsuarioPorClave(claveUsuario).subscribe(
-        (usuario) => {
-          if (usuario.data.length) {
+      this.ServicioUsuario.buscarUsuarioPorCodigoVendedor(String(claveUsuario)).subscribe(
+        (res: any) => {
+          const usuario = res?.data ?? null;
+          const nombre = usuario?.idUsuario || usuario?.nombreUsuario || '';
+          if (nombre) {
             this.formularioVentainterna.patchValue({
-              fa_nomVend: usuario.data[0].idUsuario,
+              fa_nomVend: nombre,
             });
             nextElement?.focus();
-            console.log(usuario.data[0].idUsuario);
-          } else {
-            this.mensagePantalla = true;
-            Swal.fire({
-              icon: 'error',
-              title: 'A V I S O',
-              text: 'Codigo de usuario invalido.',
-            }).then(() => {
-              this.mensagePantalla = false;
-            });
             return;
-            console.log('Vendedor no encontrado');
           }
-        }
+
+          this.mensagePantalla = true;
+          Swal.fire({
+            icon: 'error',
+            title: 'A V I S O',
+            text: 'Codigo de usuario invalido.',
+          }).then(() => {
+            this.mensagePantalla = false;
+          });
+        },
+        () => {
+          this.mensagePantalla = true;
+          Swal.fire({
+            icon: 'error',
+            title: 'A V I S O',
+            text: 'No se pudo buscar el vendedor.',
+          }).then(() => {
+            this.mensagePantalla = false;
+          });
+        },
       );
     } else {
       this.mensagePantalla = true;

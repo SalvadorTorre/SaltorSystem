@@ -6,7 +6,7 @@ import { ServicioFpago } from 'src/app/core/services/mantenimientos/fpago/fpago.
 import { ServicioContFactura } from 'src/app/core/services/mantenimientos/contfactura/contfactura.service';
 import { ServicioSucursal } from 'src/app/core/services/mantenimientos/sucursal/sucursal.service';
 import Swal from 'sweetalert2';
-import { Subject, Subscription, forkJoin } from 'rxjs';
+import { Subject, Subscription, forkJoin, firstValueFrom } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -18,6 +18,7 @@ interface DetalleSalida {
   fecFact: string;
   valFact: number;
   codfpago: string;
+  // Flag de pago: 'S' (pagada) / 'N' (pendiente)
   fpago: string;
 }
 
@@ -51,6 +52,7 @@ export class SalidafacturaComponent implements OnInit {
   nombreSucursalActual: string = '';
   zonaSucursalActual: string = '';
   esEdicion: boolean = false;
+  salidaPendienteId: number | null = null;
 
   private searchTerms = new Subject<string>();
 
@@ -74,6 +76,32 @@ private mostrarError(msg: string) {
     confirmButtonText: 'Aceptar',
     confirmButtonColor: '#d33',
   });
+}
+
+private extraerMensajeError(err: any): string {
+  if (!err) return 'Error desconocido';
+  const direct = typeof err === 'string' ? err : null;
+  if (direct) return direct;
+
+  const httpError = err?.error;
+  if (typeof httpError === 'string' && httpError.trim()) return httpError;
+  if (httpError?.message) return String(httpError.message);
+  if (httpError?.error) return String(httpError.error);
+  if (err?.message) return String(err.message);
+
+  try {
+    return JSON.stringify(httpError || err);
+  } catch {
+    return 'Error desconocido';
+  }
+}
+
+private pickContFacturaRow(rows: any[], idsucursal: number): any | null {
+  if (!Array.isArray(rows) || rows.length === 0) return null;
+  const exact = rows.find((r: any) => Number(r?.idsucursal) === idsucursal);
+  if (exact) return exact;
+  const principal = rows.find((r: any) => r?.idsucursal === null || r?.idsucursal === undefined || Number(r?.idsucursal) === 0);
+  return principal || rows[0] || null;
 }
   ngOnInit(): void {
     this.obtenerNombreSucursal();
@@ -126,46 +154,48 @@ private mostrarError(msg: string) {
     }
   }
 
-  generarCodSalida() {
-    const idSucursal = localStorage.getItem('idSucursal');
-    if (!idSucursal) {
-      console.warn('No se encontró idSucursal en localStorage');
+  async generarCodSalida() {
+    const idSucursalRaw = localStorage.getItem('idSucursal');
+    const idSucursal = idSucursalRaw ? Number(idSucursalRaw) : NaN;
+    if (!Number.isFinite(idSucursal) || idSucursal <= 0) {
+      console.warn('No se encontró idSucursal válido en localStorage');
+      this.codSalida = '';
+      this.contFacturaActual = null;
       return;
     }
 
-    this.servicioContFactura.buscarPorSucursal(Number(idSucursal)).subscribe({
-      next: (resp: any) => {
-        let data: any[] = [];
-        // La respuesta del backend devuelve los datos en la propiedad 'data'
-        console.log('Respuesta backend:', resp);
-        if (Array.isArray(resp?.data)) {
-           data = resp.data;
-        } else if (Array.isArray(resp)) {
-           data = resp;
-        }
-        
-        const item = data[0];
-        
-        if (item) {
-          this.contFacturaActual = item;
-          const ano = item.ano;
-          // Usar estrictamente contsalida. Si es nulo, asumir 0.
-          // Se suma 1 para obtener el siguiente número disponible.
-          const ultimoContador = item.contsalida !== undefined && item.contsalida !== null ? Number(item.contsalida) : 0;
-          const proximoContador = ultimoContador + 1;
-          
-          if (ano) {
-             // Formato: Ano (4) + Contador (6) = 10 chars
-             // Ejemplo: 2026 + 000001
-             const contadorStr = String(proximoContador).padStart(6, '0');
-             this.codSalida = `${ano}${contadorStr}`;
-          }
-        }
-      },
-      error: (err: any) => {
-        console.error('Error al obtener contador de factura', err);
+    try {
+      let rows: any[] = [];
+      const resp: any = await firstValueFrom(this.servicioContFactura.buscarPorSucursal(idSucursal));
+      if (Array.isArray(resp?.data)) rows = resp.data;
+      else if (Array.isArray(resp)) rows = resp;
+
+      // Fallback: si no hay registro por sucursal, intentar tomar el principal (idsucursal null/0)
+      if (!rows || rows.length === 0) {
+        const respAll: any = await firstValueFrom(this.servicioContFactura.obtenerTodos());
+        if (Array.isArray(respAll?.data)) rows = respAll.data;
+        else if (Array.isArray(respAll)) rows = respAll;
       }
-    });
+
+      const item = this.pickContFacturaRow(rows, idSucursal);
+      if (!item) {
+        this.codSalida = '';
+        this.contFacturaActual = null;
+        return;
+      }
+
+      this.contFacturaActual = item;
+      const ano = Number(item?.ano);
+      const year = Number.isFinite(ano) && ano > 0 ? ano : new Date().getFullYear();
+      const cont = item?.contsalida !== undefined && item?.contsalida !== null ? Number(item.contsalida) : 0;
+      const proximo = (Number.isFinite(cont) ? cont : 0) + 1;
+      const contadorStr = String(proximo).padStart(6, '0');
+      this.codSalida = `${year}${contadorStr}`;
+    } catch (err) {
+      console.error('Error al obtener contfactura para salida', err);
+      this.codSalida = '';
+      this.contFacturaActual = null;
+    }
   }
 
   manejarTecladoModal(e: KeyboardEvent) {
@@ -288,6 +318,8 @@ private mostrarError(msg: string) {
 
   cargarSalidaPendiente(salida: any) {
       this.esEdicion = true;
+      this.salidaPendienteId = Number(salida?.id ?? salida?.idsalida ?? null);
+      if (!Number.isFinite(this.salidaPendienteId as any)) this.salidaPendienteId = null;
       this.codSalida = salida.codSalida;
       this.detallesSalida = [];
       this.datosUltimaSalida = null;
@@ -313,11 +345,47 @@ private mostrarError(msg: string) {
                            });
                        }
                    });
+                   this.datosUltimaSalida = {
+                     codSalida: this.codSalida,
+                     fecSalida:
+                       salida?.fecSalida ?? salida?.fecsalida ?? new Date().toISOString(),
+                     horaSalida:
+                       salida?.horaSalida ?? salida?.horasalida ?? new Date().toISOString(),
+                     idsucursal: salida?.idsucursal ?? salida?.idSucursal ?? null,
+                     codChofer:
+                       salida?.codChofer ??
+                       salida?.codchofer ??
+                       Number(this.codChofer || 0),
+                     nomChofer: salida?.nomChofer ?? salida?.nomchofer ?? this.nomChofer,
+                     cedChofer: salida?.cedChofer ?? salida?.cedchofer ?? this.cedChofer,
+                     canFact: this.detallesSalida.length,
+                     valFact: this.totalSalida,
+                     valPagado: salida?.valPagado ?? salida?.valpagado ?? 0,
+                     detalles: [...this.detallesSalida],
+                   };
+                   this.mostrarBotonImprimir = true;
                    Swal.fire('Información', `Se encontró una salida pendiente. Se cargaron ${this.detallesSalida.length} facturas.`, 'info');
                },
                error: (err: any) => console.error('Error cargando detalles de facturas', err)
            });
       } else {
+           this.datosUltimaSalida = {
+             codSalida: this.codSalida,
+             fecSalida:
+               salida?.fecSalida ?? salida?.fecsalida ?? new Date().toISOString(),
+             horaSalida:
+               salida?.horaSalida ?? salida?.horasalida ?? new Date().toISOString(),
+             idsucursal: salida?.idsucursal ?? salida?.idSucursal ?? null,
+             codChofer:
+               salida?.codChofer ?? salida?.codchofer ?? Number(this.codChofer || 0),
+             nomChofer: salida?.nomChofer ?? salida?.nomchofer ?? this.nomChofer,
+             cedChofer: salida?.cedChofer ?? salida?.cedchofer ?? this.cedChofer,
+             canFact: 0,
+             valFact: 0,
+             valPagado: salida?.valPagado ?? salida?.valpagado ?? 0,
+             detalles: [],
+           };
+           this.mostrarBotonImprimir = true;
            Swal.fire('Información', `Se encontró una salida pendiente (${this.codSalida}) sin facturas.`, 'info');
       }
   }
@@ -334,6 +402,7 @@ private mostrarError(msg: string) {
     this.detallesSalida = [];
     this.codChofer = '';
     this.esEdicion = false;
+    this.salidaPendienteId = null;
     setTimeout(() => document.querySelector('input')?.focus(), 100);
   }
 
@@ -483,8 +552,8 @@ agregarFactura() {
       }
 
       // Validar condiciones
-      if (factura.fa_envio != 2) {
-        this.mostrarError(`La factura ${codFact} no está marcada para envío (fa_envio != 2)`);
+      if (Number(factura.fa_envio) !== 1) {
+        this.mostrarError(`La factura ${codFact} no cumple condición de envío (fa_envio != 1)`);
         return;
       }
 
@@ -493,19 +562,21 @@ agregarFactura() {
         return;
       }
 
-      if (factura.fa_salida && factura.fa_salida.trim() !== '') {
-        this.mostrarError(`La factura ${codFact} ya tiene salida registrada`);
+      if (String(factura.fa_salida || '').trim().toUpperCase() !== 'N') {
+        this.mostrarError(`La factura ${codFact} no cumple condición de salida (fa_salida != 'N')`);
         return;
       }
 
       // Agregar a la lista
+      const fpagoRaw = String((factura as any)?.fa_fpago ?? '').trim().toUpperCase();
+      const fpagoFlag = (fpagoRaw === 'S' || fpagoRaw === 'P') ? 'S' : 'N';
       this.detallesSalida.push({
         codFact: factura.fa_codFact,
         nomClie: factura.fa_nomClie,
         fecFact: factura.fa_fecFact,
         valFact: Number(factura.fa_valFact),
         codfpago: String(factura.fa_codfpago || '').trim(),
-        fpago: factura.fpago
+        fpago: fpagoFlag
       });
 
       this.txtcodFact = ''; // limpiar
@@ -538,7 +609,22 @@ agregarFactura() {
 
 
   eliminarDetalle(index: number) {
-    this.detallesSalida.splice(index, 1);
+    const item = this.detallesSalida[index];
+    if (!item) return;
+
+    Swal.fire({
+      title: '¿Eliminar factura?',
+      text: `Se quitará la factura ${item.codFact} de esta salida.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#d33',
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.detallesSalida.splice(index, 1);
+      }
+    });
   }
 
   guardarSalida() {
@@ -558,9 +644,21 @@ agregarFactura() {
     });
   }
 
-  procesarGuardado() {
+  async procesarGuardado() {
+    if (this.esEdicion && (!this.salidaPendienteId || !Number.isFinite(this.salidaPendienteId))) {
+      this.mostrarError('No se encontró el id de la salida pendiente para editar. Vuelva a seleccionar el chofer.');
+      return;
+    }
+
     if (!this.codSalida) {
-      this.mostrarError('No se pudo generar el código de salida. Verifique la configuración de contfactura.');
+      await this.generarCodSalida();
+    }
+
+    if (!this.codSalida) {
+      const idSucursal = localStorage.getItem('idSucursal') || '(sin idSucursal)';
+      this.mostrarError(
+        `No se pudo generar el código de salida. Verifique contfactura para la sucursal ${idSucursal} (campos: ano y contsalida).`
+      );
       return;
     }
 
@@ -574,48 +672,95 @@ agregarFactura() {
     const idUsuario = idUsuarioStr ? Number(idUsuarioStr) : null;
 
     const now = new Date();
-     const fechasalida = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
-    // const horaSalida = now.toTimeString().split(' ')[0];
-    const horaSalida = new Date(`1970-01-01T${now.toTimeString().split(' ')[0]}`);
+    const fechasalida = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+    const horaSalidaStr = now.toTimeString().split(' ')[0];
+    // Mantener compatibilidad: enviamos un ISO completo (timestamptz) y también dejamos el campo camelCase.
+    const horaSalidaIso = new Date(`1970-01-01T${horaSalidaStr}`).toISOString();
+
+    const codChoferNum = Number(this.codChofer);
+    if (!Number.isFinite(codChoferNum) || codChoferNum <= 0) {
+      this.mostrarError('Código de chofer inválido.');
+      return;
+    }
     // Calcular totales
     const canFactura = this.detallesSalida.length;
     const valFactura = this.detallesSalida.reduce((sum, item) => sum + (Number(item.valFact) || 0), 0);
     
-    // Calcular valPagado: sumar solo si fpago es 'P'
+    // Calcular valPagado: sumar solo si fpago es 'S'
     const valPagado = this.detallesSalida.reduce((sum, item) => {
-         const esPagada = String(item.fpago || '').trim() === 'P';
+         const esPagada = String(item.fpago || '').trim().toUpperCase() === 'S';
          return sum + (esPagada ? (Number(item.valFact) || 0) : 0);
      }, 0);
 
-    const payload = {
-      codSalida: this.codSalida,
-      idsucursal: Number(idSucursal),
-      idusuario: idUsuario,
-      fecSalida: fechasalida,
-      horaSalida: horaSalida,
-      canFact: canFactura,
-      valFact: valFactura,
-      valPagado: valPagado,
-      codChofer: Number(this.codChofer),
-      // codChofer: this.codChofer,
-      nomChofer: this.nomChofer,
-      cedChofer: this.cedChofer,
-      detalles: this.detallesSalida.map(d => ({
-        codSalida: this.codSalida,
-        idsucursal: Number(idSucursal),
-        codChofer: Number(this.codChofer),
-        fpago: d.fpago,
+    const codSalida = String(this.codSalida || '').trim();
+    const idsucursalNum = Number(idSucursal);
+
+    const detallesPayload = this.detallesSalida.map(d => {
+      const pagado = String(d.fpago || '').trim().toUpperCase() === 'S' ? 'S' : 'N';
+      return {
+        // Duplicamos en camelCase y snake/lowercase para compatibilidad con backends existentes
+        codSalida,
+        codsalida: codSalida,
+        idsucursal: idsucursalNum,
+        idSucursal: idsucursalNum,
+        codChofer: codChoferNum,
+        codchofer: codChoferNum,
+        nomChofer: this.nomChofer,
+        nomchofer: this.nomChofer,
         codFact: d.codFact,
-        valFact: d.valFact
-      }))
+        codfact: d.codFact,
+        valFact: d.valFact,
+        valfact: d.valFact,
+        fecFact: d.fecFact,
+        fecfact: d.fecFact,
+        nomClie: d.nomClie,
+        nomclie: d.nomClie,
+        pagado,
+        // Fallback: algunos backends usan "fpago" como flag de pagado
+        fpago: pagado,
+        status: 'P',
+      };
+    });
+
+    const payload = {
+      codSalida,
+      codsalida: codSalida,
+      idsucursal: idsucursalNum,
+      idSucursal: idsucursalNum,
+      idusuario: idUsuario,
+      idUsuario: idUsuario,
+      fecSalida: fechasalida,
+      fecsalida: fechasalida,
+      horaSalida: horaSalidaIso,
+      horasalida: horaSalidaIso,
+      canFact: canFactura,
+      canfact: canFactura,
+      valFact: valFactura,
+      valfact: valFactura,
+      valPagado: valPagado,
+      valpagado: valPagado,
+      codChofer: codChoferNum,
+      codchofer: codChoferNum,
+      nomChofer: this.nomChofer,
+      nomchofer: this.nomChofer,
+      cedChofer: this.cedChofer,
+      cedchofer: this.cedChofer,
+      status: 'P',
+      detalles: detallesPayload,
     };
 
-    const peticion = this.esEdicion 
-      ? this.servicioSalida.editarSalida(Number(this.codSalida), payload)
+    const peticion = this.esEdicion
+      ? this.servicioSalida.editarSalida(
+          Number(this.salidaPendienteId ?? 0),
+          { ...payload, id: this.salidaPendienteId, codSalida: this.codSalida }
+        )
       : this.servicioSalida.guardarSalida(payload);
 
     peticion.subscribe({
       next: (resp: any) => {
+        // Avanzar contador de salida (contfactura.contsalida) para evitar códigos duplicados
+        this.actualizarContadorSalida();
+
         // Actualizar facturas con fa_salida='S' y idsalida=codSalida
         const actualizaciones = this.detallesSalida.map(detalle => {
             const updatePayload = {
@@ -669,7 +814,7 @@ agregarFactura() {
                this.generarCodSalida();
            });
         } else {
-           Swal.fire('Error', 'No se pudo guardar la salida', 'error');
+           Swal.fire('Error', this.extraerMensajeError(err), 'error');
         }
       }
     });
@@ -690,7 +835,8 @@ agregarFactura() {
             console.log('Payload enviado:', payload);
             if (callback) callback();
          },
-         error: (err) => console.error('Error al actualizar contador de salida', err)
+         error: (err: any) =>
+           console.error('Error al actualizar contador de salida', err),
        });
     }
   }
@@ -703,6 +849,7 @@ agregarFactura() {
     this.txtcodFact = '';
     this.detallesSalida = [];
     this.esEdicion = false;
+    this.salidaPendienteId = null;
     if (borrarBotonImprimir) {
         this.mostrarBotonImprimir = false;
         this.datosUltimaSalida = null;
@@ -898,9 +1045,83 @@ agregarFactura() {
     doc.setFontSize(7);
     doc.text('Firma Recibido', centroPagina, currentY + 4, { align: 'center' });
     
-    // Abrir diálogo de impresión
-    doc.autoPrint();
-    window.open(doc.output('bloburl'), '_blank');
+    // Imprimir directamente (sin abrir pestaña).
+    // Nota: por restricciones del navegador, puede mostrarse el diálogo de impresión y/o bloquear impresión silenciosa.
+    const blob = doc.output('blob') as Blob;
+    const blobUrl = URL.createObjectURL(blob);
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    iframe.src = blobUrl;
+    document.body.appendChild(iframe);
+
+    const cleanup = () => {
+      try {
+        URL.revokeObjectURL(blobUrl);
+      } catch {}
+      setTimeout(() => iframe.remove(), 1000);
+    };
+
+    const tryPrint = () => {
+      const win = iframe.contentWindow;
+      if (!win) return false;
+      try {
+        win.focus();
+        win.print();
+        return true;
+      } catch {
+        return false;
+      }
+    };
+
+    iframe.onload = () => {
+      // Algunos navegadores tardan en preparar el PDF; intentamos varias veces.
+      let attempts = 0;
+      const timer = setInterval(() => {
+        attempts++;
+        const ok = tryPrint();
+        if (ok) {
+          clearInterval(timer);
+          cleanup();
+          return;
+        }
+
+        // Fallback para Chrome: el visor PDF embebido a veces ignora print() en iframes ocultos.
+        // En ese caso, abrimos un popup mínimo, imprimimos y cerramos.
+        if (attempts >= 20) {
+          clearInterval(timer);
+          // Mostrar el diálogo: abrir en pestaña normal y disparar print()
+          // (el navegador mostrará el diálogo de impresión).
+          try {
+            const w = window.open(blobUrl, '_blank');
+            if (w) {
+              w.onload = () => {
+                try {
+                  w.focus();
+                  w.print();
+                } catch {}
+              };
+              // No revocar de inmediato para no cortar el visor PDF
+              setTimeout(() => {
+                try {
+                  URL.revokeObjectURL(blobUrl);
+                } catch {}
+              }, 10000);
+              // Remover iframe ya no es necesario
+              setTimeout(() => iframe.remove(), 0);
+            } else {
+              cleanup();
+            }
+          } catch {
+            cleanup();
+          }
+        }
+      }, 150);
+    };
   }
 
   get totalSalida(): number {
