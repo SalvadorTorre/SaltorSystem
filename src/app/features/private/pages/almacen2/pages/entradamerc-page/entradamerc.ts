@@ -145,9 +145,9 @@ export class EntradaMercComponent implements OnInit, AfterViewInit {
       this.Toast.fire({ title: 'Código de vendedor inválido', icon: 'warning' });
       return;
     }
-    this.servicioUsuario.buscarUsuarioPorClave(codVendRaw).subscribe({
+    this.servicioUsuario.buscarUsuarioPorCodigoVendedor(codVendRaw).subscribe({
       next: (res: any) => {
-        const usuario = Array.isArray(res?.data) ? res.data[0] : (res?.data ?? res);
+        const usuario = res?.data ?? null;
         const nombre = usuario?.nombreUsuario || usuario?.idUsuario || '';
         if (!nombre) {
           this.Toast.fire({ title: 'Vendedor no encontrado', icon: 'warning' });
@@ -248,7 +248,7 @@ export class EntradaMercComponent implements OnInit, AfterViewInit {
   cargarSecuenciaEntrada() {
     const sucursalId = Number(localStorage.getItem('idSucursal') ?? this.idSucursal ?? 1);
     this.servicioContFactura.buscarPorSucursal(sucursalId).subscribe({
-      next: (response) => {
+      next: (response: any) => {
         if (response && response.data && response.data.length > 0) {
           const contador = response.data[0];
           const siguienteNumero = (contador.contentrada || 0) + 1;
@@ -259,7 +259,7 @@ export class EntradaMercComponent implements OnInit, AfterViewInit {
           });
         }
       },
-      error: (err) => {
+      error: (err: any) => {
         console.error('Error al cargar secuencia de entrada:', err);
       }
     });

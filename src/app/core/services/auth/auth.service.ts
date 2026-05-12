@@ -1,37 +1,37 @@
 import { Injectable } from '@angular/core';
-import { Observable, from, of, throwError } from 'rxjs';
-import { catchError, tap } from 'rxjs/operators';
-import { SupabaseClient } from '@supabase/supabase-js';
+import { Observable, of } from 'rxjs';
+import { tap, catchError } from 'rxjs/operators';
 import { HttpInvokeService } from '../http-invoke.service';
 import { SupabaseService } from '../supabase/supabase.service';
+import type { SupabaseClient } from '@supabase/supabase-js';
+
+type AppRole = 'root' | 'admin' | 'vendedor';
 
 interface LoginResponseData {
   usuario: any;
   token: string;
   sucursal: any;
   empresa: any;
-  role?: string;
-  source?: 'legacy' | 'supabase' | 'supabase-table';
+  role?: AppRole;
+  source?: 'backend' | 'supabase' | 'supabase-table';
 }
 
 interface LoginResponse {
   status: string;
   code: number;
   message: string;
-  data: LoginResponseData | null;
+  data: LoginResponseData;
 }
-
-type AppRole = 'root' | 'admin' | 'vendedor';
 
 @Injectable({
   providedIn: 'root',
 })
 export class AuthService {
-  private loggedIn = false;
+  private loggedIn!: boolean;
 
   constructor(
     private http: HttpInvokeService,
-    private supabaseService: SupabaseService
+    private supabaseService: SupabaseService,
   ) {}
 
   isLoggedIn(): boolean {
@@ -39,35 +39,67 @@ export class AuthService {
   }
 
   login(loginData: any): Observable<LoginResponse> {
-    if (this.supabaseService.enabled) {
-      return from(this.loginWithSupabase(loginData)).pipe(
-        catchError((error) => throwError(() => error))
-      );
-    }
-    return this.loginLegacy(loginData);
-  }
-
-  private loginLegacy(loginData: any): Observable<LoginResponse> {
     return this.http
       .PostRequest<LoginResponse, any>('/usuario-login', loginData)
       .pipe(
         tap((response: any) => {
-          if (response?.status === 'success' && response?.data) {
-            const payload: LoginResponseData = {
-              usuario: this.normalizeUsuarioPayload(response.data.usuario),
-              token: String(response.data.token || ''),
-              sucursal: response.data.sucursal || null,
-              empresa: response.data.empresa || null,
-              role: this.resolveRoleFromUsuario(response.data.usuario),
-              source: 'legacy',
-            };
-            this.persistSession(payload);
+          console.log(response.data);
+          if (response.status === 'success' && response.data) {
+            const userData = response;
+            console.log(userData.data.sucursal);
+            localStorage.setItem('authToken', userData.data.token);
+            localStorage.setItem(
+              'username',
+              userData.data.usuario.nombreUsuario,
+            );
+
+            // --- GUARDADO DE DATOS DE EMPRESA Y SUCURSAL ---
+            // Guardamos los objetos completos para uso general
+            localStorage.setItem(
+              'sucursal',
+              JSON.stringify(userData.data.sucursal),
+            );
+            localStorage.setItem(
+              'empresa',
+              JSON.stringify(userData.data.empresa),
+            );
+
+            // Guardamos datos específicos de la empresa para fácil acceso (impresión, headers, etc.)
+            const emp = userData.data.empresa;
+            if (emp && typeof emp === 'object') {
+              localStorage.setItem('nombre_empresa', emp.nom_empre || '');
+              localStorage.setItem('direccion_empresa', emp.dir_empre || '');
+              localStorage.setItem('telefono_empresa', emp.tel_empre || '');
+              localStorage.setItem('rnc_empresa', emp.rnc_empre || '');
+              localStorage.setItem('cod_empre', emp.cod_empre || '');
+              localStorage.setItem('letra_empre', emp.letra_empre || '');
+              // Guardar logo u otros datos si vienen
+              if (emp.logo) localStorage.setItem('logo_empresa', emp.logo);
+            } else if (typeof emp === 'string') {
+              // Fallback si el backend envía solo el nombre
+              localStorage.setItem('nombre_empresa', emp);
+            }
+
+            localStorage.setItem(
+              'codigousuario',
+              userData.data.usuario.codUsuario,
+            );
+            localStorage.setItem(
+              'idSucursal',
+              userData.data.usuario.sucursalid,
+            );
+            localStorage.setItem(
+              'codigoempresa',
+              userData.data.usuario.cod_empre,
+            );
+
+            this.loggedIn = true;
           }
         }),
         catchError((error) => {
           this.loggedIn = false;
           return of(error);
-        })
+        }),
       );
   }
 
@@ -107,7 +139,7 @@ export class AuthService {
         usuarioRaw = await this.validateUsuarioCredentials(
           client,
           identifier,
-          password
+          password,
         );
         if (!usuarioRaw) {
           throw authError || new Error('No fue posible iniciar sesión');
@@ -153,7 +185,7 @@ export class AuthService {
   private async validateUsuarioCredentials(
     client: SupabaseClient,
     identifier: string,
-    password: string
+    password: string,
   ): Promise<any | null> {
     const id = String(identifier || '').trim();
     const pass = String(password || '');
@@ -167,7 +199,10 @@ export class AuthService {
       .limit(5);
     if (byUserError) throw byUserError;
 
-    const { data: byMail, error: byMailError } = await this.table(client, 'usuario')
+    const { data: byMail, error: byMailError } = await this.table(
+      client,
+      'usuario',
+    )
       .select('*')
       .ilike('correo', id)
       .limit(5);
@@ -177,9 +212,7 @@ export class AuthService {
     if (!candidates.length) return null;
 
     const match = candidates.find((u: any) => {
-      const stored = String(
-        u?.claveusuario ?? u?.claveUsuario ?? ''
-      );
+      const stored = String(u?.claveusuario ?? u?.claveUsuario ?? '');
       return stored === pass;
     });
 
@@ -188,7 +221,7 @@ export class AuthService {
 
   private async resolveEmailForSupabase(
     client: SupabaseClient,
-    identifier: string
+    identifier: string,
   ): Promise<string> {
     if (identifier.includes('@')) {
       return identifier;
@@ -197,7 +230,7 @@ export class AuthService {
     const data = await this.firstRow(
       this.table(client, 'usuario')
         .select('correo,idusuario')
-        .ilike('idusuario', identifier)
+        .ilike('idusuario', identifier),
     );
 
     const correo = String(data?.correo || '')
@@ -220,59 +253,49 @@ export class AuthService {
   private async fetchSupabaseUsuario(
     client: SupabaseClient,
     email: string,
-    identifier: string
+    identifier: string,
   ): Promise<any | null> {
     const byEmail = await this.firstRow(
-      this.table(client, 'usuario')
-        .select('*')
-        .eq('correo', email)
+      this.table(client, 'usuario').select('*').eq('correo', email),
     );
     if (byEmail) return byEmail;
 
     const byId = await this.firstRow(
-      this.table(client, 'usuario')
-        .select('*')
-        .ilike('idusuario', identifier)
+      this.table(client, 'usuario').select('*').ilike('idusuario', identifier),
     );
     return byId || null;
   }
 
   private async fetchSupabaseEmpresa(
     client: SupabaseClient,
-    codEmpre: string
+    codEmpre: string,
   ): Promise<any | null> {
     const code = String(codEmpre || '').trim();
     if (!code) return null;
     return await this.firstRow(
-      this.table(client, 'empresas')
-        .select('*')
-        .eq('cod_empre', code)
+      this.table(client, 'empresas').select('*').eq('cod_empre', code),
     );
   }
 
   private async fetchSupabaseSucursal(
     client: SupabaseClient,
-    sucursalId: number | null
+    sucursalId: number | null,
   ): Promise<any | null> {
     const id = Number(sucursalId);
     if (!id) return null;
     return await this.firstRow(
-      this.table(client, 'sucursales')
-        .select('*')
-        .eq('cod_sucursal', id)
+      this.table(client, 'sucursales').select('*').eq('cod_sucursal', id),
     );
   }
 
   private async fetchRoleDescription(
     client: SupabaseClient,
-    idTipoUsuario: number | null
+    idTipoUsuario: number | null,
   ): Promise<string> {
     const id = Number(idTipoUsuario);
     if (!id) return '';
     const data = await this.firstRow(
-      this.table(client, 'tipousuario')
-        .select('descripcion')
-        .eq('id', id)
+      this.table(client, 'tipousuario').select('descripcion').eq('id', id),
     );
 
     return String(data?.descripcion || '').trim();
@@ -325,7 +348,7 @@ export class AuthService {
     localStorage.setItem('authToken', String(payload.token || ''));
     localStorage.setItem(
       'username',
-      String(usuario.nombreUsuario || usuario.idUsuario || 'Usuario')
+      String(usuario.nombreUsuario || usuario.idUsuario || 'Usuario'),
     );
 
     localStorage.setItem('sucursal', JSON.stringify(sucursal || {}));
@@ -333,12 +356,16 @@ export class AuthService {
 
     if (empresa && typeof empresa === 'object') {
       localStorage.setItem('nombre_empresa', String(empresa.nom_empre || ''));
-      localStorage.setItem('direccion_empresa', String(empresa.dir_empre || ''));
+      localStorage.setItem(
+        'direccion_empresa',
+        String(empresa.dir_empre || ''),
+      );
       localStorage.setItem('telefono_empresa', String(empresa.tel_empre || ''));
       localStorage.setItem('rnc_empresa', String(empresa.rnc_empre || ''));
       localStorage.setItem('cod_empre', String(empresa.cod_empre || ''));
       localStorage.setItem('letra_empre', String(empresa.letra_empre || ''));
-      if (empresa.logo) localStorage.setItem('logo_empresa', String(empresa.logo));
+      if (empresa.logo)
+        localStorage.setItem('logo_empresa', String(empresa.logo));
     } else if (typeof empresa === 'string') {
       localStorage.setItem('nombre_empresa', empresa);
     }
@@ -368,7 +395,9 @@ export class AuthService {
 
     if (candidates.length) return candidates[0];
 
-    const idTipo = Number(usuario?.idtipoUsuario ?? usuario?.idtipousuario ?? 0);
+    const idTipo = Number(
+      usuario?.idtipoUsuario ?? usuario?.idtipousuario ?? 0,
+    );
     if (idTipo === 1) return 'root';
     if (idTipo === 2) return 'admin';
 
@@ -392,20 +421,22 @@ export class AuthService {
       return 'root';
     }
     if (value.includes('admin')) return 'admin';
-    if (value.includes('vendedor') || value.includes('venta')) return 'vendedor';
+    if (value.includes('vendedor') || value.includes('venta'))
+      return 'vendedor';
     return null;
   }
 
   private translateAuthError(error: any): string {
     const raw = String(
       error?.message ||
-      error?.error_description ||
-      error?.details ||
-      error?.hint ||
-      error?.error?.message ||
-      ''
+        error?.error_description ||
+        error?.details ||
+        error?.hint ||
+        error?.error?.message ||
+        '',
     ).trim();
-    if (!raw) return 'No fue posible iniciar sesión. Verifica usuario y contraseña.';
+    if (!raw)
+      return 'No fue posible iniciar sesión. Verifica usuario y contraseña.';
 
     const msg = raw.toLowerCase();
     if (msg.includes('invalid login credentials')) {
@@ -427,28 +458,12 @@ export class AuthService {
   }
 
   logout(): void {
-    const client = this.supabaseService.client;
-    if (client) {
-      client.auth.signOut().catch(() => undefined);
-    }
-
     localStorage.removeItem('authToken');
     localStorage.removeItem('username');
     localStorage.removeItem('sucursal');
     localStorage.removeItem('empresa');
-    localStorage.removeItem('codigousuario');
-    localStorage.removeItem('idSucursal');
-    localStorage.removeItem('codigoempresa');
-    localStorage.removeItem('nombre_empresa');
-    localStorage.removeItem('direccion_empresa');
-    localStorage.removeItem('telefono_empresa');
-    localStorage.removeItem('rnc_empresa');
-    localStorage.removeItem('cod_empre');
-    localStorage.removeItem('letra_empre');
-    localStorage.removeItem('logo_empresa');
-    localStorage.removeItem('role');
-    localStorage.removeItem('dashboardRole');
     this.loggedIn = false;
+    console.log(this.isLoggedIn());
   }
 
   getUsername(): string | null {

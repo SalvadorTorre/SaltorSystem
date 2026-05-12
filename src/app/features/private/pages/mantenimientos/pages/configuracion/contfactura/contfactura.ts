@@ -42,7 +42,7 @@ export class ContFacturaPage implements OnInit {
 
   cargarSucursales(): void {
     this.sucSrv.buscarTodasSucursal().subscribe({
-      next: (res) => {
+      next: (res: any) => {
         this.sucursales = this.unwrapList(res);
       },
       error: () => {
@@ -54,7 +54,7 @@ export class ContFacturaPage implements OnInit {
   cargarItems(page: number = this.currentPage): void {
     this.currentPage = page;
     this.contSrv.buscarTodos(this.currentPage, this.pageSize, this.filtroSucursal).subscribe({
-      next: (res) => {
+      next: (res: any) => {
         this.items = this.unwrapList(res);
       },
       error: () => {
@@ -84,7 +84,7 @@ export class ContFacturaPage implements OnInit {
     const id = Number(it?.id || it?.cod || 0);
     if (id) {
       this.contSrv.buscarPorId(id).subscribe({
-        next: (res) => {
+        next: (res: any) => {
           const r = Array.isArray(res?.data) ? res.data[0] : (res?.data || res);
           this.detalleSeleccionado = r || it;
           this.actual = {

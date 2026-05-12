@@ -208,7 +208,7 @@ export class Empresas implements OnInit {
     }
 
     this.servicioEmpresa.buscarEmpres(cod).subscribe({
-      next: (resp) => {
+      next: (resp: any) => {
         const data = resp?.data;
         const empresaFull = Array.isArray(data) ? data[0] : data;
         if (empresaFull) {
@@ -281,7 +281,7 @@ export class Empresas implements OnInit {
 
     // Buscar si ya existe un control de factura para esta sucursal (opcionalmente por año actual)
     this.contSrv.buscarTodos(1, 200, undefined).subscribe({
-      next: (resp) => {
+      next: (resp: any) => {
         const lista = Array.isArray(resp?.data) ? resp.data : [];
         // Filtrar por la sucursal seleccionada
         const listaSucursal = lista.filter((it: any) => Number(it?.idsucursal || it?.sucursal?.cod_sucursal) === sucId);
@@ -324,7 +324,7 @@ export class Empresas implements OnInit {
     }
     // Buscar si ya existe un registro para la misma sucursal y año
     this.contSrv.buscarTodos(1, 500, undefined).subscribe({
-      next: (resp) => {
+      next: (resp: any) => {
         const lista = Array.isArray(resp?.data) ? resp.data : [];
         const listaSucursal = lista.filter((it: any) => Number(it?.idsucursal || it?.sucursal?.cod_sucursal) === payload.idsucursal);
         const existente = listaSucursal.find((it: any) => Number(it?.ano) === payload.ano);
@@ -479,7 +479,7 @@ export class Empresas implements OnInit {
     const cod = this.empresaid || this.formularioEmpresa.getRawValue()?.cod_empre;
     if (!cod) { return; }
     this.servicioEmpresa.buscarEmpres(cod).subscribe({
-      next: (resp) => {
+      next: (resp: any) => {
         const data = resp?.data;
         const empresaFull = Array.isArray(data) ? data[0] : data;
         if (empresaFull) {
@@ -499,7 +499,7 @@ export class Empresas implements OnInit {
       return;
     }
     this.contSrv.buscarTodos(1, 500, undefined).subscribe({
-      next: (resp) => {
+      next: (resp: any) => {
         const registros = Array.isArray(resp?.data) ? resp.data : [];
         const currentYear = new Date().getFullYear();
         const mapa: Record<number, { ano: number; contador: number } | null> = {};
@@ -531,7 +531,7 @@ export class Empresas implements OnInit {
     const cod = String(codEmpresa || this.empresaid || this.formularioEmpresa.getRawValue()?.cod_empre || '').trim();
     if (!cod) { this.encfList = []; return; }
     this.servicioEncf.obtenerEncfPorEmpresaId(cod).subscribe({
-      next: (resp) => {
+      next: (resp: any) => {
         const data = Array.isArray(resp?.data) ? resp.data : (Array.isArray(resp) ? resp : []);
         this.encfList = data || [];
       },
