@@ -1,5 +1,5 @@
 import { Injectable } from "@angular/core";
-import { Observable, from } from "rxjs";
+import { Observable, from, of } from "rxjs";
 import { map } from "rxjs/operators";
 import { ModeloCliente, ModeloClienteData } from ".";
 import { SupabaseService } from "../../supabase/supabase.service";
@@ -261,6 +261,43 @@ export class ServicioCliente {
           limit: rows.length,
           totalPages: 1,
         },
+      }))
+    );
+  }
+
+  buscarPorRnc(rnc: string): Observable<any> {
+    const limpio = String(rnc || "").replace(/\D/g, "").trim();
+    if (!limpio) {
+      return of({
+        status: "success",
+        code: 200,
+        message: "RNC vacío",
+        data: null,
+      });
+    }
+
+    return from(
+      (async () => {
+        const rncNumero = Number(limpio);
+        if (Number.isNaN(rncNumero)) return null;
+
+        const { data, error } = await this.db
+          .from("clientes")
+          .select("*")
+          .eq("cl_rnc", rncNumero)
+          .order("cl_codclie", { ascending: true })
+          .limit(1)
+          .maybeSingle();
+
+        if (error) throw error;
+        return data ? this.normalizarCliente(data) : null;
+      })()
+    ).pipe(
+      map((row: ModeloClienteData | null) => ({
+        status: "success",
+        code: 200,
+        message: "Cliente por RNC",
+        data: row,
       }))
     );
   }

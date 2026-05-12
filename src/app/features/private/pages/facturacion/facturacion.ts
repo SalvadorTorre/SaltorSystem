@@ -137,6 +137,9 @@ export class Facturacion implements OnInit {
   codmerVacio: boolean = false;
   desmerVacio: boolean = false;
   isLoading: boolean = false;
+  clienteRncNoExiste: boolean = false;
+  rncApiNombre: string = '';
+  rncApiValor: string = '';
 
   habilitarCampos: boolean = false;
 
@@ -420,22 +423,22 @@ export class Facturacion implements OnInit {
         tap(() => {
           this.resultadoNombre = [];
         }),
-        filter((query: string) => query !== ''),
+        filter((query: string) => String(query || '').trim() !== ''),
         switchMap((query: string) =>
-          this.http.GetRequest<ModeloCliente>(`/cliente-nombre/${query}`).pipe(
+          this.servicioCliente.buscarporNombre(query).pipe(
             catchError((error) => {
-              console.error('Error en búsqueda de cliente:', error);
+              console.error(
+                'Error en búsqueda de cliente (Supabase):',
+                error,
+              );
               return of({ data: [] } as any);
             }),
           ),
         ),
       )
       .subscribe((results: ModeloCliente) => {
-        console.log(results.data);
-        if (results) {
-          if (Array.isArray(results.data)) {
-            this.resultadoNombre = results.data;
-          }
+        if (results && Array.isArray(results.data)) {
+          this.resultadoNombre = results.data;
         } else {
           this.resultadoNombre = [];
         }
@@ -1180,29 +1183,10 @@ export class Facturacion implements OnInit {
 
   buscarUsuario(event: Event, nextElement: HTMLInputElement | null): void {
     event.preventDefault();
-    const claveUsuario = this.formularioFacturacion.get('fa_codVend')?.value;
-    if (claveUsuario) {
-      this.ServicioUsuario.buscarUsuarioPorClave(claveUsuario).subscribe(
-        (usuario) => {
-          if (usuario.data.length) {
-            this.formularioFacturacion.patchValue({
-              fa_nomVend: usuario.data[0].idUsuario,
-            });
-            nextElement?.focus();
-          } else {
-            this.mensagePantalla = true;
-            Swal.fire({
-              icon: 'error',
-              title: 'A V I S O',
-              text: 'Codigo de usuario invalido.',
-            }).then(() => {
-              this.mensagePantalla = false;
-            });
-            return;
-          }
-        },
-      );
-    } else {
+    const claveUsuario = String(
+      this.formularioFacturacion.get('fa_codVend')?.value || '',
+    ).trim();
+    if (!claveUsuario) {
       this.mensagePantalla = true;
       Swal.fire({
         icon: 'error',
@@ -1213,11 +1197,41 @@ export class Facturacion implements OnInit {
       });
       return;
     }
+
+    this.formularioFacturacion.patchValue(
+      { fa_codVend: claveUsuario },
+      { emitEvent: false },
+    );
+
+    this.ServicioUsuario.buscarUsuarioPorCodigoVendedor(claveUsuario).subscribe({
+      next: (usuarioResp) => {
+        const u = usuarioResp?.data;
+        if (u) {
+          const nombreVendedor = String(
+            u?.nombreUsuario || u?.idUsuario || '',
+          ).trim();
+          this.formularioFacturacion.patchValue({
+            fa_nomVend: nombreVendedor,
+          });
+          nextElement?.focus();
+          return;
+        }
+        this.mostrarMensajeError('Codigo de usuario invalido.');
+      },
+      error: () => {
+        this.mostrarMensajeError('Codigo de usuario invalido.');
+      },
+    });
   }
   buscarRnc(event: Event, nextElement: HTMLInputElement | null): void {
     event.preventDefault();
-    const rnc = this.formularioFacturacion.get('fa_rncFact')?.value;
-    if (!rnc || rnc.trim() === '') {
+    const rncRaw = this.formularioFacturacion.get('fa_rncFact')?.value;
+    const rnc = String(rncRaw || '').replace(/\D/g, '').trim();
+    this.clienteRncNoExiste = false;
+    this.rncApiNombre = '';
+    this.rncApiValor = '';
+
+    if (!rnc) {
       // Si no se ha ingresado un RNC, por defecto Tipo NCF = 32 (Consumidor Final)
       this.formularioFacturacion.patchValue({ fa_tipoNcf: '32' });
       this.formularioFacturacion.get('fa_tipoNcf')?.disable();
@@ -1229,18 +1243,28 @@ export class Facturacion implements OnInit {
     // Validar longitud del RNC
     if (rnc.length !== 9 && rnc.length !== 11) {
       this.mostrarMensajeError('RNC inválido.');
-      console.log(rnc.length);
       return;
     }
+
+    this.formularioFacturacion.patchValue({ fa_rncFact: rnc }, { emitEvent: false });
+
     // Buscar RNC en el servicio
     this.ServicioRnc.buscarRncPorrncId(rnc).subscribe((response) => {
       if (response?.data) {
-        console.log(response.data);
-        // Si se encuentra el RNC, asignar el nombre del cliente
-        const nombreEmpresa = response.data.rason;
+        // Si se encuentra el RNC en API, asignar razón social
+        const nombreEmpresa = String(response.data.rason || '').trim();
+        if (!nombreEmpresa) {
+          this.mostrarMensajeError('RNC no encontrado.');
+          this.isDisabled = true;
+          return;
+        }
 
-        //  const nombreEmpresa = response.data[0]?.rason;
-        this.formularioFacturacion.patchValue({ fa_nomClie: nombreEmpresa });
+        this.rncApiNombre = nombreEmpresa;
+        this.rncApiValor = rnc;
+        this.formularioFacturacion.patchValue({
+          fa_nomClie: nombreEmpresa,
+          fa_codClie: '',
+        });
 
         // MANTENIMIENTO: Todas las facturas son E32 por el momento, incluso con RNC.
         // Se mantiene deshabilitado el dropdown.
@@ -1251,15 +1275,129 @@ export class Facturacion implements OnInit {
 
         // Habilitar campos
         this.isDisabled = false;
-
-        $('#input3').focus();
-        $('#input3').select();
+        this.validarClienteLocalPorRnc(rnc, nombreEmpresa, nextElement);
       } else {
-        // Si no se encuentra el RNC, mostrar error
-        this.mostrarMensajeError('RNC inválido.');
-        console.log('RNC no encontrado.');
+        // Si no se encuentra el RNC en API
+        this.formularioFacturacion.patchValue({
+          fa_nomClie: '',
+          fa_codClie: '',
+        });
+        this.mostrarMensajeError('RNC no encontrado.');
         this.isDisabled = true;
       }
+    });
+  }
+
+  private validarClienteLocalPorRnc(
+    rnc: string,
+    nombreEmpresaApi: string,
+    nextElement: HTMLInputElement | null,
+  ): void {
+    this.servicioCliente.buscarPorRnc(rnc).subscribe({
+      next: (clienteResp) => {
+        const cliente = clienteResp?.data as ModeloClienteData | null;
+        if (cliente) {
+          this.clienteRncNoExiste = false;
+          this.cargarDatosCliente(cliente);
+          this.formularioFacturacion.patchValue(
+            { fa_nomClie: nombreEmpresaApi },
+            { emitEvent: false },
+          );
+        } else {
+          this.clienteRncNoExiste = true;
+          this.formularioFacturacion.patchValue(
+            {
+              fa_codClie: '',
+              fa_nomClie: nombreEmpresaApi,
+            },
+            { emitEvent: false },
+          );
+        }
+        $('#input3').focus();
+        $('#input3').select();
+        nextElement?.focus();
+      },
+      error: (error) => {
+        console.error('Error buscando cliente en Supabase por RNC:', error);
+        this.clienteRncNoExiste = true;
+        this.formularioFacturacion.patchValue(
+          {
+            fa_codClie: '',
+            fa_nomClie: nombreEmpresaApi,
+          },
+          { emitEvent: false },
+        );
+        $('#input3').focus();
+        $('#input3').select();
+        nextElement?.focus();
+      },
+    });
+  }
+
+  agregarRncComoCliente(): void {
+    const rnc = String(this.rncApiValor || '').replace(/\D/g, '').trim();
+    const nombre = String(this.rncApiNombre || '').trim();
+    if (!rnc || !nombre) {
+      this.mostrarMensajeError(
+        'No hay un RNC válido consultado para agregar a clientes.',
+      );
+      return;
+    }
+
+    Swal.fire({
+      title: 'Agregar a mis clientes',
+      text: `¿Deseas agregar "${nombre}" a tu lista de clientes?`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, agregar',
+      cancelButtonText: 'Cancelar',
+    }).then((result) => {
+      if (!result.isConfirmed) return;
+
+      const payload: ModeloClienteData = {
+        cl_codClie: null as any,
+        cl_nomClie: nombre,
+        cl_dirClie:
+          String(this.formularioFacturacion.get('fa_dirClie')?.value || '').trim() ||
+          'SIN DIRECCIÓN',
+        cl_codSect: null as any,
+        cl_codZona: this.formularioFacturacion.get('fa_codZona')?.value || null,
+        cl_telClie:
+          String(this.formularioFacturacion.get('fa_telClie')?.value || '').trim() ||
+          '',
+        cl_tipo: 'RNC',
+        cl_status: true,
+        cl_rnc: Number(rnc),
+      };
+
+      this.servicioCliente.guardarCliente(payload).subscribe({
+        next: (saved) => {
+          const nuevo = saved?.data as ModeloClienteData;
+          if (nuevo) {
+            this.clienteRncNoExiste = false;
+            this.cargarDatosCliente(nuevo);
+            this.formularioFacturacion.patchValue(
+              { fa_nomClie: nombre },
+              { emitEvent: false },
+            );
+          }
+          Swal.fire({
+            icon: 'success',
+            title: 'Cliente agregado',
+            text: 'El cliente fue agregado correctamente.',
+            timer: 1400,
+            showConfirmButton: false,
+          });
+        },
+        error: (error) => {
+          console.error('Error agregando cliente desde RNC:', error);
+          Swal.fire({
+            icon: 'error',
+            title: 'No se pudo agregar',
+            text: 'No fue posible guardar este cliente.',
+          });
+        },
+      });
     });
   }
 

@@ -1,7 +1,9 @@
 export const environment = {
   production: false,
   bypassAuth: false,
-  backendUrl: 'http://localhost:3390/api',
+  // backendUrl: 'http://localhost:3390/api',
+  backendUrl: 'https://grupohierro.duckdns.org/api',
+
   supabase: {
     enabled: true,
     url: 'https://dslfmrecdeckuwhlhbsw.supabase.co',
