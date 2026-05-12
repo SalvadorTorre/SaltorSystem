@@ -48,10 +48,12 @@ export class Cliente implements OnInit {
         return this.servicioCliente.buscarTodosCliente(this.currentPage, this.pageSize, this.codigo, this.descripcion);
       })
     )
-      .subscribe(response => {
+    .subscribe(response => {
         this.clienteList = response.data;
         this.totalItems = response.pagination.total;
         this.currentPage = response.pagination.page;
+      }, error => {
+        this.mostrarErrorSupabase(error);
       });
     this.idBuscar.pipe(
       debounceTime(500),
@@ -61,10 +63,12 @@ export class Cliente implements OnInit {
         return this.servicioCliente.buscarTodosCliente(this.currentPage, this.pageSize, this.codigo, this.descripcion);
       })
     )
-      .subscribe(response => {
+    .subscribe(response => {
         this.clienteList = response.data;
         this.totalItems = response.pagination.total;
         this.currentPage = response.pagination.page;
+      }, error => {
+        this.mostrarErrorSupabase(error);
       });
   }
   seleccionarCliente(cliente: any) { this.selectedCliente = cliente; }
@@ -98,7 +102,7 @@ export class Cliente implements OnInit {
     this.formularioCliente.reset();
     this.crearFormularioCliente();
     // Estado activo por defecto y zona deshabilitada
-    this.formularioCliente.patchValue({ cl_status: true });
+    this.formularioCliente.patchValue({ cl_status: '1' });
     this.formularioCliente.get('cl_codZona')?.disable();
     $('#modalcliente').modal('show');
     this.habilitarFormulario = true;
@@ -125,7 +129,7 @@ export class Cliente implements OnInit {
       cl_codZona: clientes.cl_codZona,
       cl_telClie: (clientes.cl_telClie || '').toUpperCase(),
       cl_tipo: clientes.cl_tipo,
-      cl_status: Boolean(clientes.cl_status),
+      cl_status: clientes.cl_status ? '1' : '0',
       cl_rnc: clientes.cl_rnc,
     });
     // Mantener zona solo lectura
@@ -136,10 +140,12 @@ export class Cliente implements OnInit {
   }
 
   buscarTodosCliente(page: number) {
-    this.servicioCliente.buscarTodosCliente(page, this.pageSize).subscribe(response => {
-      console.log(response);
-      this.
-        clienteList = response.data;
+    this.servicioCliente.buscarTodosCliente(page, this.pageSize, this.codigo, this.descripcion).subscribe(response => {
+      this.clienteList = response.data;
+      this.totalItems = response.pagination.total;
+      this.currentPage = response.pagination.page;
+    }, error => {
+      this.mostrarErrorSupabase(error);
     });
   }
   consultarCliente(Cliente: ModeloClienteData) {
@@ -175,6 +181,8 @@ export class Cliente implements OnInit {
             }
           )
           this.buscarTodosCliente(this.currentPage);
+        }, error => {
+          this.mostrarErrorSupabase(error);
         });
       }
     })
@@ -207,9 +215,10 @@ export class Cliente implements OnInit {
       const raw = this.formularioCliente.getRawValue();
       const payload: any = {
         ...raw,
-        cl_nomClie: (this.formularioCliente.value.cl_nomClie || '').toUpperCase(),
-        cl_dirClie: (this.formularioCliente.value.cl_dirClie || '').toUpperCase(),
-        cl_telClie: (this.formularioCliente.value.cl_telClie || '').toUpperCase(),
+        cl_nomClie: (raw.cl_nomClie || '').toUpperCase(),
+        cl_dirClie: (raw.cl_dirClie || '').toUpperCase(),
+        cl_telClie: (raw.cl_telClie || '').toUpperCase(),
+        cl_status: raw.cl_status === true || raw.cl_status === '1',
       };
       if (this.modoedicionCliente) {
         this.servicioCliente.editarCliente(this.clienteid, payload).subscribe(response => {
@@ -224,6 +233,8 @@ export class Cliente implements OnInit {
           this.formularioCliente.reset();
           this.crearFormularioCliente();
           $('#modalcliente').modal('hide');
+        }, error => {
+          this.mostrarErrorSupabase(error);
         });
       }
       else {
@@ -240,6 +251,8 @@ export class Cliente implements OnInit {
           this.formularioCliente.reset();
           this.crearFormularioCliente();
           $('#modalcliente').modal('hide');
+        }, error => {
+          this.mostrarErrorSupabase(error);
         });
       }
     }
@@ -247,10 +260,6 @@ export class Cliente implements OnInit {
       alert("Este Cliente no fue Guardado");
     }
   }
-  buscarTodoCliente(arg0: number) {
-    throw new Error('Method not implemented.');
-  }
-
   convertToUpperCase(event: Event): void {
     const input = event.target as HTMLInputElement;
     const start = input.selectionStart;
@@ -279,6 +288,8 @@ export class Cliente implements OnInit {
         this.clienteList = response.data;
         this.totalItems = response.pagination.total;
         this.currentPage = page;
+      }, error => {
+        this.mostrarErrorSupabase(error);
       });
   }
 
@@ -311,18 +322,29 @@ export class Cliente implements OnInit {
 
   buscartodaZona() {
     this.servicioZona.obtenerTodasZonas().subscribe(response => {
-      console.log(response);
       this.zonasList = response.data;
+    }, error => {
+      this.mostrarErrorSupabase(error);
     });
   }
 
   buscardatosSector() {
     this.servicioSector.obtenerTodosSector().subscribe(response => {
-      console.log(response);
       this.sectorList = response.data;
+    }, error => {
+      this.mostrarErrorSupabase(error);
     });
   }
 
+  private mostrarErrorSupabase(error: any) {
+    const message = error?.message || error?.error_description || 'No se pudo completar la operacion en Supabase.';
+    Swal.fire({
+      title: 'Error de Supabase',
+      text: message,
+      icon: 'error',
+      confirmButtonText: 'OK',
+    });
+  }
 
 
 }
