@@ -33,6 +33,20 @@ export class ServicioCliente {
     return ["true", "1", "s", "si", "y", "yes"].includes(normalized);
   }
 
+  private toNullableNumber(value: any): number | null | undefined {
+    if (value === undefined) return undefined;
+    if (value === null || value === "") return null;
+    const numberValue = Number(value);
+    return Number.isNaN(numberValue) ? null : numberValue;
+  }
+
+  private toNullableString(value: any): string | null | undefined {
+    if (value === undefined) return undefined;
+    if (value === null) return null;
+    const stringValue = String(value).trim();
+    return stringValue ? stringValue : null;
+  }
+
   private normalizarCliente(row: any): ModeloClienteData {
     return {
       cl_codClie: Number(row?.cl_codclie ?? row?.cl_codClie ?? 0),
@@ -49,19 +63,19 @@ export class ServicioCliente {
 
   private mapPayloadToDb(cliente: any): any {
     const payload: any = {
-      cl_nomclie: cliente?.cl_nomClie ?? cliente?.cl_nomclie ?? undefined,
-      cl_dirclie: cliente?.cl_dirClie ?? cliente?.cl_dirclie ?? undefined,
-      cl_codsect: cliente?.cl_codSect ?? cliente?.cl_codsect ?? undefined,
-      cl_codzona: cliente?.cl_codZona ?? cliente?.cl_codzona ?? undefined,
-      cl_telclie: cliente?.cl_telClie ?? cliente?.cl_telclie ?? undefined,
-      cl_tipo: cliente?.cl_tipo ?? undefined,
+      cl_nomclie: this.toNullableString(cliente?.cl_nomClie ?? cliente?.cl_nomclie),
+      cl_dirclie: this.toNullableString(cliente?.cl_dirClie ?? cliente?.cl_dirclie),
+      cl_codsect: this.toNullableNumber(cliente?.cl_codSect ?? cliente?.cl_codsect),
+      cl_codzona: this.toNullableNumber(cliente?.cl_codZona ?? cliente?.cl_codzona),
+      cl_telclie: this.toNullableString(cliente?.cl_telClie ?? cliente?.cl_telclie),
+      cl_tipo: this.toNullableString(cliente?.cl_tipo),
       cl_status:
         cliente?.cl_status !== undefined
           ? this.toBoolean(cliente?.cl_status)
           : undefined,
-      cl_rnc: cliente?.cl_rnc ?? undefined,
+      cl_rnc: this.toNullableNumber(cliente?.cl_rnc),
       cl_codsucursal:
-        cliente?.cl_codSucursal ?? cliente?.cl_codsucursal ?? undefined,
+        this.toNullableString(cliente?.cl_codSucursal ?? cliente?.cl_codsucursal),
     };
 
     Object.keys(payload).forEach((key: string) => {
