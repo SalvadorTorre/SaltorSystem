@@ -1,7 +1,6 @@
 import { Injectable } from '@angular/core';
-import { Observable, of } from 'rxjs';
-import { tap, catchError } from 'rxjs/operators';
-import { HttpInvokeService } from '../http-invoke.service';
+import { Observable, from, throwError } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { SupabaseService } from '../supabase/supabase.service';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -13,7 +12,7 @@ interface LoginResponseData {
   sucursal: any;
   empresa: any;
   role?: AppRole;
-  source?: 'backend' | 'supabase' | 'supabase-table';
+  source?: 'supabase';
 }
 
 interface LoginResponse {
@@ -29,78 +28,16 @@ interface LoginResponse {
 export class AuthService {
   private loggedIn!: boolean;
 
-  constructor(
-    private http: HttpInvokeService,
-    private supabaseService: SupabaseService,
-  ) {}
+  constructor(private supabaseService: SupabaseService) {}
 
   isLoggedIn(): boolean {
     return !!localStorage.getItem('authToken');
   }
 
   login(loginData: any): Observable<LoginResponse> {
-    return this.http
-      .PostRequest<LoginResponse, any>('/usuario-login', loginData)
-      .pipe(
-        tap((response: any) => {
-          console.log(response.data);
-          if (response.status === 'success' && response.data) {
-            const userData = response;
-            console.log(userData.data.sucursal);
-            localStorage.setItem('authToken', userData.data.token);
-            localStorage.setItem(
-              'username',
-              userData.data.usuario.nombreUsuario,
-            );
-
-            // --- GUARDADO DE DATOS DE EMPRESA Y SUCURSAL ---
-            // Guardamos los objetos completos para uso general
-            localStorage.setItem(
-              'sucursal',
-              JSON.stringify(userData.data.sucursal),
-            );
-            localStorage.setItem(
-              'empresa',
-              JSON.stringify(userData.data.empresa),
-            );
-
-            // Guardamos datos específicos de la empresa para fácil acceso (impresión, headers, etc.)
-            const emp = userData.data.empresa;
-            if (emp && typeof emp === 'object') {
-              localStorage.setItem('nombre_empresa', emp.nom_empre || '');
-              localStorage.setItem('direccion_empresa', emp.dir_empre || '');
-              localStorage.setItem('telefono_empresa', emp.tel_empre || '');
-              localStorage.setItem('rnc_empresa', emp.rnc_empre || '');
-              localStorage.setItem('cod_empre', emp.cod_empre || '');
-              localStorage.setItem('letra_empre', emp.letra_empre || '');
-              // Guardar logo u otros datos si vienen
-              if (emp.logo) localStorage.setItem('logo_empresa', emp.logo);
-            } else if (typeof emp === 'string') {
-              // Fallback si el backend envía solo el nombre
-              localStorage.setItem('nombre_empresa', emp);
-            }
-
-            localStorage.setItem(
-              'codigousuario',
-              userData.data.usuario.codUsuario,
-            );
-            localStorage.setItem(
-              'idSucursal',
-              userData.data.usuario.sucursalid,
-            );
-            localStorage.setItem(
-              'codigoempresa',
-              userData.data.usuario.cod_empre,
-            );
-
-            this.loggedIn = true;
-          }
-        }),
-        catchError((error) => {
-          this.loggedIn = false;
-          return of(error);
-        }),
-      );
+    return from(this.loginWithSupabase(loginData)).pipe(
+      catchError((error) => throwError(() => error)),
+    );
   }
 
   private async loginWithSupabase(loginData: any): Promise<LoginResponse> {
@@ -125,29 +62,12 @@ export class AuthService {
           password,
         });
 
-      let usuarioRaw: any | null = null;
-      let token = '';
-      let source: 'supabase' | 'supabase-table' = 'supabase';
-
-      if (!authError && authData?.session?.access_token) {
-        token = authData.session.access_token;
-        usuarioRaw = await this.fetchSupabaseUsuario(client, email, identifier);
-        source = 'supabase';
-      } else {
-        // Fallback temporal: permite iniciar con usuarios creados desde mantenimiento
-        // que aún no existen en auth.users.
-        usuarioRaw = await this.validateUsuarioCredentials(
-          client,
-          identifier,
-          password,
-        );
-        if (!usuarioRaw) {
-          throw authError || new Error('No fue posible iniciar sesión');
-        }
-        token = `local-${Date.now()}-${usuarioRaw?.codusuario ?? usuarioRaw?.codUsuario ?? 'user'}`;
-        source = 'supabase-table';
+      if (authError || !authData?.session?.access_token) {
+        throw authError || new Error('No fue posible iniciar sesión');
       }
 
+      const token = authData.session.access_token;
+      const usuarioRaw = await this.fetchSupabaseUsuario(client, email, identifier);
       if (!usuarioRaw) {
         throw new Error('No se encontró el usuario en myappdb.usuario');
       }
@@ -166,7 +86,7 @@ export class AuthService {
         sucursal: sucursal || null,
         empresa: empresa || null,
         role,
-        source,
+        source: 'supabase',
       };
 
       this.persistSession(payload);
@@ -182,71 +102,20 @@ export class AuthService {
     }
   }
 
-  private async validateUsuarioCredentials(
-    client: SupabaseClient,
-    identifier: string,
-    password: string,
-  ): Promise<any | null> {
-    const id = String(identifier || '').trim();
-    const pass = String(password || '');
-    if (!id || !pass) return null;
-
-    const table = this.table(client, 'usuario');
-
-    const { data: byUser, error: byUserError } = await table
-      .select('*')
-      .ilike('idusuario', id)
-      .limit(5);
-    if (byUserError) throw byUserError;
-
-    const { data: byMail, error: byMailError } = await this.table(
-      client,
-      'usuario',
-    )
-      .select('*')
-      .ilike('correo', id)
-      .limit(5);
-    if (byMailError) throw byMailError;
-
-    const candidates = [...(byUser || []), ...(byMail || [])];
-    if (!candidates.length) return null;
-
-    const match = candidates.find((u: any) => {
-      const stored = String(u?.claveusuario ?? u?.claveUsuario ?? '');
-      return stored === pass;
-    });
-
-    return match || null;
-  }
-
   private async resolveEmailForSupabase(
-    client: SupabaseClient,
+    _client: SupabaseClient,
     identifier: string,
   ): Promise<string> {
     if (identifier.includes('@')) {
       return identifier;
     }
-
-    const data = await this.firstRow(
-      this.table(client, 'usuario')
-        .select('correo,idusuario')
-        .ilike('idusuario', identifier),
-    );
-
-    const correo = String(data?.correo || '')
-      .trim()
-      .toLowerCase();
-    if (correo) {
-      return correo;
-    }
-
-    const normalizedId = String(data?.idusuario || identifier || '')
+    const normalizedId = String(identifier || '')
       .trim()
       .toLowerCase();
     if (!normalizedId) {
       throw new Error('No se encontró usuario para Supabase Auth');
     }
-    // Fallback para cuentas creadas con username sin correo visible en tabla usuario.
+    // Login por username usando alias de correo interno.
     return `${normalizedId}@saltorsystem.local`;
   }
 
