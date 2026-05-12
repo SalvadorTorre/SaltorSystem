@@ -1213,6 +1213,7 @@ export class Facturacion implements OnInit {
           this.formularioFacturacion.patchValue({
             fa_nomVend: nombreVendedor,
           });
+          this.abrirModalDetalle();
           nextElement?.focus();
           return;
         }
@@ -1249,42 +1250,49 @@ export class Facturacion implements OnInit {
     this.formularioFacturacion.patchValue({ fa_rncFact: rnc }, { emitEvent: false });
 
     // Buscar RNC en el servicio
-    this.ServicioRnc.buscarRncPorrncId(rnc).subscribe((response) => {
-      if (response?.data) {
-        // Si se encuentra el RNC en API, asignar razón social
-        const nombreEmpresa = String(response.data.rason || '').trim();
-        if (!nombreEmpresa) {
+    this.ServicioRnc.buscarRncPorrncId(rnc).subscribe({
+      next: (response) => {
+        if (response?.data) {
+          // Si se encuentra el RNC en API, asignar razón social
+          const nombreEmpresa = String(response.data.rason || '').trim();
+          if (!nombreEmpresa) {
+            this.mostrarMensajeError('RNC no encontrado.');
+            this.isDisabled = true;
+            return;
+          }
+
+          this.rncApiNombre = nombreEmpresa;
+          this.rncApiValor = rnc;
+          this.formularioFacturacion.patchValue({
+            fa_nomClie: nombreEmpresa,
+            fa_codClie: '',
+          });
+
+          // MANTENIMIENTO: Todas las facturas son E32 por el momento, incluso con RNC.
+          // Se mantiene deshabilitado el dropdown.
+          this.formularioFacturacion.patchValue({ fa_tipoNcf: 32 });
+          this.formularioFacturacion.get('fa_tipoNcf')?.disable();
+
+          // Habilitar campos
+          this.isDisabled = false;
+          this.validarClienteLocalPorRnc(rnc, nombreEmpresa, nextElement);
+        } else {
+          this.formularioFacturacion.patchValue({
+            fa_nomClie: '',
+            fa_codClie: '',
+          });
           this.mostrarMensajeError('RNC no encontrado.');
           this.isDisabled = true;
-          return;
         }
-
-        this.rncApiNombre = nombreEmpresa;
-        this.rncApiValor = rnc;
-        this.formularioFacturacion.patchValue({
-          fa_nomClie: nombreEmpresa,
-          fa_codClie: '',
-        });
-
-        // MANTENIMIENTO: Todas las facturas son E32 por el momento, incluso con RNC.
-        // Se mantiene deshabilitado el dropdown.
-        this.formularioFacturacion.patchValue({ fa_tipoNcf: 32 });
-        this.formularioFacturacion.get('fa_tipoNcf')?.disable();
-
-        // this.ncflist = this.ncflist.filter((ncf) => ncf.codNcf !== 1);
-
-        // Habilitar campos
-        this.isDisabled = false;
-        this.validarClienteLocalPorRnc(rnc, nombreEmpresa, nextElement);
-      } else {
-        // Si no se encuentra el RNC en API
+      },
+      error: () => {
         this.formularioFacturacion.patchValue({
           fa_nomClie: '',
           fa_codClie: '',
         });
         this.mostrarMensajeError('RNC no encontrado.');
         this.isDisabled = true;
-      }
+      },
     });
   }
 
