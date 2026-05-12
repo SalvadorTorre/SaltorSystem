@@ -649,39 +649,39 @@
             </div>
           </div>
 
-          <div class="mt-3" *ngIf="detallesTipoSeleccionado?.length">
+          <div class="mt-3" *ngIf="permisosMatrizNuevoUsuario?.length">
             <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
-              <h6 class="mb-0">Módulos del tipo seleccionado</h6>
-              <span class="badge text-bg-light">{{ detallesTipoSeleccionado.length }} módulo(s)</span>
+              <h6 class="mb-0">Permisos por módulo/pantalla</h6>
+              <span class="badge text-bg-light">{{ permisosMatrizNuevoUsuario.length }} recurso(s)</span>
             </div>
             <div class="table-responsive modal-table-wrap">
               <table class="table table-sm table-hover align-middle mb-0">
                 <thead>
                   <tr>
                     <th>Módulo</th>
-                    <th>Acceso</th>
-                    <th>Lectura</th>
+                    <th>Pantalla</th>
+                    <th *ngFor="let a of accionesPermisosCatalogo">{{ a.descripcion }}</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr *ngFor="let d of detallesTipoSeleccionado; let i = index">
-                    <td>{{ descModulo(d.idmodulo) }}</td>
-                    <td>
-                      <select class="form-select form-select-sm" [(ngModel)]="d.acceso" name="detalle-{{i}}-acceso">
-                        <option value="S">Sí</option>
-                        <option value="N">No</option>
-                      </select>
-                    </td>
-                    <td>
-                      <select class="form-select form-select-sm" [(ngModel)]="d.lectura" name="detalle-{{i}}-lectura">
-                        <option value="S">Sí</option>
-                        <option value="N">No</option>
-                      </select>
+                  <tr *ngFor="let f of permisosMatrizNuevoUsuario; let i = index">
+                    <td class="text-nowrap">{{ f.modulo_nombre || '-' }}</td>
+                    <td>{{ f.pantalla_nombre || '-' }}</td>
+                    <td *ngFor="let a of accionesPermisosCatalogo" class="text-center">
+                      <input
+                        type="checkbox"
+                        class="form-check-input"
+                        [(ngModel)]="f.acciones[a.accion_key]"
+                        [name]="'perm-' + i + '-' + a.accion_key"
+                      >
                     </td>
                   </tr>
                 </tbody>
               </table>
             </div>
+            <small class="text-muted d-block mt-2">
+              Marca exactamente lo que el usuario puede hacer. Si no marcas nada, se intentará aplicar la plantilla del tipo de usuario.
+            </small>
           </div>
         </div>
         <div class="modal-footer">

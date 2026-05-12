@@ -34,9 +34,14 @@ export class SupabaseService {
           schema: this.schema,
         },
         auth: {
+          storageKey: 'saltorsystem-auth-token',
           persistSession: true,
           autoRefreshToken: true,
           detectSessionInUrl: false,
+          lockAcquireTimeout: 5000,
+          // Evita conflictos del Navigator LockManager en algunos navegadores/escenarios Angular.
+          lock: async (_name: string, _timeout: number, fn: () => Promise<any>) =>
+            await fn(),
         },
       };
       this.clientInstance = createClient(

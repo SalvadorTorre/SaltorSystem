@@ -3,6 +3,8 @@
 
 BEGIN;
 
+GRANT USAGE ON SCHEMA myappdb TO anon, authenticated, service_role;
+
 CREATE TABLE IF NOT EXISTS myappdb.permiso_accion_catalogo (
   accion_key varchar(30) PRIMARY KEY,
   descripcion varchar(120) NOT NULL,
@@ -30,11 +32,62 @@ CREATE TABLE IF NOT EXISTS myappdb.permiso_recurso_accion_catalogo (
   UNIQUE (recurso_key, accion_key)
 );
 
+CREATE TABLE IF NOT EXISTS myappdb.usuario_permiso_accion (
+  id bigserial PRIMARY KEY,
+  codusuario int4 NOT NULL REFERENCES myappdb.usuario(codusuario) ON DELETE CASCADE,
+  recurso_key varchar(80) NOT NULL REFERENCES myappdb.permiso_recurso_catalogo(recurso_key) ON DELETE CASCADE,
+  accion_key varchar(30) NOT NULL REFERENCES myappdb.permiso_accion_catalogo(accion_key) ON DELETE CASCADE,
+  permitido boolean NOT NULL DEFAULT true,
+  cod_empre varchar(30) REFERENCES myappdb.empresas(cod_empre),
+  sucursalid int4 REFERENCES myappdb.sucursales(cod_sucursal),
+  vigencia_desde timestamptz NOT NULL DEFAULT now(),
+  vigencia_hasta timestamptz,
+  activo boolean NOT NULL DEFAULT true,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_usuario_permiso_accion_user
+ON myappdb.usuario_permiso_accion(codusuario);
+CREATE INDEX IF NOT EXISTS idx_usuario_permiso_accion_scope
+ON myappdb.usuario_permiso_accion(cod_empre, sucursalid);
+CREATE INDEX IF NOT EXISTS idx_usuario_permiso_accion_recurso
+ON myappdb.usuario_permiso_accion(recurso_key, accion_key);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_usuario_permiso_accion_unico
+ON myappdb.usuario_permiso_accion(codusuario, recurso_key, accion_key, cod_empre, sucursalid, vigencia_desde);
+
+CREATE TABLE IF NOT EXISTS myappdb.tipousuario_permiso_accion (
+  id bigserial PRIMARY KEY,
+  idtipousuario int4 NOT NULL REFERENCES myappdb.tipousuario(id) ON DELETE CASCADE,
+  recurso_key varchar(80) NOT NULL REFERENCES myappdb.permiso_recurso_catalogo(recurso_key) ON DELETE CASCADE,
+  accion_key varchar(30) NOT NULL REFERENCES myappdb.permiso_accion_catalogo(accion_key) ON DELETE CASCADE,
+  permitido boolean NOT NULL DEFAULT true,
+  activo boolean NOT NULL DEFAULT true,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (idtipousuario, recurso_key, accion_key)
+);
+
+-- Permisos para frontend (anon/authenticated) y service_role.
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE myappdb.permiso_accion_catalogo TO anon, authenticated, service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE myappdb.permiso_recurso_catalogo TO anon, authenticated, service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE myappdb.permiso_recurso_accion_catalogo TO anon, authenticated, service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE myappdb.usuario_permiso_accion TO anon, authenticated, service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE myappdb.tipousuario_permiso_accion TO anon, authenticated, service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE myappdb.usuario_tenant_asignacion TO anon, authenticated, service_role;
+
+GRANT USAGE, SELECT ON SEQUENCE myappdb.permiso_recurso_catalogo_id_seq TO anon, authenticated, service_role;
+GRANT USAGE, SELECT ON SEQUENCE myappdb.permiso_recurso_accion_catalogo_id_seq TO anon, authenticated, service_role;
+GRANT USAGE, SELECT ON SEQUENCE myappdb.usuario_permiso_accion_id_seq TO anon, authenticated, service_role;
+GRANT USAGE, SELECT ON SEQUENCE myappdb.tipousuario_permiso_accion_id_seq TO anon, authenticated, service_role;
+GRANT USAGE, SELECT ON SEQUENCE myappdb.usuario_tenant_asignacion_id_seq TO anon, authenticated, service_role;
+
 CREATE TABLE IF NOT EXISTS myappdb.usuario_tenant_asignacion (
   id bigserial PRIMARY KEY,
   codusuario int4 NOT NULL REFERENCES myappdb.usuario(codusuario) ON DELETE CASCADE,
   cod_empre varchar(30) NOT NULL REFERENCES myappdb.empresas(cod_empre),
-  sucursalid int4 REFERENCES myappdb.sucursales(sucursalid),
+  sucursalid int4 REFERENCES myappdb.sucursales(cod_sucursal),
   es_principal boolean NOT NULL DEFAULT false,
   es_temporal boolean NOT NULL DEFAULT false,
   fecha_inicio timestamptz NOT NULL DEFAULT now(),

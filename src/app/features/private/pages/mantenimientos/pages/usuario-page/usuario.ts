@@ -2,7 +2,11 @@ import { Component, OnInit } from '@angular/core';
 import { NgForm } from '@angular/forms';
 import { ServicioUsuario } from 'src/app/core/services/mantenimientos/usuario/usuario.service';
 import { ModeloUsuarioData } from 'src/app/core/services/mantenimientos/usuario';
-import { ServicioPermiso } from 'src/app/core/services/mantenimientos/permiso/permiso.service';
+import {
+  AccionCatalogoPermiso,
+  PermisoMatrizFila,
+  ServicioPermiso
+} from 'src/app/core/services/mantenimientos/permiso/permiso.service';
 import { ServicioModulo } from 'src/app/core/services/mantenimientos/modulo/modulo.service';
 import { Permiso, PermisoModel } from 'src/app/features/private/pages/mantenimientos/pages/configuracion/permiso/modelo';
 import Swal from 'sweetalert2';
@@ -36,6 +40,8 @@ export class Usuario implements OnInit {
   nuevoUsuario: Partial<ModeloUsuarioData> = {};
   // Detalles de tipo seleccionado para nuevo usuario
   detallesTipoSeleccionado: any[] = [];
+  accionesPermisosCatalogo: AccionCatalogoPermiso[] = [];
+  permisosMatrizNuevoUsuario: PermisoMatrizFila[] = [];
   usernameExiste = false;
   claveExiste = false;
   usernameMensaje = '';
@@ -168,6 +174,73 @@ export class Usuario implements OnInit {
       next: (res) => { this.tipousuarios = this.unwrapList(res); },
       error: () => { this.tipousuarios = []; }
     });
+  }
+
+  private construirPlantillaPermisosNuevoUsuario(): void {
+    forkJoin({
+      accionesRes: this.permisoSrv.obtenerAccionesCatalogo(),
+      recursosRes: this.permisoSrv.obtenerRecursosCatalogo(),
+    }).subscribe({
+      next: ({ accionesRes, recursosRes }) => {
+        this.accionesPermisosCatalogo = this.unwrapList(accionesRes);
+        const recursos = this.unwrapList(recursosRes);
+        const actionKeys = this.accionesPermisosCatalogo.map((a: any) => String(a?.accion_key || '').trim()).filter(Boolean);
+        this.permisosMatrizNuevoUsuario = recursos.map((r: any) => {
+          const acciones: Record<string, boolean> = {};
+          actionKeys.forEach((k: string) => acciones[k] = false);
+          return {
+            codusuario: null,
+            recurso_key: String(r?.recurso_key || '').trim() || null,
+            idmodulo: Number(r?.idmodulo || 0) || null,
+            pantalla_nombre: r?.pantalla_nombre || r?.descmodulo || r?.descModulo || '-',
+            modulo_nombre: r?.modulo_nombre || r?.modulo_key || 'General',
+            acciones,
+            modo: r?.recurso_key ? 'v2' : 'legacy',
+          } as PermisoMatrizFila;
+        });
+      },
+      error: () => {
+        this.accionesPermisosCatalogo = [
+          { accion_key: 'acceso', descripcion: 'Acceso', orden: 10 },
+          { accion_key: 'lectura', descripcion: 'Lectura', orden: 20 },
+        ];
+        this.permisosMatrizNuevoUsuario = this.modulos.map((m: any) => ({
+          codusuario: null,
+          idmodulo: Number(m?.idmodulo || 0) || null,
+          pantalla_nombre: m?.descmodulo || '-',
+          modulo_nombre: 'Legacy',
+          acciones: { acceso: false, lectura: false },
+          modo: 'legacy',
+        }));
+      }
+    });
+  }
+
+  private aplicarPermisosTipoSeleccionadoEnMatriz(detalles: any[]): void {
+    if (!Array.isArray(detalles) || !detalles.length || !this.permisosMatrizNuevoUsuario.length) return;
+    detalles.forEach((d: any) => {
+      const idmod = Number(d?.idmodulo || 0);
+      if (!idmod) return;
+      const fila = this.permisosMatrizNuevoUsuario.find((f: PermisoMatrizFila) => Number(f?.idmodulo || 0) === idmod);
+      if (!fila) return;
+      if (Object.prototype.hasOwnProperty.call(fila.acciones, 'acceso')) {
+        fila.acciones['acceso'] = String(d?.acceso || 'N').toUpperCase() === 'S';
+      }
+      if (Object.prototype.hasOwnProperty.call(fila.acciones, 'lectura')) {
+        fila.acciones['lectura'] = String(d?.lectura || 'N').toUpperCase() === 'S';
+      }
+      if (Object.prototype.hasOwnProperty.call(fila.acciones, 'ver')) {
+        const acceso = String(d?.acceso || 'N').toUpperCase() === 'S';
+        const lectura = String(d?.lectura || 'N').toUpperCase() === 'S';
+        fila.acciones['ver'] = acceso || lectura;
+      }
+    });
+  }
+
+  private hayPermisosSeleccionados(filas: PermisoMatrizFila[]): boolean {
+    return (filas || []).some((f: PermisoMatrizFila) =>
+      Object.values(f?.acciones || {}).some((v: any) => !!v)
+    );
   }
 
   descModulo(id?: number): string {
@@ -499,7 +572,10 @@ export class Usuario implements OnInit {
       empresa: '',
     } as any;
     this.detallesTipoSeleccionado = [];
+    this.accionesPermisosCatalogo = [];
+    this.permisosMatrizNuevoUsuario = [];
     this.resetValidacionesNuevoUsuario();
+    this.construirPlantillaPermisosNuevoUsuario();
     $('#modalNuevoUsuario').modal('show');
   }
 
@@ -597,6 +673,7 @@ export class Usuario implements OnInit {
       next: (res: any) => {
         const tipo = Array.isArray(res?.data) ? res.data[0] : (res?.data ?? res);
         this.detallesTipoSeleccionado = Array.isArray(tipo?.dtipousuarios) ? tipo.dtipousuarios : [];
+        this.aplicarPermisosTipoSeleccionadoEnMatriz(this.detallesTipoSeleccionado);
       },
       error: () => {
         this.detallesTipoSeleccionado = [];
@@ -679,6 +756,8 @@ export class Usuario implements OnInit {
             // Intentar obtener el codUsuario creado
             const nuevoCod = Number(res?.data?.codUsuario ?? res?.codUsuario ?? (Array.isArray(res?.data) ? res.data[0]?.codUsuario : undefined));
             const continuar = (cod: number | undefined) => {
+              const empresaScope = String(payload?.cod_empre || '').trim() || null;
+              const sucursalScope = Number(payload?.sucursalid || 0) || null;
               if (!cod || isNaN(cod)) {
                 // Buscar por idUsuario si no vino el id
                 const clave = String((this.nuevoUsuario as any)?.idUsuario || '');
@@ -687,7 +766,7 @@ export class Usuario implements OnInit {
                     const usuarioEncontrado = Array.isArray(buscado?.data) ? buscado.data[0] : (buscado?.data ?? buscado);
                     const codEncontrado = Number(usuarioEncontrado?.codUsuario);
                     if (codEncontrado) {
-                      this.persistirPermisosDesdeDetalles(codEncontrado);
+                      this.persistirPermisosSeleccionados(codEncontrado, empresaScope, sucursalScope);
                     } else {
                       this.fireToast({ title: 'Usuario creado (sin permisos por tipo)', icon: 'info' });
                     }
@@ -702,7 +781,7 @@ export class Usuario implements OnInit {
                   }
                 });
               } else {
-                this.persistirPermisosDesdeDetalles(cod);
+                this.persistirPermisosSeleccionados(cod, empresaScope, sucursalScope);
                 this.cargarUsuarios();
                 $('#modalNuevoUsuario').modal('hide');
                 this.fireToast({ title: 'Usuario creado', icon: 'success' });
@@ -745,6 +824,35 @@ export class Usuario implements OnInit {
       },
       error: () => {
         this.fireToast({ title: 'Error aplicando permisos por tipo', icon: 'error' });
+      }
+    });
+  }
+
+  private persistirPermisosSeleccionados(
+    codusuario: number,
+    codEmpre?: string | null,
+    sucursalid?: number | null
+  ): void {
+    if (!codusuario) return;
+
+    const filas = Array.isArray(this.permisosMatrizNuevoUsuario)
+      ? this.permisosMatrizNuevoUsuario
+      : [];
+
+    if (!this.hayPermisosSeleccionados(filas)) {
+      // Fallback para compatibilidad con el detalle heredado del tipo.
+      this.persistirPermisosDesdeDetalles(codusuario);
+      return;
+    }
+
+    this.permisoSrv.guardarMatrizPermisosUsuario(codusuario, filas, codEmpre, sucursalid).subscribe({
+      next: () => {
+        this.fireToast({ title: 'Permisos del usuario guardados', icon: 'success' });
+      },
+      error: () => {
+        // fallback legacy para no perder la creación de usuario
+        this.persistirPermisosDesdeDetalles(codusuario);
+        this.fireToast({ title: 'No se pudo guardar la matriz de permisos, se aplicó plantilla básica', icon: 'warning' });
       }
     });
   }

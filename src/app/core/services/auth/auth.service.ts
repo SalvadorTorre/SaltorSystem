@@ -194,11 +194,11 @@ export class AuthService {
       return identifier;
     }
 
-    const { data } = await this.table(client, 'usuario')
-      .select('correo,idusuario')
-      .ilike('idusuario', identifier)
-      .limit(1)
-      .maybeSingle();
+    const data = await this.firstRow(
+      this.table(client, 'usuario')
+        .select('correo,idusuario')
+        .ilike('idusuario', identifier)
+    );
 
     const correo = String(data?.correo || '')
       .trim()
@@ -222,19 +222,19 @@ export class AuthService {
     email: string,
     identifier: string
   ): Promise<any | null> {
-    const byEmail = await this.table(client, 'usuario')
-      .select('*')
-      .eq('correo', email)
-      .limit(1)
-      .maybeSingle();
-    if (byEmail?.data) return byEmail.data;
+    const byEmail = await this.firstRow(
+      this.table(client, 'usuario')
+        .select('*')
+        .eq('correo', email)
+    );
+    if (byEmail) return byEmail;
 
-    const byId = await this.table(client, 'usuario')
-      .select('*')
-      .ilike('idusuario', identifier)
-      .limit(1)
-      .maybeSingle();
-    return byId?.data || null;
+    const byId = await this.firstRow(
+      this.table(client, 'usuario')
+        .select('*')
+        .ilike('idusuario', identifier)
+    );
+    return byId || null;
   }
 
   private async fetchSupabaseEmpresa(
@@ -243,12 +243,11 @@ export class AuthService {
   ): Promise<any | null> {
     const code = String(codEmpre || '').trim();
     if (!code) return null;
-    const { data } = await this.table(client, 'empresas')
-      .select('*')
-      .eq('cod_empre', code)
-      .limit(1)
-      .maybeSingle();
-    return data || null;
+    return await this.firstRow(
+      this.table(client, 'empresas')
+        .select('*')
+        .eq('cod_empre', code)
+    );
   }
 
   private async fetchSupabaseSucursal(
@@ -257,12 +256,11 @@ export class AuthService {
   ): Promise<any | null> {
     const id = Number(sucursalId);
     if (!id) return null;
-    const { data } = await this.table(client, 'sucursales')
-      .select('*')
-      .eq('cod_sucursal', id)
-      .limit(1)
-      .maybeSingle();
-    return data || null;
+    return await this.firstRow(
+      this.table(client, 'sucursales')
+        .select('*')
+        .eq('cod_sucursal', id)
+    );
   }
 
   private async fetchRoleDescription(
@@ -271,11 +269,11 @@ export class AuthService {
   ): Promise<string> {
     const id = Number(idTipoUsuario);
     if (!id) return '';
-    const { data } = await this.table(client, 'tipousuario')
-      .select('descripcion')
-      .eq('id', id)
-      .limit(1)
-      .maybeSingle();
+    const data = await this.firstRow(
+      this.table(client, 'tipousuario')
+        .select('descripcion')
+        .eq('id', id)
+    );
 
     return String(data?.descripcion || '').trim();
   }
@@ -310,6 +308,13 @@ export class AuthService {
       }
     }
     return anyClient.from(name);
+  }
+
+  private async firstRow(query: any): Promise<any | null> {
+    const { data, error } = await query.limit(1);
+    if (error) throw error;
+    if (Array.isArray(data) && data.length) return data[0];
+    return null;
   }
 
   private persistSession(payload: LoginResponseData): void {

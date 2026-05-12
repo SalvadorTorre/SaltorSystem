@@ -95,6 +95,13 @@ export class ServicioUsuario {
     return String(text ?? '').trim().toLowerCase();
   }
 
+  private firstRow<T = any>(data: T[] | null | undefined): T | null {
+    if (!Array.isArray(data) || data.length === 0) {
+      return null;
+    }
+    return data[0] ?? null;
+  }
+
   private traducirError(error: any, fallback = 'Ocurrió un error al procesar la solicitud'): string {
     const raw = String(
       error?.message ||
@@ -151,24 +158,24 @@ export class ServicioUsuario {
       throw new Error('La clave debe tener exactamente 4 caracteres');
     }
 
-    const { data: byId, error: byIdError } = await this.db
+    const { data: byIdRows, error: byIdError } = await this.db
       .from('usuario')
       .select('codusuario,idusuario')
       .ilike('idusuario', idUsuario)
-      .limit(1)
-      .maybeSingle();
+      .limit(1);
     if (byIdError) throw byIdError;
+    const byId = this.firstRow(byIdRows);
     if (byId) {
       throw new Error('El código de usuario ya existe');
     }
 
-    const { data: byClave, error: byClaveError } = await this.db
+    const { data: byClaveRows, error: byClaveError } = await this.db
       .from('usuario')
       .select('codusuario')
       .eq('claveusuario', clave)
-      .limit(1)
-      .maybeSingle();
+      .limit(1);
     if (byClaveError) throw byClaveError;
+    const byClave = this.firstRow(byClaveRows);
     if (byClave) {
       throw new Error('La clave de usuario ya está en uso');
     }
@@ -343,14 +350,14 @@ export class ServicioUsuario {
   editarUsuario(codUsuario: number, usuario: ModeloUsuario): Observable<any> {
     return from((async () => {
       const payload = this.mapearPayloadUsuario(usuario);
-      const { data, error } = await this.db
+      const { data: rows, error } = await this.db
         .from("usuario")
         .update(payload)
         .eq("codusuario", codUsuario)
         .select("*")
-        .maybeSingle();
+        .limit(1);
       if (error) throw error;
-      return data;
+      return this.firstRow(rows);
     })()).pipe(
       map((row: any) => ({
         status: "success",
@@ -380,13 +387,13 @@ export class ServicioUsuario {
 
   buscarUsuario(claveUsuario: number): Observable<any> {
     return from((async () => {
-      const { data, error } = await this.db
+      const { data: rows, error } = await this.db
         .from("usuario")
         .select("*")
         .eq("codusuario", claveUsuario)
-        .maybeSingle();
+        .limit(1);
       if (error) throw error;
-      return data;
+      return this.firstRow(rows);
     })()).pipe(
       map((row: any) => ({
         status: "success",
@@ -402,14 +409,13 @@ export class ServicioUsuario {
 
   buscarUsuarioPorClave(claveUsuario: string): Observable<any> {
     return from((async () => {
-      const { data, error } = await this.db
+      const { data: rows, error } = await this.db
         .from("usuario")
         .select("*")
         .ilike("idusuario", claveUsuario)
-        .limit(1)
-        .maybeSingle();
+        .limit(1);
       if (error) throw error;
-      return data;
+      return this.firstRow(rows);
     })()).pipe(
       map((row: any) => ({
         status: "success",
@@ -437,35 +443,35 @@ export class ServicioUsuario {
       if (!raw) return null;
 
       // 1) Prioridad: claveusuario (código corto del vendedor)
-      const { data: byClave, error: errClave } = await this.db
+      const { data: byClaveRows, error: errClave } = await this.db
         .from("usuario")
         .select("*")
         .eq("claveusuario", raw)
-        .limit(1)
-        .maybeSingle();
+        .limit(1);
       if (errClave) throw errClave;
+      const byClave = this.firstRow(byClaveRows);
       if (byClave) return byClave;
 
       // 2) Fallback: codusuario numérico
       if (/^\d+$/.test(raw)) {
-        const { data: byCod, error: errCod } = await this.db
+        const { data: byCodRows, error: errCod } = await this.db
           .from("usuario")
           .select("*")
           .eq("codusuario", Number(raw))
-          .limit(1)
-          .maybeSingle();
+          .limit(1);
         if (errCod) throw errCod;
+        const byCod = this.firstRow(byCodRows);
         if (byCod) return byCod;
       }
 
       // 3) Fallback: idusuario
-      const { data: byIdUsuario, error: errIdUsuario } = await this.db
+      const { data: byIdUsuarioRows, error: errIdUsuario } = await this.db
         .from("usuario")
         .select("*")
         .ilike("idusuario", raw)
-        .limit(1)
-        .maybeSingle();
+        .limit(1);
       if (errIdUsuario) throw errIdUsuario;
+      const byIdUsuario = this.firstRow(byIdUsuarioRows);
       return byIdUsuario || null;
     })()).pipe(
       map((row: any) => ({
@@ -480,14 +486,13 @@ export class ServicioUsuario {
     return from((async () => {
       const id = String(idUsuario || '').trim();
       if (!id) return false;
-      const { data, error } = await this.db
+      const { data: rows, error } = await this.db
         .from('usuario')
         .select('codusuario')
         .ilike('idusuario', id)
-        .limit(1)
-        .maybeSingle();
+        .limit(1);
       if (error) throw error;
-      return !!data;
+      return !!this.firstRow(rows);
     })());
   }
 
@@ -495,14 +500,13 @@ export class ServicioUsuario {
     return from((async () => {
       const clave = String(claveUsuario || '').trim();
       if (!clave) return false;
-      const { data, error } = await this.db
+      const { data: rows, error } = await this.db
         .from('usuario')
         .select('codusuario')
         .eq('claveusuario', clave)
-        .limit(1)
-        .maybeSingle();
+        .limit(1);
       if (error) throw error;
-      return !!data;
+      return !!this.firstRow(rows);
     })());
   }
 }
