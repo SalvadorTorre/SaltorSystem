@@ -31,7 +31,13 @@ export class AuthService {
   constructor(private supabaseService: SupabaseService) {}
 
   isLoggedIn(): boolean {
-    return !!localStorage.getItem('authToken');
+    const token = String(localStorage.getItem('authToken') || '').trim();
+    if (!token) return false;
+    if (!this.isActiveJwt(token)) {
+      this.clearSessionStorage();
+      return false;
+    }
+    return true;
   }
 
   login(loginData: any): Observable<LoginResponse> {
@@ -50,20 +56,21 @@ export class AuthService {
       const identifier = String(loginData?.username || '')
         .trim()
         .toLowerCase();
-      const password = String(loginData?.userpassword || '');
+      const password = String(loginData?.userpassword || '').trim();
       if (!identifier || !password) {
         throw new Error('Credenciales incompletas');
       }
 
       const email = await this.resolveEmailForSupabase(client, identifier);
-      const { data: authData, error: authError } =
-        await client.auth.signInWithPassword({
-          email,
-          password,
-        });
+      const authData = await this.signInWithCandidates(
+        client,
+        email,
+        identifier,
+        password,
+      );
 
-      if (authError || !authData?.session?.access_token) {
-        throw authError || new Error('No fue posible iniciar sesión');
+      if (!authData?.session?.access_token) {
+        throw new Error('No fue posible iniciar sesión');
       }
 
       const token = authData.session.access_token;
@@ -102,8 +109,44 @@ export class AuthService {
     }
   }
 
+  private buildInternalPassword(identifier: string, plainPassword: string): string {
+    const id = String(identifier || '')
+      .trim()
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, '');
+    const prefix = id || 'USUARIO';
+    const generated = `${prefix}#${plainPassword}#SS`;
+    return generated.length >= 8 ? generated : generated.padEnd(8, 'X');
+  }
+
+  private async signInWithCandidates(
+    client: SupabaseClient,
+    email: string,
+    identifier: string,
+    plainPassword: string,
+  ): Promise<any> {
+    const internalPassword = this.buildInternalPassword(identifier, plainPassword);
+    const candidates = Array.from(
+      new Set([plainPassword, internalPassword].filter((x) => !!x)),
+    );
+
+    let lastError: any = null;
+    for (const candidate of candidates) {
+      const { data, error } = await client.auth.signInWithPassword({
+        email,
+        password: candidate,
+      });
+      if (!error && data?.session) {
+        return data;
+      }
+      lastError = error || lastError;
+    }
+
+    throw lastError || new Error('No fue posible iniciar sesión');
+  }
+
   private async resolveEmailForSupabase(
-    _client: SupabaseClient,
+    client: SupabaseClient,
     identifier: string,
   ): Promise<string> {
     if (identifier.includes('@')) {
@@ -115,6 +158,24 @@ export class AuthService {
     if (!normalizedId) {
       throw new Error('No se encontró usuario para Supabase Auth');
     }
+
+    // Primero intenta el correo real guardado en usuario.
+    try {
+      const row = await this.firstRow(
+        this.table(client, 'usuario')
+          .select('correo,idusuario')
+          .ilike('idusuario', normalizedId),
+      );
+      const correo = String(row?.correo || '')
+        .trim()
+        .toLowerCase();
+      if (correo.includes('@')) {
+        return correo;
+      }
+    } catch {
+      // Si falla consulta (schema cache/RLS), cae al alias interno.
+    }
+
     // Login por username usando alias de correo interno.
     return `${normalizedId}@saltorsystem.local`;
   }
@@ -327,12 +388,45 @@ export class AuthService {
   }
 
   logout(): void {
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('username');
-    localStorage.removeItem('sucursal');
-    localStorage.removeItem('empresa');
+    this.clearSessionStorage();
     this.loggedIn = false;
     console.log(this.isLoggedIn());
+  }
+
+  private clearSessionStorage(): void {
+    const keys = [
+      'authToken',
+      'username',
+      'sucursal',
+      'empresa',
+      'nombre_empresa',
+      'direccion_empresa',
+      'telefono_empresa',
+      'rnc_empresa',
+      'cod_empre',
+      'letra_empre',
+      'logo_empresa',
+      'codigousuario',
+      'idSucursal',
+      'codigoempresa',
+      'role',
+      'dashboardRole',
+    ];
+    keys.forEach((k) => localStorage.removeItem(k));
+  }
+
+  private isActiveJwt(token: string): boolean {
+    try {
+      const parts = token.split('.');
+      if (parts.length !== 3) return false;
+      const payload = JSON.parse(atob(parts[1]));
+      const exp = Number(payload?.exp || 0);
+      if (!exp) return false;
+      const now = Math.floor(Date.now() / 1000);
+      return exp > now;
+    } catch {
+      return false;
+    }
   }
 
   getUsername(): string | null {

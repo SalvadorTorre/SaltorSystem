@@ -1,6 +1,6 @@
 export const environment = {
   production: false,
-  bypassAuth: true,
+  bypassAuth: false,
   backendUrl: 'http://localhost:3390/api',
   supabase: {
     enabled: true,
