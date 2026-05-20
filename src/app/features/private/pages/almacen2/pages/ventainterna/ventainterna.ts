@@ -30,12 +30,12 @@ import {
   detVentainternaData,
 } from 'src/app/core/services/almacen/ventainterna';
 //import { ServiciodetVentainterna } from 'src/app/core/services/almacen/detventainterna/detventainterna.service';
-import { ServicioCliente } from 'src/app/core/services/mantenimientos/clientes/cliente.service';
-import { HttpInvokeService } from 'src/app/core/services/http-invoke.service';
+import { SucursalesData } from 'src/app/core/services/mantenimientos/sucursal';
+import { ServicioEmpresa } from 'src/app/core/services/mantenimientos/empresas/empresas.service';
 import {
-  ModeloCliente,
-  ModeloClienteData,
-} from 'src/app/core/services/mantenimientos/clientes';
+  EmpresaModel,
+  EmpresaModelData,
+} from 'src/app/core/services/mantenimientos/empresas';
 import {
   VentainternaDetalleModel,
   interfaceDetalleModel,
@@ -114,8 +114,7 @@ export class Ventainterna implements OnInit {
   constructor(
     private fb: FormBuilder,
     private servicioVentainterna: ServicioVentainterna,
-    private servicioCliente: ServicioCliente,
-    private http: HttpInvokeService,
+    private servicioEmpresa: ServicioEmpresa,
     private servicioInventario: ServicioInventario,
     private ServicioUsuario: ServicioUsuario,
     private printing: PrintingService
@@ -261,7 +260,12 @@ export class Ventainterna implements OnInit {
   }
   @ViewChild('buscarcodmercInput') buscarcodmercElement!: ElementRef;
   buscarNombre = new FormControl();
-  resultadoNombre: ModeloClienteData[] = [];
+  buscarSucursalCliente = new FormControl();
+  resultadoNombre: EmpresaModelData[] = [];
+  resultadoSucursalCliente: SucursalesData[] = [];
+  sucursalesCliente: SucursalesData[] = [];
+  mostrarSucursalCliente = false;
+  empresaClienteSeleccionada: EmpresaModelData | null = null;
   selectedIndex = 1;
   buscarcodmerc = new FormControl();
   buscardescripcionmerc = new FormControl();
@@ -292,7 +296,7 @@ export class Ventainterna implements OnInit {
         ),
         switchMap((query: string) => {
           const q = query.trim().toUpperCase();
-          return this.http.GetRequest<ModeloInventario>(`/productos-buscador/${q}`);
+          return this.servicioInventario.buscarporCodigoMerc(q);
         })
       )
       .subscribe((results: ModeloInventario) => {
@@ -344,7 +348,7 @@ export class Ventainterna implements OnInit {
         ),
         switchMap((query: string) => {
           const q = query.trim().toUpperCase();
-          return this.http.GetRequest<ModeloInventario>(`/productos-buscador-desc/${q}`);
+          return this.servicioInventario.buscarPorDescripcionMerc(q);
         })
       )
       .subscribe((results: ModeloInventario) => {
@@ -371,10 +375,10 @@ export class Ventainterna implements OnInit {
         }),
         filter((query: string) => query !== ''),
         switchMap((query: string) =>
-          this.http.GetRequest<ModeloCliente>(`/cliente-nombre/${query}`)
+          this.servicioEmpresa.buscarPorNombreEmpresa(query)
         )
       )
-      .subscribe((results: ModeloCliente) => {
+      .subscribe((results: EmpresaModel) => {
         console.log(results.data);
         if (results) {
           if (Array.isArray(results.data)) {
@@ -383,6 +387,23 @@ export class Ventainterna implements OnInit {
         } else {
           this.resultadoNombre = [];
         }
+      });
+    this.buscarSucursalCliente.valueChanges
+      .pipe(
+        debounceTime(250),
+        distinctUntilChanged(),
+        tap(() => {
+          this.resultadoSucursalCliente = [];
+        }),
+        filter((query: string) => query !== '' && this.mostrarSucursalCliente)
+      )
+      .subscribe((query: string) => {
+        const q = String(query || '').trim().toUpperCase();
+        this.resultadoSucursalCliente = this.sucursalesCliente.filter((sucursal) =>
+          `${sucursal.nom_sucursal || ''} ${sucursal.cod_sucursal || ''}`
+            .toUpperCase()
+            .includes(q)
+        );
       });
   }
 
@@ -395,6 +416,7 @@ export class Ventainterna implements OnInit {
       fa_valFact: [''],
       fa_codClie: [''],
       fa_nomClie: [''],
+      suculsar_clie: [''],
       fa_codVend: ['', Validators.required],
       fa_nomVend: [''],
       fa_solicitud: [''],
@@ -409,6 +431,13 @@ export class Ventainterna implements OnInit {
   nuevaVentainterna() {
     this.modoedicionVentainterna = false;
     this.tituloModalVentainterna = 'Nueva Ventainterna';
+    this.resultadoNombre = [];
+    this.resultadoSucursalCliente = [];
+    this.sucursalesCliente = [];
+    this.mostrarSucursalCliente = false;
+    this.empresaClienteSeleccionada = null;
+    this.buscarNombre.setValue('', { emitEvent: false });
+    this.buscarSucursalCliente.setValue('', { emitEvent: false });
     $('#modalventainterna').modal('show');
     this.habilitarFormulario = true;
     this.formularioVentainterna.get('fa_codFact')!.disable();
@@ -422,6 +451,13 @@ export class Ventainterna implements OnInit {
   cerrarModalVentainterna() {
     this.habilitarFormulario = false;
     this.formularioVentainterna.reset();
+    this.resultadoNombre = [];
+    this.resultadoSucursalCliente = [];
+    this.sucursalesCliente = [];
+    this.mostrarSucursalCliente = false;
+    this.empresaClienteSeleccionada = null;
+    this.buscarNombre.setValue('', { emitEvent: false });
+    this.buscarSucursalCliente.setValue('', { emitEvent: false });
     this.modoedicionVentainterna = false;
     this.modoconsultaVentainterna = false;
     this.mensagePantalla = false;
@@ -445,6 +481,9 @@ export class Ventainterna implements OnInit {
     this.modoedicionVentainterna = true;
     this.originalVentainterna = Ventainterna;
     this.formularioVentainterna.patchValue(Ventainterna);
+    this.buscarNombre.setValue(Ventainterna.fa_nomClie || '', { emitEvent: false });
+    this.buscarSucursalCliente.setValue(Ventainterna.suculsar_clie || '', { emitEvent: false });
+    this.mostrarSucursalCliente = !!Ventainterna.suculsar_clie;
     this.tituloModalVentainterna = 'Editando Ventainterna';
     $('#modalventainterna').modal('show');
     this.habilitarFormulario = true;
@@ -678,6 +717,17 @@ export class Ventainterna implements OnInit {
     this.formularioVentainterna.get('fa_codFact')!.enable();
     this.formularioVentainterna.get('fa_fecFact')!.enable();
     this.formularioVentainterna.get('fa_nomVend')!.enable();
+
+    if (!this.items.length) {
+      Swal.fire({
+        title: 'Faltan productos',
+        text: 'Debe agregar al menos un producto antes de guardar la venta interna.',
+        icon: 'warning',
+        confirmButtonText: 'Aceptar',
+      });
+      return;
+    }
+
     const sucObjRaw = localStorage.getItem('sucursal');
     const empObjRaw = localStorage.getItem('empresa');
     let sucursalId: number | undefined = undefined;
@@ -705,7 +755,33 @@ export class Ventainterna implements OnInit {
     }
     const codVendedor = (this.formularioVentainterna.get('fa_codVend')?.value || localStorage.getItem('codigousuario') || '').toString().trim();
     const nomVendedor = (this.formularioVentainterna.get('fa_nomVend')?.value || localStorage.getItem('username') || '').toString().trim();
-    const base = this.formularioVentainterna.value;
+    if (codVendedor) {
+      this.formularioVentainterna.patchValue({
+        fa_codVend: codVendedor,
+        fa_nomVend: nomVendedor,
+      });
+    }
+
+    const base = this.formularioVentainterna.getRawValue();
+    if (!base.fa_codClie || !base.fa_nomClie) {
+      Swal.fire({
+        title: 'Empresa requerida',
+        text: 'Seleccione la empresa antes de guardar.',
+        icon: 'warning',
+        confirmButtonText: 'Aceptar',
+      });
+      return;
+    }
+    if (this.mostrarSucursalCliente && !base.suculsar_clie) {
+      Swal.fire({
+        title: 'Sucursal requerida',
+        text: 'Seleccione la sucursal de la empresa antes de guardar.',
+        icon: 'warning',
+        confirmButtonText: 'Aceptar',
+      });
+      return;
+    }
+
     const ventainternaExtendida: any = {
       ...base,
       fa_codVend: codVendedor || base.fa_codVend,
@@ -734,43 +810,69 @@ export class Ventainterna implements OnInit {
         });
         this.servicioVentainterna
           .editarVentainterna(this.ventainternaid, { ventainterna: ventainternaExtendida, detalle: detallePayload })
-          .subscribe((response) => {
-            Swal.fire({
-              title: 'Excelente!',
-              text: 'Ventainterna Editada correctamente.',
-              icon: 'success',
-              timer: 5000,
-              showConfirmButton: false,
-            });
-            this.buscarTodasVentainterna(1);
-            this.formularioVentainterna.reset();
-            this.crearFormularioVentainterna();
-            $('#modalventainterna').modal('hide');
-          });
-      } else {
-        if (this.formularioVentainterna.valid) {
-          this.servicioVentainterna
-            .guardarVentainterna(payload)
-            .subscribe((response) => {
+          .subscribe({
+            next: (response) => {
               Swal.fire({
                 title: 'Excelente!',
-                text: 'Ventainterna creada correctamente.',
+                text: 'Ventainterna Editada correctamente.',
                 icon: 'success',
-                timer: 1000,
+                timer: 5000,
                 showConfirmButton: false,
               });
               this.buscarTodasVentainterna(1);
               this.formularioVentainterna.reset();
               this.crearFormularioVentainterna();
-              this.formularioVentainterna.enable();
               $('#modalventainterna').modal('hide');
+            },
+            error: (err) => {
+              Swal.fire({
+                title: 'Error guardando',
+                text: err?.message || err?.error?.message || 'No se pudo guardar la venta interna.',
+                icon: 'error',
+                confirmButtonText: 'Aceptar',
+              });
+            },
+          });
+      } else {
+        if (this.formularioVentainterna.valid) {
+          this.servicioVentainterna
+            .guardarVentainterna(payload)
+            .subscribe({
+              next: (response) => {
+                Swal.fire({
+                  title: 'Excelente!',
+                  text: 'Ventainterna creada correctamente.',
+                  icon: 'success',
+                  timer: 1000,
+                  showConfirmButton: false,
+                });
+                this.buscarTodasVentainterna(1);
+                this.formularioVentainterna.reset();
+                this.crearFormularioVentainterna();
+                this.formularioVentainterna.enable();
+                $('#modalventainterna').modal('hide');
+              },
+              error: (err) => {
+                Swal.fire({
+                  title: 'Error guardando',
+                  text: err?.message || err?.error?.message || 'No se pudo guardar la venta interna.',
+                  icon: 'error',
+                  confirmButtonText: 'Aceptar',
+                });
+              },
             });
         } else {
           console.log(this.formularioVentainterna.value);
         }
       }
     } else {
-      alert('Esta Empresa no fue Guardado');
+      this.formularioVentainterna.markAllAsTouched();
+      Swal.fire({
+        title: 'Datos incompletos',
+        text: 'Revise los campos requeridos antes de guardar.',
+        icon: 'warning',
+        confirmButtonText: 'Aceptar',
+      });
     }
   }
 
@@ -936,8 +1038,8 @@ export class Ventainterna implements OnInit {
   buscarPorCodigo(codigo: string) {}
 
   buscarClienteporNombre() {
-    this.servicioCliente
-      .buscarporNombre(this.formularioVentainterna.get('fa_nomClie')!.value)
+    this.servicioEmpresa
+      .buscarPorNombreEmpresa(this.formularioVentainterna.get('fa_nomClie')!.value)
       .subscribe((response) => {
         console.log(response);
       });
@@ -950,14 +1052,37 @@ export class Ventainterna implements OnInit {
     return `${day}/${month}/${year}`;
   }
 
-  cargarDatosCliente(cliente: ModeloClienteData) {
+  cargarDatosEmpresaCliente(empresa: EmpresaModelData) {
     this.resultadoNombre = [];
-    this.buscarNombre.reset();
-    if (cliente.cl_nomClie !== '') {
+    this.resultadoSucursalCliente = [];
+    this.sucursalesCliente = [];
+    this.mostrarSucursalCliente = false;
+    this.empresaClienteSeleccionada = empresa || null;
+
+    if (empresa?.nom_empre !== '') {
       this.formularioVentainterna.patchValue({
-        fa_codClie: cliente.cl_codClie,
-        fa_nomClie: cliente.cl_nomClie,
+        fa_codClie: empresa.cod_empre,
+        fa_nomClie: empresa.nom_empre,
+        suculsar_clie: '',
       });
+      this.buscarNombre.setValue(empresa.nom_empre, { emitEvent: false });
+      this.buscarSucursalCliente.setValue('', { emitEvent: false });
+      this.servicioEmpresa.buscarEmpres(empresa.cod_empre).subscribe((response) => {
+        const data = Array.isArray(response?.data) ? response.data[0] : response?.data;
+        this.sucursalesCliente = Array.isArray(data?.sucursales) ? data.sucursales : [];
+        this.mostrarSucursalCliente = this.sucursalesCliente.length > 0;
+        this.resultadoSucursalCliente = this.sucursalesCliente;
+      });
+    }
+  }
+
+  cargarSucursalCliente(sucursal: SucursalesData) {
+    this.resultadoSucursalCliente = [];
+    if (sucursal?.nom_sucursal !== '') {
+      this.formularioVentainterna.patchValue({
+        suculsar_clie: sucursal.nom_sucursal,
+      });
+      this.buscarSucursalCliente.setValue(sucursal.nom_sucursal, { emitEvent: false });
     }
   }
 
@@ -988,7 +1113,7 @@ export class Ventainterna implements OnInit {
     } else if (key === 'Enter') {
       // Selecciona el ítem actual
       if (this.selectedIndex >= 0 && this.selectedIndex <= maxIndex) {
-        this.cargarDatosCliente(this.resultadoNombre[this.selectedIndex]);
+        this.cargarDatosEmpresaCliente(this.resultadoNombre[this.selectedIndex]);
       }
       event.preventDefault();
     }

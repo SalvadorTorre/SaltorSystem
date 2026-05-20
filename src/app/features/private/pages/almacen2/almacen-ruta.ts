@@ -65,6 +65,13 @@ const routes: Routes = [
             (m) => m.ModuloDevoluciones
           ),
       },
+      {
+        path: 'solicitudprestamo',
+        loadChildren: () =>
+          import('./pages/solicitudprestamo/solicitudprestamo-modulo').then(
+            (m) => m.ModuloSolicitudPrestamo
+          ),
+      },
       //   {
       //     path:"Conduce",
       //     loadChildren: () => import('./pages/usuario-page/usuario-modulo').then(m => m.ModuloUsuario)

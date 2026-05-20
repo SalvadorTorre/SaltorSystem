@@ -103,6 +103,29 @@ export class ServicioEmpresa {
     );
   }
 
+  buscarPorNombreEmpresa(valor: string): Observable<any> {
+    const termino = String(valor || "").trim();
+    return from((async () => {
+      if (!termino) {
+        return [];
+      }
+
+      let query = this.db
+        .from("empresas")
+        .select("*")
+        .order("nom_empre", { ascending: true })
+        .limit(50);
+
+      query = query.or(`nom_empre.ilike.%${termino}%,cod_empre.ilike.%${termino}%,rnc_empre.ilike.%${termino}%`);
+
+      const { data, error } = await query;
+      if (error) throw error;
+      return data || [];
+    })()).pipe(
+      map((rows: any[]) => ({ status: "success", code: 200, data: rows }))
+    );
+  }
+
   eliminarEmpresa(cod_empre: string): Observable<any> {
     return from((async () => {
       const { error } = await this.db

@@ -34,7 +34,7 @@
       <div class="col">
         <div class="card bg-success text-white shadow-sm h-100">
           <div class="card-body p-1 text-center">
-            <div class="text-uppercase font-weight-bold opacity-75 small" style="font-size: 0.7rem;">Efectivo</div>
+            <div class="text-uppercase fw-bold small" style="font-size: 0.72rem;">Efectivo</div>
             <h6 class="mb-0 fw-bold">{{ totales.efectivo | number:'1.2-2' }}</h6>
           </div>
         </div>
@@ -42,39 +42,31 @@
       <div class="col">
         <div class="card bg-info text-white shadow-sm h-100">
           <div class="card-body p-1 text-center">
-            <div class="text-uppercase font-weight-bold opacity-75 small" style="font-size: 0.7rem;">Tarjeta</div>
+            <div class="text-uppercase fw-bold small" style="font-size: 0.72rem;">Tarjetas  de Crédito/Debito</div>
             <h6 class="mb-0 fw-bold">{{ totales.tarjeta | number:'1.2-2' }}</h6>
-          </div>
-        </div>
-      </div>
-      <div class="col">
-        <div class="card bg-primary text-white shadow-sm h-100">
-          <div class="card-body p-1 text-center">
-            <div class="text-uppercase font-weight-bold opacity-75 small" style="font-size: 0.7rem;">Crédito</div>
-            <h6 class="mb-0 fw-bold">{{ totales.credito | number:'1.2-2' }}</h6>
           </div>
         </div>
       </div>
       <div class="col">
         <div class="card bg-warning text-dark shadow-sm h-100">
           <div class="card-body p-1 text-center">
-            <div class="text-uppercase font-weight-bold opacity-75 small" style="font-size: 0.7rem;">Depósito</div>
+            <div class="text-uppercase fw-bold small" style="font-size: 0.72rem;">Depósito Transferencia/Cheques</div>
             <h6 class="mb-0 fw-bold">{{ totales.deposito | number:'1.2-2' }}</h6>
-          </div>
-        </div>
-      </div>
-      <div class="col">
-        <div class="card bg-secondary text-white shadow-sm h-100">
-          <div class="card-body p-1 text-center">
-            <div class="text-uppercase font-weight-bold opacity-75 small" style="font-size: 0.7rem;">Cheque</div>
-            <h6 class="mb-0 fw-bold">{{ totales.cheque | number:'1.2-2' }}</h6>
           </div>
         </div>
       </div>
       <div class="col">
         <div class="card bg-danger text-white shadow-sm h-100">
           <div class="card-body p-1 text-center">
-            <div class="text-uppercase font-weight-bold opacity-75 small" style="font-size: 0.7rem;">Pendiente</div>
+            <div class="text-uppercase fw-bold small" style="font-size: 0.72rem;">Credito</div>
+            <h6 class="mb-0 fw-bold">{{ totales.credito | number:'1.2-2' }}</h6>
+          </div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="card bg-secondary text-white shadow-sm h-100">
+          <div class="card-body p-1 text-center">
+            <div class="text-uppercase fw-bold small" style="font-size: 0.72rem;">Pendiente de Pago</div>
             <h6 class="mb-0 fw-bold">{{ totales.pendiente | number:'1.2-2' }}</h6>
           </div>
         </div>
@@ -82,7 +74,7 @@
       <div class="col">
         <div class="card bg-dark text-white shadow-sm h-100">
           <div class="card-body p-1 text-center">
-            <div class="text-uppercase font-weight-bold opacity-75 small" style="font-size: 0.7rem;">Total</div>
+            <div class="text-uppercase fw-bold small" style="font-size: 0.72rem;">Total</div>
             <h6 class="mb-0 fw-bold">{{ totales.total | number:'1.2-2' }}</h6>
           </div>
         </div>
@@ -104,8 +96,10 @@
               <th class="ps-4">Código Factura</th>
           <th>Fecha</th>
           <th>Nombre Cliente</th>
+          <th class="text-center">Tipo</th>
+          <th>Forma de Pago</th>
           <th class="text-end">Valor Factura</th>
-          <th class="text-end pe-4">Forma Pago</th>
+          <th class="text-end pe-4">Estado</th>
         </tr>
       </thead>
       <tbody>
@@ -113,14 +107,24 @@
           <td class="ps-4 fw-bold">{{ f.fa_codFact }}</td>
           <td>{{ f.fa_fecFact | date:'dd/MM/yyyy HH:mm' }}</td>
           <td>{{ f.fa_nomClie }}</td>
+          <td class="text-center">
+            <span class="badge" [ngClass]="obtenerClaseTipoFactura(f)">
+              {{ obtenerTipoFactura(f) }}
+            </span>
+          </td>
+          <td>{{ obtenerFormaPagoVisible(f) }}</td>
           <td class="fw-bold text-end">{{ f.fa_valFact | number:'1.2-2' }}</td>
           <td class="text-end pe-4" 
-              [ngClass]="{'text-success fw-bold': obtenerEtiquetaPago(f) === 'COBRADA', 'text-danger': obtenerEtiquetaPago(f) === 'PENDIENTE'}">
+              [ngClass]="{
+                'text-success fw-bold': obtenerEtiquetaPago(f) === 'COBRADA',
+                'text-warning fw-bold': obtenerEtiquetaPago(f) === 'CREDITO',
+                'text-danger fw-bold': obtenerEtiquetaPago(f) === 'Pendiente Pago'
+              }">
               {{ obtenerEtiquetaPago(f) }}
           </td>
         </tr>
             <tr *ngIf="facturasFiltradas.length === 0">
-              <td colspan="5" class="text-center py-5 text-muted">
+              <td colspan="7" class="text-center py-5 text-muted">
                 <i class="fas fa-inbox fa-3x mb-3"></i>
                 <p>No hay facturas pendientes para cerrar en este rango.</p>
               </td>

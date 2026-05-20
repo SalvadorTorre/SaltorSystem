@@ -5,7 +5,9 @@ import { ServicioChofer } from 'src/app/core/services/mantenimientos/choferes/ch
 import { ServicioSalidafactura } from 'src/app/core/services/almacen/salidafactura/salidafactura.service';
 import { ServicioFacturacion } from 'src/app/core/services/facturacion/factura/factura.service';
 import { ServicioCierreCaja } from 'src/app/core/services/caja/cierrecaja/cierrecaja.service';
+import { ServicioFpago } from 'src/app/core/services/mantenimientos/fpago/fpago.service';
 import Swal from 'sweetalert2';
+import { jsPDF } from 'jspdf';
 
 interface DetalleSalidaCaja {
   codFact: string;
@@ -13,10 +15,20 @@ interface DetalleSalidaCaja {
   fecFact: any;
   valFact: number;
   fpago: string;
+  codfpago: string;
+  descfpago: string;
+  fa_status: string;
   pagado: boolean;
   pagadoOriginal: boolean;
   entregada: boolean;
   entregadaOriginal: boolean;
+}
+
+interface TotalPorFormaPago {
+  codigo: string;
+  descripcion: string;
+  cantidad: number;
+  total: number;
 }
 
 @Component({
@@ -42,20 +54,26 @@ export class ControlSalidaCajaComponent implements OnInit, OnDestroy {
   totalSalida: number = 0;
   totalPagado: number = 0;
   totalPendiente: number = 0;
+  totalNoGestionable: number = 0;
+  cobradoPorFormaPago: TotalPorFormaPago[] = [];
+  private mapaFormasPago = new Map<string, string>();
 
   cargando: boolean = false;
   guardando: boolean = false;
   ultimaFacturaCuadrada: string | null = null;
+  ultimoControlImpresion: any = null;
 
   constructor(
     private servicioChofer: ServicioChofer,
     private servicioSalida: ServicioSalidafactura,
     private servicioFacturacion: ServicioFacturacion,
-    private servicioCierre: ServicioCierreCaja
+    private servicioCierre: ServicioCierreCaja,
+    private servicioFpago: ServicioFpago
   ) {}
 
   ngOnInit() {
     this.cargarUltimoCierre();
+    this.cargarFormasPago();
     this.searchSubscription = this.searchSubject
       .pipe(debounceTime(300), distinctUntilChanged())
       .subscribe((termino) => {
@@ -75,15 +93,50 @@ export class ControlSalidaCajaComponent implements OnInit, OnDestroy {
         // Asumiendo que resp.data contiene el objeto del último cierre
         // y que tiene un campo como 'cc_finFact' o similar.
         // Si no, tendremos que ajustar esto.
-        const data = resp.data || resp;
-        if (data && data.cc_finFact) {
-           this.ultimaFacturaCuadrada = data.cc_finFact;
-        }
+        const cierres = Array.isArray(resp?.data)
+          ? resp.data
+          : resp?.data
+            ? [resp.data]
+            : Array.isArray(resp)
+              ? resp
+              : [];
+        const ultimo = cierres[0] || null;
+        this.ultimaFacturaCuadrada =
+          ultimo?.cc_finFact || ultimo?.factfin || '';
       },
       error: (err: any) => {
         console.error('Error al obtener último cierre', err);
       }
     });
+  }
+
+  cargarFormasPago() {
+    this.servicioFpago.obtenerTodosFpago().subscribe({
+      next: (resp: any) => {
+        const rows = Array.isArray(resp?.data) ? resp.data : [];
+        this.mapaFormasPago.clear();
+        rows.forEach((fp: any) => {
+          const codigo = String(fp?.fp_codfpago ?? '').trim();
+          if (codigo) {
+            this.mapaFormasPago.set(codigo, String(fp?.fp_descfpago || codigo).trim());
+          }
+        });
+        this.detalles = this.detalles.map((d) => ({
+          ...d,
+          descfpago: this.obtenerDescripcionFpago(d.codfpago),
+        }));
+        this.calcularTotales();
+      },
+      error: (err: any) => {
+        console.error('Error al cargar formas de pago', err);
+      },
+    });
+  }
+
+  obtenerDescripcionFpago(codigo: any): string {
+    const key = String(codigo ?? '').trim();
+    if (!key) return 'Sin forma de pago';
+    return this.mapaFormasPago.get(key) || `Forma ${key}`;
   }
 
   buscarChoferPorNombre(valor: string) {
@@ -273,7 +326,8 @@ export class ControlSalidaCajaComponent implements OnInit, OnDestroy {
               const esPagadaPorFactura =
                 estadoFactura === 'P' ||
                 estadoFactura === 'PAGADA' ||
-                pagoFactura === 'P';
+                pagoFactura === 'P' ||
+                pagoFactura === 'S';
               return {
                 codFact: f?.fa_codFact || det.codFact,
                 nomClie: f?.fa_nomClie || '',
@@ -284,6 +338,11 @@ export class ControlSalidaCajaComponent implements OnInit, OnDestroy {
                     : det.valFact) || 0
                 ),
                 fpago: f?.fa_fpago || '',
+                codfpago: String(f?.fa_codfpago ?? det?.codfpago ?? '').trim(),
+                descfpago: this.obtenerDescripcionFpago(
+                  f?.fa_codfpago ?? det?.codfpago
+                ),
+                fa_status: estadoFactura,
                 pagado: esPagadaPorSalida || esPagadaPorFactura,
                 pagadoOriginal: esPagadaPorFactura,
                 entregada: (f?.fa_entrega || '').trim().toUpperCase() === 'S',
@@ -310,6 +369,22 @@ export class ControlSalidaCajaComponent implements OnInit, OnDestroy {
 
   cambiarChofer() {
     this.resetChofer();
+  }
+
+  obtenerTipoFactura(detalle: DetalleSalidaCaja): string {
+    const status = String(detalle?.fa_status || '').trim().toUpperCase();
+    if (status === 'C') return 'Conduce';
+    if (status === 'A') return 'Factura';
+    if (status === 'P') return 'Pendiente';
+    return '';
+  }
+
+  obtenerClaseTipoFactura(detalle: DetalleSalidaCaja): string {
+    const status = String(detalle?.fa_status || '').trim().toUpperCase();
+    if (status === 'C') return 'bg-warning text-dark';
+    if (status === 'A') return 'bg-success';
+    if (status === 'P') return 'bg-secondary';
+    return 'bg-light text-muted border';
   }
 
   togglePagado(detalle: DetalleSalidaCaja) {
@@ -370,11 +445,46 @@ export class ControlSalidaCajaComponent implements OnInit, OnDestroy {
       (sum, d) => sum + (Number(d.valFact) || 0),
       0
     );
-    this.totalPagado = this.detalles.reduce(
-      (sum, d) => sum + (d.pagado ? Number(d.valFact) || 0 : 0),
+    this.totalNoGestionable = this.detalles.reduce(
+      (sum, d) => sum + (d.pagadoOriginal ? Number(d.valFact) || 0 : 0),
       0
     );
-    this.totalPendiente = this.totalSalida - this.totalPagado;
+    this.totalPagado = this.detalles.reduce(
+      (sum, d) =>
+        sum + (!d.pagadoOriginal && d.pagado ? Number(d.valFact) || 0 : 0),
+      0
+    );
+    this.totalPendiente = this.detalles.reduce(
+      (sum, d) =>
+        sum + (!d.pagadoOriginal && !d.pagado ? Number(d.valFact) || 0 : 0),
+      0
+    );
+    const grupos = new Map<string, TotalPorFormaPago>();
+
+    this.detalles
+      .filter((d) => !d.pagadoOriginal && d.pagado)
+      .forEach((d) => {
+        const codigo = String(d.codfpago || '').trim() || 'SIN_FPAGO';
+        const descripcion =
+          codigo === 'SIN_FPAGO'
+            ? 'Sin forma de pago'
+            : d.descfpago || this.obtenerDescripcionFpago(codigo);
+        const actual =
+          grupos.get(codigo) || {
+            codigo,
+            descripcion,
+            cantidad: 0,
+            total: 0,
+          };
+
+        actual.cantidad += 1;
+        actual.total += Number(d.valFact) || 0;
+        grupos.set(codigo, actual);
+      });
+
+    this.cobradoPorFormaPago = Array.from(grupos.values()).sort((a, b) =>
+      a.descripcion.localeCompare(b.descripcion)
+    );
   }
 
   guardarCobro() {
@@ -406,7 +516,8 @@ export class ControlSalidaCajaComponent implements OnInit, OnDestroy {
     this.cargando = true;
 
     const valPagado = this.detalles.reduce(
-      (sum, d) => sum + (d.pagado ? Number(d.valFact) || 0 : 0),
+      (sum, d) =>
+        sum + (!d.pagadoOriginal && d.pagado ? Number(d.valFact) || 0 : 0),
       0
     );
 
@@ -419,6 +530,7 @@ export class ControlSalidaCajaComponent implements OnInit, OnDestroy {
       valFact: d.valFact,
       fecFact: d.fecFact,
       pagado: d.pagado ? 'S' : 'N',
+      status: 'C',
     }));
 
     const payload = {
@@ -430,7 +542,7 @@ export class ControlSalidaCajaComponent implements OnInit, OnDestroy {
 
     const cobroObservable = this.servicioSalida.editarSalida(Number(this.salidaActual.id), payload);
 
-    const facturasParaActualizar: any[] = [];
+    let facturasParaActualizar: any[] = [];
 
     this.detalles.forEach((d) => {
       let item: any = { fa_codFact: d.codFact };
@@ -462,6 +574,12 @@ export class ControlSalidaCajaComponent implements OnInit, OnDestroy {
       }
     });
 
+    facturasParaActualizar = this.detalles.map((d) => ({
+      fa_codFact: d.codFact,
+      fa_fpago: 'P',
+      fa_entrega: 'S',
+    }));
+
     const observables: Observable<any>[] = [cobroObservable];
 
     if (facturasParaActualizar.length > 0) {
@@ -472,10 +590,14 @@ export class ControlSalidaCajaComponent implements OnInit, OnDestroy {
 
     forkJoin(observables).subscribe({
       next: () => {
+        this.ultimoControlImpresion = this.crearDatosControlImpresion(payload);
         this.resetChofer();
         this.cargando = false;
         this.guardando = false;
-        this.mostrarMensaje('Cobro y cambios guardados correctamente', 'success');
+        this.mostrarMensaje(
+          'Cobro guardado correctamente. El chofer quedÃ³ libre para otra salida.',
+          'success'
+        );
       },
       error: () => {
         this.mostrarMensaje('Error al guardar los cambios');
@@ -500,6 +622,144 @@ export class ControlSalidaCajaComponent implements OnInit, OnDestroy {
     this.salidaActual = null;
     this.detalles = [];
     this.calcularTotales();
+  }
+
+  private crearDatosControlImpresion(payload?: any): any {
+    return {
+      salida: payload || this.salidaActual,
+      chofer: this.nomChofer || payload?.nomChofer || payload?.nomchofer || '',
+      codChofer: this.codChofer || payload?.codChofer || payload?.codchofer || '',
+      detalles: this.detalles.map((d) => ({ ...d })),
+      resumen: this.cobradoPorFormaPago.map((r) => ({ ...r })),
+      totalSalida: this.totalSalida,
+      totalPagado: this.totalPagado,
+      totalPendiente: this.totalPendiente,
+      totalNoGestionable: this.totalNoGestionable,
+      fecha: new Date(),
+    };
+  }
+
+  imprimirControlCobro() {
+    const data = this.salidaActual
+      ? this.crearDatosControlImpresion()
+      : this.ultimoControlImpresion;
+
+    if (!data) {
+      this.mostrarMensaje('No hay control disponible para imprimir.', 'warning', true);
+      return;
+    }
+
+    const formatoMoneda = new Intl.NumberFormat('es-DO', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+    const fmt = (value: any) => formatoMoneda.format(Number(value) || 0);
+    const formatDate = (value: any) => {
+      const date = value instanceof Date ? value : new Date(value || new Date());
+      if (isNaN(date.getTime())) return '';
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const year = date.getFullYear();
+      return `${day}/${month}/${year}`;
+    };
+
+    const doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: [80, 297],
+    });
+    const left = 5;
+    const right = 75;
+    const center = 40;
+    let y = 8;
+
+    const line = () => {
+      doc.line(left, y, right, y);
+      y += 4;
+    };
+    const centerText = (text: string, size = 8, bold = false) => {
+      doc.setFontSize(size);
+      doc.setFont('helvetica', bold ? 'bold' : 'normal');
+      doc.text(text, center, y, { align: 'center', maxWidth: 70 });
+      y += 4;
+    };
+
+    centerText('CONTROL DE COBRO', 10, true);
+    centerText(`Salida: ${data.salida?.codSalida || data.salida?.codsalida || ''}`, 8);
+    centerText(`Fecha: ${formatDate(data.fecha)}`, 8);
+    line();
+
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Chofer: ${data.chofer}`, left, y, { maxWidth: 70 });
+    y += 5;
+    doc.text(`Codigo: ${data.codChofer}`, left, y);
+    y += 5;
+    line();
+
+    doc.setFont('helvetica', 'bold');
+    doc.text('Resumen a pagar', left, y);
+    y += 5;
+    doc.setFont('helvetica', 'normal');
+
+    if (data.resumen.length) {
+      data.resumen.forEach((r: TotalPorFormaPago) => {
+        doc.text(`${r.descripcion} (${r.cantidad})`, left, y, { maxWidth: 42 });
+        doc.text(fmt(r.total), right, y, { align: 'right' });
+        y += 5;
+      });
+    } else {
+      doc.text('No hay cobros gestionados en esta salida.', left, y, { maxWidth: 70 });
+      y += 6;
+    }
+
+    line();
+    doc.setFont('helvetica', 'bold');
+    doc.text('Total a pagar:', left, y);
+    doc.text(fmt(data.totalPagado), right, y, { align: 'right' });
+    y += 5;
+    doc.setFont('helvetica', 'normal');
+    if (data.totalNoGestionable > 0) {
+      doc.text('Facturas ya pagadas:', left, y);
+      doc.text(fmt(data.totalNoGestionable), right, y, { align: 'right' });
+      y += 5;
+    }
+
+    line();
+    doc.setFont('helvetica', 'bold');
+    doc.text('Facturas', left, y);
+    y += 5;
+    doc.setFont('helvetica', 'normal');
+    data.detalles.forEach((d: DetalleSalidaCaja) => {
+      if (y > 275) {
+        doc.addPage([80, 297], 'portrait');
+        y = 8;
+      }
+      doc.text(String(d.codFact), left, y);
+      doc.text(fmt(d.valFact), right, y, { align: 'right' });
+      y += 4;
+      const estado = d.pagadoOriginal ? 'Ya pagada' : 'Cobrada en salida';
+      doc.text(`${d.descfpago || 'Sin forma'} - ${estado}`, left, y, { maxWidth: 70 });
+      y += 5;
+    });
+
+    y += 8;
+    doc.line(10, y, 70, y);
+    y += 5;
+    doc.text('Firma recibido', center, y, { align: 'center' });
+
+    doc.autoPrint();
+    const blob = doc.output('blob');
+    const url = URL.createObjectURL(blob);
+    const win = window.open(url, '_blank');
+    if (win) {
+      setTimeout(() => {
+        try {
+          win.focus();
+          win.print();
+        } catch {}
+      }, 600);
+    }
   }
 
   private mostrarMensaje(texto: string, icono: any = 'info', confirmButton: boolean = false) {

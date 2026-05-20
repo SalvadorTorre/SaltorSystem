@@ -265,6 +265,54 @@ export class ServicioSalidafactura {
     return this.http.GetRequest<any>(`/factura-para-salida/${codFact}`);
   }
 
+  obtenerSalidaPorFactura(codFact: string): Observable<any> {
+    const codigo = String(codFact || '').trim();
+    if (!codigo) {
+      return from(Promise.resolve({ status: 'success', code: 200, data: null }));
+    }
+
+    if (!this.useSupabase) {
+      return this.http.GetRequest<any>(
+        `/controlsalida/factura/${encodeURIComponent(codigo)}`,
+        false
+      );
+    }
+
+    return from((async () => {
+      const { data: det, error: detErr } = await this.db
+        .from('detsalida')
+        .select('*')
+        .eq('codfact', codigo)
+        .order('idsalida', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (detErr) throw detErr;
+      if (!det) {
+        return { status: 'success', code: 200, data: null };
+      }
+
+      const detalle = this.mapDetSalidaDbToUi(det);
+      const codsalida = String(detalle?.codSalida || '').trim();
+      const idsalida = this.toNumberOrNull(detalle?.idsalida);
+      let salidaQuery = this.db.from('salida').select('*').limit(1);
+      salidaQuery = codsalida
+        ? salidaQuery.eq('codsalida', codsalida)
+        : salidaQuery.eq('id', idsalida);
+      const { data: salida, error: salidaErr } = await salidaQuery.maybeSingle();
+      if (salidaErr) throw salidaErr;
+
+      return {
+        status: 'success',
+        code: 200,
+        data: {
+          detalle,
+          salida: salida ? this.mapSalidaDbToUi(salida) : null,
+          idsalida: codsalida || detalle?.idsalida || '',
+        },
+      };
+    })());
+  }
+
   obtenerPorCodigoSalida(codSalida: string): Observable<any> {
     const cod = String(codSalida || '').trim();
     if (!cod) {

@@ -20,7 +20,8 @@
                 <thead class="table-dark">
                   <tr>
                     <th class="col-2">Número</th>
-                    <th class="col-6">Cliente / Fecha</th>
+                    <th class="col-5">Cliente / Fecha</th>
+                    <th class="col-1 text-center">Tipo</th>
                     <th class="col-2 text-end">Valor</th>
                     <th class="col-2 text-center">Status</th>
                     <th class="col-2 text-center">Opciones</th>
@@ -49,6 +50,22 @@
                       <div class="text-muted small">{{ factura.fa_fecFact }}</div>
                     </td>
 
+                    <!-- Tipo -->
+                    <td class="text-center align-middle">
+                      <span
+                        *ngIf="(factura.fa_status || '').trim().toUpperCase() === 'C'"
+                        class="badge bg-warning text-dark"
+                      >
+                        Conduce
+                      </span>
+                      <span
+                        *ngIf="(factura.fa_status || '').trim().toUpperCase() === 'F'"
+                        class="badge bg-success"
+                      >
+                        Factura
+                      </span>
+                    </td>
+
                     <!-- Valor -->
                     <td class="text-end align-middle">
                     <div class="fw-bold fs-5 text-success">
@@ -58,7 +75,11 @@
 
                   <!-- Status -->
                   <td class="text-center align-middle">
-                    <span *ngIf="factura.caja_status" class="badge bg-danger">
+                    <span
+                      *ngIf="factura.caja_status"
+                      class="badge"
+                      [ngClass]="claseStatusCaja(factura)"
+                    >
                       {{ factura.caja_status }}
                     </span>
                   </td>
@@ -121,13 +142,13 @@
               </div>
               <div class="card-body bg-light p-2">
                 <div *ngIf="bloquearReimpresion" class="alert alert-danger py-2 mb-2">
-                  Factura pendiente de pago: gestión de pago deshabilitada.
+                  Factura impresa pendiente de pago: las impresiones estan deshabilitadas, pero puede marcarla como pagada y ajustar entrega.
                 </div>
                 <div class="row g-2">
                   <div class="col-md-6">
                     <div class="form-check form-switch mb-2">
                       <input
-                        [disabled]="chekpagada || bloquearReimpresion"
+                        [disabled]="chekpagada || facturaEstaPagada"
                         type="checkbox"
                         id="chk1"
                         class="form-check-input"
@@ -144,7 +165,8 @@
                         name="formapago"
                         [(ngModel)]="ftipoPago"
                         class="form-select"
-                        [disabled]="!chekPagado || bloquearReimpresion"
+                        [disabled]="!hayFacturaSeleccionada || facturaEstaPagada"
+                        (ngModelChange)="onTipoPagoChange()"
                       >
                         <option
                           [value]="fpago.fp_codfpago"
@@ -160,7 +182,8 @@
                       <select
                         class="form-select"
                         [(ngModel)]="fentrega"
-                        [disabled]="!chekPagado || bloquearReimpresion"
+                        [disabled]="!hayFacturaSeleccionada || facturaEstaPagada"
+                        (ngModelChange)="onEntregaChange()"
                       >
                         <option [value]="fe.idfentrega" *ngFor="let fe of resultadoFentrega">{{ fe.desentrega }}</option>
                       </select>
@@ -192,7 +215,7 @@
                           [ngClass]="{ 'is-invalid': valorPagado < formularioFacturacion.get('fa_valFact')?.value }"
                           style="font-weight: bold"
                           [value]="valorPagado"
-                          [disabled]="txtvalPagado || bloquearReimpresion"
+                          [disabled]="txtvalPagado || facturaEstaPagada"
                           (input)="onValorPagadoChange($event)"
                         />
                       </div>
@@ -220,9 +243,16 @@
                 <div class="action-bar d-flex justify-content-between gap-2 mt-2">
                 <button
                   class="btn btn-secondary flex-fill"
-                  [disabled]="bloquearReimpresion || !chekPagado || valorPagado < formularioFacturacion.get('fa_valFact')?.value"
-                  (click)="marcarImpresa()"  >
+                  [disabled]="!hayFacturaSeleccionada || (chekPagado && valorPagado < formularioFacturacion.get('fa_valFact')?.value)"
+                  (click)="guardarPagoEntrega()"  >
                   <i class="bi bi-arrow-counterclockwise me-1"></i>Guardar
+                </button>
+                <button
+                  class="btn btn-warning flex-fill"
+                  [disabled]="!hayFacturaSeleccionada || !esEntregaEnvio || facturaEstaImpresa"
+                  [title]="facturaEstaImpresa ? 'La factura ya está impresa' : ''"
+                  (click)="imprimirConduceFactura()">
+                  <i class="bi bi-printer me-1"></i> Imprimir conduce
                 </button>
                 <button
                   class="btn btn-success flex-fill"
@@ -232,7 +262,7 @@
                 </button>
                 <button
                   class="btn btn-primary flex-fill"
-                  [disabled]="(!chekPagado && !permitirImpresion) || bloquearReimpresion"
+                  [disabled]="(!chekPagado && (!permitirImpresion || !esEntregaEnvio)) || bloquearReimpresion"
                   [title]="bloquearReimpresion ? 'Pendiente de pago: impresión deshabilitada' : ''"
                   (click)="buscarFactura()">
                   <i class="bi bi-cash-stack me-1"></i> Cobrar y enviar DGII
@@ -635,4 +665,90 @@
         </div>
       </div>
     </div>
+</div>
+
+<div
+  class="modal fade"
+  id="modalOrigenPago"
+  tabindex="-1"
+  aria-labelledby="modalOrigenPagoLabel"
+  aria-hidden="true"
+  data-bs-backdrop="static"
+>
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white py-2">
+        <h5 class="modal-title" id="modalOrigenPagoLabel">
+          Origen de pago
+        </h5>
+        <button
+          type="button"
+          class="btn-close btn-close-white"
+          data-bs-dismiss="modal"
+          aria-label="Cerrar"
+        ></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label fw-bold">Origen de pago</label>
+          <select class="form-select" [(ngModel)]="origenPagoSeleccionado">
+            <option value="">Seleccione...</option>
+            <option
+              *ngFor="let origen of resultadoOrigenPago"
+              [value]="origen.codigo"
+            >
+              {{ origen.descripcion }}
+            </option>
+          </select>
+          <div
+            *ngIf="cargandoOrigenPago"
+            class="form-text text-primary fw-semibold"
+          >
+            Cargando origenes de pago...
+          </div>
+          <div
+            *ngIf="!cargandoOrigenPago && resultadoOrigenPago.length === 0"
+            class="form-text text-danger fw-semibold"
+          >
+            No hay origenes de pago disponibles en Supabase.
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-bold">Confirmacion</label>
+          <input
+            type="text"
+            class="form-control"
+            [(ngModel)]="confirmacionPago"
+            placeholder="Numero de autorizacion o referencia"
+          />
+        </div>
+
+        <div class="mb-0">
+          <label class="form-label fw-bold">Nota</label>
+          <textarea
+            class="form-control"
+            rows="3"
+            [(ngModel)]="notaPago"
+          ></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          data-bs-dismiss="modal"
+        >
+          Cancelar
+        </button>
+        <button
+          type="button"
+          class="btn btn-primary"
+          (click)="guardarOrigenPagoModal()"
+        >
+          Guardar origen
+        </button>
+      </div>
+    </div>
+  </div>
 </div>

@@ -257,7 +257,7 @@
 
                   <div class="mb-1 row mt-1">
                     <div class="col-2">
-                      <label for=" ">Nombre</label>
+                      <label for=" ">Empresa</label>
                     </div>
                     <div class="col-10">
                       <div class="input-group show">
@@ -294,7 +294,7 @@
                             [class.active]="i === selectedIndex"
                           >
                             <a
-                              (click)="cargarDatosCliente(result)"
+                              (click)="cargarDatosEmpresaCliente(result)"
                               style="
                                 color: #222222 !important;
                                 font-size: 10pt;
@@ -304,7 +304,56 @@
                               "
                               class="px-3 cp"
                             >
-                              <i class="far fa-user-circle mr-5"></i>&nbsp;&nbsp;{{ result.cl_nomClie }}
+                              <i class="far fa-building mr-5"></i>&nbsp;&nbsp;{{ result.nom_empre }} - {{ result.cod_empre }}
+                            </a>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="mb-1 row mt-1" *ngIf="mostrarSucursalCliente">
+                    <div class="col-2">
+                      <label for=" ">Sucursal Cliente</label>
+                    </div>
+                    <div class="col-10">
+                      <div class="input-group show">
+                        <input
+                          class="form-control dropdown-toggle searchInput"
+                          type="text"
+                          style="height: 30px"
+                          autocomplete="off"
+                          (input)="convertToUpperCase($event)"
+                          [formControl]="buscarSucursalCliente"
+                          formControlName="suculsar_clie"
+                        />
+                        <div
+                          [ngClass]="{ 'show': resultadoSucursalCliente.length > 0 }"
+                          class="dropdown-menu"
+                          style="
+                            margin-right: 30px;
+                            margin-top: 45px;
+                            z-index: 300;
+                            width: 340px;
+                            position: absolute;
+                            will-change: transform;
+                          "
+                        >
+                          <div
+                            class="searchReturnItem name-find"
+                            *ngFor="let sucursal of resultadoSucursalCliente"
+                          >
+                            <a
+                              (click)="cargarSucursalCliente(sucursal)"
+                              style="
+                                color: #222222 !important;
+                                font-size: 10pt;
+                                padding: 20px 0px;
+                                text-decoration: none !important;
+                                cursor: pointer;
+                              "
+                              class="px-3 cp"
+                            >
+                              <i class="far fa-building mr-5"></i>&nbsp;&nbsp;{{ sucursal.nom_sucursal }} - {{ sucursal.cod_sucursal }}
                             </a>
                           </div>
                         </div>
@@ -670,7 +719,6 @@
               <button
                 class="btn btn-primary btn-xs"
                 type="submit"
-                [disabled]="items.length === 0"
               >
                 Guardar
               </button>

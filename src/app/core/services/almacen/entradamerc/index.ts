@@ -13,6 +13,7 @@ export interface EntradamercModelData {
     me_nomSupl: string;
     me_rncSupl: number;
     me_facSupl: number;
+    me_ordencomp: string;
     me_fecSupl: string;
     me_telSupl: string;
     me_dirSupl: string;

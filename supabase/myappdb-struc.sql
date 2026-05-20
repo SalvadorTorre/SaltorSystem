@@ -570,7 +570,7 @@ CREATE TABLE "myappdb"."detfactura" (
   "df_valmerc" numeric(12,2),
   "df_unidad" varchar(8) COLLATE "pg_catalog"."default",
   "df_cosmerc" numeric(10,2),
-  "df_codclie" numeric(5,0),
+  "df_codclie" varchar(10) COLLATE "pg_catalog"."default",
   "df_imp" varchar(1) COLLATE "pg_catalog"."default",
   "df_status" varchar(3) COLLATE "pg_catalog"."default",
   "enviado" numeric(1,0),
@@ -708,6 +708,7 @@ CREATE TABLE "myappdb"."entradamerc" (
   "me_codsupl" varchar(6) COLLATE "pg_catalog"."default",
   "me_nomsupl" varchar(255) COLLATE "pg_catalog"."default",
   "me_facsupl" varchar(30) COLLATE "pg_catalog"."default",
+  "me_ordencomp" varchar(30) COLLATE "pg_catalog"."default",
   "me_fecsupl" date,
   "me_status" varchar(4) COLLATE "pg_catalog"."default",
   "me_codvend" varchar(5) COLLATE "pg_catalog"."default",
@@ -755,7 +756,7 @@ CREATE TABLE "myappdb"."factura" (
   "fa_cosfact" numeric(12,2),
   "fa_abofact" numeric(12,2),
   "fa_expfact" date,
-  "fa_codclie" int4,
+  "fa_codclie" varchar(10) COLLATE "pg_catalog"."default",
   "fa_nomclie" varchar(39) COLLATE "pg_catalog"."default",
   "fa_telclie" varchar(26) COLLATE "pg_catalog"."default",
   "fa_dirclie" varchar(40) COLLATE "pg_catalog"."default",
@@ -1082,6 +1083,7 @@ CREATE TABLE "myappdb"."ventainterna" (
   "fa_solicitud" varchar(12) COLLATE "pg_catalog"."default",
   "fa_codempr" varchar(6) COLLATE "pg_catalog"."default",
   "fa_codsucu" int4,
+  "suculsar_clie" varchar(60) COLLATE "pg_catalog"."default",
   "fa_tipo" varchar(10) COLLATE "pg_catalog"."default"
 )
 ;

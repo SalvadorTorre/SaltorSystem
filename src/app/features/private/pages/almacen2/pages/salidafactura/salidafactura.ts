@@ -18,6 +18,7 @@ interface DetalleSalida {
   fecFact: string;
   valFact: number;
   codfpago: string;
+  fa_status?: string;
   // Flag de pago: 'S' (pagada) / 'N' (pendiente)
   fpago: string;
 }
@@ -341,6 +342,7 @@ private pickContFacturaRow(rows: any[], idsucursal: number): any | null {
                                fecFact: f.fa_fecFact,
                                valFact: Number(f.fa_valFact),
                                codfpago: String(f.fa_codfpago || '').trim(),
+                               fa_status: String(f.fa_status || '').trim(),
                                fpago: f.fa_fpago
                            });
                        }
@@ -576,6 +578,7 @@ agregarFactura() {
         fecFact: factura.fa_fecFact,
         valFact: Number(factura.fa_valFact),
         codfpago: String(factura.fa_codfpago || '').trim(),
+        fa_status: String(factura.fa_status || '').trim(),
         fpago: fpagoFlag
       });
 
@@ -607,6 +610,10 @@ agregarFactura() {
     return this.mapaFpagos.get(codigo) || codigo; // Si no encuentra, muestra el código
   }
 
+
+  esConduce(item: DetalleSalida): boolean {
+    return String(item?.fa_status || '').trim().toUpperCase() === 'C';
+  }
 
   eliminarDetalle(index: number) {
     const item = this.detallesSalida[index];

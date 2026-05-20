@@ -587,7 +587,7 @@ export class Facturacion implements OnInit {
       fa_correo: [''],
       fa_codVend: ['', Validators.required],
       fa_nomVend: [''],
-      fa_status: [''],
+      fa_status: ['C'],
       fa_sector: [''],
       fa_codZona: [null],
       fa_desZona: [''],
@@ -2090,6 +2090,7 @@ export class Facturacion implements OnInit {
     const facturaPayload = {
       ...this.formularioFacturacion.getRawValue(),
     } as any;
+    facturaPayload.fa_status = 'C';
     facturaPayload.fa_codEmpr = localStorage.getItem('codigoempresa');
     facturaPayload.fa_codSucu = parseInt(
       localStorage.getItem('idSucursal') || '0',

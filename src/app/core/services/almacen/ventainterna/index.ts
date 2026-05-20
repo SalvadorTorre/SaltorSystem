@@ -11,6 +11,7 @@ export interface VentainternaModelData {
   fa_valFact: number;
   fa_codClie: string;
   fa_nomClie: string;
+  suculsar_clie?: string;
   fa_codVend: string;
   fa_nomVend: string;
   fa_solicitud:string;

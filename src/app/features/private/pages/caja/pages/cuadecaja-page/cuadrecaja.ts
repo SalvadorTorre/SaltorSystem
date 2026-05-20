@@ -78,6 +78,29 @@ export class CuadreCaja implements OnInit {
     return codigo; 
   }
 
+  facturaEstaPagada(factura: any): boolean {
+    const estadoPago = String(factura?.fa_fpago || '').trim().toUpperCase();
+    return ['S', 'P', 'PAGADA', 'COBRADA'].includes(estadoPago);
+  }
+
+  obtenerFormaPagoVisible(factura: any): string {
+    if (!this.facturaEstaPagada(factura)) return '';
+    return this.obtenerDescripcionPago(factura.fa_codfpago || factura.fa_fpago);
+  }
+
+  esFacturaCredito(factura: any): boolean {
+    const descripcion = this.obtenerDescripcionPago(factura?.fa_codfpago || factura?.fa_fpago)
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
+    return descripcion.includes('credito');
+  }
+
+  facturaTieneCierre(factura: any): boolean {
+    const cierre = String(factura?.fa_cierre || '').trim().toUpperCase();
+    return cierre !== '' && cierre !== 'N' && cierre !== 'PENDIENTE';
+  }
+
   esFacturaAntigua(factura: any): boolean {
     if (!this.ultimaFacturaCuadrada) return false;
     
@@ -93,20 +116,33 @@ export class CuadreCaja implements OnInit {
   }
 
   obtenerEtiquetaPago(factura: any): string {
-    const descripcion = this.obtenerDescripcionPago(factura.fa_codfpago || factura.fa_fpago);
-    
-    // 1. Si es crédito (no pagada), SIEMPRE es PENDIENTE (sea antigua o nueva)
-    if (descripcion.toLowerCase().includes('credito')) {
-        return 'PENDIENTE';
+    if (this.esFacturaCredito(factura)) {
+        return 'CREDITO';
     }
 
-    // 2. Si es antigua y NO es crédito (ya pasó el check arriba), entonces está COBRADA
-    if (this.esFacturaAntigua(factura)) {
+    if (this.facturaEstaPagada(factura)) {
         return 'COBRADA';
     }
+
+    return 'Pendiente Pago';
+    
+    // 1. Si es crédito (no pagada), SIEMPRE es PENDIENTE (sea antigua o nueva)
+
+    // 2. Si es antigua y NO es crédito (ya pasó el check arriba), entonces está COBRADA
     
     // 3. Si es actual y pagada, dejar en blanco
-    return '';
+  }
+
+  obtenerTipoFactura(factura: any): string {
+    return String(factura?.fa_status || '').trim().toUpperCase() === 'C'
+      ? 'Conduce'
+      : 'Factura';
+  }
+
+  obtenerClaseTipoFactura(factura: any): string {
+    return this.obtenerTipoFactura(factura) === 'Conduce'
+      ? 'bg-warning text-dark'
+      : 'bg-success';
   }
 
   obtenerUltimoCierreYFacturas() {
@@ -160,8 +196,7 @@ export class CuadreCaja implements OnInit {
     // Simplificación: Traer todas las facturas que no tengan fa_cierre == 'C'
     
     let facturasCandidatas = this.facturas.filter(f => {
-       const estadoCierre = String(f.fa_cierre || '').trim().toUpperCase();
-       return estadoCierre !== 'C';
+       return !this.facturaTieneCierre(f);
     });
 
     if (facturasCandidatas.length > 0) {
@@ -198,16 +233,20 @@ export class CuadreCaja implements OnInit {
 
     this.facturasFiltradas.forEach(f => {
       const monto = Number(f.fa_valFact) || 0;
+
+      if (this.esFacturaCredito(f)) {
+        this.totales.credito += monto;
+        return;
+      }
+
+      if (!this.facturaEstaPagada(f)) {
+        this.totales.pendiente += monto;
+        return;
+      }
+
       // Usamos fa_codfpago preferiblemente para identificar el método, fallback a fa_fpago
       const codigoPago = f.fa_codfpago || f.fa_fpago;
       const metodo = this.obtenerDescripcionPago(codigoPago).toLowerCase();
-
-      // Calcular pendiente usando la misma lógica que la tabla
-      if (this.obtenerEtiquetaPago(f) === 'PENDIENTE') {
-        this.totales.pendiente += monto;
-        // Si es pendiente, no sumar a otros totales (como crédito, efectivo, etc.)
-        return; 
-      }
 
       if (metodo.includes('efectivo') || metodo.includes('contado')) {
         this.totales.efectivo += monto;
@@ -225,7 +264,7 @@ export class CuadreCaja implements OnInit {
       }
     });
 
-    this.totales.total = this.totales.efectivo + this.totales.tarjeta + this.totales.credito + this.totales.deposito + this.totales.cheque + this.totales.pendiente;
+    this.totales.total = this.totales.efectivo + this.totales.tarjeta + this.totales.credito + this.totales.deposito + this.totales.cheque;
   }
 
   generarReporte() {
@@ -233,7 +272,7 @@ export class CuadreCaja implements OnInit {
     builder.iniciarDocumento('Cierre de Caja')
            .agregarDatosGenerales(`Desde Factura ${this.inicioFactura} hasta ${this.finFactura}`, `Última Cuadrada: ${this.ultimaFacturaCuadrada || 'Ninguna'}`)
            .agregarTotales(this.totales, this.formatoMoneda)
-           .agregarTablaDetalle(this.facturasFiltradas, this.formatoMoneda, (cod) => this.obtenerDescripcionPago(cod))
+           .agregarTablaDetalle(this.facturasFiltradas, this.formatoMoneda, (factura) => this.obtenerFormaPagoVisible(factura))
            .agregarFirma()
            .build('cierre_caja.pdf');
   }
@@ -248,7 +287,12 @@ export class CuadreCaja implements OnInit {
         return;
     }
 
+    const primeraDeEsteCierre = this.facturasFiltradas[0]?.fa_codFact;
     const ultimaDeEsteCierre = this.facturasFiltradas[this.facturasFiltradas.length - 1].fa_codFact;
+    const facturasCobradas = this.facturasFiltradas.filter(f => this.facturaEstaPagada(f) || this.esFacturaCredito(f));
+    const codigosFacturasCobradas = facturasCobradas
+      .map(f => String(f.fa_codFact || '').trim())
+      .filter(Boolean);
 
     Swal.fire({
       title: '¿Confirmar Cierre de Caja?',
@@ -260,6 +304,7 @@ export class CuadreCaja implements OnInit {
       if (result.isConfirmed) {
         const dataCierre = {
             feccierre: new Date().toISOString(),
+            factini: String(primeraDeEsteCierre || '').trim(),
             factfin: String(ultimaDeEsteCierre || '').trim(), // Guardamos la última factura procesada, forzando String
             montocierre: this.totales.total,
             efectivo: this.totales.efectivo,
@@ -271,19 +316,26 @@ export class CuadreCaja implements OnInit {
 
         this.cierreService.crearCierre(dataCierre).subscribe({
                     next: (res: any) => {
-                        // Actualizar facturas con pago 'P' a cierre 'C'
-                        this.facturaService.confirmarCierreFacturas().subscribe({
-                          next: (resp) => console.log('Facturas actualizadas a cierre C', resp),
-                          error: (err) => console.error('Error actualizando facturas cierre', err)
-                        });
+                        const idCierre = res?.data?.idcierre || res?.idcierre;
 
-                        Swal.fire('Cerrado!', 'La caja ha sido cerrada correctamente.', 'success');
-                        this.generarReporte();
-                        this.obtenerUltimoCierreYFacturas(); 
+                        this.facturaService.confirmarCierreFacturas(idCierre, codigosFacturasCobradas).subscribe({
+                          next: (resp) => {
+                            console.log('Facturas cobradas actualizadas con idcierre', resp);
+                            Swal.fire('Cerrado!', 'La caja ha sido cerrada correctamente.', 'success');
+                            this.generarReporte();
+                            this.obtenerUltimoCierreYFacturas(); 
+                          },
+                          error: (err) => {
+                            console.error('Error actualizando facturas cierre', err);
+                            const detalle = err?.message || err?.details || err?.hint || 'El cierre fue creado, pero no se pudo marcar el idcierre en las facturas cobradas.';
+                            Swal.fire('Error', detalle, 'error');
+                          }
+                        });
                     },
                     error: (err: any) => {
                 console.error(err);
-                Swal.fire('Error', 'No se pudo registrar el cierre en base de datos', 'error');
+                const detalle = err?.message || err?.details || err?.hint || 'No se pudo registrar el cierre en base de datos';
+                Swal.fire('Error', detalle, 'error');
             }
         });
       }

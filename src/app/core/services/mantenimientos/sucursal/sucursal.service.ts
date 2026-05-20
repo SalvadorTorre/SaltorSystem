@@ -90,6 +90,30 @@ export class ServicioSucursal {
     );
   }
 
+  buscarPorNombreSucursal(valor: string): Observable<any> {
+    const termino = (valor || '').toString().trim();
+    return from((async () => {
+      if (!termino) {
+        return [];
+      }
+
+      const query = this.db
+        .from('sucursales')
+        .select('*')
+        .order('nom_sucursal', { ascending: true })
+        .limit(50);
+
+      const { data, error } = /^\d+$/.test(termino)
+        ? await query.or(`nom_sucursal.ilike.%${termino}%,cod_sucursal.eq.${Number(termino)}`)
+        : await query.ilike('nom_sucursal', `%${termino}%`);
+
+      if (error) throw error;
+      return data || [];
+    })()).pipe(
+      map((rows: any[]) => ({ status: 'success', code: 200, data: rows }))
+    );
+  }
+
   eliminarSucursal(cod_sucursal: string): Observable<any> {
     return from((async () => {
       const { error } = await this.db

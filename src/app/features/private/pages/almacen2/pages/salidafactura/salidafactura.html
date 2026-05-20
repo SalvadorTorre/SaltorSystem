@@ -79,8 +79,9 @@
               <thead>
                 <tr>
                   <th class="text-center" style="width: 5%">#</th>
-                  <th style="width: 15%">Factura</th>
-                  <th style="width: 30%">Cliente</th>
+                  <th style="width: 13%">Factura</th>
+                  <th style="width: 25%">Cliente</th>
+                  <th class="text-center" style="width: 10%">Tipo</th>
                   <th class="text-center" style="width: 10%">Fecha</th>
                   <th class="text-center" style="width: 10%">Estado</th>
                   <th class="text-center" style="width: 15%">Forma Pago</th>
@@ -93,6 +94,11 @@
                   <td class="text-center fw-bold text-secondary">{{ i + 1 }}</td>
                   <td class="fw-bold text-primary">{{ item.codFact }}</td>
                   <td>{{ item.nomClie }}</td>
+                  <td class="text-center">
+                    <span *ngIf="esConduce(item)" class="badge bg-warning text-dark">
+                      Conduce
+                    </span>
+                  </td>
                   <td class="text-center">{{ item.fecFact | date:'dd/MM/yyyy' }}</td>
                   <td class="text-center">
                     <button *ngIf="item.fpago === 'S'" class="btn btn-sm btn-success py-0 px-2 rounded-pill fw-bold" style="font-size: 0.75rem;">
@@ -112,7 +118,7 @@
                   </td>
                 </tr>
                 <tr *ngIf="detallesSalida.length === 0">
-                  <td colspan="8" class="text-center py-5 text-muted">
+                  <td colspan="9" class="text-center py-5 text-muted">
                     <i class="bi bi-box-seam display-4 d-block mb-3 opacity-50"></i>
                     No hay facturas agregadas para esta salida.
                   </td>
@@ -120,7 +126,7 @@
               </tbody>
               <tfoot class="bg-light border-top" *ngIf="detallesSalida.length > 0">
                 <tr>
-                  <td colspan="4" class="text-end fw-bold fs-5 py-3">Total Salida:</td>
+                  <td colspan="7" class="text-end fw-bold fs-5 py-3">Total Salida:</td>
                   <td class="text-end fw-bold fs-5 py-3 text-success">{{ totalSalida | currency }}</td>
                   <td></td>
                 </tr>

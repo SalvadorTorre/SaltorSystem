@@ -494,6 +494,11 @@ export class PrintingService {
       doc.text(`Factura No.: ${e.me_facSupl || ''}`, xLeft, yPos);
       doc.text(`Fecha Fact.: ${fecSuplTxt}`, xRight, yPos, { align: 'right' });
       yPos += 4;
+      const ordenCompra = (e.me_ordencomp || '').toString();
+      if (ordenCompra) {
+        doc.text(`Orden Compra: ${ordenCompra}`, xLeft, yPos);
+        yPos += 4;
+      }
       doc.text(`Vendedor: ${(e.vendedor || '').toString()}`, xLeft, yPos);
       doc.text(`Chofer: ${(e.chofer || '').toString()}`, xRight, yPos, { align: 'right' });
       yPos += 4;
@@ -1068,6 +1073,151 @@ items.forEach((it: any) => {
       const pdfUrl = URL.createObjectURL(pdfBlob);
       this.printPdf(pdfUrl);
     } catch {}
+  }
+
+  async imprimirConduceFactura80mm(facturaData: any, items: any[]) {
+    try {
+      const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: [80, 297] });
+      const pageWidth = 74;
+      const centerX = pageWidth / 2;
+      const leftMargin = 5;
+      const rightMargin = 5;
+      let yPos = 5;
+      const drawDashedLine = (y: number) => {
+        (doc as any).setLineDash([1, 1], 0);
+        doc.line(leftMargin, y, pageWidth - rightMargin, y);
+        (doc as any).setLineDash([], 0);
+      };
+      const centerText = (text: any, y: number, options?: any) => {
+        doc.text(String(text), centerX, y, { align: 'center', ...options });
+      };
+
+      try {
+        const imgData = 'assets/logo2.png';
+        doc.addImage(imgData, 'PNG', centerX - 10, yPos, 20, 20);
+        yPos += 25;
+      } catch {
+        yPos += 5;
+      }
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      let empresa = 'CENTRO HIERRO MARCOS SRL';
+      let direccion = 'CALLE 30 DE MARZO NO. 54';
+      let telefono = '809-547-0022';
+      let rncEmpresa = '101-66762-2';
+
+      try {
+        const empresaStorage = localStorage.getItem('empresa');
+        if (empresaStorage && empresaStorage !== '[object Object]') {
+          let parsedEmpresa = JSON.parse(empresaStorage);
+          if (Array.isArray(parsedEmpresa)) parsedEmpresa = parsedEmpresa[0];
+          if (parsedEmpresa) {
+            if (typeof parsedEmpresa === 'string') {
+              empresa = parsedEmpresa;
+              direccion = localStorage.getItem('direccion_empresa') || direccion;
+              telefono = localStorage.getItem('telefono_empresa') || telefono;
+              rncEmpresa = localStorage.getItem('rnc_empresa') || rncEmpresa;
+            } else {
+              empresa = parsedEmpresa.nom_empre || empresa;
+              direccion = parsedEmpresa.dir_empre || direccion;
+              telefono = parsedEmpresa.tel_empre || telefono;
+              rncEmpresa = parsedEmpresa.rnc_empre || rncEmpresa;
+            }
+          }
+        }
+      } catch {}
+
+      centerText(empresa, yPos);
+      yPos += 4;
+      const dirSplit = doc.splitTextToSize(direccion, pageWidth - (leftMargin + rightMargin));
+      doc.text(dirSplit, centerX, yPos, { align: 'center' });
+      yPos += dirSplit.length * 4;
+      centerText(`Tel: ${telefono}`, yPos);
+      yPos += 4;
+      centerText(`RNC: ${rncEmpresa}`, yPos);
+      yPos += 6;
+      drawDashedLine(yPos);
+      yPos += 5;
+
+      const f = facturaData?.data || facturaData || {};
+      const fecha = f.fa_fecFact ? new Date(f.fa_fecFact) : new Date();
+      const formatDateShort = (date: Date) => {
+        const d = new Date(date);
+        const day = d.getDate().toString().padStart(2, '0');
+        const month = (d.getMonth() + 1).toString().padStart(2, '0');
+        const year = d.getFullYear();
+        return `${day}/${month}/${year}`;
+      };
+      const formatoMoneda = new Intl.NumberFormat('es-DO', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+
+      doc.setFont('helvetica', 'bold');
+      centerText('CONDUCE DE FACTURA', yPos);
+      yPos += 5;
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Factura: ${f.fa_codFact || ''}`, leftMargin, yPos);
+      doc.text(formatDateShort(fecha), pageWidth - rightMargin, yPos, { align: 'right' });
+      yPos += 4;
+      doc.text(`Cliente: ${String(f.fa_nomClie || '')}`, leftMargin, yPos);
+      yPos += 4;
+      if (f.fa_dirClie) {
+        const dirCliente = doc.splitTextToSize(`Dir: ${String(f.fa_dirClie)}`, pageWidth - (leftMargin + rightMargin));
+        doc.text(dirCliente, leftMargin, yPos);
+        yPos += dirCliente.length * 4;
+      }
+      if (f.fa_telClie) {
+        doc.text(`Tel: ${String(f.fa_telClie)}`, leftMargin, yPos);
+        yPos += 4;
+      }
+
+      drawDashedLine(yPos);
+      yPos += 5;
+      doc.setFont('helvetica', 'bold');
+      doc.text('Cant', leftMargin, yPos);
+      doc.text('Descripcion', leftMargin + 12, yPos);
+      doc.text('Total', pageWidth - rightMargin, yPos, { align: 'right' });
+      yPos += 2;
+      drawDashedLine(yPos);
+      yPos += 4;
+      doc.setFont('helvetica', 'normal');
+
+      let total = 0;
+      (items || []).forEach((item: any) => {
+        const cantidad = Number(item.cantidad ?? item.df_canMerc ?? 0);
+        const desc = String(item.producto?.in_desmerc ?? item.df_desMerc ?? '');
+        const val = Number(item.total ?? item.df_valMerc ?? 0);
+        total += val;
+        const descLines = doc.splitTextToSize(desc, 35);
+
+        doc.text(String(cantidad), leftMargin, yPos);
+        doc.text(descLines, leftMargin + 12, yPos);
+        doc.text(formatoMoneda.format(val), pageWidth - rightMargin, yPos, { align: 'right' });
+        yPos += Math.max(descLines.length * 4, 4) + 2;
+      });
+
+      drawDashedLine(yPos);
+      yPos += 5;
+      doc.setFont('helvetica', 'bold');
+      doc.text('TOTAL', leftMargin, yPos);
+      doc.text(formatoMoneda.format(total || Number(f.fa_valFact || 0)), pageWidth - rightMargin, yPos, { align: 'right' });
+      yPos += 12;
+      doc.setLineWidth(0.3);
+      doc.line(leftMargin, yPos, pageWidth - rightMargin, yPos);
+      yPos += 5;
+      centerText('Recibido Conforme', yPos);
+      yPos += 15;
+      doc.text('.', leftMargin, yPos);
+
+      doc.autoPrint();
+      const pdfBlob = doc.output('blob');
+      const pdfUrl = URL.createObjectURL(pdfBlob);
+      this.printPdf(pdfUrl);
+    } catch (error) {
+      console.error('Error al generar conduce:', error);
+    }
   }
 
   private printPdf(pdfUrl: string) {

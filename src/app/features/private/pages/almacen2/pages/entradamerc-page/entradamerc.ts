@@ -12,6 +12,7 @@ import { catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
 import { PrintingService } from 'src/app/core/services/utils/printing.service';
 import { ServicioUsuario } from 'src/app/core/services/mantenimientos/usuario/usuario.service';
+import { ServicioRnc } from 'src/app/core/services/mantenimientos/rnc/rnc.service';
 import Swal from 'sweetalert2';
 declare var $: any;
 
@@ -47,6 +48,7 @@ export interface EntradaMerc {
   despachado?: string;
   chofer?: string;
   me_rncSupl?: number;
+  me_ordencomp?: string;
   me_codEmpr?: string;
   me_codSucu?: number;
   detentradamerc: DetEntradaMerc[];
@@ -62,6 +64,7 @@ export class EntradaMercComponent implements OnInit, AfterViewInit {
   detalles: DetEntradaMerc[] = [];
   idSucursal: number = 1; // Default sucursal ID or retrieved from auth service
   suplidoresBusqueda: any[] = [];
+  @ViewChild('inputRncSupl') inputRncSupl!: ElementRef<HTMLInputElement>;
   @ViewChild('inputNombreSupl') inputNombreSupl!: ElementRef<HTMLInputElement>;
   @ViewChild('inputCantidad') inputCantidad!: ElementRef<HTMLInputElement>;
   @ViewChild('inputCodigo') inputCodigo!: ElementRef<HTMLInputElement>;
@@ -70,11 +73,19 @@ export class EntradaMercComponent implements OnInit, AfterViewInit {
   productosBusquedaCodigo: any[] = [];
   productosBusquedaDesc: any[] = [];
   Toast = (Swal as any).mixin({
-    toast: true,
-    position: 'bottom-start',
-    showConfirmButton: false,
-    timer: 5000,
-    timerProgressBar: false
+    toast: false,
+    position: 'center',
+    showConfirmButton: true,
+    confirmButtonText: 'Aceptar',
+    timer: undefined,
+    timerProgressBar: false,
+    allowOutsideClick: true,
+    width: '36rem',
+    customClass: {
+      popup: 'shadow-lg',
+      title: 'fs-4',
+      htmlContainer: 'fs-6'
+    }
   });
 //   page = 1;
 // limit = 10;
@@ -96,6 +107,7 @@ export class EntradaMercComponent implements OnInit, AfterViewInit {
   tituloModalEntradamerc: string = '';
   entradaSeleccionada: any = null;
   detalleConsulta: any[] = [];
+  private ultimoRncBuscado: string = '';
 
   constructor(
     private fb: FormBuilder,
@@ -106,14 +118,16 @@ export class EntradaMercComponent implements OnInit, AfterViewInit {
     private servicioEntradamerc: ServicioEntradamerc,
     private servicioDetEntrada: ServiciodetEntradamerc,
     private printing: PrintingService,
-    private servicioUsuario: ServicioUsuario
+    private servicioUsuario: ServicioUsuario,
+    private servicioRnc: ServicioRnc
   ) {
     this.entradaForm = this.fb.group({
       me_codEntr: [{value: '', disabled: true}, Validators.required],
-      me_fecEntr: [new Date().toISOString().split('T')[0]],
+      me_fecEntr: [{ value: this.fechaHoy(), disabled: true }],
       me_codSupl: [''],
       me_nomSupl: ['', [Validators.required, this.noWhitespaceValidator]],
       me_facSupl: [''],
+      me_ordencomp: [''],
       me_fecSupl: [new Date().toISOString().split('T')[0]],
       me_status: [''],
       me_codVend: [''],
@@ -168,7 +182,68 @@ export class EntradaMercComponent implements OnInit, AfterViewInit {
   }
 
   ngAfterViewInit(): void {
-    this.inputNombreSupl?.nativeElement.focus();
+    this.inputRncSupl?.nativeElement.focus();
+  }
+
+  buscarRncSuplidor(event?: Event): void {
+    event?.preventDefault();
+    const rnc = String(this.entradaForm.get('me_rncSupl')?.value || '').replace(/\D/g, '').trim();
+
+    if (!rnc) {
+      this.ultimoRncBuscado = '';
+      if (event) this.focusNext(event);
+      return;
+    }
+
+    this.entradaForm.patchValue({ me_rncSupl: rnc }, { emitEvent: false });
+
+    if (rnc.length !== 9 && rnc.length !== 11) {
+      if (event) {
+        this.Toast.fire({
+          title: 'RNC invalido',
+          text: 'El RNC debe tener 9 digitos o la cedula 11 digitos.',
+          icon: 'warning'
+        });
+      }
+      return;
+    }
+
+    if (!event && this.ultimoRncBuscado === rnc) return;
+    this.ultimoRncBuscado = rnc;
+
+    this.servicioRnc.buscarRncPorrncId(rnc).subscribe({
+      next: (response: any) => {
+        const row = this.extraerRncData(response);
+        const razonSocial = String(row?.rason || row?.razon || row?.razon_social || '').trim();
+
+        if (razonSocial) {
+          this.entradaForm.patchValue({
+            me_nomSupl: razonSocial.toUpperCase()
+          });
+          this.suplidoresBusqueda = [];
+          if (event) this.focusNextFrom(event.target as HTMLElement);
+          return;
+        }
+
+        if (event) {
+          this.Toast.fire({
+            title: 'RNC no encontrado',
+            text: 'No se encontro razon social para ese RNC.',
+            icon: 'info'
+          });
+        }
+      },
+      error: (err: any) => {
+        console.error('Error consultando RNC suplidor:', err);
+        if (event) {
+          this.Toast.fire({
+            title: 'No se pudo consultar el RNC',
+            text: this.getErrorMessage(err),
+            icon: 'error'
+          });
+        }
+      }
+    });
   }
 
   buscarSuplidor(force: boolean = false) {
@@ -212,9 +287,7 @@ export class EntradaMercComponent implements OnInit, AfterViewInit {
       const nombre = ((nombreCtrl?.value || '') as string).trim();
       if (nombre.length === 0) {
         this.suplidoresBusqueda = [];
-        const isMobile = (typeof window !== 'undefined') && window.innerWidth <= 576;
-        const position = isMobile ? 'bottom-end' : 'bottom-start';
-        this.Toast.fire({ title: 'Nombre de suplidor no puede estar en blanco', icon: 'warning', position });
+        this.Toast.fire({ title: 'Nombre de suplidor no puede estar en blanco', icon: 'warning' });
         this.inputNombreSupl?.nativeElement.focus();
         return;
       }
@@ -275,9 +348,7 @@ export class EntradaMercComponent implements OnInit, AfterViewInit {
 
   agregarDetalle() {
     if (this.entradaForm.get('det_desMerc')?.invalid || this.entradaForm.get('det_canEntr')?.invalid || this.entradaForm.get('det_preMerc')?.invalid) {
-      const isMobile = (typeof window !== 'undefined') && window.innerWidth <= 576;
-      const position = isMobile ? 'bottom-end' : 'bottom-start';
-      this.Toast.fire({ title: 'Descripción no puede ser vacía o espacios. Cantidad y Precio deben ser > 0', icon: 'warning', position });
+      this.Toast.fire({ title: 'Descripción no puede ser vacía o espacios. Cantidad y Precio deben ser > 0', icon: 'warning' });
       if (this.entradaForm.get('det_desMerc')?.invalid) {
         this.inputDescripcion?.nativeElement.focus();
       } else if (this.entradaForm.get('det_canEntr')?.invalid) {
@@ -351,6 +422,7 @@ guardarEntrada() {
     me_codSupl: this.toIntOrNull(formValue.me_codSupl),
     me_nomSupl: formValue.me_nomSupl,
     me_facSupl: formValue.me_facSupl,
+    me_ordencomp: formValue.me_ordencomp,
     me_fecSupl: this.toIsoDate(formValue.me_fecSupl),
     me_status: formValue.me_status,
     me_codVend: formValue.me_codVend,
@@ -444,17 +516,21 @@ guardarEntrada() {
                 icon: 'success'
               });
             },
-            error: () => {
+            error: (err: any) => {
+              console.error('Error guardando entrada en Supabase:', err);
               this.Toast.fire({
                 title: 'Error guardando la entrada',
+                text: this.getErrorMessage(err),
                 icon: 'error'
               });
             }
           });
       },
-      error: () => {
+      error: (err: any) => {
+        console.error('Error validando productos:', err);
         this.Toast.fire({
           title: 'Error validando productos',
+          text: this.getErrorMessage(err),
           icon: 'error'
         });
       }
@@ -648,6 +724,32 @@ guardarEntrada() {
     return i;
   }
 
+  private getErrorMessage(err: any): string {
+    const raw =
+      err?.message ||
+      err?.error?.message ||
+      err?.details ||
+      err?.hint ||
+      (typeof err === 'string' ? err : '');
+    const msg = String(raw || '').trim();
+    return msg || 'Revise la conexion con Supabase y las columnas de la tabla entradamerc.';
+  }
+
+  private fechaHoy(): string {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+
+  private extraerRncData(response: any): any {
+    const data = response?.data;
+    if (Array.isArray(data)) return data[0] || null;
+    if (Array.isArray(data?.data)) return data.data[0] || null;
+    return data || null;
+  }
+
   refrescarFormulario() {
     this.canPrint = false;
     this.lastSavedEntrada = null;
@@ -657,12 +759,14 @@ guardarEntrada() {
     this.productosBusquedaCodigo = [];
     this.productosBusquedaDesc = [];
     this.selectedProducto = null;
+    this.ultimoRncBuscado = '';
     this.entradaForm.reset({
       me_codEntr: '',
-      me_fecEntr: new Date().toISOString().split('T')[0],
+      me_fecEntr: this.fechaHoy(),
       me_codSupl: '',
       me_nomSupl: '',
       me_facSupl: '',
+      me_ordencomp: '',
       me_fecSupl: new Date().toISOString().split('T')[0],
       me_status: '',
       me_codVend: '',
@@ -678,9 +782,10 @@ guardarEntrada() {
       det_preMerc: 0
     });
     this.entradaForm.get('me_codEntr')?.disable();
+    this.entradaForm.get('me_fecEntr')?.disable();
     this.entradaForm.get('det_codMerc')?.enable();
     this.entradaForm.get('det_desMerc')?.enable();
-    this.inputNombreSupl?.nativeElement.focus();
+    this.inputRncSupl?.nativeElement.focus();
   }
 
   imprimirEntrada() {
@@ -1034,6 +1139,7 @@ get totalPages(): number {
       me_fecEntr: e?.me_fecEntr ?? e?.me_fecentr ?? null,
       me_nomSupl: e?.me_nomSupl ?? e?.me_nomsupl ?? '',
       me_facSupl: e?.me_facSupl ?? e?.me_facsupl ?? '',
+      me_ordencomp: e?.me_ordencomp ?? e?.ME_ORDENCOMP ?? '',
       me_fecSupl: e?.me_fecSupl ?? e?.me_fecsupl ?? null,
       me_rncSupl: e?.me_rncSupl ?? e?.me_rncsupl ?? null,
       me_status: e?.me_status ?? e?.ME_STATUS ?? '',

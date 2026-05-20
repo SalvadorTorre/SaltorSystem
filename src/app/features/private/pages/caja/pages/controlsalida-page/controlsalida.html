@@ -113,12 +113,46 @@
               </div>
             </div>
             <div class="col-md-3">
-              <div class="fw-bold text-secondary small">Total Pagado</div>
+              <div class="fw-bold text-secondary small">Cobrado en esta salida</div>
               <div class="fs-5 fw-bold text-success">
                 {{ totalPagado | currency }}
               </div>
               <div class="small text-danger">
                 Pendiente: {{ totalPendiente | currency }}
+              </div>
+              <div class="small text-muted" *ngIf="totalNoGestionable > 0">
+                Ya pagadas: {{ totalNoGestionable | currency }}
+              </div>
+            </div>
+          </div>
+
+          <div class="row g-2 mb-3" *ngIf="salidaActual">
+            <div class="col-12">
+              <div class="fw-bold text-secondary small mb-1">
+                Cobrado en esta salida por forma de pago
+              </div>
+            </div>
+            <div
+              class="col-12 col-sm-6 col-lg-3"
+              *ngFor="let cobrado of cobradoPorFormaPago"
+            >
+              <div class="border rounded bg-white px-3 py-2 h-100 shadow-sm">
+                <div class="d-flex justify-content-between align-items-center">
+                  <span class="fw-semibold text-dark">
+                    {{ cobrado.descripcion }}
+                  </span>
+                  <span class="badge bg-success">
+                    {{ cobrado.cantidad }}
+                  </span>
+                </div>
+                <div class="fs-5 fw-bold text-success mt-1">
+                  {{ cobrado.total | currency }}
+                </div>
+              </div>
+            </div>
+            <div class="col-12" *ngIf="!cobradoPorFormaPago.length">
+              <div class="border rounded bg-white px-3 py-2 shadow-sm text-success fw-semibold">
+                No hay facturas cobradas en esta salida.
               </div>
             </div>
           </div>
@@ -132,11 +166,15 @@
                 <table class="table table-hover align-middle mb-0">
                   <thead class="table-dark">
                     <tr>
-                      <th style="width: 10%">Factura</th>
-                      <th style="width: 35%">Cliente</th>
-                      <th style="width: 15%">Fecha</th>
-                      <th class="text-end" style="width: 15%">Valor</th>
-                      <th class="text-center" style="width: 12%">Pagado</th>
+                      <th style="width: 9%">Factura</th>
+                      <th style="width: 28%">Cliente</th>
+                      <th class="text-center" style="width: 10%">Tipo</th>
+                      <th style="width: 12%">Fecha</th>
+                      <th style="width: 13%">Forma Pago</th>
+                      <th class="text-end" style="width: 12%">Valor</th>
+                      <th class="text-center" style="width: 8%; cursor: pointer;" (click)="toggleTodosPagado()" title="Click para marcar/desmarcar todas">
+                        Pagado <i class="bi bi-check-all ms-1"></i>
+                      </th>
                       <th class="text-center" style="width: 13%; cursor: pointer;" (click)="toggleTodosEntregada()" title="Click para marcar/desmarcar todas">
                         Entregada <i class="bi bi-check-all ms-1"></i>
                       </th>
@@ -146,21 +184,39 @@
                     <tr *ngFor="let d of detalles; let i = index">
                       <td class="fw-bold text-primary">{{ d.codFact }}</td>
                       <td>{{ d.nomClie }}</td>
+                      <td class="text-center">
+                        <span
+                          *ngIf="obtenerTipoFactura(d)"
+                          class="badge"
+                          [ngClass]="obtenerClaseTipoFactura(d)"
+                        >
+                          {{ obtenerTipoFactura(d) }}
+                        </span>
+                      </td>
                       <td>{{ d.fecFact | date : 'dd/MM/yyyy' }}</td>
+                      <td>
+                        <span
+                          class="badge"
+                          [ngClass]="d.pagado ? 'bg-light text-secondary border' : 'bg-warning text-dark'"
+                        >
+                          {{ d.descfpago }}
+                        </span>
+                      </td>
                       <td class="text-end fw-bold">{{ d.valFact | currency }}</td>
                       <td class="text-center">
                         <!-- Si es mayor al cierre, mostrar Checkbox interactivo -->
                         <div 
                           *ngIf="esMayorAlCierre(d.codFact)" 
                           class="d-flex justify-content-center align-items-center"
-                          style="cursor: pointer;"
+                          [style.cursor]="d.pagadoOriginal ? 'not-allowed' : 'pointer'"
+                          [class.opacity-75]="d.pagadoOriginal"
                           (click)="togglePagado(d)"
                         >
                              <i 
                                class="bi" 
                                [ngClass]="d.pagado ? 'bi-check-square-fill text-success' : 'bi-square text-secondary'" 
                                style="font-size: 1.8rem;" 
-                               title="{{ d.pagado ? 'Pagada' : 'Pendiente' }}"
+                               title="{{ d.pagadoOriginal ? 'Pagada en facturacion' : (d.pagado ? 'Pagada' : 'Pendiente') }}"
                              ></i>
                         </div>
 
@@ -189,7 +245,7 @@
                       </td>
                     </tr>
                     <tr *ngIf="detalles.length === 0">
-                      <td colspan="6" class="text-center py-4 text-muted">
+                      <td colspan="8" class="text-center py-4 text-muted">
                         <i class="bi bi-inbox display-6 d-block mb-2 opacity-50"></i>
                         No hay facturas en el control de salida.
                       </td>
@@ -203,6 +259,13 @@
         <div
           class="card-footer bg-white py-3 border-top-0 d-flex justify-content-end gap-2"
         >
+          <button
+            class="btn btn-primary btn-lg px-4"
+            (click)="imprimirControlCobro()"
+            [disabled]="(!salidaActual || detalles.length === 0) && !ultimoControlImpresion"
+          >
+            <i class="bi bi-printer me-2"></i>Imprimir Control
+          </button>
           <button
             class="btn btn-success btn-lg px-4"
             (click)="guardarCobro()"

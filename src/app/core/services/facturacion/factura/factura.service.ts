@@ -250,6 +250,9 @@ export class ServicioFacturacion {
       fa_envio: row.fa_envio ?? null,
       fa_fpago: row.fa_fpago ?? '',
       fa_codfpago: row.fa_codfpago ?? null,
+      fa_origenpago: row.fa_origenpago ?? '',
+      fa_confirpago: row.fa_confirpago ?? '',
+      fa_notapago: row.fa_notapago ?? '',
       fa_status: row.fa_status ?? '',
       fa_tipoFact: row.fa_tipofact ?? row.fa_tipoFact ?? null,
       fa_imp: row.fa_imp ?? '',
@@ -340,6 +343,9 @@ export class ServicioFacturacion {
       fa_envio: this.toNumberOrNull(input?.fa_envio),
       fa_fpago: this.toStringMax(input?.fa_fpago, 20),
       fa_codfpago: this.toNumberOrNull(input?.fa_codfpago),
+      fa_origenpago: this.toStringMax(input?.fa_origenpago, 30),
+      fa_confirpago: this.toStringMax(input?.fa_confirpago, 50),
+      fa_notapago: this.toStringOrNull(input?.fa_notapago),
       fa_status: this.toStringMax(input?.fa_status, 3),
       fa_tipofact: this.toNumberOrNull(input?.fa_tipoFact),
       fa_imp: this.toStringMax(input?.fa_imp, 1),
@@ -363,7 +369,7 @@ export class ServicioFacturacion {
       ecf: this.toStringOrNull(input?.ecf),
       rfce: this.toStringOrNull(input?.rfce),
       estado_envio_dgii: this.toStringMax(input?.estado_envio_dgii, 50),
-      fa_cierre: this.toStringMax(input?.fa_cierre, 1),
+      fa_cierre: this.toStringMax(input?.fa_cierre, 20),
       fa_salida: this.toStringMax(input?.fa_salida, 1),
       idsalida: this.toStringOrNull(input?.idsalida),
     };
@@ -570,7 +576,7 @@ export class ServicioFacturacion {
 
   marcarImpresa(
     numero: string,
-    body: { fa_envio?: string; fa_fpago?: string }
+    body: { fa_envio?: string; fa_fpago?: string; fa_codfpago?: string }
   ) {
     if (!this.useSupabase) {
       return this.http.PatchRequest(`/factura-impresa/${numero}`, body);
@@ -580,6 +586,7 @@ export class ServicioFacturacion {
       const patch: any = {};
       if (body?.fa_envio !== undefined) patch.fa_envio = this.toNumberOrNull(body.fa_envio);
       if (body?.fa_fpago !== undefined) patch.fa_fpago = this.toStringOrNull(body.fa_fpago);
+      if (body?.fa_codfpago !== undefined) patch.fa_codfpago = this.toNumberOrNull(body.fa_codfpago);
       patch.fa_impresa = 'S';
 
       let updateQuery = this.db
@@ -635,7 +642,7 @@ export class ServicioFacturacion {
         if (Number.isFinite(tenantSucursal) && tenantSucursal > 0) {
           facturaPayload.fa_codsucu = tenantSucursal;
         }
-        facturaPayload.fa_status = facturaPayload.fa_status || 'A';
+        facturaPayload.fa_status = 'C';
         // Al grabar facturas: siempre quedan pendientes de pago
         // (la forma de pago vive en fa_codfpago; fa_fpago se usa como flag/estado).
         facturaPayload.fa_fpago = 'N';
@@ -725,9 +732,7 @@ export class ServicioFacturacion {
       let query = this.db
         .from('factura')
         .select('*')
-        // Caja: facturas pendientes de pago (fa_fpago='N') tanto impresas como no impresas.
-        .eq('fa_fpago', 'N')
-        .in('fa_impresa', ['N', 'S'])
+        .or('fa_impresa.eq.N,fa_status.eq.C,and(fa_status.eq.F,fa_fpago.eq.N)')
         .order('fa_fecfact', { ascending: false })
         .limit(500);
       query = this.applyTenantFilter(query);
@@ -782,7 +787,44 @@ export class ServicioFacturacion {
       };
       if (payload?.fa_fpago !== undefined) patch.fa_fpago = this.toStringOrNull(payload.fa_fpago);
       if (payload?.fa_envio !== undefined) patch.fa_envio = this.toNumberOrNull(payload.fa_envio);
+      if (payload?.fa_codfpago !== undefined) patch.fa_codfpago = this.toNumberOrNull(payload.fa_codfpago);
+      if (payload?.fa_origenpago !== undefined) patch.fa_origenpago = this.toStringOrNull(payload.fa_origenpago);
+      if (payload?.fa_confirpago !== undefined) patch.fa_confirpago = this.toStringOrNull(payload.fa_confirpago);
+      if (payload?.fa_notapago !== undefined) patch.fa_notapago = this.toStringOrNull(payload.fa_notapago);
+      if (payload?.fa_status !== undefined) patch.fa_status = this.toStringMax(payload.fa_status, 3);
       if (payload?.estado_envio_dgii !== undefined) patch.estado_envio_dgii = this.toStringOrNull(payload.estado_envio_dgii);
+
+      let updateQuery = this.db
+        .from('factura')
+        .update(patch)
+        .eq('fa_codfact', cod)
+        .select('*');
+      updateQuery = this.applyTenantFilter(updateQuery);
+      const { data, error } = await updateQuery.maybeSingle();
+      if (error) throw error;
+      return { status: 'success', code: 200, data: this.mapFacturaDbToUi(data) };
+    })());
+  }
+
+  actualizarPagoEntregaCaja(payload: any) {
+    if (!this.useSupabase) {
+      const cod = payload.fa_codFact;
+      return this.http.PatchRequest(`/factura-impresa/${cod}`, payload);
+    }
+
+    const cod = String(payload?.fa_codFact || '').trim();
+    return from((async () => {
+      const patch: any = {};
+      if (payload?.fa_fpago !== undefined) patch.fa_fpago = this.toStringOrNull(payload.fa_fpago);
+      if (payload?.fa_envio !== undefined) patch.fa_envio = this.toNumberOrNull(payload.fa_envio);
+      if (payload?.fa_codfpago !== undefined) patch.fa_codfpago = this.toNumberOrNull(payload.fa_codfpago);
+      if (payload?.fa_origenpago !== undefined) patch.fa_origenpago = this.toStringOrNull(payload.fa_origenpago);
+      if (payload?.fa_confirpago !== undefined) patch.fa_confirpago = this.toStringOrNull(payload.fa_confirpago);
+      if (payload?.fa_notapago !== undefined) patch.fa_notapago = this.toStringOrNull(payload.fa_notapago);
+
+      if (Object.keys(patch).length === 0) {
+        return { status: 'success', code: 200, data: null };
+      }
 
       let updateQuery = this.db
         .from('factura')
@@ -1347,6 +1389,7 @@ export class ServicioFacturacion {
         ecf: this.toStringOrNull(payload?.ecf) ?? undefined,
         rfce: this.toStringOrNull(payload?.rfce) ?? undefined,
         estado_envio_dgii: this.toStringOrNull(payload?.estado_envio_dgii) ?? undefined,
+        fa_status: payload?.fa_status !== undefined ? this.toStringMax(payload.fa_status, 3) : undefined,
       };
 
       Object.keys(patch).forEach((k) => {
@@ -1393,18 +1436,32 @@ export class ServicioFacturacion {
     })());
   }
 
-  confirmarCierreFacturas(): Observable<any> {
+  confirmarCierreFacturas(idCierre?: string | number, codigosFacturas?: string[]): Observable<any> {
     if (!this.useSupabase) {
-      return this.http.PatchRequest('/facturacion/confirmar-cierre', {});
+      return this.http.PatchRequest('/facturacion/confirmar-cierre', {
+        idcierre: idCierre,
+        facturas: codigosFacturas || [],
+      });
     }
 
     return from((async () => {
-      let base = this.db.from('factura').update({ fa_cierre: 'S' }).neq('fa_cierre', 'S');
+      const codigos = (codigosFacturas || [])
+        .map((codigo) => String(codigo || '').trim())
+        .filter(Boolean);
+
+      if (!idCierre || codigos.length === 0) {
+        return { status: 'success', code: 200, data: { updated: 0 } };
+      }
+
+      let base = this.db
+        .from('factura')
+        .update({ fa_cierre: String(idCierre) })
+        .in('fa_codfact', codigos);
       base = this.applyTenantFilter(base);
 
       const { error } = await base;
       if (error) throw error;
-      return { status: 'success', code: 200 };
+      return { status: 'success', code: 200, data: { updated: codigos.length } };
     })());
   }
 }

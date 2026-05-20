@@ -22,11 +22,15 @@
           </div>
           <div class="col-md-2">
             <label class="form-label">Fecha Entrada</label>
-            <input type="date" class="form-control enter-next" formControlName="me_fecEntr" (keydown.enter)="focusNext($event)">
+            <input type="date" class="form-control" formControlName="me_fecEntr" readonly>
           </div>
           
           <input type="hidden" formControlName="me_codSupl">
 
+          <div class="col-md-2">
+            <label class="form-label">RNC Suplidor</label>
+            <input #inputRncSupl type="text" inputmode="numeric" class="form-control enter-next" formControlName="me_rncSupl" (keydown.enter)="buscarRncSuplidor($event)" (blur)="buscarRncSuplidor()">
+          </div>
           <div class="col-md-6 position-relative">
             <label class="form-label">Nombre Suplidor</label>
             <div class="input-group">
@@ -43,12 +47,12 @@
             </ul>
           </div>
           <div class="col-md-2">
-            <label class="form-label">RNC Suplidor</label>
-            <input type="number" class="form-control enter-next" formControlName="me_rncSupl" (keydown.enter)="focusNext($event)">
-          </div>
-          <div class="col-md-2">
             <label class="form-label">Factura Suplidor</label>
             <input type="text" class="form-control enter-next" formControlName="me_facSupl" (input)="toUpper('me_facSupl', $event)" (keydown.enter)="focusNext($event)">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Orden Compra</label>
+            <input type="text" class="form-control enter-next" formControlName="me_ordencomp" (input)="toUpper('me_ordencomp', $event)" (keydown.enter)="focusNext($event)">
           </div>
           <div class="col-md-1">
             <label class="form-label">Fec. Fact. Supl.</label>
