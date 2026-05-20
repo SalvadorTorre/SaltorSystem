@@ -31,6 +31,12 @@ export class ServicioInventario {
     return Number.isFinite(n) ? n : 0;
   }
 
+  private toNullableNumber(value: any): number | null {
+    if (value === null || value === undefined || value === "") return null;
+    const n = Number(value);
+    return Number.isFinite(n) ? n : null;
+  }
+
   private mapDbToUi(row: any): any {
     if (!row) return row;
     return {
@@ -300,6 +306,88 @@ export class ServicioInventario {
         .maybeSingle();
       if (error) throw error;
       return data || null;
+    })()).pipe(
+      map((row: any) => ({ status: "success", code: 200, data: row }))
+    );
+  }
+
+  obtenerInventarioPorProducto(codigo: string): Observable<any> {
+    const cod = String(codigo || "").trim();
+    return from((async () => {
+      const { data, error } = await this.db
+        .from("inventario")
+        .select("*")
+        .eq("inv_codprod", cod)
+        .order("inv_codsucu", { ascending: true });
+      if (error) throw error;
+      return data || [];
+    })()).pipe(
+      map((rows: any[]) => ({ status: "success", code: 200, data: rows }))
+    );
+  }
+
+  guardarInventarioSucursal(payload: {
+    inv_codsucu: number;
+    inv_codprod: string;
+    inv_desprod?: string | null;
+    inv_cosprod?: number | null;
+    inv_preprod?: number | null;
+    inv_existencia?: number | null;
+    activo?: boolean | null;
+  }): Observable<any> {
+    return from((async () => {
+      const inv_codsucu = Number(payload?.inv_codsucu);
+      const inv_codprod = String(payload?.inv_codprod || "").trim();
+      if (!inv_codsucu || !inv_codprod) {
+        throw new Error("Sucursal y código de producto son requeridos");
+      }
+
+      const body: any = {
+        inv_codsucu,
+        inv_codprod,
+        inv_desprod: payload?.inv_desprod ?? null,
+        inv_cosprod: this.toNullableNumber(payload?.inv_cosprod),
+        inv_preprod: this.toNullableNumber(payload?.inv_preprod),
+        inv_existencia: this.toNumber(payload?.inv_existencia ?? 0),
+        inv_fechamov: new Date().toISOString(),
+      };
+
+      if (payload?.activo !== undefined && payload?.activo !== null) {
+        body.activo = !!payload.activo;
+      }
+
+      const { data: current, error: findError } = await this.db
+        .from("inventario")
+        .select("*")
+        .eq("inv_codsucu", inv_codsucu)
+        .eq("inv_codprod", inv_codprod)
+        .limit(1)
+        .maybeSingle();
+      if (findError) throw findError;
+
+      if (current) {
+        const updatePayload = { ...body };
+        delete updatePayload.inv_codsucu;
+        delete updatePayload.inv_codprod;
+        const { data, error } = await this.db
+          .from("inventario")
+          .update(updatePayload)
+          .eq("id", Number(current.id))
+          .eq("inv_codsucu", inv_codsucu)
+          .eq("inv_codprod", inv_codprod)
+          .select("*")
+          .maybeSingle();
+        if (error) throw error;
+        return data;
+      }
+
+      const { data, error } = await this.db
+        .from("inventario")
+        .insert(body)
+        .select("*")
+        .single();
+      if (error) throw error;
+      return data;
     })()).pipe(
       map((row: any) => ({ status: "success", code: 200, data: row }))
     );

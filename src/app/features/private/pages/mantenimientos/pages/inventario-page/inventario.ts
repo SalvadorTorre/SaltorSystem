@@ -5,6 +5,8 @@ import { ModeloGrupoMercanciasData } from 'src/app/core/services/mantenimientos/
 import { ServicioGrupoMercancias } from 'src/app/core/services/mantenimientos/grupomerc/grupomerc.service';
 import { ModeloInventarioData } from 'src/app/core/services/mantenimientos/inventario';
 import { ServicioInventario } from 'src/app/core/services/mantenimientos/inventario/inventario.service';
+import { ServicioSucursal } from 'src/app/core/services/mantenimientos/sucursal/sucursal.service';
+import { SucursalesData } from 'src/app/core/services/mantenimientos/sucursal';
 declare var $: any;
 import Swal from 'sweetalert2';
 
@@ -38,7 +40,17 @@ export class Inventario implements OnInit {
   private codigoSubject = new BehaviorSubject<string>('');
   private descripcionSubject = new BehaviorSubject<string>('');
 
-  constructor(private fb: FormBuilder, private servicioInventario: ServicioInventario, private servicioGrupmerc: ServicioGrupoMercancias) {
+  sucursalesList: SucursalesData[] = [];
+  inventarioSucursalList: any[] = [];
+  productoDetalleSucursal: ModeloInventarioData | null = null;
+  guardandoSucursal: Record<number, boolean> = {};
+
+  constructor(
+    private fb: FormBuilder,
+    private servicioInventario: ServicioInventario,
+    private servicioGrupmerc: ServicioGrupoMercancias,
+    private servicioSucursal: ServicioSucursal
+  ) {
     this.crearFormularioInventario();
     this.codigoSubject.pipe(
       debounceTime(500),
@@ -71,8 +83,20 @@ export class Inventario implements OnInit {
   ngOnInit(): void {
     this.obtenerTodosInventario(1);
     this.obtenerTodosGrupoMercancias();
+    this.obtenerTodasSucursales();
     this.formularioInventario.get('in_desmerc')!.valueChanges.subscribe(value => {
       this.updateCharCount();
+    });
+  }
+
+  obtenerTodasSucursales() {
+    this.servicioSucursal.buscarTodasSucursal().subscribe({
+      next: (response) => {
+        this.sucursalesList = response?.data || [];
+      },
+      error: () => {
+        this.sucursalesList = [];
+      }
     });
   }
 
@@ -165,6 +189,100 @@ export class Inventario implements OnInit {
     this.updateCharCount();
     $('#modalProducto').modal('show');
   };
+
+  abrirDetallePorSucursal(producto: ModeloInventarioData) {
+    const codigo = String((producto as any)?.in_codmerc || '').trim();
+    if (!codigo) {
+      Swal.fire('Código inválido', 'El producto no tiene código válido.', 'warning');
+      return;
+    }
+    this.productoDetalleSucursal = producto;
+
+    if (!this.sucursalesList.length) {
+      this.obtenerTodasSucursales();
+    }
+
+    this.servicioInventario.obtenerInventarioPorProducto(codigo).subscribe({
+      next: (response) => {
+        const rows = response?.data || [];
+        const mapInv = new Map<number, any>();
+        rows.forEach((r: any) => mapInv.set(Number(r.inv_codsucu), r));
+        const costoGlobal = Number((producto as any)?.in_cosmerc ?? 0);
+        const precioGlobal = Number((producto as any)?.in_premerc ?? 0);
+
+        this.inventarioSucursalList = (this.sucursalesList || []).map((s) => {
+          const inv = mapInv.get(Number(s.cod_sucursal));
+          const costoLocalRaw = inv?.inv_cosprod;
+          const costoLocal = costoLocalRaw === null || costoLocalRaw === undefined || costoLocalRaw === '' ? null : Number(costoLocalRaw);
+          return {
+            id: inv?.id ?? null,
+            cod_sucursal: Number(s.cod_sucursal),
+            nom_sucursal: s.nom_sucursal,
+            inv_codprod: codigo,
+            inv_desprod: (producto as any)?.in_desmerc ?? '',
+            inv_existencia: Number(inv?.inv_existencia ?? 0),
+            inv_cosprod: costoLocal,
+            inv_preprod: Number(inv?.inv_preprod ?? precioGlobal),
+            activo: inv?.activo === false ? false : true,
+            costo_global: costoGlobal,
+            costo_efectivo: costoLocal === null ? costoGlobal : costoLocal,
+          };
+        });
+
+        $('#modalInventarioSucursal').modal('show');
+      },
+      error: () => {
+        Swal.fire('Error', 'No se pudo cargar el detalle por sucursal.', 'error');
+      }
+    });
+  }
+
+  onCostoLocalChange(item: any) {
+    const raw = item?.inv_cosprod;
+    if (raw === '' || raw === null || raw === undefined) {
+      item.inv_cosprod = null;
+      item.costo_efectivo = Number(item.costo_global || 0);
+      return;
+    }
+    const n = Number(raw);
+    item.inv_cosprod = Number.isFinite(n) ? n : null;
+    item.costo_efectivo = item.inv_cosprod === null ? Number(item.costo_global || 0) : item.inv_cosprod;
+  }
+
+  guardarSucursalDetalle(item: any) {
+    const cod = String(item?.inv_codprod || '').trim();
+    if (!cod) {
+      Swal.fire('Error', 'Código de producto inválido.', 'error');
+      return;
+    }
+
+    this.guardandoSucursal[item.cod_sucursal] = true;
+    this.servicioInventario.guardarInventarioSucursal({
+      inv_codsucu: Number(item.cod_sucursal),
+      inv_codprod: cod,
+      inv_desprod: item.inv_desprod,
+      inv_existencia: Number(item.inv_existencia || 0),
+      inv_cosprod: item.inv_cosprod === '' ? null : item.inv_cosprod,
+      inv_preprod: item.inv_preprod,
+      activo: !!item.activo
+    }).subscribe({
+      next: () => {
+        this.guardandoSucursal[item.cod_sucursal] = false;
+        Swal.fire({
+          title: 'Guardado',
+          text: `Sucursal ${item.nom_sucursal} actualizada.`,
+          icon: 'success',
+          timer: 1200,
+          showConfirmButton: false
+        });
+      },
+      error: (err) => {
+        this.guardandoSucursal[item.cod_sucursal] = false;
+        const msg = String(err?.message || err?.error?.message || 'No se pudo guardar');
+        Swal.fire('Error', msg, 'error');
+      }
+    });
+  }
 
   cerrarModalProducto(): void {
     this.formularioInventario.reset({

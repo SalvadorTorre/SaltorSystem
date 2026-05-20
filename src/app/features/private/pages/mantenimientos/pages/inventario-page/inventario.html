@@ -78,6 +78,9 @@
                 <button type="button" class="btn btn-sm btn-outline-success" (click)="consultarProducto(inventario)" title="Consultar">
                   <i class="bi bi-card-list"></i>
                 </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" (click)="abrirDetallePorSucursal(inventario)" title="Detalle por sucursal">
+                  <i class="bi bi-building"></i>
+                </button>
               </div>
 
               <div class="d-md-none mt-2 small inventory-mobile-meta">
@@ -437,6 +440,91 @@
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal detalle por sucursal -->
+<div
+  class="modal fade"
+  id="modalInventarioSucursal"
+  tabindex="-1"
+  aria-labelledby="modalInventarioSucursalLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-xl modal-dialog-scrollable modal-fullscreen-lg-down">
+    <div class="modal-content inventory-modal-content">
+      <div class="modal-header bg-dark text-white">
+        <h5 class="modal-title" id="modalInventarioSucursalLabel">
+          Detalle por sucursal
+          <span class="ms-2 fw-normal text-white-50" *ngIf="productoDetalleSucursal">
+            {{ productoDetalleSucursal.in_codmerc }} - {{ productoDetalleSucursal.in_desmerc }}
+          </span>
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="table-responsive border rounded-3">
+          <table class="table table-sm align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Sucursal</th>
+                <th class="text-end">Existencia</th>
+                <th class="text-end">Costo local (temporal)</th>
+                <th class="text-end">Costo global</th>
+                <th class="text-end">Costo efectivo</th>
+                <th class="text-center">Activo</th>
+                <th class="text-center">Acción</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of inventarioSucursalList">
+                <td class="fw-semibold">{{ item.nom_sucursal }}</td>
+                <td>
+                  <input
+                    type="number"
+                    class="form-control form-control-sm text-end"
+                    [(ngModel)]="item.inv_existencia"
+                  />
+                </td>
+                <td>
+                  <input
+                    type="number"
+                    class="form-control form-control-sm text-end"
+                    [ngModel]="item.inv_cosprod"
+                    (ngModelChange)="item.inv_cosprod = $event; onCostoLocalChange(item)"
+                    placeholder="Usar global"
+                  />
+                </td>
+                <td class="text-end">RD$ {{ item.costo_global | number:'1.2-2' }}</td>
+                <td class="text-end fw-semibold text-primary">RD$ {{ item.costo_efectivo | number:'1.2-2' }}</td>
+                <td class="text-center">
+                  <input type="checkbox" class="form-check-input" [(ngModel)]="item.activo" />
+                </td>
+                <td class="text-center">
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-primary"
+                    (click)="guardarSucursalDetalle(item)"
+                    [disabled]="guardandoSucursal[item.cod_sucursal]"
+                  >
+                    <span *ngIf="guardandoSucursal[item.cod_sucursal]" class="spinner-border spinner-border-sm me-1"></span>
+                    Guardar
+                  </button>
+                </td>
+              </tr>
+              <tr *ngIf="!inventarioSucursalList.length">
+                <td colspan="7" class="text-center text-muted py-4">
+                  No hay sucursales para mostrar.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button>
       </div>
     </div>
   </div>
