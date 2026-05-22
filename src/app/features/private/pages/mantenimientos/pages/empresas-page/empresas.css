@@ -1,39 +1,372 @@
-.no-border {
-  border: none !important;
+:host {
+  display: block;
 }
 
-.table- class th,
-.table-class td {
-  padding: 1px 1px;
-  /* Ajusta los valores según tus necesidades */
-  /* height: 1px;
-  /* Establece una altura fija si es necesario */
+.empresas-page {
+  --surface: #ffffff;
+  --surface-soft: #f4f7fc;
+  --line: #dbe2ef;
+  --text-main: #12243f;
+  --text-muted: #65758d;
+  --brand: #1f5ed6;
+  --brand-strong: #0f4fbe;
+  color: var(--text-main);
+  padding-bottom: 1rem;
 }
 
-.tabla-estrecha th {
-  font-weight: bold;
+.empresas-hero {
+  border-radius: 1rem;
+  border: 0;
+  color: #fff;
+  background: linear-gradient(120deg, #0f4fbe 0%, #2362d6 44%, #3275d4 72%, #3f8abf 100%);
 }
 
-/* --- Modal Empresas redesign --- */
-.emp-modal .modal-content {
-  border-radius: 8px;
+.empresas-eyebrow {
+  font-size: 0.76rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  opacity: 0.84;
 }
-.emp-modal .card-header {
-  background: #f5f7fa;
-  border-bottom: 1px solid #e5e9f2;
+
+.text-white-75 {
+  color: rgba(255, 255, 255, 0.84);
 }
-.emp-modal .card {
-  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+
+.empresas-btn-primary {
+  border-radius: 999px;
+  font-weight: 600;
+  padding-inline: 0.95rem;
 }
-.emp-modal .table-responsive {
+
+.empresas-metric-card {
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  border-radius: 0.82rem;
+  padding: 0.7rem 0.75rem;
+  min-height: 74px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.empresas-metric-card span {
+  font-size: 0.75rem;
+  opacity: 0.9;
+}
+
+.empresas-metric-card strong {
+  font-size: 1.3rem;
+  line-height: 1.12;
+}
+
+.empresas-panel {
+  border-radius: 1rem;
+  background: var(--surface);
+}
+
+.empresas-search .input-group-text {
+  background: #eef3ff;
+  border-color: var(--line);
+  color: #3155ab;
+}
+
+.empresas-search .form-control {
+  border-color: var(--line);
+}
+
+.empresas-btn-clear {
+  min-height: 2.4rem;
+  border-radius: 0.62rem;
+}
+
+.empresas-grid-wrap {
+  max-height: calc(100vh - 390px);
+  min-height: 280px;
+  border: 1px solid #dce4f1;
+  border-radius: 0.82rem;
+}
+
+.empresas-table {
+  min-width: 980px;
+}
+
+.empresas-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #f1f5fd;
+  color: #284e95;
+  border-bottom: 1px solid #cfd8eb;
+  white-space: nowrap;
+  font-weight: 700;
+}
+
+.empresas-table td,
+.empresas-table th {
+  padding: 0.72rem 0.64rem;
+}
+
+.empresas-table tbody tr {
+  border-color: #edf1f8;
+}
+
+.empresas-table tbody tr:hover {
+  background: #f7faff;
+}
+
+.empresas-actions-cell {
+  white-space: nowrap;
+}
+
+.empresas-actions-cell .btn {
+  margin-left: 0.35rem;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border-radius: 0.58rem;
+}
+
+.empresas-pagination .page-link {
+  border-radius: 0.5rem;
+  margin-inline: 0.12rem;
+}
+
+.modal-modern {
+  border: 0;
+  border-radius: 1rem;
+  overflow: hidden;
+  box-shadow: 0 18px 46px rgba(12, 30, 68, 0.24);
+}
+
+.modal-header-degradado {
+  background: linear-gradient(90deg, #1f5ed6, #2f79d8);
+  color: #fff;
+  border-bottom: 0;
+}
+
+.modal-header-degradado .modal-title {
+  font-weight: 600;
+}
+
+.btn-close-white {
+  filter: invert(1) grayscale(100%) brightness(200%);
+}
+
+.modal-modern .modal-body {
+  background: var(--surface-soft);
+}
+
+.modal-modern .modal-footer {
+  border-top: 1px solid #e8edf7;
+  background: #f3f6fc;
+}
+
+.modal-modern .card {
+  border: 1px solid #e2e8f4;
+  border-radius: 0.85rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.modal-modern .card-header {
+  background: #f6f9ff;
+  border-bottom: 1px solid #e3e9f5;
+}
+
+.modal-modern .table-responsive {
   border: 1px solid #e5e9f2;
-  border-radius: 6px;
+  border-radius: 0.68rem;
 }
-.emp-modal .table thead th {
+
+.modal-modern .table thead th {
   position: sticky;
   top: 0;
   z-index: 1;
 }
+
+.modal-modern .form-control,
+.modal-modern .form-select {
+  min-height: 2.3rem;
+  border-color: #d3dded;
+}
+
+.modal-modern .form-control:focus,
+.modal-modern .form-select:focus {
+  border-color: #5f8fe6;
+  box-shadow: 0 0 0 0.15rem rgba(31, 94, 214, 0.16);
+}
+
+.emp-section-card {
+  border: 1px solid #dde5f3;
+  border-radius: 0.82rem;
+  overflow: hidden;
+}
+
+.sucursal-list,
+.encf-list {
+  max-height: 420px;
+  overflow-y: auto;
+  padding: 0.75rem;
+}
+
+.sucursal-item,
+.encf-item {
+  background: #f8fbff;
+  border: 1px solid #d9e6fb;
+  border-radius: 0.75rem;
+  padding: 0.7rem 0.75rem;
+}
+
+.sucursal-item + .sucursal-item,
+.encf-item + .encf-item {
+  margin-top: 0.65rem;
+}
+
+.sucursal-item.consulta-click {
+  cursor: pointer;
+}
+
+.sucursal-item.consulta-click:hover {
+  border-color: #b9ccf4;
+  background: #f2f7ff;
+}
+
+.sucursal-item-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 0.5rem;
+}
+
+.sucursal-address {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.sucursal-metrics {
+  display: flex;
+  gap: 0.85rem;
+  flex-wrap: wrap;
+  font-size: 0.81rem;
+  color: #304863;
+}
+
+.sucursal-actions {
+  margin-top: 0.5rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.4rem;
+}
+
+.sucursal-actions .btn {
+  width: 1.9rem;
+  height: 1.9rem;
+  padding: 0;
+  border-radius: 0.5rem;
+}
+
+.encf-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border-bottom: 1px solid #e5ecf7;
+  background: #f7faff;
+}
+
+.encf-chip {
+  border: 1px solid #d8e4fb;
+  border-radius: 0.65rem;
+  background: #fff;
+  padding: 0.5rem 0.55rem;
+}
+
+.encf-chip span {
+  display: block;
+  font-size: 0.72rem;
+  color: #61728c;
+}
+
+.encf-chip strong {
+  display: block;
+  margin-top: 0.08rem;
+  font-size: 0.92rem;
+}
+
+.encf-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+  color: #5d6f8a;
+}
+
+.encf-progress {
+  height: 0.45rem;
+  background: #e8eef8;
+}
+
+.encf-progress .progress-bar {
+  background: linear-gradient(90deg, #1f5ed6, #5f84e9);
+}
+
+.encf-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.45rem;
+}
+
+.empty-panel {
+  border-top: 1px dashed #d9e3f4;
+}
+
 .uppercase-input {
   text-transform: uppercase;
+}
+
+.no-border {
+  border: none !important;
+}
+
+@media (max-width: 991.98px) {
+  .empresas-grid-wrap {
+    max-height: none;
+  }
+
+  .empresas-table {
+    min-width: 860px;
+  }
+
+  .sucursal-list,
+  .encf-list {
+    max-height: none;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .empresas-page {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .empresas-hero .card-body,
+  .empresas-panel .card-body {
+    padding: 0.95rem;
+  }
+
+  .empresas-metric-card {
+    min-height: 66px;
+  }
+
+  .empresas-metric-card strong {
+    font-size: 1.12rem;
+  }
+
+  .empresas-actions-cell .btn {
+    width: 1.88rem;
+    height: 1.88rem;
+  }
+
+  .encf-summary {
+    grid-template-columns: 1fr;
+  }
 }

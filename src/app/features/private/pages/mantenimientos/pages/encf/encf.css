@@ -1,8 +1,223 @@
-/* Estilos base similares al NCF */
-.rounded-top-4 { border-top-left-radius: 1rem; border-top-right-radius: 1rem; }
-.rounded-4 { border-radius: 1rem; }
+:host {
+  display: block;
+}
 
-.table thead th { font-weight: 600; }
-.table tbody td { vertical-align: middle; }
+.encf-page {
+  --surface: #ffffff;
+  --surface-soft: #f4f7fc;
+  --line: #dbe2ef;
+  --text-main: #12243f;
+  --brand: #1f5ed6;
+  color: var(--text-main);
+  padding-bottom: 1rem;
+}
 
-.form-text { font-size: 0.85rem; color: #6c757d; }
+.encf-hero {
+  border-radius: 1rem;
+  border: 0;
+  color: #fff;
+  background: linear-gradient(120deg, #0f4fbe 0%, #2362d6 44%, #4d55cd 72%, #a43d75 100%);
+}
+
+.encf-eyebrow {
+  font-size: 0.76rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  opacity: 0.84;
+}
+
+.text-white-75 {
+  color: rgba(255, 255, 255, 0.84);
+}
+
+.encf-btn-primary {
+  border-radius: 999px;
+  font-weight: 600;
+  padding-inline: 0.95rem;
+}
+
+.encf-metric-card {
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  border-radius: 0.82rem;
+  padding: 0.7rem 0.75rem;
+  min-height: 74px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.encf-metric-card span {
+  font-size: 0.75rem;
+  opacity: 0.9;
+}
+
+.encf-metric-card strong {
+  font-size: 1.18rem;
+  line-height: 1.12;
+}
+
+.encf-panel {
+  border-radius: 1rem;
+  background: var(--surface);
+}
+
+.encf-results-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: #edf3ff;
+  color: #244894;
+  border: 1px solid #d6e3ff;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 0.45rem 0.75rem;
+}
+
+.encf-btn-action {
+  min-height: 2.42rem;
+}
+
+.encf-search .input-group-text {
+  background: #eef3ff;
+  border-color: var(--line);
+  color: #3155ab;
+}
+
+.encf-search .form-control,
+.encf-search .form-select {
+  border-color: var(--line);
+}
+
+.encf-table-wrap {
+  max-height: calc(100vh - 390px);
+  min-height: 300px;
+  border: 1px solid #dce4f1;
+  border-radius: 0.82rem;
+}
+
+.encf-table {
+  min-width: 1080px;
+}
+
+.encf-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #f1f5fd;
+  color: #284e95;
+  border-bottom: 1px solid #cfd8eb;
+  white-space: nowrap;
+  font-weight: 700;
+}
+
+.encf-table td,
+.encf-table th {
+  padding: 0.72rem 0.64rem;
+}
+
+.encf-table tbody tr {
+  border-color: #edf1f8;
+}
+
+.encf-table tbody tr:hover {
+  background: #f7faff;
+}
+
+.encf-actions-cell {
+  white-space: nowrap;
+}
+
+.encf-actions-cell .btn {
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border-radius: 0.58rem;
+}
+
+.modal-modern {
+  border: 0;
+  border-radius: 1rem;
+  overflow: hidden;
+  box-shadow: 0 18px 46px rgba(12, 30, 68, 0.24);
+}
+
+.modal-header-degradado {
+  background: linear-gradient(90deg, #1f5ed6, #6b3dd7);
+  color: #fff;
+  border-bottom: 0;
+}
+
+.modal-header-degradado .modal-title {
+  font-weight: 600;
+}
+
+.btn-close-white {
+  filter: invert(1) grayscale(100%) brightness(200%);
+}
+
+.modal-modern .modal-body {
+  background: var(--surface-soft);
+}
+
+.modal-modern .modal-footer {
+  border-top: 1px solid #e8edf7;
+  background: #f3f6fc;
+}
+
+.modal-modern .form-control,
+.modal-modern .form-select {
+  min-height: 2.3rem;
+  border-color: #d3dded;
+}
+
+.modal-modern .form-control:focus,
+.modal-modern .form-select:focus {
+  border-color: #5f8fe6;
+  box-shadow: 0 0 0 0.15rem rgba(31, 94, 214, 0.16);
+}
+
+.form-text {
+  font-size: 0.85rem;
+  color: #6c757d;
+}
+
+@media (max-width: 991.98px) {
+  .encf-table-wrap {
+    max-height: none;
+  }
+
+  .encf-table {
+    min-width: 920px;
+  }
+
+  .encf-btn-action {
+    min-height: 2.3rem;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .encf-page {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .encf-hero .card-body,
+  .encf-panel .card-body {
+    padding: 0.95rem;
+  }
+
+  .encf-metric-card {
+    min-height: 66px;
+  }
+
+  .encf-metric-card strong {
+    font-size: 1.08rem;
+  }
+
+  .encf-results-pill {
+    width: 100%;
+    justify-content: center;
+  }
+}

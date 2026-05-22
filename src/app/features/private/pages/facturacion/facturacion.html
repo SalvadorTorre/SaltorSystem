@@ -105,6 +105,14 @@
                   </a>
                 </div>
               </div>
+              <div *ngIf="clienteRncNoExiste" class="mt-2 d-flex align-items-center justify-content-between rounded border border-warning-subtle bg-warning bg-opacity-10 px-3 py-2">
+                <small class="text-muted">
+                  Este RNC no existe en tus clientes.
+                </small>
+                <button type="button" class="btn btn-sm btn-outline-primary" (click)="agregarRncComoCliente()">
+                  Agregar a mis clientes
+                </button>
+              </div>
             </div>
 
             <!-- Dirección -->
@@ -210,14 +218,15 @@
                   id="input9"
                   [formControl]="buscarFpago"
                   (keydown)="handleKeydownFpago($event)"
-                  (focus)="resultadoFpago = listaFpago"
+                  (focus)="onFocusFpago()"
+                  (blur)="onBlurFpago()"
                   class="form-control"
                   placeholder="Seleccionar Pago"
                   autocomplete="off"
                 />
                 <div
-                  class="dropdown-menu show w-100"
-                  [style.display]="resultadoFpago.length > 0 ? 'block' : 'none'"
+                  class="dropdown-menu w-100"
+                  [style.display]="mostrarDropdownFpago && resultadoFpago.length > 0 ? 'block' : 'none'"
                   style="max-height: 200px; overflow-y: auto; position: absolute; z-index: 1000;"
                 >
                   <a
@@ -239,14 +248,15 @@
                   id="input11"
                   [formControl]="buscarEnvio"
                   (keydown)="handleKeydownEnvio($event)"
-                  (focus)="resultadoEnvio = listaEnvio"
+                  (focus)="onFocusEnvio()"
+                  (blur)="onBlurEnvio()"
                   class="form-control"
                   placeholder="Seleccionar Entrega"
                   autocomplete="off"
                 />
                 <div
-                  class="dropdown-menu show w-100"
-                  [style.display]="resultadoEnvio.length > 0 ? 'block' : 'none'"
+                  class="dropdown-menu w-100"
+                  [style.display]="mostrarDropdownEnvio && resultadoEnvio.length > 0 ? 'block' : 'none'"
                   style="max-height: 200px; overflow-y: auto; position: absolute; z-index: 1000;"
                 >
                   <a
@@ -263,7 +273,7 @@
               <div class="col-md-2">
                 <label class="form-label small text-muted fw-semibold">Vend.</label>
                 <input
-                  type="password"
+                  type="text"
                   (keydown.enter)="buscarUsuario($event, input13)"
                   formControlName="fa_codVend"
                   #input12
@@ -283,6 +293,56 @@
               </div>
             </div>
           </form>
+
+          <div
+            *ngIf="modoconsultaFacturacion && resumenConsultaFactura"
+            class="mt-3 border rounded bg-white p-3 shadow-sm"
+          >
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 border-bottom pb-2 mb-3">
+              <h6 class="mb-0 text-primary fw-bold">
+                <i class="bi bi-info-circle me-2"></i>Consulta de Factura
+              </h6>
+              <span class="badge text-bg-secondary">{{resumenConsultaFactura.documento}}</span>
+            </div>
+            <div class="row g-3 small">
+              <div class="col-6 col-md-3">
+                <div class="text-muted fw-semibold">Pago</div>
+                <div class="fw-bold">{{resumenConsultaFactura.pago}}</div>
+              </div>
+              <div class="col-6 col-md-3">
+                <div class="text-muted fw-semibold">Pendiente</div>
+                <div class="fw-bold">{{resumenConsultaFactura.pendiente}}</div>
+              </div>
+              <div class="col-6 col-md-3">
+                <div class="text-muted fw-semibold">Entrega</div>
+                <div class="fw-bold">{{resumenConsultaFactura.entrega}}</div>
+              </div>
+              <div class="col-6 col-md-3">
+                <div class="text-muted fw-semibold">Salida</div>
+                <div class="fw-bold">{{resumenConsultaFactura.salida}}</div>
+              </div>
+              <div class="col-6 col-md-3">
+                <div class="text-muted fw-semibold">Estado salida</div>
+                <div class="fw-bold">{{resumenConsultaFactura.estadoSalida}}</div>
+              </div>
+              <div class="col-md-6">
+                <div class="text-muted fw-semibold">Chofer</div>
+                <div class="fw-bold">{{resumenConsultaFactura.chofer}}</div>
+              </div>
+              <div class="col-6 col-md-2">
+                <div class="text-muted fw-semibold">Asignacion</div>
+                <div class="fw-bold">{{resumenConsultaFactura.asignacionChofer}}</div>
+              </div>
+              <div class="col-6 col-md-2">
+                <div class="text-muted fw-semibold">Despacho Forjas</div>
+                <div class="fw-bold">{{resumenConsultaFactura.despachoForjas}}</div>
+              </div>
+              <div class="col-6 col-md-2">
+                <div class="text-muted fw-semibold">Despacho Patio</div>
+                <div class="fw-bold">{{resumenConsultaFactura.despachoPatio}}</div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -345,10 +405,10 @@
               <span class="badge rounded-pill" [ngStyle]="{'background-color': factxt < 10 ? '#dc3545' : '#198754'}">{{formatNumber(factxt)}}%</span>
            </div>
 
-           <!-- Reopen Modal Button -->
-           <div class="d-grid gap-2 mt-3" *ngIf="items.length > 0">
+           <!-- Detalle de productos -->
+           <div class="d-grid gap-2 mt-3">
              <button class="btn btn-primary shadow-sm fw-bold" (click)="abrirModalDetalle()">
-               <i class="bi bi-cart-check me-2"></i>Ver/Editar Productos
+               <i class="bi bi-cart-check me-2"></i>Ir a Detalle de Productos
              </button>
            </div>
         </div>
@@ -361,9 +421,7 @@
            <div class="d-grid gap-2">
              <button
               class="btn btn-outline-primary mb-2"
-              data-bs-toggle="modal"
-              data-bs-target="#modalBuscarFactura"
-              (click)="buscarTodasFacturacion()"
+              (click)="solicitarBusquedaFactura()"
             >
               <i class="bi bi-search me-2"></i>Buscar Factura
             </button>
@@ -627,8 +685,15 @@
                   <input type="text" class="form-control form-control-sm fw-bold text-center border-0 bg-transparent" readonly [(ngModel)]="fecacttxt">
                 </div>
               </div>
+              <!-- Margen Venta -->
+              <div class="col-6 col-sm-4 col-md-2">
+                <label class="form-label small text-muted mb-1 fw-semibold">Margen Venta</label>
+                <div class="input-group input-group-sm bg-white rounded border">
+                  <input type="text" class="form-control fw-bold text-end border-0 bg-transparent" readonly [value]="formatNumber(margenVentatxt) + '%'">
+                </div>
+              </div>
               <!-- Costo -->
-              <div class="col-6 col-sm-4 col-md-3">
+              <div class="col-6 col-sm-4 col-md-2">
                 <label class="form-label small text-muted mb-1 fw-semibold">Costo</label>
                 <div class="input-group input-group-sm bg-white rounded border">
                   <span class="input-group-text border-0 bg-transparent text-muted">$</span>
@@ -636,7 +701,7 @@
                 </div>
               </div>
               <!-- Margen Producto -->
-              <div class="col-6 col-sm-4 col-md-3">
+              <div class="col-6 col-sm-4 col-md-2">
                 <label class="form-label small text-muted mb-1 fw-semibold">Margen Actual</label>
                 <div class="input-group input-group-sm bg-white rounded border">
                   <input type="text" class="form-control fw-bold text-end border-0 bg-transparent" readonly

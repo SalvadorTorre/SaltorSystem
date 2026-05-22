@@ -1,26 +1,19 @@
-import { NgModule } from "@angular/core";
-import { FormsModule, ReactiveFormsModule } from "@angular/forms";
+import { NgModule } from '@angular/core';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 
-import { SignInPageRoutingModule } from "./signin.page-routing.module";
-import { SignInPage } from "./signin.page";
-import { PublicModule } from "../../public.module";
-
-
-
+import { SignInPageRoutingModule } from './signin.page-routing.module';
+import { SignInPage } from './signin.page';
+// import { PublicModule } from "../../public.module";
 
 @NgModule({
   imports: [
     SignInPageRoutingModule,
-    PublicModule,
+    // PublicModule,
     CommonModule,
     ReactiveFormsModule,
     FormsModule,
   ],
-  declarations: [
-    SignInPage,
-  ],
-
+  declarations: [SignInPage],
 })
-
-export class SignInPageModule { }
+export class SignInPageModule {}

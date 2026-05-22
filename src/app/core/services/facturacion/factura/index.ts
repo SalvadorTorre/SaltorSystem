@@ -48,6 +48,11 @@ export interface FacturacionModelData {
   fa_despacho: string;
   fa_entrega: string;
   fa_impresa: string;
+  fa_impalmaf?: string;
+  fa_impalmap?: string;
+  fa_pendiente?: string;
+  fa_salida?: string;
+  idsalida?: string | number | null;
 
   detFactura: detFacturaData[];
 }

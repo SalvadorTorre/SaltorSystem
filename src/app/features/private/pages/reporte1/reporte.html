@@ -25,13 +25,19 @@
               <i class="bi" [ngClass]="{'bi-chevron-down': openMenu === 'productos', 'bi-chevron-right': openMenu !== 'productos'}"></i>
             </a>
             
+
+            
             <div class="collapse" [ngClass]="{'show': openMenu === 'productos'}" id="submenuProductos">
               <ul class="nav flex-column submenu">
                 <li class="nav-item">
-                  <a class="nav-link submenu-item" [routerLink]="['movproducto']">
-                    <i class="bi bi-arrow-right-short"></i> Mov. por Productos
+                  <a class="nav-link submenu-item" routerLinkActive="active" [routerLink]="['movproducto']">
+                    <i class="bi bi-arrow-right-short"></i> <span>Mov. por Productos</span>
                   </a>
                 </li>
+
+
+
+
                 <li class="nav-item">
                   <a class="nav-link submenu-item" [routerLink]="['entradaProducto']">
                     <i class="bi bi-arrow-right-short"></i> Mov. por Grupo
@@ -130,33 +136,13 @@
           </li>
         </ul>
       </div>
-    </div>
-
-     <!-- Contenido principal
-    <div class="col-md-9 col-lg-10 content-area">
-       <div class="p-3"> -->
-        <!-- Encabezado de página -->
-        <!-- <div class="d-flex justify-content-between align-items-center mb-4">
-          <h2 class="report-title mb-0">
-            <i class="bi bi-file-earmark-bar-graph me-2"></i>
-            <span *ngIf="!currentReport">Reportes del Sistema</span>
-            <span *ngIf="currentReport">{{currentReport}}</span>
-          </h2>
-          <div>
-            <button class="btn action-btn me-2">
-              <i class="bi bi-printer me-1"></i> Imprimir
-            </button>
-            <button class="btn action-btn secondary">
-              <i class="bi bi-download me-1"></i> Exportar
-            </button>
-          </div>
-        </div>  -->
-        
-        
-        <!-- Contenido del router outlet -->
-        <!-- <router-outlet></router-outlet>
+      <!-- Contenido principal -->
+      <div class="col-md-9 col-lg-10 content-area">
+        <div class="p-3">
+          <router-outlet></router-outlet>
+        </div>
       </div>
-    </div> -->
+    </div>
   </div>
 
   <!-- Sidebar offcanvas para móviles -->

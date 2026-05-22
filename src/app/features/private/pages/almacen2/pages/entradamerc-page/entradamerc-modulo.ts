@@ -1,22 +1,20 @@
+
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Entradamerc } from './entradamerc';
-import { RutaEntradamerc } from './entradamerc-ruta';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-
+import { EntradaMercComponent } from './entradamerc';
+import { RutaEntradaMerc } from './entradamerc-ruta';
 
 @NgModule({
   declarations: [
-    Entradamerc,
+    EntradaMercComponent
   ],
   imports: [
     CommonModule,
-    RutaEntradamerc,
-    ReactiveFormsModule,
-    FormsModule
+    RutaEntradaMerc,
+    FormsModule,
+    ReactiveFormsModule
   ],
-  exports: [
-  ],
-  providers: [],
+  providers: []
 })
-export class ModuloEntradamerc { }
+export class ModuloEntradaMerc { }

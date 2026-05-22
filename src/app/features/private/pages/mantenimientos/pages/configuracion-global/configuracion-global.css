@@ -1,0 +1,46 @@
+.config-global-page .config-global-card {
+  border-radius: 14px;
+}
+
+.config-global-page .config-global-header {
+  border: 0;
+  color: #fff;
+  border-radius: 14px 14px 0 0;
+  background: linear-gradient(120deg, #143f8f 0%, #2d67c9 58%, #1d8bc4 100%);
+}
+
+.config-block {
+  border: 1px solid #e7eef9;
+  border-radius: 12px;
+  background: #fff;
+  padding: 1rem;
+}
+
+.logo-preview-wrap {
+  border: 1px dashed #c9d8f5;
+  border-radius: 12px;
+  min-height: 170px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f6f9ff;
+  padding: 0.5rem;
+}
+
+.logo-preview {
+  max-width: 100%;
+  max-height: 150px;
+  object-fit: contain;
+}
+
+.invalid-note {
+  color: #b42318;
+  font-size: 0.8rem;
+  margin-top: 0.3rem;
+}
+
+@media (max-width: 991.98px) {
+  .config-block {
+    padding: 0.85rem;
+  }
+}

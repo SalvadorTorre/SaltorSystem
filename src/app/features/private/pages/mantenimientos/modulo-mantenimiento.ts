@@ -5,17 +5,9 @@ import { RutaMantenimiento } from './ruta-matenimiento';
 import { PhoneNumberMaskDirective } from 'src/app/core/directive/phonemask.directive';
 
 @NgModule({
-  declarations: [
-    Mantenimiento,
-    PhoneNumberMaskDirective
-  ],
-  imports: [
-    CommonModule,
-    RutaMantenimiento
-  ],
-  exports: [
-    PhoneNumberMaskDirective
-  ],
+  declarations: [Mantenimiento, PhoneNumberMaskDirective],
+  imports: [CommonModule, RutaMantenimiento],
+  exports: [PhoneNumberMaskDirective],
   providers: [],
 })
-export class ModuloMantenimiento { }
+export class ModuloMantenimiento {}

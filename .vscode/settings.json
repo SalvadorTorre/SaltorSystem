@@ -5,6 +5,7 @@
     "Entradamerc",
     "Facturacion",
     "Salidafactura",
+    "supabase",
     "Ventainterna"
   ]
 }

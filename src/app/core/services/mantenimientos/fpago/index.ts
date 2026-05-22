@@ -9,5 +9,8 @@ export interface ModeloFpago{
 export interface ModeloFpagoData{
   fp_codfpago: number;
   fp_descfpago: string;
+  dgii_codigo?: number;
+  es_dgii?: boolean;
+  activo?: boolean;
 
 }

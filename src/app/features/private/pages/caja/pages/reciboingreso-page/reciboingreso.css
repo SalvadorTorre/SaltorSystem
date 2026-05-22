@@ -1,0 +1,20 @@
+/* Estilos para el componente de recibo de ingreso */
+.card {
+  border-radius: 0.5rem;
+}
+
+.table th {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #fff9f9ea;
+}
+
+.table td {
+  font-size: 0.9rem;
+}
+
+/* Mostrar y capturar en mayúsculas en textos */
+input[type="text"].text-uppercase,
+textarea.text-uppercase {
+  text-transform: uppercase;
+}

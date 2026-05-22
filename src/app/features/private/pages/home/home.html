@@ -1,19 +1,344 @@
-<!-- <div class="container-fluid">
-  <div class="row">
-    <div class="col-7">
-      <div class="row">
-        <div class="col">
-          <div id="chart">
-            <apx-chart
-              [series]="chartOptions.series!"
-              [chart]="chartOptions.chart!"
-              [dataLabels]="chartOptions.dataLabels!"
-              [plotOptions]="chartOptions.plotOptions!"
-              [xaxis]="chartOptions.xaxis!"
-            ></apx-chart>
+<div class="seller-dashboard">
+  <header class="hero-panel">
+    <div>
+      <p class="hero-kicker">Panel comercial</p>
+      <h1>Hola, {{ username }}</h1>
+      <p class="hero-subtitle">
+        {{ empresaNombre }} | {{ sucursalNombre }} | {{ periodoActual }}
+      </p>
+      <span class="role-chip" [ngClass]="{ 'admin': role !== 'vendedor' }">
+        Vista {{ role === 'root' ? 'Cómputos' : role === 'admin' ? 'Administrador' : 'Vendedor' }}
+      </span>
+    </div>
+    <div class="hero-logo-orb">
+      <img
+        [src]="logoEmpresa"
+        alt="Logo empresa"
+        class="hero-logo"
+      />
+    </div>
+  </header>
+
+  <ng-container *ngIf="role === 'vendedor'; else adminDashboard">
+    <section class="kpi-grid">
+      <article class="kpi-card">
+        <p>Meta a Facturar</p>
+        <h3>{{ vendedor.metaFacturarMM | number:'1.2-2' }} MM</h3>
+      </article>
+      <article class="kpi-card">
+        <p>Total Factura</p>
+        <h3>{{ vendedor.totalFactura }}</h3>
+      </article>
+      <article class="kpi-card">
+        <p>Valor facturado</p>
+        <h3>{{ vendedor.valorFacturadoOculto }} MM</h3>
+      </article>
+      <article class="kpi-card">
+        <p>Margen de venta</p>
+        <h3>{{ vendedor.margenVentaPct | number:'1.1-2' }}%</h3>
+      </article>
+      <article class="kpi-card">
+        <p>Porciento Facturado</p>
+        <h3>{{ vendedor.porcientoFacturado | number:'1.1-2' }}%</h3>
+      </article>
+      <article class="kpi-card">
+        <p>Valor a Pagar</p>
+        <h3>{{ currency(vendedor.valorPagar) }}</h3>
+      </article>
+    </section>
+
+    <section class="panel panel-distribution-wide">
+      <div class="panel-title-row">
+        <h4>Distribución por línea (Hierros y Forjas)</h4>
+        <small>Total vendido: {{ currency(vendedor.valorFacturadoReal) }}</small>
+      </div>
+      <div class="distribution-grid">
+        <div class="channel-list">
+          <div class="channel-item" *ngFor="let canal of vendedor.canales">
+            <div class="channel-head">
+              <span>{{ canal.nombre }}</span>
+              <strong>{{ canalPct(canal.monto) | number:'1.1-1' }}%</strong>
+            </div>
+            <div class="channel-track">
+              <div
+                class="channel-fill"
+                [style.width.%]="canalPct(canal.monto)"
+              ></div>
+            </div>
+          </div>
+        </div>
+        <div class="distribution-cards">
+          <div class="distribution-card" *ngFor="let canal of vendedor.canales">
+            <p>{{ canal.nombre }}</p>
+            <h5>{{ currency(canal.monto) }}</h5>
+            <small>{{ canalPct(canal.monto) | number:'1.1-1' }}% de participación</small>
           </div>
         </div>
       </div>
-    </div>
-  </div>
-</div> -->
+    </section>
+
+    <section class="panels panels-summary-agenda">
+      <article class="panel">
+        <div class="panel-title-row">
+          <h4>Resumen semanal comercial</h4>
+          <small>{{ vendedor.ventasSemana.length }} días registrados</small>
+        </div>
+        <div class="mini-kpis">
+          <div class="mini-kpi">
+            <span>Total semana</span>
+            <strong>{{ currency(totalSemanaMonto()) }}</strong>
+          </div>
+          <div class="mini-kpi">
+            <span>Promedio diario</span>
+            <strong>{{ currency(promedioSemanaMonto()) }}</strong>
+          </div>
+          <div class="mini-kpi">
+            <span>Mejor día</span>
+            <strong>
+              {{ mejorDiaSemana()?.dia || '-' }}
+              <small>{{ mejorDiaSemana() ? ' | ' + currency(mejorDiaSemanaMonto()) : '' }}</small>
+            </strong>
+          </div>
+        </div>
+        <ul class="week-rows">
+          <li class="week-row" *ngFor="let dia of ventasSemanaPreview()">
+            <div class="week-day">
+              <strong>{{ dia.dia }}</strong>
+              <small>{{ semanaPct(dia.monto) | number:'1.1-1' }}% de la semana</small>
+            </div>
+            <div class="week-amount">
+              {{ currency(dia.monto) }}
+            </div>
+          </li>
+          <li class="week-row week-empty" *ngIf="!vendedor.ventasSemana.length">
+            <div class="week-day">
+              <strong>Sin registros</strong>
+              <small>Cuando tengas ventas semanales aparecerán aquí.</small>
+            </div>
+          </li>
+        </ul>
+        <div class="week-actions" *ngIf="vendedor.ventasSemana.length > 3">
+          <button type="button" class="btn btn-sm btn-outline-primary" (click)="openSemanaModal()">
+            Ver detalle semanal
+          </button>
+        </div>
+      </article>
+
+      <article class="panel agenda-panel">
+        <div class="panel-title-row panel-title-actions">
+          <h4>Agenda comercial de hoy</h4>
+          <div class="agenda-actions">
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-primary"
+              (click)="openAgendaModal()"
+            >
+              Ver todas
+            </button>
+            <button
+              type="button"
+              class="btn btn-sm btn-primary"
+              (click)="agendarNuevaTarea()"
+            >
+              <i class="bi bi-plus-lg me-1"></i>Agendar
+            </button>
+          </div>
+        </div>
+        <ul class="agenda-list">
+          <li
+            *ngFor="let tarea of agendaDelDia"
+            [ngClass]="{ 'done': tarea.completada }"
+          >
+            <span class="dot"></span>
+            <div>
+              <strong>{{ tarea.titulo }}</strong>
+              <small
+                >{{ formatoFechaAgenda(tarea.fechaISO) }} | {{ tarea.hora
+                }}</small
+              >
+            </div>
+          </li>
+          <li *ngIf="!agendaDelDia.length" class="agenda-empty">
+            <span class="dot"></span>
+            <div>
+              <strong>No tienes tareas registradas</strong>
+              <small>Usa el botón Agendar para crear una.</small>
+            </div>
+          </li>
+        </ul>
+      </article>
+    </section>
+
+    <section class="panel panel-facturas-full">
+      <div class="panel-title-row">
+        <h4>Ventas recientes (Hierros y Forjas)</h4>
+        <small>{{ vendedor.facturasRecientes.length }} facturas</small>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0 table-facturas-reales">
+          <thead>
+            <tr>
+              <th>Factura</th>
+              <th>NCF</th>
+              <th>Cliente</th>
+              <th>RNC</th>
+              <th>Fecha</th>
+              <th>Condición</th>
+              <th class="text-end">Monto</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let factura of vendedor.facturasRecientes">
+              <td>{{ factura.numero }}</td>
+              <td>{{ factura.ncf }}</td>
+              <td>{{ factura.cliente }}</td>
+              <td>{{ factura.rnc }}</td>
+              <td>{{ formatDateShort(factura.fecha) }}</td>
+              <td>{{ factura.condicion }}</td>
+              <td class="text-end">{{ currency(factura.monto) }}</td>
+              <td>
+                <span
+                  class="status-pill"
+                  [ngClass]="{
+                    'ok': factura.estado === 'Cobrada',
+                    'pending': factura.estado === 'Pendiente',
+                    'route': factura.estado === 'En ruta'
+                  }"
+                >
+                  {{ factura.estado }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </ng-container>
+
+  <ng-template #adminDashboard>
+    <section class="kpi-grid kpi-grid-admin">
+      <article class="kpi-card">
+        <p>Meta mensual empresa</p>
+        <h3>{{ (global.metaMensual / 1000000) | number:'1.2-2' }} MM</h3>
+      </article>
+      <article class="kpi-card">
+        <p>Facturado general</p>
+        <h3>{{ currency(global.facturadoGeneral) }}</h3>
+      </article>
+      <article class="kpi-card">
+        <p>Cumplimiento general</p>
+        <h3>{{ global.cumplimientoGeneralPct | number:'1.1-2' }}%</h3>
+      </article>
+      <article class="kpi-card">
+        <p>Total facturas</p>
+        <h3>{{ global.totalFacturas | number }}</h3>
+      </article>
+      <article class="kpi-card">
+        <p>Ticket promedio</p>
+        <h3>{{ currency(global.ticketPromedio) }}</h3>
+      </article>
+      <article class="kpi-card">
+        <p>Sucursales / Vendedores</p>
+        <h3>{{ global.sucursalesActivas }} / {{ global.vendedoresActivos }}</h3>
+      </article>
+    </section>
+
+    <section class="panels panels-admin-main">
+      <article class="panel">
+        <div class="panel-title-row">
+          <h4>Rendimiento por sucursal</h4>
+          <small>Participación sobre facturación general</small>
+        </div>
+
+        <div class="admin-sucursal-list">
+          <div class="admin-sucursal-item" *ngFor="let suc of global.sucursales">
+            <div class="admin-sucursal-head">
+              <strong>{{ suc.nombre }}</strong>
+              <span>{{ sucursalPctFacturado(suc.facturado) | number:'1.1-1' }}%</span>
+            </div>
+            <div class="channel-track">
+              <div class="channel-fill" [style.width.%]="sucursalPctFacturado(suc.facturado)"></div>
+            </div>
+            <div class="admin-sucursal-meta">
+              <small>Facturas: {{ suc.facturas }}</small>
+              <small>Vendedores: {{ suc.vendedores }}</small>
+              <small>Margen: {{ suc.margenPct | number:'1.1-2' }}%</small>
+              <small>Facturado: {{ currency(suc.facturado) }}</small>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article class="panel">
+        <div class="panel-title-row">
+          <h4>Alertas comerciales</h4>
+          <small>Seguimiento diario</small>
+        </div>
+        <ul class="admin-alert-list">
+          <li *ngFor="let alerta of global.alertas">
+            <span class="dot"></span>
+            <div>{{ alerta }}</div>
+          </li>
+        </ul>
+
+        <div class="panel-title-row admin-subtitle">
+          <h4>Distribución por forma de pago</h4>
+          <small>DGII / control interno</small>
+        </div>
+        <div class="admin-forma-pago-list">
+          <div class="admin-forma-item" *ngFor="let forma of global.formasPago">
+            <div class="admin-forma-head">
+              <span>{{ forma.nombre }}</span>
+              <strong>{{ formaPagoPct(forma.monto) | number:'1.1-1' }}%</strong>
+            </div>
+            <div class="channel-track">
+              <div class="channel-fill" [style.width.%]="formaPagoPct(forma.monto)"></div>
+            </div>
+            <small>{{ currency(forma.monto) }}</small>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <section class="panel panel-facturas-full">
+      <div class="panel-title-row">
+        <h4>Top vendedores (global)</h4>
+        <small>Vista consolidada por equipo</small>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0 table-facturas-reales">
+          <thead>
+            <tr>
+              <th>Vendedor</th>
+              <th>Sucursal</th>
+              <th>Facturas</th>
+              <th class="text-end">Facturado</th>
+              <th>Cumplimiento</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let vend of global.topVendedores">
+              <td>{{ vend.nombre }}</td>
+              <td>{{ vend.sucursal }}</td>
+              <td>{{ vend.facturas | number }}</td>
+              <td class="text-end">{{ currency(vend.facturado) }}</td>
+              <td>
+                <span
+                  class="status-pill"
+                  [ngClass]="{
+                    'ok': vend.cumplimientoPct >= 50,
+                    'pending': vend.cumplimientoPct >= 20 && vend.cumplimientoPct < 50,
+                    'route': vend.cumplimientoPct < 20
+                  }"
+                >
+                  {{ vend.cumplimientoPct | number:'1.1-1' }}%
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </ng-template>
+</div>

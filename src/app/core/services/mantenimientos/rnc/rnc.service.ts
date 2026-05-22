@@ -42,10 +42,11 @@ export class ServicioRnc {
   }
 
   buscarRncPorId(rnc: string): Observable<any> {
-    return this.http.GetRequest<any>(`/rnc-id/${rnc}`);
+    return this.http.GetRequest<any>(`/rnc-id/${rnc}`, false);
   }
+
   buscarRncPorrncId(rnc: string): Observable<any> {
-    return this.http.GetRequest<any>(`/rncid/${rnc}`);
+    return this.http.GetRequest<any>(`/rncid/${rnc}`, false);
   }
 
   importarDgii(): Observable<any> {

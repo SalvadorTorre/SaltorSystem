@@ -2,14 +2,18 @@ import { Component, OnInit } from '@angular/core';
 import { NgForm } from '@angular/forms';
 import { ServicioUsuario } from 'src/app/core/services/mantenimientos/usuario/usuario.service';
 import { ModeloUsuarioData } from 'src/app/core/services/mantenimientos/usuario';
-import { ServicioPermiso } from 'src/app/core/services/mantenimientos/permiso/permiso.service';
+import {
+  AccionCatalogoPermiso,
+  PermisoMatrizFila,
+  ServicioPermiso
+} from 'src/app/core/services/mantenimientos/permiso/permiso.service';
 import { ServicioModulo } from 'src/app/core/services/mantenimientos/modulo/modulo.service';
 import { Permiso, PermisoModel } from 'src/app/features/private/pages/mantenimientos/pages/configuracion/permiso/modelo';
 import Swal from 'sweetalert2';
 import { ServicioSucursal } from 'src/app/core/services/mantenimientos/sucursal/sucursal.service';
 import { ServicioTipousuario } from 'src/app/core/services/mantenimientos/tipousuario/tipousuario.service';
 import { ServicioEmpresa } from 'src/app/core/services/mantenimientos/empresas/empresas.service';
-import { forkJoin } from 'rxjs';
+import { forkJoin, of } from 'rxjs';
 declare var $: any;
 
 @Component({
@@ -27,6 +31,7 @@ export class Usuario implements OnInit {
   permisos: Permiso[] = [];
   modulos: any[] = [];
   sucursales: any[] = [];
+  empresas: any[] = [];
   tipousuarios: any[] = [];
   actual: Partial<Permiso> = new PermisoModel();
   editIndex = -1;
@@ -35,6 +40,24 @@ export class Usuario implements OnInit {
   nuevoUsuario: Partial<ModeloUsuarioData> = {};
   // Detalles de tipo seleccionado para nuevo usuario
   detallesTipoSeleccionado: any[] = [];
+  accionesPermisosCatalogo: AccionCatalogoPermiso[] = [];
+  permisosMatrizNuevoUsuario: PermisoMatrizFila[] = [];
+  usernameExiste = false;
+  claveExiste = false;
+  usernameMensaje = '';
+  claveMensaje = '';
+  validandoUsername = false;
+  validandoClave = false;
+  private usernameDebounce: any;
+  private claveDebounce: any;
+  editUsernameExiste = false;
+  editClaveExiste = false;
+  editUsernameMensaje = '';
+  editClaveMensaje = '';
+  validandoEditUsername = false;
+  validandoEditClave = false;
+  private editUsernameDebounce: any;
+  private editClaveDebounce: any;
 
   // Toast SweetAlert para mensajes no bloqueantes
   Toast = Swal.mixin({
@@ -57,6 +80,7 @@ export class Usuario implements OnInit {
   ngOnInit(): void {
     this.cargarUsuarios();
     this.cargarModulos();
+    this.cargarEmpresas();
     this.cargarSucursales();
     this.cargarTipousuarios();
   }
@@ -74,6 +98,28 @@ export class Usuario implements OnInit {
       timer,
       timerProgressBar
     });
+  }
+
+  private traducirError(rawMessage: any, fallback = 'Ocurrió un error'): string {
+    const raw = String(rawMessage || '').trim();
+    if (!raw) return fallback;
+    const msg = raw.toLowerCase();
+    if (msg.includes('password should be at least') || msg.includes('password must be at least')) {
+      return 'La clave no cumple los requisitos internos de seguridad.';
+    }
+    if (msg.includes('already exists') || msg.includes('duplicate key')) {
+      return 'Ya existe un registro con esos datos.';
+    }
+    if (msg.includes('invalid login credentials')) {
+      return 'Usuario o clave inválidos.';
+    }
+    if (msg.includes('fetch failed') || msg.includes('network')) {
+      return 'No se pudo conectar con el servidor.';
+    }
+    if (msg.includes('invalid api key')) {
+      return 'Configuración inválida de Supabase.';
+    }
+    return raw;
   }
 
   get usuariosFiltrados(): ModeloUsuarioData[] {
@@ -116,6 +162,13 @@ export class Usuario implements OnInit {
     });
   }
 
+  cargarEmpresas(): void {
+    this.empresaSrv.buscarTodasEmpresa(1, 500).subscribe({
+      next: (res) => { this.empresas = this.unwrapList(res); },
+      error: () => { this.empresas = []; }
+    });
+  }
+
   cargarTipousuarios(): void {
     this.tipoSrv.obtenerTodosTipousuario().subscribe({
       next: (res) => { this.tipousuarios = this.unwrapList(res); },
@@ -123,10 +176,142 @@ export class Usuario implements OnInit {
     });
   }
 
+  private construirPlantillaPermisosNuevoUsuario(): void {
+    forkJoin({
+      accionesRes: this.permisoSrv.obtenerAccionesCatalogo(),
+      recursosRes: this.permisoSrv.obtenerRecursosCatalogo(),
+    }).subscribe({
+      next: ({ accionesRes, recursosRes }) => {
+        this.accionesPermisosCatalogo = this.unwrapList(accionesRes);
+        const recursos = this.unwrapList(recursosRes);
+        const actionKeys = this.accionesPermisosCatalogo.map((a: any) => String(a?.accion_key || '').trim()).filter(Boolean);
+        this.permisosMatrizNuevoUsuario = recursos.map((r: any) => {
+          const acciones: Record<string, boolean> = {};
+          actionKeys.forEach((k: string) => acciones[k] = false);
+          return {
+            codusuario: null,
+            recurso_key: String(r?.recurso_key || '').trim() || null,
+            idmodulo: Number(r?.idmodulo || 0) || null,
+            pantalla_nombre: r?.pantalla_nombre || r?.descmodulo || r?.descModulo || '-',
+            modulo_nombre: r?.modulo_nombre || r?.modulo_key || 'General',
+            acciones,
+            modo: r?.recurso_key ? 'v2' : 'legacy',
+          } as PermisoMatrizFila;
+        });
+      },
+      error: () => {
+        this.accionesPermisosCatalogo = [
+          { accion_key: 'acceso', descripcion: 'Acceso', orden: 10 },
+          { accion_key: 'lectura', descripcion: 'Lectura', orden: 20 },
+        ];
+        this.permisosMatrizNuevoUsuario = this.modulos.map((m: any) => ({
+          codusuario: null,
+          idmodulo: Number(m?.idmodulo || 0) || null,
+          pantalla_nombre: m?.descmodulo || '-',
+          modulo_nombre: 'Legacy',
+          acciones: { acceso: false, lectura: false },
+          modo: 'legacy',
+        }));
+      }
+    });
+  }
+
+  private aplicarPermisosTipoSeleccionadoEnMatriz(detalles: any[]): void {
+    if (!Array.isArray(detalles) || !detalles.length || !this.permisosMatrizNuevoUsuario.length) return;
+    detalles.forEach((d: any) => {
+      const idmod = Number(d?.idmodulo || 0);
+      if (!idmod) return;
+      const fila = this.permisosMatrizNuevoUsuario.find((f: PermisoMatrizFila) => Number(f?.idmodulo || 0) === idmod);
+      if (!fila) return;
+      if (Object.prototype.hasOwnProperty.call(fila.acciones, 'acceso')) {
+        fila.acciones['acceso'] = String(d?.acceso || 'N').toUpperCase() === 'S';
+      }
+      if (Object.prototype.hasOwnProperty.call(fila.acciones, 'lectura')) {
+        fila.acciones['lectura'] = String(d?.lectura || 'N').toUpperCase() === 'S';
+      }
+      if (Object.prototype.hasOwnProperty.call(fila.acciones, 'ver')) {
+        const acceso = String(d?.acceso || 'N').toUpperCase() === 'S';
+        const lectura = String(d?.lectura || 'N').toUpperCase() === 'S';
+        fila.acciones['ver'] = acceso || lectura;
+      }
+    });
+  }
+
+  private hayPermisosSeleccionados(filas: PermisoMatrizFila[]): boolean {
+    return (filas || []).some((f: PermisoMatrizFila) =>
+      Object.values(f?.acciones || {}).some((v: any) => !!v)
+    );
+  }
+
   descModulo(id?: number): string {
     if (!id) return '-';
     const m = this.modulos.find((x: any) => x?.idmodulo === id);
     return m?.descmodulo || '-';
+  }
+
+  descTipoUsuario(id?: number): string {
+    if (!id) return '-';
+    const tipo = this.tipousuarios.find((t: any) => Number(t?.id ?? t?.idtipoUsuario ?? t?.codigo) === Number(id));
+    return tipo?.descripcion || tipo?.desc || `Tipo ${id}`;
+  }
+
+  descSucursalUsuario(usuario?: Partial<ModeloUsuarioData> | null): string {
+    if (!usuario) return '-';
+    const sucId = Number((usuario as any)?.sucursalid ?? usuario?.sucursal);
+    const sucursal = this.sucursales.find((s: any) => Number(s?.cod_sucursal) === sucId);
+    if (sucursal) {
+      return `${sucursal?.nom_sucursal || 'Sucursal'} (${sucursal?.cod_sucursal})`;
+    }
+    const info = (usuario as any)?.sucursalInfo;
+    if (Array.isArray(info) && info.length) {
+      const first = info[0];
+      return first?.nom_sucursal || first?.descripcion || (sucId ? `Sucursal ${sucId}` : '-');
+    }
+    if (info && typeof info === 'object') {
+      return info?.nom_sucursal || info?.descripcion || (sucId ? `Sucursal ${sucId}` : '-');
+    }
+    return sucId ? `Sucursal ${sucId}` : '-';
+  }
+
+  descEmpresaUsuario(usuario?: Partial<ModeloUsuarioData> | null): string {
+    if (!usuario) return '-';
+    const empresa = String((usuario as any)?.empresa || '').trim();
+    if (empresa) return empresa;
+    const info = (usuario as any)?.empresaInfo;
+    if (Array.isArray(info) && info.length) {
+      const first = info[0];
+      return first?.nom_empre || first?.descripcion || first?.nombre || ((usuario as any)?.cod_empre ? `Empresa ${(usuario as any)?.cod_empre}` : '-');
+    }
+    if (info && typeof info === 'object') {
+      return info?.nom_empre || info?.descripcion || info?.nombre || ((usuario as any)?.cod_empre ? `Empresa ${(usuario as any)?.cod_empre}` : '-');
+    }
+    return (usuario as any)?.cod_empre ? `Empresa ${(usuario as any)?.cod_empre}` : '-';
+  }
+
+  estadoBooleano(valor: any): string {
+    return this.esVerdadero(valor) ? 'Sí' : 'No';
+  }
+
+  claseEstadoBooleano(valor: any): string {
+    return this.esVerdadero(valor) ? 'badge text-bg-success' : 'badge text-bg-secondary';
+  }
+
+  estadoConfigurado(valor: any): string {
+    return String(valor || '').trim() ? 'Configurada' : 'No definida';
+  }
+
+  claseEstadoConfigurado(valor: any): string {
+    return String(valor || '').trim() ? 'badge text-bg-success' : 'badge text-bg-warning';
+  }
+
+  private esVerdadero(valor: any): boolean {
+    if (typeof valor === 'boolean') return valor;
+    if (typeof valor === 'number') return valor === 1;
+    if (typeof valor === 'string') {
+      const v = valor.trim().toUpperCase();
+      return ['S', 'SI', 'TRUE', '1', 'Y', 'YES'].includes(v);
+    }
+    return false;
   }
 
   abrirPermisosUsuario(u: ModeloUsuarioData): void {
@@ -168,6 +353,10 @@ export class Usuario implements OnInit {
   }
 
   abrirEditarUsuario(u: ModeloUsuarioData): void {
+    const sucursalid = Number((u as any)?.sucursalid ?? (u as any)?.sucursal ?? 0) || undefined;
+    const suc = this.sucursales.find((s: any) => Number(s?.cod_sucursal) === Number(sucursalid));
+    const codEmpre = String((u as any)?.cod_empre || suc?.cod_empre || '').trim();
+    const emp = this.empresas.find((e: any) => String(e?.cod_empre || '').trim() === codEmpre);
     this.selectedUsuario = u;
     // Crear copia editable con campos comunes
     this.editableUsuario = {
@@ -177,10 +366,115 @@ export class Usuario implements OnInit {
       claveUsuario: u.claveUsuario,
       nivel: u.nivel,
       correo: u.correo,
-      empresa: u.empresa,
-      sucursal: u.sucursal,
+      claveCorreo: (u as any).claveCorreo,
+      idtipoUsuario: Number((u as any).idtipoUsuario || 0) || undefined,
+      idpermiso: Number((u as any).idpermiso || 0) || undefined,
+      cod_empre: codEmpre || undefined,
+      empresa: emp?.nom_empre || u.empresa || '',
+      sucursalid,
+      sucursal: sucursalid,
     };
+    this.resetValidacionesEditarUsuario();
     $('#modalEditarUsuario').modal('show');
+  }
+
+  private resetValidacionesEditarUsuario(): void {
+    this.editUsernameExiste = false;
+    this.editClaveExiste = false;
+    this.editUsernameMensaje = '';
+    this.editClaveMensaje = '';
+    this.validandoEditUsername = false;
+    this.validandoEditClave = false;
+    if (this.editUsernameDebounce) clearTimeout(this.editUsernameDebounce);
+    if (this.editClaveDebounce) clearTimeout(this.editClaveDebounce);
+  }
+
+  onEditarIdUsuarioInput(value: string): void {
+    const upper = String(value || '').toUpperCase().trim();
+    (this.editableUsuario as any).idUsuario = upper;
+
+    this.editUsernameExiste = false;
+    this.editUsernameMensaje = '';
+    this.validandoEditUsername = false;
+    if (this.editUsernameDebounce) clearTimeout(this.editUsernameDebounce);
+
+    if (!upper) return;
+
+    const original = String(this.selectedUsuario?.idUsuario || '').trim().toUpperCase();
+    if (upper === original) return;
+
+    const codActual = Number(this.selectedUsuario?.codUsuario || 0);
+    const existeLocal = this.usuarios.some((u) => {
+      const cod = Number(u?.codUsuario || 0);
+      const id = String(u?.idUsuario || '').trim().toUpperCase();
+      return cod !== codActual && id === upper;
+    });
+    if (existeLocal) {
+      this.editUsernameExiste = true;
+      this.editUsernameMensaje = 'Ese nombre de usuario ya existe.';
+      return;
+    }
+
+    this.validandoEditUsername = true;
+    this.editUsernameDebounce = setTimeout(() => {
+      this.usuarioSrv.existeUsuarioPorId(upper).subscribe({
+        next: (existe: boolean) => {
+          this.validandoEditUsername = false;
+          this.editUsernameExiste = !!existe;
+          this.editUsernameMensaje = existe ? 'Ese nombre de usuario ya existe.' : '';
+        },
+        error: () => {
+          this.validandoEditUsername = false;
+          this.editUsernameMensaje = 'No se pudo validar el nombre de usuario.';
+        }
+      });
+    }, 250);
+  }
+
+  onEditarClaveUsuarioInput(value: string): void {
+    const clave = String(value || '').slice(0, 4);
+    (this.editableUsuario as any).claveUsuario = clave;
+
+    this.editClaveExiste = false;
+    this.editClaveMensaje = '';
+    this.validandoEditClave = false;
+    if (this.editClaveDebounce) clearTimeout(this.editClaveDebounce);
+
+    if (!clave) return;
+    if (clave.length < 4) {
+      this.editClaveMensaje = 'La clave debe tener 4 caracteres.';
+      return;
+    }
+
+    const original = String((this.selectedUsuario as any)?.claveUsuario || '').trim();
+    if (clave === original) return;
+
+    const codActual = Number(this.selectedUsuario?.codUsuario || 0);
+    const existeLocal = this.usuarios.some((u: any) => {
+      const cod = Number(u?.codUsuario || 0);
+      const claveUsr = String(u?.claveUsuario || '').trim();
+      return cod !== codActual && claveUsr === clave;
+    });
+    if (existeLocal) {
+      this.editClaveExiste = true;
+      this.editClaveMensaje = 'Esa clave ya existe.';
+      return;
+    }
+
+    this.validandoEditClave = true;
+    this.editClaveDebounce = setTimeout(() => {
+      this.usuarioSrv.existeClaveUsuario(clave).subscribe({
+        next: (existe: boolean) => {
+          this.validandoEditClave = false;
+          this.editClaveExiste = !!existe;
+          this.editClaveMensaje = existe ? 'Esa clave ya existe.' : '';
+        },
+        error: () => {
+          this.validandoEditClave = false;
+          this.editClaveMensaje = 'No se pudo validar la clave.';
+        }
+      });
+    }, 250);
   }
 
   guardarEdicionUsuario(form: NgForm): void {
@@ -193,14 +487,71 @@ export class Usuario implements OnInit {
       return;
     }
     const id = Number(this.selectedUsuario.codUsuario);
-    this.usuarioSrv.editarUsuario(id, this.editableUsuario as any).subscribe({
-      next: () => {
-        this.cargarUsuarios();
-        $('#modalEditarUsuario').modal('hide');
-        this.fireToast({ title: 'Usuario actualizado', icon: 'success' });
+    const payload: any = { ...(this.editableUsuario as any) };
+    payload.idUsuario = String(payload.idUsuario || '').trim().toUpperCase();
+    payload.claveUsuario = String(payload.claveUsuario || '');
+
+    if (payload.claveUsuario.length !== 4) {
+      this.fireToast({ title: 'La clave debe tener exactamente 4 caracteres', icon: 'warning' });
+      return;
+    }
+    if (this.editUsernameExiste || this.editClaveExiste || this.validandoEditUsername || this.validandoEditClave) {
+      this.fireToast({ title: 'Corrige usuario/clave antes de guardar', icon: 'warning' });
+      return;
+    }
+
+    payload.nombreUsuario = String(payload.nombreUsuario || '').trim();
+    payload.cod_empre = String(payload.cod_empre || '').trim() || null;
+    payload.idtipoUsuario = Number(payload.idtipoUsuario || 0) || null;
+    payload.idpermiso = Number(payload.idpermiso || 0) || null;
+
+    const sucursalid = Number(payload.sucursalid ?? payload.sucursal ?? 0) || null;
+    payload.sucursalid = sucursalid;
+    payload.sucursal = sucursalid;
+
+    if (!payload.cod_empre && sucursalid) {
+      const suc = this.sucursales.find((s: any) => Number(s?.cod_sucursal) === Number(sucursalid));
+      if (suc?.cod_empre) {
+        payload.cod_empre = String(suc.cod_empre);
+      }
+    }
+
+    const originalId = String(this.selectedUsuario.idUsuario || '').trim().toUpperCase();
+    const originalClave = String((this.selectedUsuario as any).claveUsuario || '').trim();
+    const cambioUsuario = payload.idUsuario !== originalId;
+    const cambioClave = payload.claveUsuario !== originalClave;
+
+    forkJoin([
+      cambioUsuario ? this.usuarioSrv.existeUsuarioPorId(payload.idUsuario) : of(false),
+      cambioClave ? this.usuarioSrv.existeClaveUsuario(payload.claveUsuario) : of(false),
+    ]).subscribe({
+      next: ([existeId, existeClave]) => {
+        if (existeId) {
+          this.editUsernameExiste = true;
+          this.editUsernameMensaje = 'Ese nombre de usuario ya existe.';
+          this.fireToast({ title: 'Ese nombre de usuario ya existe', icon: 'warning' });
+          return;
+        }
+        if (existeClave) {
+          this.editClaveExiste = true;
+          this.editClaveMensaje = 'Esa clave ya existe.';
+          this.fireToast({ title: 'Esa clave ya existe', icon: 'warning' });
+          return;
+        }
+
+        this.usuarioSrv.editarUsuario(id, payload as any).subscribe({
+          next: () => {
+            this.cargarUsuarios();
+            $('#modalEditarUsuario').modal('hide');
+            this.fireToast({ title: 'Usuario actualizado', icon: 'success' });
+          },
+          error: () => {
+            this.fireToast({ title: 'Error al actualizar usuario', icon: 'error' });
+          }
+        });
       },
       error: () => {
-        this.fireToast({ title: 'Error al actualizar usuario', icon: 'error' });
+        this.fireToast({ title: 'No se pudo validar duplicados en servidor', icon: 'error' });
       }
     });
   }
@@ -217,10 +568,102 @@ export class Usuario implements OnInit {
       idtipoUsuario: undefined,
       sucursalid: undefined,
       idpermiso: undefined,
-      cod_empre: '',
+      cod_empre: undefined,
+      empresa: '',
     } as any;
     this.detallesTipoSeleccionado = [];
+    this.accionesPermisosCatalogo = [];
+    this.permisosMatrizNuevoUsuario = [];
+    this.resetValidacionesNuevoUsuario();
+    this.construirPlantillaPermisosNuevoUsuario();
     $('#modalNuevoUsuario').modal('show');
+  }
+
+  private resetValidacionesNuevoUsuario(): void {
+    this.usernameExiste = false;
+    this.claveExiste = false;
+    this.usernameMensaje = '';
+    this.claveMensaje = '';
+    this.validandoUsername = false;
+    this.validandoClave = false;
+    if (this.usernameDebounce) clearTimeout(this.usernameDebounce);
+    if (this.claveDebounce) clearTimeout(this.claveDebounce);
+  }
+
+  onNuevoIdUsuarioInput(value: string): void {
+    const upper = String(value || '').toUpperCase().trim();
+    (this.nuevoUsuario as any).idUsuario = upper;
+
+    this.usernameExiste = false;
+    this.usernameMensaje = '';
+    this.validandoUsername = false;
+    if (this.usernameDebounce) clearTimeout(this.usernameDebounce);
+
+    if (!upper) return;
+
+    const existeLocal = this.usuarios.some(
+      (u) => String(u?.idUsuario || '').trim().toUpperCase() === upper
+    );
+    if (existeLocal) {
+      this.usernameExiste = true;
+      this.usernameMensaje = 'Ese nombre de usuario ya existe.';
+      return;
+    }
+
+    this.validandoUsername = true;
+    this.usernameDebounce = setTimeout(() => {
+      this.usuarioSrv.existeUsuarioPorId(upper).subscribe({
+        next: (existe: boolean) => {
+          this.validandoUsername = false;
+          this.usernameExiste = !!existe;
+          this.usernameMensaje = existe ? 'Ese nombre de usuario ya existe.' : '';
+        },
+        error: () => {
+          this.validandoUsername = false;
+          this.usernameMensaje = 'No se pudo validar el nombre de usuario.';
+        }
+      });
+    }, 250);
+  }
+
+  onNuevoClaveUsuarioInput(value: string): void {
+    const clave = String(value || '').slice(0, 4);
+    (this.nuevoUsuario as any).claveUsuario = clave;
+
+    this.claveExiste = false;
+    this.claveMensaje = '';
+    this.validandoClave = false;
+    if (this.claveDebounce) clearTimeout(this.claveDebounce);
+
+    if (!clave) return;
+    if (clave.length < 4) {
+      this.claveMensaje = 'La clave debe tener 4 caracteres.';
+      return;
+    }
+
+    const existeLocal = this.usuarios.some(
+      (u) => String((u as any)?.claveUsuario || '').trim() === clave
+    );
+    if (existeLocal) {
+      this.claveExiste = true;
+      this.claveMensaje = 'Esa clave ya existe.';
+      return;
+    }
+
+    this.validandoClave = true;
+    this.claveDebounce = setTimeout(() => {
+      this.usuarioSrv.existeClaveUsuario(clave).subscribe({
+        next: (existe: boolean) => {
+          this.validandoClave = false;
+          this.claveExiste = !!existe;
+          this.claveMensaje = existe ? 'Esa clave ya existe.' : '';
+        },
+        error: () => {
+          this.validandoClave = false;
+          this.claveMensaje = 'No se pudo validar la clave.';
+        }
+      });
+    }, 250);
   }
 
   onTipoUsuarioChange(idtipo: number | undefined): void {
@@ -230,6 +673,7 @@ export class Usuario implements OnInit {
       next: (res: any) => {
         const tipo = Array.isArray(res?.data) ? res.data[0] : (res?.data ?? res);
         this.detallesTipoSeleccionado = Array.isArray(tipo?.dtipousuarios) ? tipo.dtipousuarios : [];
+        this.aplicarPermisosTipoSeleccionadoEnMatriz(this.detallesTipoSeleccionado);
       },
       error: () => {
         this.detallesTipoSeleccionado = [];
@@ -242,52 +686,121 @@ export class Usuario implements OnInit {
       this.fireToast({ title: 'Formulario inválido', icon: 'warning' });
       return;
     }
+    const idNuevoForm = String((this.nuevoUsuario as any)?.idUsuario || '')
+      .trim()
+      .toUpperCase();
+    (this.nuevoUsuario as any).idUsuario = idNuevoForm;
+    const claveNueva = String((this.nuevoUsuario as any)?.claveUsuario || '');
+
+    if (claveNueva.length !== 4) {
+      this.fireToast({ title: 'La clave debe tener exactamente 4 caracteres', icon: 'warning' });
+      return;
+    }
+    if (this.usernameExiste || this.claveExiste || this.validandoUsername || this.validandoClave) {
+      this.fireToast({ title: 'Corrige usuario/clave antes de guardar', icon: 'warning' });
+      return;
+    }
+
     // Validación de duplicado: por codUsuario o idUsuario
     const codNuevo = Number((this.nuevoUsuario as any)?.codUsuario);
-    const idNuevo = String((this.nuevoUsuario as any)?.idUsuario || '').trim().toLowerCase();
+    const idNuevo = idNuevoForm.toLowerCase();
     const existeUsuario = this.usuarios.some(u => Number(u?.codUsuario) === codNuevo || String(u?.idUsuario || '').trim().toLowerCase() === idNuevo);
     if (existeUsuario) {
       this.fireToast({ title: 'Usuario duplicado', icon: 'warning' });
       return;
     }
-    this.usuarioSrv.guardarUsuario(this.nuevoUsuario as any).subscribe({
-      next: (res) => {
-        // Intentar obtener el codUsuario creado
-        const nuevoCod = Number(res?.data?.codUsuario ?? res?.codUsuario ?? (Array.isArray(res?.data) ? res.data[0]?.codUsuario : undefined));
-        const continuar = (cod: number | undefined) => {
-          if (!cod || isNaN(cod)) {
-            // Buscar por idUsuario si no vino el id
-            const clave = String((this.nuevoUsuario as any)?.idUsuario || '');
-            this.usuarioSrv.buscarUsuarioPorClave(clave).subscribe({
-              next: (buscado) => {
-                const usuarioEncontrado = Array.isArray(buscado?.data) ? buscado.data[0] : (buscado?.data ?? buscado);
-                const codEncontrado = Number(usuarioEncontrado?.codUsuario);
-                if (codEncontrado) {
-                  this.persistirPermisosDesdeDetalles(codEncontrado);
-                } else {
-                  this.fireToast({ title: 'Usuario creado (sin permisos por tipo)', icon: 'info' });
-                }
+    const existeClave = this.usuarios.some(
+      (u) => String((u as any)?.claveUsuario || '').trim() === claveNueva
+    );
+    if (existeClave) {
+      this.fireToast({ title: 'Esa clave ya existe', icon: 'warning' });
+      return;
+    }
+    const payload: any = { ...(this.nuevoUsuario as any) };
+    payload.idUsuario = String(payload.idUsuario || '').trim();
+    payload.nombreUsuario = String(payload.nombreUsuario || '').trim();
+    payload.cod_empre = String(payload.cod_empre || '').trim() || null;
+    payload.idtipoUsuario = Number(payload.idtipoUsuario || 0) || null;
+    payload.idpermiso = Number(payload.idpermiso || 0) || null;
+    const sucursalid = Number(payload.sucursalid ?? payload.sucursal ?? 0) || null;
+    payload.sucursalid = sucursalid;
+    payload.sucursal = sucursalid;
+
+    if (!payload.cod_empre && sucursalid) {
+      const suc = this.sucursales.find((s: any) => Number(s?.cod_sucursal) === Number(sucursalid));
+      if (suc?.cod_empre) {
+        payload.cod_empre = String(suc.cod_empre);
+      }
+    }
+
+    forkJoin([
+      this.usuarioSrv.existeUsuarioPorId(idNuevoForm),
+      this.usuarioSrv.existeClaveUsuario(claveNueva),
+    ]).subscribe({
+      next: ([existeId, existeClaveSrv]) => {
+        if (existeId) {
+          this.usernameExiste = true;
+          this.usernameMensaje = 'Ese nombre de usuario ya existe.';
+          this.fireToast({ title: 'Ese nombre de usuario ya existe', icon: 'warning' });
+          return;
+        }
+        if (existeClaveSrv) {
+          this.claveExiste = true;
+          this.claveMensaje = 'Esa clave ya existe.';
+          this.fireToast({ title: 'Esa clave ya existe', icon: 'warning' });
+          return;
+        }
+
+        this.usuarioSrv.guardarUsuario(payload as any).subscribe({
+          next: (res) => {
+            // Intentar obtener el codUsuario creado
+            const nuevoCod = Number(res?.data?.codUsuario ?? res?.codUsuario ?? (Array.isArray(res?.data) ? res.data[0]?.codUsuario : undefined));
+            const continuar = (cod: number | undefined) => {
+              const empresaScope = String(payload?.cod_empre || '').trim() || null;
+              const sucursalScope = Number(payload?.sucursalid || 0) || null;
+              if (!cod || isNaN(cod)) {
+                // Buscar por idUsuario si no vino el id
+                const clave = String((this.nuevoUsuario as any)?.idUsuario || '');
+                this.usuarioSrv.buscarUsuarioPorClave(clave).subscribe({
+                  next: (buscado) => {
+                    const usuarioEncontrado = Array.isArray(buscado?.data) ? buscado.data[0] : (buscado?.data ?? buscado);
+                    const codEncontrado = Number(usuarioEncontrado?.codUsuario);
+                    if (codEncontrado) {
+                      this.persistirPermisosSeleccionados(codEncontrado, empresaScope, sucursalScope);
+                    } else {
+                      this.fireToast({ title: 'Usuario creado (sin permisos por tipo)', icon: 'info' });
+                    }
+                    this.cargarUsuarios();
+                    $('#modalNuevoUsuario').modal('hide');
+                    this.fireToast({ title: 'Usuario creado', icon: 'success' });
+                  },
+                  error: () => {
+                    this.cargarUsuarios();
+                    $('#modalNuevoUsuario').modal('hide');
+                    this.fireToast({ title: 'Usuario creado (no se pudieron cargar permisos)', icon: 'warning' });
+                  }
+                });
+              } else {
+                this.persistirPermisosSeleccionados(cod, empresaScope, sucursalScope);
                 this.cargarUsuarios();
                 $('#modalNuevoUsuario').modal('hide');
                 this.fireToast({ title: 'Usuario creado', icon: 'success' });
-              },
-              error: () => {
-                this.cargarUsuarios();
-                $('#modalNuevoUsuario').modal('hide');
-                this.fireToast({ title: 'Usuario creado (no se pudieron cargar permisos)', icon: 'warning' });
               }
-            });
-          } else {
-            this.persistirPermisosDesdeDetalles(cod);
-            this.cargarUsuarios();
-            $('#modalNuevoUsuario').modal('hide');
-            this.fireToast({ title: 'Usuario creado', icon: 'success' });
+            };
+            continuar(nuevoCod);
+          },
+          error: (error: any) => {
+            const msg = this.traducirError(
+              error?.error?.message ||
+              error?.message ||
+              'Error al crear usuario'
+            );
+            this.fireToast({ title: msg, icon: 'error' });
           }
-        };
-        continuar(nuevoCod);
+        });
       },
       error: () => {
-        this.fireToast({ title: 'Error al crear usuario', icon: 'error' });
+        this.fireToast({ title: 'No se pudo validar duplicados en servidor', icon: 'error' });
       }
     });
   }
@@ -315,26 +828,78 @@ export class Usuario implements OnInit {
     });
   }
 
-  onSucursalChange(sucursalId: number | undefined): void {
+  private persistirPermisosSeleccionados(
+    codusuario: number,
+    codEmpre?: string | null,
+    sucursalid?: number | null
+  ): void {
+    if (!codusuario) return;
+
+    const filas = Array.isArray(this.permisosMatrizNuevoUsuario)
+      ? this.permisosMatrizNuevoUsuario
+      : [];
+
+    if (!this.hayPermisosSeleccionados(filas)) {
+      // Fallback para compatibilidad con el detalle heredado del tipo.
+      this.persistirPermisosDesdeDetalles(codusuario);
+      return;
+    }
+
+    this.permisoSrv.guardarMatrizPermisosUsuario(codusuario, filas, codEmpre, sucursalid).subscribe({
+      next: () => {
+        this.fireToast({ title: 'Permisos del usuario guardados', icon: 'success' });
+      },
+      error: () => {
+        // fallback legacy para no perder la creación de usuario
+        this.persistirPermisosDesdeDetalles(codusuario);
+        this.fireToast({ title: 'No se pudo guardar la matriz de permisos, se aplicó plantilla básica', icon: 'warning' });
+      }
+    });
+  }
+
+  get sucursalesFiltradasNuevo(): any[] {
+    const codEmpre = String((this.nuevoUsuario as any)?.cod_empre || '').trim();
+    if (!codEmpre) return this.sucursales;
+    return this.sucursales.filter((s: any) => String(s?.cod_empre || '').trim() === codEmpre);
+  }
+
+  get sucursalesFiltradasEdicion(): any[] {
+    const codEmpre = String((this.editableUsuario as any)?.cod_empre || '').trim();
+    if (!codEmpre) return this.sucursales;
+    return this.sucursales.filter((s: any) => String(s?.cod_empre || '').trim() === codEmpre);
+  }
+
+  onEmpresaChange(codEmpre: string | undefined, modo: 'nuevo' | 'editar' = 'nuevo'): void {
+    const codigo = String(codEmpre || '').trim();
+    const target: any = modo === 'nuevo' ? this.nuevoUsuario : this.editableUsuario;
+    target.cod_empre = codigo || undefined;
+    const empresa = this.empresas.find((e: any) => String(e?.cod_empre || '').trim() === codigo);
+    target.empresa = empresa?.nom_empre || '';
+
+    const sucursalidActual = Number(target?.sucursalid ?? target?.sucursal ?? 0) || 0;
+    if (sucursalidActual) {
+      const suc = this.sucursales.find((s: any) => Number(s?.cod_sucursal) === sucursalidActual);
+      if (!suc || String(suc?.cod_empre || '').trim() !== codigo) {
+        target.sucursalid = undefined;
+        target.sucursal = undefined;
+      }
+    }
+  }
+
+  onSucursalChange(sucursalId: number | undefined, modo: 'nuevo' | 'editar' = 'nuevo'): void {
     if (!sucursalId) { return; }
     const s = this.sucursales.find((x: any) => Number(x?.cod_sucursal) === Number(sucursalId));
+    const target: any = modo === 'nuevo' ? this.nuevoUsuario : this.editableUsuario;
     if (s) {
-      (this.nuevoUsuario as any).sucursalid = sucursalId;
-      (this.nuevoUsuario as any).sucursal = sucursalId; // mantener compatibilidad con backend existente
-      (this.nuevoUsuario as any).cod_empre = s.cod_empre ?? (this.nuevoUsuario as any).cod_empre;
+      target.sucursalid = sucursalId;
+      target.sucursal = sucursalId; // compatibilidad
+      target.cod_empre = s.cod_empre ?? target.cod_empre;
       // Buscar nombre de la empresa por código y reflejarlo en el formulario
       if (s.cod_empre) {
-        this.empresaSrv.buscarEmpres(String(s.cod_empre)).subscribe({
-          next: (res: any) => {
-            const empresa = Array.isArray(res?.data) ? res.data[0] : (res?.data ?? res);
-            (this.nuevoUsuario as any).empresa = String(empresa?.nom_empre || '').trim();
-          },
-          error: () => {
-            (this.nuevoUsuario as any).empresa = '';
-          }
-        });
+        const empresa = this.empresas.find((e: any) => String(e?.cod_empre || '').trim() === String(s.cod_empre).trim());
+        target.empresa = String(empresa?.nom_empre || '').trim();
       } else {
-        (this.nuevoUsuario as any).empresa = '';
+        target.empresa = '';
       }
     }
   }

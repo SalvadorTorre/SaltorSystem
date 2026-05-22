@@ -1,8 +1,11 @@
 import { Component, OnInit } from '@angular/core';
 import { NgForm } from '@angular/forms';
+import { forkJoin } from 'rxjs';
 import { ServicioPermiso } from 'src/app/core/services/mantenimientos/permiso/permiso.service';
 import { ServicioModulo } from 'src/app/core/services/mantenimientos/modulo/modulo.service';
 import { ServicioUsuario } from 'src/app/core/services/mantenimientos/usuario/usuario.service';
+
+declare var $: any;
 
 @Component({
   selector: 'app-config-permiso',
@@ -13,11 +16,15 @@ export class PermisoPage implements OnInit {
   permisos: any[] = [];
   modulos: any[] = [];
   usuarios: any[] = [];
+  recursos: any[] = [];
+  acciones: any[] = [];
+  modo: 'v2' | 'legacy' = 'legacy';
 
   filtro = '';
 
-  actual: any = { idusuario: '', idmodulo: undefined, acceso: 'N', lectura: 'N' };
-  editIndex = -1;
+  actual: any = this.buildActual();
+  editando: any = null;
+  guardando = false;
 
   constructor(
     private permisoSrv: ServicioPermiso,
@@ -27,6 +34,18 @@ export class PermisoPage implements OnInit {
 
   ngOnInit(): void {
     this.cargarDatosIniciales();
+  }
+
+  private buildActual(): any {
+    return {
+      idpermiso: null,
+      codusuario: null,
+      idmodulo: null,
+      recurso_key: null,
+      cod_empre: null,
+      sucursalid: null,
+      acciones: {}
+    };
   }
 
   private unwrapList(res: any): any[] {
@@ -39,15 +58,54 @@ export class PermisoPage implements OnInit {
   }
 
   cargarDatosIniciales(): void {
-    this.cargarPermisos();
-    this.cargarModulos();
-    this.cargarUsuarios();
+    forkJoin({
+      accionesRes: this.permisoSrv.obtenerAccionesCatalogo(),
+      recursosRes: this.permisoSrv.obtenerRecursosCatalogo(),
+      modulosRes: this.moduloSrv.obtenerTodosModulo(),
+      usuariosRes: this.usuarioSrv.buscarTodosUsuario(1, 500),
+    }).subscribe({
+      next: ({ accionesRes, recursosRes, modulosRes, usuariosRes }) => {
+        this.acciones = this.unwrapList(accionesRes);
+        this.recursos = this.unwrapList(recursosRes);
+        this.modulos = this.unwrapList(modulosRes);
+        this.usuarios = this.unwrapList(usuariosRes);
+        this.cargarPermisos();
+      },
+      error: () => {
+        this.acciones = [];
+        this.recursos = [];
+        this.modulos = [];
+        this.usuarios = [];
+        this.permisos = [];
+      }
+    });
   }
 
   cargarPermisos(): void {
-    this.permisoSrv.obtenerTodosPermiso().subscribe({
+    this.permisoSrv.obtenerListadoPermisosCrud().subscribe({
       next: (res) => {
-        this.permisos = this.unwrapList(res);
+        const payload = res?.data || {};
+        this.modo = payload?.modo === 'v2' ? 'v2' : 'legacy';
+        this.permisos = Array.isArray(payload?.rows) ? payload.rows : this.unwrapList(res);
+        const accionesPayload = Array.isArray(payload?.acciones) ? payload.acciones : [];
+        if (this.modo === 'v2' && accionesPayload.length) {
+          this.acciones = accionesPayload;
+        }
+        if (this.modo !== 'v2' && !this.acciones.length) {
+          this.acciones = [
+            { accion_key: 'acceso', descripcion: 'Acceso', orden: 10 },
+            { accion_key: 'lectura', descripcion: 'Lectura', orden: 20 },
+          ];
+        }
+        if (this.modo !== 'v2') {
+          this.permisos = (this.permisos || []).map((p: any) => ({
+            ...p,
+            acciones: {
+              acceso: String(p?.acceso || 'N').toUpperCase() === 'S',
+              lectura: String(p?.lectura || 'N').toUpperCase() === 'S',
+            }
+          }));
+        }
       },
       error: () => {
         this.permisos = [];
@@ -55,116 +113,143 @@ export class PermisoPage implements OnInit {
     });
   }
 
-  cargarModulos(): void {
-    this.moduloSrv.obtenerTodosModulo().subscribe({
-      next: (res) => {
-        this.modulos = this.unwrapList(res);
-      },
-      error: () => {
-        this.modulos = [];
-      }
-    });
-  }
-
-  cargarUsuarios(): void {
-    // Trae la primera página con un tamaño grande para poblar el combo
-    this.usuarioSrv.buscarTodosUsuario(1, 200).subscribe({
-      next: (res) => {
-        this.usuarios = this.unwrapList(res);
-      },
-      error: () => {
-        this.usuarios = [];
-      }
-    });
+  nombreUsuario(codusuario?: number | string): string {
+    const cod = Number(codusuario || 0);
+    if (!cod) return '-';
+    const u = this.usuarios.find((x: any) => Number(x?.codUsuario) === cod);
+    if (!u) return `Usuario ${cod}`;
+    return `${u?.nombreUsuario || '-'} (${u?.idUsuario || cod})`;
   }
 
   descModulo(id?: number): string {
     if (!id) return '-';
-    const m = this.modulos.find((x: any) => x?.idmodulo === id);
+    const m = this.modulos.find((x: any) => Number(x?.idmodulo) === Number(id));
     return m?.descmodulo || '-';
   }
 
-  nombreUsuario(idCodUsuario?: number | string): string {
-    if (idCodUsuario === undefined || idCodUsuario === null || idCodUsuario === '') return '-';
-    const cod = Number(idCodUsuario);
-    const u = this.usuarios.find((x: any) => Number(x?.codUsuario) === cod);
-    return u?.nombreUsuario || '-';
+  descPantalla(p: any): string {
+    if (this.modo === 'v2') return p?.pantalla_nombre || p?.recurso_key || '-';
+    return this.descModulo(p?.idmodulo);
   }
 
   get listaFiltrada(): any[] {
     const q = this.filtro.trim().toLowerCase();
     if (!q) return this.permisos;
     return this.permisos.filter((p: any) => {
-      const moduloDesc = this.descModulo(p?.idmodulo).toLowerCase();
-      const usuarioNombre = this.nombreUsuario(p?.idusuario).toLowerCase();
-      return (String(p?.idpermiso || '')).includes(q)
-        || (String(p?.idusuario || '')).toLowerCase().includes(q)
-        || usuarioNombre.includes(q)
-        || (String(p?.acceso || '')).toLowerCase().includes(q)
-        || (String(p?.lectura || '')).toLowerCase().includes(q)
-        || moduloDesc.includes(q);
+      const usuario = this.nombreUsuario(p?.codusuario ?? p?.idusuario).toLowerCase();
+      const modulo = String(p?.modulo_nombre || this.descModulo(p?.idmodulo) || '').toLowerCase();
+      const pantalla = this.descPantalla(p).toLowerCase();
+      const empresa = String(p?.cod_empre || '').toLowerCase();
+      const sucursal = String(p?.sucursalid || '').toLowerCase();
+      return usuario.includes(q)
+        || modulo.includes(q)
+        || pantalla.includes(q)
+        || empresa.includes(q)
+        || sucursal.includes(q);
     });
   }
 
-  abrirModalNuevo(): void {
-    this.editIndex = -1;
-    this.actual = { idusuario: '', idmodulo: undefined, acceso: 'N', lectura: 'N' };
+  private buildAccionesDefault(): Record<string, boolean> {
+    const out: Record<string, boolean> = {};
+    this.acciones.forEach((a: any) => {
+      const key = String(a?.accion_key || '').trim();
+      if (key) out[key] = false;
+    });
+    if (!Object.keys(out).length) {
+      out['acceso'] = false;
+      out['lectura'] = false;
+    }
+    return out;
   }
 
-  abrirModalEditar(p: any, idx: number): void {
-    this.editIndex = idx;
-    // Clonar para no mutar directamente
-    this.actual = { idusuario: p?.idusuario, idmodulo: p?.idmodulo, acceso: p?.acceso, lectura: p?.lectura };
+  abrirModalNuevo(): void {
+    this.editando = null;
+    this.actual = this.buildActual();
+    this.actual.acciones = this.buildAccionesDefault();
+  }
+
+  abrirModalEditar(p: any): void {
+    this.editando = p;
+    const baseAcciones = this.buildAccionesDefault();
+    const accionesActuales = { ...(p?.acciones || {}) };
+    Object.keys(accionesActuales).forEach((k: string) => {
+      baseAcciones[k] = !!accionesActuales[k];
+    });
+
+    this.actual = {
+      idpermiso: p?.idpermiso ?? null,
+      codusuario: Number(p?.codusuario ?? p?.idusuario ?? 0) || null,
+      idmodulo: Number(p?.idmodulo || 0) || null,
+      recurso_key: p?.recurso_key || null,
+      cod_empre: p?.cod_empre || null,
+      sucursalid: Number(p?.sucursalid || 0) || null,
+      acciones: baseAcciones,
+    };
+  }
+
+  private validarFormulario(): string | null {
+    const cod = Number(this.actual?.codusuario || 0);
+    if (!cod) return 'Debes seleccionar un usuario.';
+
+    if (this.modo === 'v2') {
+      const recurso = String(this.actual?.recurso_key || '').trim();
+      if (!recurso) return 'Debes seleccionar una pantalla/recurso.';
+      const hayAccion = Object.values(this.actual?.acciones || {}).some((v: any) => !!v);
+      if (!hayAccion) return 'Debes seleccionar al menos una acción.';
+      return null;
+    }
+
+    const idmod = Number(this.actual?.idmodulo || 0);
+    if (!idmod) return 'Debes seleccionar un módulo.';
+    return null;
   }
 
   guardarPermiso(form: NgForm): void {
     if (!form.valid) return;
-    const idusuario = Number(this.actual.idusuario);
-    const idmodulo = Number(this.actual.idmodulo);
-    const acceso = (this.actual.acceso || 'N').toUpperCase();
-    const lectura = (this.actual.lectura || 'N').toUpperCase();
-
-    if (!idusuario || isNaN(idusuario)) return;
-    if (!idmodulo || isNaN(idmodulo)) return;
-    if (!['S', 'N'].includes(acceso) || !['S', 'N'].includes(lectura)) return;
-
-    const payload = { idusuario, idmodulo, acceso, lectura };
-
-    if (this.editIndex >= 0) {
-      const edit = this.permisos[this.editIndex];
-      this.permisoSrv.editarPermiso(edit.idpermiso, payload).subscribe({
-        next: () => {
-          // Actualiza localmente y recarga
-          edit.idusuario = idusuario;
-          edit.idmodulo = idmodulo;
-          edit.acceso = acceso;
-          edit.lectura = lectura;
-          this.cargarPermisos();
-        },
-        error: () => {}
-      });
-    } else {
-      this.permisoSrv.guardarPermiso(payload).subscribe({
-        next: () => {
-          this.cargarPermisos();
-        },
-        error: () => {}
-      });
+    const errorValidacion = this.validarFormulario();
+    if (errorValidacion) {
+      alert(errorValidacion);
+      return;
     }
 
-    // Reset modal/form
-    this.editIndex = -1;
-    this.actual = { idusuario: '', idmodulo: undefined, acceso: 'N', lectura: 'N' };
-    form.resetForm({ idusuario: '', idmodulo: undefined, acceso: 'N', lectura: 'N' });
+    const payload: any = {
+      idpermiso: this.actual?.idpermiso ?? null,
+      codusuario: Number(this.actual?.codusuario || 0) || null,
+      idusuario: Number(this.actual?.codusuario || 0) || null,
+      idmodulo: Number(this.actual?.idmodulo || 0) || null,
+      recurso_key: this.actual?.recurso_key || null,
+      cod_empre: String(this.actual?.cod_empre || '').trim() || null,
+      sucursalid: Number(this.actual?.sucursalid || 0) || null,
+      acciones: { ...(this.actual?.acciones || {}) },
+      acceso: this.actual?.acciones?.acceso ? 'S' : 'N',
+      lectura: this.actual?.acciones?.lectura ? 'S' : 'N',
+    };
+
+    this.guardando = true;
+    this.permisoSrv.guardarRegistroPermisoCrud(payload).subscribe({
+      next: () => {
+        this.guardando = false;
+        this.cargarPermisos();
+        this.editando = null;
+        this.actual = this.buildActual();
+        $('#permisoModal').modal('hide');
+      },
+      error: (err) => {
+        this.guardando = false;
+        alert(String(err?.message || 'No se pudo guardar el permiso.'));
+      }
+    });
   }
 
   eliminarPermiso(p: any): void {
-    if (!p || !p.idpermiso) return;
-    this.permisoSrv.eliminarPermiso(p.idpermiso).subscribe({
+    if (!confirm('¿Eliminar este permiso?')) return;
+    this.permisoSrv.eliminarRegistroPermisoCrud(p).subscribe({
       next: () => {
         this.cargarPermisos();
       },
-      error: () => {}
+      error: (err) => {
+        alert(String(err?.message || 'No se pudo eliminar el permiso.'));
+      }
     });
   }
 }

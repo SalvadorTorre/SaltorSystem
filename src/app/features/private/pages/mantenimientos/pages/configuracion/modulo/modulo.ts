@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { NgForm } from '@angular/forms';
 import { ModuloModel, Modulo } from './modelo';
 import { ServicioModulo } from 'src/app/core/services/mantenimientos/modulo/modulo.service';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-config-modulo',
@@ -11,6 +12,13 @@ import { ServicioModulo } from 'src/app/core/services/mantenimientos/modulo/modu
 export class ModuloPage implements OnInit {
   modulos: Modulo[] = [];
   filtro = '';
+  Toast = (Swal as any).mixin({
+    toast: true,
+    position: 'bottom-start',
+    showConfirmButton: false,
+    timer: 5000,
+    timerProgressBar: true
+  });
 
   // modelo para el formulario de nuevo módulo
   nuevo: Partial<Modulo> = {
@@ -22,8 +30,39 @@ export class ModuloPage implements OnInit {
 
   constructor(private moduloSrv: ServicioModulo) {}
 
+  private obtenerMensajeError(err: any): string {
+    return (
+      err?.error?.message
+      || err?.message
+      || err?.details
+      || 'Error inesperado con modulos.'
+    );
+  }
+
+  private cerrarModal(id: string): void {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const bs = (window as any)?.bootstrap;
+    if (!bs?.Modal) return;
+    const instance = bs.Modal.getInstance(el) || new bs.Modal(el);
+    instance.hide();
+  }
+
   ngOnInit(): void {
+    this.limpiarBloqueoModal();
     this.cargarModulos();
+  }
+
+  abrirNuevoModal(): void {
+    this.limpiarBloqueoModal();
+    const el = document.getElementById('nuevoModuloModal');
+    if (!el) return;
+    const bs = (window as any)?.bootstrap;
+    if (!bs?.Modal) {
+      return;
+    }
+    const instance = bs.Modal.getOrCreateInstance(el);
+    instance.show();
   }
 
   cargarModulos(): void {
@@ -41,8 +80,7 @@ export class ModuloPage implements OnInit {
       },
       error: (err) => {
         console.error('Error cargando módulos', err);
-        // Fallback opcional si falla: mantener lista vacía
-         alert(err.error.message); // “El módulo 'Contabilidad' ya existe.”
+        this.Toast.fire({ title: this.obtenerMensajeError(err), icon: 'error' as any });
         this.modulos = [];
       }
 
@@ -62,13 +100,17 @@ export class ModuloPage implements OnInit {
   }
 
   crearModulo(form: NgForm) {
-    if (!form.valid) return;
-
     const desc = (this.nuevo.descmodulo || '').trim();
-    if (!desc || desc.length > 30) return;
+    if (!desc || desc.length > 30) {
+      this.Toast.fire({ title: 'La descripcion es requerida (maximo 30 caracteres).', icon: 'warning' as any });
+      return;
+    }
     const scc = (this.nuevo.scceso || 'N').toUpperCase();
     const lec = (this.nuevo.lectura || 'N').toUpperCase();
-    if (!['S','N'].includes(scc) || !['S','N'].includes(lec)) return;
+    if (!['S','N'].includes(scc) || !['S','N'].includes(lec)) {
+      this.Toast.fire({ title: 'Valores de acceso/lectura invalidos.', icon: 'warning' as any });
+      return;
+    }
 
     const payload: Partial<Modulo> = {
       descmodulo: desc,
@@ -79,16 +121,25 @@ export class ModuloPage implements OnInit {
 
     this.moduloSrv.guardarModulo(payload).subscribe({
       next: () => {
-        // tras guardar, recargar lista desde backend
         this.cargarModulos();
-        // reset form
         this.nuevo = { descmodulo: '', scceso: 'N', lectura: 'N', permisos: [] };
         form.resetForm({ descmodulo: '', scceso: 'N', lectura: 'N' });
+        this.cerrarModal('nuevoModuloModal');
+        this.limpiarBloqueoModal();
+        this.Toast.fire({ title: 'Modulo creado', icon: 'success' as any });
       },
       error: (err) => {
         console.error('Error guardando módulo', err);
+        this.Toast.fire({ title: this.obtenerMensajeError(err), icon: 'error' as any });
       }
     });
+  }
+
+  private limpiarBloqueoModal(): void {
+    document.querySelectorAll('.modal-backdrop').forEach((node) => node.remove());
+    document.body.classList.remove('modal-open');
+    document.body.style.removeProperty('overflow');
+    document.body.style.removeProperty('padding-right');
   }
   getBadgeClass(value: string, tipo: 'acceso' | 'lectura') {
   if (tipo === 'acceso') return (value === 'S') ? 'bg-success' : 'bg-secondary';

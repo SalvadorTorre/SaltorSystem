@@ -31,7 +31,7 @@ const routes: Routes = [
         path: 'entradamerc',
         loadChildren: () =>
           import('./pages/entradamerc-page/entradamerc-modulo').then(
-            (m) => m.ModuloEntradamerc
+            (m) => m.ModuloEntradaMerc
           ),
       },
 
@@ -46,8 +46,8 @@ const routes: Routes = [
       {
         path: 'pendiente',
         loadChildren: () =>
-          import('./pages/pendiente/pendiente-modulo').then(
-            (m) => m.ModuloPendiente
+          import('./pages/pendienteentrega/pendienteentrega-modulo').then(
+            (m) => m.ModuloPendienteEntrega
           ),
       },
 
@@ -56,6 +56,20 @@ const routes: Routes = [
         loadChildren: () =>
           import('./pages/salidafactura/salidafactura-modulo').then(
             (m) => m.ModuloSalidafactura
+          ),
+      },
+      {
+        path: 'devoluciones',
+        loadChildren: () =>
+          import('./pages/devoluciones/devoluciones-modulo').then(
+            (m) => m.ModuloDevoluciones
+          ),
+      },
+      {
+        path: 'solicitudprestamo',
+        loadChildren: () =>
+          import('./pages/solicitudprestamo/solicitudprestamo-modulo').then(
+            (m) => m.ModuloSolicitudPrestamo
           ),
       },
       //   {

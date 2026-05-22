@@ -65,13 +65,13 @@ export class ReporteCierreBuilder {
     return this;
   }
 
-  public agregarTablaDetalle(facturas: any[], formatoMoneda: (val: number) => string, formatoPago?: (cod: string) => string): ReporteCierreBuilder {
+  public agregarTablaDetalle(facturas: any[], formatoMoneda: (val: number) => string, formatoPago?: (factura: any) => string): ReporteCierreBuilder {
     const data = facturas.map(f => [
       f.fa_codFact,
       new Date(f.fa_fecFact).toLocaleString(),
       f.fa_nomClie,
       formatoMoneda(Number(f.fa_valFact)),
-      formatoPago ? formatoPago(f.fa_fpago) : f.fa_fpago
+      formatoPago ? formatoPago(f) : f.fa_fpago
     ]);
 
     autoTable(this.doc, {

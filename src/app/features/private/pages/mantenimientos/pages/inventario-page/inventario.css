@@ -1,10 +1,217 @@
-.row {
-  margin-bottom: 5px;
+:host {
+  display: block;
 }
 
-.card-body-custom {
-  background-color: #b2bec3;
+.uppercase {
+  text-transform: uppercase;
 }
+
+.inventory-page-card {
+  border-radius: 16px;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.inventory-header {
+  background: linear-gradient(120deg, #144085 0%, #2f68c2 100%);
+  color: #ffffff;
+  border: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem 1rem;
+}
+
+.inventory-header__title {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.inventory-header__title h4 {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.inventory-header__title small {
+  opacity: 0.9;
+  font-size: 0.8rem;
+}
+
+.inventory-header__icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+.inventory-header__meta {
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 999px;
+  padding: 0.28rem 0.65rem;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.inventory-toolbar {
+  background: #f8faff;
+  border: 1px solid #e4ebf7;
+  border-radius: 14px;
+  padding: 0.9rem;
+}
+
+.inventory-toolbar .form-label {
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: #223458;
+  margin-bottom: 0.35rem;
+}
+
+.inventory-search .input-group-text {
+  background: #ffffff;
+  border-color: #d9e3f3;
+  color: #355d9f;
+}
+
+.inventory-search .form-control {
+  border-color: #d9e3f3;
+}
+
+.inventory-search .form-control:focus {
+  border-color: #7ba3e6;
+  box-shadow: 0 0 0 0.2rem rgba(61, 114, 209, 0.14);
+}
+
+.inventory-btn-new {
+  font-weight: 600;
+  border-radius: 10px;
+  padding-top: 0.55rem;
+  padding-bottom: 0.55rem;
+}
+
+.inventory-table-wrap {
+  border: 1px solid #e3eaf7;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.inventory-table {
+  margin: 0;
+}
+
+.inventory-table thead th {
+  background: #1f4f9a;
+  color: #ffffff;
+  border: 0;
+  font-weight: 600;
+  font-size: 0.86rem;
+  padding: 0.72rem;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.inventory-table tbody td {
+  border-color: #edf1f8;
+  padding: 0.72rem;
+  font-size: 0.9rem;
+}
+
+.inventory-table tbody tr:hover {
+  background: #f4f8ff;
+}
+
+.inventory-actions .btn {
+  border-radius: 9px;
+}
+
+.inventory-mobile-meta .badge {
+  font-weight: 500;
+  color: #334768;
+}
+
+.inventory-pagination .page-link {
+  border-radius: 8px;
+  margin: 0 2px;
+  border-color: #d6e0f1;
+  color: #1f4f9a;
+}
+
+.inventory-pagination .page-item.active .page-link {
+  background: #1f4f9a;
+  border-color: #1f4f9a;
+  color: #ffffff;
+}
+
+.inventory-modal-content {
+  border: 0;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
 .modal-ancho {
-  max-width: 65% !important; /* ajusta entre 70% y 95% */
+  width: min(96vw, 1180px);
+  max-width: none !important;
+}
+
+.inventory-form-card {
+  border: 1px solid #e4ebf7;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.inventory-form-card__header {
+  background: #f8faff !important;
+  border-bottom: 1px solid #e4ebf7;
+}
+
+.inventory-form-card .form-label {
+  font-weight: 600;
+  font-size: 0.84rem;
+  color: #31466d;
+  margin-bottom: 0.35rem;
+}
+
+.inventory-form-card .form-control,
+.inventory-form-card .form-select,
+.inventory-form-card .input-group-text {
+  border-color: #d8e2f3;
+}
+
+.inventory-form-card .form-control:focus,
+.inventory-form-card .form-select:focus {
+  border-color: #7ba3e6;
+  box-shadow: 0 0 0 0.2rem rgba(61, 114, 209, 0.14);
+}
+
+@media (max-width: 991.98px) {
+  .inventory-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .inventory-header__meta {
+    align-self: flex-start;
+  }
+
+  .modal-ancho {
+    width: 100%;
+  }
+}
+
+@media (max-width: 576px) {
+  .inventory-toolbar {
+    padding: 0.75rem;
+  }
+
+  .inventory-table thead th,
+  .inventory-table tbody td {
+    padding: 0.6rem;
+  }
 }

@@ -1,13 +1,5 @@
-import { Inventario } from './../mantenimientos/pages/inventario-page/inventario';
-import {
-  Component,
-  NgModule,
-  OnInit,
-  ViewChild,
-  ElementRef,
-  ɵNG_COMP_DEF,
-} from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
+// import { FormsModule } from '@angular/forms';
 import {
   FormBuilder,
   FormControl,
@@ -19,7 +11,6 @@ import {
   debounceTime,
   distinctUntilChanged,
   filter,
-  from,
   switchMap,
   tap,
   catchError,
@@ -27,8 +18,8 @@ import {
   map,
 } from 'rxjs';
 import Swal from 'sweetalert2';
-import { ModeloUsuarioData } from 'src/app/core/services/mantenimientos/usuario';
-import { ModeloRncData } from 'src/app/core/services/mantenimientos/rnc';
+// import { ModeloUsuarioData } from 'src/app/core/services/mantenimientos/usuario';
+// import { ModeloRncData } from 'src/app/core/services/mantenimientos/rnc';
 import { ServicioRnc } from 'src/app/core/services/mantenimientos/rnc/rnc.service';
 import { ServicioUsuario } from 'src/app/core/services/mantenimientos/usuario/usuario.service';
 import { ServicioFacturacion } from 'src/app/core/services/facturacion/factura/factura.service';
@@ -42,20 +33,14 @@ import {
   ModeloCliente,
   ModeloClienteData,
 } from 'src/app/core/services/mantenimientos/clientes';
-import {
-  FacturaDetalleModel,
-  interfaceDetalleModel,
-} from 'src/app/core/services/facturacion/factura/factura';
+import { interfaceDetalleModel } from 'src/app/core/services/facturacion/factura/factura';
 import { ServicioInventario } from 'src/app/core/services/mantenimientos/inventario/inventario.service';
 import { ServicioSector } from 'src/app/core/services/mantenimientos/sector/sector.service';
 import {
   ModeloSector,
   ModeloSectorData,
 } from 'src/app/core/services/mantenimientos/sector';
-import {
-  ModeloFpago,
-  ModeloFpagoData,
-} from 'src/app/core/services/mantenimientos/fpago';
+import { ModeloFpagoData } from 'src/app/core/services/mantenimientos/fpago';
 import { ServicioFpago } from 'src/app/core/services/mantenimientos/fpago/fpago.service';
 import {
   ModeloInventario,
@@ -63,10 +48,24 @@ import {
 } from 'src/app/core/services/mantenimientos/inventario';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { disableDebugTools } from '@angular/platform-browser';
+// import { disableDebugTools } from '@angular/platform-browser';
 import { ServicioNcf } from 'src/app/core/services/mantenimientos/ncf/ncf.service';
 import { ModeloNcfData } from 'src/app/core/services/mantenimientos/ncf';
+import { ServicioSalidafactura } from 'src/app/core/services/almacen/salidafactura/salidafactura.service';
 declare var $: any;
+
+interface ResumenConsultaFactura {
+  pago: string;
+  documento: string;
+  pendiente: string;
+  entrega: string;
+  salida: string;
+  estadoSalida: string;
+  chofer: string;
+  asignacionChofer: string;
+  despachoForjas: string;
+  despachoPatio: string;
+}
 
 @Component({
   selector: 'facturacion',
@@ -75,6 +74,7 @@ declare var $: any;
 })
 export class Facturacion implements OnInit {
   @ViewChild('inputCodmerc') inputCodmerc!: ElementRef; // Para manejar el foco
+  @ViewChild('codigoInput') codigoInput!: ElementRef<HTMLInputElement>;
   @ViewChild('descripcionInput') descripcionInput!: ElementRef; // Para manejar el foco
   @ViewChild('Tabladetalle') Tabladetalle!: ElementRef;
   isDisabled: boolean = true;
@@ -113,6 +113,7 @@ export class Facturacion implements OnInit {
   existenciatxt: any;
   existtxt: any;
   medidatxt: any;
+  margenVentatxt: any;
   costotxt: any;
   totalcostotxt: any;
   fecacttxt: any;
@@ -152,6 +153,11 @@ export class Facturacion implements OnInit {
   codmerVacio: boolean = false;
   desmerVacio: boolean = false;
   isLoading: boolean = false;
+  clienteRncNoExiste: boolean = false;
+  rncApiNombre: string = '';
+  rncApiValor: string = '';
+  resumenConsultaFactura: ResumenConsultaFactura | null = null;
+  private facturaConsultaActual: string = '';
 
   habilitarCampos: boolean = false;
 
@@ -176,7 +182,8 @@ export class Facturacion implements OnInit {
     private ServicioRnc: ServicioRnc,
     private ServicioSector: ServicioSector,
     private servicioFpago: ServicioFpago,
-    private servicioNcf: ServicioNcf
+    private servicioNcf: ServicioNcf,
+    private servicioSalidaFactura: ServicioSalidafactura,
   ) {
     this.form = this.fb.group({
       fa_codVend: ['', Validators.required], // El campo es requerido
@@ -195,9 +202,9 @@ export class Facturacion implements OnInit {
             this.currentPage,
             this.facturacionList.length,
             this.codigo,
-            this.txtdescripcion
+            this.txtdescripcion,
           );
-        })
+        }),
       )
       .subscribe((response) => {
         if (response && Array.isArray(response.data)) {
@@ -207,7 +214,7 @@ export class Facturacion implements OnInit {
         } else {
           console.warn(
             'Respuesta de búsqueda por cliente no es válida:',
-            response
+            response,
           );
           this.facturacionList = [];
           this.totalItems = 0;
@@ -225,9 +232,9 @@ export class Facturacion implements OnInit {
             this.facturacionList.length,
             this.codigo,
             this.txtdescripcion,
-            this.txtFactura
+            this.txtFactura,
           );
-        })
+        }),
       )
       .subscribe((response) => {
         if (response && Array.isArray(response.data)) {
@@ -237,7 +244,7 @@ export class Facturacion implements OnInit {
         } else {
           console.warn(
             'Respuesta de búsqueda por número de factura no es válida:',
-            response
+            response,
           );
           this.facturacionList = [];
           this.totalItems = 0;
@@ -256,6 +263,10 @@ export class Facturacion implements OnInit {
 
   // Entrega
   buscarEnvio = new FormControl();
+  mostrarDropdownFpago = false;
+  mostrarDropdownEnvio = false;
+  private blurTimeoutFpago: any = null;
+  private blurTimeoutEnvio: any = null;
   listaEnvio = [
     { codigo: '1', descripcion: 'Envío' },
     { codigo: '2', descripcion: 'Retiro Cliente' },
@@ -291,29 +302,15 @@ export class Facturacion implements OnInit {
         filter((query: any) => (query || '').toString().trim() !== ''),
         tap((q) => console.log('DEBUG: Searching Code:', q)),
         switchMap((query: string) =>
-          this.http
-            .GetRequest<ModeloInventario>(
-              `/productos-buscador/${encodeURIComponent(query)}`
-            )
+          this.ServicioInventario
+            .buscarporCodigoMerc(query)
             .pipe(
               catchError((error) => {
                 console.error('Error en búsqueda de código:', error);
                 return of({ data: [] } as any); // Retorna estructura vacía válida
-              })
-            )
+              }),
+            ),
         ),
-        map((response: any) => {
-          if (response && Array.isArray(response.data)) {
-            response.data = response.data.map((item: any) => {
-              const newItem: any = {};
-              Object.keys(item).forEach((key) => {
-                newItem[key.toLowerCase()] = item[key];
-              });
-              return newItem;
-            });
-          }
-          return response;
-        })
       )
       .subscribe((results: ModeloInventario) => {
         console.log(results.data);
@@ -355,7 +352,7 @@ export class Facturacion implements OnInit {
       } else {
         const filterValue = value.toLowerCase();
         this.resultadoFpago = this.listaFpago.filter((option) =>
-          option.fp_descfpago.toLowerCase().includes(filterValue)
+          option.fp_descfpago.toLowerCase().includes(filterValue),
         );
       }
       this.selectedIndexfpago = 0;
@@ -367,7 +364,7 @@ export class Facturacion implements OnInit {
       } else {
         const filterValue = value.toLowerCase();
         this.resultadoEnvio = this.listaEnvio.filter((option) =>
-          option.descripcion.toLowerCase().includes(filterValue)
+          option.descripcion.toLowerCase().includes(filterValue),
         );
       }
       this.selectedIndexEnvio = 0;
@@ -378,34 +375,21 @@ export class Facturacion implements OnInit {
           console.log('DEBUG: Input Desc Change:', v);
           this.resultadodescripcionmerc = [];
         }),
-        debounceTime(300),
+        map((query: any) => String(query || '').trim()),
+        debounceTime(120),
         distinctUntilChanged(),
-        filter((query: any) => (query || '').toString().trim() !== ''),
+        filter((query: string) => query !== ''),
         tap((q) => console.log('DEBUG: Searching Desc:', q)),
         switchMap((query: string) =>
-          this.http
-            .GetRequest<ModeloInventario>(
-              `/productos-buscador-desc/${encodeURIComponent(query)}`
-            )
+          this.ServicioInventario
+            .buscarPorDescripcionMerc(query)
             .pipe(
               catchError((error) => {
                 console.error('Error en búsqueda de descripción:', error);
                 return of({ data: [] } as any);
-              })
-            )
+              }),
+            ),
         ),
-        map((response: any) => {
-          if (response && Array.isArray(response.data)) {
-            response.data = response.data.map((item: any) => {
-              const newItem: any = {};
-              Object.keys(item).forEach((key) => {
-                newItem[key.toLowerCase()] = item[key];
-              });
-              return newItem;
-            });
-          }
-          return response;
-        })
       )
       .subscribe((results: ModeloInventario) => {
         console.log(results.data);
@@ -431,22 +415,22 @@ export class Facturacion implements OnInit {
         tap(() => {
           this.resultadoNombre = [];
         }),
-        filter((query: string) => query !== ''),
+        filter((query: string) => String(query || '').trim() !== ''),
         switchMap((query: string) =>
-          this.http.GetRequest<ModeloCliente>(`/cliente-nombre/${query}`).pipe(
+          this.servicioCliente.buscarporNombre(query).pipe(
             catchError((error) => {
-              console.error('Error en búsqueda de cliente:', error);
+              console.error(
+                'Error en búsqueda de cliente (Supabase):',
+                error,
+              );
               return of({ data: [] } as any);
-            })
-          )
-        )
+            }),
+          ),
+        ),
       )
       .subscribe((results: ModeloCliente) => {
-        console.log(results.data);
-        if (results) {
-          if (Array.isArray(results.data)) {
-            this.resultadoNombre = results.data;
-          }
+        if (results && Array.isArray(results.data)) {
+          this.resultadoNombre = results.data;
         } else {
           this.resultadoNombre = [];
         }
@@ -465,9 +449,9 @@ export class Facturacion implements OnInit {
             catchError((error) => {
               console.error('Error en búsqueda de sector:', error);
               return of({ data: [] } as any);
-            })
-          )
-        )
+            }),
+          ),
+        ),
       )
       .subscribe((results: ModeloSector) => {
         console.log(results.data);
@@ -485,16 +469,16 @@ export class Facturacion implements OnInit {
 
     // Sincronizar controles con propiedades (Reemplazo de [(ngModel)])
     this.buscarcodmerc.valueChanges.subscribe(
-      (val) => (this.codmerc = val || '')
+      (val) => (this.codmerc = val || ''),
     );
     this.buscardescripcionmerc.valueChanges.subscribe(
-      (val) => (this.descripcionmerc = val || '')
+      (val) => (this.descripcionmerc = val || ''),
     );
     this.cantidadform.valueChanges.subscribe(
-      (val) => (this.cantidadmerc = Number(val) || 0)
+      (val) => (this.cantidadmerc = Number(val) || 0),
     );
     this.precioform.valueChanges.subscribe(
-      (val) => (this.preciomerc = Number(val) || 0)
+      (val) => (this.preciomerc = Number(val) || 0),
     );
 
     // Asegurar que los campos de búsqueda estén habilitados
@@ -503,6 +487,7 @@ export class Facturacion implements OnInit {
 
     // Gestionar estado de campos dependientes
     this.manageFieldsState();
+    this.sincronizarTipoNcfPorRnc();
   }
 
   manageFieldsState() {
@@ -573,7 +558,10 @@ export class Facturacion implements OnInit {
   }
   obtenerNcf() {
     this.servicioNcf.buscarTodosNcf().subscribe((response) => {
-      this.ncflist = response.data;
+      this.ncflist = (response.data || []).filter((ncf: ModeloNcfData) =>
+        Number(ncf.grupo) === 1
+      );
+      this.actualizarTipoNcfPorRnc(this.formularioFacturacion.get('fa_rncFact')?.value);
     });
   }
 
@@ -595,7 +583,7 @@ export class Facturacion implements OnInit {
       fa_correo: [''],
       fa_codVend: ['', Validators.required],
       fa_nomVend: [''],
-      fa_status: [''],
+      fa_status: ['C'],
       fa_sector: [''],
       fa_codZona: [null],
       fa_desZona: [''],
@@ -634,6 +622,10 @@ export class Facturacion implements OnInit {
     this.totalcosto = 0;
     this.costoGral = 0;
     this.factxt = 0;
+    this.modoconsultaFacturacion = false;
+    this.resumenConsultaFactura = null;
+    this.facturaConsultaActual = '';
+    this.habilitarIcono = true;
     this.actualizarTotales();
     $('#input1').focus();
     $('#input1').select();
@@ -732,6 +724,9 @@ export class Facturacion implements OnInit {
   }
   consultarFacturacion(factura: FacturacionModelData) {
     this.modoconsultaFacturacion = true;
+    this.facturaConsultaActual = String(factura.fa_codFact || '').trim();
+    this.resumenConsultaFactura = this.crearResumenConsultaFactura(factura);
+    this.cargarSalidaResumenConsulta(this.facturaConsultaActual);
     this.formularioFacturacion.reset();
     this.crearFormularioFacturacion();
     this.formularioFacturacion.patchValue(factura);
@@ -772,7 +767,6 @@ export class Facturacion implements OnInit {
             in_cosmerc: 0,
             in_premerc: 0,
             in_precmin: 0,
-            in_tramo: item.in_tramo,
             //  in_costpro: 0,
             in_ucosto: 0,
             in_porgana: 0,
@@ -820,6 +814,126 @@ export class Facturacion implements OnInit {
           factura.fa_cosFact;
         this.actualizarTotales();
       });
+  }
+
+  private crearResumenConsultaFactura(
+    factura: FacturacionModelData,
+  ): ResumenConsultaFactura {
+    const salidaRegistrada =
+      this.normalizarBandera(factura.fa_salida) === 'S' ||
+      Boolean(String(factura.idsalida ?? '').trim());
+
+    return {
+      pago: this.etiquetaPagoConsulta(factura.fa_fpago),
+      documento: this.etiquetaDocumentoConsulta(factura.fa_status),
+      pendiente: this.etiquetaPendienteConsulta(factura.fa_pendiente),
+      entrega: this.etiquetaEntregaConsulta(factura.fa_entrega),
+      salida: salidaRegistrada ? 'Si' : 'No',
+      estadoSalida: salidaRegistrada ? 'Registrada' : 'Sin salida',
+      chofer: 'Sin chofer asignado',
+      asignacionChofer: 'No asignada',
+      despachoForjas: this.etiquetaDespachoConsulta(factura.fa_impalmaf),
+      despachoPatio: this.etiquetaDespachoConsulta(factura.fa_impalmap),
+    };
+  }
+
+  private cargarSalidaResumenConsulta(codFactura: string): void {
+    if (!codFactura) return;
+
+    this.servicioSalidaFactura.obtenerSalidaPorFactura(codFactura).subscribe({
+      next: (response) => {
+        if (
+          !this.resumenConsultaFactura ||
+          this.facturaConsultaActual !== codFactura
+        ) {
+          return;
+        }
+
+        const salida = response?.data?.salida;
+        const detalle = response?.data?.detalle;
+        const nombreChofer = String(
+          salida?.nomChofer || detalle?.nomChofer || '',
+        ).trim();
+        const codigoSalida = String(
+          salida?.codSalida || detalle?.codSalida || response?.data?.idsalida || '',
+        ).trim();
+        const estadoSalida = String(
+          salida?.status || detalle?.status || '',
+        ).trim();
+        const tieneSalida = Boolean(salida || detalle || codigoSalida);
+
+        this.resumenConsultaFactura = {
+          ...this.resumenConsultaFactura,
+          salida: tieneSalida
+            ? codigoSalida
+              ? `Si (${codigoSalida})`
+              : 'Si'
+            : 'No',
+          estadoSalida: tieneSalida
+            ? this.etiquetaEstadoSalidaConsulta(estadoSalida)
+            : 'Sin salida',
+          chofer: nombreChofer || 'Sin chofer asignado',
+          asignacionChofer: nombreChofer ? 'Asignada' : 'No asignada',
+        };
+      },
+      error: () => {
+        if (
+          this.resumenConsultaFactura &&
+          this.facturaConsultaActual === codFactura
+        ) {
+          this.resumenConsultaFactura = {
+            ...this.resumenConsultaFactura,
+            estadoSalida:
+              this.resumenConsultaFactura.salida === 'No'
+                ? 'Sin salida'
+                : 'Salida registrada',
+          };
+        }
+      },
+    });
+  }
+
+  private etiquetaPagoConsulta(valor: any): string {
+    const fpago = this.normalizarBandera(valor);
+    if (fpago === 'S' || fpago === 'P') return 'Pagada';
+    if (fpago === 'N' || fpago === '') return 'No pagada';
+    return String(valor || '').trim();
+  }
+
+  private etiquetaDocumentoConsulta(valor: any): string {
+    const status = this.normalizarBandera(valor);
+    if (status === 'C') return 'Conduce';
+    if (status === 'F') return 'Factura';
+    return status || 'Sin status';
+  }
+
+  private etiquetaPendienteConsulta(valor: any): string {
+    const pendiente = this.normalizarBandera(valor);
+    if (pendiente === 'P' || pendiente === 'S') return 'Si';
+    if (pendiente === 'N' || pendiente === '') return 'No';
+    return String(valor || '').trim();
+  }
+
+  private etiquetaDespachoConsulta(valor: any): string {
+    return this.normalizarBandera(valor) === 'S' ? 'Si' : 'No';
+  }
+
+  private etiquetaEntregaConsulta(valor: any): string {
+    return this.normalizarBandera(valor) === 'S'
+      ? 'Entregada'
+      : 'No entregada';
+  }
+
+  private etiquetaEstadoSalidaConsulta(valor: any): string {
+    const estado = this.normalizarBandera(valor);
+    if (estado === 'P') return 'Pendiente';
+    if (estado === 'S') return 'Con salida';
+    if (estado === 'C') return 'Conduce';
+    return estado || 'Registrada';
+  }
+
+  private normalizarBandera(valor: any): string {
+    return String(valor ?? '').trim().toUpperCase();
   }
 
   eliminarFacturacion(facturacionId: string) {
@@ -927,25 +1041,47 @@ export class Facturacion implements OnInit {
   }
 
   buscarTodasFacturacion() {
+    this.servicioFacturacion.buscarTodasFacturacion().subscribe((response) => {
+      console.log('buscarTodasFacturacion response:', response);
+      if (response && Array.isArray(response.data)) {
+        this.facturacionList = response.data;
+      } else {
+        console.warn('response.data is not an array:', response?.data);
+        this.facturacionList = [];
+      }
+      console.log(this.facturacionList.length);
+    });
+  }
+
+  onOpenBuscarFacturaModal(): void {
+    // Siempre reinicia filtros y recarga para mostrar todas las facturas al abrir el modal.
     this.txtFactura = '';
     this.txtdescripcion = '';
     this.txtFecha = '';
-    this.servicioFacturacion.buscarTodasFacturacion().subscribe(
-      (response) => {
-        console.log('buscarTodasFacturacion response:', response);
-        if (response && Array.isArray(response.data)) {
-          this.facturacionList = response.data;
-        } else {
-          console.warn('response.data is not an array:', response?.data);
-          this.facturacionList = [];
-        }
-        console.log(this.facturacionList.length);
-      },
-      (error) => {
-        console.error('Error cargando facturas:', error);
-        this.facturacionList = [];
+    this.buscarTodasFacturacion();
+  }
+
+  solicitarBusquedaFactura(): void {
+    if (!this.tieneFacturaEnCurso()) {
+      this.abrirModalBuscarFactura();
+      return;
+    }
+
+    Swal.fire({
+      title: 'Factura en curso',
+      text: 'Ya tiene datos digitados en esta factura. Puede cancelarla para buscar otra factura o ignorar la busqueda.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Cancelar factura y buscar',
+      cancelButtonText: 'Ignorar busqueda',
+    }).then((result) => {
+      if (!result.isConfirmed) {
+        return;
       }
-    );
+
+      this.limpia();
+      this.abrirModalBuscarFactura();
+    });
   }
 
   buscaNombre(event: Event) {
@@ -982,7 +1118,7 @@ export class Facturacion implements OnInit {
   moveFocuscodmerc(
     event: Event,
     descripcionInput: HTMLInputElement,
-    cantidadInput: HTMLInputElement
+    cantidadInput: HTMLInputElement,
   ) {
     // Enter: buscar por cadena (prefijo). Si coincide o hay selección en grid -> ir a cantidad.
     // Si vacío -> ir a descripción. Si no hay coincidencias -> error y pasar a descripción.
@@ -1016,7 +1152,7 @@ export class Facturacion implements OnInit {
 
     // Buscar por prefijo en resultados ya cargados
     const candidatosLocales = this.resultadoCodmerc.filter((r) =>
-      String(r.in_codmerc).toLowerCase().startsWith(queryLower)
+      String(r.in_codmerc).toLowerCase().startsWith(queryLower),
     );
     if (candidatosLocales.length > 0) {
       this.cargarDatosInventario(candidatosLocales[0]);
@@ -1026,26 +1162,14 @@ export class Facturacion implements OnInit {
       return;
     }
 
-    // Fallback: consultar al backend con la cadena y aplicar startsWith
-    this.http
-      .GetRequest<ModeloInventario>(`/productos-buscador/${currentInputValue}`)
+    // Fallback: consultar productos2 con la cadena y aplicar startsWith
+    this.ServicioInventario
+      .buscarporCodigoMerc(currentInputValue)
       .pipe(
         catchError((error) => {
           console.error('Error en búsqueda manual de código:', error);
           return of({ data: [] } as any);
         }),
-        map((response: any) => {
-          if (response && Array.isArray(response.data)) {
-            response.data = response.data.map((item: any) => {
-              const newItem: any = {};
-              Object.keys(item).forEach((key) => {
-                newItem[key.toLowerCase()] = item[key];
-              });
-              return newItem;
-            });
-          }
-          return response;
-        })
       )
       .subscribe((results: ModeloInventario) => {
         if (results && Array.isArray(results.data) && results.data.length) {
@@ -1060,7 +1184,7 @@ export class Facturacion implements OnInit {
           this.resultadoCodmerc = ordenados;
           this.selectedIndexcodmerc = 0;
           const candidatos = ordenados.filter((r) =>
-            String(r.in_codmerc).toLowerCase().startsWith(queryLower)
+            String(r.in_codmerc).toLowerCase().startsWith(queryLower),
           );
           if (candidatos.length > 0) {
             this.cargarDatosInventario(candidatos[0]);
@@ -1117,10 +1241,10 @@ export class Facturacion implements OnInit {
         this.selectedIndexcodmerc <= maxIndex
       ) {
         this.cargarDatosInventario(
-          this.resultadoCodmerc[this.selectedIndexcodmerc]
+          this.resultadoCodmerc[this.selectedIndexcodmerc],
         );
         const qty = document.getElementById(
-          'input15'
+          'input15',
         ) as HTMLInputElement | null;
         qty?.focus();
         qty?.select?.();
@@ -1138,9 +1262,14 @@ export class Facturacion implements OnInit {
       obj[key] || obj[key.toUpperCase()] || obj[key.toLowerCase()];
 
     this.codmerc = getProp(inventario, 'in_codmerc');
-    this.preciomerc = getProp(inventario, 'in_premerc');
     this.tipomerc = getProp(inventario, 'in_tipoproduct');
     this.descripcionmerc = getProp(inventario, 'in_desmerc');
+    this.costotxt = getProp(inventario, 'in_cosmerc');
+    this.margenVentatxt = getProp(inventario, 'in_porgana');
+
+    const costo = Number(this.costotxt) || 0;
+    const margenVenta = Number(this.margenVentatxt) || 0;
+    this.preciomerc = costo + (costo * margenVenta) / 100;
 
     // Sincronizar controles (fix ngModel warning)
     this.buscarcodmerc.setValue(this.codmerc, { emitEvent: false });
@@ -1150,12 +1279,9 @@ export class Facturacion implements OnInit {
     this.precioform.setValue(this.preciomerc, { emitEvent: false });
     this.cantidadform.setValue(0, { emitEvent: false }); // Reset cantidad logic if appropriate
 
-    this.existenciatxt = getProp(inventario, 'in_canmerc');
-    this.costotxt = getProp(inventario, 'in_cosmerc');
+    this.existenciatxt = 0;
     this.medidatxt = getProp(inventario, 'in_medida');
     this.fecacttxt = getProp(inventario, 'in_fecmodif');
-
-    const costo = Number(this.costotxt) || 0;
 
     this.atxt = costo + (costo * 5) / 100;
     this.btxt = costo + (costo * 7) / 100;
@@ -1173,14 +1299,19 @@ export class Facturacion implements OnInit {
       this.protxt = 0;
     }
 
-    this.productoselect = inventario;
+    this.productoselect = {
+      ...inventario,
+      in_canmerc: 0,
+      in_premerc: this.preciomerc,
+    };
+    this.cargarExistenciaProducto(this.codmerc);
     this.cancelarBusquedaDescripcion = true;
     this.cancelarBusquedaCodigo = true;
     this.formularioFacturacion.patchValue({
       df_codMerc: this.codmerc,
       df_desMerc: this.descripcionmerc,
       df_tipomerc: this.tipomerc,
-      df_canMerc: this.existenciatxt,
+      df_canMerc: 0,
       df_preMerc: this.preciomerc,
       df_cosMerc: this.costotxt,
       df_unidad: getProp(inventario, 'in_unidad'),
@@ -1191,35 +1322,44 @@ export class Facturacion implements OnInit {
     qty?.select?.();
   }
 
-  abrirModalDetalle() {
-    $('#modalDetalleFactura').modal('show');
+  private cargarExistenciaProducto(codProducto: string): void {
+    const codigo = String(codProducto || '').trim();
+    const sucursal = Number(localStorage.getItem('idSucursal') || 0);
+
+    if (!codigo || !sucursal) {
+      this.existenciatxt = 0;
+      return;
+    }
+
+    this.ServicioInventario
+      .obtenerExistenciaPorProductoSucursal(codigo, sucursal)
+      .pipe(
+        catchError((error) => {
+          console.error('Error consultando existencia del producto:', error);
+          return of({ data: null } as any);
+        }),
+      )
+      .subscribe((response: any) => {
+        if (String(this.codmerc || '').trim() !== codigo) return;
+
+        const existencia = Number(response?.data?.inv_existencia ?? 0);
+        this.existenciatxt = Number.isFinite(existencia) ? existencia : 0;
+
+        if (
+          this.productoselect &&
+          String(this.productoselect.in_codmerc || '').trim() === codigo
+        ) {
+          this.productoselect.in_canmerc = this.existenciatxt;
+        }
+      });
   }
 
   buscarUsuario(event: Event, nextElement: HTMLInputElement | null): void {
     event.preventDefault();
-    const claveUsuario = this.formularioFacturacion.get('fa_codVend')?.value;
-    if (claveUsuario) {
-      this.ServicioUsuario.buscarUsuarioPorClave(claveUsuario).subscribe(
-        (usuario) => {
-          if (usuario.data.length) {
-            this.formularioFacturacion.patchValue({
-              fa_nomVend: usuario.data[0].idUsuario,
-            });
-            this.abrirModalDetalle();
-          } else {
-            this.mensagePantalla = true;
-            Swal.fire({
-              icon: 'error',
-              title: 'A V I S O',
-              text: 'Codigo de usuario invalido.',
-            }).then(() => {
-              this.mensagePantalla = false;
-            });
-            return;
-          }
-        }
-      );
-    } else {
+    const claveUsuario = String(
+      this.formularioFacturacion.get('fa_codVend')?.value || '',
+    ).trim();
+    if (!claveUsuario) {
       this.mensagePantalla = true;
       Swal.fire({
         icon: 'error',
@@ -1230,14 +1370,44 @@ export class Facturacion implements OnInit {
       });
       return;
     }
+
+    this.formularioFacturacion.patchValue(
+      { fa_codVend: claveUsuario },
+      { emitEvent: false },
+    );
+
+    this.ServicioUsuario.buscarUsuarioPorCodigoVendedor(claveUsuario).subscribe({
+      next: (usuarioResp) => {
+        const u = usuarioResp?.data;
+        if (u) {
+          const nombreVendedor = String(
+            u?.nombreUsuario || u?.idUsuario || '',
+          ).trim();
+          this.formularioFacturacion.patchValue({
+            fa_nomVend: nombreVendedor,
+          });
+          this.abrirModalDetalle();
+          nextElement?.focus();
+          return;
+        }
+        this.mostrarMensajeError('Codigo de usuario invalido.');
+      },
+      error: () => {
+        this.mostrarMensajeError('Codigo de usuario invalido.');
+      },
+    });
   }
   buscarRnc(event: Event, nextElement: HTMLInputElement | null): void {
     event.preventDefault();
-    const rnc = this.formularioFacturacion.get('fa_rncFact')?.value;
-    if (!rnc || rnc.trim() === '') {
+    const rncRaw = this.formularioFacturacion.get('fa_rncFact')?.value;
+    const rnc = String(rncRaw || '').replace(/\D/g, '').trim();
+    this.clienteRncNoExiste = false;
+    this.rncApiNombre = '';
+    this.rncApiValor = '';
+
+    if (!rnc) {
       // Si no se ha ingresado un RNC, por defecto Tipo NCF = 32 (Consumidor Final)
-      this.formularioFacturacion.patchValue({ fa_tipoNcf: '32' });
-      this.formularioFacturacion.get('fa_tipoNcf')?.disable();
+      this.seleccionarTipoNcfConsumidorFinal();
       // Pasamos el foco al siguiente elemento (Cliente)
       nextElement?.focus();
       return;
@@ -1246,36 +1416,204 @@ export class Facturacion implements OnInit {
     // Validar longitud del RNC
     if (rnc.length !== 9 && rnc.length !== 11) {
       this.mostrarMensajeError('RNC inválido.');
-      console.log(rnc.length);
       return;
     }
+
+    this.formularioFacturacion.patchValue({ fa_rncFact: rnc }, { emitEvent: false });
+
     // Buscar RNC en el servicio
-    this.ServicioRnc.buscarRncPorrncId(rnc).subscribe((response) => {
-      if (response?.data) {
-        console.log(response.data);
-        // Si se encuentra el RNC, asignar el nombre del cliente
-        const nombreEmpresa = response.data.rason;
+    this.ServicioRnc.buscarRncPorrncId(rnc).subscribe({
+      next: (response) => {
+        if (response?.data) {
+          // Si se encuentra el RNC en API, asignar razón social
+          const nombreEmpresa = String(response.data.rason || '').trim();
+          if (!nombreEmpresa) {
+            this.mostrarMensajeError('RNC no encontrado.');
+            this.isDisabled = true;
+            return;
+          }
 
-        //  const nombreEmpresa = response.data[0]?.rason;
-        this.formularioFacturacion.patchValue({ fa_nomClie: nombreEmpresa });
+          this.rncApiNombre = nombreEmpresa;
+          this.rncApiValor = rnc;
+          this.formularioFacturacion.patchValue({
+            fa_nomClie: nombreEmpresa,
+            fa_codClie: '',
+          });
 
-        // Si se encuentra RNC, por defecto E31 (Crédito Fiscal) pero habilitado para cambio
-        this.formularioFacturacion.patchValue({ fa_tipoNcf: '31' });
-        this.formularioFacturacion.get('fa_tipoNcf')?.enable();
+          this.seleccionarTipoNcfRnc();
 
-        // this.ncflist = this.ncflist.filter((ncf) => ncf.codNcf !== 1);
+          // Habilitar campos
+          this.isDisabled = false;
+          this.validarClienteLocalPorRnc(rnc, nombreEmpresa, nextElement);
+        } else {
+          this.formularioFacturacion.patchValue({
+            fa_nomClie: '',
+            fa_codClie: '',
+          });
+          this.mostrarMensajeError('RNC no encontrado.');
+          this.isDisabled = true;
+        }
+      },
+      error: () => {
+        this.formularioFacturacion.patchValue({
+          fa_nomClie: '',
+          fa_codClie: '',
+        });
+        this.mostrarMensajeError('RNC no encontrado.');
+        this.isDisabled = true;
+      },
+    });
+  }
 
-        // Habilitar campos
-        this.isDisabled = false;
-
+  private validarClienteLocalPorRnc(
+    rnc: string,
+    nombreEmpresaApi: string,
+    nextElement: HTMLInputElement | null,
+  ): void {
+    this.servicioCliente.buscarPorRnc(rnc).subscribe({
+      next: (clienteResp) => {
+        const cliente = clienteResp?.data as ModeloClienteData | null;
+        if (cliente) {
+          this.clienteRncNoExiste = false;
+          this.cargarDatosCliente(cliente);
+          this.formularioFacturacion.patchValue(
+            { fa_nomClie: nombreEmpresaApi },
+            { emitEvent: false },
+          );
+        } else {
+          this.clienteRncNoExiste = true;
+          this.formularioFacturacion.patchValue(
+            {
+              fa_codClie: '',
+              fa_nomClie: nombreEmpresaApi,
+            },
+            { emitEvent: false },
+          );
+        }
         $('#input3').focus();
         $('#input3').select();
-      } else {
-        // Si no se encuentra el RNC, mostrar error
-        this.mostrarMensajeError('RNC inválido.');
-        console.log('RNC no encontrado.');
-        this.isDisabled = true;
-      }
+        nextElement?.focus();
+      },
+      error: (error) => {
+        console.error('Error buscando cliente en Supabase por RNC:', error);
+        this.clienteRncNoExiste = true;
+        this.formularioFacturacion.patchValue(
+          {
+            fa_codClie: '',
+            fa_nomClie: nombreEmpresaApi,
+          },
+          { emitEvent: false },
+        );
+        $('#input3').focus();
+        $('#input3').select();
+        nextElement?.focus();
+      },
+    });
+  }
+
+
+  private sincronizarTipoNcfPorRnc() {
+    this.formularioFacturacion.get('fa_rncFact')?.valueChanges.subscribe((value) => {
+      this.actualizarTipoNcfPorRnc(value);
+    });
+  }
+
+  private actualizarTipoNcfPorRnc(value: any) {
+    const rnc = String(value || '').replace(/\D/g, '').trim();
+    if (rnc) {
+      this.seleccionarTipoNcfRnc();
+      return;
+    }
+
+    this.seleccionarTipoNcfConsumidorFinal();
+  }
+
+  private seleccionarTipoNcfRnc() {
+    const tipoE31 = this.ncflist.find((ncf) =>
+      String(ncf.tipo || '').trim().toUpperCase() === 'E31'
+    );
+    this.formularioFacturacion.patchValue(
+      { fa_tipoNcf: String(tipoE31?.codigo || '31') },
+      { emitEvent: false },
+    );
+    this.formularioFacturacion.get('fa_tipoNcf')?.enable();
+  }
+
+  private seleccionarTipoNcfConsumidorFinal() {
+    const tipoE32 = this.ncflist.find((ncf) =>
+      String(ncf.tipo || '').trim().toUpperCase() === 'E32'
+    );
+    this.formularioFacturacion.patchValue(
+      { fa_tipoNcf: String(tipoE32?.codigo || '32') },
+      { emitEvent: false },
+    );
+    this.formularioFacturacion.get('fa_tipoNcf')?.disable();
+  }
+
+  agregarRncComoCliente(): void {
+    const rnc = String(this.rncApiValor || '').replace(/\D/g, '').trim();
+    const nombre = String(this.rncApiNombre || '').trim();
+    if (!rnc || !nombre) {
+      this.mostrarMensajeError(
+        'No hay un RNC válido consultado para agregar a clientes.',
+      );
+      return;
+    }
+
+    Swal.fire({
+      title: 'Agregar a mis clientes',
+      text: `¿Deseas agregar "${nombre}" a tu lista de clientes?`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, agregar',
+      cancelButtonText: 'Cancelar',
+    }).then((result) => {
+      if (!result.isConfirmed) return;
+
+      const payload: ModeloClienteData = {
+        cl_codClie: null as any,
+        cl_nomClie: nombre,
+        cl_dirClie:
+          String(this.formularioFacturacion.get('fa_dirClie')?.value || '').trim() ||
+          'SIN DIRECCIÓN',
+        cl_codSect: null as any,
+        cl_codZona: this.formularioFacturacion.get('fa_codZona')?.value || null,
+        cl_telClie:
+          String(this.formularioFacturacion.get('fa_telClie')?.value || '').trim() ||
+          '',
+        cl_tipo: 'RNC',
+        cl_status: true,
+        cl_rnc: Number(rnc),
+      };
+
+      this.servicioCliente.guardarCliente(payload).subscribe({
+        next: (saved) => {
+          const nuevo = saved?.data as ModeloClienteData;
+          if (nuevo) {
+            this.clienteRncNoExiste = false;
+            this.cargarDatosCliente(nuevo);
+            this.formularioFacturacion.patchValue(
+              { fa_nomClie: nombre },
+              { emitEvent: false },
+            );
+          }
+          Swal.fire({
+            icon: 'success',
+            title: 'Cliente agregado',
+            text: 'El cliente fue agregado correctamente.',
+            timer: 1400,
+            showConfirmButton: false,
+          });
+        },
+        error: (error) => {
+          console.error('Error agregando cliente desde RNC:', error);
+          Swal.fire({
+            icon: 'error',
+            title: 'No se pudo agregar',
+            text: 'No fue posible guardar este cliente.',
+          });
+        },
+      });
     });
   }
 
@@ -1437,10 +1775,10 @@ export class Facturacion implements OnInit {
         this.selectedIndexdescripcionmerc <= maxIndex
       ) {
         this.cargarDatosInventario(
-          this.resultadodescripcionmerc[this.selectedIndexdescripcionmerc]
+          this.resultadodescripcionmerc[this.selectedIndexdescripcionmerc],
         );
         const qty = document.getElementById(
-          'input15'
+          'input15',
         ) as HTMLInputElement | null;
         qty?.focus();
         qty?.select?.();
@@ -1496,7 +1834,7 @@ export class Facturacion implements OnInit {
 
       // Buscar por prefijo en resultados ya cargados (por descripción)
       const candidatosLocales = this.resultadodescripcionmerc.filter((r) =>
-        String(r.in_desmerc).toLowerCase().startsWith(queryLower)
+        String(r.in_desmerc).toLowerCase().startsWith(queryLower),
       );
       if (candidatosLocales.length > 0) {
         this.cargarDatosInventario(candidatosLocales[0]);
@@ -1507,37 +1845,26 @@ export class Facturacion implements OnInit {
         return;
       }
 
-      // Fallback: consultar al backend con la cadena y aplicar startsWith
-      this.http
-        .GetRequest<ModeloInventario>(
-          `/productos-buscador-desc/${encodeURIComponent(currentInputValue)}`
-        )
+      // Fallback: consultar productos2 con la cadena y aplicar startsWith
+      this.ServicioInventario
+        .buscarPorDescripcionMerc(currentInputValue)
         .pipe(
           catchError((error) => {
             console.error('Error en búsqueda manual de descripción:', error);
             return of({ data: [] } as any);
-          })
+          }),
         )
         .subscribe((results: ModeloInventario) => {
           if (results && Array.isArray(results.data) && results.data.length) {
-            // Normalize data keys to lowercase to match template expectations
-            const normalizedData = results.data.map((item: any) => {
-              const newItem: any = {};
-              Object.keys(item).forEach((key) => {
-                newItem[key.toLowerCase()] = item[key];
-              });
-              return newItem;
-            });
-
-            const ordenados = normalizedData.sort((a, b) =>
+            const ordenados = results.data.sort((a, b) =>
               a.in_desmerc.localeCompare(b.in_desmerc, undefined, {
                 sensitivity: 'base',
-              })
+              }),
             );
             this.resultadodescripcionmerc = ordenados;
             this.selectedIndexdescripcionmerc = 0;
             const candidatos = ordenados.filter((r) =>
-              String(r.in_desmerc).toLowerCase().startsWith(queryLower)
+              String(r.in_desmerc).toLowerCase().startsWith(queryLower),
             );
             if (candidatos.length > 0) {
               this.cargarDatosInventario(candidatos[0]);
@@ -1652,18 +1979,8 @@ export class Facturacion implements OnInit {
           fa_codZona: cliente.cl_codZona,
           fa_sector: cliente.cl_codSect,
         },
-        { emitEvent: false }
+        { emitEvent: false },
       );
-
-      // Lógica de NCF según RNC del cliente
-      if (cliente.cl_rnc && String(cliente.cl_rnc).trim() !== '') {
-        this.formularioFacturacion.patchValue({ fa_tipoNcf: '31' });
-        this.formularioFacturacion.get('fa_tipoNcf')?.enable();
-      } else {
-        this.formularioFacturacion.patchValue({ fa_tipoNcf: '32' });
-        this.formularioFacturacion.get('fa_tipoNcf')?.disable();
-      }
-
       console.log(cliente);
       console.log('Formulario actualizado:', this.formularioFacturacion.value);
     }
@@ -1714,6 +2031,79 @@ export class Facturacion implements OnInit {
     if (nextInput) {
       nextInput.focus();
     }
+  }
+
+  onFocusFpago(): void {
+    if (this.blurTimeoutFpago) clearTimeout(this.blurTimeoutFpago);
+    this.mostrarDropdownFpago = true;
+    if (!this.resultadoFpago.length) this.resultadoFpago = this.listaFpago;
+    this.selectedIndexfpago = 0;
+  }
+
+  onBlurFpago(): void {
+    if (this.blurTimeoutFpago) clearTimeout(this.blurTimeoutFpago);
+    this.blurTimeoutFpago = setTimeout(() => {
+      this.mostrarDropdownFpago = false;
+    }, 150);
+  }
+
+  onFocusEnvio(): void {
+    if (this.blurTimeoutEnvio) clearTimeout(this.blurTimeoutEnvio);
+    this.mostrarDropdownEnvio = true;
+    if (!this.resultadoEnvio.length) this.resultadoEnvio = this.listaEnvio;
+    this.selectedIndexEnvio = 0;
+  }
+
+  onBlurEnvio(): void {
+    if (this.blurTimeoutEnvio) clearTimeout(this.blurTimeoutEnvio);
+    this.blurTimeoutEnvio = setTimeout(() => {
+      this.mostrarDropdownEnvio = false;
+    }, 150);
+  }
+
+  abrirModalDetalle(): void {
+    try {
+      const modalDetalle = $('#modalDetalleFactura');
+      modalDetalle.one('shown.bs.modal', () => {
+        const inputCodigo = this.codigoInput?.nativeElement;
+        if (!inputCodigo || inputCodigo.disabled) return;
+
+        inputCodigo.focus();
+        inputCodigo.select();
+      });
+      modalDetalle.modal('show');
+    } catch (e) {
+      console.warn('No se pudo abrir #modalDetalleFactura:', e);
+    }
+  }
+
+  private abrirModalBuscarFactura(): void {
+    this.onOpenBuscarFacturaModal();
+    try {
+      $('#modalBuscarFactura').modal('show');
+    } catch (e) {
+      console.warn('No se pudo abrir #modalBuscarFactura:', e);
+    }
+  }
+
+  private tieneFacturaEnCurso(): boolean {
+    const factura = this.formularioFacturacion?.getRawValue?.() || {};
+    const camposCaptura = [
+      factura.fa_rncFact,
+      factura.fa_nomClie,
+      factura.fa_codClie,
+      factura.fa_telClie,
+      factura.fa_dirClie,
+      factura.fa_correo,
+      factura.fa_codVend,
+      factura.fa_nomVend,
+      factura.fa_sector,
+      factura.fa_contacto,
+      factura.fa_envio,
+      factura.fa_fpago,
+    ];
+
+    return this.items.length > 0 || camposCaptura.some((campo) => String(campo || '').trim() !== '');
   }
 
   handleKeydownEnvio(event: KeyboardEvent): void {
@@ -1836,6 +2226,7 @@ export class Facturacion implements OnInit {
     this.existenciatxt = 0;
     this.costotxt = 0;
     this.medidatxt = 0;
+    this.margenVentatxt = 0;
     this.tipomerc = '';
     this.fecacttxt = ' ';
     this.atxt = 0;
@@ -1887,6 +2278,7 @@ export class Facturacion implements OnInit {
     this.cantidadmerc = item.cantidad;
     this.existenciatxt = item.producto.in_canmerc;
     this.costotxt = item.producto.in_cosmerc;
+    this.margenVentatxt = item.producto.in_porgana;
 
     // Sincronizar controles
     this.buscarcodmerc.setValue(this.codmerc, { emitEvent: false });
@@ -1900,15 +2292,15 @@ export class Facturacion implements OnInit {
     this.totalGral = this.items.reduce((sum, item) => sum + item.total, 0);
     this.totalItbis = this.items.reduce(
       (sum, item) => sum + item.total * 0.18,
-      0
+      0,
     );
     this.subTotal = this.items.reduce(
       (sum, item) => sum + (item.total - item.total * 0.18),
-      0
+      0,
     );
     this.totalcosto = this.items.reduce(
       (sum, item) => sum + this.costotxt * item.cantidad,
-      0
+      0,
     );
     const formatCurrency = (value: number) =>
       value.toLocaleString('es-DO', {
@@ -1934,15 +2326,16 @@ export class Facturacion implements OnInit {
     const facturaPayload = {
       ...this.formularioFacturacion.getRawValue(),
     } as any;
+    facturaPayload.fa_status = 'C';
     facturaPayload.fa_codEmpr = localStorage.getItem('codigoempresa');
     facturaPayload.fa_codSucu = parseInt(
-      localStorage.getItem('idSucursal') || '0'
+      localStorage.getItem('idSucursal') || '0',
     );
     // Convertir fa_tipoNcf a entero
     if (facturaPayload.fa_tipoNcf) {
       facturaPayload.fa_tipoNcf = parseInt(
         facturaPayload.fa_tipoNcf.toString(),
-        10
+        10,
       );
     }
     facturaPayload.fa_fecFact = this.toPrismaDate(facturaPayload.fa_fecFact);
@@ -1995,7 +2388,7 @@ export class Facturacion implements OnInit {
             title: 'Error',
             text: 'Hubo un error al guardar la factura.',
           });
-        }
+        },
       );
     } else {
       alert('Esta Factura no fue Guardada');
@@ -2024,13 +2417,109 @@ export class Facturacion implements OnInit {
     this.selectedRow = index; // Selecciona la fila cuando se hace clic
     this.selectedItem = this.items[index];
     console.log(this.selectedItem);
-    this.calcularPorcentaje();
+    this.mostrarInformacionProductoSeleccionado(this.selectedItem);
   }
 
   calcularPorcentaje(): void {
     this.protxt =
       ((this.selectedItem.total - this.selectedItem.costo) * 100) /
       this.selectedItem.costo;
+  }
+
+  private mostrarInformacionProductoSeleccionado(item: any): void {
+    const producto = item?.producto;
+    const codigo = String(producto?.in_codmerc || '').trim();
+    if (!producto || !codigo) return;
+
+    this.aplicarInformacionProducto(producto, item);
+    this.cargarExistenciaInformacionProducto(codigo);
+
+    this.ServicioInventario.obtenerProductoPorId(codigo).subscribe({
+      next: (response: any) => {
+        if (
+          this.selectedItem !== item ||
+          String(this.selectedItem?.producto?.in_codmerc || '').trim() !== codigo
+        ) {
+          return;
+        }
+
+        const productoActualizado = response?.data;
+        if (!productoActualizado) return;
+
+        item.producto = {
+          ...producto,
+          ...productoActualizado,
+          in_canmerc: producto.in_canmerc,
+        };
+        this.aplicarInformacionProducto(item.producto, item);
+      },
+      error: (error) => {
+        console.error('Error consultando informacion del producto:', error);
+      },
+    });
+  }
+
+  private aplicarInformacionProducto(producto: any, item: any): void {
+    const costoUnitario = this.obtenerCostoUnitarioProducto(producto, item);
+    const precioUnitario = Number(item?.precio ?? producto?.in_premerc ?? 0) || 0;
+
+    this.existenciatxt = Number(producto?.in_canmerc ?? 0) || 0;
+    this.medidatxt = producto?.in_medida ?? producto?.media ?? '';
+    this.margenVentatxt = Number(producto?.in_porgana ?? 0) || 0;
+    this.fecacttxt = producto?.in_fecmodif ?? producto?.in_fecmodi ?? ' ';
+    this.costotxt = costoUnitario;
+    this.protxt =
+      costoUnitario > 0
+        ? ((precioUnitario - costoUnitario) * 100) / costoUnitario
+        : 0;
+
+    this.atxt = costoUnitario + (costoUnitario * 5) / 100;
+    this.btxt = costoUnitario + (costoUnitario * 7) / 100;
+    this.ctxt = costoUnitario + (costoUnitario * 10) / 100;
+    this.dtxt = costoUnitario + (costoUnitario * 12) / 100;
+    this.etxt = costoUnitario + (costoUnitario * 14) / 100;
+    this.ftxt = costoUnitario + (costoUnitario * 16) / 100;
+    this.gtxt = costoUnitario + (costoUnitario * 18) / 100;
+    this.htxt = costoUnitario + (costoUnitario * 20) / 100;
+  }
+
+  private obtenerCostoUnitarioProducto(producto: any, item: any): number {
+    const costoProducto = Number(producto?.in_cosmerc ?? producto?.in_costmer ?? 0);
+    if (costoProducto > 0) return costoProducto;
+
+    const costoItem = Number(item?.costo ?? 0);
+    const cantidad = Number(item?.cantidad ?? 0);
+    if (costoItem > 0 && cantidad > 0 && costoItem > Number(item?.precio ?? 0)) {
+      return costoItem / cantidad;
+    }
+
+    return costoItem > 0 ? costoItem : 0;
+  }
+
+  private cargarExistenciaInformacionProducto(codProducto: string): void {
+    const codigo = String(codProducto || '').trim();
+    const sucursal = Number(localStorage.getItem('idSucursal') || 0);
+    if (!codigo || !sucursal) return;
+
+    this.ServicioInventario
+      .obtenerExistenciaPorProductoSucursal(codigo, sucursal)
+      .subscribe({
+        next: (response: any) => {
+          if (
+            String(this.selectedItem?.producto?.in_codmerc || '').trim() !==
+            codigo
+          ) {
+            return;
+          }
+
+          const existencia = Number(response?.data?.inv_existencia ?? 0);
+          this.existenciatxt = Number.isFinite(existencia) ? existencia : 0;
+          this.selectedItem.producto.in_canmerc = this.existenciatxt;
+        },
+        error: (error) => {
+          console.error('Error consultando existencia del producto:', error);
+        },
+      });
   }
 
   ngAfterViewInit() {
@@ -2068,7 +2557,6 @@ export class Facturacion implements OnInit {
             in_cosmerc: 0,
             in_premerc: 0,
             in_precmin: 0,
-            in_tramo: item.in_tramo,
             // in_costpro: 0,
             in_ucosto: 0,
             in_porgana: 0,

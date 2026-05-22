@@ -1,0 +1,63 @@
+.solicitud-page {
+  color: #243142;
+}
+
+.module-title {
+  margin: 0 0 10px;
+  color: #243142;
+  font-size: 1.35rem;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.toolbar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.table-wrap {
+  border: 1px solid #d8dee6;
+  border-radius: 6px;
+  overflow: auto;
+  background: #fff;
+}
+
+.table th {
+  white-space: nowrap;
+}
+
+.modal-body {
+  background: #f7f9fb;
+}
+
+.detalle-panel {
+  border: 1px solid #d8dee6;
+  border-radius: 6px;
+  padding: 10px;
+  background: #fff;
+}
+
+@media print {
+  #printSolicitud {
+    display: block !important;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  #printSolicitud,
+  #printSolicitud * {
+    visibility: visible;
+  }
+
+  #printSolicitud {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+}

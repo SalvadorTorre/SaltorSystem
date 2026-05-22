@@ -1,318 +1,261 @@
-<div class="container-fluid p-0 mantenimiento-wrapper">
-  <div class="row g-0 row-full-height">
-    <!-- Botón para mostrar/ocultar sidebar en dispositivos móviles -->
-    <div class="d-block d-lg-none position-fixed start-0 top-0 p-2 z-index-1000">
-      <button class="btn btn-primary" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu">
-        <i class="bi bi-list"></i> Menú
+<div class="maintenance-shell">
+  <button
+    class="btn mobile-menu-btn d-lg-none"
+    type="button"
+    data-bs-toggle="offcanvas"
+    data-bs-target="#sidebarMenu"
+    aria-controls="sidebarMenu"
+  >
+    <i class="bi bi-list"></i>
+    Menú
+  </button>
+
+  <aside class="maintenance-sidebar d-none d-lg-flex">
+    <div class="maintenance-sidebar__top">
+      <span class="maintenance-badge">Gestión interna</span>
+      <h5 class="maintenance-title">
+        <i class="bi bi-gear-wide-connected me-2"></i>
+        Mantenimientos
+      </h5>
+      <p class="maintenance-subtitle">Catálogos, permisos y configuración general</p>
+    </div>
+
+    <nav class="maintenance-nav">
+      <a class="maintenance-link" routerLinkActive="active" [routerLink]="['inventario']">
+        <i class="bi bi-box-seam"></i>
+        <span>Productos</span>
+      </a>
+
+      <a class="maintenance-link" routerLinkActive="active" [routerLink]="['cliente']">
+        <i class="bi bi-people"></i>
+        <span>Clientes</span>
+      </a>
+
+      <a class="maintenance-link" routerLinkActive="active" [routerLink]="['suplidor']">
+        <i class="bi bi-truck"></i>
+        <span>Suplidores</span>
+      </a>
+
+      <a class="maintenance-link" routerLinkActive="active" [routerLink]="['zona']">
+        <i class="bi bi-geo-alt"></i>
+        <span>Zonas</span>
+      </a>
+
+      <a class="maintenance-link" routerLinkActive="active" [routerLink]="['sector']">
+        <i class="bi bi-map"></i>
+        <span>Sectores</span>
+      </a>
+
+      <a class="maintenance-link" routerLinkActive="active" [routerLink]="['choferes']">
+        <i class="bi bi-car-front"></i>
+        <span>Choferes</span>
+      </a>
+
+      <a class="maintenance-link" routerLinkActive="active" [routerLink]="['despachadores']">
+        <i class="bi bi-send"></i>
+        <span>Despachadores</span>
+      </a>
+
+      <a class="maintenance-link" routerLinkActive="active" [routerLink]="['grupo-mercancias']">
+        <i class="bi bi-collection"></i>
+        <span>Grupo de mercancías</span>
+      </a>
+
+      <a class="maintenance-link" routerLinkActive="active" [routerLink]="['Empresas']">
+        <i class="bi bi-building"></i>
+        <span>Empresas</span>
+      </a>
+
+      <button
+        type="button"
+        class="maintenance-link maintenance-link--toggle"
+        (click)="toggleMenu('configuracion')"
+        [attr.aria-expanded]="openMenu === 'configuracion'"
+      >
+        <span class="d-flex align-items-center">
+          <i class="bi bi-sliders me-2"></i>
+          Configuración
+        </span>
+        <i
+          class="bi"
+          [ngClass]="{
+            'bi-chevron-down': openMenu === 'configuracion',
+            'bi-chevron-right': openMenu !== 'configuracion'
+          }"
+        ></i>
       </button>
+
+      <div class="maintenance-submenu" [class.show]="openMenu === 'configuracion'">
+        <a class="maintenance-sublink" routerLinkActive="active" [routerLink]="['encf']">
+          <i class="bi bi-file-text"></i>
+          <span>ENCF</span>
+        </a>
+        <a class="maintenance-sublink" routerLinkActive="active" [routerLink]="['usuario']">
+          <i class="bi bi-person"></i>
+          <span>Usuarios</span>
+        </a>
+        <a class="maintenance-sublink" routerLinkActive="active" [routerLink]="['tipousuario']">
+          <i class="bi bi-person-badge"></i>
+          <span>Tipo de usuario</span>
+        </a>
+        <a class="maintenance-sublink" routerLinkActive="active" [routerLink]="['modulo']">
+          <i class="bi bi-ui-checks-grid"></i>
+          <span>Módulos</span>
+        </a>
+        <a class="maintenance-sublink" routerLinkActive="active" [routerLink]="['permiso']">
+          <i class="bi bi-shield-lock"></i>
+          <span>Permisos</span>
+        </a>
+        <a class="maintenance-sublink" routerLinkActive="active" [routerLink]="['fentrega']">
+          <i class="bi bi-truck"></i>
+          <span>Tipo de entrega</span>
+        </a>
+        <a class="maintenance-sublink" routerLinkActive="active" [routerLink]="['fpago']">
+          <i class="bi bi-credit-card"></i>
+          <span>Forma de pago</span>
+        </a>
+        <a class="maintenance-sublink" routerLinkActive="active" [routerLink]="['rnc']">
+          <i class="bi bi-card-heading"></i>
+          <span>RNC</span>
+        </a>
+        <a class="maintenance-sublink" routerLinkActive="active" [routerLink]="['configuracion-global']">
+          <i class="bi bi-file-earmark-lock2"></i>
+          <span>Firma digital DGII</span>
+        </a>
+        <a class="maintenance-sublink" routerLinkActive="active" [routerLink]="['contfactura']">
+          <i class="bi bi-123"></i>
+          <span>Cont. Factura</span>
+        </a>
+      </div>
+
+    </nav>
+  </aside>
+
+  <section class="maintenance-main">
+    <div class="maintenance-main__inner">
+      <router-outlet></router-outlet>
     </div>
+  </section>
 
-
-    <!-- Sidebar para pantallas grandes (lg y superiores) -->
-    <div class="col-lg-3 col-xl-2 d-none d-lg-block sidebar-column">
-        <div class="sidebar-header d-flex align-items-center">
-          <i class="bi bi-gear-fill me-2"></i>
-          <h5 class="mb-0">Mantenimientos</h5>
-        </div>
-        <ul class="nav flex-column sidebar-nav nav-pills">
-
-        <!-- <ul class="nav flex-column sidebar-nav"> -->
-        <li class="nav-item">
-          <a class="nav-link" routerLinkActive="active" [routerLink]="['inventario']">
-            <i class="bi bi-box"></i>
-            <span>Productos</span>
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" routerLinkActive="active" [routerLink]="['cliente']">
-            <i class="bi bi-people"></i>
-            <span>Cliente</span>
-          </a>
-          </li>
-        <li class="nav-item">
-          <a class="nav-link" routerLinkActive="active" [routerLink]="['suplidor']">
-            <i class="bi bi-truck"></i>
-            <span>Suplidor</span>
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" routerLinkActive="active" [routerLink]="['zona']">
-            <i class="bi bi-geo-alt"></i>
-            <span>Zonas</span>
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" routerLinkActive="active" [routerLink]="['sector']">
-            <i class="bi bi-map"></i>
-            <span>Sector</span>
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" routerLinkActive="active" [routerLink]="['choferes']">
-            <i class="bi bi-car-front"></i>
-            <span>Choferes</span>
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" routerLinkActive="active" [routerLink]="['despachadores']">
-            <i class="bi bi-send"></i>
-            <span>Despachadores</span>
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" routerLinkActive="active" [routerLink]="['grupo-mercancias']">
-            <i class="bi bi-collection"></i>
-            <span>Grupo de Mercancías</span>
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" routerLinkActive="active" [routerLink]="['Empresas']">
-            <i class="bi bi-building"></i>
-            <span>Empresa</span>
-          </a>
-        </li>
-
-          <!-- Configuración con submenu -->
-          <li class="nav-item">
-            <a
-              href="javascript:void(0)"
-              class="nav-link justify-content-between"
-              (click)="toggleMenu('configuracion')" >
-              <span class="d-flex align-items-center">
-                <i class="bi bi-sliders"></i> Configuración
-              </span>
-              <i
-                class="bi"
-                [ngClass]="{
-                  'bi-chevron-down': openMenu === 'configuracion',
-                  'bi-chevron-right': openMenu !== 'configuracion'
-                }"
-              ></i>
-            </a>
-
-            <ul class="nav flex-column ms-4 collapse" [ngClass]="{'show': openMenu === 'configuracion'}">
-              <li class="nav-item">
-                <a class="nav-link" routerLinkActive="active" [routerLink]="['encf']">
-                  <i class="bi bi-file-text me-2"></i> ENCF
-                </a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" routerLinkActive="active" [routerLink]="['usuario']">
-                  <i class="bi bi-person me-2"></i> Usuario
-                </a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" routerLinkActive="active" [routerLink]="['tipousuario']">
-                  <i class="bi bi-person-badge me-2"></i> Tipo de Usuario
-                </a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" routerLinkActive="active" [routerLink]="['modulo']">
-                  <i class="bi bi-ui-checks-grid me-2"></i> Modulos
-                </a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" routerLinkActive="active" [routerLink]="['permiso']">
-                  <i class="bi bi-shield-lock me-2"></i> Permisos
-                </a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" routerLinkActive="active" [routerLink]="['fentrega']">
-                  <i class="bi bi-truck me-2"></i> Tipo de Entrega
-                </a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" routerLinkActive="active" [routerLink]="['fpago']">
-                  <i class="bi bi-credit-card me-2"></i> Forma de Pago
-                </a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" routerLinkActive="active" [routerLink]="['rnc']">
-                  <i class="bi bi-card-heading me-2"></i> RNC
-                </a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" routerLinkActive="active" [routerLink]="['otros']">
-                  <i class="bi bi-gear me-2"></i> Otros
-                </a>
-              </li>
-            </ul>
-          </li>
-        </ul>
-    </div>
-    <!-- Sidebar para dispositivos móviles (offcanvas) -->
-    <div class="offcanvas offcanvas-start" tabindex="-1" id="sidebarMenu" aria-labelledby="sidebarMenuLabel">
-      <div class="offcanvas-header bg-primary text-white">
+  <div class="offcanvas offcanvas-start maintenance-offcanvas" tabindex="-1" id="sidebarMenu" aria-labelledby="sidebarMenuLabel">
+    <div class="offcanvas-header">
+      <div>
         <h5 class="offcanvas-title" id="sidebarMenuLabel">Mantenimientos</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        <small>Navegación rápida</small>
       </div>
-      <div class="offcanvas-body p-0">
-        <ul class="nav flex-column sidebar-nav">
-          <li class="nav-item">
-            <a class="nav-link d-flex align-items-center" routerLinkActive="active" [routerLink]="['inventario']" data-bs-dismiss="offcanvas">
-              <i class="bi bi-box me-2"></i>
-              <span>Inventario</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link d-flex align-items-center" routerLinkActive="active" [routerLink]="['cliente']" data-bs-dismiss="offcanvas">
-              <i class="bi bi-people me-2"></i>
-              <span>Cliente</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link d-flex align-items-center" routerLinkActive="active" [routerLink]="['suplidor']" data-bs-dismiss="offcanvas">
-              <i class="bi bi-truck me-2"></i>
-              <span>Suplidor</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link d-flex align-items-center" routerLinkActive="active" [routerLink]="['zona']" data-bs-dismiss="offcanvas">
-              <i class="bi bi-geo-alt me-2"></i>
-              <span>Zonas</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link d-flex align-items-center" routerLinkActive="active" [routerLink]="['sector']" data-bs-dismiss="offcanvas">
-              <i class="bi bi-map me-2"></i>
-              <span>Sector</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link d-flex align-items-center" routerLinkActive="active" [routerLink]="['choferes']" data-bs-dismiss="offcanvas">
-              <i class="bi bi-car-front me-2"></i>
-              <span>Choferes</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link d-flex align-items-center" routerLinkActive="active" [routerLink]="['despachadores']" data-bs-dismiss="offcanvas">
-              <i class="bi bi-send me-2"></i>
-              <span>Despachadores</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link d-flex align-items-center" routerLinkActive="active" [routerLink]="['grupo-mercancias']" data-bs-dismiss="offcanvas">
-              <i class="bi bi-collection me-2"></i>
-              <span>Grupo de Mercancías</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link d-flex align-items-center text-dark" routerLinkActive="active" [routerLink]="['Empresas']" data-bs-dismiss="offcanvas">
-              <i class="bi bi-building me-2"></i>
-              <span>Empresa</span>
-            </a>
-          </li>
-       <!-- Configuración con submenu (móvil) -->
-          <li class="nav-item">
-            <a
-              href="javascript:void(0)"
-              class="nav-link d-flex align-items-center justify-content-between text-dark"
-              (click)="toggleMenu('configuracion')"
-            >
-              <span>
-                <i class="bi bi-sliders me-2"></i> Configuración
-              </span>
-              <i
-                class="bi"
-                [ngClass]="{
-                  'bi-chevron-down': openMenu === 'configuracion',
-                  'bi-chevron-right': openMenu !== 'configuracion'
-                }"
-              ></i>
-            </a>
-
-            <ul class="nav flex-column ms-4 collapse" [ngClass]="{'show': openMenu === 'configuracion'}">
-              <li class="nav-item">
-                <a
-                  class="nav-link text-dark"
-                  routerLinkActive="active"
-                  [routerLink]="['encf']"
-                  data-bs-dismiss="offcanvas"
-                >
-                  <i class="bi bi-file-text me-2"></i> ENCF
-                </a>
-              </li>
-              <li class="nav-item">
-                <a
-                  class="nav-link text-dark"
-                  routerLinkActive="active"
-                  [routerLink]="['usuario']"
-                  data-bs-dismiss="offcanvas"
-                >
-                  <i class="bi bi-person me-2"></i> Usuario
-                </a>
-              </li>
-              <li class="nav-item">
-                <a
-                  class="nav-link text-dark"
-                  routerLinkActive="active"
-                  [routerLink]="['tipousuario']"
-                  data-bs-dismiss="offcanvas"
-                >
-                  <i class="bi bi-person-badge me-2"></i> Tipo de Usuario
-                </a>
-              </li>
-              <li class="nav-item">
-                <a
-                  class="nav-link text-dark"
-                  routerLinkActive="active"
-                  [routerLink]="['modulo']"
-                  data-bs-dismiss="offcanvas"
-                >
-                  <i class="bi bi-ui-checks-grid me-2"></i> Modulos                </a>
-              </li>
-              <li class="nav-item">
-                <a
-                  class="nav-link text-dark"
-                  routerLinkActive="active"
-                  [routerLink]="['permiso']"
-                  data-bs-dismiss="offcanvas"
-                >
-                  <i class="bi bi-shield-lock me-2"></i> Permisos
-                </a>
-              </li>
-              <!-- </li>
-              <li class="nav-item">
-                <a
-                  class="nav-link text-dark"
-                  routerLinkActive="active"
-                  [routerLink]="['fentrega']"
-                  data-bs-dismiss="offcanvas"
-                >
-                  <i class="bi bi-truck me-2"></i> Tipo de Entrega
-                </a>
-              </li> -->
-              <li class="nav-item">
-                <a
-                  class="nav-link text-dark"
-                  routerLinkActive="active"
-                  [routerLink]="['fpago']"
-                  data-bs-dismiss="offcanvas"
-                >
-                  <i class="bi bi-credit-card me-2"></i> Forma de Pago
-                </a>
-              </li>
-              <li class="nav-item">
-                <a
-                  class="nav-link text-dark"
-                  routerLinkActive="active"
-                  [routerLink]="['otros']"
-                  data-bs-dismiss="offcanvas"
-                >
-                  <i class="bi bi-gear me-2"></i> Otros
-                </a>
-              </li>
-            </ul>
-          </li>
-        </ul>
-      </div>
+      <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
     </div>
 
-    <!-- Contenido principal -->
-    <div class="col-12 col-lg-9 col-xl-10 main-content-column">
-      <div class="p-3">
-        <router-outlet></router-outlet>
-      </div>
+    <div class="offcanvas-body">
+      <nav class="maintenance-nav">
+        <a class="maintenance-link" routerLinkActive="active" [routerLink]="['inventario']" data-bs-dismiss="offcanvas">
+          <i class="bi bi-box-seam"></i>
+          <span>Productos</span>
+        </a>
+
+        <a class="maintenance-link" routerLinkActive="active" [routerLink]="['cliente']" data-bs-dismiss="offcanvas">
+          <i class="bi bi-people"></i>
+          <span>Clientes</span>
+        </a>
+
+        <a class="maintenance-link" routerLinkActive="active" [routerLink]="['suplidor']" data-bs-dismiss="offcanvas">
+          <i class="bi bi-truck"></i>
+          <span>Suplidores</span>
+        </a>
+
+        <a class="maintenance-link" routerLinkActive="active" [routerLink]="['zona']" data-bs-dismiss="offcanvas">
+          <i class="bi bi-geo-alt"></i>
+          <span>Zonas</span>
+        </a>
+
+        <a class="maintenance-link" routerLinkActive="active" [routerLink]="['sector']" data-bs-dismiss="offcanvas">
+          <i class="bi bi-map"></i>
+          <span>Sectores</span>
+        </a>
+
+        <a class="maintenance-link" routerLinkActive="active" [routerLink]="['choferes']" data-bs-dismiss="offcanvas">
+          <i class="bi bi-car-front"></i>
+          <span>Choferes</span>
+        </a>
+
+        <a class="maintenance-link" routerLinkActive="active" [routerLink]="['despachadores']" data-bs-dismiss="offcanvas">
+          <i class="bi bi-send"></i>
+          <span>Despachadores</span>
+        </a>
+
+        <a class="maintenance-link" routerLinkActive="active" [routerLink]="['grupo-mercancias']" data-bs-dismiss="offcanvas">
+          <i class="bi bi-collection"></i>
+          <span>Grupo de mercancías</span>
+        </a>
+
+        <a class="maintenance-link" routerLinkActive="active" [routerLink]="['Empresas']" data-bs-dismiss="offcanvas">
+          <i class="bi bi-building"></i>
+          <span>Empresas</span>
+        </a>
+
+        <button
+          type="button"
+          class="maintenance-link maintenance-link--toggle"
+          (click)="toggleMenu('configuracion')"
+          [attr.aria-expanded]="openMenu === 'configuracion'"
+        >
+          <span class="d-flex align-items-center">
+            <i class="bi bi-sliders me-2"></i>
+            Configuración
+          </span>
+          <i
+            class="bi"
+            [ngClass]="{
+              'bi-chevron-down': openMenu === 'configuracion',
+              'bi-chevron-right': openMenu !== 'configuracion'
+            }"
+          ></i>
+        </button>
+
+        <div class="maintenance-submenu" [class.show]="openMenu === 'configuracion'">
+          <a class="maintenance-sublink" routerLinkActive="active" [routerLink]="['encf']" data-bs-dismiss="offcanvas">
+            <i class="bi bi-file-text"></i>
+            <span>ENCF</span>
+          </a>
+          <a class="maintenance-sublink" routerLinkActive="active" [routerLink]="['usuario']" data-bs-dismiss="offcanvas">
+            <i class="bi bi-person"></i>
+            <span>Usuarios</span>
+          </a>
+          <a class="maintenance-sublink" routerLinkActive="active" [routerLink]="['tipousuario']" data-bs-dismiss="offcanvas">
+            <i class="bi bi-person-badge"></i>
+            <span>Tipo de usuario</span>
+          </a>
+          <a class="maintenance-sublink" routerLinkActive="active" [routerLink]="['modulo']" data-bs-dismiss="offcanvas">
+            <i class="bi bi-ui-checks-grid"></i>
+            <span>Módulos</span>
+          </a>
+          <a class="maintenance-sublink" routerLinkActive="active" [routerLink]="['permiso']" data-bs-dismiss="offcanvas">
+            <i class="bi bi-shield-lock"></i>
+            <span>Permisos</span>
+          </a>
+          <a class="maintenance-sublink" routerLinkActive="active" [routerLink]="['fentrega']" data-bs-dismiss="offcanvas">
+            <i class="bi bi-truck"></i>
+            <span>Tipo de entrega</span>
+          </a>
+          <a class="maintenance-sublink" routerLinkActive="active" [routerLink]="['fpago']" data-bs-dismiss="offcanvas">
+            <i class="bi bi-credit-card"></i>
+            <span>Forma de pago</span>
+          </a>
+          <a class="maintenance-sublink" routerLinkActive="active" [routerLink]="['rnc']" data-bs-dismiss="offcanvas">
+            <i class="bi bi-card-heading"></i>
+            <span>RNC</span>
+          </a>
+          <a class="maintenance-sublink" routerLinkActive="active" [routerLink]="['configuracion-global']" data-bs-dismiss="offcanvas">
+            <i class="bi bi-file-earmark-lock2"></i>
+            <span>Firma digital DGII</span>
+          </a>
+          <a class="maintenance-sublink" routerLinkActive="active" [routerLink]="['contfactura']" data-bs-dismiss="offcanvas">
+            <i class="bi bi-123"></i>
+            <span>Cont. Factura</span>
+          </a>
+        </div>
+
+      </nav>
     </div>
   </div>
 </div>

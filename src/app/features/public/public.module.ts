@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { PublicRoutingModule } from './public.page-routing.module';
 import { PublicPage } from './public.page';
-import { PhoneNumberMaskDirective } from 'src/app/core/directive/phonemask.directive';
 
 @NgModule({
   imports: [
@@ -11,13 +10,8 @@ import { PhoneNumberMaskDirective } from 'src/app/core/directive/phonemask.direc
     ReactiveFormsModule,
     FormsModule,
     PublicRoutingModule,
-
   ],
-  declarations: [
-    PublicPage,
-  ],
-  exports: [
-  ]
-
+  declarations: [PublicPage],
+  exports: [],
 })
-export class PublicModule { }
+export class PublicModule {}

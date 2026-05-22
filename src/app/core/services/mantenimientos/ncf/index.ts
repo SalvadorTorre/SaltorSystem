@@ -10,4 +10,5 @@ export interface ModeloNcfData {
   desNcf: string;
   tipo: string;
   codigo: string;
+  grupo?: number | null;
 }

@@ -1,13 +1,6 @@
-import { Inventario } from './../mantenimientos/pages/inventario-page/inventario';
-import {
-  Component,
-  NgModule,
-  OnInit,
-  ViewChild,
-  ElementRef,
-  ɵNG_COMP_DEF,
-} from '@angular/core';
-import { FormsModule } from '@angular/forms';
+// import { Inventario } from './../mantenimientos/pages/inventario-page/inventario';
+import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
+// import { FormsModule } from '@angular/forms';
 import {
   FormBuilder,
   FormControl,
@@ -23,8 +16,8 @@ import {
   tap,
 } from 'rxjs';
 import Swal from 'sweetalert2';
-import { ModeloUsuarioData } from 'src/app/core/services/mantenimientos/usuario';
-import { ModeloRncData } from 'src/app/core/services/mantenimientos/rnc';
+// import { ModeloUsuarioData } from 'src/app/core/services/mantenimientos/usuario';
+// import { ModeloRncData } from 'src/app/core/services/mantenimientos/rnc';
 import { ServicioRnc } from 'src/app/core/services/mantenimientos/rnc/rnc.service';
 import { ServicioUsuario } from 'src/app/core/services/mantenimientos/usuario/usuario.service';
 import { ServicioCotizacion } from 'src/app/core/services/cotizaciones/cotizacion/cotizacion.service';
@@ -39,10 +32,7 @@ import {
   ModeloCliente,
   ModeloClienteData,
 } from 'src/app/core/services/mantenimientos/clientes';
-import {
-  CotizacionDetalleModel,
-  interfaceDetalleModel,
-} from 'src/app/core/services/cotizaciones/cotizacion/cotizacion';
+import { interfaceDetalleModel } from 'src/app/core/services/cotizaciones/cotizacion/cotizacion';
 import { ServicioInventario } from 'src/app/core/services/mantenimientos/inventario/inventario.service';
 import {
   ModeloInventario,
@@ -75,7 +65,7 @@ export class Cotizacion implements OnInit {
   cotizacionNumero: string = '';
   mensaje: string = '';
   factura: string = '';
-  cotizacionData: any = null;      // objeto con la factura que devuelve el backend
+  cotizacionData: any = null; // objeto con la factura que devuelve el backend
   private descripcionBuscar = new BehaviorSubject<string>('');
   private codigoBuscar = new BehaviorSubject<string>('');
   private fechaBuscar = new BehaviorSubject<string>('');
@@ -128,7 +118,7 @@ export class Cotizacion implements OnInit {
     private http: HttpInvokeService,
     private servicioInventario: ServicioInventario,
     private ServicioUsuario: ServicioUsuario,
-    private ServicioRnc: ServicioRnc
+    private ServicioRnc: ServicioRnc,
   ) {
     this.form = this.fb.group({
       ct_codvend: ['', Validators.required], // El campo es requerido
@@ -136,7 +126,7 @@ export class Cotizacion implements OnInit {
     });
 
     this.crearFormularioCotizacion();
-    console.log("formulario", this.formularioCotizacion.value);
+    console.log('formulario', this.formularioCotizacion.value);
 
     this.nomclienteSubject
       .pipe(
@@ -148,9 +138,9 @@ export class Cotizacion implements OnInit {
             this.currentPage,
             this.pageSize,
             this.codigo,
-            this.txtdescripcion
+            this.txtdescripcion,
           );
-        })
+        }),
       )
       .subscribe((response) => {
         this.cotizacionList = response.data;
@@ -170,9 +160,9 @@ export class Cotizacion implements OnInit {
             this.pageSize,
             this.txtcodigo,
             this.txtdescripcion,
-            this.txtfecha
+            this.txtfecha,
           );
-        })
+        }),
       )
       .subscribe((response) => {
         this.cotizacionList = response.data;
@@ -192,9 +182,9 @@ export class Cotizacion implements OnInit {
             this.pageSize,
             this.txtcodigo,
             this.txtdescripcion,
-            this.txtfecha
+            this.txtfecha,
           );
-        })
+        }),
       )
       .subscribe((response) => {
         this.cotizacionList = response.data;
@@ -250,11 +240,13 @@ export class Cotizacion implements OnInit {
           (query: string) =>
             query.trim() !== '' &&
             !this.cancelarBusquedaCodigo &&
-            !this.isEditing
+            !this.isEditing,
         ),
         switchMap((query: string) =>
-          this.http.GetRequest<ModeloInventario>(`/productos-buscador/${query}`)
-        )
+          this.http.GetRequest<ModeloInventario>(
+            `/productos-buscador/${query}`,
+          ),
+        ),
       )
       .subscribe((results: ModeloInventario) => {
         console.log(results.data);
@@ -293,13 +285,15 @@ export class Cotizacion implements OnInit {
         }),
         filter(
           (query: string) =>
-            query !== '' && !this.cancelarBusquedaDescripcion && !this.isEditing
+            query !== '' &&
+            !this.cancelarBusquedaDescripcion &&
+            !this.isEditing,
         ),
         switchMap((query: string) =>
           this.http.GetRequest<ModeloInventario>(
-            `/productos-buscador-desc/${query}`
-          )
-        )
+            `/productos-buscador-desc/${query}`,
+          ),
+        ),
       )
       .subscribe((results: ModeloInventario) => {
         console.log(results.data);
@@ -325,8 +319,8 @@ export class Cotizacion implements OnInit {
         }),
         filter((query: string) => query !== ''),
         switchMap((query: string) =>
-          this.http.GetRequest<ModeloCliente>(`/cliente-nombre/${query}`)
-        )
+          this.http.GetRequest<ModeloCliente>(`/cliente-nombre/${query}`),
+        ),
       )
       .subscribe((results: ModeloCliente) => {
         console.log(results.data);
@@ -568,30 +562,31 @@ export class Cotizacion implements OnInit {
   }
 
   generarPDF(Cotizacion: CotizacionModelData) {
-    console.log("No. Cotizacion",Cotizacion);
+    console.log('No. Cotizacion', Cotizacion);
     if (!Cotizacion.ct_codcoti || Cotizacion.ct_codcoti.trim() === '') {
       alert('Debe ingresar un número de cotizacion');
       return;
     }
-  //   console.log('Buscando cotizacion con número:', this.cotizacionNumero);
-  // this.servicioCotizacion
-  //     .buscarCotizacionDetalle(Cotizacion.ct_codcoti)
-  //     .subscribe((response) => {
+    //   console.log('Buscando cotizacion con número:', this.cotizacionNumero);
+    // this.servicioCotizacion
+    //     .buscarCotizacionDetalle(Cotizacion.ct_codcoti)
+    //     .subscribe((response) => {
 
-    this.servicioCotizacion.getByNumero(Cotizacion.ct_codcoti).subscribe(response => {
-      this.cotizacionData = response.data;
-      console.log(this.cotizacionData.length);
-      if (response) {
-      this.cotizacionData = response; // 🔹 aquí está la cotizacion completa
-      console.log("cotizacionData", this.cotizacionData);
-        this.mensaje = '';
-      //  this.generarPDF();
-      } else {
-        this.cotizacionData = null;
-        this.mensaje = 'No se encontró una cotizacion con ese número';
-      }
-    });
-     
+    this.servicioCotizacion
+      .getByNumero(Cotizacion.ct_codcoti)
+      .subscribe((response) => {
+        this.cotizacionData = response.data;
+        console.log(this.cotizacionData.length);
+        if (response) {
+          this.cotizacionData = response; // 🔹 aquí está la cotizacion completa
+          console.log('cotizacionData', this.cotizacionData);
+          this.mensaje = '';
+          //  this.generarPDF();
+        } else {
+          this.cotizacionData = null;
+          this.mensaje = 'No se encontró una cotizacion con ese número';
+        }
+      });
   }
   eliminarCotizacion(CotizacionId: string) {
     Swal.fire({
@@ -684,31 +679,29 @@ export class Cotizacion implements OnInit {
           });
       } else {
         if (this.formularioCotizacion.valid) {
-          this.servicioCotizacion
-            .guardarCotizacion(payload)
-            .subscribe({
-              next: (response) => {
-                Swal.fire({
-                  title: 'Excelente!',
-                  text: 'Cotizacion creada correctamente.',
-                  icon: 'success',
-                  timer: 1500,
-                  showConfirmButton: false,
-                });
-                this.buscarCotizacion(this.currentPage);
-                this.formularioCotizacion.reset();
-                this.crearFormularioCotizacion();
-                this.formularioCotizacion.enable();
-                $('#modalcotizacion').modal('hide');
-              },
-              error: (err) => {
-                Swal.fire({
-                  icon: 'error',
-                  title: 'A V I S O',
-                  text: 'No se pudo crear la cotización.',
-                });
-              },
-            });
+          this.servicioCotizacion.guardarCotizacion(payload).subscribe({
+            next: (response) => {
+              Swal.fire({
+                title: 'Excelente!',
+                text: 'Cotizacion creada correctamente.',
+                icon: 'success',
+                timer: 1500,
+                showConfirmButton: false,
+              });
+              this.buscarCotizacion(this.currentPage);
+              this.formularioCotizacion.reset();
+              this.crearFormularioCotizacion();
+              this.formularioCotizacion.enable();
+              $('#modalcotizacion').modal('hide');
+            },
+            error: (err) => {
+              Swal.fire({
+                icon: 'error',
+                title: 'A V I S O',
+                text: 'No se pudo crear la cotización.',
+              });
+            },
+          });
         } else {
           console.log(this.formularioCotizacion.value);
         }
@@ -726,7 +719,10 @@ export class Cotizacion implements OnInit {
         // Asegurar que el input exista antes de enfocar
         setTimeout(() => {
           this.vendedorInput?.nativeElement?.focus();
-          this.vendedorInput?.nativeElement?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          this.vendedorInput?.nativeElement?.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center',
+          });
         }, 0);
       }
     }
@@ -752,7 +748,13 @@ export class Cotizacion implements OnInit {
     this.currentPage = page;
     // Mantener filtros actuales en la paginación
     this.servicioCotizacion
-      .buscarCotizacion(this.currentPage, this.pageSize, this.txtcodigo, this.txtdescripcion, this.txtfecha)
+      .buscarCotizacion(
+        this.currentPage,
+        this.pageSize,
+        this.txtcodigo,
+        this.txtdescripcion,
+        this.txtfecha,
+      )
       .subscribe((response) => {
         this.cotizacionList = response.data;
         this.totalItems = response.pagination.total;
@@ -765,7 +767,13 @@ export class Cotizacion implements OnInit {
   buscarCotizacion(page: number) {
     this.currentPage = page;
     this.servicioCotizacion
-      .buscarCotizacion(this.currentPage, this.pageSize, this.txtcodigo, this.txtdescripcion, this.txtfecha)
+      .buscarCotizacion(
+        this.currentPage,
+        this.pageSize,
+        this.txtcodigo,
+        this.txtdescripcion,
+        this.txtfecha,
+      )
       .subscribe((response) => {
         this.cotizacionList = response.data;
         this.totalItems = response.pagination.total;
@@ -792,7 +800,7 @@ export class Cotizacion implements OnInit {
 
     return Array.from(
       { length: endPage - startPage + 1 },
-      (_, i) => startPage + i
+      (_, i) => startPage + i,
     );
   }
   limpiaBusqueda() {
@@ -906,11 +914,11 @@ export class Cotizacion implements OnInit {
     this.totalGral = this.items.reduce((sum, item) => sum + item.total, 0);
     this.totalItbis = this.items.reduce(
       (sum, item) => sum + item.total * 0.18,
-      0
+      0,
     );
     this.subTotal = this.items.reduce(
       (sum, item) => sum + (item.total - item.total * 0.18),
-      0
+      0,
     );
   }
 
@@ -1058,7 +1066,6 @@ export class Cotizacion implements OnInit {
     }
   }
 
-
   cancelarBusquedaDescripcion: boolean = false;
   cancelarBusquedaCodigo: boolean = false;
 
@@ -1107,7 +1114,7 @@ export class Cotizacion implements OnInit {
         this.selectedIndexcodmerc <= maxIndex
       ) {
         this.cargarDatosInventario(
-          this.resultadoCodmerc[this.selectedIndexcodmerc]
+          this.resultadoCodmerc[this.selectedIndexcodmerc],
         );
       }
       event.preventDefault();
@@ -1138,7 +1145,7 @@ export class Cotizacion implements OnInit {
         this.selectedIndexcoddescripcionmerc <= maxIndex
       ) {
         this.cargarDatosInventario(
-          this.resultadodescripcionmerc[this.selectedIndexcoddescripcionmerc]
+          this.resultadodescripcionmerc[this.selectedIndexcoddescripcionmerc],
         );
       }
       event.preventDefault();
@@ -1167,7 +1174,6 @@ export class Cotizacion implements OnInit {
             });
             nextElement?.focus();
             console.log(usuario.data[0].idUsuario);
-          } else {
             this.mensagePantalla = true;
             Swal.fire({
               icon: 'error',
@@ -1179,7 +1185,7 @@ export class Cotizacion implements OnInit {
             return;
             console.log('Vendedor no encontrado');
           }
-        }
+        },
       );
     } else {
       this.mensagePantalla = true;
@@ -1510,7 +1516,7 @@ export class Cotizacion implements OnInit {
           'Estos Precios Estan Sujetos a Cambio Sin Previo Aviso',
           105,
           finalY + 40,
-          { align: 'center' }
+          { align: 'center' },
         );
         doc.setFontSize(14);
         doc.text('WWW.GRUPOHIERRO.COM', 105, finalY + 47, { align: 'center' });
@@ -1537,7 +1543,7 @@ export class Cotizacion implements OnInit {
         {
           [fieldName]: upperValue,
         },
-        { emitEvent: false }
+        { emitEvent: false },
       );
     }
   }

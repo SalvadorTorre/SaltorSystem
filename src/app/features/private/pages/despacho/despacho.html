@@ -3,17 +3,22 @@
     <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
       <h4 class="m-0">Despacho</h4>
       <div class="d-flex align-items-center gap-2">
-        <button class="btn btn-outline-secondary" (click)="limpiarCampos()"><i class="bi bi-eraser"></i> Limpiar</button>
-        <button *ngIf="facturaData" class="btn btn-danger" (click)="generarPDF()"><i class="bi bi-filetype-pdf"></i> Exportar a PDF</button>
+        <button class="btn btn-outline-secondary" (click)="limpiarCampos()">
+          <i class="bi bi-eraser"></i> Limpiar
+        </button>
+        <button *ngIf="facturaData" class="btn btn-danger" (click)="imprimirConduce()">
+          <i class="bi bi-printer"></i> Imprimir Conduce
+        </button>
       </div>
     </div>
+
     <div *ngIf="mensaje" class="alert alert-info mb-3" role="alert">{{ mensaje }}</div>
 
     <div class="row g-3">
       <div class="col-12 col-md-6">
         <div class="row g-2 align-items-end">
           <div class="col-12 col-sm-4">
-            <label for="cedula" class="form-label">Cédula</label>
+            <label for="cedula" class="form-label">Cedula</label>
           </div>
           <div class="col-12 col-sm-5">
             <input
@@ -21,13 +26,13 @@
               id="cedula"
               #cedulaInput
               [(ngModel)]="cedula"
-              (keyup.enter)="buscarDespachador(facturaInput)"
+              (keyup.enter)="buscarDespachador()"
               class="form-control"
-              placeholder="Ingrese la cédula"
+              placeholder="Ingrese la cedula"
             />
           </div>
           <div class="col-12 col-sm-3 d-grid">
-            <button class="btn btn-primary" (click)="buscarDespachador(facturaInput)">Buscar</button>
+            <button class="btn btn-primary" (click)="buscarDespachador()">Buscar</button>
           </div>
           <div class="col-12">
             <input class="form-control" [value]="despacho?.nomDesp || ''" readonly />
@@ -49,7 +54,7 @@
               [(ngModel)]="facturaNumero"
               (keyup.enter)="buscarFactura()"
               class="form-control"
-              placeholder="Ingrese la Factura"
+              placeholder="Ingrese la factura"
             />
           </div>
           <div class="col-12 col-sm-3 d-grid">
@@ -68,8 +73,8 @@
           <table class="table table-bordered table-striped table-sm">
             <thead class="table-dark">
               <tr>
-                <th>Código</th>
-                <th>Descripción</th>
+                <th>Codigo</th>
+                <th>Descripcion</th>
                 <th>Cantidad</th>
                 <th>Precio</th>
                 <th>Total</th>
@@ -93,24 +98,27 @@
       <div class="col-12 col-md-6">
         <div *ngIf="despacho" class="row g-3">
           <div class="col-12 col-sm-6">
-            <label class="form-label">Código</label>
-            <input class="form-control" [value]="despacho?.codDesp || ''" readonly />
+            <label class="form-label">Codigo</label>
+            <input class="form-control" [value]="despacho.CodDesp || ''" readonly />
           </div>
           <div class="col-12 col-sm-6">
             <label class="form-label">Nombre</label>
-            <input class="form-control" [value]="despacho?.nomDesp || ''" readonly />
+            <input class="form-control" [value]="despacho.nomDesp || ''" readonly />
           </div>
           <div class="col-12 col-sm-6">
             <label class="form-label">Tipo</label>
-            <input class="form-control" [value]="despacho?.tipoDesp || ''" readonly />
+            <input class="form-control" [value]="despacho.tipoDesp || ''" readonly />
           </div>
           <div class="col-12 col-sm-6">
             <label class="form-label">Status</label>
-            <input class="form-control" [value]="despacho?.status || ''" readonly />
+            <input
+              class="form-control"
+              [value]="despacho.statusDespachadores ? 'Activo' : 'Inactivo'"
+              readonly
+            />
           </div>
         </div>
       </div>
-      <div class="col-12 col-md-6 d-flex align-items-start justify-content-md-end"></div>
     </div>
   </div>
 </div>

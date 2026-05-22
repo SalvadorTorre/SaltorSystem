@@ -4,17 +4,9 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { Zona } from './zona';
 import { RutaZona } from './zona-ruta';
 
-
 @NgModule({
-  declarations: [
-    Zona
-  ],
-  imports: [
-    CommonModule,
-    RutaZona,
-    ReactiveFormsModule,
-    FormsModule,
-  ],
+  declarations: [Zona],
+  imports: [CommonModule, RutaZona, ReactiveFormsModule, FormsModule],
   providers: [],
 })
-export class ModuloZona { }
+export class ModuloZona {}

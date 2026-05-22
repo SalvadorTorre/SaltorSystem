@@ -2,17 +2,12 @@ import { NgModule } from '@angular/core';
 import { PrivatePage } from './private.page';
 import { PrivateRoutingModule } from './private-routing.module';
 import { CommonModule } from '@angular/common';
-import { PhoneNumberMaskDirective } from 'src/app/core/directive/phonemask.directive';
+import { PrivateNavbarComponent } from './components/private-navbar/private-navbar.component';
 
 @NgModule({
-  declarations: [
-    PrivatePage,
-  ],
-  imports: [
-    CommonModule,
-    PrivateRoutingModule
-  ],
+  declarations: [PrivatePage, PrivateNavbarComponent],
+  imports: [CommonModule, PrivateRoutingModule],
 
   providers: [],
 })
-export class PrivateModule { }
+export class PrivateModule {}

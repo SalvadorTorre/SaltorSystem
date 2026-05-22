@@ -1,0 +1,99 @@
+<div class="container mt-4">
+  <h2>{{ title }}</h2>
+  <hr />
+
+  <!-- Formulario de filtros -->
+  <form [formGroup]="filtroForm" (ngSubmit)="filtrar()" class="row g-3 mb-4">
+    <div class="col-md-2 position-relative">
+      <label class="form-label">Código producto</label>
+      <input type="text" class="form-control" placeholder="Código" formControlName="codigo"
+             #codigoInput
+             (input)="onCodigoInput()" (keydown)="onCodigoKeyDown($event)" />
+      <div class="list-group position-absolute dropdown-suggest" *ngIf="sugerenciasCodigo.length > 0" style="z-index: 1000;">
+        <button type="button"
+                class="list-group-item list-group-item-action"
+                *ngFor="let it of sugerenciasCodigo; let i = index"
+                [class.active]="i === idxCodigo"
+                (click)="seleccionarSugerenciaCodigo(it)">
+          {{ it.in_codmerc || it.codigo }} - {{ it.in_desmerc || it.descripcion }}
+        </button>
+      </div>
+    </div>
+
+    <div class="col-md-3 position-relative">
+      <label class="form-label">Nombre producto</label>
+      <input type="text" class="form-control" placeholder="Nombre" formControlName="producto"
+             #nombreInput
+             [disabled]="nombreDeshabilitado"
+             (input)="onNombreInput()" (keydown)="onNombreKeyDown($event)" />
+      <div class="list-group position-absolute dropdown-suggest" *ngIf="sugerenciasNombre.length > 0" style="z-index: 1000;">
+        <button type="button"
+                class="list-group-item list-group-item-action"
+                *ngFor="let it of sugerenciasNombre; let i = index"
+                [class.active]="i === idxNombre"
+                (click)="seleccionarSugerenciaNombre(it)">
+          {{ it.in_desmerc || it.descripcion }} ({{ it.in_codmerc || it.codigo }})
+        </button>
+      </div>
+    </div>
+    <div class="col-md-2">
+      <label class="form-label">Fecha inicial</label>
+      <input type="date" class="form-control" formControlName="fechaInicio" #fechaInicioInput (keydown.enter)="focusNext('fechaInicio')" />
+    </div>
+    <div class="col-md-2">
+      <label class="form-label">Fecha final</label>
+      <input type="date" class="form-control" formControlName="fechaFin" #fechaFinInput (keydown.enter)="focusNext('fechaFin')" />
+    </div>
+
+      <div class="col-md-3">
+      <label class="form-label">Tipo Movimiento</label>
+      <select class="form-select" formControlName="tipo" #tipoSelect (keydown.enter)="focusNext('tipo')">
+        <option value="">Todos</option>
+        <option value="Entrada">Entrada</option>
+        <option value="Salida">Salida</option>
+      </select>
+    </div>
+    <div class="col-md-3 d-flex align-items-end">
+      <button class="btn btn-primary me-2" type="submit">Buscar</button>
+      <button class="btn btn-secondary" type="button" (click)="limpiar()">Limpiar</button>
+    </div>
+  </form>
+  <div class="alert alert-info mt-3">
+
+<strong>Existencia actual:</strong>
+{{ existenciaActual | number:'1.0-2' }}
+
+</div>
+
+  <!-- Resultados -->
+  <table class="table table-striped">
+    <thead>
+      <tr>
+        <th>No. Documento</th>
+        <th>Fecha</th>
+        <th>Cliente</th>
+        <th>Origen</th>
+        <th>Salida</th>
+        <th>Entrada</th>
+        <th>Balance</th>
+        <th>Precio</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let mov of resultados">
+        <td>{{ getDocumento(mov) }}</td>
+        <td>{{ formatFecha(mov.fecha) }}</td>
+        <td>{{ mov.cliente }}</td>
+        <td>{{ mov.origen }}</td>
+        <td>{{ mov.salida }}</td>
+        <td>{{ mov.entrada }}</td>
+        <td>{{ mov.balance }}</td>
+        <td>{{ mov.precio }}</td>
+      </tr>
+      <tr *ngIf="resultados.length === 0">
+        <td colspan="8" class="text-center">No se encontraron movimientos</td>
+      </tr>
+    </tbody>
+  </table>
+  
+</div>

@@ -38,6 +38,24 @@ export class TipousuarioPage implements OnInit {
     private moduloSrv: ServicioModulo,
   ) {}
 
+  private obtenerMensajeError(err: any): string {
+    return (
+      err?.error?.message
+      || err?.message
+      || err?.details
+      || 'Error inesperado en tipo de usuario.'
+    );
+  }
+
+  private cerrarModal(id: string): void {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const bs = (window as any)?.bootstrap;
+    if (!bs?.Modal) return;
+    const instance = bs.Modal.getInstance(el) || new bs.Modal(el);
+    instance.hide();
+  }
+
   ngOnInit(): void {
     this.cargarTipos();
     this.cargarModulos();
@@ -57,8 +75,9 @@ export class TipousuarioPage implements OnInit {
       next: (res) => {
         this.tipos = this.unwrapList(res);
       },
-      error: () => {
+      error: (err) => {
         this.tipos = [];
+        this.Toast.fire({ title: this.obtenerMensajeError(err), icon: 'error' as any });
       }
     });
   }
@@ -68,8 +87,9 @@ export class TipousuarioPage implements OnInit {
       next: (res) => {
         this.modulos = this.unwrapList(res);
       },
-      error: () => {
+      error: (err) => {
         this.modulos = [];
+        this.Toast.fire({ title: this.obtenerMensajeError(err), icon: 'error' as any });
       }
     });
   }
@@ -85,8 +105,9 @@ export class TipousuarioPage implements OnInit {
         this.seleccionado = tipo || this.seleccionado;
         this.detalles = (this.seleccionado?.dtipousuarios || []);
       },
-      error: () => {
+      error: (err) => {
         this.detalles = [];
+        this.Toast.fire({ title: this.obtenerMensajeError(err), icon: 'error' as any });
       }
     });
   }
@@ -144,25 +165,25 @@ export class TipousuarioPage implements OnInit {
         next: () => {
           edit.descripcion = payload.descripcion;
           this.cargarTipos();
+          this.cerrarModal('tipoModal');
           this.Toast.fire({ title: 'Tipo actualizado', icon: 'success' as any, timer: 4000, timerProgressBar: true });
         },
-        error: () => {
-          this.Toast.fire({ title: 'Error al actualizar tipo', icon: 'error' as any });
+        error: (err) => {
+          this.Toast.fire({ title: this.obtenerMensajeError(err), icon: 'error' as any });
         }
       });
     } else {
       this.tipoSrv.guardarTipousuario(payload).subscribe({
         next: () => {
           this.cargarTipos();
+          this.cerrarModal('tipoModal');
           this.Toast.fire({ title: 'Tipo creado', icon: 'success' as any, timer: 4000, timerProgressBar: true });
         },
         error: (err) => {
           const status = err?.status;
           if (status === 409) {
             this.Toast.fire({ title: 'Tipo ya existe', icon: 'warning' as any });
-          } else {
-            this.Toast.fire({ title: 'Error al crear tipo', icon: 'error' as any });
-          }
+          } else this.Toast.fire({ title: this.obtenerMensajeError(err), icon: 'error' as any });
         }
       });
     }
@@ -228,10 +249,11 @@ export class TipousuarioPage implements OnInit {
           edit.acceso = acceso;
           edit.lectura = lectura;
           this.refrescarSeleccionado();
+          this.cerrarModal('detModal');
           this.Toast.fire({ title: 'Detalle actualizado', icon: 'success' as any, timer: 4000, timerProgressBar: true });
         },
-        error: () => {
-          this.Toast.fire({ title: 'Error al actualizar detalle', icon: 'error' as any });
+        error: (err) => {
+          this.Toast.fire({ title: this.obtenerMensajeError(err), icon: 'error' as any });
         }
       });
     } else {
@@ -244,15 +266,14 @@ export class TipousuarioPage implements OnInit {
       this.tipoSrv.agregarDetalle(idtipousuario, payload).subscribe({
         next: () => {
           this.refrescarSeleccionado();
+          this.cerrarModal('detModal');
           this.Toast.fire({ title: 'Módulo agregado al tipo', icon: 'success' as any, timer: 4000, timerProgressBar: true });
         },
         error: (err) => {
           const status = err?.status;
           if (status === 409) {
             this.Toast.fire({ title: 'Módulo duplicado para este tipo', icon: 'warning' as any });
-          } else {
-            this.Toast.fire({ title: 'Error al agregar módulo', icon: 'error' as any });
-          }
+          } else this.Toast.fire({ title: this.obtenerMensajeError(err), icon: 'error' as any });
         }
       });
     }

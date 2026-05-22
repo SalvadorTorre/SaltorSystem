@@ -2,8 +2,8 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { environment } from '@env/environment';
 import { Observable } from 'rxjs';
-import { catchError } from 'rxjs/operators';
-
+// import { catchError } from 'rxjs/operators';
+import { catchError, throwError } from 'rxjs';
 @Injectable({
 providedIn: 'root'
 })
@@ -43,10 +43,26 @@ DeleteRequest = <TResult, TSource>(request: string, body: TSource, handleError: 
 this.handleError = handleError;
 return this.filterRequest(this.http.delete(`${this.backendUrl}${request}`, { body }));
 };
+
+// GetRequest<T>(url: string): Observable<T> {
+//   return this.http.get<T>(url).pipe(
+//     catchError((error) => {
+//       console.error('HTTP Error:', error);
+//       return throwError(() => error);
+//     })
+//   );
+// }
+
 GetRequest = <TResult>(request: string, handleError: boolean = true): Observable<TResult> => {
 this.handleError = handleError;
 return this.filterRequest(this.http.get(`${this.backendUrl}${request}`));
 };
+
+// GetRequest = <TResult>(request: string, handleError: boolean = true): Observable<TResult> => {
+// this.handleError = handleError;
+// return this.filterRequest(this.http.get(`${this.backendUrl}${request}`));
+// };
+
 PostRequest = <TResult, TSource>(request: string, body: TSource, handleError: boolean = true): Observable<TResult> => {
 this.handleError = handleError;
 return this.filterRequest(this.http.post(`${this.backendUrl}${request}`, body));

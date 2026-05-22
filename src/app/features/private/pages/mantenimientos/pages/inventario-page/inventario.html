@@ -1,27 +1,36 @@
-<div class="card shadow-sm h-100">
-  <div class="card-header bg-primary text-white">
-    <h4 class="mb-0">Módulo Producto</h4>
+<section class="inventory-page-card card shadow-sm h-100 border-0">
+  <div class="card-header inventory-header">
+    <div class="inventory-header__title">
+      <span class="inventory-header__icon">
+        <i class="bi bi-box-seam"></i>
+      </span>
+      <div>
+        <h4 class="mb-0">Productos e Inventario</h4>
+        <small>Control de catálogo, precios y existencia</small>
+      </div>
+    </div>
+    <span class="inventory-header__meta">{{ totalItems || 0 }} registros</span>
   </div>
-  <div class="card-body">
-    <!-- buscador -->
 
-    <div class="row g-3 mb-4">
-      <div class="col-12 col-sm-6 col-md-4 col-lg-3">
-        <label for="buscarCodigo" class="form-label">Buscar Código</label>
-        <div class="input-group">
-          <span class="input-group-text"><i class="bi bi-search"></i></span>
+  <div class="card-body">
+    <div class="inventory-toolbar row g-3 mb-4">
+      <div class="col-12 col-md-5 col-xl-4">
+        <label for="buscarCodigo" class="form-label">Buscar por código</label>
+        <div class="input-group inventory-search">
+          <span class="input-group-text"><i class="bi bi-upc-scan"></i></span>
           <input
             type="text"
             id="buscarCodigo"
-            placeholder="Digite código"
+            placeholder="Ej: H-1020"
             class="form-control uppercase"
             (input)="onCodigoInput($event)"
           />
         </div>
       </div>
-      <div class="col-12 col-sm-6 col-md-5 col-lg-4">
-        <label for="buscarDescripcion" class="form-label">Buscar Descripción</label>
-        <div class="input-group">
+
+      <div class="col-12 col-md-7 col-xl-5">
+        <label for="buscarDescripcion" class="form-label">Buscar por descripción</label>
+        <div class="input-group inventory-search">
           <span class="input-group-text"><i class="bi bi-search"></i></span>
           <input
             type="text"
@@ -32,18 +41,18 @@
           />
         </div>
       </div>
-      <div class="col-12 col-sm-6 col-md-3 col-lg-3 d-flex align-items-end">
-        <button class="btn btn-primary w-100" (click)="nuevoProducto()">
-          <i class="bi bi-plus-circle me-2"></i>Nuevo producto
+
+      <div class="col-12 col-xl-3 d-flex align-items-end">
+        <button class="btn btn-primary inventory-btn-new w-100" (click)="nuevoProducto()">
+          <i class="bi bi-plus-circle me-2"></i>
+          Nuevo producto
         </button>
       </div>
     </div>
 
-    <!-- fin buscador -->
-
-    <div class="table-responsive mt-3">
-      <table class="table table-bordered table-hover table-striped table-sm">
-        <thead class="table-dark">
+    <div class="inventory-table-wrap table-responsive mt-3">
+      <table class="table table-hover table-sm inventory-table align-middle mb-0">
+        <thead>
           <tr>
             <th class="text-center">Código</th>
             <th>Descripción</th>
@@ -54,12 +63,12 @@
         </thead>
         <tbody>
           <tr *ngFor="let inventario of invenarioList">
-            <td class="text-center align-middle">{{inventario.in_codmerc}}</td>
-            <td class="align-middle">{{inventario.in_desmerc}}</td>
-            <td class="text-center align-middle d-none d-md-table-cell">{{inventario.in_canmerc}}</td>
-            <td class="text-center align-middle d-none d-md-table-cell">{{inventario.in_premerc}}</td>
+            <td class="text-center fw-semibold">{{ inventario.in_codmerc }}</td>
+            <td>{{ inventario.in_desmerc }}</td>
+            <td class="text-center d-none d-md-table-cell">{{ inventario.in_canmerc | number:'1.0-2' }}</td>
+            <td class="text-center d-none d-md-table-cell">RD$ {{ inventario.in_premerc | number:'1.2-2' }}</td>
             <td class="text-center">
-              <div class="btn-group" role="group">
+              <div class="btn-group inventory-actions" role="group">
                 <button type="button" class="btn btn-sm btn-outline-primary" (click)="editarProducto(inventario)" title="Editar">
                   <i class="bi bi-pencil"></i>
                 </button>
@@ -69,32 +78,36 @@
                 <button type="button" class="btn btn-sm btn-outline-success" (click)="consultarProducto(inventario)" title="Consultar">
                   <i class="bi bi-card-list"></i>
                 </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" (click)="abrirDetallePorSucursal(inventario)" title="Detalle por sucursal">
+                  <i class="bi bi-building"></i>
+                </button>
               </div>
-              
-              <!-- Mostrar información adicional en móviles -->
-              <div class="d-md-none mt-2 small">
-                <span class="badge bg-info me-2">Existencia: {{inventario.in_canmerc}}</span>
-                <span class="badge bg-secondary">Precio: {{inventario.in_premerc}}</span>
+
+              <div class="d-md-none mt-2 small inventory-mobile-meta">
+                <span class="badge text-bg-light border me-2">Existencia: {{ inventario.in_canmerc | number:'1.0-2' }}</span>
+                <span class="badge text-bg-light border">RD$ {{ inventario.in_premerc | number:'1.2-2' }}</span>
               </div>
+            </td>
+          </tr>
+          <tr *ngIf="!invenarioList.length">
+            <td colspan="5" class="text-center py-4 text-muted">
+              <i class="bi bi-inbox me-2"></i>
+              No hay productos para mostrar con los filtros actuales.
             </td>
           </tr>
         </tbody>
       </table>
     </div>
+
     <nav aria-label="Page navigation" class="mt-4">
-      <ul class="pagination pagination-sm flex-wrap justify-content-center">
+      <ul class="pagination pagination-sm flex-wrap justify-content-center inventory-pagination">
         <li class="page-item" [class.disabled]="currentPage === 1">
           <a class="page-link" (click)="changePage(1)" aria-label="First" title="Primera página">
             <span aria-hidden="true">&laquo;&laquo;</span>
           </a>
         </li>
         <li class="page-item" [class.disabled]="currentPage === 1">
-          <a
-            class="page-link"
-            (click)="changePage(currentPage - 1)"
-            aria-label="Previous"
-            title="Página anterior"
-          >
+          <a class="page-link" (click)="changePage(currentPage - 1)" aria-label="Previous" title="Página anterior">
             <span aria-hidden="true">&laquo;</span>
           </a>
         </li>
@@ -102,7 +115,7 @@
           *ngFor="let page of pages"
           class="page-item d-none d-sm-inline-block"
           [class.active]="currentPage === page"
-          [class.d-inline-block]="page === currentPage || page === currentPage-1 || page === currentPage+1"
+          [class.d-inline-block]="page === currentPage || page === currentPage - 1 || page === currentPage + 1"
         >
           <a class="page-link" (click)="changePage(page)">{{ page }}</a>
         </li>
@@ -110,29 +123,19 @@
           <span class="page-link">{{ currentPage }} / {{ totalPages }}</span>
         </li>
         <li class="page-item" [class.disabled]="currentPage === totalPages">
-          <a
-            class="page-link"
-            (click)="changePage(currentPage + 1)"
-            aria-label="Next"
-            title="Página siguiente"
-          >
+          <a class="page-link" (click)="changePage(currentPage + 1)" aria-label="Next" title="Página siguiente">
             <span aria-hidden="true">&raquo;</span>
           </a>
         </li>
         <li class="page-item" [class.disabled]="currentPage === totalPages">
-          <a
-            class="page-link"
-            (click)="changePage(totalPages)"
-            aria-label="Last"
-            title="Última página"
-          >
+          <a class="page-link" (click)="changePage(totalPages)" aria-label="Last" title="Última página">
             <span aria-hidden="true">&raquo;&raquo;</span>
           </a>
         </li>
       </ul>
     </nav>
   </div>
-</div>
+</section>
 <!-- Modal productos -->
 <div
   class="modal fade"
@@ -141,8 +144,8 @@
   aria-labelledby="modalProductoLabel"
   aria-hidden="true"
 >
-  <div class="modal-dialog modal-ancho modal-fullscreen-lg-down">
-    <div class="modal-content">
+  <div class="modal-dialog modal-ancho modal-dialog-scrollable modal-fullscreen-lg-down">
+    <div class="modal-content inventory-modal-content">
       <div class="modal-header bg-primary text-white">
         <h1 class="modal-title fs-5" id="modalProductoLabel">
           {{tituloModalProducto}}
@@ -150,7 +153,7 @@
         <button
           type="button"
           class="btn-close btn-close-white"
-          data-bs-dismiss="modal"
+          (click)="cerrarModalProducto()"
           aria-label="Close"
         ></button>
       </div>
@@ -160,13 +163,13 @@
           (ngSubmit)="onSubmitInventario()"
         >
           <!-- Datos del producto -->
-          <div class="card shadow-sm mb-3">
-            <div class="card-header bg-light">
+          <div class="card shadow-sm mb-3 inventory-form-card">
+            <div class="card-header bg-light inventory-form-card__header">
               <h5 class="mb-0">Datos del producto</h5>
             </div>
             <div class="card-body">
               <div class="row g-3">
-                <div class="col-3 col-md-3">
+                <div class="col-12 col-md-4 col-xl-2">
                   <label for="codigo" class="form-label">Código</label>
                   <input
                     type="text"
@@ -176,7 +179,7 @@
                   />
                 </div>
                 
-                <div class="col-8">
+                <div class="col-12 col-md-8 col-xl-6">
                   <label for="descripcion" class="form-label">Descripción</label>
                   <input
                     type="text"
@@ -190,7 +193,7 @@
                     {{ remainingChars }} caracteres restantes
                   </small>
                 </div>
-                <div class="col-1 col-md-1">
+                <div class="col-12 col-md-4 col-xl-2">
                   <label for="status" class="form-label">Status</label>
                   <select
                     id="status"
@@ -203,7 +206,7 @@
                     <option value="X">Autorizado</option>
                   </select>
                 </div>
-                <div class="col-2 col-md-2">
+                <div class="col-6 col-md-4 col-xl-2">
                   <label for="unidad" class="form-label">Unidad</label>
                   <input
                     type="text"
@@ -212,7 +215,7 @@
                     formControlName="in_unidad"
                   />
                 </div>
-                <div class="col-2 col-md-2">
+                <div class="col-6 col-md-4 col-xl-2">
                   <label for="peso" class="form-label">Peso</label>
                   <input
                     type="text"
@@ -221,7 +224,7 @@
                     formControlName="in_peso"
                   />
                 </div>
-                <div class="col-2 col-md-2">
+                <div class="col-6 col-md-4 col-xl-2">
                   <label for="longitud" class="form-label">Longitud</label>
                   <input
                     type="text"
@@ -230,7 +233,7 @@
                     formControlName="in_longitud"
                   />
                 </div>
-                <div class="col-3 col-md-3">
+                <div class="col-12 col-md-8 col-xl-4">
                   <label for="grupo" class="form-label">Grupo</label>
                   <select
                     id="grupo"
@@ -248,7 +251,7 @@
                     </option>
                   </select>
                 </div>
-                   <div class="col-6 col-md-3">
+                   <div class="col-12 col-md-4 col-xl-2">
                   <label for="tipo" class="form-label">Tipo</label>
                   <select
                     id="tipo"
@@ -264,14 +267,14 @@
           </div>
 
           <!-- Costo y Precio -->
-          <div class="card shadow-sm mb-3">
-            <div class="card-header bg-light">
+          <div class="card shadow-sm mb-3 inventory-form-card">
+            <div class="card-header bg-light inventory-form-card__header">
               <h5 class="mb-0">Costo y Precio</h5>
             </div>
             <div class="card-body">
               <h6 class="text-danger mb-3">Costo</h6>
               <div class="row g-3">
-                <div class="col-3 col-sm-3">
+                <div class="col-12 col-sm-6 col-lg-3">
                   <label for="compra" class="form-label">Compra</label>
                   <div class="input-group">
                     <span class="input-group-text"><i class="bi bi-currency-dollar"></i></span>
@@ -283,7 +286,7 @@
                     />
                   </div>
                 </div>
-                <div class="col-3 col-sm-3">
+                <div class="col-12 col-sm-6 col-lg-3">
                   <label for="compraAnterior" class="form-label">Compra Anterior</label>
                   <div class="input-group">
                     <span class="input-group-text"><i class="bi bi-currency-dollar"></i></span>
@@ -295,7 +298,7 @@
                     />
                   </div>
                 </div>
-                <div class="col-3 col-sm-3">
+                <div class="col-12 col-sm-6 col-lg-3">
                   <label for="promedio" class="form-label">Promedio</label>
                   <div class="input-group">
                     <span class="input-group-text"><i class="bi bi-currency-dollar"></i></span>
@@ -307,7 +310,7 @@
                     />
                   </div>
                 </div>
-                <div class="col-3 col-sm-3">
+                <div class="col-12 col-sm-6 col-lg-3">
                   <label for="porcentajeVentas" class="form-label">% Ventas</label>
                   <div class="input-group">
                     <input
@@ -322,7 +325,7 @@
               </div>
               <h6 class="text-danger mb-3 mt-4">Precio</h6>
               <div class="row g-3">
-                <div class="col-12 col-sm-4">
+                <div class="col-12 col-md-4">
                   <label for="venta" class="form-label">Venta</label>
                   <div class="input-group">
                     <span class="input-group-text"><i class="bi bi-currency-dollar"></i></span>
@@ -334,7 +337,7 @@
                     />
                   </div>
                 </div>
-                <div class="col-12 col-sm-4">
+                <div class="col-12 col-md-4">
                   <label for="minimo" class="form-label">Mínimo</label>
                   <div class="input-group">
                     <span class="input-group-text"><i class="bi bi-currency-dollar"></i></span>
@@ -346,7 +349,7 @@
                     />
                   </div>
                 </div>
-                <div class="col-12 col-sm-4">
+                <div class="col-12 col-md-4">
                   <label for="actualizada" class="form-label">Actualizada</label>
                   <input
                     type="date"
@@ -362,8 +365,8 @@
           <!-- Existencia e Inventario -->
           <div class="row g-3">
             <div class="col-12 col-lg-6">
-              <div class="card shadow-sm h-100">
-                <div class="card-header bg-light">
+              <div class="card shadow-sm h-100 inventory-form-card">
+                <div class="card-header bg-light inventory-form-card__header">
                   <h5 class="mb-0">Existencia</h5>
                 </div>
                 <div class="card-body">
@@ -400,8 +403,8 @@
               </div>
             </div>
             <div class="col-12 col-lg-6">
-              <div class="card shadow-sm h-100">
-                <div class="card-header bg-light">
+              <div class="card shadow-sm h-100 inventory-form-card">
+                <div class="card-header bg-light inventory-form-card__header">
                   <h5 class="mb-0">Inventario</h5>
                 </div>
                 <div class="card-body">
@@ -431,12 +434,97 @@
           </div>
           
           <div class="d-flex justify-content-end mt-4">
-            <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">Cancelar</button>
-            <button type="submit" class="btn btn-success">
+            <button type="button" class="btn btn-secondary me-2" (click)="cerrarModalProducto()">Cancelar</button>
+            <button *ngIf="!modoConsultaProducto" type="submit" class="btn btn-success">
               <i class="bi bi-save me-2"></i>Guardar
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal detalle por sucursal -->
+<div
+  class="modal fade"
+  id="modalInventarioSucursal"
+  tabindex="-1"
+  aria-labelledby="modalInventarioSucursalLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-xl modal-dialog-scrollable modal-fullscreen-lg-down">
+    <div class="modal-content inventory-modal-content">
+      <div class="modal-header bg-dark text-white">
+        <h5 class="modal-title" id="modalInventarioSucursalLabel">
+          Detalle por sucursal
+          <span class="ms-2 fw-normal text-white-50" *ngIf="productoDetalleSucursal">
+            {{ productoDetalleSucursal.in_codmerc }} - {{ productoDetalleSucursal.in_desmerc }}
+          </span>
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="table-responsive border rounded-3">
+          <table class="table table-sm align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Sucursal</th>
+                <th class="text-end">Existencia</th>
+                <th class="text-end">Costo local (temporal)</th>
+                <th class="text-end">Costo global</th>
+                <th class="text-end">Costo efectivo</th>
+                <th class="text-center">Activo</th>
+                <th class="text-center">Acción</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of inventarioSucursalList">
+                <td class="fw-semibold">{{ item.nom_sucursal }}</td>
+                <td>
+                  <input
+                    type="number"
+                    class="form-control form-control-sm text-end"
+                    [(ngModel)]="item.inv_existencia"
+                  />
+                </td>
+                <td>
+                  <input
+                    type="number"
+                    class="form-control form-control-sm text-end"
+                    [ngModel]="item.inv_cosprod"
+                    (ngModelChange)="item.inv_cosprod = $event; onCostoLocalChange(item)"
+                    placeholder="Usar global"
+                  />
+                </td>
+                <td class="text-end">RD$ {{ item.costo_global | number:'1.2-2' }}</td>
+                <td class="text-end fw-semibold text-primary">RD$ {{ item.costo_efectivo | number:'1.2-2' }}</td>
+                <td class="text-center">
+                  <input type="checkbox" class="form-check-input" [(ngModel)]="item.activo" />
+                </td>
+                <td class="text-center">
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-primary"
+                    (click)="guardarSucursalDetalle(item)"
+                    [disabled]="guardandoSucursal[item.cod_sucursal]"
+                  >
+                    <span *ngIf="guardandoSucursal[item.cod_sucursal]" class="spinner-border spinner-border-sm me-1"></span>
+                    Guardar
+                  </button>
+                </td>
+              </tr>
+              <tr *ngIf="!inventarioSucursalList.length">
+                <td colspan="7" class="text-center text-muted py-4">
+                  No hay sucursales para mostrar.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button>
       </div>
     </div>
   </div>

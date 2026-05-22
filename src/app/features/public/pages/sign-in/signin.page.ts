@@ -3,6 +3,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from 'src/app/core/services/auth/auth.service';
 import { ProfileService } from 'src/app/core/services/profile/profile.service';
+import Swal from 'sweetalert2';
 
 declare var $: any;
 
@@ -48,18 +49,58 @@ export class SignInPage implements OnInit {
   onSubmit() {
     if (this.myFormCreate.valid) {
       this.isLoading = true;
-      this.authService.login(this.myFormCreate.value).subscribe(response => {
-        if (response.code === 200) {
-          this.router.navigate(['/private']);
-        } else {
+      this.authService.login(this.myFormCreate.value).subscribe({
+        next: (response) => {
+          if (response?.code === 200) {
+            this.router.navigate(['/private']);
+            return;
+          }
           this.isLoading = false;
-          alert("Error al iniciar sesión");
-        }
-        //this.router.navigate(['/private']);
-        console.log(response);
-
+          Swal.fire({
+            icon: 'error',
+            title: 'Acceso denegado',
+            text: response?.message || 'Credenciales inválidas.',
+          });
+        },
+        error: (error) => {
+          this.isLoading = false;
+          const message = this.translateError(
+            error?.message ||
+            error?.error?.message ||
+            'No fue posible iniciar sesión. Verifica usuario y contraseña.'
+          );
+          Swal.fire({
+            icon: 'error',
+            title: 'Error de inicio de sesión',
+            text: message,
+          });
+        },
       });
     }
+  }
+
+  private translateError(rawMessage: string): string {
+    const raw = String(rawMessage || '').trim();
+    if (!raw) return 'No fue posible iniciar sesión. Verifica usuario y contraseña.';
+    const msg = raw.toLowerCase();
+
+    if (msg.includes('invalid login credentials')) {
+      return 'Usuario o clave inválidos.';
+    }
+    if (msg.includes('email not confirmed')) {
+      return 'La cuenta no está confirmada.';
+    }
+    if (msg.includes('fetch failed') || msg.includes('network')) {
+      return 'No se pudo conectar con el servidor.';
+    }
+    if (msg.includes('invalid api key')) {
+      return 'Configuración inválida de Supabase.';
+    }
+    if (msg.includes('password should be at least') || msg.includes('password must be at least')) {
+      return 'La clave no cumple con la longitud requerida.';
+    }
+
+    return raw;
   }
 
 

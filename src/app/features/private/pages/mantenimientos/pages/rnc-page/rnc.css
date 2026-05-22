@@ -1,0 +1,40 @@
+.rnc-page .rnc-card {
+  border-radius: 14px;
+}
+
+.rnc-page .rnc-header {
+  border: 0;
+  color: #fff;
+  border-radius: 14px 14px 0 0;
+  background: linear-gradient(120deg, #11408f 0%, #2e67c9 58%, #1f8fcb 100%);
+}
+
+.rnc-page .rnc-table-wrap {
+  border: 1px solid #e7eef9;
+  border-radius: 12px;
+  overflow: auto;
+  max-height: 62vh;
+}
+
+.rnc-page .rnc-table-wrap thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #f2f7ff;
+  color: #1a3363;
+  font-weight: 700;
+}
+
+.rnc-page .table > :not(caption) > * > * {
+  padding: 0.6rem 0.7rem;
+}
+
+.rnc-page .rnc-modal-header {
+  background: linear-gradient(120deg, #11408f 0%, #2e67c9 100%);
+}
+
+@media (max-width: 991.98px) {
+  .rnc-page .rnc-table-wrap {
+    max-height: none;
+  }
+}

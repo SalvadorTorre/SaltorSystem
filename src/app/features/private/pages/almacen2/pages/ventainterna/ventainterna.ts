@@ -30,12 +30,12 @@ import {
   detVentainternaData,
 } from 'src/app/core/services/almacen/ventainterna';
 //import { ServiciodetVentainterna } from 'src/app/core/services/almacen/detventainterna/detventainterna.service';
-import { ServicioCliente } from 'src/app/core/services/mantenimientos/clientes/cliente.service';
-import { HttpInvokeService } from 'src/app/core/services/http-invoke.service';
+import { SucursalesData } from 'src/app/core/services/mantenimientos/sucursal';
+import { ServicioEmpresa } from 'src/app/core/services/mantenimientos/empresas/empresas.service';
 import {
-  ModeloCliente,
-  ModeloClienteData,
-} from 'src/app/core/services/mantenimientos/clientes';
+  EmpresaModel,
+  EmpresaModelData,
+} from 'src/app/core/services/mantenimientos/empresas';
 import {
   VentainternaDetalleModel,
   interfaceDetalleModel,
@@ -46,6 +46,7 @@ import {
   ModeloInventarioData,
 } from 'src/app/core/services/mantenimientos/inventario';
 import { Inventario } from '../../../mantenimientos/pages/inventario-page/inventario';
+import { PrintingService } from 'src/app/core/services/utils/printing.service';
 declare var $: any;
 @Component({
   selector: 'Ventainterna',
@@ -103,6 +104,7 @@ export class Ventainterna implements OnInit {
   sucursales = [];
   sucursalSeleccionada: any = null;
   habilitarIcono: boolean = true;
+  private originalVentainterna: VentainternaModelData | null = null;
 
   private codigoSubject = new BehaviorSubject<string>('');
   private nomclienteSubject = new BehaviorSubject<string>('');
@@ -112,10 +114,10 @@ export class Ventainterna implements OnInit {
   constructor(
     private fb: FormBuilder,
     private servicioVentainterna: ServicioVentainterna,
-    private servicioCliente: ServicioCliente,
-    private http: HttpInvokeService,
+    private servicioEmpresa: ServicioEmpresa,
     private servicioInventario: ServicioInventario,
-    private ServicioUsuario: ServicioUsuario
+    private ServicioUsuario: ServicioUsuario,
+    private printing: PrintingService
   ) {
     this.form = this.fb.group({
       fa_codvend: ['', Validators.required], // El campo es requerido
@@ -130,12 +132,88 @@ export class Ventainterna implements OnInit {
         debounceTime(500),
         distinctUntilChanged(),
         switchMap((nomcliente) => {
-          this.txtdescripcion = nomcliente;
+          const trimmed = (nomcliente || '').toString().trim().toUpperCase();
+          this.txtdescripcion = trimmed;
+          if (trimmed.length > 0) {
+            // Usa la ruta específica de cliente
+            this.currentPage = 1;
+            return this.servicioVentainterna.buscarVentainternaPorNombreCliente(trimmed);
+          }
+          // Sin valor: vuelve a la lista paginada sin filtros
+          this.currentPage = 1;
+          return this.servicioVentainterna.buscarTodasVentainterna(
+            this.currentPage,
+            this.pageSize
+          );
+        })
+      )
+      .subscribe((response) => {
+        const data = response?.data;
+        if (Array.isArray(data)) {
+          this.ventainternaList = data;
+          this.totalItems = response?.pagination?.total ?? data.length;
+          this.currentPage = response?.pagination?.page ?? 1;
+        } else if (data) {
+          this.ventainternaList = [data];
+          this.totalItems = this.ventainternaList.length;
+          this.currentPage = 1;
+        } else {
+          this.ventainternaList = [];
+          this.totalItems = 0;
+          this.currentPage = 1;
+        }
+      });
+    // (removida suscripción previa de nomcliente; ahora usamos la ruta específica de cliente)
+
+
+    // Filtro reactivo por número (código) - usa lista con filtro "codigo"
+      this.codigoBuscar
+        .pipe(
+          debounceTime(500),
+          distinctUntilChanged(),
+          switchMap((codigo) => {
+            const trimmed = (codigo || '').toString().trim().toUpperCase();
+            this.codigo = trimmed;
+            if (trimmed.length > 0) {
+              // Reinicia a la primera página al filtrar
+              this.currentPage = 1;
+              return this.servicioVentainterna.buscarVentainterna(
+                this.currentPage,
+                this.pageSize,
+                this.codigo,
+                this.txtdescripcion,
+                this.fecha
+              );
+            }
+            // Sin valor: vuelve a la lista paginada sin filtros
+            this.currentPage = 1;
+            return this.servicioVentainterna.buscarTodasVentainterna(
+              this.currentPage,
+              this.pageSize
+            );
+          })
+        )
+        .subscribe((response) => {
+          const data = response?.data ?? [];
+          this.ventainternaList = Array.isArray(data) ? data : [];
+          this.totalItems = response?.pagination?.total ?? this.ventainternaList.length;
+          this.currentPage = response?.pagination?.page ?? 1;
+        });
+    // (removed duplicate codigoBuscar subscription after adding exact-number search)
+
+    // Filtro reactivo por fecha
+    this.fechaBuscar
+      .pipe(
+        debounceTime(500),
+        distinctUntilChanged(),
+        switchMap((fecha) => {
+          this.fecha = fecha;
           return this.servicioVentainterna.buscarVentainterna(
             this.currentPage,
             this.pageSize,
             this.codigo,
-            this.txtdescripcion
+            this.txtdescripcion,
+            this.fecha
           );
         })
       )
@@ -144,6 +222,22 @@ export class Ventainterna implements OnInit {
         this.totalItems = response.pagination.total;
         this.currentPage = response.pagination.page;
       });
+  }
+  imprimirVentainterna(ventainterna: VentainternaModelData): void {
+    const fa = ventainterna;
+    this.servicioVentainterna.buscarVentainternaDetalle(fa.fa_codFact).subscribe((response) => {
+      const raw = Array.isArray(response?.data) ? response.data : (Array.isArray(response) ? response : (Array.isArray(response?.detalle) ? response.detalle : []));
+      const items = raw.map((d: any) => {
+        const cantidad = Number(d.df_canMerc ?? d.df_canmerc ?? d.DF_CANMERC ?? d.dc_canmerc ?? d.DC_CANMERC ?? d.cantidad ?? 0);
+        const precio = Number(d.df_preMerc ?? d.df_premerc ?? d.DF_PREMERC ?? d.dc_premerc ?? d.DC_PREMERC ?? d.precio ?? 0);
+        const totalItem = Number(cantidad * precio);
+        const des = d.df_desMerc ?? d.df_desmerc ?? d.DF_DESMERC ?? d.dc_descrip ?? d.DC_DESCRIP ?? d.in_desmerc ?? '';
+        return { df_canPend: cantidad, df_desMerc: des, df_valMerc: totalItem, df_preMerc: precio };
+   
+
+      });
+      this.printing.imprimirVentainterna80mm(fa, items);
+    });
   }
 
   agregarVentainterna() {
@@ -166,7 +260,12 @@ export class Ventainterna implements OnInit {
   }
   @ViewChild('buscarcodmercInput') buscarcodmercElement!: ElementRef;
   buscarNombre = new FormControl();
-  resultadoNombre: ModeloClienteData[] = [];
+  buscarSucursalCliente = new FormControl();
+  resultadoNombre: EmpresaModelData[] = [];
+  resultadoSucursalCliente: SucursalesData[] = [];
+  sucursalesCliente: SucursalesData[] = [];
+  mostrarSucursalCliente = false;
+  empresaClienteSeleccionada: EmpresaModelData | null = null;
   selectedIndex = 1;
   buscarcodmerc = new FormControl();
   buscardescripcionmerc = new FormControl();
@@ -195,23 +294,32 @@ export class Ventainterna implements OnInit {
             !this.cancelarBusquedaCodigo &&
             !this.isEditing
         ),
-        switchMap((query: string) =>
-          this.http.GetRequest<ModeloInventario>(`/productos-buscador/${query}`)
-        )
+        switchMap((query: string) => {
+          const q = query.trim().toUpperCase();
+          return this.servicioInventario.buscarporCodigoMerc(q);
+        })
       )
       .subscribe((results: ModeloInventario) => {
         console.log(results.data);
         if (results) {
           if (Array.isArray(results.data) && results.data.length) {
-            // Aquí ordenamos los resultados por el campo 'nombre' (puedes cambiar el campo según tus necesidades)
+            // Ordenar por código
             this.resultadoCodmerc = results.data.sort((a, b) => {
               return a.in_codmerc.localeCompare(b.in_codmerc, undefined, {
                 numeric: true,
                 sensitivity: 'base',
               });
             });
-            // Aquí seleccionamos automáticamente el primer ítem
-            this.selectedIndex = -1;
+            // Priorizar coincidencia exacta si existe
+            const qUpper = String(this.buscarcodmerc.value || '').trim().toUpperCase();
+            const exactIdx = this.resultadoCodmerc.findIndex((item) => String(item.in_codmerc || '').trim().toUpperCase() === qUpper);
+            if (exactIdx >= 0) {
+              // Solo selecciona el índice, espera Enter para cargar
+              this.selectedIndexcodmerc = exactIdx;
+            } else {
+              // Seleccionar el primer elemento por defecto
+              this.selectedIndexcodmerc = 0;
+            }
 
             this.codnotfound = false;
           } else {
@@ -236,13 +344,12 @@ export class Ventainterna implements OnInit {
         }),
         filter(
           (query: string) =>
-            query !== '' && !this.cancelarBusquedaDescripcion && !this.isEditing
+            query.trim() !== '' && !this.cancelarBusquedaDescripcion && !this.isEditing
         ),
-        switchMap((query: string) =>
-          this.http.GetRequest<ModeloInventario>(
-            `/productos-buscador-desc/${query}`
-          )
-        )
+        switchMap((query: string) => {
+          const q = query.trim().toUpperCase();
+          return this.servicioInventario.buscarPorDescripcionMerc(q);
+        })
       )
       .subscribe((results: ModeloInventario) => {
         console.log(results.data);
@@ -268,10 +375,10 @@ export class Ventainterna implements OnInit {
         }),
         filter((query: string) => query !== ''),
         switchMap((query: string) =>
-          this.http.GetRequest<ModeloCliente>(`/cliente-nombre/${query}`)
+          this.servicioEmpresa.buscarPorNombreEmpresa(query)
         )
       )
-      .subscribe((results: ModeloCliente) => {
+      .subscribe((results: EmpresaModel) => {
         console.log(results.data);
         if (results) {
           if (Array.isArray(results.data)) {
@@ -280,6 +387,23 @@ export class Ventainterna implements OnInit {
         } else {
           this.resultadoNombre = [];
         }
+      });
+    this.buscarSucursalCliente.valueChanges
+      .pipe(
+        debounceTime(250),
+        distinctUntilChanged(),
+        tap(() => {
+          this.resultadoSucursalCliente = [];
+        }),
+        filter((query: string) => query !== '' && this.mostrarSucursalCliente)
+      )
+      .subscribe((query: string) => {
+        const q = String(query || '').trim().toUpperCase();
+        this.resultadoSucursalCliente = this.sucursalesCliente.filter((sucursal) =>
+          `${sucursal.nom_sucursal || ''} ${sucursal.cod_sucursal || ''}`
+            .toUpperCase()
+            .includes(q)
+        );
       });
   }
 
@@ -292,6 +416,7 @@ export class Ventainterna implements OnInit {
       fa_valFact: [''],
       fa_codClie: [''],
       fa_nomClie: [''],
+      suculsar_clie: [''],
       fa_codVend: ['', Validators.required],
       fa_nomVend: [''],
       fa_solicitud: [''],
@@ -306,6 +431,13 @@ export class Ventainterna implements OnInit {
   nuevaVentainterna() {
     this.modoedicionVentainterna = false;
     this.tituloModalVentainterna = 'Nueva Ventainterna';
+    this.resultadoNombre = [];
+    this.resultadoSucursalCliente = [];
+    this.sucursalesCliente = [];
+    this.mostrarSucursalCliente = false;
+    this.empresaClienteSeleccionada = null;
+    this.buscarNombre.setValue('', { emitEvent: false });
+    this.buscarSucursalCliente.setValue('', { emitEvent: false });
     $('#modalventainterna').modal('show');
     this.habilitarFormulario = true;
     this.formularioVentainterna.get('fa_codFact')!.disable();
@@ -319,6 +451,13 @@ export class Ventainterna implements OnInit {
   cerrarModalVentainterna() {
     this.habilitarFormulario = false;
     this.formularioVentainterna.reset();
+    this.resultadoNombre = [];
+    this.resultadoSucursalCliente = [];
+    this.sucursalesCliente = [];
+    this.mostrarSucursalCliente = false;
+    this.empresaClienteSeleccionada = null;
+    this.buscarNombre.setValue('', { emitEvent: false });
+    this.buscarSucursalCliente.setValue('', { emitEvent: false });
     this.modoedicionVentainterna = false;
     this.modoconsultaVentainterna = false;
     this.mensagePantalla = false;
@@ -340,27 +479,36 @@ export class Ventainterna implements OnInit {
   editarVentainterna(Ventainterna: VentainternaModelData) {
     this.ventainternaid = Ventainterna.fa_codFact;
     this.modoedicionVentainterna = true;
+    this.originalVentainterna = Ventainterna;
     this.formularioVentainterna.patchValue(Ventainterna);
+    this.buscarNombre.setValue(Ventainterna.fa_nomClie || '', { emitEvent: false });
+    this.buscarSucursalCliente.setValue(Ventainterna.suculsar_clie || '', { emitEvent: false });
+    this.mostrarSucursalCliente = !!Ventainterna.suculsar_clie;
     this.tituloModalVentainterna = 'Editando Ventainterna';
     $('#modalventainterna').modal('show');
     this.habilitarFormulario = true;
-    const inputs = document.querySelectorAll('.seccion-productos input');
-    inputs.forEach((input) => {
-      (input as HTMLInputElement).disabled = true;
-    });
+    this.formularioVentainterna.get('fa_codFact')?.disable();
+    this.formularioVentainterna.get('fa_fecFact')?.disable();
+    this.formularioVentainterna.get('fa_codVend')?.disable();
+    setTimeout(() => { $('#input1').focus(); }, 300);
     // Limpiar los items antes de agregar los nuevos
     this.items = [];
     this.servicioVentainterna
       .buscarVentainternaDetalle(Ventainterna.fa_codFact)
       .subscribe((response) => {
         let subtotal = 0;
-        let itbis = 0;
-        let totalGeneral = 0;
-        const itbisRate = 0.18; // Ejemplo: 18% de ITBIS
-        response.data.forEach((item: any) => {
+        const data = Array.isArray(response?.data)
+          ? response.data
+          : (Array.isArray(response) ? response : (Array.isArray(response?.detalle) ? response.detalle : []));
+        data.forEach((d: any) => {
+          const cod = d.df_codMerc ?? d.df_codmerc ?? d.DF_CODMERC ?? d.dc_codmerc ?? d.DC_CODMERC ?? d.in_codmerc ?? '';
+          const des = d.df_desMerc ?? d.df_desmerc ?? d.DF_DESMERC ?? d.dc_descrip ?? d.DC_DESCRIP ?? d.in_desmerc ?? '';
+          const cantidad = Number(d.df_canMerc ?? d.df_canmerc ?? d.DF_CANMERC ?? d.dc_canmerc ?? d.DC_CANMERC ?? d.cantidad ?? 0);
+          const precio = Number(d.df_preMerc ?? d.df_premerc ?? d.DF_PREMERC ?? d.dc_premerc ?? d.DC_PREMERC ?? d.precio ?? 0);
+          const totalItem = Number(d.df_valMerc ?? d.df_valmerc ?? d.DF_VALMERC ?? d.dc_total ?? d.DC_TOTAL ?? (cantidad * precio));
           const producto: ModeloInventarioData = {
-            in_codmerc: item.dc_codmerc,
-            in_desmerc: item.dc_descrip,
+            in_codmerc: cod,
+            in_desmerc: des,
             in_grumerc: '',
             in_tipoproduct: '',
             in_canmerc: 0,
@@ -385,23 +533,54 @@ export class Ventainterna implements OnInit {
             in_itbis: false,
             in_minvent: 0,
           };
-          const cantidad = item.dc_canmerc;
-          const precio = item.dc_premerc;
-          const totalItem = cantidad * precio;
-          this.items.push({
-            producto: producto,
-            cantidad: cantidad,
-            precio: precio,
-            total: totalItem,
-          });
+          this.items.push({ producto, cantidad, precio, total: totalItem });
+          subtotal += totalItem;
         });
-        // Calcular el total general (subtotal + ITBIS)
-        totalGeneral = subtotal;
-        // Asignar los totales a variables o mostrarlos en la interfaz
         this.subTotal = subtotal;
-        //this.totalItbis = this.totalItbis;
-        this.totalGral = totalGeneral;
+        this.totalGral = subtotal;
+        this.initTooltips();
       });
+  }
+ 
+  refrescarVentainterna(): void {
+    const base = this.originalVentainterna;
+    if (!base) { return; }
+    this.formularioVentainterna.patchValue(base);
+    if (this.modoedicionVentainterna) {
+      this.formularioVentainterna.get('fa_codFact')?.disable();
+      this.formularioVentainterna.get('fa_fecFact')?.disable();
+      this.formularioVentainterna.get('fa_codVend')?.disable();
+    } else {
+      this.formularioVentainterna.disable();
+    }
+    this.items = [];
+    this.servicioVentainterna.buscarVentainternaDetalle(base.fa_codFact).subscribe((response) => {
+      let subtotal = 0;
+      const data = Array.isArray(response?.data)
+        ? response.data
+        : (Array.isArray(response) ? response : (Array.isArray(response?.detalle) ? response.detalle : []));
+      data.forEach((d: any) => {
+        const cod = d.df_codMerc ?? d.df_codmerc ?? d.DF_CODMERC ?? d.dc_codmerc ?? d.DC_CODMERC ?? d.in_codmerc ?? '';
+        const des = d.df_desMerc ?? d.df_desmerc ?? d.DF_DESMERC ?? d.dc_descrip ?? d.DC_DESCRIP ?? d.in_desmerc ?? '';
+        const cantidad = Number(d.df_canMerc ?? d.df_canmerc ?? d.DF_CANMERC ?? d.dc_canmerc ?? d.DC_CANMERC ?? d.cantidad ?? 0);
+        const precio = Number(d.df_preMerc ?? d.df_premerc ?? d.DF_PREMERC ?? d.dc_premerc ?? d.DC_PREMERC ?? d.precio ?? 0);
+        const totalItem = Number(d.df_valMerc ?? d.df_valmerc ?? d.DF_VALMERC ?? d.dc_total ?? d.DC_TOTAL ?? (cantidad * precio));
+        const producto: ModeloInventarioData = { in_codmerc: cod, in_desmerc: des, in_grumerc: '', in_tipoproduct: '', in_canmerc: 0, in_caninve: 0, in_fecinve: null, in_eximini: 0, in_cosmerc: 0, in_premerc: 0, in_precmin: 0, in_costpro: 0, in_ucosto: 0, in_porgana: 0, in_peso: 0, in_longitud: 0, in_unidad: 0, in_medida: 0, in_longitu: 0, in_fecmodif: null, in_amacen: 0, in_imagen: '', in_status: '', in_itbis: false, in_minvent: 0 };
+        this.items.push({ producto, cantidad, precio, total: totalItem });
+        subtotal += totalItem;
+      });
+      this.subTotal = subtotal;
+      this.totalGral = subtotal;
+      this.initTooltips();
+    });
+    setTimeout(() => { $('#input1').focus(); }, 300);
+  }
+  private initTooltips(): void {
+    const elements = Array.prototype.slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    const b = (window as any).bootstrap;
+    if (b && b.Tooltip) {
+      elements.forEach((el: any) => new b.Tooltip(el));
+    }
   }
 
   buscarTodasVentainterna(page: number) {
@@ -410,16 +589,19 @@ export class Ventainterna implements OnInit {
       .subscribe((response) => {
         console.log(response);
         this.ventainternaList = response.data;
+        this.initTooltips();
       });
   }
   consultarVentainterna(Ventainterna: VentainternaModelData) {
     this.modoconsultaVentainterna = true;
+    this.originalVentainterna = Ventainterna;
     this.formularioVentainterna.patchValue(Ventainterna);
     this.tituloModalVentainterna = 'Consulta Ventainterna';
     $('#modalventainterna').modal('show');
     this.habilitarFormulario = true;
     this.formularioVentainterna.disable();
     this.habilitarIcono = false;
+    setTimeout(() => { $('#input1').focus(); }, 300);
 
     const inputs = document.querySelectorAll('.seccion-productos input');
     inputs.forEach((input) => {
@@ -433,14 +615,21 @@ export class Ventainterna implements OnInit {
       .buscarVentainternaDetalle(Ventainterna.fa_codFact)
       .subscribe((response) => {
         let subtotal = 0;
-        let itbis = 0;
         let totalGeneral = 0;
-        // const itbisRate = 0.18; // Ejemplo: 18% de ITBIS
+        const data = Array.isArray(response?.data)
+          ? response.data
+          : (Array.isArray(response) ? response : (Array.isArray(response?.detalle) ? response.detalle : []));
 
-        response.data.forEach((item: any) => {
+        data.forEach((d: any) => {
+          const cod = d.df_codMerc ?? d.df_codmerc ?? d.DF_CODMERC ?? d.dc_codmerc ?? d.DC_CODMERC ?? d.in_codmerc ?? '';
+          const des = d.df_desMerc ?? d.df_desmerc ?? d.DF_DESMERC ?? d.dc_descrip ?? d.DC_DESCRIP ?? d.in_desmerc ?? '';
+          const cantidad = Number(d.df_canMerc ?? d.df_canmerc ?? d.DF_CANMERC ?? d.dc_canmerc ?? d.DC_CANMERC ?? d.cantidad ?? 0);
+          const precio = Number(d.df_preMerc ?? d.df_premerc ?? d.DF_PREMERC ?? d.dc_premerc ?? d.DC_PREMERC ?? d.precio ?? 0);
+          const totalItem = Number(d.df_valMerc ?? d.df_valmerc ?? d.DF_VALMERC ?? d.dc_total ?? d.DC_TOTAL ?? (cantidad * precio));
+
           const producto: ModeloInventarioData = {
-            in_codmerc: item.dc_codmerc,
-            in_desmerc: item.dc_descrip,
+            in_codmerc: cod,
+            in_desmerc: des,
             in_grumerc: '',
             in_tipoproduct: '',
             in_canmerc: 0,
@@ -466,25 +655,16 @@ export class Ventainterna implements OnInit {
             in_minvent: 0,
           };
 
-          const cantidad = item.dc_canmerc;
-          const precio = item.dc_premerc;
-          const totalItem = cantidad * precio;
-
           this.items.push({
-            producto: producto,
-            cantidad: cantidad,
-            precio: precio,
+            producto,
+            cantidad,
+            precio,
             total: totalItem,
           });
-
-          // Calcular el subtotal
           subtotal += totalItem;
         });
 
-        // Calcular el total general (subtotal + ITBIS)
         totalGeneral = subtotal;
-
-        // Asignar los totales a variables o mostrarlos en la interfaz
         this.subTotal = subtotal;
         this.totalGral = totalGeneral;
       });
@@ -528,7 +708,7 @@ export class Ventainterna implements OnInit {
   }
   fechaEntra(event: Event) {
     const inputElement = event.target as HTMLInputElement;
-    this.codigoBuscar.next(inputElement.value.toUpperCase());
+    this.fechaBuscar.next(inputElement.value.trim());
   }
 
   guardarVentainterna() {
@@ -537,56 +717,162 @@ export class Ventainterna implements OnInit {
     this.formularioVentainterna.get('fa_codFact')!.enable();
     this.formularioVentainterna.get('fa_fecFact')!.enable();
     this.formularioVentainterna.get('fa_nomVend')!.enable();
+
+    if (!this.items.length) {
+      Swal.fire({
+        title: 'Faltan productos',
+        text: 'Debe agregar al menos un producto antes de guardar la venta interna.',
+        icon: 'warning',
+        confirmButtonText: 'Aceptar',
+      });
+      return;
+    }
+
+    const sucObjRaw = localStorage.getItem('sucursal');
+    const empObjRaw = localStorage.getItem('empresa');
+    let sucursalId: number | undefined = undefined;
+    let codEmpresa: string | undefined = undefined;
+    try {
+      if (sucObjRaw && sucObjRaw !== '[object Object]') {
+        const s = JSON.parse(sucObjRaw);
+        const suc = Array.isArray(s) ? s[0] : s;
+        sucursalId = Number(suc?.cod_sucursal);
+      }
+    } catch {}
+    if (!sucursalId || isNaN(sucursalId)) {
+      const idS = Number(localStorage.getItem('idSucursal'));
+      sucursalId = isNaN(idS) ? undefined : idS;
+    }
+    try {
+      if (empObjRaw && empObjRaw !== '[object Object]') {
+        const e = JSON.parse(empObjRaw);
+        const emp = Array.isArray(e) ? e[0] : e;
+        codEmpresa = String(emp?.cod_empre || '').trim() || undefined;
+      }
+    } catch {}
+    if (!codEmpresa) {
+      codEmpresa = (localStorage.getItem('codigoempresa') || localStorage.getItem('cod_empre') || '').trim() || undefined;
+    }
+    const codVendedor = (this.formularioVentainterna.get('fa_codVend')?.value || localStorage.getItem('codigousuario') || '').toString().trim();
+    const nomVendedor = (this.formularioVentainterna.get('fa_nomVend')?.value || localStorage.getItem('username') || '').toString().trim();
+    if (codVendedor) {
+      this.formularioVentainterna.patchValue({
+        fa_codVend: codVendedor,
+        fa_nomVend: nomVendedor,
+      });
+    }
+
+    const base = this.formularioVentainterna.getRawValue();
+    if (!base.fa_codClie || !base.fa_nomClie) {
+      Swal.fire({
+        title: 'Empresa requerida',
+        text: 'Seleccione la empresa antes de guardar.',
+        icon: 'warning',
+        confirmButtonText: 'Aceptar',
+      });
+      return;
+    }
+    if (this.mostrarSucursalCliente && !base.suculsar_clie) {
+      Swal.fire({
+        title: 'Sucursal requerida',
+        text: 'Seleccione la sucursal de la empresa antes de guardar.',
+        icon: 'warning',
+        confirmButtonText: 'Aceptar',
+      });
+      return;
+    }
+
+    const ventainternaExtendida: any = {
+      ...base,
+      fa_codVend: codVendedor || base.fa_codVend,
+      fa_nomVend: nomVendedor || base.fa_nomVend,
+      fa_codSucu: sucursalId,
+      fa_codEmpr: codEmpresa
+    };
     const payload = {
-      ventainterna: this.formularioVentainterna.value,
+      ventainterna: ventainternaExtendida,
       detalle: this.items,
       idVentainterna: this.formularioVentainterna.get('fa_codFact')?.value,
     };
 
     if (this.formularioVentainterna.valid) {
       if (this.modoedicionVentainterna) {
+        const detallePayload = (this.items || []).map((it: any) => {
+          const p: any = { ...(it?.producto || {}) };
+          p.in_unidad = p?.in_unidad == null ? null : String(p.in_unidad);
+          p.in_cosmerc = isFinite(Number(p?.in_cosmerc)) ? Number(p.in_cosmerc) : 0;
+          return {
+            total: isFinite(Number(it?.total)) ? Number(it.total) : (Number(it?.cantidad) * Number(it?.precio) || 0),
+            cantidad: isFinite(Number(it?.cantidad)) ? Number(it.cantidad) : 0,
+            precio: isFinite(Number(it?.precio)) ? Number(it.precio) : 0,
+            producto: p,
+          };
+        });
         this.servicioVentainterna
-          .editarVentainterna(
-            this.ventainternaid,
-            this.formularioVentainterna.value
-          )
-          .subscribe((response) => {
-            Swal.fire({
-              title: 'Excelente!',
-              text: 'Ventainterna Editada correctamente.',
-              icon: 'success',
-              timer: 5000,
-              showConfirmButton: false,
-            });
-            this.buscarTodasVentainterna(1);
-            this.formularioVentainterna.reset();
-            this.crearFormularioVentainterna();
-            $('#modalventainterna').modal('hide');
-          });
-      } else {
-        if (this.formularioVentainterna.valid) {
-          this.servicioVentainterna
-            .guardarVentainterna(payload)
-            .subscribe((response) => {
+          .editarVentainterna(this.ventainternaid, { ventainterna: ventainternaExtendida, detalle: detallePayload })
+          .subscribe({
+            next: (response) => {
               Swal.fire({
                 title: 'Excelente!',
-                text: 'Ventainterna creada correctamente.',
+                text: 'Ventainterna Editada correctamente.',
                 icon: 'success',
-                timer: 1000,
+                timer: 5000,
                 showConfirmButton: false,
               });
               this.buscarTodasVentainterna(1);
               this.formularioVentainterna.reset();
               this.crearFormularioVentainterna();
-              this.formularioVentainterna.enable();
               $('#modalventainterna').modal('hide');
+            },
+            error: (err) => {
+              Swal.fire({
+                title: 'Error guardando',
+                text: err?.message || err?.error?.message || 'No se pudo guardar la venta interna.',
+                icon: 'error',
+                confirmButtonText: 'Aceptar',
+              });
+            },
+          });
+      } else {
+        if (this.formularioVentainterna.valid) {
+          this.servicioVentainterna
+            .guardarVentainterna(payload)
+            .subscribe({
+              next: (response) => {
+                Swal.fire({
+                  title: 'Excelente!',
+                  text: 'Ventainterna creada correctamente.',
+                  icon: 'success',
+                  timer: 1000,
+                  showConfirmButton: false,
+                });
+                this.buscarTodasVentainterna(1);
+                this.formularioVentainterna.reset();
+                this.crearFormularioVentainterna();
+                this.formularioVentainterna.enable();
+                $('#modalventainterna').modal('hide');
+              },
+              error: (err) => {
+                Swal.fire({
+                  title: 'Error guardando',
+                  text: err?.message || err?.error?.message || 'No se pudo guardar la venta interna.',
+                  icon: 'error',
+                  confirmButtonText: 'Aceptar',
+                });
+              },
             });
         } else {
           console.log(this.formularioVentainterna.value);
         }
       }
     } else {
-      alert('Esta Empresa no fue Guardado');
+      this.formularioVentainterna.markAllAsTouched();
+      Swal.fire({
+        title: 'Datos incompletos',
+        text: 'Revise los campos requeridos antes de guardar.',
+        icon: 'warning',
+        confirmButtonText: 'Aceptar',
+      });
     }
   }
 
@@ -752,8 +1038,8 @@ export class Ventainterna implements OnInit {
   buscarPorCodigo(codigo: string) {}
 
   buscarClienteporNombre() {
-    this.servicioCliente
-      .buscarporNombre(this.formularioVentainterna.get('fa_nomClie')!.value)
+    this.servicioEmpresa
+      .buscarPorNombreEmpresa(this.formularioVentainterna.get('fa_nomClie')!.value)
       .subscribe((response) => {
         console.log(response);
       });
@@ -766,14 +1052,37 @@ export class Ventainterna implements OnInit {
     return `${day}/${month}/${year}`;
   }
 
-  cargarDatosCliente(cliente: ModeloClienteData) {
+  cargarDatosEmpresaCliente(empresa: EmpresaModelData) {
     this.resultadoNombre = [];
-    this.buscarNombre.reset();
-    if (cliente.cl_nomClie !== '') {
+    this.resultadoSucursalCliente = [];
+    this.sucursalesCliente = [];
+    this.mostrarSucursalCliente = false;
+    this.empresaClienteSeleccionada = empresa || null;
+
+    if (empresa?.nom_empre !== '') {
       this.formularioVentainterna.patchValue({
-        fa_codClie: cliente.cl_codClie,
-        fa_nomClie: cliente.cl_nomClie,
+        fa_codClie: empresa.cod_empre,
+        fa_nomClie: empresa.nom_empre,
+        suculsar_clie: '',
       });
+      this.buscarNombre.setValue(empresa.nom_empre, { emitEvent: false });
+      this.buscarSucursalCliente.setValue('', { emitEvent: false });
+      this.servicioEmpresa.buscarEmpres(empresa.cod_empre).subscribe((response) => {
+        const data = Array.isArray(response?.data) ? response.data[0] : response?.data;
+        this.sucursalesCliente = Array.isArray(data?.sucursales) ? data.sucursales : [];
+        this.mostrarSucursalCliente = this.sucursalesCliente.length > 0;
+        this.resultadoSucursalCliente = this.sucursalesCliente;
+      });
+    }
+  }
+
+  cargarSucursalCliente(sucursal: SucursalesData) {
+    this.resultadoSucursalCliente = [];
+    if (sucursal?.nom_sucursal !== '') {
+      this.formularioVentainterna.patchValue({
+        suculsar_clie: sucursal.nom_sucursal,
+      });
+      this.buscarSucursalCliente.setValue(sucursal.nom_sucursal, { emitEvent: false });
     }
   }
 
@@ -804,7 +1113,7 @@ export class Ventainterna implements OnInit {
     } else if (key === 'Enter') {
       // Selecciona el ítem actual
       if (this.selectedIndex >= 0 && this.selectedIndex <= maxIndex) {
-        this.cargarDatosCliente(this.resultadoNombre[this.selectedIndex]);
+        this.cargarDatosEmpresaCliente(this.resultadoNombre[this.selectedIndex]);
       }
       event.preventDefault();
     }
@@ -908,27 +1217,37 @@ export class Ventainterna implements OnInit {
     event.preventDefault();
     const claveUsuario = this.formularioVentainterna.get('fa_codVend')?.value;
     if (claveUsuario) {
-      this.ServicioUsuario.buscarUsuarioPorClave(claveUsuario).subscribe(
-        (usuario) => {
-          if (usuario.data.length) {
+      this.ServicioUsuario.buscarUsuarioPorCodigoVendedor(String(claveUsuario)).subscribe(
+        (res: any) => {
+          const usuario = res?.data ?? null;
+          const nombre = usuario?.idUsuario || usuario?.nombreUsuario || '';
+          if (nombre) {
             this.formularioVentainterna.patchValue({
-              fa_nomVend: usuario.data[0].idUsuario,
+              fa_nomVend: nombre,
             });
             nextElement?.focus();
-            console.log(usuario.data[0].idUsuario);
-          } else {
-            this.mensagePantalla = true;
-            Swal.fire({
-              icon: 'error',
-              title: 'A V I S O',
-              text: 'Codigo de usuario invalido.',
-            }).then(() => {
-              this.mensagePantalla = false;
-            });
             return;
-            console.log('Vendedor no encontrado');
           }
-        }
+
+          this.mensagePantalla = true;
+          Swal.fire({
+            icon: 'error',
+            title: 'A V I S O',
+            text: 'Codigo de usuario invalido.',
+          }).then(() => {
+            this.mensagePantalla = false;
+          });
+        },
+        () => {
+          this.mensagePantalla = true;
+          Swal.fire({
+            icon: 'error',
+            title: 'A V I S O',
+            text: 'No se pudo buscar el vendedor.',
+          }).then(() => {
+            this.mensagePantalla = false;
+          });
+        },
       );
     } else {
       this.mensagePantalla = true;
@@ -1086,3 +1405,4 @@ export class Ventainterna implements OnInit {
     }
   }
 }
+
