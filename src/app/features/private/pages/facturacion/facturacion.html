@@ -306,24 +306,53 @@
             </div>
             <div class="row g-3 small">
               <div class="col-6 col-md-3">
-                <div class="text-muted fw-semibold">Pago</div>
-                <div class="fw-bold">{{resumenConsultaFactura.pago}}</div>
+                <div class="text-muted fw-semibold">Pagada</div>
+                <div class="fw-bold">
+                  <i
+                    class="bi fs-5"
+                    [ngClass]="resumenConsultaFactura.pagada ? 'bi-check-square-fill text-success' : 'bi-square text-secondary'"
+                  ></i>
+                </div>
               </div>
               <div class="col-6 col-md-3">
                 <div class="text-muted fw-semibold">Pendiente</div>
-                <div class="fw-bold">{{resumenConsultaFactura.pendiente}}</div>
+                <div class="fw-bold d-flex align-items-center gap-2">
+                  <i
+                    class="bi fs-5"
+                    [ngClass]="resumenConsultaFactura.pendiente ? 'bi-check-square-fill text-success' : 'bi-square text-secondary'"
+                  ></i>
+                  <button
+                    *ngIf="resumenConsultaFactura.pendiente"
+                    type="button"
+                    class="btn btn-sm btn-outline-primary px-2"
+                    (click)="verProductosPendientesConsulta()"
+                  >
+                    Ver
+                  </button>
+                </div>
               </div>
               <div class="col-6 col-md-3">
-                <div class="text-muted fw-semibold">Entrega</div>
-                <div class="fw-bold">{{resumenConsultaFactura.entrega}}</div>
+                <div class="text-muted fw-semibold">Entregada</div>
+                <div class="fw-bold">
+                  <i
+                    class="bi fs-5"
+                    [ngClass]="resumenConsultaFactura.entregada ? 'bi-check-square-fill text-success' : 'bi-square text-secondary'"
+                  ></i>
+                </div>
               </div>
               <div class="col-6 col-md-3">
                 <div class="text-muted fw-semibold">Salida</div>
-                <div class="fw-bold">{{resumenConsultaFactura.salida}}</div>
+                <div class="fw-bold d-flex align-items-center gap-2">
+                  <i
+                    class="bi fs-5"
+                    [ngClass]="resumenConsultaFactura.salida ? 'bi-check-square-fill text-success' : 'bi-square text-secondary'"
+                  ></i>
+                  <span *ngIf="resumenConsultaFactura.codigoSalida">{{resumenConsultaFactura.codigoSalida}}</span>
+                </div>
               </div>
               <div class="col-6 col-md-3">
-                <div class="text-muted fw-semibold">Estado salida</div>
-                <div class="fw-bold">{{resumenConsultaFactura.estadoSalida}}</div>
+                <div class="text-muted fw-semibold">Estado Factura</div>
+                <div class="fw-bold">{{resumenConsultaFactura.documento}}</div>
               </div>
               <div class="col-md-6">
                 <div class="text-muted fw-semibold">Chofer</div>
@@ -331,15 +360,30 @@
               </div>
               <div class="col-6 col-md-2">
                 <div class="text-muted fw-semibold">Asignacion</div>
-                <div class="fw-bold">{{resumenConsultaFactura.asignacionChofer}}</div>
+                <div class="fw-bold">
+                  <i
+                    class="bi fs-5"
+                    [ngClass]="resumenConsultaFactura.choferAsignado ? 'bi-check-square-fill text-success' : 'bi-square text-secondary'"
+                  ></i>
+                </div>
               </div>
               <div class="col-6 col-md-2">
-                <div class="text-muted fw-semibold">Despacho Forjas</div>
-                <div class="fw-bold">{{resumenConsultaFactura.despachoForjas}}</div>
+                <div class="text-muted fw-semibold">Almacen Forjas</div>
+                <div class="fw-bold">
+                  <i
+                    class="bi fs-5"
+                    [ngClass]="resumenConsultaFactura.despachoForjas ? 'bi-check-square-fill text-success' : 'bi-square text-secondary'"
+                  ></i>
+                </div>
               </div>
               <div class="col-6 col-md-2">
-                <div class="text-muted fw-semibold">Despacho Patio</div>
-                <div class="fw-bold">{{resumenConsultaFactura.despachoPatio}}</div>
+                <div class="text-muted fw-semibold">Almacen Patio</div>
+                <div class="fw-bold">
+                  <i
+                    class="bi fs-5"
+                    [ngClass]="resumenConsultaFactura.despachoPatio ? 'bi-check-square-fill text-success' : 'bi-square text-secondary'"
+                  ></i>
+                </div>
               </div>
             </div>
           </div>
@@ -437,6 +481,68 @@
             </div>
            </div>
         </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Productos Pendientes -->
+<div
+  class="modal fade"
+  id="modalProductosPendientesFactura"
+  tabindex="-1"
+  aria-labelledby="modalProductosPendientesFacturaLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title fw-semibold" id="modalProductosPendientesFacturaLabel">
+          <i class="bi bi-box-seam me-2"></i>Productos Pendientes
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body bg-light">
+        <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+          <span class="text-muted fw-semibold">Factura</span>
+          <span class="badge text-bg-secondary">{{facturaConsultaActual}}</span>
+        </div>
+
+        <div *ngIf="cargandoDetallePendienteConsulta" class="text-center text-muted py-4">
+          <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+          Consultando productos pendientes...
+        </div>
+
+        <div *ngIf="!cargandoDetallePendienteConsulta" class="table-responsive bg-white">
+          <table class="table table-bordered table-hover table-sm align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Codigo</th>
+                <th>Descripcion</th>
+                <th>Unidad</th>
+                <th class="text-end">Cantidad</th>
+                <th class="text-end">Cant. Pendiente</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of detallePendienteConsulta">
+                <td class="fw-semibold">{{item.codigo}}</td>
+                <td>{{item.descripcion}}</td>
+                <td>{{item.unidad}}</td>
+                <td class="text-end">{{item.cantidad | number:'1.0-2'}}</td>
+                <td class="text-end fw-bold">{{item.cantidadPendiente | number:'1.0-2'}}</td>
+              </tr>
+              <tr *ngIf="detallePendienteConsulta.length === 0">
+                <td colspan="5" class="text-center text-muted py-4">
+                  No hay productos pendientes para esta factura.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
       </div>
     </div>
   </div>

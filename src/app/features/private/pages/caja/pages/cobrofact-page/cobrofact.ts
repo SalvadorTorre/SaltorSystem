@@ -1607,34 +1607,59 @@ export class CobroFact implements OnInit {
       fa_notapago: this.notaPago,
     };
 
-    this.servicioFacturacion.marcarFacturaComoImpresa(payload).subscribe({
-      next: (resp: any) => {
-        this.DatosSeleccionado = {
+    this.servicioFacturacion.asignarEncfFactura(cod).subscribe({
+      next: (encfResp: any) => {
+        const facturaConEncf = {
           ...(this.DatosSeleccionado || {}),
-          ...(resp?.data || {}),
-          fa_envio: this.fentrega,
-          fa_codfpago: this.ftipoPago,
-          fa_fpago: payload.fa_fpago,
-          fa_origenpago: payload.fa_origenpago,
-          fa_confirpago: payload.fa_confirpago,
-          fa_notapago: payload.fa_notapago,
+          ...(encfResp?.data || {}),
         };
+        this.DatosSeleccionado = facturaConEncf;
         this.formularioFacturacion.patchValue(
           {
-            fa_envio: this.fentrega,
-            fa_codfpago: this.ftipoPago,
-            fa_fpago: payload.fa_fpago,
-            fa_origenpago: payload.fa_origenpago,
-            fa_confirpago: payload.fa_confirpago,
-            fa_notapago: payload.fa_notapago,
+            fa_ncfFact: facturaConEncf.fa_ncfFact,
+            fa_tipoNcf: facturaConEncf.fa_tipoNcf,
+            fa_fecNcf: facturaConEncf.fa_fecNcf,
           },
           { emitEvent: false },
         );
-        this.buscarFacturasNoImpresas();
-        this.imprimirFactura();
+
+        this.servicioFacturacion.marcarFacturaComoImpresa(payload).subscribe({
+          next: (resp: any) => {
+            const facturaCobro = {
+              ...facturaConEncf,
+              ...(resp?.data || {}),
+              fa_envio: this.fentrega,
+              fa_codfpago: this.ftipoPago,
+              fa_fpago: payload.fa_fpago,
+              fa_origenpago: payload.fa_origenpago,
+              fa_confirpago: payload.fa_confirpago,
+              fa_notapago: payload.fa_notapago,
+            };
+            this.DatosSeleccionado = facturaCobro;
+            this.formularioFacturacion.patchValue(
+              {
+                fa_ncfFact: facturaCobro.fa_ncfFact,
+                fa_tipoNcf: facturaCobro.fa_tipoNcf,
+                fa_envio: this.fentrega,
+                fa_codfpago: this.ftipoPago,
+                fa_fpago: payload.fa_fpago,
+                fa_origenpago: payload.fa_origenpago,
+                fa_confirpago: payload.fa_confirpago,
+                fa_notapago: payload.fa_notapago,
+              },
+              { emitEvent: false },
+            );
+            this.buscarFacturasNoImpresas();
+            this.imprimirFactura();
+          },
+          error: (err) => {
+            console.error('Error guardando factura antes de imprimir:', err);
+            Swal.fire('Error', this.extraerMensajeError(err), 'error');
+          },
+        });
       },
       error: (err) => {
-        console.error('Error guardando factura antes de imprimir:', err);
+        console.error('Error generando ENCF antes de enviar DGII:', err);
         Swal.fire('Error', this.extraerMensajeError(err), 'error');
       },
     });

@@ -215,6 +215,48 @@ export class ServicioFacturacion {
     if (facturaError) throw facturaError;
   }
 
+  private async descontarInventarioFactura(
+    detalle: any[],
+    idsucursal: number,
+  ): Promise<void> {
+    if (!Number.isFinite(idsucursal) || idsucursal <= 0) {
+      throw new Error('Sucursal invalida para descontar inventario.');
+    }
+
+    for (const item of detalle) {
+      const producto = item?.producto || {};
+      const codProducto = String(
+        producto?.in_codmerc ?? item?.df_codMerc ?? item?.df_codmerc ?? '',
+      ).trim();
+      const cantidad = this.toNumber(
+        item?.cantidad ?? item?.df_canMerc ?? item?.df_canmerc,
+      );
+      if (!codProducto || cantidad <= 0) continue;
+
+      const { data: inventario, error: inventarioError } = await this.db
+        .from('inventario')
+        .select('*')
+        .eq('inv_codsucu', idsucursal)
+        .eq('inv_codprod', codProducto)
+        .limit(1)
+        .maybeSingle();
+      if (inventarioError) throw inventarioError;
+      if (!inventario) continue;
+
+      const existenciaNueva = this.toNumber(inventario?.inv_existencia) - cantidad;
+      const { error: updateError } = await this.db
+        .from('inventario')
+        .update({
+          inv_existencia: existenciaNueva,
+          inv_fechamov: new Date().toISOString(),
+        })
+        .eq('id', Number(inventario.id))
+        .eq('inv_codsucu', idsucursal)
+        .eq('inv_codprod', codProducto);
+      if (updateError) throw updateError;
+    }
+  }
+
   private mapFacturaDbToUi(row: any): any {
     if (!row) return row;
     return {
@@ -553,6 +595,82 @@ export class ServicioFacturacion {
     }
   }
 
+  asignarEncfFactura(fa_codFact: string): Observable<any> {
+    if (!this.useSupabase) {
+      return this.http.PatchRequest(
+        `/facturacion/asignar-encf/${fa_codFact}`,
+        {},
+      );
+    }
+
+    const codigo = String(fa_codFact || '').trim();
+    return from((async () => {
+      if (!codigo) {
+        throw new Error('Debe indicar la factura para generar el ENCF.');
+      }
+
+      let facturaQuery = this.db
+        .from('factura')
+        .select('*')
+        .eq('fa_codfact', codigo)
+        .limit(1);
+      facturaQuery = this.applyTenantFilter(facturaQuery);
+      const { data: factura, error: facturaError } = await facturaQuery.maybeSingle();
+      if (facturaError) throw facturaError;
+      if (!factura) {
+        throw new Error(`Factura ${codigo} no pertenece al tenant activo.`);
+      }
+
+      const encfActual = String(factura?.fa_ncffact || '').trim();
+      if (encfActual) {
+        return {
+          status: 'success',
+          code: 200,
+          data: this.mapFacturaDbToUi(factura),
+        };
+      }
+
+      const codEmpresa = String(
+        factura?.fa_codempr || (await this.ensureTenantCodEmpre()) || '',
+      ).trim();
+      const tipoNcf = factura?.fa_tiponcf;
+      if (!tipoNcf) {
+        throw new Error('La factura no tiene tipo de comprobante para generar ENCF.');
+      }
+
+      let reservation: EncfReservation | null = null;
+      try {
+        reservation = await this.reserveNextEncf(codEmpresa, tipoNcf);
+        const patch: any = {
+          fa_ncffact: reservation.ncf,
+          fa_tiponcf: reservation.tipoNumero ?? this.toNumberOrNull(tipoNcf),
+          fa_fecncf: this.normalizeDate(new Date()),
+        };
+
+        let updateQuery = this.db
+          .from('factura')
+          .update(patch)
+          .eq('fa_codfact', codigo)
+          .select('*');
+        updateQuery = this.applyTenantFilter(updateQuery);
+        const { data: actualizada, error: updateError } = await updateQuery.maybeSingle();
+        if (updateError) throw updateError;
+        if (!actualizada) {
+          throw new Error(`No se pudo actualizar el ENCF de la factura ${codigo}.`);
+        }
+
+        return {
+          status: 'success',
+          code: 200,
+          data: this.mapFacturaDbToUi(actualizada),
+        };
+      } catch (error) {
+        await this.rollbackEncfReservation(reservation);
+        throw error;
+      }
+    })());
+  }
+
   getByNumero(numero: string): Observable<any> {
     if (!this.useSupabase) {
       return this.http.GetRequest<any>(`/factura-numero/${numero}`, false);
@@ -607,7 +725,6 @@ export class ServicioFacturacion {
     }
 
     return from((async () => {
-      let encfReservation: EncfReservation | null = null;
       try {
         const facturaRaw = { ...(datosParaGuardar?.factura || {}) };
         const detalleRaw = Array.isArray(datosParaGuardar?.detalle)
@@ -623,11 +740,6 @@ export class ServicioFacturacion {
         if (!codigo) {
           codigo = await this.nextFacturaCode();
         }
-
-        encfReservation = await this.reserveNextEncf(tenantCodEmpre, facturaRaw?.fa_tipoNcf);
-        facturaRaw.fa_ncfFact = encfReservation.ncf;
-        facturaRaw.fa_tipoNcf = encfReservation.tipoNumero ?? facturaRaw.fa_tipoNcf;
-        facturaRaw.fa_fecNcf = this.normalizeDate(facturaRaw?.fa_fecFact) || this.normalizeDate(new Date());
 
         facturaRaw.fa_codFact = codigo;
         facturaRaw.fa_codEmpr = tenantCodEmpre;
@@ -697,6 +809,11 @@ export class ServicioFacturacion {
               .from('detfactura')
               .insert(detallePayload);
             if (detalleError) throw detalleError;
+
+            const idsucursal = this.toNumber(
+              facturaRaw?.fa_codSucu ?? tenantSucursal,
+            );
+            await this.descontarInventarioFactura(detalleRaw, idsucursal);
           }
         } catch (error) {
           let rollback = this.db.from('factura').delete().eq('fa_codfact', codigo);
@@ -715,7 +832,6 @@ export class ServicioFacturacion {
           },
         };
       } catch (error) {
-        await this.rollbackEncfReservation(encfReservation);
         throw error;
       }
     })());
