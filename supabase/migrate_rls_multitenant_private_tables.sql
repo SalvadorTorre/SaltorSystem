@@ -249,16 +249,16 @@ BEGIN
     FROM information_schema.columns c
     WHERE c.table_schema = 'myappdb'
       AND c.table_name = r.tablename
-      AND c.column_name IN ('cod_empre','fa_codempr','ct_codempr','dc_codempr','de_codempr','df_codepr','me_codempr','codempr')
-    ORDER BY array_position(ARRAY['cod_empre','fa_codempr','ct_codempr','dc_codempr','de_codempr','df_codepr','me_codempr','codempr'], c.column_name)
+      AND c.column_name IN ('cod_empre','fa_codempr','ct_codempr','dc_codempr','de_codempr','df_codepr','me_codempr','so_codempr','codempr')
+    ORDER BY array_position(ARRAY['cod_empre','fa_codempr','ct_codempr','dc_codempr','de_codempr','df_codepr','me_codempr','so_codempr','codempr'], c.column_name)
     LIMIT 1;
 
     SELECT c.column_name INTO branch_col
     FROM information_schema.columns c
     WHERE c.table_schema = 'myappdb'
       AND c.table_name = r.tablename
-      AND c.column_name IN ('sucursalid','fa_codsucu','ct_cod_sucu','dc_codsucu','de_codsucu','df_codsucu','me_codsucu','inv_codsucu','idsucursal','cl_codsucursal')
-    ORDER BY array_position(ARRAY['sucursalid','fa_codsucu','ct_cod_sucu','dc_codsucu','de_codsucu','df_codsucu','me_codsucu','inv_codsucu','idsucursal','cl_codsucursal'], c.column_name)
+      AND c.column_name IN ('sucursalid','fa_codsucu','ct_cod_sucu','dc_codsucu','de_codsucu','df_codsucu','me_codsucu','so_codsucu','inv_codsucu','idsucursal','cl_codsucursal')
+    ORDER BY array_position(ARRAY['sucursalid','fa_codsucu','ct_cod_sucu','dc_codsucu','de_codsucu','df_codsucu','me_codsucu','so_codsucu','inv_codsucu','idsucursal','cl_codsucursal'], c.column_name)
     LIMIT 1;
 
     SELECT c.column_name INTO owner_text_col

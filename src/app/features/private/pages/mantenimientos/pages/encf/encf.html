@@ -194,15 +194,20 @@
               </div>
             </div>
 
-            <div class="col-md-6">
+            <div class="col-md-4">
               <label class="form-label fw-semibold text-secondary small">Tipo de Comprobante *</label>
               <div class="input-group">
                 <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-tags"></i></span>
-                <select class="form-select border-start-0 ps-0" name="tipoencf" [(ngModel)]="encf.tipoencf" required>
+                <select class="form-select border-start-0 ps-0" name="tipoencf" [(ngModel)]="encf.tipoencf" (ngModelChange)="seleccionarTipoEncf($event)" required>
                   <option value="">Seleccione un tipo</option>
                   <option *ngFor="let t of tiposNcf" [value]="t.tipo">{{ t.tipo }} - {{ t.desNcf }}</option>
                 </select>
               </div>
+            </div>
+
+            <div class="col-md-2">
+              <label class="form-label fw-semibold text-secondary small">Grupo</label>
+              <input type="number" class="form-control" name="tipo" [ngModel]="encf.tipo" readonly />
             </div>
           </div>
 

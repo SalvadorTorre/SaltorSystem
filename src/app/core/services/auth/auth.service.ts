@@ -413,6 +413,7 @@ export class AuthService {
       'dashboardRole',
     ];
     keys.forEach((k) => localStorage.removeItem(k));
+    this.supabaseService.clearAuthSession();
   }
 
   private isActiveJwt(token: string): boolean {

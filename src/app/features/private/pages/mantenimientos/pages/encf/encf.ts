@@ -135,6 +135,11 @@ export class EncfComponent implements OnInit {
     return t?.desNcf ?? code;
   }
 
+  seleccionarTipoEncf(tipoencf?: string): void {
+    this.encf.tipoencf = String(tipoencf || '').trim().toUpperCase();
+    this.encf.tipo = this.grupoTipoEncf(this.encf.tipoencf);
+  }
+
   empresaNombre(codempr?: string): string {
     const code = String(codempr || '').trim().toUpperCase();
     if (!code) { return ''; }
@@ -183,6 +188,16 @@ export class EncfComponent implements OnInit {
       return;
     }
 
+    const tipoGrupo = this.grupoTipoEncf(this.encf.tipoencf);
+    if (tipoGrupo === undefined) {
+      Swal.fire({
+        title: 'Tipo incompleto',
+        text: 'El tipo de comprobante seleccionado no tiene grupo asignado.',
+        icon: 'warning'
+      });
+      return;
+    }
+
     const payload = {
       codempr: this.encf.codempr,
       cantencf: this.encf.cantencf,
@@ -191,6 +206,7 @@ export class EncfComponent implements OnInit {
       fechaencf: this.encf.fechaencf,
       hastaencf: this.encf.hastaencf,
       tipoencf: this.encf.tipoencf,
+      tipo: tipoGrupo,
       desdeencf: this.encf.desdeencf,
     } as any;
     this.guardando = true;
@@ -253,7 +269,21 @@ export class EncfComponent implements OnInit {
     const idx = this.listaEncf.findIndex(n => n === item);
     this.editIndex = idx;
     this.encf = { ...item };
+    this.encf.tipo = this.encf.tipo ?? this.grupoTipoEncf(this.encf.tipoencf);
     this.abrirModalEncf();
+  }
+
+  private grupoTipoEncf(tipoencf?: string): number | undefined {
+    const value = String(tipoencf || '').trim().toUpperCase();
+    if (!value) {
+      return undefined;
+    }
+
+    const tipo = this.tiposNcf.find((item) =>
+      String(item?.tipo || '').trim().toUpperCase() === value
+    );
+    const grupo = Number(tipo?.grupo);
+    return Number.isFinite(grupo) && grupo > 0 ? grupo : undefined;
   }
 
   eliminar(item: Encf) {

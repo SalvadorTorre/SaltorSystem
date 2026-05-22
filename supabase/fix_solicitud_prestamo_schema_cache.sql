@@ -1,19 +1,14 @@
+-- Corrige el error:
+-- Could not find the 'so_codclie' column of 'solicitud' in the schema cache
+
+create schema if not exists myappdb;
+
 create table if not exists myappdb.solicitud (
   so_numero varchar(12) primary key,
-  so_fecha date not null default current_date,
-  so_codclie varchar(10),
-  so_nomclie varchar(80),
-  so_sucursal_clie varchar(80),
-  so_solicitante varchar(60),
-  so_observacion varchar(250),
-  so_status varchar(4) default 'A',
-  so_codempr varchar(10),
-  so_codsucu int4
+  so_fecha date not null default current_date
 );
 
-alter table if exists myappdb.solicitud
-  add column if not exists so_numero varchar(12),
-  add column if not exists so_fecha date default current_date,
+alter table myappdb.solicitud
   add column if not exists so_codclie varchar(10),
   add column if not exists so_nomclie varchar(80),
   add column if not exists so_sucursal_clie varchar(80),
@@ -29,22 +24,48 @@ create table if not exists myappdb.detsolicitud (
   ds_codmerc varchar(15) not null,
   ds_desmerc varchar(80),
   ds_canmerc numeric(12, 2) not null default 0,
-  ds_unidad varchar(12),
-  constraint detsolicitud_ds_numero_fkey
-    foreign key (ds_numero)
-    references myappdb.solicitud (so_numero)
-    on delete cascade
+  ds_unidad varchar(12)
 );
 
-alter table if exists myappdb.detsolicitud
+alter table myappdb.detsolicitud
   add column if not exists ds_numero varchar(12),
   add column if not exists ds_codmerc varchar(15),
   add column if not exists ds_desmerc varchar(80),
   add column if not exists ds_canmerc numeric(12, 2) default 0,
   add column if not exists ds_unidad varchar(12);
 
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'detsolicitud_ds_numero_fkey'
+      and conrelid = 'myappdb.detsolicitud'::regclass
+  ) then
+    alter table myappdb.detsolicitud
+      add constraint detsolicitud_ds_numero_fkey
+      foreign key (ds_numero)
+      references myappdb.solicitud (so_numero)
+      on delete cascade;
+  end if;
+end $$;
+
 create index if not exists idx_solicitud_fecha on myappdb.solicitud (so_fecha);
 create index if not exists idx_solicitud_cliente on myappdb.solicitud (so_codclie, so_nomclie);
 create index if not exists idx_detsolicitud_numero on myappdb.detsolicitud (ds_numero);
 
+grant usage on schema myappdb to anon, authenticated, service_role;
+grant select, insert, update, delete on all tables in schema myappdb to anon, authenticated, service_role;
+grant usage, select on all sequences in schema myappdb to anon, authenticated, service_role;
+
 notify pgrst, 'reload schema';
+
+select
+  table_schema,
+  table_name,
+  column_name,
+  data_type
+from information_schema.columns
+where table_schema = 'myappdb'
+  and table_name in ('solicitud', 'detsolicitud')
+order by table_name, ordinal_position;

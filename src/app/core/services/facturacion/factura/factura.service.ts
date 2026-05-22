@@ -1436,6 +1436,44 @@ export class ServicioFacturacion {
     })());
   }
 
+  registrarImpresionDespacho(cod: string, tipoDespachador: string) {
+    const codigo = String(cod || '').trim();
+    const tipo = String(tipoDespachador || '').trim().toUpperCase();
+    const patch = tipo === 'H'
+      ? { fa_impalmap: 'S' }
+      : tipo === 'F'
+        ? { fa_impalmaf: 'S' }
+        : null;
+
+    if (!codigo || !patch) {
+      return from(Promise.resolve({
+        status: 'ignored',
+        code: 200,
+        data: null,
+      }));
+    }
+
+    if (!this.useSupabase) {
+      return this.http.PatchRequest(`/facturacion/${codigo}`, patch);
+    }
+
+    return from((async () => {
+      let updateQuery = this.db
+        .from('factura')
+        .update(patch)
+        .eq('fa_codfact', codigo)
+        .select('*');
+      updateQuery = this.applyTenantFilter(updateQuery);
+      const { data, error } = await updateQuery.maybeSingle();
+      if (error) throw error;
+      return {
+        status: 'success',
+        code: 200,
+        data: this.mapFacturaDbToUi(data),
+      };
+    })());
+  }
+
   confirmarCierreFacturas(idCierre?: string | number, codigosFacturas?: string[]): Observable<any> {
     if (!this.useSupabase) {
       return this.http.PatchRequest('/facturacion/confirmar-cierre', {

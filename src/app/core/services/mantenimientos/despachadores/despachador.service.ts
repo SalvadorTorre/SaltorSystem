@@ -75,6 +75,22 @@ export class ServicioDespachador {
     );
   }
 
+  buscarPorCedula(cedula: string): Observable<any> {
+    const termino = String(cedula ?? "").trim();
+    return from((async () => {
+      const { data, error } = await this.db
+        .from("despachadores")
+        .select("*")
+        .eq("ceddesp", termino)
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return data ? this.mapRow(data) : null;
+    })()).pipe(
+      map((row: ModeloDespachadorData | null) => ({ status: "success", code: 200, data: row }))
+    );
+  }
+
   guardarDespachador(despachador: any): Observable<any> {
     const payload = this.mapPayload(despachador);
     return from((async () => {

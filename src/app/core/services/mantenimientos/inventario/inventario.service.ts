@@ -204,10 +204,12 @@ export class ServicioInventario {
 
   buscarPorDescripcionMerc(descripcion:string): Observable<any>{
     return from((async () => {
+      const descripcionInicial = String(descripcion || "").trim();
+
       const { data, error } = await this.db
         .from("productos2")
         .select("*")
-        .ilike("in_desmerc", `%${descripcion}%`)
+        .ilike("in_desmerc", `${descripcionInicial}%`)
         .order("in_desmerc", { ascending: true })
         .limit(50);
       if (error) throw error;

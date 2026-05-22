@@ -2,6 +2,14 @@
   color: #243142;
 }
 
+.module-title {
+  margin: 0 0 10px;
+  color: #243142;
+  font-size: 1.35rem;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
 .toolbar {
   display: flex;
   gap: 8px;

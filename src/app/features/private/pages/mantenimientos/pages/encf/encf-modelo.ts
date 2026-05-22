@@ -8,6 +8,7 @@ export interface Encf {
   fechaencf: string; // Date (YYYY-MM-DD)
   hastaencf?: number; // Decimal(10,0)
   tipoencf?: string; // VarChar(4)
+  tipo?: number; // Grupo del comprobante e-CF
   empresacodempr?: { nom_empre?: string };
 }
 
@@ -21,6 +22,7 @@ export class EncfModel implements Encf {
   fechaencf: string;
   hastaencf?: number;
   tipoencf?: string;
+  tipo?: number;
   empresacodempr?: { nom_empre?: string };
 
   constructor(init?: Partial<Encf>) {
@@ -33,6 +35,7 @@ export class EncfModel implements Encf {
     this.fechaencf = init?.fechaencf ?? '';
     this.hastaencf = init?.hastaencf ?? 0;
     this.tipoencf = init?.tipoencf ?? '';
+    this.tipo = init?.tipo ?? undefined;
     this.empresacodempr = init?.empresacodempr ?? undefined;
   }
 }

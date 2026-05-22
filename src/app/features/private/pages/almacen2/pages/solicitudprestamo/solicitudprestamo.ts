@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
-import { debounceTime, distinctUntilChanged, filter, switchMap, tap } from 'rxjs';
+import { catchError, debounceTime, distinctUntilChanged, filter, of, switchMap, tap } from 'rxjs';
 import Swal from 'sweetalert2';
 import { SolicitudPrestamoService } from 'src/app/core/services/almacen/solicitudprestamo/solicitudprestamo.service';
 import {
@@ -64,7 +64,19 @@ export class SolicitudPrestamo implements OnInit {
         distinctUntilChanged(),
         tap(() => (this.resultadoEmpresas = [])),
         filter((query) => !this.modoConsulta && String(query || '').trim().length > 0),
-        switchMap((query) => this.servicioEmpresa.buscarPorNombreEmpresa(String(query || '').trim()))
+        switchMap((query) =>
+          this.servicioEmpresa.buscarPorNombreEmpresa(String(query || '').trim()).pipe(
+            catchError((err) => {
+              this.mostrarError('Error consultando empresas', err);
+              return of({
+                status: 'error',
+                code: 0,
+                message: err?.message || 'No se pudieron consultar empresas.',
+                data: [],
+              } satisfies EmpresaModel);
+            })
+          )
+        )
       )
       .subscribe((response: EmpresaModel) => {
         this.resultadoEmpresas = Array.isArray(response?.data) ? response.data : [];
@@ -179,12 +191,12 @@ export class SolicitudPrestamo implements OnInit {
 
   crearFormulario(): void {
     this.formulario = this.fb.group({
-      so_numero: [''],
+      so_codsoli: [''],
       so_fecha: [this.hoy(), Validators.required],
       so_codclie: ['', Validators.required],
       so_nomclie: ['', Validators.required],
       so_sucursal_clie: [''],
-      so_solicitante: [localStorage.getItem('username') || ''],
+      so_nomvend: [localStorage.getItem('username') || ''],
       so_observacion: [''],
       so_status: ['A'],
       so_codempr: [this.getEmpresa()],
@@ -194,7 +206,7 @@ export class SolicitudPrestamo implements OnInit {
 
   nuevoDetalle(): DetSolicitudPrestamoData {
     return {
-      ds_numero: '',
+      ds_codsoli: '',
       ds_codmerc: '',
       ds_desmerc: '',
       ds_canmerc: 1,
@@ -223,6 +235,7 @@ export class SolicitudPrestamo implements OnInit {
     this.limpiarBusquedaCliente();
     this.limpiarBusquedaProducto();
     $('#modalSolicitudPrestamo').modal('show');
+    this.focusById('inputNombreClienteSolicitud');
   }
 
   private limpiarBusquedaCliente(): void {
@@ -290,6 +303,13 @@ export class SolicitudPrestamo implements OnInit {
       return;
     }
     this.focusById('inputObservacionSolicitud');
+  }
+
+  pasarAlCodigoMercancia(event: Event): void {
+    event.preventDefault();
+    if (!this.modoConsulta) {
+      this.focusById('inputCodigoMercanciaSolicitud');
+    }
   }
 
   onCodigoMercanciaInput(event: Event): void {

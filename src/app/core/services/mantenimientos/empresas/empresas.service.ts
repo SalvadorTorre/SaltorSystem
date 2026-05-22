@@ -26,6 +26,22 @@ export class ServicioEmpresa {
     return anyClient;
   }
 
+  private isJwtExpired(error: any): boolean {
+    return String(error?.message || error?.error_description || error || "")
+      .toLowerCase()
+      .includes("jwt expired");
+  }
+
+  private async retryAfterExpiredJwt<T>(operation: () => Promise<T>): Promise<T> {
+    try {
+      return await operation();
+    } catch (error) {
+      if (!this.isJwtExpired(error)) throw error;
+      this.supabase.clearAuthSession();
+      return await operation();
+    }
+  }
+
   private mapEmpresaPayload(empresas: any): any {
     return {
       cod_empre: empresas?.cod_empre ?? undefined,
@@ -105,7 +121,7 @@ export class ServicioEmpresa {
 
   buscarPorNombreEmpresa(valor: string): Observable<any> {
     const termino = String(valor || "").trim();
-    return from((async () => {
+    return from(this.retryAfterExpiredJwt(async () => {
       if (!termino) {
         return [];
       }
@@ -121,7 +137,7 @@ export class ServicioEmpresa {
       const { data, error } = await query;
       if (error) throw error;
       return data || [];
-    })()).pipe(
+    })).pipe(
       map((rows: any[]) => ({ status: "success", code: 200, data: rows }))
     );
   }
@@ -140,7 +156,7 @@ export class ServicioEmpresa {
   }
 
   buscarEmpres(cod_empre: string): Observable<any> {
-    return from((async () => {
+    return from(this.retryAfterExpiredJwt(async () => {
       const codigo = String(cod_empre || "").trim().toUpperCase();
       const [{ data: empresa, error: empresaError }, { data: sucursales, error: sucursalesError }] = await Promise.all([
         this.db
@@ -163,7 +179,7 @@ export class ServicioEmpresa {
         ...empresa,
         sucursales: sucursales || []
       };
-    })()).pipe(
+    })).pipe(
       map((row: any) => ({ status: "success", code: 200, data: row }))
     );
   }

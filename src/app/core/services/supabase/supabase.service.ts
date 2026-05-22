@@ -6,6 +6,7 @@ import { createClient } from '@supabase/supabase-js';
   providedIn: 'root',
 })
 export class SupabaseService {
+  private readonly storageKey = 'saltorsystem-auth-token';
   private clientInstance: ReturnType<typeof createClient> | null = null;
 
   get url(): string {
@@ -28,13 +29,14 @@ export class SupabaseService {
     if (!this.enabled) {
       return null;
     }
+    this.clearExpiredStoredSession();
     if (!this.clientInstance) {
       const options: any = {
         db: {
           schema: this.schema,
         },
         auth: {
-          storageKey: 'saltorsystem-auth-token',
+          storageKey: this.storageKey,
           persistSession: true,
           autoRefreshToken: true,
           detectSessionInUrl: false,
@@ -51,5 +53,46 @@ export class SupabaseService {
       );
     }
     return this.clientInstance;
+  }
+
+  clearAuthSession(): void {
+    localStorage.removeItem(this.storageKey);
+    const client = this.clientInstance as any;
+    if (client?.auth?.signOut) {
+      void client.auth.signOut({ scope: 'local' }).catch(() => undefined);
+    }
+    this.clientInstance = null;
+  }
+
+  private clearExpiredStoredSession(): void {
+    const raw = localStorage.getItem(this.storageKey);
+    if (!raw) return;
+    try {
+      const session = JSON.parse(raw);
+      const token = String(
+        session?.access_token || session?.currentSession?.access_token || ''
+      );
+      const expiresAt = Number(
+        session?.expires_at || session?.currentSession?.expires_at || 0
+      );
+      if ((expiresAt && expiresAt <= Math.floor(Date.now() / 1000)) || this.isExpiredJwt(token)) {
+        localStorage.removeItem(this.storageKey);
+        this.clientInstance = null;
+      }
+    } catch {
+      localStorage.removeItem(this.storageKey);
+      this.clientInstance = null;
+    }
+  }
+
+  private isExpiredJwt(token: string): boolean {
+    if (!token) return false;
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1] || ''));
+      const exp = Number(payload?.exp || 0);
+      return Boolean(exp && exp <= Math.floor(Date.now() / 1000));
+    } catch {
+      return false;
+    }
   }
 }

@@ -25,6 +25,22 @@ export class SolicitudPrestamoService {
     return anyClient;
   }
 
+  private isJwtExpired(error: any): boolean {
+    return String(error?.message || error?.error_description || error || '')
+      .toLowerCase()
+      .includes('jwt expired');
+  }
+
+  private async retryAfterExpiredJwt<T>(operation: () => Promise<T>): Promise<T> {
+    try {
+      return await operation();
+    } catch (error) {
+      if (!this.isJwtExpired(error)) throw error;
+      this.supabase.clearAuthSession();
+      return await operation();
+    }
+  }
+
   private toStringMax(value: any, max: number): string | null {
     const str = value === null || value === undefined ? '' : String(value).trim();
     return str ? str.slice(0, max) : null;
@@ -49,23 +65,25 @@ export class SolicitudPrestamoService {
     const now = new Date();
     const yy = String(now.getFullYear()).slice(-2);
     const mm = String(now.getMonth() + 1).padStart(2, '0');
-    const dd = String(now.getDate()).padStart(2, '0');
     const tail = String(Date.now()).slice(-6);
-    return `SP${yy}${mm}${dd}${tail}`;
+    return `SP${yy}${mm}${tail}`;
   }
 
   private mapSolicitud(row: any): any {
     if (!row) return row;
+    const codigo = row.so_codsoli ?? row.so_numero ?? row.numero ?? row.cod_solicitud ?? row.id ?? '';
     return {
       ...row,
-      so_numero: row.so_numero ?? row.numero ?? row.cod_solicitud ?? row.id ?? '',
+      so_codsoli: codigo,
+      so_numero: codigo,
       so_fecha: row.so_fecha ?? row.fecha ?? row.fec_solicitud ?? null,
       so_codclie: row.so_codclie ?? row.codclie ?? row.cod_cliente ?? '',
       so_nomclie: row.so_nomclie ?? row.nomclie ?? row.nombre_cliente ?? '',
       so_sucursal_clie: row.so_sucursal_clie ?? row.sucursal_clie ?? '',
-      so_solicitante: row.so_solicitante ?? row.solicitante ?? '',
+      so_nomvend: row.so_nomvend ?? row.so_solicitante ?? row.solicitante ?? '',
+      so_solicitante: row.so_nomvend ?? row.so_solicitante ?? row.solicitante ?? '',
       so_observacion: row.so_observacion ?? row.observacion ?? '',
-      so_status: row.so_status ?? row.status ?? 'A',
+      so_status: row.so_status ?? row.status ?? row.ststus ?? 'A',
       so_codempr: row.so_codempr ?? row.codempr ?? null,
       so_codsucu: row.so_codsucu ?? row.codsucu ?? null,
     };
@@ -73,7 +91,7 @@ export class SolicitudPrestamoService {
 
   listar(pageIndex = 1, pageSize = 20, filtro = ''): Observable<any> {
     const offset = Math.max(pageIndex - 1, 0) * pageSize;
-    return from((async () => {
+    return from(this.retryAfterExpiredJwt(async () => {
       let query = this.db
         .from('solicitud')
         .select('*', { count: 'exact' })
@@ -81,13 +99,13 @@ export class SolicitudPrestamoService {
 
       const q = String(filtro || '').trim();
       if (q) {
-        query = query.or(`so_numero.ilike.%${q}%,so_nomclie.ilike.%${q}%,so_codclie.ilike.%${q}%`);
+        query = query.or(`so_codsoli.ilike.%${q}%,so_nomclie.ilike.%${q}%,so_codclie.ilike.%${q}%`);
       }
 
       const { data, error, count } = await query;
       if (error) throw error;
       return { rows: data || [], total: Number(count || 0) };
-    })()).pipe(
+    })).pipe(
       map((result: any) => ({
         status: 'success',
         code: 200,
@@ -99,29 +117,26 @@ export class SolicitudPrestamoService {
 
   buscar(numero: string): Observable<any> {
     const soNumero = String(numero || '').trim();
-    return from((async () => {
+    return from(this.retryAfterExpiredJwt(async () => {
       const [{ data: solicitud, error: solError }, { data: detalle, error: detError }] = await Promise.all([
-        this.db.from('solicitud').select('*').eq('so_numero', soNumero).maybeSingle(),
-        this.db.from('detsolicitud').select('*').eq('ds_numero', soNumero),
+        this.db.from('solicitud').select('*').eq('so_codsoli', soNumero).maybeSingle(),
+        this.db.from('detsolicitud').select('*').eq('ds_codsoli', soNumero),
       ]);
       if (solError) throw solError;
       if (detError) throw detError;
       return solicitud ? { ...this.mapSolicitud(solicitud), detsolicitud: detalle || [] } : null;
-    })()).pipe(map((data: any) => ({ status: 'success', code: 200, data })));
+    })).pipe(map((data: any) => ({ status: 'success', code: 200, data })));
   }
 
   guardar(solicitud: any, detalle: any[]): Observable<any> {
-    return from((async () => {
-      const numero = this.toStringMax(solicitud?.so_numero, 12) || this.generarNumero();
+    return from(this.retryAfterExpiredJwt(async () => {
+      const numero = this.toStringMax(solicitud?.so_codsoli ?? solicitud?.so_numero, 12) || this.generarNumero();
       const header: any = {
-        so_numero: numero,
+        so_codsoli: numero,
         so_fecha: this.normalizeDate(solicitud?.so_fecha),
         so_codclie: this.toStringMax(solicitud?.so_codclie, 10),
         so_nomclie: this.toStringMax(solicitud?.so_nomclie, 80),
-        so_sucursal_clie: this.toStringMax(solicitud?.so_sucursal_clie, 80),
-        so_solicitante: this.toStringMax(solicitud?.so_solicitante, 60),
-        so_observacion: this.toStringMax(solicitud?.so_observacion, 250),
-        so_status: this.toStringMax(solicitud?.so_status || 'A', 4),
+        so_nomvend: this.toStringMax(solicitud?.so_nomvend ?? solicitud?.so_solicitante, 60),
         so_codempr: this.toStringMax(solicitud?.so_codempr, 10),
         so_codsucu: this.toNumber(solicitud?.so_codsucu) || null,
       };
@@ -137,7 +152,7 @@ export class SolicitudPrestamoService {
       if (solError) throw solError;
 
       const rows = (detalle || []).map((item: any) => ({
-        ds_numero: numero,
+        ds_codsoli: numero,
         ds_codmerc: this.toStringMax(item?.ds_codmerc, 15) || '',
         ds_desmerc: this.toStringMax(item?.ds_desmerc, 80) || '',
         ds_canmerc: this.toNumber(item?.ds_canmerc),
@@ -150,6 +165,6 @@ export class SolicitudPrestamoService {
       }
 
       return { ...this.mapSolicitud(inserted), detsolicitud: rows };
-    })()).pipe(map((data: any) => ({ status: 'success', code: 200, data })));
+    })).pipe(map((data: any) => ({ status: 'success', code: 200, data })));
   }
 }

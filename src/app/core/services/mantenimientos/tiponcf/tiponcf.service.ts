@@ -8,6 +8,7 @@ export interface TiponcfData {
   desNcf: string;
   tipo: string;
   codigo: number;
+  grupo: number | null;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -35,7 +36,10 @@ export class ServicioTiponcf {
       idNcf: Number(row?.idncf ?? row?.idNcf ?? 0),
       desNcf: String(row?.desncf ?? row?.desNcf ?? "").trim(),
       tipo: String(row?.tipo ?? "").trim(),
-      codigo: Number(row?.codigo ?? 0)
+      codigo: Number(row?.codigo ?? 0),
+      grupo: row?.grupo === null || row?.grupo === undefined || row?.grupo === ""
+        ? null
+        : Number(row.grupo)
     };
   }
 
