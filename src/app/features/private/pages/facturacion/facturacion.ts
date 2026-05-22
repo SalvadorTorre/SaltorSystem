@@ -55,16 +55,17 @@ import { ServicioSalidafactura } from 'src/app/core/services/almacen/salidafactu
 declare var $: any;
 
 interface ResumenConsultaFactura {
-  pago: string;
+  pagada: boolean;
   documento: string;
-  pendiente: string;
-  entrega: string;
-  salida: string;
+  pendiente: boolean;
+  entregada: boolean;
+  salida: boolean;
+  codigoSalida: string;
   estadoSalida: string;
   chofer: string;
-  asignacionChofer: string;
-  despachoForjas: string;
-  despachoPatio: string;
+  choferAsignado: boolean;
+  despachoForjas: boolean;
+  despachoPatio: boolean;
 }
 
 @Component({
@@ -157,7 +158,9 @@ export class Facturacion implements OnInit {
   rncApiNombre: string = '';
   rncApiValor: string = '';
   resumenConsultaFactura: ResumenConsultaFactura | null = null;
-  private facturaConsultaActual: string = '';
+  detallePendienteConsulta: any[] = [];
+  cargandoDetallePendienteConsulta: boolean = false;
+  facturaConsultaActual: string = '';
 
   habilitarCampos: boolean = false;
 
@@ -624,6 +627,8 @@ export class Facturacion implements OnInit {
     this.factxt = 0;
     this.modoconsultaFacturacion = false;
     this.resumenConsultaFactura = null;
+    this.detallePendienteConsulta = [];
+    this.cargandoDetallePendienteConsulta = false;
     this.facturaConsultaActual = '';
     this.habilitarIcono = true;
     this.actualizarTotales();
@@ -725,6 +730,8 @@ export class Facturacion implements OnInit {
   consultarFacturacion(factura: FacturacionModelData) {
     this.modoconsultaFacturacion = true;
     this.facturaConsultaActual = String(factura.fa_codFact || '').trim();
+    this.detallePendienteConsulta = [];
+    this.cargandoDetallePendienteConsulta = false;
     this.resumenConsultaFactura = this.crearResumenConsultaFactura(factura);
     this.cargarSalidaResumenConsulta(this.facturaConsultaActual);
     this.formularioFacturacion.reset();
@@ -824,16 +831,17 @@ export class Facturacion implements OnInit {
       Boolean(String(factura.idsalida ?? '').trim());
 
     return {
-      pago: this.etiquetaPagoConsulta(factura.fa_fpago),
+      pagada: this.banderaConsulta(factura.fa_fpago),
       documento: this.etiquetaDocumentoConsulta(factura.fa_status),
-      pendiente: this.etiquetaPendienteConsulta(factura.fa_pendiente),
-      entrega: this.etiquetaEntregaConsulta(factura.fa_entrega),
-      salida: salidaRegistrada ? 'Si' : 'No',
+      pendiente: this.banderaConsulta(factura.fa_pendiente, ['P', 'S']),
+      entregada: this.banderaConsulta(factura.fa_entrega),
+      salida: salidaRegistrada,
+      codigoSalida: '',
       estadoSalida: salidaRegistrada ? 'Registrada' : 'Sin salida',
       chofer: 'Sin chofer asignado',
-      asignacionChofer: 'No asignada',
-      despachoForjas: this.etiquetaDespachoConsulta(factura.fa_impalmaf),
-      despachoPatio: this.etiquetaDespachoConsulta(factura.fa_impalmap),
+      choferAsignado: false,
+      despachoForjas: this.banderaConsulta(factura.fa_impalmaf),
+      despachoPatio: this.banderaConsulta(factura.fa_impalmap),
     };
   }
 
@@ -864,16 +872,13 @@ export class Facturacion implements OnInit {
 
         this.resumenConsultaFactura = {
           ...this.resumenConsultaFactura,
-          salida: tieneSalida
-            ? codigoSalida
-              ? `Si (${codigoSalida})`
-              : 'Si'
-            : 'No',
+          salida: tieneSalida,
+          codigoSalida,
           estadoSalida: tieneSalida
             ? this.etiquetaEstadoSalidaConsulta(estadoSalida)
             : 'Sin salida',
           chofer: nombreChofer || 'Sin chofer asignado',
-          asignacionChofer: nombreChofer ? 'Asignada' : 'No asignada',
+          choferAsignado: Boolean(nombreChofer),
         };
       },
       error: () => {
@@ -884,7 +889,7 @@ export class Facturacion implements OnInit {
           this.resumenConsultaFactura = {
             ...this.resumenConsultaFactura,
             estadoSalida:
-              this.resumenConsultaFactura.salida === 'No'
+              !this.resumenConsultaFactura.salida
                 ? 'Sin salida'
                 : 'Salida registrada',
           };
@@ -893,11 +898,45 @@ export class Facturacion implements OnInit {
     });
   }
 
-  private etiquetaPagoConsulta(valor: any): string {
-    const fpago = this.normalizarBandera(valor);
-    if (fpago === 'S' || fpago === 'P') return 'Pagada';
-    if (fpago === 'N' || fpago === '') return 'No pagada';
-    return String(valor || '').trim();
+  verProductosPendientesConsulta(): void {
+    const codFactura = String(this.facturaConsultaActual || '').trim();
+    if (!codFactura) return;
+
+    this.detallePendienteConsulta = [];
+    this.cargandoDetallePendienteConsulta = true;
+    $('#modalProductosPendientesFactura').modal('show');
+
+    this.servicioFacturacion
+      .buscarFacturaDetallePendiente(codFactura)
+      .subscribe({
+        next: (response) => {
+          const detalle = Array.isArray(response?.data?.rows)
+            ? response.data.rows
+            : Array.isArray(response?.data)
+              ? response.data
+              : Array.isArray(response)
+                ? response
+                : [];
+
+          this.detallePendienteConsulta = detalle.map((item: any) => ({
+            codigo: item.df_codMerc ?? item.df_codmerc ?? '',
+            descripcion: item.df_desMerc ?? item.df_desmerc ?? '',
+            cantidad: Number(item.df_canMerc ?? item.df_canmerc ?? 0),
+            unidad: String(item.df_unidad ?? ''),
+            cantidadPendiente: Number(item.df_canpend ?? item.df_canPend ?? 0),
+          }));
+          this.cargandoDetallePendienteConsulta = false;
+        },
+        error: () => {
+          this.cargandoDetallePendienteConsulta = false;
+          $('#modalProductosPendientesFactura').modal('hide');
+          Swal.fire({
+            title: 'Error',
+            text: 'No se pudieron consultar los productos pendientes.',
+            icon: 'error',
+          });
+        },
+      });
   }
 
   private etiquetaDocumentoConsulta(valor: any): string {
@@ -907,21 +946,9 @@ export class Facturacion implements OnInit {
     return status || 'Sin status';
   }
 
-  private etiquetaPendienteConsulta(valor: any): string {
-    const pendiente = this.normalizarBandera(valor);
-    if (pendiente === 'P' || pendiente === 'S') return 'Si';
-    if (pendiente === 'N' || pendiente === '') return 'No';
-    return String(valor || '').trim();
-  }
-
-  private etiquetaDespachoConsulta(valor: any): string {
-    return this.normalizarBandera(valor) === 'S' ? 'Si' : 'No';
-  }
-
-  private etiquetaEntregaConsulta(valor: any): string {
-    return this.normalizarBandera(valor) === 'S'
-      ? 'Entregada'
-      : 'No entregada';
+  private banderaConsulta(valor: any, adicionales: string[] = []): boolean {
+    const bandera = this.normalizarBandera(valor);
+    return bandera === 'S' || adicionales.includes(bandera);
   }
 
   private etiquetaEstadoSalidaConsulta(valor: any): string {
