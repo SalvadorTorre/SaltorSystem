@@ -1,0 +1,50 @@
+name: Build Desktop Installer
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows-installer:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Build Windows installer (.exe)
+        run: yarn desktop:pack:win
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SaltorSystem-Desktop-Setup
+          path: release/SaltorSystem-Desktop-Setup.exe
+          if-no-files-found: error
+
+      - name: Publish latest desktop release
+        uses: ncipollo/release-action@v1
+        with:
+          tag: desktop-latest
+          name: Saltor System Desktop (Latest)
+          commit: ${{ github.sha }}
+          allowUpdates: true
+          replacesArtifacts: true
+          makeLatest: true
+          artifacts: release/SaltorSystem-Desktop-Setup.exe
+          body: |
+            Instalador Desktop más reciente generado automáticamente desde main.

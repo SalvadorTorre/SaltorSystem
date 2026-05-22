@@ -1220,7 +1220,10 @@ items.forEach((it: any) => {
     }
   }
 
-  private printPdf(pdfUrl: string) {
+  private async printPdf(pdfUrl: string): Promise<void> {
+    const silentPrinted = await this.trySilentPrintDesktop(pdfUrl);
+    if (silentPrinted) return;
+
     // Intento 1: abrir en nueva pestaña y disparar impresión
     try {
       const win = window.open(pdfUrl, '_blank');
@@ -1261,6 +1264,37 @@ items.forEach((it: any) => {
       }
     };
     iframe.src = pdfUrl;
+  }
+
+  private async trySilentPrintDesktop(pdfUrl: string): Promise<boolean> {
+    if (typeof window === 'undefined' || !window.electronAPI?.printPdfSilently) {
+      return false;
+    }
+
+    try {
+      const base64Data = await this.blobUrlToBase64(pdfUrl);
+      const result = await window.electronAPI.printPdfSilently({ base64Data });
+      return !!result?.success;
+    } catch (error) {
+      console.warn('No se pudo imprimir en modo silencioso con Electron:', error);
+      return false;
+    }
+  }
+
+  private async blobUrlToBase64(blobUrl: string): Promise<string> {
+    const response = await fetch(blobUrl);
+    const blob = await response.blob();
+    const arrayBuffer = await blob.arrayBuffer();
+    let binary = '';
+    const bytes = new Uint8Array(arrayBuffer);
+    const chunkSize = 0x8000;
+
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      const chunk = bytes.subarray(i, i + chunkSize);
+      binary += String.fromCharCode(...chunk);
+    }
+
+    return btoa(binary);
   }
 numeroALetras(numero: number): string {
 
