@@ -9,6 +9,19 @@
       <span class="role-chip" [ngClass]="{ 'admin': role !== 'vendedor' }">
         Vista {{ role === 'root' ? 'Cómputos' : role === 'admin' ? 'Administrador' : 'Vendedor' }}
       </span>
+      <div class="hero-actions">
+        <button
+          *ngIf="!isDesktopApp"
+          type="button"
+          class="btn btn-sm btn-light desktop-cta"
+          (click)="abrirInstaladorDesktop()"
+        >
+          <i class="bi bi-windows me-1"></i> Instalar versión Desktop
+        </button>
+        <span *ngIf="isDesktopApp" class="desktop-badge">
+          Versión Desktop activa
+        </span>
+      </div>
     </div>
     <div class="hero-logo-orb">
       <img

@@ -1,14 +1,39 @@
 {
   "name": "saltor-system",
   "version": "0.0.0",
+  "main": "electron/main.js",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
+    "desktop": "yarn build --configuration production --base-href ./ && electron electron/main.js",
+    "desktop:dev": "cross-env ELECTRON_START_URL=http://localhost:4200 electron electron/main.js",
+    "desktop:pack": "yarn build --configuration production --base-href ./ && electron-builder",
+    "desktop:pack:win": "yarn build --configuration production --base-href ./ && electron-builder --win nsis --x64",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "dev": "cross-env PORT=3390 npx kill-port 3390 && nodemon src/index.js",
     "deploy:ghp": "npm run build && gh-pages -d dist/saltor-system"
+  },
+  "build": {
+    "appId": "com.saltorsystem.desktop",
+    "productName": "Saltor System",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/saltor-system/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    },
+    "nsis": {
+      "artifactName": "SaltorSystem-Desktop-Setup.${ext}"
+    }
   },
   "private": true,
   "dependencies": {
@@ -48,6 +73,8 @@
     "@types/node": "^18.19.3",
     "@types/qrcode": "^1.5.6",
     "cross-env": "^10.1.0",
+    "electron": "^42.2.0",
+    "electron-builder": "^26.8.1",
     "gh-pages": "^6.3.0",
     "jasmine-core": "~4.6.0",
     "karma": "~6.4.0",

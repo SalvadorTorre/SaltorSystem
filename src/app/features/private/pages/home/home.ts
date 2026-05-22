@@ -97,6 +97,8 @@ export class Home implements OnInit {
   sucursalNombre: string = '';
   logoEmpresa: string = 'assets/logo.jpg';
   periodoActual: string = '';
+  desktopReleaseUrl: string = 'https://github.com/SalvadorTorre/SaltorSystem/releases/download/desktop-latest/SaltorSystem-Desktop-Setup.exe';
+  isDesktopApp: boolean = false;
 
   vendedor: DashboardVendedor = {
     metaFacturar: 0,
@@ -131,10 +133,16 @@ export class Home implements OnInit {
   };
 
   ngOnInit(): void {
+    this.isDesktopApp = typeof window !== 'undefined' && !!window.electronAPI?.isDesktop;
     this.periodoActual = new Intl.DateTimeFormat('es-DO', { month: 'long', year: 'numeric' }).format(new Date());
     this.loadSession();
     this.buildVendedorDashboard();
     this.buildGlobalDashboard();
+  }
+
+  abrirInstaladorDesktop(): void {
+    if (this.isDesktopApp) return;
+    window.open(this.desktopReleaseUrl, '_blank');
   }
 
   get agendaDelDia(): TareaAgenda[] {

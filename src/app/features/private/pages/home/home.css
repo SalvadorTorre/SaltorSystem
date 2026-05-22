@@ -53,6 +53,28 @@
   font-size: 0.78rem;
 }
 
+.hero-actions {
+  margin-top: 0.6rem;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+}
+
+.desktop-cta {
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  font-weight: 600;
+}
+
+.desktop-badge {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  background: rgba(25, 135, 84, 0.2);
+  border: 1px solid rgba(25, 135, 84, 0.35);
+}
+
 .hero-logo-orb {
   width: clamp(120px, 16vw, 180px);
   height: clamp(120px, 16vw, 180px);
