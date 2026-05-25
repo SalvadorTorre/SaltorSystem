@@ -8,10 +8,11 @@
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
+    "build:icon": "node scripts/generate-icons.js",
     "desktop": "yarn build --configuration production --base-href ./ && electron electron/main.js",
     "desktop:dev": "cross-env ELECTRON_START_URL=http://localhost:4200 electron electron/main.js",
-    "desktop:pack": "yarn build --configuration production --base-href ./ && electron-builder --publish never",
-    "desktop:pack:win": "yarn build --configuration production --base-href ./ && electron-builder --win nsis --x64 --publish never",
+    "desktop:pack": "yarn build:icon && yarn build --configuration production --base-href ./ && electron-builder --publish never",
+    "desktop:pack:win": "yarn build:icon && yarn build --configuration production --base-href ./ && electron-builder --win nsis --x64 --publish never",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "dev": "cross-env PORT=3390 npx kill-port 3390 && nodemon src/index.js",
@@ -96,6 +97,8 @@
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.1.0",
     "kill-port": "^2.0.1",
+    "png-to-ico": "^3.0.1",
+    "sharp": "^0.34.5",
     "typescript": "~5.1.3"
   }
 }
