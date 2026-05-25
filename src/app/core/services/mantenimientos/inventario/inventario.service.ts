@@ -8,6 +8,8 @@ import { SupabaseService } from "../../supabase/supabase.service";
   providedIn: "root"
 })
 export class ServicioInventario {
+  private readonly fetchBatchSize = 1000;
+
   constructor(private supabase: SupabaseService) {}
 
   private get db(): any {
@@ -43,6 +45,56 @@ export class ServicioInventario {
         .map((row: any) => String(row?.inv_codprod || "").trim())
         .filter((code: string) => !!code)
     );
+  }
+
+  private async fetchAllRows(
+    table: string,
+    selectClause: string,
+    configure?: (query: any) => any
+  ): Promise<any[]> {
+    const rows: any[] = [];
+    let from = 0;
+
+    while (true) {
+      let query = this.db
+        .from(table)
+        .select(selectClause)
+        .range(from, from + this.fetchBatchSize - 1);
+
+      if (configure) {
+        query = configure(query);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      const batch = data || [];
+      rows.push(...batch);
+
+      if (batch.length < this.fetchBatchSize) {
+        break;
+      }
+
+      from += this.fetchBatchSize;
+    }
+
+    return rows;
+  }
+
+  private async insertInBatches(table: string, rows: any[]): Promise<number> {
+    let inserted = 0;
+
+    for (let from = 0; from < rows.length; from += this.fetchBatchSize) {
+      const batch = rows.slice(from, from + this.fetchBatchSize);
+      if (!batch.length) continue;
+
+      const { error } = await this.db.from(table).insert(batch);
+      if (error) throw error;
+
+      inserted += batch.length;
+    }
+
+    return inserted;
   }
 
   private mapDbToUi(row: any): any {
@@ -336,6 +388,65 @@ export class ServicioInventario {
     );
   }
 
+  obtenerInventarioPorSucursal(
+    sucursal: number | string,
+    pageIndex: number,
+    pageSize: number,
+    codigo?: string,
+    descripcion?: string
+  ): Observable<any> {
+    const inv_codsucu = Number(sucursal);
+    const page = Math.max(Number(pageIndex || 1), 1);
+    const limit = Math.max(Number(pageSize || 10), 1);
+    const offset = (page - 1) * limit;
+
+    return from((async () => {
+      if (!inv_codsucu || Number.isNaN(inv_codsucu)) {
+        return {
+          rows: [],
+          total: 0,
+        };
+      }
+
+      let query = this.db
+        .from("inventario")
+        .select("*", { count: "exact" })
+        .eq("inv_codsucu", inv_codsucu)
+        .order("inv_codprod", { ascending: true })
+        .range(offset, offset + limit - 1);
+
+      const codigoFiltro = String(codigo || "").trim();
+      const descripcionFiltro = String(descripcion || "").trim();
+
+      if (codigoFiltro) {
+        query = query.ilike("inv_codprod", `%${codigoFiltro}%`);
+      }
+
+      if (descripcionFiltro) {
+        query = query.ilike("inv_desprod", `%${descripcionFiltro}%`);
+      }
+
+      const { data, error, count } = await query;
+      if (error) throw error;
+
+      return {
+        rows: data || [],
+        total: Number(count || 0),
+      };
+    })()).pipe(
+      map((result: { rows: any[]; total: number }) => ({
+        status: "success",
+        code: 200,
+        data: result.rows,
+        pagination: {
+          total: result.total,
+          page,
+          pageSize: limit,
+        },
+      }))
+    );
+  }
+
   guardarInventarioSucursal(payload: {
     inv_codsucu: number;
     inv_codprod: string;
@@ -438,20 +549,19 @@ export class ServicioInventario {
       const sobrescribirExistentes = !!payload?.sobrescribirExistentes;
       const existenciaInicial = this.toNumber(payload?.existenciaInicial ?? 0);
 
-      const [{ data: productos, error: productosError }, { data: inventarioActual, error: inventarioError }] =
+      const [productos, inventarioActual] =
         await Promise.all([
-          this.db
-            .from("productos2")
-            .select("in_codmerc,in_desmerc,in_costmer,in_premerc,status")
-            .order("in_codmerc", { ascending: true }),
-          this.db
-            .from("inventario")
-            .select("id,inv_codprod,inv_codsucu")
-            .eq("inv_codsucu", inv_codsucu),
+          this.fetchAllRows(
+            "productos2",
+            "in_codmerc,in_desmerc,in_costmer,in_premerc,status",
+            (query: any) => query.order("in_codmerc", { ascending: true })
+          ),
+          this.fetchAllRows(
+            "inventario",
+            "id,inv_codprod,inv_codsucu",
+            (query: any) => query.eq("inv_codsucu", inv_codsucu)
+          ),
         ]);
-
-      if (productosError) throw productosError;
-      if (inventarioError) throw inventarioError;
 
       const catalogo = (productos || []).filter((item: any) => String(item?.in_codmerc || "").trim());
       const existentes = this.uniqueCodes(inventarioActual || []);
@@ -479,11 +589,7 @@ export class ServicioInventario {
       }
 
       if (rowsToInsert.length > 0) {
-        const { error: insertError } = await this.db
-          .from("inventario")
-          .insert(rowsToInsert);
-        if (insertError) throw insertError;
-        inserted = rowsToInsert.length;
+        inserted = await this.insertInBatches("inventario", rowsToInsert);
       }
 
       const totalCatalogo = catalogo.length;
@@ -511,16 +617,17 @@ export class ServicioInventario {
         .map((value) => Number(value))
         .filter((value) => !!value && !Number.isNaN(value));
 
-      const [{ count: totalCatalogo, error: countError }, { data: inventarioRows, error: inventarioError }] =
+      const [{ count: totalCatalogo, error: countError }, inventarioRows] =
         await Promise.all([
           this.db.from("productos2").select("id", { count: "exact", head: true }),
-          ids.length
-            ? this.db.from("inventario").select("inv_codsucu,inv_codprod").in("inv_codsucu", ids)
-            : this.db.from("inventario").select("inv_codsucu,inv_codprod"),
+          this.fetchAllRows(
+            "inventario",
+            "inv_codsucu,inv_codprod",
+            (query: any) => (ids.length ? query.in("inv_codsucu", ids) : query)
+          ),
         ]);
 
       if (countError) throw countError;
-      if (inventarioError) throw inventarioError;
 
       const grouped = new Map<number, Set<string>>();
       (inventarioRows || []).forEach((row: any) => {

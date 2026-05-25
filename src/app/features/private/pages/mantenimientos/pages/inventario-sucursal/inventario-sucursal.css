@@ -1,0 +1,35 @@
+.inventory-branch-page__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  background: linear-gradient(135deg, #0f4c81 0%, #1f6aa5 100%);
+  color: #fff;
+}
+
+.inventory-branch-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.inventory-branch-page table th {
+  white-space: nowrap;
+}
+
+.inventory-branch-input,
+.inventory-branch-select {
+  min-width: 110px;
+}
+
+.inventory-branch-note {
+  border-top: 1px solid rgba(15, 76, 129, 0.12);
+  padding-top: 0.75rem;
+}
+
+@media (max-width: 767.98px) {
+  .inventory-branch-page__header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

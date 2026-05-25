@@ -26,6 +26,11 @@
         <span>Productos</span>
       </a>
 
+      <a class="maintenance-link" routerLinkActive="active" [routerLink]="['inventario-sucursal']">
+        <i class="bi bi-boxes"></i>
+        <span>Inventario sucursal</span>
+      </a>
+
       <a class="maintenance-link" routerLinkActive="active" [routerLink]="['cliente']">
         <i class="bi bi-people"></i>
         <span>Clientes</span>
@@ -156,6 +161,11 @@
         <a class="maintenance-link" routerLinkActive="active" [routerLink]="['inventario']" data-bs-dismiss="offcanvas">
           <i class="bi bi-box-seam"></i>
           <span>Productos</span>
+        </a>
+
+        <a class="maintenance-link" routerLinkActive="active" [routerLink]="['inventario-sucursal']" data-bs-dismiss="offcanvas">
+          <i class="bi bi-boxes"></i>
+          <span>Inventario sucursal</span>
         </a>
 
         <a class="maintenance-link" routerLinkActive="active" [routerLink]="['cliente']" data-bs-dismiss="offcanvas">

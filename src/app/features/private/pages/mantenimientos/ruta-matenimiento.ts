@@ -20,6 +20,13 @@ const routes: Routes = [
             (m) => m.ModuloInventario
           ),
       },
+      {
+        path: 'inventario-sucursal',
+        loadChildren: () =>
+          import('./pages/inventario-sucursal/inventario-sucursal-modulo').then(
+            (m) => m.ModuloInventarioSucursal
+          ),
+      },
 
       {
         path: 'cliente',

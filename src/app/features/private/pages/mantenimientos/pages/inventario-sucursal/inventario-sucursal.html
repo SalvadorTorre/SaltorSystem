@@ -1,0 +1,158 @@
+<section class="card border-0 shadow-sm inventory-branch-page">
+  <div class="card-header inventory-branch-page__header">
+    <div>
+      <h4 class="mb-1">Inventario por sucursal</h4>
+      <small>Consulta el inventario real guardado en la tabla `inventario` por sucursal.</small>
+    </div>
+    <span class="badge text-bg-light border">{{ totalItems || 0 }} registros</span>
+  </div>
+
+  <div class="card-body">
+    <div class="row g-3 align-items-end mb-4">
+      <div class="col-12 col-lg-4">
+        <label class="form-label">Sucursal</label>
+        <select class="form-select" [(ngModel)]="selectedSucursal" (change)="onSucursalChange()">
+          <option [ngValue]="0">Seleccione una sucursal</option>
+          <option *ngFor="let sucursal of sucursales" [ngValue]="sucursal.cod_sucursal">
+            {{ sucursal.nom_sucursal }} (#{{ sucursal.cod_sucursal }})
+          </option>
+        </select>
+      </div>
+
+      <div class="col-12 col-md-6 col-lg-3">
+        <label class="form-label">Código</label>
+        <input
+          type="text"
+          class="form-control uppercase"
+          [(ngModel)]="codigo"
+          (keyup.enter)="buscar()"
+          placeholder="Filtrar por código"
+        />
+      </div>
+
+      <div class="col-12 col-md-6 col-lg-3">
+        <label class="form-label">Descripción</label>
+        <input
+          type="text"
+          class="form-control uppercase"
+          [(ngModel)]="descripcion"
+          (keyup.enter)="buscar()"
+          placeholder="Filtrar por descripción"
+        />
+      </div>
+
+      <div class="col-12 col-lg-2 d-grid gap-2">
+        <button class="btn btn-primary" (click)="buscar()" [disabled]="!selectedSucursal || loading">
+          <i class="bi bi-search me-2"></i>
+          Buscar
+        </button>
+        <button class="btn btn-outline-secondary" (click)="limpiarFiltros()" [disabled]="loading">
+          Limpiar
+        </button>
+      </div>
+    </div>
+
+    <div class="inventory-branch-summary" *ngIf="sucursalActual as sucursal">
+      <span class="badge text-bg-primary">Sucursal: {{ sucursal.nom_sucursal }}</span>
+      <span class="badge text-bg-light border">Empresa: {{ sucursal.cod_empre }}</span>
+      <span class="badge text-bg-light border">Página: {{ currentPage }}/{{ totalPages }}</span>
+    </div>
+
+    <div class="table-responsive mt-3">
+      <table class="table table-hover align-middle">
+        <thead>
+          <tr>
+            <th class="text-center">Código</th>
+            <th>Descripción</th>
+            <th class="text-center">Existencia</th>
+            <th class="text-center">Costo</th>
+            <th class="text-center">Precio</th>
+            <th class="text-center">Estado</th>
+            <th class="text-center">Acción</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of inventarioList">
+            <td class="text-center fw-semibold">{{ item.inv_codprod }}</td>
+            <td>{{ item.inv_desprod || 'Sin descripción' }}</td>
+            <td class="text-center">
+              <input
+                type="number"
+                class="form-control form-control-sm inventory-branch-input text-end"
+                [(ngModel)]="item.inv_existencia"
+              />
+            </td>
+            <td class="text-center">
+              <input
+                type="number"
+                class="form-control form-control-sm inventory-branch-input text-end"
+                [(ngModel)]="item.inv_cosprod"
+              />
+            </td>
+            <td class="text-center">
+              <input
+                type="number"
+                class="form-control form-control-sm inventory-branch-input text-end"
+                [(ngModel)]="item.inv_preprod"
+              />
+            </td>
+            <td class="text-center">
+              <select class="form-select form-select-sm inventory-branch-select" [(ngModel)]="item.activo">
+                <option [ngValue]="true">Activo</option>
+                <option [ngValue]="false">Inactivo</option>
+              </select>
+            </td>
+            <td class="text-center">
+              <button
+                class="btn btn-sm btn-success"
+                (click)="guardarFila(item)"
+                [disabled]="guardandoPorFila[rowKey(item)]"
+              >
+                <span *ngIf="!guardandoPorFila[rowKey(item)]">Guardar</span>
+                <span *ngIf="guardandoPorFila[rowKey(item)]">Guardando...</span>
+              </button>
+            </td>
+          </tr>
+
+          <tr *ngIf="!loading && !inventarioList.length">
+            <td colspan="7" class="text-center py-4 text-muted">
+              No hay inventario cargado para la sucursal o con esos filtros.
+            </td>
+          </tr>
+
+          <tr *ngIf="loading">
+            <td colspan="7" class="text-center py-4 text-muted">
+              Cargando inventario...
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="inventory-branch-note mt-3">
+      <small class="text-muted">
+        Esta vista trabaja directo sobre la tabla <strong>`inventario`</strong> de la sucursal seleccionada.
+      </small>
+    </div>
+
+    <nav aria-label="Paginación inventario sucursal" class="mt-4">
+      <ul class="pagination pagination-sm flex-wrap justify-content-center">
+        <li class="page-item" [class.disabled]="currentPage === 1">
+          <a class="page-link" (click)="changePage(1)">&laquo;&laquo;</a>
+        </li>
+        <li class="page-item" [class.disabled]="currentPage === 1">
+          <a class="page-link" (click)="changePage(currentPage - 1)">&laquo;</a>
+        </li>
+        <li *ngFor="let page of pages" class="page-item" [class.active]="currentPage === page">
+          <a class="page-link" (click)="changePage(page)">{{ page }}</a>
+        </li>
+        <li class="page-item" [class.disabled]="currentPage === totalPages">
+          <a class="page-link" (click)="changePage(currentPage + 1)">&raquo;</a>
+        </li>
+        <li class="page-item" [class.disabled]="currentPage === totalPages">
+          <a class="page-link" (click)="changePage(totalPages)">&raquo;&raquo;</a>
+        </li>
+      </ul>
+    </nav>
+  </div>
+</section>
