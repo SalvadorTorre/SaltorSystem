@@ -8,6 +8,7 @@ import { ServicioSucursal } from 'src/app/core/services/mantenimientos/sucursal/
 import Swal from 'sweetalert2';
 import { Subject, Subscription, forkJoin, firstValueFrom } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { PrintingService } from 'src/app/core/services/utils/printing.service';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 declare var bootstrap: any;
@@ -65,7 +66,8 @@ export class SalidafacturaComponent implements OnInit {
     private servicioSalida: ServicioSalidafactura,
     private servicioFpago: ServicioFpago,
     private servicioContFactura: ServicioContFactura,
-    private servicioSucursal: ServicioSucursal
+    private servicioSucursal: ServicioSucursal,
+    private printingService: PrintingService
   ) { }
 // En el componente
 
@@ -1052,83 +1054,8 @@ agregarFactura() {
     doc.setFontSize(7);
     doc.text('Firma Recibido', centroPagina, currentY + 4, { align: 'center' });
     
-    // Imprimir directamente (sin abrir pestaña).
-    // Nota: por restricciones del navegador, puede mostrarse el diálogo de impresión y/o bloquear impresión silenciosa.
     const blob = doc.output('blob') as Blob;
-    const blobUrl = URL.createObjectURL(blob);
-    const iframe = document.createElement('iframe');
-    iframe.style.position = 'fixed';
-    iframe.style.right = '0';
-    iframe.style.bottom = '0';
-    iframe.style.width = '0';
-    iframe.style.height = '0';
-    iframe.style.border = '0';
-    iframe.src = blobUrl;
-    document.body.appendChild(iframe);
-
-    const cleanup = () => {
-      try {
-        URL.revokeObjectURL(blobUrl);
-      } catch {}
-      setTimeout(() => iframe.remove(), 1000);
-    };
-
-    const tryPrint = () => {
-      const win = iframe.contentWindow;
-      if (!win) return false;
-      try {
-        win.focus();
-        win.print();
-        return true;
-      } catch {
-        return false;
-      }
-    };
-
-    iframe.onload = () => {
-      // Algunos navegadores tardan en preparar el PDF; intentamos varias veces.
-      let attempts = 0;
-      const timer = setInterval(() => {
-        attempts++;
-        const ok = tryPrint();
-        if (ok) {
-          clearInterval(timer);
-          cleanup();
-          return;
-        }
-
-        // Fallback para Chrome: el visor PDF embebido a veces ignora print() en iframes ocultos.
-        // En ese caso, abrimos un popup mínimo, imprimimos y cerramos.
-        if (attempts >= 20) {
-          clearInterval(timer);
-          // Mostrar el diálogo: abrir en pestaña normal y disparar print()
-          // (el navegador mostrará el diálogo de impresión).
-          try {
-            const w = window.open(blobUrl, '_blank');
-            if (w) {
-              w.onload = () => {
-                try {
-                  w.focus();
-                  w.print();
-                } catch {}
-              };
-              // No revocar de inmediato para no cortar el visor PDF
-              setTimeout(() => {
-                try {
-                  URL.revokeObjectURL(blobUrl);
-                } catch {}
-              }, 10000);
-              // Remover iframe ya no es necesario
-              setTimeout(() => iframe.remove(), 0);
-            } else {
-              cleanup();
-            }
-          } catch {
-            cleanup();
-          }
-        }
-      }, 150);
-    };
+    this.printingService.printBlob(blob, 'ticket');
   }
 
   get totalSalida(): number {

@@ -36,6 +36,11 @@ interface ElectronAPI {
   getPrintSettings: () => Promise<ElectronPrintSettings>;
   savePrintSettings: (payload: ElectronPrintSettings) => Promise<ElectronPrintSettings>;
   printPdfSilently: (payload: ElectronPrintRequest) => Promise<ElectronPrintResult>;
+  printHtmlSilently: (payload: {
+    html: string;
+    deviceName?: string;
+    profileKey?: ElectronPrintProfileKey;
+  }) => Promise<ElectronPrintResult>;
   printTestPage: (payload: {
     profileKey: ElectronPrintProfileKey;
     deviceName?: string;

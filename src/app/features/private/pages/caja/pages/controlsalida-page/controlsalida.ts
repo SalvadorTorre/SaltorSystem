@@ -6,6 +6,7 @@ import { ServicioSalidafactura } from 'src/app/core/services/almacen/salidafactu
 import { ServicioFacturacion } from 'src/app/core/services/facturacion/factura/factura.service';
 import { ServicioCierreCaja } from 'src/app/core/services/caja/cierrecaja/cierrecaja.service';
 import { ServicioFpago } from 'src/app/core/services/mantenimientos/fpago/fpago.service';
+import { PrintingService } from 'src/app/core/services/utils/printing.service';
 import Swal from 'sweetalert2';
 import { jsPDF } from 'jspdf';
 
@@ -68,7 +69,8 @@ export class ControlSalidaCajaComponent implements OnInit, OnDestroy {
     private servicioSalida: ServicioSalidafactura,
     private servicioFacturacion: ServicioFacturacion,
     private servicioCierre: ServicioCierreCaja,
-    private servicioFpago: ServicioFpago
+    private servicioFpago: ServicioFpago,
+    private printingService: PrintingService
   ) {}
 
   ngOnInit() {
@@ -748,18 +750,8 @@ export class ControlSalidaCajaComponent implements OnInit, OnDestroy {
     y += 5;
     doc.text('Firma recibido', center, y, { align: 'center' });
 
-    doc.autoPrint();
     const blob = doc.output('blob');
-    const url = URL.createObjectURL(blob);
-    const win = window.open(url, '_blank');
-    if (win) {
-      setTimeout(() => {
-        try {
-          win.focus();
-          win.print();
-        } catch {}
-      }, 600);
-    }
+    this.printingService.printBlob(blob, 'ticket');
   }
 
   private mostrarMensaje(texto: string, icono: any = 'info', confirmButton: boolean = false) {

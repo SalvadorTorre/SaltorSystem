@@ -270,6 +270,54 @@ async function printTestPage({ profileKey, deviceName } = {}) {
   }
 }
 
+async function printHtmlSilently({ html, deviceName, profileKey } = {}) {
+  if (!html || typeof html !== 'string') {
+    return { success: false, error: 'No se recibió contenido HTML para imprimir.' };
+  }
+
+  const resolvedProfileKey = PRINT_PROFILE_KEYS.includes(profileKey) ? profileKey : 'reporte';
+  const resolvedDeviceName = resolvePrintDeviceName(deviceName, resolvedProfileKey);
+  const copies = getProfileCopies(resolvedProfileKey);
+  const printWindow = new BrowserWindow({
+    show: false,
+    webPreferences: {
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+    },
+  });
+
+  try {
+    await printWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`);
+
+    const printResult = await new Promise((resolve) => {
+      printWindow.webContents.print(
+        {
+          silent: true,
+          printBackground: true,
+          deviceName: resolvedDeviceName,
+          copies,
+        },
+        (success, failureReason) => resolve({ success, failureReason })
+      );
+    });
+
+    return {
+      success: !!printResult.success,
+      error: printResult.success ? null : (printResult.failureReason || 'No se pudo imprimir el documento HTML.'),
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error?.message || 'Falló la impresión HTML en Electron.',
+    };
+  } finally {
+    if (!printWindow.isDestroyed()) {
+      printWindow.close();
+    }
+  }
+}
+
 ipcMain.handle('print:list-printers', async () => {
   const focused = BrowserWindow.getFocusedWindow() || BrowserWindow.getAllWindows()[0];
   if (!focused) return [];
@@ -297,6 +345,7 @@ ipcMain.handle('print:get-settings', async () => readPrintSettings());
 ipcMain.handle('print:save-settings', async (_evt, payload) => savePrintSettings(payload));
 ipcMain.handle('print:pdf:silent', async (_evt, payload) => printPdfSilently(payload));
 ipcMain.handle('print:test-page', async (_evt, payload) => printTestPage(payload));
+ipcMain.handle('print:html:silent', async (_evt, payload) => printHtmlSilently(payload));
 
 app.whenReady().then(() => {
   createMainWindow();

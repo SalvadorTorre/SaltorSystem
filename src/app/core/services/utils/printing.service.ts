@@ -1270,6 +1270,39 @@ items.forEach((it: any) => {
     iframe.src = pdfUrl;
   }
 
+  async printBlob(blob: Blob, profileKey: DesktopPrintProfileKey): Promise<void> {
+    const pdfUrl = URL.createObjectURL(blob);
+    try {
+      await this.printPdf(pdfUrl, profileKey);
+    } catch (error) {
+      try {
+        URL.revokeObjectURL(pdfUrl);
+      } catch {}
+      throw error;
+    }
+  }
+
+  async printHtmlContent(html: string, profileKey: DesktopPrintProfileKey): Promise<void> {
+    const silentPrinted = await this.trySilentPrintHtmlDesktop(html, profileKey);
+    if (silentPrinted) return;
+
+    const win = window.open('', '_blank', 'width=900,height=700');
+    if (!win) {
+      throw new Error('No se pudo abrir la ventana de impresión.');
+    }
+
+    win.document.open();
+    win.document.write(html);
+    win.document.close();
+
+    setTimeout(() => {
+      try {
+        win.focus();
+        win.print();
+      } catch {}
+    }, 500);
+  }
+
   private async trySilentPrintDesktop(
     pdfUrl: string,
     profileKey: DesktopPrintProfileKey
@@ -1285,6 +1318,28 @@ items.forEach((it: any) => {
       return !!result?.success;
     } catch (error) {
       console.warn('No se pudo imprimir en modo silencioso con Electron:', error);
+      return false;
+    }
+  }
+
+  private async trySilentPrintHtmlDesktop(
+    html: string,
+    profileKey: DesktopPrintProfileKey
+  ): Promise<boolean> {
+    if (typeof window === 'undefined' || !window.electronAPI?.printHtmlSilently) {
+      return false;
+    }
+
+    try {
+      const deviceName = await this.desktopPrintSettings.getProfileDeviceName(profileKey);
+      const result = await window.electronAPI.printHtmlSilently({
+        html,
+        deviceName,
+        profileKey,
+      });
+      return !!result?.success;
+    } catch (error) {
+      console.warn('No se pudo imprimir HTML en modo silencioso con Electron:', error);
       return false;
     }
   }

@@ -14,6 +14,7 @@ import {
   SucursalesData,
 } from 'src/app/core/services/mantenimientos/empresas';
 import { ServicioProducto } from 'src/app/core/services/mantenimientos/producto/producto.service';
+import { PrintingService } from 'src/app/core/services/utils/printing.service';
 
 declare var $: any;
 
@@ -47,7 +48,8 @@ export class SolicitudPrestamo implements OnInit {
     private fb: FormBuilder,
     private solicitudService: SolicitudPrestamoService,
     private servicioEmpresa: ServicioEmpresa,
-    private servicioProducto: ServicioProducto
+    private servicioProducto: ServicioProducto,
+    private printingService: PrintingService
   ) {}
 
   ngOnInit(): void {
@@ -488,7 +490,7 @@ export class SolicitudPrestamo implements OnInit {
     this.solicitudService.buscar(numero).subscribe({
       next: (response) => {
         this.solicitudSeleccionada = response?.data || null;
-        setTimeout(() => window.print(), 100);
+        this.imprimirSolicitudActual();
       },
       error: (err) => this.mostrarError('Error imprimiendo la solicitud', err),
     });
@@ -500,7 +502,112 @@ export class SolicitudPrestamo implements OnInit {
       ...raw,
       detsolicitud: this.detalle,
     };
-    setTimeout(() => window.print(), 100);
+    this.imprimirSolicitudActual();
+  }
+
+  private imprimirSolicitudActual(): void {
+    if (!this.solicitudSeleccionada) return;
+    const html = this.buildSolicitudPrintHtml(this.solicitudSeleccionada);
+    this.printingService.printHtmlContent(html, 'reporte');
+  }
+
+  private buildSolicitudPrintHtml(data: SolicitudPrestamoData): string {
+    const formatDate = (value: any) => {
+      if (!value) return '';
+      const dt = new Date(value);
+      if (Number.isNaN(dt.getTime())) return String(value);
+      return new Intl.DateTimeFormat('es-DO', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      }).format(dt);
+    };
+
+    const escapeHtml = (value: any) =>
+      String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+
+    const rows = (data.detsolicitud || [])
+      .map(
+        (item) => `
+          <tr>
+            <td>${escapeHtml(item.ds_codmerc)}</td>
+            <td>${escapeHtml(item.ds_desmerc)}</td>
+            <td>${escapeHtml(item.ds_unidad)}</td>
+            <td style="text-align:right;">${escapeHtml(Number(item.ds_canmerc || 0).toFixed(2))}</td>
+          </tr>
+        `
+      )
+      .join('');
+
+    return `
+      <!doctype html>
+      <html lang="es">
+        <head>
+          <meta charset="utf-8" />
+          <title>Solicitud de Prestamo</title>
+          <style>
+            body { font-family: Arial, sans-serif; color: #1f2937; padding: 28px; }
+            h1 { margin: 0 0 6px; font-size: 22px; text-align: center; }
+            .meta { margin: 0 0 18px; text-align: center; color: #4b5563; font-size: 13px; }
+            .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 18px; margin-bottom: 18px; }
+            .row-full { grid-column: 1 / -1; }
+            .label { font-size: 12px; color: #6b7280; margin-bottom: 2px; }
+            .value { font-size: 14px; font-weight: 600; }
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+            th, td { border: 1px solid #d1d5db; padding: 8px 10px; font-size: 13px; }
+            th { background: #eef2f7; text-align: left; }
+            .footer { margin-top: 24px; font-size: 12px; color: #6b7280; text-align: center; }
+          </style>
+        </head>
+        <body>
+          <h1>Solicitud de Prestamo</h1>
+          <p class="meta">Saltor System</p>
+          <div class="grid">
+            <div>
+              <div class="label">Numero</div>
+              <div class="value">${escapeHtml(data.so_codsoli)}</div>
+            </div>
+            <div>
+              <div class="label">Fecha</div>
+              <div class="value">${escapeHtml(formatDate(data.so_fecha))}</div>
+            </div>
+            <div>
+              <div class="label">Cliente</div>
+              <div class="value">${escapeHtml(data.so_codclie)} - ${escapeHtml(data.so_nomclie)}</div>
+            </div>
+            <div>
+              <div class="label">Solicitante</div>
+              <div class="value">${escapeHtml(data.so_nomvend)}</div>
+            </div>
+            <div class="row-full">
+              <div class="label">Sucursal Cliente</div>
+              <div class="value">${escapeHtml(data.so_sucursal_clie)}</div>
+            </div>
+            <div class="row-full">
+              <div class="label">Observacion</div>
+              <div class="value">${escapeHtml(data.so_observacion)}</div>
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Codigo</th>
+                <th>Descripcion</th>
+                <th>Unidad</th>
+                <th style="text-align:right;">Cantidad</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+          <div class="footer">Documento generado para impresion desde la app desktop.</div>
+        </body>
+      </html>
+    `;
   }
 
   private mostrarError(titulo: string, err: any): void {

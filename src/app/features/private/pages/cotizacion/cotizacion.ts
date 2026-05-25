@@ -38,6 +38,7 @@ import {
   ModeloInventario,
   ModeloInventarioData,
 } from 'src/app/core/services/mantenimientos/inventario';
+import { PrintingService } from 'src/app/core/services/utils/printing.service';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 declare var $: any;
@@ -119,6 +120,7 @@ export class Cotizacion implements OnInit {
     private servicioInventario: ServicioInventario,
     private ServicioUsuario: ServicioUsuario,
     private ServicioRnc: ServicioRnc,
+    private printingService: PrintingService,
   ) {
     this.form = this.fb.group({
       ct_codvend: ['', Validators.required], // El campo es requerido
@@ -1530,8 +1532,7 @@ export class Cotizacion implements OnInit {
         const pdfBlob = doc.output('blob');
 
         // Crear un objeto URL para el Blob y abrirlo en una nueva pestaña
-        const pdfUrl = URL.createObjectURL(pdfBlob);
-        window.open(pdfUrl, '_blank');
+        this.printingService.printBlob(pdfBlob, 'reporte');
       });
   }
 
