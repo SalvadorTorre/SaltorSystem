@@ -158,6 +158,15 @@ export class InventarioSucursalPageComponent implements OnInit {
     );
   }
 
+  private toNullableNumber(value: unknown): number | null {
+    if (value === null || value === undefined) {
+      return null;
+    }
+
+    const n = Number(value);
+    return Number.isFinite(n) ? n : null;
+  }
+
   guardarFila(item: InventarioSucursalRow): void {
     const key = this.rowKey(item);
     this.guardandoPorFila[key] = true;
@@ -168,14 +177,8 @@ export class InventarioSucursalPageComponent implements OnInit {
         inv_codprod: String(item.inv_codprod || '').trim(),
         inv_desprod: item.inv_desprod ?? null,
         inv_existencia: Number(item.inv_existencia ?? 0),
-        inv_cosprod:
-          item.inv_cosprod === null || item.inv_cosprod === undefined || item.inv_cosprod === ''
-            ? null
-            : Number(item.inv_cosprod),
-        inv_preprod:
-          item.inv_preprod === null || item.inv_preprod === undefined || item.inv_preprod === ''
-            ? null
-            : Number(item.inv_preprod),
+        inv_cosprod: this.toNullableNumber(item.inv_cosprod),
+        inv_preprod: this.toNullableNumber(item.inv_preprod),
         activo: item.activo !== false,
       })
       .subscribe({
@@ -183,14 +186,8 @@ export class InventarioSucursalPageComponent implements OnInit {
           const data = response?.data || {};
           item.id = data?.id ?? item.id ?? null;
           item.inv_existencia = Number(data?.inv_existencia ?? item.inv_existencia ?? 0);
-          item.inv_cosprod =
-            data?.inv_cosprod === null || data?.inv_cosprod === undefined || data?.inv_cosprod === ''
-              ? null
-              : Number(data.inv_cosprod);
-          item.inv_preprod =
-            data?.inv_preprod === null || data?.inv_preprod === undefined || data?.inv_preprod === ''
-              ? null
-              : Number(data.inv_preprod);
+          item.inv_cosprod = this.toNullableNumber(data?.inv_cosprod);
+          item.inv_preprod = this.toNullableNumber(data?.inv_preprod);
           item.activo = data?.activo === false ? false : true;
           this.guardandoPorFila[key] = false;
           Swal.fire({

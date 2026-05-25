@@ -1583,6 +1583,10 @@ export class CobroFact implements OnInit {
     });
   }
 
+  marcarImpresa() {
+    this.buscarFactura();
+  }
+
   buscarFactura() {
     if (this.bloquearReimpresion) return;
 
