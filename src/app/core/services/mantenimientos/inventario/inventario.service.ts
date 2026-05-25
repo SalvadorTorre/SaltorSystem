@@ -135,6 +135,36 @@ export class ServicioInventario {
     return data ?? null;
   }
 
+  private async resumenInventarioSucursalesViaRpc(
+    ids: number[]
+  ): Promise<any[] | null> {
+    const anyDb = this.db as any;
+    if (typeof anyDb?.rpc !== "function") {
+      return null;
+    }
+
+    const { data, error } = await anyDb.rpc("resumen_inventario_sucursales", {
+      p_ids: ids.length ? ids : null,
+    });
+
+    if (error) {
+      const code = String(error?.code || "");
+      const message = String(error?.message || "");
+      const isMissingFunction =
+        code === "PGRST202" ||
+        code === "42883" ||
+        /function .*resumen_inventario_sucursales/i.test(message);
+
+      if (isMissingFunction) {
+        return null;
+      }
+
+      throw error;
+    }
+
+    return Array.isArray(data) ? data : [];
+  }
+
   private mapDbToUi(row: any): any {
     if (!row) return row;
     return {
@@ -675,6 +705,20 @@ export class ServicioInventario {
         .map((value) => Number(value))
         .filter((value) => !!value && !Number.isNaN(value));
 
+      const rpcRows = await this.resumenInventarioSucursalesViaRpc(ids);
+      if (rpcRows) {
+        const totalCatalogo = Number(rpcRows[0]?.totalcatalogo || 0);
+        return {
+          totalCatalogo,
+          sucursales: rpcRows.map((row: any) => ({
+            inv_codsucu: Number(row?.inv_codsucu || 0),
+            totalInventario: Number(row?.totalinventario || 0),
+            faltantes: Number(row?.faltantes || 0),
+          })),
+          via: "rpc",
+        };
+      }
+
       const [{ count: totalCatalogo, error: countError }, inventarioRows] =
         await Promise.all([
           this.db.from("productos2").select("id", { count: "exact", head: true }),
@@ -705,6 +749,7 @@ export class ServicioInventario {
           totalInventario: codes.size,
           faltantes: Math.max(Number(totalCatalogo || 0) - codes.size, 0),
         })),
+        via: "cliente",
       };
     })()).pipe(
       map((data: any) => ({ status: "success", code: 200, data }))

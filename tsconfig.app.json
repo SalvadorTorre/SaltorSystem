@@ -9,6 +9,7 @@
   "include": ["src/**/*.d.ts", "src/**/*.ts"],
   "exclude": [
     "src/test.ts",
+    "src/polyfills.ts",
     "src/**/*.spec.ts",
     "src/app/features/private/pages/facturacion/factura.reporte.ts",
     "src/app/features/private/pages/mantenimientos/pages/configuracion/configuracion.ts"
