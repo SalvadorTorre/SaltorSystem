@@ -1228,21 +1228,25 @@ items.forEach((it: any) => {
     const silentPrinted = await this.trySilentPrintDesktop(pdfUrl, profileKey);
     if (silentPrinted) return;
 
-    // Intento 1: abrir en nueva pestaña y disparar impresión
-    try {
-      const win = window.open(pdfUrl, '_blank');
-      if (win) {
-        win.focus();
-        setTimeout(() => {
-          try {
-            win.print();
-          } catch {}
-        }, 600);
-        return;
-      }
-    } catch {}
+    const isDesktop = typeof window !== 'undefined' && !!window.electronAPI?.isDesktop;
 
-    // Intento 2 (fallback): iframe oculto
+    if (!isDesktop) {
+      // Intento 1 web: abrir en nueva pestaña y disparar impresión
+      try {
+        const win = window.open(pdfUrl, '_blank');
+        if (win) {
+          win.focus();
+          setTimeout(() => {
+            try {
+              win.print();
+            } catch {}
+          }, 600);
+          return;
+        }
+      } catch {}
+    }
+
+    // Fallback: iframe oculto dentro de la misma app
     const iframe = document.createElement('iframe');
     iframe.style.position = 'fixed';
     iframe.style.right = '0';
@@ -1260,7 +1264,9 @@ items.forEach((it: any) => {
         console.error('Print error', e);
       } finally {
         setTimeout(() => {
-          document.body.removeChild(iframe);
+          if (iframe.parentNode) {
+            document.body.removeChild(iframe);
+          }
           try {
             URL.revokeObjectURL(pdfUrl);
           } catch {}

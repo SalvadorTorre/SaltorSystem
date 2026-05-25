@@ -6,6 +6,10 @@ const os = require('node:os');
 const isDev = !!process.env.ELECTRON_START_URL;
 const PRINT_PROFILE_KEYS = ['factura', 'ticket', 'reporte'];
 
+function wait(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 function getPrintSettingsPath() {
   return path.join(app.getPath('userData'), 'printing-settings.json');
 }
@@ -97,6 +101,19 @@ function resolvePrintDeviceName(deviceName, profileKey) {
   return savedDevice || undefined;
 }
 
+async function validatePrinterDeviceName(browserWindow, deviceName) {
+  const requested = String(deviceName || '').trim();
+  if (!requested) return undefined;
+
+  try {
+    const printers = await browserWindow.webContents.getPrintersAsync();
+    const exists = printers.some((printer) => String(printer.name || '').trim() === requested);
+    return exists ? requested : undefined;
+  } catch {
+    return requested;
+  }
+}
+
 function getProfileCopies(profileKey) {
   if (!PRINT_PROFILE_KEYS.includes(profileKey)) return 1;
   const settings = readPrintSettings();
@@ -128,7 +145,9 @@ function createMainWindow() {
   });
 
   win.webContents.setWindowOpenHandler(({ url }) => {
-    shell.openExternal(url);
+    if (/^(https?:|mailto:)/i.test(url)) {
+      shell.openExternal(url);
+    }
     return { action: 'deny' };
   });
 
@@ -159,15 +178,17 @@ async function printPdfSilently({ base64Data, deviceName, profileKey } = {}) {
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: true,
+      sandbox: false,
     },
   });
 
   try {
-    const resolvedDeviceName = resolvePrintDeviceName(deviceName, profileKey);
+    const configuredDeviceName = resolvePrintDeviceName(deviceName, profileKey);
     const copies = getProfileCopies(profileKey);
     fs.writeFileSync(tmpFile, Buffer.from(base64Data, 'base64'));
     await printWindow.loadURL(`file://${tmpFile}`);
+    await wait(700);
+    const resolvedDeviceName = await validatePrinterDeviceName(printWindow, configuredDeviceName);
 
     const printResult = await new Promise((resolve) => {
       printWindow.webContents.print(
@@ -209,7 +230,7 @@ async function printTestPage({ profileKey, deviceName } = {}) {
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: true,
+      sandbox: false,
     },
   });
 
@@ -241,13 +262,15 @@ async function printTestPage({ profileKey, deviceName } = {}) {
 
   try {
     await printWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`);
+    await wait(250);
+    const validatedDeviceName = await validatePrinterDeviceName(printWindow, resolvedDeviceName);
 
     const printResult = await new Promise((resolve) => {
       printWindow.webContents.print(
         {
           silent: true,
           printBackground: true,
-          deviceName: resolvedDeviceName,
+          deviceName: validatedDeviceName,
           copies,
         },
         (success, failureReason) => resolve({ success, failureReason })
@@ -283,19 +306,21 @@ async function printHtmlSilently({ html, deviceName, profileKey } = {}) {
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: true,
+      sandbox: false,
     },
   });
 
   try {
     await printWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`);
+    await wait(250);
+    const validatedDeviceName = await validatePrinterDeviceName(printWindow, resolvedDeviceName);
 
     const printResult = await new Promise((resolve) => {
       printWindow.webContents.print(
         {
           silent: true,
           printBackground: true,
-          deviceName: resolvedDeviceName,
+          deviceName: validatedDeviceName,
           copies,
         },
         (success, failureReason) => resolve({ success, failureReason })
