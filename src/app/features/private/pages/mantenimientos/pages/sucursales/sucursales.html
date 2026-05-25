@@ -1,0 +1,106 @@
+<section class="branch-page card shadow-sm border-0">
+  <div class="card-header branch-header">
+    <div>
+      <h4 class="mb-1"><i class="bi bi-diagram-3 me-2"></i>Sucursales e Inventario Base</h4>
+      <small>Administra las sucursales y carga el inventario faltante desde `productos2` hacia `inventario`.</small>
+    </div>
+    <button
+      type="button"
+      class="btn btn-light btn-sm"
+      (click)="cargarInventarioFaltanteTodas()"
+      [disabled]="cargandoGlobal || loading"
+    >
+      <span *ngIf="cargandoGlobal" class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+      <i *ngIf="!cargandoGlobal" class="bi bi-database-fill-add me-1"></i>
+      Cargar faltantes a todas
+    </button>
+  </div>
+
+  <div class="card-body">
+    <div class="row g-3 align-items-end mb-3">
+      <div class="col-12 col-lg-6">
+        <label class="form-label">Buscar sucursal</label>
+        <input
+          type="text"
+          class="form-control"
+          [(ngModel)]="filtro"
+          placeholder="Nombre, empresa, teléfono o código"
+        />
+      </div>
+      <div class="col-12 col-lg-3">
+        <button type="button" class="btn btn-outline-secondary w-100" (click)="cargarSucursales()" [disabled]="loading">
+          <i class="bi bi-arrow-clockwise me-1"></i>Recargar
+        </button>
+      </div>
+    </div>
+
+    <div *ngIf="loading" class="branch-loading">
+      <div class="spinner-border text-primary" aria-hidden="true"></div>
+      <span>Cargando sucursales e inventario...</span>
+    </div>
+
+    <div *ngIf="!loading" class="table-responsive">
+      <table class="table table-hover align-middle branch-table">
+        <thead>
+          <tr>
+            <th>Sucursal</th>
+            <th>Empresa</th>
+            <th class="text-center">Catálogo</th>
+            <th class="text-center">En inventario</th>
+            <th class="text-center">Faltantes</th>
+            <th class="text-center">Cobertura</th>
+            <th class="text-center">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of sucursalesFiltradas">
+            <td>
+              <div class="fw-semibold">{{ item.nom_sucursal }}</div>
+              <small class="text-muted">#{{ item.cod_sucursal }} · {{ item.dir_sucursal || 'Sin dirección' }}</small>
+            </td>
+            <td>
+              <span class="badge text-bg-light border">{{ item.cod_empre }}</span>
+            </td>
+            <td class="text-center">{{ item.totalCatalogo }}</td>
+            <td class="text-center">{{ item.totalInventario }}</td>
+            <td class="text-center">
+              <span class="badge" [ngClass]="item.faltantes ? 'text-bg-warning' : 'text-bg-success'">
+                {{ item.faltantes }}
+              </span>
+            </td>
+            <td class="text-center">
+              <div class="branch-progress">
+                <div class="branch-progress__bar" [style.width.%]="item.porcentaje"></div>
+              </div>
+              <small>{{ item.porcentaje }}%</small>
+            </td>
+            <td class="text-center">
+              <div class="btn-group">
+                <button
+                  type="button"
+                  class="btn btn-sm btn-outline-primary"
+                  (click)="cargarInventarioSucursal(item, false)"
+                  [disabled]="accionPorSucursal[item.cod_sucursal] || loading"
+                >
+                  <span *ngIf="accionPorSucursal[item.cod_sucursal]" class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+                  Cargar faltantes
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-sm btn-outline-danger"
+                  (click)="cargarInventarioSucursal(item, true)"
+                  [disabled]="accionPorSucursal[item.cod_sucursal] || loading"
+                >
+                  Reemplazar
+                </button>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="!sucursalesFiltradas.length">
+            <td colspan="7" class="text-center py-4 text-muted">No hay sucursales para mostrar.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>

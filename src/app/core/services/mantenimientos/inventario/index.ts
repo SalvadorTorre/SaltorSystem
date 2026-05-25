@@ -6,6 +6,7 @@ export interface ModeloInventario {
 }
 
 export interface ModeloInventarioData {
+  id?: number | null;
   in_codmerc: string;
   in_desmerc: string;
   in_grumerc: string;
@@ -32,4 +33,7 @@ export interface ModeloInventarioData {
   in_itbis: boolean;
   in_minvent: number;
   in_tramo?: string;
+  sucursales_cargadas?: number;
+  sucursales_totales?: number;
+  inventario_completo?: boolean;
 }

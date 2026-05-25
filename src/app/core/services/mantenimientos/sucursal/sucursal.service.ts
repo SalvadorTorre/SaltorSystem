@@ -3,12 +3,16 @@ import { Observable, from } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { SucursalModel } from '.';
 import { SupabaseService } from '../../supabase/supabase.service';
+import { ServicioInventario } from '../inventario/inventario.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class ServicioSucursal {
-  constructor(private supabase: SupabaseService) {}
+  constructor(
+    private supabase: SupabaseService,
+    private servicioInventario: ServicioInventario
+  ) {}
 
   private get db(): any {
     const client = this.supabase.client;
@@ -42,7 +46,32 @@ export class ServicioSucursal {
         .select('*')
         .single();
       if (error) throw error;
-      return data;
+
+      let inventorySeed: any = null;
+      try {
+        const seedResp = await new Promise<any>((resolve, reject) => {
+          this.servicioInventario
+            .sembrarInventarioSucursalDesdeCatalogo({
+              inv_codsucu: Number(data?.cod_sucursal),
+              sobrescribirExistentes: false,
+              existenciaInicial: 0,
+            })
+            .subscribe({
+              next: resolve,
+              error: reject,
+            });
+        });
+        inventorySeed = seedResp?.data || null;
+      } catch (seedError: any) {
+        inventorySeed = {
+          error: String(seedError?.message || 'No se pudo sembrar el inventario base.'),
+        };
+      }
+
+      return {
+        ...data,
+        inventorySeed,
+      };
     })()).pipe(
       map((row: any) => ({ status: 'success', code: 200, data: row }))
     );

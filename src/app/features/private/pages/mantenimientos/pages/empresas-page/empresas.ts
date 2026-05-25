@@ -646,13 +646,18 @@ export class Empresas implements OnInit {
         ? this.servicioSucursal.editaSucursal(String(editId), payload)
         : this.servicioSucursal.guardarSucursal(payload);
       req$.subscribe({
-        next: () => {
+        next: (response: any) => {
+          const seedError = response?.data?.inventorySeed?.error;
           Swal.fire({
-            title: "Excelente!",
-            text: editId ? "Sucursal actualizada correctamente." : "Sucursal guardada correctamente.",
-            icon: 'success',
-            timer: 3000,
-            showConfirmButton: false,
+            title: seedError ? "Sucursal guardada" : "Excelente!",
+            text: seedError
+              ? `La sucursal se guardó, pero falló la carga automática del inventario base. ${seedError}`
+              : editId
+                ? "Sucursal actualizada correctamente."
+                : "Sucursal guardada correctamente.",
+            icon: seedError ? 'warning' : 'success',
+            timer: seedError ? undefined : 3000,
+            showConfirmButton: !!seedError,
           });
           // Refrescar la tabla de sucursales dentro del modal
           this.refrescarSucursalesModal();
@@ -710,13 +715,16 @@ export class Empresas implements OnInit {
               tel_sucursal: payload.tel_empre || '0000000000',
             };
             this.servicioSucursal.guardarSucursal(defaultSucursal).subscribe({
-              next: () => {
+              next: (response: any) => {
+                const seedError = response?.data?.inventorySeed?.error;
                 Swal.fire({
-                  title: "Excelente!",
-                  text: "Empresa y Sucursal guardadas correctamente.",
-                  icon: 'success',
-                  timer: 5000,
-                  showConfirmButton: false,
+                  title: seedError ? "Empresa creada" : "Excelente!",
+                  text: seedError
+                    ? `Empresa y sucursal creadas, pero falló la carga automática del inventario base. ${seedError}`
+                    : "Empresa y Sucursal guardadas correctamente.",
+                  icon: seedError ? 'warning' : 'success',
+                  timer: seedError ? undefined : 5000,
+                  showConfirmButton: !!seedError,
                 });
                 this.buscarTodasEmpresa(1);
                 this.formularioEmpresa.reset();
@@ -803,7 +811,6 @@ export class Empresas implements OnInit {
     this.buscarTodasEmpresa(1);
   }
 }
-
 
 
 

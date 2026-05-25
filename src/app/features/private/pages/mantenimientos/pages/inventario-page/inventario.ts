@@ -44,6 +44,7 @@ export class Inventario implements OnInit {
   inventarioSucursalList: any[] = [];
   productoDetalleSucursal: ModeloInventarioData | null = null;
   guardandoSucursal: Record<number, boolean> = {};
+  totalSucursales = 0;
 
   constructor(
     private fb: FormBuilder,
@@ -93,9 +94,11 @@ export class Inventario implements OnInit {
     this.servicioSucursal.buscarTodasSucursal().subscribe({
       next: (response) => {
         this.sucursalesList = response?.data || [];
+        this.totalSucursales = this.sucursalesList.length;
       },
       error: () => {
         this.sucursalesList = [];
+        this.totalSucursales = 0;
       }
     });
   }
@@ -342,11 +345,49 @@ export class Inventario implements OnInit {
 
   obtenerTodosInventario(page: number) {
     this.servicioInventario.obtenerTodosInventario(page, this.pageSize).subscribe(response => {
-      this.invenarioList = response?.data || [];
+      const rows = response?.data || [];
+      this.invenarioList = rows;
       this.totalItems = Number(response?.pagination?.total ?? this.invenarioList.length);
       this.currentPage = Number(response?.pagination?.page ?? page);
+      this.cargarCoberturaSucursalProductos(rows);
     }
     );
+  }
+
+  private cargarCoberturaSucursalProductos(rows: ModeloInventarioData[]) {
+    const codigos = (rows || []).map((item) => item.in_codmerc);
+    if (!codigos.length || !this.totalSucursales) {
+      this.invenarioList = (rows || []).map((item) => ({
+        ...item,
+        sucursales_cargadas: 0,
+        sucursales_totales: this.totalSucursales,
+        inventario_completo: false,
+      }));
+      return;
+    }
+
+    this.servicioInventario
+      .obtenerCoberturaSucursalesPorProductos(codigos, this.totalSucursales)
+      .subscribe({
+        next: (coverageResp) => {
+          const coverageRows = Array.isArray(coverageResp?.data) ? coverageResp.data : [];
+          const coverageMap = new Map<string, any>(
+            coverageRows.map((item: any) => [String(item.in_codmerc || '').trim(), item])
+          );
+          this.invenarioList = (rows || []).map((item) => {
+            const coverage = coverageMap.get(String(item.in_codmerc || '').trim());
+            return {
+              ...item,
+              sucursales_cargadas: Number(coverage?.sucursales_cargadas || 0),
+              sucursales_totales: Number(coverage?.sucursales_totales || this.totalSucursales),
+              inventario_completo: !!coverage?.inventario_completo,
+            };
+          });
+        },
+        error: () => {
+          this.invenarioList = rows;
+        },
+      });
   }
 
   obtenerTodosGrupoMercancias() {
@@ -397,9 +438,11 @@ export class Inventario implements OnInit {
     const descripcion = this.descripcionSubject.getValue();
     this.servicioInventario.obtenerTodosInventario(this.currentPage, this.pageSize, codigo, descripcion)
       .subscribe(response => {
-        this.invenarioList = response?.data || [];
+        const rows = response?.data || [];
+        this.invenarioList = rows;
         this.totalItems = Number(response?.pagination?.total ?? this.invenarioList.length);
         this.currentPage = Number(response?.pagination?.page ?? page);
+        this.cargarCoberturaSucursalProductos(rows);
       });
   }
 

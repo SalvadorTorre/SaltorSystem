@@ -37,6 +37,14 @@ export class ServicioInventario {
     return Number.isFinite(n) ? n : null;
   }
 
+  private uniqueCodes(rows: any[]): Set<string> {
+    return new Set(
+      (rows || [])
+        .map((row: any) => String(row?.inv_codprod || "").trim())
+        .filter((code: string) => !!code)
+    );
+  }
+
   private mapDbToUi(row: any): any {
     if (!row) return row;
     return {
@@ -411,6 +419,176 @@ export class ServicioInventario {
       const { data, error } = await query.limit(100);
       if (error) throw error;
       return data || [];
+    })()).pipe(
+      map((rows: any[]) => ({ status: "success", code: 200, data: rows }))
+    );
+  }
+
+  sembrarInventarioSucursalDesdeCatalogo(payload: {
+    inv_codsucu: number | string;
+    sobrescribirExistentes?: boolean;
+    existenciaInicial?: number | null;
+  }): Observable<any> {
+    return from((async () => {
+      const inv_codsucu = Number(payload?.inv_codsucu);
+      if (!inv_codsucu || Number.isNaN(inv_codsucu)) {
+        throw new Error("Sucursal inválida para sembrar inventario");
+      }
+
+      const sobrescribirExistentes = !!payload?.sobrescribirExistentes;
+      const existenciaInicial = this.toNumber(payload?.existenciaInicial ?? 0);
+
+      const [{ data: productos, error: productosError }, { data: inventarioActual, error: inventarioError }] =
+        await Promise.all([
+          this.db
+            .from("productos2")
+            .select("in_codmerc,in_desmerc,in_cosmerc,in_premerc,in_status")
+            .order("in_codmerc", { ascending: true }),
+          this.db
+            .from("inventario")
+            .select("id,inv_codprod,inv_codsucu")
+            .eq("inv_codsucu", inv_codsucu),
+        ]);
+
+      if (productosError) throw productosError;
+      if (inventarioError) throw inventarioError;
+
+      const catalogo = (productos || []).filter((item: any) => String(item?.in_codmerc || "").trim());
+      const existentes = this.uniqueCodes(inventarioActual || []);
+
+      const rowsToInsert = catalogo
+        .filter((producto: any) => sobrescribirExistentes || !existentes.has(String(producto.in_codmerc).trim()))
+        .map((producto: any) => ({
+          inv_codsucu,
+          inv_codprod: String(producto.in_codmerc || "").trim(),
+          inv_desprod: String(producto.in_desmerc || "").trim() || null,
+          inv_cosprod: this.toNullableNumber(producto?.in_cosmerc),
+          inv_preprod: this.toNullableNumber(producto?.in_premerc),
+          inv_existencia: existenciaInicial,
+          inv_fechamov: new Date().toISOString(),
+          activo: String(producto?.in_status || "A").trim().toUpperCase() !== "I",
+        }));
+
+      let inserted = 0;
+      if (sobrescribirExistentes) {
+        const { error: deleteError } = await this.db
+          .from("inventario")
+          .delete()
+          .eq("inv_codsucu", inv_codsucu);
+        if (deleteError) throw deleteError;
+      }
+
+      if (rowsToInsert.length > 0) {
+        const { error: insertError } = await this.db
+          .from("inventario")
+          .insert(rowsToInsert);
+        if (insertError) throw insertError;
+        inserted = rowsToInsert.length;
+      }
+
+      const totalCatalogo = catalogo.length;
+      const totalFinal = sobrescribirExistentes
+        ? inserted
+        : this.uniqueCodes([...(inventarioActual || []), ...rowsToInsert]).size;
+
+      return {
+        sucursal: inv_codsucu,
+        totalCatalogo,
+        totalAntes: this.uniqueCodes(inventarioActual || []).size,
+        totalDespues: totalFinal,
+        insertados: inserted,
+        faltantes: Math.max(totalCatalogo - totalFinal, 0),
+        modo: sobrescribirExistentes ? "reemplazo" : "faltantes",
+      };
+    })()).pipe(
+      map((data: any) => ({ status: "success", code: 200, data }))
+    );
+  }
+
+  obtenerResumenInventarioSucursales(idsSucursales?: Array<number | string>): Observable<any> {
+    return from((async () => {
+      const ids = (idsSucursales || [])
+        .map((value) => Number(value))
+        .filter((value) => !!value && !Number.isNaN(value));
+
+      const [{ count: totalCatalogo, error: countError }, { data: inventarioRows, error: inventarioError }] =
+        await Promise.all([
+          this.db.from("productos2").select("id", { count: "exact", head: true }),
+          ids.length
+            ? this.db.from("inventario").select("inv_codsucu,inv_codprod").in("inv_codsucu", ids)
+            : this.db.from("inventario").select("inv_codsucu,inv_codprod"),
+        ]);
+
+      if (countError) throw countError;
+      if (inventarioError) throw inventarioError;
+
+      const grouped = new Map<number, Set<string>>();
+      (inventarioRows || []).forEach((row: any) => {
+        const sucursal = Number(row?.inv_codsucu || 0);
+        const codigo = String(row?.inv_codprod || "").trim();
+        if (!sucursal || !codigo) return;
+        if (!grouped.has(sucursal)) {
+          grouped.set(sucursal, new Set<string>());
+        }
+        grouped.get(sucursal)!.add(codigo);
+      });
+
+      return {
+        totalCatalogo: Number(totalCatalogo || 0),
+        sucursales: Array.from(grouped.entries()).map(([inv_codsucu, codes]) => ({
+          inv_codsucu,
+          totalInventario: codes.size,
+          faltantes: Math.max(Number(totalCatalogo || 0) - codes.size, 0),
+        })),
+      };
+    })()).pipe(
+      map((data: any) => ({ status: "success", code: 200, data }))
+    );
+  }
+
+  obtenerCoberturaSucursalesPorProductos(
+    codigos: Array<string | number>,
+    totalSucursales: number
+  ): Observable<any> {
+    return from((async () => {
+      const codes = Array.from(
+        new Set(
+          (codigos || [])
+            .map((value) => String(value || "").trim())
+            .filter((value) => !!value)
+        )
+      );
+
+      if (!codes.length) {
+        return [];
+      }
+
+      const { data, error } = await this.db
+        .from("inventario")
+        .select("inv_codprod,inv_codsucu")
+        .in("inv_codprod", codes);
+      if (error) throw error;
+
+      const grouped = new Map<string, Set<number>>();
+      (data || []).forEach((row: any) => {
+        const codigo = String(row?.inv_codprod || "").trim();
+        const sucursal = Number(row?.inv_codsucu || 0);
+        if (!codigo || !sucursal) return;
+        if (!grouped.has(codigo)) {
+          grouped.set(codigo, new Set<number>());
+        }
+        grouped.get(codigo)!.add(sucursal);
+      });
+
+      return codes.map((codigo) => {
+        const sucursales = grouped.get(codigo) || new Set<number>();
+        return {
+          in_codmerc: codigo,
+          sucursales_cargadas: sucursales.size,
+          sucursales_totales: totalSucursales,
+          inventario_completo: totalSucursales > 0 && sucursales.size >= totalSucursales,
+        };
+      });
     })()).pipe(
       map((rows: any[]) => ({ status: "success", code: 200, data: rows }))
     );

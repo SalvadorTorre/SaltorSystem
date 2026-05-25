@@ -56,6 +56,7 @@
           <tr>
             <th class="text-center">Código</th>
             <th>Descripción</th>
+            <th class="text-center d-none d-lg-table-cell">Cobertura sucursal</th>
             <th class="text-center d-none d-md-table-cell">Existencia</th>
             <th class="text-center d-none d-md-table-cell">Precio</th>
             <th class="text-center">Acciones</th>
@@ -64,7 +65,25 @@
         <tbody>
           <tr *ngFor="let inventario of invenarioList">
             <td class="text-center fw-semibold">{{ inventario.in_codmerc }}</td>
-            <td>{{ inventario.in_desmerc }}</td>
+            <td>
+              {{ inventario.in_desmerc }}
+              <div class="mt-1">
+                <span
+                  class="badge"
+                  [ngClass]="inventario.inventario_completo ? 'text-bg-success' : 'text-bg-warning'"
+                >
+                  {{ inventario.sucursales_cargadas || 0 }}/{{ inventario.sucursales_totales || totalSucursales || 0 }} sucursales
+                </span>
+              </div>
+            </td>
+            <td class="text-center d-none d-lg-table-cell">
+              <span
+                class="badge"
+                [ngClass]="inventario.inventario_completo ? 'text-bg-success' : 'text-bg-warning'"
+              >
+                {{ inventario.inventario_completo ? 'Completo' : 'Pendiente' }}
+              </span>
+            </td>
             <td class="text-center d-none d-md-table-cell">{{ inventario.in_canmerc | number:'1.0-2' }}</td>
             <td class="text-center d-none d-md-table-cell">RD$ {{ inventario.in_premerc | number:'1.2-2' }}</td>
             <td class="text-center">
@@ -90,7 +109,7 @@
             </td>
           </tr>
           <tr *ngIf="!invenarioList.length">
-            <td colspan="5" class="text-center py-4 text-muted">
+            <td colspan="6" class="text-center py-4 text-muted">
               <i class="bi bi-inbox me-2"></i>
               No hay productos para mostrar con los filtros actuales.
             </td>

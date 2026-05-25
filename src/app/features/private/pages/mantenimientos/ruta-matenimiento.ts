@@ -28,6 +28,13 @@ const routes: Routes = [
             (m) => m.ModuloCliente
           ),
       },
+      {
+        path: 'sucursales',
+        loadChildren: () =>
+          import('./pages/sucursales/sucursales-modulo').then(
+            (m) => m.ModuloSucursales
+          ),
+      },
 
       {
         path: 'suplidor',
