@@ -7,6 +7,12 @@ import {
   ConfiguracionGlobalData,
 } from 'src/app/core/services/mantenimientos/configuracion-global';
 import { ServicioConfiguracionGlobal } from 'src/app/core/services/mantenimientos/configuracion-global/configuracion-global.service';
+import {
+  DesktopPrinterInfo,
+  DesktopPrintProfileKey,
+  DesktopPrintSettings,
+  DesktopPrintSettingsService,
+} from 'src/app/core/services/utils/desktop-print-settings.service';
 
 @Component({
   selector: 'app-configuracion-global',
@@ -33,16 +39,46 @@ export class ConfiguracionGlobal implements OnInit {
   pendingCertNombre: string | null = null;
 
   certificadoInfo: CertificadoInspeccion | null = null;
+  desktopPrintingSupported = false;
+  isLoadingDesktopPrinting = false;
+  isSavingDesktopPrinting = false;
+  testingPrintProfile: DesktopPrintProfileKey | null = null;
+  desktopPrinters: DesktopPrinterInfo[] = [];
+  desktopPrintSettings: DesktopPrintSettings;
+  readonly printProfiles: Array<{
+    key: DesktopPrintProfileKey;
+    title: string;
+    description: string;
+  }> = [
+    {
+      key: 'factura',
+      title: 'Facturas',
+      description: 'Para facturas y documentos fiscales que quieras separar del flujo térmico.',
+    },
+    {
+      key: 'ticket',
+      title: 'Tickets',
+      description: 'Ideal para impresoras térmicas de 80mm, recibos y comprobantes rápidos.',
+    },
+    {
+      key: 'reporte',
+      title: 'Reportes',
+      description: 'Para reportes, conduces o salidas que prefieras mandar a una impresora A4/Carta.',
+    },
+  ];
 
   constructor(
     private fb: FormBuilder,
-    private servicioConfiguracionGlobal: ServicioConfiguracionGlobal
+    private servicioConfiguracionGlobal: ServicioConfiguracionGlobal,
+    private desktopPrintSettingsService: DesktopPrintSettingsService
   ) {
+    this.desktopPrintSettings = this.desktopPrintSettingsService.getDefaultSettings();
     this.crearFormulario();
   }
 
   ngOnInit(): void {
     this.cargarConfiguracion();
+    this.cargarConfiguracionImpresionDesktop();
   }
 
   get endpointDirectCertPreview(): string {
@@ -130,6 +166,127 @@ export class ConfiguracionGlobal implements OnInit {
 
   activarEdicion(): void {
     this.isEditMode = true;
+  }
+
+  getProfileSettings(profileKey: DesktopPrintProfileKey) {
+    return this.desktopPrintSettings.profiles[profileKey];
+  }
+
+  getPrinterLabel(deviceName: string): string {
+    const printer = this.desktopPrinters.find((item) => item.name === deviceName);
+    if (!printer) return deviceName || 'Impresora no disponible';
+    const base = printer.displayName || printer.name;
+    return printer.isDefault ? `${base} (predeterminada)` : base;
+  }
+
+  getSelectedPrinterLabel(profileKey: DesktopPrintProfileKey): string {
+    const profile = this.getProfileSettings(profileKey);
+    if (profile.useSystemDefault || !profile.deviceName) {
+      const defaultPrinter = this.desktopPrinters.find((item) => item.isDefault);
+      return defaultPrinter
+        ? this.getPrinterLabel(defaultPrinter.name)
+        : 'Predeterminada del sistema';
+    }
+
+    return this.getPrinterLabel(profile.deviceName);
+  }
+
+  onDesktopPrinterDefaultChange(profileKey: DesktopPrintProfileKey): void {
+    const profile = this.getProfileSettings(profileKey);
+    if (profile.useSystemDefault) {
+      profile.deviceName = '';
+    }
+  }
+
+  private async cargarConfiguracionImpresionDesktop(): Promise<void> {
+    this.desktopPrintingSupported = this.desktopPrintSettingsService.isSupported();
+    if (!this.desktopPrintingSupported) return;
+
+    this.isLoadingDesktopPrinting = true;
+    try {
+      const [printers, settings] = await Promise.all([
+        window.electronAPI?.listPrinters() || Promise.resolve([]),
+        this.desktopPrintSettingsService.load(),
+      ]);
+
+      this.desktopPrinters = printers || [];
+      this.desktopPrintSettings = this.desktopPrintSettingsService.normalize(settings);
+    } catch (error) {
+      console.error(error);
+      Swal.fire(
+        'Impresión desktop',
+        'No se pudo cargar la configuración de impresoras del escritorio.',
+        'warning'
+      );
+    } finally {
+      this.isLoadingDesktopPrinting = false;
+    }
+  }
+
+  async recargarImpresorasDesktop(): Promise<void> {
+    await this.cargarConfiguracionImpresionDesktop();
+  }
+
+  async guardarConfiguracionImpresionDesktop(): Promise<void> {
+    if (!this.desktopPrintingSupported) return;
+
+    this.isSavingDesktopPrinting = true;
+    try {
+      this.desktopPrintSettings = await this.desktopPrintSettingsService.save(
+        this.desktopPrintSettings
+      );
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Impresoras guardadas',
+        text: 'La configuración de impresión desktop quedó actualizada en esta computadora.',
+        timer: 1600,
+        showConfirmButton: false,
+      });
+    } catch (error: any) {
+      console.error(error);
+      Swal.fire(
+        'Error',
+        error?.message || 'No se pudo guardar la configuración de impresión desktop.',
+        'error'
+      );
+    } finally {
+      this.isSavingDesktopPrinting = false;
+    }
+  }
+
+  async probarImpresionDesktop(profileKey: DesktopPrintProfileKey): Promise<void> {
+    if (!this.desktopPrintingSupported) return;
+
+    this.testingPrintProfile = profileKey;
+    try {
+      const profile = this.getProfileSettings(profileKey);
+      const result = await this.desktopPrintSettingsService.printTestPage(
+        profileKey,
+        profile.useSystemDefault ? undefined : profile.deviceName
+      );
+
+      if (!result?.success) {
+        throw new Error(result?.error || 'No se pudo imprimir la pagina de prueba.');
+      }
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Prueba enviada',
+        text: `Se envió una prueba al perfil ${profileKey}.`,
+        timer: 1400,
+        showConfirmButton: false,
+      });
+    } catch (error: any) {
+      console.error(error);
+      Swal.fire(
+        'Prueba fallida',
+        error?.message || 'No se pudo enviar la prueba de impresión.',
+        'error'
+      );
+    } finally {
+      this.testingPrintProfile = null;
+    }
   }
 
   private asegurarModoEdicion(): boolean {

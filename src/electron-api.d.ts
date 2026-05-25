@@ -1,12 +1,15 @@
 interface ElectronPrintRequest {
   base64Data: string;
   deviceName?: string;
+  profileKey?: ElectronPrintProfileKey;
 }
 
 interface ElectronPrintResult {
   success: boolean;
   error?: string | null;
 }
+
+type ElectronPrintProfileKey = 'factura' | 'ticket' | 'reporte';
 
 interface ElectronPrinterInfo {
   name: string;
@@ -15,10 +18,28 @@ interface ElectronPrinterInfo {
   status?: number;
 }
 
+interface ElectronPrintProfileSettings {
+  deviceName: string;
+  useSystemDefault: boolean;
+  copies: number;
+}
+
+interface ElectronPrintSettings {
+  version: number;
+  updatedAt?: string | null;
+  profiles: Record<ElectronPrintProfileKey, ElectronPrintProfileSettings>;
+}
+
 interface ElectronAPI {
   isDesktop: boolean;
   listPrinters: () => Promise<ElectronPrinterInfo[]>;
+  getPrintSettings: () => Promise<ElectronPrintSettings>;
+  savePrintSettings: (payload: ElectronPrintSettings) => Promise<ElectronPrintSettings>;
   printPdfSilently: (payload: ElectronPrintRequest) => Promise<ElectronPrintResult>;
+  printTestPage: (payload: {
+    profileKey: ElectronPrintProfileKey;
+    deviceName?: string;
+  }) => Promise<ElectronPrintResult>;
 }
 
 declare global {

@@ -172,6 +172,117 @@
               </div>
             </div>
           </div>
+
+          <div class="col-12">
+            <div class="config-block desktop-print-block" [class.opacity-50]="isLoadingDesktopPrinting">
+              <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+                <div>
+                  <h2 class="h6 mb-1">
+                    <i class="bi bi-printer me-2"></i>Impresión Desktop Pro
+                  </h2>
+                  <p class="small text-muted mb-0">
+                    Configura una impresora por perfil para facturas, tickets y reportes dentro de Electron.
+                  </p>
+                </div>
+                <button
+                  *ngIf="desktopPrintingSupported"
+                  type="button"
+                  class="btn btn-outline-secondary btn-sm"
+                  (click)="recargarImpresorasDesktop()"
+                  [disabled]="isLoadingDesktopPrinting || isSavingDesktopPrinting"
+                >
+                  <i class="bi bi-arrow-clockwise me-1"></i>Recargar impresoras
+                </button>
+              </div>
+
+              <div *ngIf="!desktopPrintingSupported" class="alert alert-secondary mb-0">
+                Esta configuración solo aparece dentro de la app desktop de Electron.
+              </div>
+
+              <ng-container *ngIf="desktopPrintingSupported">
+                <div class="alert alert-info py-2 px-3 small">
+                  Consejo: usa <strong>Tickets</strong> para impresoras térmicas y <strong>Reportes</strong> para impresoras carta/A4.
+                </div>
+
+                <div class="printer-profile-grid">
+                  <div class="printer-profile-card" *ngFor="let profile of printProfiles">
+                    <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                      <div>
+                        <h3 class="h6 mb-1">{{ profile.title }}</h3>
+                        <p class="small text-muted mb-0">{{ profile.description }}</p>
+                      </div>
+                      <span class="printer-profile-chip">{{ getSelectedPrinterLabel(profile.key) }}</span>
+                    </div>
+
+                    <div class="form-check form-switch mb-3">
+                      <input
+                        class="form-check-input"
+                        type="checkbox"
+                        [id]="'profile-default-' + profile.key"
+                        [(ngModel)]="getProfileSettings(profile.key).useSystemDefault"
+                        [ngModelOptions]="{ standalone: true }"
+                        (change)="onDesktopPrinterDefaultChange(profile.key)"
+                      />
+                      <label class="form-check-label small fw-semibold" [for]="'profile-default-' + profile.key">
+                        Usar impresora predeterminada del sistema
+                      </label>
+                    </div>
+
+                    <div class="mb-3">
+                      <label class="form-label small fw-semibold text-muted">Impresora asignada</label>
+                      <select
+                        class="form-select"
+                        [(ngModel)]="getProfileSettings(profile.key).deviceName"
+                        [ngModelOptions]="{ standalone: true }"
+                        [disabled]="getProfileSettings(profile.key).useSystemDefault"
+                      >
+                        <option value="">Selecciona una impresora</option>
+                        <option *ngFor="let printer of desktopPrinters" [value]="printer.name">
+                          {{ getPrinterLabel(printer.name) }}
+                        </option>
+                      </select>
+                    </div>
+
+                    <div class="mb-3">
+                      <label class="form-label small fw-semibold text-muted">Copias por envío</label>
+                      <input
+                        type="number"
+                        class="form-control"
+                        min="1"
+                        max="5"
+                        [(ngModel)]="getProfileSettings(profile.key).copies"
+                        [ngModelOptions]="{ standalone: true }"
+                      />
+                    </div>
+
+                    <button
+                      type="button"
+                      class="btn btn-outline-primary btn-sm"
+                      (click)="probarImpresionDesktop(profile.key)"
+                      [disabled]="testingPrintProfile === profile.key || isSavingDesktopPrinting"
+                    >
+                      <span *ngIf="testingPrintProfile === profile.key" class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+                      <i *ngIf="testingPrintProfile !== profile.key" class="bi bi-printer me-1"></i>
+                      Imprimir prueba
+                    </button>
+                  </div>
+                </div>
+
+                <div class="d-flex justify-content-end mt-3">
+                  <button
+                    type="button"
+                    class="btn btn-dark"
+                    (click)="guardarConfiguracionImpresionDesktop()"
+                    [disabled]="isSavingDesktopPrinting || isLoadingDesktopPrinting"
+                  >
+                    <span *ngIf="isSavingDesktopPrinting" class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+                    <i *ngIf="!isSavingDesktopPrinting" class="bi bi-save me-1"></i>
+                    Guardar impresoras desktop
+                  </button>
+                </div>
+              </ng-container>
+            </div>
+          </div>
         </div>
 
         <div class="d-flex justify-content-end mt-3">

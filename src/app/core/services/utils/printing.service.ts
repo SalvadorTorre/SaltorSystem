@@ -2,12 +2,16 @@ import { Injectable } from '@angular/core';
 import { jsPDF } from 'jspdf';
 import JsBarcode from 'jsbarcode';
 import * as QRCode from 'qrcode';
+import {
+  DesktopPrintProfileKey,
+  DesktopPrintSettingsService,
+} from './desktop-print-settings.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class PrintingService {
-  constructor() {}
+  constructor(private desktopPrintSettings: DesktopPrintSettingsService) {}
 
   /**
    * Generates a PDF for a receipt/invoice in 80mm format and prints it.
@@ -380,7 +384,7 @@ export class PrintingService {
       const pdfBlob = doc.output('blob');
       const pdfUrl = URL.createObjectURL(pdfBlob);
 
-      this.printPdf(pdfUrl);
+      this.printPdf(pdfUrl, 'factura');
     } catch (error) {
       console.error('Error fatal al generar factura:', error);
     }
@@ -583,7 +587,7 @@ export class PrintingService {
       doc.autoPrint();
       const pdfBlob = doc.output('blob');
       const pdfUrl = URL.createObjectURL(pdfBlob);
-      this.printPdf(pdfUrl);
+      this.printPdf(pdfUrl, 'ticket');
     } catch (error) {
       console.error('Error al generar entrada:', error);
     }
@@ -754,7 +758,7 @@ items.forEach((it: any) => {
       doc.autoPrint();
       const pdfBlob = doc.output('blob');
       const pdfUrl = URL.createObjectURL(pdfBlob);
-      this.printPdf(pdfUrl);
+      this.printPdf(pdfUrl, 'ticket');
     } catch {}
   }
 
@@ -938,7 +942,7 @@ items.forEach((it: any) => {
       doc.autoPrint();
       const pdfBlob = doc.output('blob');
       const pdfUrl = URL.createObjectURL(pdfBlob);
-      this.printPdf(pdfUrl);
+      this.printPdf(pdfUrl, 'ticket');
     } catch {}
   }
 
@@ -1071,7 +1075,7 @@ items.forEach((it: any) => {
       doc.autoPrint();
       const pdfBlob = doc.output('blob');
       const pdfUrl = URL.createObjectURL(pdfBlob);
-      this.printPdf(pdfUrl);
+      this.printPdf(pdfUrl, 'ticket');
     } catch {}
   }
 
@@ -1214,14 +1218,14 @@ items.forEach((it: any) => {
       doc.autoPrint();
       const pdfBlob = doc.output('blob');
       const pdfUrl = URL.createObjectURL(pdfBlob);
-      this.printPdf(pdfUrl);
+      this.printPdf(pdfUrl, 'reporte');
     } catch (error) {
       console.error('Error al generar conduce:', error);
     }
   }
 
-  private async printPdf(pdfUrl: string): Promise<void> {
-    const silentPrinted = await this.trySilentPrintDesktop(pdfUrl);
+  private async printPdf(pdfUrl: string, profileKey: DesktopPrintProfileKey): Promise<void> {
+    const silentPrinted = await this.trySilentPrintDesktop(pdfUrl, profileKey);
     if (silentPrinted) return;
 
     // Intento 1: abrir en nueva pestaña y disparar impresión
@@ -1266,14 +1270,18 @@ items.forEach((it: any) => {
     iframe.src = pdfUrl;
   }
 
-  private async trySilentPrintDesktop(pdfUrl: string): Promise<boolean> {
+  private async trySilentPrintDesktop(
+    pdfUrl: string,
+    profileKey: DesktopPrintProfileKey
+  ): Promise<boolean> {
     if (typeof window === 'undefined' || !window.electronAPI?.printPdfSilently) {
       return false;
     }
 
     try {
       const base64Data = await this.blobUrlToBase64(pdfUrl);
-      const result = await window.electronAPI.printPdfSilently({ base64Data });
+      const deviceName = await this.desktopPrintSettings.getProfileDeviceName(profileKey);
+      const result = await window.electronAPI.printPdfSilently({ base64Data, deviceName, profileKey });
       return !!result?.success;
     } catch (error) {
       console.warn('No se pudo imprimir en modo silencioso con Electron:', error);
