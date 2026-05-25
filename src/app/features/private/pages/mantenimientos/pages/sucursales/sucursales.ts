@@ -179,4 +179,55 @@ export class SucursalesPageComponent implements OnInit {
         Swal.fire('Error', error?.message || 'Falló la carga masiva de inventario.', 'error');
       });
   }
+
+  async vaciarInventarioSucursal(item: SucursalInventarioRow): Promise<void> {
+    const confirmacion = await Swal.fire({
+      title: 'Vaciar inventario',
+      text: `Se eliminará todo el inventario de la sucursal ${item.nom_sucursal}.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, vaciar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#dc3545',
+    });
+
+    if (!confirmacion.isConfirmed) return;
+
+    const segundaConfirmacion = await Swal.fire({
+      title: 'Confirmación final',
+      text: 'Esta acción eliminará todas las filas de inventario de esa sucursal.',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Vaciar ahora',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#b02a37',
+    });
+
+    if (!segundaConfirmacion.isConfirmed) return;
+
+    this.accionPorSucursal[item.cod_sucursal] = true;
+    this.servicioInventario.vaciarInventarioSucursal(item.cod_sucursal).subscribe({
+      next: (response: any) => {
+        this.accionPorSucursal[item.cod_sucursal] = false;
+        const eliminados = Number(response?.data?.eliminados || 0);
+        Swal.fire({
+          title: 'Inventario vaciado',
+          text: `Sucursal ${item.nom_sucursal}: ${eliminados} filas eliminadas.`,
+          icon: 'success',
+          timer: 1800,
+          showConfirmButton: false,
+        });
+        this.cargarSucursales();
+      },
+      error: (error) => {
+        this.accionPorSucursal[item.cod_sucursal] = false;
+        console.error(error);
+        Swal.fire(
+          'Error',
+          error?.message || 'No se pudo vaciar el inventario de la sucursal.',
+          'error'
+        );
+      },
+    });
+  }
 }

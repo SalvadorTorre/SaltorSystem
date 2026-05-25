@@ -41,6 +41,13 @@
   background: linear-gradient(90deg, #198754 0%, #4dc089 100%);
 }
 
+.branch-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  justify-content: center;
+}
+
 @media (max-width: 991.98px) {
   .branch-header {
     flex-direction: column;

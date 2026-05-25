@@ -8,7 +8,7 @@ import { SupabaseService } from "../../supabase/supabase.service";
   providedIn: "root"
 })
 export class ServicioInventario {
-  private readonly fetchBatchSize = 1000;
+  private readonly fetchBatchSize = 250;
 
   constructor(private supabase: SupabaseService) {}
 
@@ -107,32 +107,59 @@ export class ServicioInventario {
       return null;
     }
 
-    const { data, error } = await anyDb.rpc("seed_inventario_sucursal_desde_catalogo", {
-      p_inv_codsucu: payload.inv_codsucu,
-      p_sobrescribir_existentes: payload.sobrescribirExistentes,
-      p_existencia_inicial: payload.existenciaInicial,
-    });
+    let totalInsertados = 0;
+    let ultimoResultado: any = null;
+    const batchSize = 250;
+    let afterId = 0;
 
-    if (error) {
-      const code = String(error?.code || "");
-      const message = String(error?.message || "");
-      const isMissingFunction =
-        code === "PGRST202" ||
-        code === "42883" ||
-        /function .*seed_inventario_sucursal_desde_catalogo/i.test(message);
+    for (let intento = 0; intento < 2000; intento += 1) {
+      const { data, error } = await anyDb.rpc("seed_inventario_sucursal_desde_catalogo", {
+        p_inv_codsucu: payload.inv_codsucu,
+        p_sobrescribir_existentes: intento === 0 ? payload.sobrescribirExistentes : false,
+        p_existencia_inicial: payload.existenciaInicial,
+        p_batch_size: batchSize,
+        p_after_id: afterId,
+      });
 
-      if (isMissingFunction) {
-        return null;
+      if (error) {
+        const code = String(error?.code || "");
+        const message = String(error?.message || "");
+        const isMissingFunction =
+          code === "PGRST202" ||
+          code === "42883" ||
+          /function .*seed_inventario_sucursal_desde_catalogo/i.test(message);
+        const isTimeout =
+          code === "57014" ||
+          /statement timeout/i.test(message) ||
+          /canceling statement due to statement timeout/i.test(message);
+
+        if (isMissingFunction || isTimeout) {
+          return null;
+        }
+
+        throw error;
       }
 
-      throw error;
+      const resultado = Array.isArray(data) ? data[0] ?? null : data ?? null;
+      if (!resultado) {
+        return ultimoResultado;
+      }
+
+      const insertadosLote = Number(resultado?.insertados ?? 0);
+      const procesadosLote = Number(resultado?.procesados ?? 0);
+      afterId = Number(resultado?.ultimoId ?? resultado?.ultimoid ?? afterId);
+      totalInsertados += insertadosLote;
+      ultimoResultado = {
+        ...resultado,
+        insertados: totalInsertados,
+      };
+
+      if (procesadosLote < batchSize || afterId <= 0) {
+        return ultimoResultado;
+      }
     }
 
-    if (Array.isArray(data)) {
-      return data[0] ?? null;
-    }
-
-    return data ?? null;
+    return ultimoResultado;
   }
 
   private async resumenInventarioSucursalesViaRpc(
@@ -154,8 +181,12 @@ export class ServicioInventario {
         code === "PGRST202" ||
         code === "42883" ||
         /function .*resumen_inventario_sucursales/i.test(message);
+      const isTimeout =
+        code === "57014" ||
+        /statement timeout/i.test(message) ||
+        /canceling statement due to statement timeout/i.test(message);
 
-      if (isMissingFunction) {
+      if (isMissingFunction || isTimeout) {
         return null;
       }
 
@@ -750,6 +781,29 @@ export class ServicioInventario {
           faltantes: Math.max(Number(totalCatalogo || 0) - codes.size, 0),
         })),
         via: "cliente",
+      };
+    })()).pipe(
+      map((data: any) => ({ status: "success", code: 200, data }))
+    );
+  }
+
+  vaciarInventarioSucursal(inv_codsucu: number | string): Observable<any> {
+    return from((async () => {
+      const sucursal = Number(inv_codsucu);
+      if (!sucursal || Number.isNaN(sucursal)) {
+        throw new Error("Sucursal inválida para vaciar inventario");
+      }
+
+      const { error, count } = await this.db
+        .from("inventario")
+        .delete({ count: "exact" })
+        .eq("inv_codsucu", sucursal);
+
+      if (error) throw error;
+
+      return {
+        sucursal,
+        eliminados: Number(count || 0),
       };
     })()).pipe(
       map((data: any) => ({ status: "success", code: 200, data }))

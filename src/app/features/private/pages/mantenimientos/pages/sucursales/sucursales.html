@@ -75,7 +75,7 @@
               <small>{{ item.porcentaje }}%</small>
             </td>
             <td class="text-center">
-              <div class="btn-group">
+              <div class="btn-group branch-actions">
                 <button
                   type="button"
                   class="btn btn-sm btn-outline-primary"
@@ -92,6 +92,14 @@
                   [disabled]="accionPorSucursal[item.cod_sucursal] || loading"
                 >
                   Reemplazar
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-sm btn-outline-dark"
+                  (click)="vaciarInventarioSucursal(item)"
+                  [disabled]="accionPorSucursal[item.cod_sucursal] || loading"
+                >
+                  Vaciar sucursal
                 </button>
               </div>
             </td>
