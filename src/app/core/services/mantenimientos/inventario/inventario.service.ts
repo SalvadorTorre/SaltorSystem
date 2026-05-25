@@ -442,7 +442,7 @@ export class ServicioInventario {
         await Promise.all([
           this.db
             .from("productos2")
-            .select("in_codmerc,in_desmerc,in_cosmerc,in_premerc,in_status")
+            .select("in_codmerc,in_desmerc,in_costmer,in_premerc,status")
             .order("in_codmerc", { ascending: true }),
           this.db
             .from("inventario")
@@ -462,11 +462,11 @@ export class ServicioInventario {
           inv_codsucu,
           inv_codprod: String(producto.in_codmerc || "").trim(),
           inv_desprod: String(producto.in_desmerc || "").trim() || null,
-          inv_cosprod: this.toNullableNumber(producto?.in_cosmerc),
+          inv_cosprod: this.toNullableNumber(producto?.in_costmer ?? producto?.in_cosmerc),
           inv_preprod: this.toNullableNumber(producto?.in_premerc),
           inv_existencia: existenciaInicial,
           inv_fechamov: new Date().toISOString(),
-          activo: String(producto?.in_status || "A").trim().toUpperCase() !== "I",
+          activo: String(producto?.status ?? producto?.in_status ?? "A").trim().toUpperCase() !== "I",
         }));
 
       let inserted = 0;
