@@ -8,6 +8,7 @@ import { createClient } from '@supabase/supabase-js';
 export class SupabaseService {
   private readonly storageKey = 'saltorsystem-auth-token';
   private clientInstance: ReturnType<typeof createClient> | null = null;
+  private authListenerBound = false;
 
   get url(): string {
     return environment?.supabase?.url || '';
@@ -29,7 +30,6 @@ export class SupabaseService {
     if (!this.enabled) {
       return null;
     }
-    this.clearExpiredStoredSession();
     if (!this.clientInstance) {
       const options: any = {
         db: {
@@ -51,6 +51,7 @@ export class SupabaseService {
         environment.supabase.anonKey,
         options
       );
+      this.bindAuthListener(this.clientInstance as any);
     }
     return this.clientInstance;
   }
@@ -64,35 +65,22 @@ export class SupabaseService {
     this.clientInstance = null;
   }
 
-  private clearExpiredStoredSession(): void {
-    const raw = localStorage.getItem(this.storageKey);
-    if (!raw) return;
-    try {
-      const session = JSON.parse(raw);
-      const token = String(
-        session?.access_token || session?.currentSession?.access_token || ''
-      );
-      const expiresAt = Number(
-        session?.expires_at || session?.currentSession?.expires_at || 0
-      );
-      if ((expiresAt && expiresAt <= Math.floor(Date.now() / 1000)) || this.isExpiredJwt(token)) {
-        localStorage.removeItem(this.storageKey);
-        this.clientInstance = null;
-      }
-    } catch {
-      localStorage.removeItem(this.storageKey);
-      this.clientInstance = null;
+  private bindAuthListener(client: any): void {
+    if (this.authListenerBound || !client?.auth?.onAuthStateChange) {
+      return;
     }
-  }
 
-  private isExpiredJwt(token: string): boolean {
-    if (!token) return false;
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1] || ''));
-      const exp = Number(payload?.exp || 0);
-      return Boolean(exp && exp <= Math.floor(Date.now() / 1000));
-    } catch {
-      return false;
-    }
+    client.auth.onAuthStateChange((_event: string, session: any) => {
+      const token = String(session?.access_token || '').trim();
+
+      if (token) {
+        localStorage.setItem('authToken', token);
+        return;
+      }
+
+      localStorage.removeItem('authToken');
+    });
+
+    this.authListenerBound = true;
   }
 }

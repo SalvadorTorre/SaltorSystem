@@ -145,7 +145,7 @@ export class PrintingService {
       const fecha = f.fa_fecFact ? new Date(f.fa_fecFact) : new Date();
       const cliente = f.fa_nomClie || 'CLIENTE GENERICO';
       const rncCliente = f.fa_rncFact || '';
-      const codFact = f.fa_codFact || '';
+      const codFact = f.barcodeValue || f.fa_codFact || '';
       const vendedor = f.fa_nomVend || f.fa_codVend || '';
 
       // Title logic
@@ -315,7 +315,7 @@ export class PrintingService {
         f.signatureDateTime
       );
 
-      // 1. BARCODE (Primero)
+      // 1. BARCODE (Primero, antes del QR cuando exista)
       if (codFact) {
         try {
           const canvas = document.createElement('canvas');
