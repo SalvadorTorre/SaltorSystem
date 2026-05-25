@@ -1,6 +1,8 @@
 {
   "name": "saltor-system",
   "version": "0.0.0",
+  "description": "Sistema de facturacion, caja e inventario para multi-sucursal.",
+  "author": "Saltor System",
   "main": "electron/main.js",
   "scripts": {
     "ng": "ng",
@@ -8,8 +10,8 @@
     "build": "ng build",
     "desktop": "yarn build --configuration production --base-href ./ && electron electron/main.js",
     "desktop:dev": "cross-env ELECTRON_START_URL=http://localhost:4200 electron electron/main.js",
-    "desktop:pack": "yarn build --configuration production --base-href ./ && electron-builder",
-    "desktop:pack:win": "yarn build --configuration production --base-href ./ && electron-builder --win nsis --x64",
+    "desktop:pack": "yarn build --configuration production --base-href ./ && electron-builder --publish never",
+    "desktop:pack:win": "yarn build --configuration production --base-href ./ && electron-builder --win nsis --x64 --publish never",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "dev": "cross-env PORT=3390 npx kill-port 3390 && nodemon src/index.js",
@@ -19,8 +21,10 @@
     "appId": "com.saltorsystem.desktop",
     "productName": "Saltor System",
     "directories": {
-      "output": "release"
+      "output": "release",
+      "buildResources": "build"
     },
+    "publish": null,
     "files": [
       "dist/saltor-system/**/*",
       "electron/**/*",
@@ -28,11 +32,20 @@
     ],
     "win": {
       "target": [
-        "nsis"
-      ]
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico"
     },
     "nsis": {
-      "artifactName": "SaltorSystem-Desktop-Setup.${ext}"
+      "artifactName": "SaltorSystem-Desktop-Setup.${ext}",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "installerHeaderIcon": "build/icon.ico"
     }
   },
   "private": true,

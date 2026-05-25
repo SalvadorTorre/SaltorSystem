@@ -7,7 +7,7 @@ on:
   workflow_dispatch: {}
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build-windows-installer:
@@ -35,16 +35,3 @@ jobs:
           name: SaltorSystem-Desktop-Setup
           path: release/SaltorSystem-Desktop-Setup.exe
           if-no-files-found: error
-
-      - name: Publish latest desktop release
-        uses: ncipollo/release-action@v1
-        with:
-          tag: desktop-latest
-          name: Saltor System Desktop (Latest)
-          commit: ${{ github.sha }}
-          allowUpdates: true
-          replacesArtifacts: true
-          makeLatest: true
-          artifacts: release/SaltorSystem-Desktop-Setup.exe
-          body: |
-            Instalador Desktop más reciente generado automáticamente desde main.
