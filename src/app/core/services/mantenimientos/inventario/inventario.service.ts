@@ -97,6 +97,44 @@ export class ServicioInventario {
     return inserted;
   }
 
+  private async seedInventarioSucursalViaRpc(payload: {
+    inv_codsucu: number;
+    sobrescribirExistentes: boolean;
+    existenciaInicial: number;
+  }): Promise<any | null> {
+    const anyDb = this.db as any;
+    if (typeof anyDb?.rpc !== "function") {
+      return null;
+    }
+
+    const { data, error } = await anyDb.rpc("seed_inventario_sucursal_desde_catalogo", {
+      p_inv_codsucu: payload.inv_codsucu,
+      p_sobrescribir_existentes: payload.sobrescribirExistentes,
+      p_existencia_inicial: payload.existenciaInicial,
+    });
+
+    if (error) {
+      const code = String(error?.code || "");
+      const message = String(error?.message || "");
+      const isMissingFunction =
+        code === "PGRST202" ||
+        code === "42883" ||
+        /function .*seed_inventario_sucursal_desde_catalogo/i.test(message);
+
+      if (isMissingFunction) {
+        return null;
+      }
+
+      throw error;
+    }
+
+    if (Array.isArray(data)) {
+      return data[0] ?? null;
+    }
+
+    return data ?? null;
+  }
+
   private mapDbToUi(row: any): any {
     if (!row) return row;
     return {
@@ -549,6 +587,25 @@ export class ServicioInventario {
       const sobrescribirExistentes = !!payload?.sobrescribirExistentes;
       const existenciaInicial = this.toNumber(payload?.existenciaInicial ?? 0);
 
+      const rpcResult = await this.seedInventarioSucursalViaRpc({
+        inv_codsucu,
+        sobrescribirExistentes,
+        existenciaInicial,
+      });
+
+      if (rpcResult) {
+        return {
+          sucursal: inv_codsucu,
+          totalCatalogo: Number(rpcResult?.totalcatalogo ?? rpcResult?.totalCatalogo ?? 0),
+          totalAntes: Number(rpcResult?.totalantes ?? rpcResult?.totalAntes ?? 0),
+          totalDespues: Number(rpcResult?.totaldespues ?? rpcResult?.totalDespues ?? 0),
+          insertados: Number(rpcResult?.insertados ?? 0),
+          faltantes: Number(rpcResult?.faltantes ?? 0),
+          modo: String(rpcResult?.modo ?? (sobrescribirExistentes ? "reemplazo" : "faltantes")),
+          via: "rpc",
+        };
+      }
+
       const [productos, inventarioActual] =
         await Promise.all([
           this.fetchAllRows(
@@ -605,6 +662,7 @@ export class ServicioInventario {
         insertados: inserted,
         faltantes: Math.max(totalCatalogo - totalFinal, 0),
         modo: sobrescribirExistentes ? "reemplazo" : "faltantes",
+        via: "cliente",
       };
     })()).pipe(
       map((data: any) => ({ status: "success", code: 200, data }))
