@@ -1142,6 +1142,19 @@ export class CobroFact implements OnInit {
     // Preparar datos de la factura
     const facturaData =
       facturaActual || this.DatosSeleccionado || this.formularioFacturacion.value;
+    const datosLocalesImpresion = {
+      ...this.formularioFacturacion.getRawValue(),
+      ...(this.DatosSeleccionado || {}),
+      ...(facturaData || {}),
+      fa_codFact:
+        facturaData?.fa_codFact ||
+        this.formularioFacturacion.get('fa_codFact')?.value ||
+        '',
+      barcodeValue:
+        facturaData?.fa_codFact ||
+        this.formularioFacturacion.get('fa_codFact')?.value ||
+        '',
+    };
 
     // Construir payload DGII
     let dgiiData: any = {};
@@ -1211,6 +1224,7 @@ export class CobroFact implements OnInit {
               const datosParaImprimir = {
                 ...facturaData,
                 ...(res?.data || {}),
+                ...datosLocalesImpresion,
                 ...payloadDgii,
               };
               this.printingService.imprimirFactura80mm(
@@ -1228,7 +1242,7 @@ export class CobroFact implements OnInit {
                 // Opcional: imprimir de todos modos o detenerse
                 // Por seguridad, imprimimos para que no se pierda el comprobante generado
                 const datosParaImprimir = {
-                  ...facturaData,
+                  ...datosLocalesImpresion,
                   ...payloadDgii,
                 };
                 this.printingService.imprimirFactura80mm(
@@ -1241,13 +1255,16 @@ export class CobroFact implements OnInit {
       },
       (error) => {
         console.error('Error obteniendo datos DGII:', error);
-        Swal.fire(
-          'Error',
-          this.extraerMensajeError(error),
-          'error',
-        );
-        // En caso de error, imprimir solo con datos locales (opcional, comentado por ahora)
-        // this.printingService.imprimirFactura80mm(facturaData, this.items);
+        Swal.fire({
+          title: 'DGII no respondió',
+          text: `${this.extraerMensajeError(error)}. Se imprimirá con los datos locales de la factura.`,
+          icon: 'warning',
+        }).then(() => {
+          this.printingService.imprimirFactura80mm(
+            datosLocalesImpresion,
+            this.items,
+          );
+        });
       },
     );
   }

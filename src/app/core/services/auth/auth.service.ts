@@ -27,6 +27,7 @@ interface LoginResponse {
 })
 export class AuthService {
   private loggedIn!: boolean;
+  private readonly supabaseStorageKey = 'saltorsystem-auth-token';
 
   constructor(private supabaseService: SupabaseService) {}
 
@@ -34,6 +35,9 @@ export class AuthService {
     const token = String(localStorage.getItem('authToken') || '').trim();
     if (!token) return false;
     if (!this.isActiveJwt(token)) {
+      if (this.hasRecoverableSupabaseSession()) {
+        return true;
+      }
       this.clearSessionStorage();
       return false;
     }
@@ -425,6 +429,25 @@ export class AuthService {
       if (!exp) return false;
       const now = Math.floor(Date.now() / 1000);
       return exp > now;
+    } catch {
+      return false;
+    }
+  }
+
+  private hasRecoverableSupabaseSession(): boolean {
+    try {
+      const raw = localStorage.getItem(this.supabaseStorageKey);
+      if (!raw) return false;
+
+      const session = JSON.parse(raw);
+      const refreshToken = String(
+        session?.refresh_token ||
+          session?.currentSession?.refresh_token ||
+          session?.session?.refresh_token ||
+          ''
+      ).trim();
+
+      return !!refreshToken;
     } catch {
       return false;
     }
