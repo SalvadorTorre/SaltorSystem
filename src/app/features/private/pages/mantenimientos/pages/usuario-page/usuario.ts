@@ -13,6 +13,7 @@ import Swal from 'sweetalert2';
 import { ServicioSucursal } from 'src/app/core/services/mantenimientos/sucursal/sucursal.service';
 import { ServicioTipousuario } from 'src/app/core/services/mantenimientos/tipousuario/tipousuario.service';
 import { ServicioEmpresa } from 'src/app/core/services/mantenimientos/empresas/empresas.service';
+import { ServicioChofer } from 'src/app/core/services/mantenimientos/choferes/choferes.service';
 import { forkJoin, of } from 'rxjs';
 declare var $: any;
 
@@ -75,6 +76,7 @@ export class Usuario implements OnInit {
     private sucSrv: ServicioSucursal,
     private tipoSrv: ServicioTipousuario,
     private empresaSrv: ServicioEmpresa,
+    private choferSrv: ServicioChofer,
   ) {}
 
   ngOnInit(): void {
@@ -766,13 +768,13 @@ export class Usuario implements OnInit {
                     const usuarioEncontrado = Array.isArray(buscado?.data) ? buscado.data[0] : (buscado?.data ?? buscado);
                     const codEncontrado = Number(usuarioEncontrado?.codUsuario);
                     if (codEncontrado) {
-                      this.persistirPermisosSeleccionados(codEncontrado, empresaScope, sucursalScope);
+                      this.finalizarCreacionNuevoUsuario(codEncontrado, payload, empresaScope, sucursalScope);
                     } else {
                       this.fireToast({ title: 'Usuario creado (sin permisos por tipo)', icon: 'info' });
+                      this.cargarUsuarios();
+                      $('#modalNuevoUsuario').modal('hide');
+                      this.fireToast({ title: 'Usuario creado', icon: 'success' });
                     }
-                    this.cargarUsuarios();
-                    $('#modalNuevoUsuario').modal('hide');
-                    this.fireToast({ title: 'Usuario creado', icon: 'success' });
                   },
                   error: () => {
                     this.cargarUsuarios();
@@ -781,10 +783,7 @@ export class Usuario implements OnInit {
                   }
                 });
               } else {
-                this.persistirPermisosSeleccionados(cod, empresaScope, sucursalScope);
-                this.cargarUsuarios();
-                $('#modalNuevoUsuario').modal('hide');
-                this.fireToast({ title: 'Usuario creado', icon: 'success' });
+                this.finalizarCreacionNuevoUsuario(cod, payload, empresaScope, sucursalScope);
               }
             };
             continuar(nuevoCod);
@@ -803,6 +802,56 @@ export class Usuario implements OnInit {
         this.fireToast({ title: 'No se pudo validar duplicados en servidor', icon: 'error' });
       }
     });
+  }
+
+  private finalizarCreacionNuevoUsuario(
+    codusuario: number,
+    payload: any,
+    empresaScope?: string | null,
+    sucursalScope?: number | null,
+  ): void {
+    const persistirYSalir = () => {
+      this.persistirPermisosSeleccionados(codusuario, empresaScope, sucursalScope);
+      this.cargarUsuarios();
+      $('#modalNuevoUsuario').modal('hide');
+      this.fireToast({ title: 'Usuario creado', icon: 'success' });
+    };
+
+    if (!this.esTipoChofer(payload?.idtipoUsuario)) {
+      persistirYSalir();
+      return;
+    }
+
+    this.choferSrv.guardarChofer({
+      codChofer: codusuario,
+      nomChofer: payload?.nombreUsuario,
+      cedChofer: '',
+      statusChofer: true,
+      claveUsuario: payload?.claveUsuario,
+    }).subscribe({
+      next: () => {
+        this.fireToast({ title: 'Chofer creado desde usuario', icon: 'success' });
+        persistirYSalir();
+      },
+      error: () => {
+        persistirYSalir();
+        this.fireToast({ title: 'Usuario creado, pero no se pudo crear el chofer', icon: 'warning' });
+      }
+    });
+  }
+
+  private esTipoChofer(idtipo: any): boolean {
+    if (Number(idtipo) === 8) return true;
+
+    const tipo = this.tipousuarios.find(
+      (t: any) => Number(t?.id ?? t?.idtipoUsuario ?? t?.codigo) === Number(idtipo),
+    );
+    const descripcion = String(tipo?.descripcion || tipo?.desc || tipo?.nombre || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim()
+      .toUpperCase();
+    return descripcion === 'CHOFER';
   }
 
   private persistirPermisosDesdeDetalles(codusuario: number): void {

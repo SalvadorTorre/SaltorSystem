@@ -654,7 +654,7 @@
               <h6 class="mb-0">Permisos por módulo/pantalla</h6>
               <span class="badge text-bg-light">{{ permisosMatrizNuevoUsuario.length }} recurso(s)</span>
             </div>
-            <div class="table-responsive modal-table-wrap">
+            <div class="table-responsive modal-table-wrap permisos-modulo-wrap">
               <table class="table table-sm table-hover align-middle mb-0">
                 <thead>
                   <tr>
@@ -684,7 +684,7 @@
             </small>
           </div>
         </div>
-        <div class="modal-footer">
+        <div class="modal-footer usuario-modal-save-footer">
           <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
           <button
             type="submit"
@@ -698,7 +698,7 @@
               || ('' + (nuevoUsuario?.claveUsuario || '')).length !== 4
             "
           >
-            <i class="bi bi-check2-circle me-1"></i> Crear
+            <i class="bi bi-save me-1"></i> Guardar
           </button>
         </div>
       </form>

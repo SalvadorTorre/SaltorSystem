@@ -848,7 +848,7 @@ export class ServicioFacturacion {
       let query = this.db
         .from('factura')
         .select('*')
-        .or('fa_impresa.eq.N,fa_status.eq.C,and(fa_status.eq.F,fa_fpago.eq.N)')
+        .or('fa_impresa.eq.N,and(fa_impresa.eq.S,fa_fpago.eq.N),fa_status.eq.C,and(fa_status.eq.F,fa_fpago.eq.N)')
         .order('fa_fecfact', { ascending: false })
         .limit(500);
       query = this.applyTenantFilter(query);

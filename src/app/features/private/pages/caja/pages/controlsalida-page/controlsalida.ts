@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { forkJoin, Observable, Subject, Subscription } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
-import { ServicioChofer } from 'src/app/core/services/mantenimientos/choferes/choferes.service';
+import { ServicioUsuario } from 'src/app/core/services/mantenimientos/usuario/usuario.service';
 import { ServicioSalidafactura } from 'src/app/core/services/almacen/salidafactura/salidafactura.service';
 import { ServicioFacturacion } from 'src/app/core/services/facturacion/factura/factura.service';
 import { ServicioCierreCaja } from 'src/app/core/services/caja/cierrecaja/cierrecaja.service';
@@ -65,7 +65,7 @@ export class ControlSalidaCajaComponent implements OnInit, OnDestroy {
   ultimoControlImpresion: any = null;
 
   constructor(
-    private servicioChofer: ServicioChofer,
+    private servicioUsuario: ServicioUsuario,
     private servicioSalida: ServicioSalidafactura,
     private servicioFacturacion: ServicioFacturacion,
     private servicioCierre: ServicioCierreCaja,
@@ -160,7 +160,7 @@ export class ControlSalidaCajaComponent implements OnInit, OnDestroy {
     
     this.mostrarListaChoferes = false;
     this.choferesEncontrados = [];
-    this.servicioChofer.buscarTodosChofer(1, 20, termino).subscribe({
+    this.servicioUsuario.buscarUsuariosChoferes(1, 20, termino).subscribe({
       next: (resp: any) => {
         const lista = resp?.data || resp || [];
         if (!Array.isArray(lista) || lista.length === 0) {
@@ -240,7 +240,7 @@ export class ControlSalidaCajaComponent implements OnInit, OnDestroy {
     }
 
     this.cargando = true;
-    this.servicioChofer.buscarchoferporCodigo(Number(codigo)).subscribe({
+    this.servicioUsuario.buscarUsuarioChoferPorCodigo(codigo).subscribe({
       next: (resp: any) => {
         const data = resp?.data || resp;
         if (!data) {

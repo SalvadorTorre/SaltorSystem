@@ -54,7 +54,33 @@
 }
 
 .cobrofact-page .detalle-table-wrap {
-  height: 240px;
+  height: 175px;
+}
+
+.cobrofact-page .facturas-table-wrap table {
+  font-size: 0.82rem;
+}
+
+.cobrofact-page .facturas-table-wrap th,
+.cobrofact-page .facturas-table-wrap td {
+  padding: 0.24rem 0.38rem;
+}
+
+.cobrofact-page .facturas-table-wrap .fs-5 {
+  font-size: 0.98rem !important;
+}
+
+.cobrofact-page .detalle-table-wrap table {
+  font-size: 0.84rem;
+}
+
+.cobrofact-page .detalle-table-wrap th,
+.cobrofact-page .detalle-table-wrap td {
+  padding: 0.22rem 0.4rem;
+}
+
+.cobrofact-page .detalle-table-wrap .fs-5 {
+  font-size: 0.98rem !important;
 }
 
 .cobrofact-page .action-bar {
@@ -64,7 +90,29 @@
   border: 1px solid #e2e8f0;
   backdrop-filter: blur(6px);
   border-radius: 10px;
-  padding: 0.5rem;
+  padding: 0.32rem;
+  margin-top: 0.2rem !important;
+}
+
+.cobrofact-page .action-bar .btn {
+  padding-top: 0.32rem;
+  padding-bottom: 0.32rem;
+}
+
+.cobrofact-page .valor-pagado-row {
+  display: grid;
+  grid-template-columns: 105px minmax(0, 1fr);
+  align-items: start;
+  gap: 0.45rem;
+}
+
+.cobrofact-page .valor-pagado-row .form-label {
+  padding-top: 0.48rem;
+  white-space: nowrap;
+}
+
+.cobrofact-page .valor-pagado-control {
+  min-width: 0;
 }
 
 .selected-row td {

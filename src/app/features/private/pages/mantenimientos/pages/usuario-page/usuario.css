@@ -159,6 +159,13 @@
   background: #f3f6fc;
 }
 
+.usuario-modal-save-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  box-shadow: 0 -8px 18px rgba(12, 30, 68, 0.08);
+}
+
 .modal-modern .form-control,
 .modal-modern .form-select {
   min-height: 2.35rem;
@@ -173,10 +180,45 @@
 
 .modal-table-wrap {
   max-height: 42vh;
+  overflow: auto;
 }
 
 .modal-table-wrap .table {
   margin-bottom: 0;
+}
+
+.permisos-modulo-wrap {
+  min-height: 260px;
+  max-height: 52vh;
+  background: #ffffff;
+  border: 1px solid #d9e2f1;
+  border-radius: 0.75rem;
+}
+
+.permisos-modulo-wrap .table {
+  min-width: 760px;
+  color: var(--text-main);
+}
+
+.permisos-modulo-wrap thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #edf3ff;
+  color: #244894;
+  border-bottom: 1px solid #cfd8eb;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.permisos-modulo-wrap tbody td {
+  background: #ffffff;
+  color: var(--text-main);
+  border-color: #e6ecf6;
+}
+
+.permisos-modulo-wrap tbody tr:hover td {
+  background: #f7faff;
 }
 
 .consulta-resumen {

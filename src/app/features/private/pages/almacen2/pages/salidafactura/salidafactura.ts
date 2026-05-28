@@ -1,5 +1,5 @@
 import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
-import { ServicioChofer } from 'src/app/core/services/mantenimientos/choferes/choferes.service';
+import { ServicioUsuario } from 'src/app/core/services/mantenimientos/usuario/usuario.service';
 import { ServicioFacturacion } from 'src/app/core/services/facturacion/factura/factura.service';
 import { ServicioSalidafactura } from 'src/app/core/services/almacen/salidafactura/salidafactura.service';
 import { ServicioFpago } from 'src/app/core/services/mantenimientos/fpago/fpago.service';
@@ -61,7 +61,7 @@ export class SalidafacturaComponent implements OnInit {
   @ViewChild('inputFactura') inputFacturaElement!: ElementRef;
 
   constructor(
-    private servicioChofer: ServicioChofer,
+    private servicioUsuario: ServicioUsuario,
     private servicioFacturacion: ServicioFacturacion,
     private servicioSalida: ServicioSalidafactura,
     private servicioFpago: ServicioFpago,
@@ -241,7 +241,7 @@ private pickContFacturaRow(rows: any[], idsucursal: number): any | null {
     if (!this.codChofer.trim()) return;
     const termino = this.codChofer.trim();
 
-    this.servicioChofer.buscarchoferporCodigo(parseInt(termino)).subscribe({
+    this.servicioUsuario.buscarUsuarioChoferPorCodigo(termino).subscribe({
       next: (resp: any) => this.procesarChoferEncontrado(resp.data),
       error: (err) => this.manejarErrorChofer(err)
     });
@@ -252,7 +252,7 @@ private pickContFacturaRow(rows: any[], idsucursal: number): any | null {
   }
 
   ejecutarBusquedaChofer(termino: string) {
-    this.servicioChofer.buscarTodosChofer(1, 20, termino).subscribe({
+    this.servicioUsuario.buscarUsuariosChoferes(1, 20, termino).subscribe({
       next: (resp: any) => {
         if (resp.data && resp.data.length > 0) {
           // Ordenar por nombre alfabéticamente

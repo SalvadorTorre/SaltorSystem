@@ -482,6 +482,105 @@ export class ServicioUsuario {
     );
   }
 
+  buscarUsuariosChoferes(pageIndex: number, pageSize: number, termino?: string): Observable<any> {
+    const offset = Math.max(pageIndex - 1, 0) * pageSize;
+    const q = String(termino || '').trim();
+
+    return from((async () => {
+      let query = this.db
+        .from('usuario')
+        .select('*', { count: 'exact' })
+        .eq('idtipousuario', 8)
+        .order('nombreusuario', { ascending: true })
+        .range(offset, offset + pageSize - 1);
+
+      if (q) {
+        query = query.or(
+          `nombreusuario.ilike.%${q}%,idusuario.ilike.%${q}%,claveusuario.ilike.%${q}%`
+        );
+      }
+
+      const { data, error, count } = await query;
+      if (error) throw error;
+      return {
+        rows: (data || []).map((row: any) => this.normalizarUsuario(row)),
+        total: Number(count ?? 0),
+      };
+    })()).pipe(
+      map((result: { rows: any[]; total: number }) => ({
+        status: 'success',
+        code: 200,
+        data: result.rows.map((row: any) => this.mapUsuarioChofer(row)),
+        pagination: {
+          total: result.total,
+          page: pageIndex,
+          pageSize,
+        },
+      }))
+    );
+  }
+
+  buscarUsuarioChoferPorCodigo(codigo: string | number): Observable<any> {
+    const raw = String(codigo || '').trim();
+    return from((async () => {
+      if (!raw) return null;
+
+      let row: any = null;
+      if (/^\d+$/.test(raw)) {
+        const { data: byCodRows, error: byCodError } = await this.db
+          .from('usuario')
+          .select('*')
+          .eq('idtipousuario', 8)
+          .eq('codusuario', Number(raw))
+          .limit(1);
+        if (byCodError) throw byCodError;
+        row = this.firstRow(byCodRows);
+      }
+
+      if (!row) {
+        const { data: byClaveRows, error: byClaveError } = await this.db
+          .from('usuario')
+          .select('*')
+          .eq('idtipousuario', 8)
+          .eq('claveusuario', raw)
+          .limit(1);
+        if (byClaveError) throw byClaveError;
+        row = this.firstRow(byClaveRows);
+      }
+
+      if (!row) {
+        const { data: byIdRows, error: byIdError } = await this.db
+          .from('usuario')
+          .select('*')
+          .eq('idtipousuario', 8)
+          .ilike('idusuario', raw)
+          .limit(1);
+        if (byIdError) throw byIdError;
+        row = this.firstRow(byIdRows);
+      }
+
+      return row ? this.normalizarUsuario(row) : null;
+    })()).pipe(
+      map((row: any) => ({
+        status: 'success',
+        code: 200,
+        data: row ? this.mapUsuarioChofer(row) : null,
+      }))
+    );
+  }
+
+  private mapUsuarioChofer(row: any): any {
+    const usuario = this.normalizarUsuario(row);
+    return {
+      ...usuario,
+      codChofer: Number(usuario?.codUsuario || 0),
+      nomChofer: String(usuario?.nombreUsuario || usuario?.idUsuario || ''),
+      cedChofer: '',
+      statusChofer: true,
+      claveUsuario: String(usuario?.claveUsuario || ''),
+    };
+  }
+
   existeUsuarioPorId(idUsuario: string): Observable<boolean> {
     return from((async () => {
       const id = String(idUsuario || '').trim();

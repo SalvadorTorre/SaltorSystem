@@ -36,6 +36,7 @@ export class ServicioChofer {
       nomChofer: String(row?.nomchofer ?? row?.nomChofer ?? ""),
       cedChofer: String(row?.cedchofer ?? row?.cedChofer ?? ""),
       statusChofer: this.toBool(row?.statuschofer ?? row?.statusChofer),
+      claveUsuario: String(row?.claveusuario ?? row?.claveUsuario ?? ""),
     };
   }
 
@@ -44,6 +45,7 @@ export class ServicioChofer {
       nomchofer: chofer?.nomChofer !== undefined ? String(chofer.nomChofer).trim() : (chofer?.nomchofer !== undefined ? String(chofer.nomchofer).trim() : undefined),
       cedchofer: chofer?.cedChofer !== undefined ? String(chofer.cedChofer).trim() : (chofer?.cedchofer !== undefined ? String(chofer.cedchofer).trim() : undefined),
       statuschofer: chofer?.statusChofer !== undefined ? this.toBool(chofer.statusChofer) : (chofer?.statuschofer !== undefined ? this.toBool(chofer.statuschofer) : undefined),
+      claveusuario: chofer?.claveUsuario !== undefined ? String(chofer.claveUsuario).trim() : (chofer?.claveusuario !== undefined ? String(chofer.claveusuario).trim() : undefined),
     };
     if (chofer?.codChofer !== undefined && chofer?.codChofer !== null && chofer?.codChofer !== "") {
       payload.codchofer = Number(chofer.codChofer);

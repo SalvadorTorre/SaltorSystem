@@ -10,5 +10,6 @@ export interface ModeloChoferData{
   nomChofer: string;
   cedChofer: string;
   statusChofer: boolean,
+  claveUsuario?: string;
 
 }

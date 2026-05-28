@@ -1136,12 +1136,12 @@ export class CobroFact implements OnInit {
     return scenario;
   }
 
-  async imprimirFactura() {
+  async imprimirFactura(facturaActual?: FacturacionModelData) {
     this.formularioFacturacion.get('fa_codFact')?.enable();
 
     // Preparar datos de la factura
     const facturaData =
-      this.DatosSeleccionado || this.formularioFacturacion.value;
+      facturaActual || this.DatosSeleccionado || this.formularioFacturacion.value;
 
     // Construir payload DGII
     let dgiiData: any = {};
@@ -1182,9 +1182,7 @@ export class CobroFact implements OnInit {
         const payloadDgii = this.normalizarRespuestaDgii(
           response?.data ?? response
         );
-        payloadDgii.fa_status = this.agregarMarcaFacturaAStatus(
-          (facturaData as any)?.fa_status || this.formularioFacturacion?.get('fa_status')?.value,
-        );
+        payloadDgii.fa_status = 'F';
 
         // Actualizar mensaje de loading
         Swal.update({
@@ -1212,6 +1210,7 @@ export class CobroFact implements OnInit {
               // Combinar respuesta con datos de factura para impresión
               const datosParaImprimir = {
                 ...facturaData,
+                ...(res?.data || {}),
                 ...payloadDgii,
               };
               this.printingService.imprimirFactura80mm(
@@ -1521,12 +1520,6 @@ export class CobroFact implements OnInit {
     return String(value ?? '').trim().toUpperCase();
   }
 
-  private agregarMarcaFacturaAStatus(status: any): string {
-    const actual = this.normalizarStatusFactura(status);
-    if (!actual) return 'F';
-    return actual.includes('F') ? actual : `${actual}F`;
-  }
-
   private esPendientePago(factura: any): boolean {
     return (
       this.normalizeImpresa(factura?.fa_impresa) === 'S' &&
@@ -1538,19 +1531,19 @@ export class CobroFact implements OnInit {
     const statusFactura = this.normalizarStatusFactura(factura?.fa_status);
     const fpago = this.normalizeImpresa(factura?.fa_fpago);
 
-    if (statusFactura === 'F' && fpago === 'N') return 'Pendiente de pago';
+    if (statusFactura === 'F' && fpago === 'N') return 'Pend. pago';
     if (statusFactura !== 'C') return '';
     if (this.normalizeImpresa(factura?.fa_impresa) !== 'S') return '';
 
     if (fpago === 'S' || fpago === 'P') return 'Factura pagada';
-    if (fpago === 'N' || fpago === '') return 'Pendiente de pago';
+    if (fpago === 'N' || fpago === '') return 'Pend. pago';
     return '';
   }
 
   claseStatusCaja(factura: any): string {
     const status = this.statusCaja(factura);
     if (status === 'Factura pagada') return 'bg-success';
-    if (status === 'Pendiente de pago') return 'bg-danger';
+    if (status === 'Pend. pago') return 'bg-danger';
     return 'bg-secondary';
   }
 
@@ -1560,6 +1553,7 @@ export class CobroFact implements OnInit {
 
     return (
       this.normalizeImpresa(factura?.fa_impresa) === 'N' ||
+      this.esPendientePago(factura) ||
       statusFactura === 'C' ||
       (statusFactura === 'F' && fpago === 'N')
     );
@@ -1654,7 +1648,7 @@ export class CobroFact implements OnInit {
               { emitEvent: false },
             );
             this.buscarFacturasNoImpresas();
-            this.imprimirFactura();
+            this.imprimirFactura(facturaCobro);
           },
           error: (err) => {
             console.error('Error guardando factura antes de imprimir:', err);
