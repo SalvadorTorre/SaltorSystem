@@ -1,0 +1,164 @@
+<div class="itbis-page">
+  <header class="itbis-hero">
+    <div class="itbis-title">
+      <div class="itbis-icon">%</div>
+      <div>
+        <h1>Mantenimiento de ITBIS</h1>
+        <p>Administra los porcentajes y configuraciones del ITBIS</p>
+      </div>
+    </div>
+    <nav class="itbis-breadcrumb">
+      <span><i class="bi bi-house-door-fill"></i></span>
+      <b>Configuracion</b>
+      <i class="bi bi-chevron-right"></i>
+      <strong>ITBIS</strong>
+    </nav>
+  </header>
+
+  <section class="itbis-top">
+    <form class="itbis-form-card" #itbisForm="ngForm" (ngSubmit)="guardar(itbisForm)">
+      <h2><span></span>Datos del ITBIS</h2>
+
+      <div class="form-grid">
+        <label class="field-code">
+          Codigo
+          <input #codigoInput type="text" name="codigo" [(ngModel)]="actual.codigo" required placeholder="ITBIS-01" />
+        </label>
+
+        <label class="field-description">
+          Descripcion
+          <input type="text" name="descripcion" [(ngModel)]="actual.descripcion" required placeholder="ITBIS General" />
+        </label>
+
+        <label class="field-percent">
+          Porcentaje (%)
+          <div class="percent-input">
+            <input type="number" min="0" step="0.01" name="porcentaje" [(ngModel)]="actual.porcentaje" (ngModelChange)="actualizarPorcentajeMenos()" required />
+            <span>%</span>
+          </div>
+        </label>
+
+        <label class="field-less">
+          Porcentaje menos (%)
+          <div class="percent-input">
+            <input type="number" min="0" step="0.0001" name="porcentaje_menos" [ngModel]="actual.porcentaje_menos" readonly />
+            <span>%</span>
+          </div>
+        </label>
+
+        <label>
+          Nivel de uso
+          <select name="nivel" [(ngModel)]="actual.nivel" required>
+            <option value="General">General</option>
+            <option value="Reducido">Reducido</option>
+            <option value="Exento">Exento</option>
+          </select>
+        </label>
+
+        <label>
+          Estado
+          <select name="estado" [(ngModel)]="actual.estado" required>
+            <option value="Activo">Activo</option>
+            <option value="Inactivo">Inactivo</option>
+          </select>
+        </label>
+
+        <label>
+          Fecha inicio
+          <input type="date" name="fecha_inicio" [(ngModel)]="actual.fecha_inicio" required />
+        </label>
+
+        <label>
+          Fecha fin (opcional)
+          <input type="date" name="fecha_fin" [(ngModel)]="actual.fecha_fin" />
+        </label>
+      </div>
+
+      <div class="actions">
+        <button type="submit" class="btn-save"><i class="bi bi-floppy"></i>Guardar</button>
+        <button type="button" class="btn-new" (click)="$event.preventDefault(); nuevo(itbisForm)"><i class="bi bi-plus-lg"></i>Nuevo</button>
+        <button type="button" class="btn-cancel" (click)="cancelar(itbisForm)"><i class="bi bi-x-lg"></i>Cancelar</button>
+      </div>
+    </form>
+
+    <aside class="itbis-illustration" aria-hidden="true">
+      <div class="circle-percent">%</div>
+      <div class="chart-bars">
+        <span></span><span></span><span></span><span></span>
+      </div>
+      <div class="clipboard">
+        <div class="clip"></div>
+        <strong>ITBIS</strong>
+        <b>{{ formatoPorcentaje(actual.porcentaje) }}</b>
+        <i></i><i></i><i></i>
+      </div>
+      <div class="calculator">
+        <div class="display">{{ porcentajeActual }}</div>
+        <div class="keys">
+          <span *ngFor="let key of ['%','7','8','9','4','5','6','+','1','2','3','=']">{{ key }}</span>
+        </div>
+      </div>
+      <div class="coins"><span></span><span></span><span></span></div>
+    </aside>
+  </section>
+
+  <section class="list-card">
+    <div class="list-head">
+      <h2><i class="bi bi-list-ul"></i>Listado de ITBIS</h2>
+      <div class="list-tools">
+        <div class="search-box">
+          <i class="bi bi-search"></i>
+          <input type="text" [(ngModel)]="busqueda" placeholder="Buscar..." />
+        </div>
+        <select [(ngModel)]="filtroEstado">
+          <option value="">Filtros</option>
+          <option value="Activo">Activo</option>
+          <option value="Inactivo">Inactivo</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Codigo</th>
+            <th>Descripcion</th>
+            <th>Porcentaje (%)</th>
+            <th>Porc. menos (%)</th>
+            <th>Nivel uso</th>
+            <th>Fecha Inicio</th>
+            <th>Fecha Fin</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngIf="cargando">
+            <td colspan="9">Cargando tasas de ITBIS...</td>
+          </tr>
+          <tr *ngFor="let item of filtrados">
+            <td><b>{{ item.codigo }}</b></td>
+            <td>{{ item.descripcion }}</td>
+            <td class="percent">{{ formatoPorcentaje(item.porcentaje) }}</td>
+            <td class="percent less">{{ formatoPorcentaje(valorPorcentajeMenos(item)) }}</td>
+            <td>{{ item.nivel || 'General' }}</td>
+            <td>{{ formatoFecha(item.fecha_inicio) }}</td>
+            <td>{{ item.fecha_fin ? formatoFecha(item.fecha_fin) : '-' }}</td>
+            <td><span class="status" [class.inactive]="item.estado !== 'Activo'">{{ item.estado }}</span></td>
+            <td>
+              <div class="row-actions">
+                <button type="button" class="view" (click)="ver(item)"><i class="bi bi-eye-fill"></i></button>
+                <button type="button" class="edit" (click)="editar(item)"><i class="bi bi-pencil-fill"></i></button>
+                <button type="button" class="trash" (click)="eliminar(item)"><i class="bi bi-trash3-fill"></i></button>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="!cargando && filtrados.length === 0">
+            <td colspan="9">No hay tasas de ITBIS para mostrar.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>

@@ -9,6 +9,7 @@ export interface TiponcfData {
   tipo: string;
   codigo: number;
   grupo: number | null;
+  nivel_itbis?: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -39,7 +40,8 @@ export class ServicioTiponcf {
       codigo: Number(row?.codigo ?? 0),
       grupo: row?.grupo === null || row?.grupo === undefined || row?.grupo === ""
         ? null
-        : Number(row.grupo)
+        : Number(row.grupo),
+      nivel_itbis: String(row?.nivel_itbis ?? row?.nivelItbis ?? '').trim(),
     };
   }
 

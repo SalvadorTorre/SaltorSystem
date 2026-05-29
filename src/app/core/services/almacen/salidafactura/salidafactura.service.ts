@@ -156,6 +156,99 @@ export class ServicioSalidafactura {
     if (error) throw error;
   }
 
+  sincronizarCobroFactura(codFact: string, factura: any): Observable<any> {
+    if (!this.useSupabase) {
+      return from(Promise.resolve({ status: 'success', code: 200, data: null }));
+    }
+
+    return from((async () => {
+      const codfact = String(codFact || factura?.fa_codFact || factura?.fa_codfact || '').trim();
+      const impresa = String(factura?.fa_impresa ?? factura?.fa_impres ?? '').trim().toUpperCase();
+      const faSalida = String(factura?.fa_salida ?? factura?.faSalida ?? '').trim().toUpperCase();
+      const idsalidaFact = String(factura?.idsalida ?? factura?.idSalida ?? factura?.fa_idsalida ?? '').trim();
+
+      if (!codfact || impresa !== 'S' || faSalida !== 'S' || !idsalidaFact) {
+        return { status: 'success', code: 200, data: null };
+      }
+
+      const salidaQuery = this.db
+        .from('salida')
+        .select('*')
+        .eq('codsalida', idsalidaFact)
+        .limit(1);
+
+      let { data: salida, error: salidaErr } = await salidaQuery.maybeSingle();
+      if (salidaErr) throw salidaErr;
+
+      if (!salida && this.toNumberOrNull(idsalidaFact) !== null) {
+        const byId = await this.db
+          .from('salida')
+          .select('*')
+          .eq('id', this.toNumber(idsalidaFact))
+          .limit(1)
+          .maybeSingle();
+        if (byId.error) throw byId.error;
+        salida = byId.data;
+      }
+
+      const codsalida = String(salida?.codsalida ?? salida?.codSalida ?? idsalidaFact).trim();
+      if (!codsalida) {
+        return { status: 'success', code: 200, data: null };
+      }
+
+      const fpago = String(factura?.fa_fpago ?? factura?.faFpago ?? '').trim().toUpperCase();
+      const pagado = fpago === 'S' || fpago === 'P' ? 'S' : 'N';
+      const detallePatch: any = {
+        pagado,
+      };
+
+      const { error: detErr } = await this.db
+        .from('detsalida')
+        .update(detallePatch)
+        .eq('codsalida', codsalida)
+        .eq('codfact', codfact);
+      if (detErr) throw detErr;
+
+      const { data: dets, error: detsErr } = await this.db
+        .from('detsalida')
+        .select('*')
+        .eq('codsalida', codsalida);
+      if (detsErr) throw detsErr;
+
+      const detalles = Array.isArray(dets) ? dets : [];
+      const valpagado = detalles.reduce((sum: number, det: any) => {
+        const detPagado = String(det?.pagado ?? '').trim().toUpperCase();
+        if (detPagado !== 'S' && detPagado !== 'P') return sum;
+        return sum + Number(det?.valfact || det?.valFact || 0);
+      }, 0);
+      const todasPagadas = detalles.length > 0 && detalles.every((det: any) => {
+        const detPagado = String(det?.pagado ?? '').trim().toUpperCase();
+        return detPagado === 'S' || detPagado === 'P';
+      });
+
+      const salidaUpdate = this.db
+        .from('salida')
+        .update({
+          canfact: detalles.length,
+          valpagado,
+          status: todasPagadas ? 'C' : 'P',
+        })
+        .eq('codsalida', codsalida)
+        .select('*');
+      const { data: salidaUpdated, error: salidaUpdateErr } = await salidaUpdate.maybeSingle();
+      if (salidaUpdateErr) throw salidaUpdateErr;
+
+      return {
+        status: 'success',
+        code: 200,
+        data: {
+          salida: this.mapSalidaDbToUi(salidaUpdated || salida),
+          detsalida: detalles.map((r: any) => this.mapDetSalidaDbToUi(r)),
+        },
+      };
+    })());
+  }
+
   guardarSalida(payload: any): Observable<any> {
     if (!this.useSupabase) {
       return this.http.PostRequest<any, any>('/controlsalida', payload);

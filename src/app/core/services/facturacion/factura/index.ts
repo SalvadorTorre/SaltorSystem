@@ -32,6 +32,7 @@ export interface FacturacionModelData {
   fa_ncfFact: string;
   fa_fecNcf: string;
   fa_tipoNcf: string;
+  fa_tipoitbis?: string;
   fa_tipoRnc: string;
   fa_condFact: string;
   fa_contacto: string;

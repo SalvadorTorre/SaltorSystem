@@ -218,11 +218,35 @@ export class PrintingService {
         maximumFractionDigits: 2,
       });
 
+      const itemTotal = (item: any): number => Number(
+        item.total ??
+          item.df_valMerc ??
+          item.df_valmerc ??
+          ((Number(item.cantidad ?? item.df_canMerc ?? item.df_canmerc ?? 0) || 0) *
+            (Number(item.precio ?? item.df_preMerc ?? item.df_premerc ?? 0) || 0)) ??
+          0
+      ) || 0;
+      const totalDetalle = (items || []).reduce(
+        (sum: number, item: any) => sum + itemTotal(item),
+        0
+      );
+
       items.forEach((item: any) => {
         const desc = item.producto?.in_desmerc || item.df_desMerc || '';
         const cant = item.cantidad || item.df_canMerc || 0;
-        const totalItem = item.total || item.df_valMerc || 0;
-        const itbisItem = item.df_itbiMerc || totalItem * 0.18 || 0;
+        const totalItem = itemTotal(item);
+        const itbisGuardado = Number(
+          item.df_itbiMerc ??
+            item.df_itbimerc ??
+            item.itbis ??
+            item.montoItbis ??
+            0
+        );
+        const totalItbisFactura = Number(f.fa_itbiFact ?? f.fa_itbifact ?? 0);
+        const itbisItem = itbisGuardado ||
+          (totalDetalle > 0 && totalItbisFactura > 0
+            ? totalItbisFactura * (totalItem / totalDetalle)
+            : 0);
 
         // Split description
         const descLines = doc.splitTextToSize(desc, 30); // Narrower width for desc

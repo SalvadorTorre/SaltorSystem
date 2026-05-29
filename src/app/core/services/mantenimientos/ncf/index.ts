@@ -11,4 +11,5 @@ export interface ModeloNcfData {
   tipo: string;
   codigo: string;
   grupo?: number | null;
+  nivel_itbis?: string;
 }

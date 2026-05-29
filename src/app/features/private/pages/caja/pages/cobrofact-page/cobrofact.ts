@@ -1107,6 +1107,19 @@ export class CobroFact implements OnInit {
       CasoPrueba: `${rncEmisorLimpio}${encf}`,
     };
 
+    const itemTotal = (item: any): number => Number(
+      item.total ??
+        item.df_valMerc ??
+        item.df_valmerc ??
+        ((Number(item.cantidad ?? item.df_canMerc ?? item.df_canmerc ?? 0) || 0) *
+          (Number(item.precio ?? item.df_preMerc ?? item.df_premerc ?? 0) || 0)) ??
+        0
+    ) || 0;
+    const totalDetalle = (items || []).reduce(
+      (sum: number, item: any) => sum + itemTotal(item),
+      0
+    );
+
     // 3. Agregar items
     items.forEach((item, index) => {
       const i = index + 1;
@@ -1114,9 +1127,12 @@ export class CobroFact implements OnInit {
       const nombre = item.producto?.in_desmerc || item.df_desMerc || '';
       const cantidad = Number(item.cantidad || item.df_canMerc || 0);
       const precio = Number(item.precio || item.df_preMerc || 0);
-      const total = Number(item.total || item.df_valMerc || 0);
+      const total = itemTotal(item);
       // Calcular o usar ITBIS
-      const itbis = item.df_itbiMerc ? Number(item.df_itbiMerc) : total * 0.18;
+      const itbisGuardado = Number(item.df_itbiMerc ?? item.df_itbimerc ?? item.itbis ?? 0);
+      const itbis = itbisGuardado ||
+        (totalDetalle > 0 && totalItbis > 0 ? totalItbis * (total / totalDetalle) : 0);
+      const tasaItbis = total > 0 ? itbis / total : 0;
 
       scenario[`NumeroLinea[${i}]`] = i;
       scenario[`NombreItem[${i}]`] = nombre;
@@ -1125,7 +1141,7 @@ export class CobroFact implements OnInit {
       scenario[`PrecioUnitarioItem[${i}]`] = precio.toFixed(2);
       scenario[`MontoItem[${i}]`] = total.toFixed(2);
       scenario[`MontoITBIS[${i}]`] = itbis.toFixed(2);
-      scenario[`TasaITBIS[${i}]`] = 0.18;
+      scenario[`TasaITBIS[${i}]`] = tasaItbis.toFixed(4);
       scenario[`IndicadorFacturacion[${i}]`] = '1';
     });
 
@@ -1422,8 +1438,10 @@ export class CobroFact implements OnInit {
 
     this.servicioFacturacion.actualizarPagoEntregaCaja(payload).subscribe({
       next: (resp: any) => {
-        const facturaActualizada = resp?.data || {
+        const facturaActualizada = {
           ...(this.DatosSeleccionado || {}),
+          ...this.formularioFacturacion.getRawValue(),
+          ...(resp?.data || {}),
           fa_envio: this.fentrega,
           fa_codfpago: this.ftipoPago,
           fa_fpago: payload.fa_fpago,
@@ -1443,17 +1461,44 @@ export class CobroFact implements OnInit {
           },
           { emitEvent: false },
         );
-        Swal.fire({
-          icon: 'success',
-          title: 'Guardado',
-          text: 'Factura guardada correctamente',
-          timer: 1500,
+        this.sincronizarSalidaCaja(facturaActualizada, () => {
+          Swal.fire({
+            icon: 'success',
+            title: 'Guardado',
+            text: 'Factura guardada correctamente',
+            timer: 1500,
+          });
+          this.buscarFacturasNoImpresas();
         });
-        this.buscarFacturasNoImpresas();
       },
       error: (err) => {
         console.error('Error guardando pago y entrega:', err);
         Swal.fire('Error', this.extraerMensajeError(err), 'error');
+      },
+    });
+  }
+
+  private sincronizarSalidaCaja(factura: any, onDone?: () => void): void {
+    const facturaSync = {
+      ...(this.DatosSeleccionado || {}),
+      ...this.formularioFacturacion.getRawValue(),
+      ...(factura || {}),
+    };
+    const codFact = String(facturaSync?.fa_codFact || facturaSync?.fa_codfact || '').trim();
+    if (!codFact) {
+      onDone?.();
+      return;
+    }
+
+    this.servicioSalidaFactura.sincronizarCobroFactura(codFact, facturaSync).subscribe({
+      next: () => onDone?.(),
+      error: (err: any) => {
+        console.error('Error sincronizando salida/detsalida:', err);
+        Swal.fire(
+          'Aviso',
+          `La factura se guardó, pero no se pudo actualizar salida/detsalida. ${this.extraerMensajeError(err)}`,
+          'warning',
+        ).then(() => onDone?.());
       },
     });
   }
@@ -1512,11 +1557,13 @@ export class CobroFact implements OnInit {
           },
           { emitEvent: false },
         );
-        this.buscarFacturasNoImpresas();
-        this.printingService.imprimirConduceFactura80mm(
-          facturaActualizada,
-          this.items,
-        );
+        this.sincronizarSalidaCaja(facturaActualizada, () => {
+          this.buscarFacturasNoImpresas();
+          this.printingService.imprimirConduceFactura80mm(
+            facturaActualizada,
+            this.items,
+          );
+        });
       },
       error: (err) => {
         console.error('Error marcando conduce:', err);
@@ -1664,8 +1711,10 @@ export class CobroFact implements OnInit {
               },
               { emitEvent: false },
             );
-            this.buscarFacturasNoImpresas();
-            this.imprimirFactura(facturaCobro);
+            this.sincronizarSalidaCaja(facturaCobro, () => {
+              this.buscarFacturasNoImpresas();
+              this.imprimirFactura(facturaCobro);
+            });
           },
           error: (err) => {
             console.error('Error guardando factura antes de imprimir:', err);

@@ -134,6 +134,13 @@ const routes: Routes = [
           ),
       },
       {
+        path: 'tasa-itbis',
+        loadChildren: () =>
+          import('./pages/configuracion/itbis/itbis-modulo').then(
+            (m) => m.ItbisModulo
+          ),
+      },
+      {
         path: 'fentrega',
         loadChildren: () =>
           import('./pages/fentrega-page/fentrega-modulo').then(

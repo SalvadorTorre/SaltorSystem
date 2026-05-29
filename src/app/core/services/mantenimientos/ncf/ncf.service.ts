@@ -46,7 +46,8 @@ export class ServicioNcf {
           codigo: Number(row?.codigo ?? 0),
           grupo: row?.grupo === null || row?.grupo === undefined || row?.grupo === ""
             ? null
-            : Number(row.grupo)
+            : Number(row.grupo),
+          nivel_itbis: String(row?.nivel_itbis ?? row?.nivelItbis ?? '').trim(),
         }) as TiponcfData)
       }))
     );

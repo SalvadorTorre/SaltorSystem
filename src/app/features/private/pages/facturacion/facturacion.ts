@@ -16,6 +16,7 @@ import {
   catchError,
   of,
   map,
+  firstValueFrom,
 } from 'rxjs';
 import Swal from 'sweetalert2';
 // import { ModeloUsuarioData } from 'src/app/core/services/mantenimientos/usuario';
@@ -52,6 +53,7 @@ import autoTable from 'jspdf-autotable';
 import { ServicioNcf } from 'src/app/core/services/mantenimientos/ncf/ncf.service';
 import { ModeloNcfData } from 'src/app/core/services/mantenimientos/ncf';
 import { ServicioSalidafactura } from 'src/app/core/services/almacen/salidafactura/salidafactura.service';
+import { ItbisData, ServicioItbis } from 'src/app/core/services/mantenimientos/itbis/itbis.service';
 declare var $: any;
 
 interface ResumenConsultaFactura {
@@ -110,6 +112,7 @@ export class Facturacion implements OnInit {
   totalcosto: number = 0;
   costoGral: number = 0;
   subTotal: number = 0;
+  itbisActual: ItbisData | null = null;
   subtotaltxt: string = '';
   existenciatxt: any;
   existtxt: any;
@@ -187,6 +190,7 @@ export class Facturacion implements OnInit {
     private servicioFpago: ServicioFpago,
     private servicioNcf: ServicioNcf,
     private servicioSalidaFactura: ServicioSalidafactura,
+    private servicioItbis: ServicioItbis,
   ) {
     this.form = this.fb.group({
       fa_codVend: ['', Validators.required], // El campo es requerido
@@ -565,7 +569,17 @@ export class Facturacion implements OnInit {
         Number(ncf.grupo) === 1
       );
       this.actualizarTipoNcfPorRnc(this.formularioFacturacion.get('fa_rncFact')?.value);
+      this.actualizarItbisPorComprobante();
     });
+  }
+
+  private async actualizarItbisPorComprobante(): Promise<void> {
+    const tipoNcf = this.formularioFacturacion?.get('fa_tipoNcf')?.value;
+    const itbis = await this.obtenerItbisParaComprobante(tipoNcf, false);
+    if (!itbis) return;
+    this.itbisActual = itbis;
+    this.formularioFacturacion.patchValue({ fa_tipoitbis: itbis.codigo }, { emitEvent: false });
+    this.actualizarTotales();
   }
 
   crearFormularioFacturacion() {
@@ -595,7 +609,12 @@ export class Facturacion implements OnInit {
       fa_envio: [''],
       fa_ncfFact: [{ value: '', disabled: true }],
       fa_tipoNcf: [{ value: '32', disabled: true }],
+      fa_tipoitbis: [''],
       fa_contacto: [''],
+    });
+
+    this.formularioFacturacion.get('fa_tipoNcf')?.valueChanges.subscribe(() => {
+      this.actualizarItbisPorComprobante();
     });
   }
   limpia(): void {
@@ -658,7 +677,7 @@ export class Facturacion implements OnInit {
         let subtotal = 0;
         let itbis = 0;
         let totalGeneral = 0;
-        const itbisRate = 0.18; // Ejemplo: 18% de ITBIS
+        const itbisRate = this.tasaItbisRestar();
         response.data.forEach((item: any) => {
           const producto: ModeloInventarioData = {
             in_codmerc: item.df_codMerc,
@@ -759,7 +778,7 @@ export class Facturacion implements OnInit {
         let itbis = 0;
         let totalGeneral = 0;
         let totalcosto = 0;
-        const itbisRate = 0.18; // Ejemplo: 18% de ITBIS
+        const itbisRate = this.tasaItbisRestar();
         console.log('faa', response.data);
         response.data.forEach((item: any) => {
           const producto: ModeloInventarioData = {
@@ -1316,7 +1335,7 @@ export class Facturacion implements OnInit {
     this.dtxt = costo + (costo * 12) / 100;
     this.etxt = costo + (costo * 14) / 100;
     this.ftxt = costo + (costo * 16) / 100;
-    this.gtxt = costo + (costo * 18) / 100;
+    this.gtxt = costo + this.calcularItbisSumando(costo);
     this.htxt = costo + (costo * 20) / 100;
 
     // Calcular margen del producto actual
@@ -2210,7 +2229,7 @@ export class Facturacion implements OnInit {
     } else {
       const total = this.cantidadmerc * this.preciomerc;
       this.totalGral += total;
-      const itbis = total * 0.18;
+      const itbis = this.calcularItbisRestando(total);
       this.totalItbis += itbis;
       this.subTotal += total - itbis;
       const tcosto = this.costotxt * this.cantidadmerc;
@@ -2281,7 +2300,7 @@ export class Facturacion implements OnInit {
       this.totalGral -= item.total;
 
       // Calcular el itbis del ítem eliminado y restarlo del total itbis
-      const itbis = item.total * 0.18;
+      const itbis = this.calcularItbisRestando(item.total);
       this.totalItbis -= itbis;
 
       // Restar el subtotal del ítem eliminado
@@ -2289,6 +2308,7 @@ export class Facturacion implements OnInit {
 
       // Eliminar el ítem de la lista
       this.items.splice(index, 1);
+      this.actualizarTotales();
     }
   }
 
@@ -2318,11 +2338,11 @@ export class Facturacion implements OnInit {
   actualizarTotales() {
     this.totalGral = this.items.reduce((sum, item) => sum + item.total, 0);
     this.totalItbis = this.items.reduce(
-      (sum, item) => sum + item.total * 0.18,
+      (sum, item) => sum + this.calcularItbisRestando(item.total),
       0,
     );
     this.subTotal = this.items.reduce(
-      (sum, item) => sum + (item.total - item.total * 0.18),
+      (sum, item) => sum + (item.total - this.calcularItbisRestando(item.total)),
       0,
     );
     this.totalcosto = this.items.reduce(
@@ -2338,7 +2358,31 @@ export class Facturacion implements OnInit {
     this.itbitxt = formatCurrency(this.totalItbis);
     this.totalgraltxt = formatCurrency(this.totalGral);
   }
-  guardarFacturacion() {
+
+  private calcularItbisSumando(subtotal: number): number {
+    return this.redondear(Number(subtotal || 0) * this.tasaItbisSumar());
+  }
+
+  private calcularItbisRestando(total: number): number {
+    return this.redondear(Number(total || 0) * this.tasaItbisRestar());
+  }
+
+  private tasaItbisSumar(): number {
+    return Number(this.itbisActual?.porcentaje || 0) / 100;
+  }
+
+  private tasaItbisRestar(): number {
+    const porcentajeMenos = Number(this.itbisActual?.porcentaje_menos || 0);
+    if (porcentajeMenos) return porcentajeMenos / 100;
+    const porcentaje = Number(this.itbisActual?.porcentaje || 0);
+    return porcentaje ? (porcentaje / (1 + porcentaje / 100)) / 100 : 0;
+  }
+
+  private redondear(value: number): number {
+    return Math.round((Number(value || 0) + Number.EPSILON) * 100) / 100;
+  }
+
+  async guardarFacturacion() {
     const date = new Date();
     this.formularioFacturacion.get('fa_valFact')?.patchValue(this.totalGral);
     this.formularioFacturacion.get('fa_itbiFact')?.patchValue(this.totalItbis);
@@ -2365,6 +2409,21 @@ export class Facturacion implements OnInit {
         10,
       );
     }
+    const itbisFactura = await this.obtenerItbisParaComprobante(facturaPayload.fa_tipoNcf, true);
+    if (!itbisFactura) {
+      this.isLoading = false;
+      return;
+    }
+    this.itbisActual = itbisFactura;
+    this.actualizarTotales();
+    this.formularioFacturacion.get('fa_valFact')?.patchValue(this.totalGral);
+    this.formularioFacturacion.get('fa_itbiFact')?.patchValue(this.totalItbis);
+    this.formularioFacturacion.get('fa_subFact')?.patchValue(this.subTotal);
+    facturaPayload.fa_valFact = this.totalGral;
+    facturaPayload.fa_itbiFact = this.totalItbis;
+    facturaPayload.fa_subFact = this.subTotal;
+    facturaPayload.fa_tipoitbis = itbisFactura.codigo;
+    this.formularioFacturacion.patchValue({ fa_tipoitbis: itbisFactura.codigo }, { emitEvent: false });
     facturaPayload.fa_fecFact = this.toPrismaDate(facturaPayload.fa_fecFact);
     facturaPayload.fa_rncFact = facturaPayload.fa_rncFact || '';
     const datosParaGuardar = { factura: facturaPayload, detalle: this.items };
@@ -2420,6 +2479,40 @@ export class Facturacion implements OnInit {
     } else {
       alert('Esta Factura no fue Guardada');
     }
+  }
+
+  private async obtenerItbisParaComprobante(tipoNcf: any, mostrarAviso: boolean): Promise<ItbisData | null> {
+    const tipoSeleccionado = this.ncflist.find((ncf) =>
+      String(ncf.codigo).trim() === String(tipoNcf || '').trim()
+    );
+    const nivelItbis = String((tipoSeleccionado as any)?.nivel_itbis || '').trim();
+
+    if (!nivelItbis) {
+      if (mostrarAviso) {
+        await Swal.fire({
+          icon: 'warning',
+          title: 'Nivel ITBIS no configurado',
+          text: 'El tipo de comprobante seleccionado no tiene nivel_itbis configurado.',
+        });
+      }
+      return null;
+    }
+
+    try {
+      const itbis = await firstValueFrom(this.servicioItbis.buscarActivoPorNivel(nivelItbis));
+      if (String(itbis?.codigo || '').trim()) return itbis;
+    } catch (error) {
+      console.error('Error buscando ITBIS por nivel:', error);
+    }
+
+    if (mostrarAviso) {
+      await Swal.fire({
+        icon: 'warning',
+        title: 'ITBIS no encontrado',
+        text: `No existe un ITBIS activo para el nivel ${nivelItbis}.`,
+      });
+    }
+    return null;
   }
 
   navigateTable(event: KeyboardEvent) {
@@ -2506,7 +2599,7 @@ export class Facturacion implements OnInit {
     this.dtxt = costoUnitario + (costoUnitario * 12) / 100;
     this.etxt = costoUnitario + (costoUnitario * 14) / 100;
     this.ftxt = costoUnitario + (costoUnitario * 16) / 100;
-    this.gtxt = costoUnitario + (costoUnitario * 18) / 100;
+    this.gtxt = costoUnitario + this.calcularItbisSumando(costoUnitario);
     this.htxt = costoUnitario + (costoUnitario * 20) / 100;
   }
 
@@ -2570,7 +2663,7 @@ export class Facturacion implements OnInit {
         let subtotal = 0;
         let itbis = 0;
         let totalGeneral = 0;
-        const itbisRate = 0.18; // Ejemplo: 18% de ITBIS
+        const itbisRate = this.tasaItbisRestar();
         response.data.forEach((item: any) => {
           const producto: ModeloInventarioData = {
             in_codmerc: item.dc_codmerc,
@@ -2678,7 +2771,7 @@ export class Facturacion implements OnInit {
             item.df_desMerc,
             parseInt(item.df_canMerc),
             formatCurrency(parseFloat(item.df_preMerc)),
-            formatCurrency((item.df_preMerc * item.df_canMerc * 18) / 100),
+            formatCurrency(this.calcularItbisRestando(item.df_preMerc * item.df_canMerc)),
             formatCurrency(item.df_preMerc * item.df_canMerc),
           ]),
           startY: 115,
