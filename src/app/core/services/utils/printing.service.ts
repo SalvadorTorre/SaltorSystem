@@ -197,13 +197,19 @@ export class PrintingService {
 
       // --- 4. ITEMS TABLE ---
       doc.setFont('helvetica', 'bold');
-      const xDesc = leftMargin;
-      const xCant = 38;
-      const xItbis = 52;
+      doc.setFontSize(6.5);
+      const xCod = leftMargin;
+      const xDesc = 17;
+      const xCant = pageWidth - rightMargin;
+      const xPrecio = 28;
+      const xItbis = 49;
       const xValor = pageWidth - rightMargin;
 
+      doc.text('COD', xCod, yPos);
       doc.text('DESC', xDesc, yPos);
       doc.text('CANT', xCant, yPos, { align: 'right' });
+      yPos += 4;
+      doc.text('PRECIO', xPrecio, yPos, { align: 'right' });
       doc.text('ITBIS', xItbis, yPos, { align: 'right' });
       doc.text('VALOR', xValor, yPos, { align: 'right' });
       yPos += 2;
@@ -230,10 +236,28 @@ export class PrintingService {
         (sum: number, item: any) => sum + itemTotal(item),
         0
       );
+      const truncateText = (text: string, maxWidth: number): string => {
+        let value = String(text || '').trim();
+        while (value && doc.getTextWidth(value) > maxWidth) {
+          value = value.slice(0, -1);
+        }
+        return value;
+      };
+      const porcentajeMenos = Number(
+        f.porcentaje_menos ??
+          f.itbis_porcentaje_menos ??
+          f.fa_porcentaje_menos ??
+          0
+      );
+      const tasaRestar = porcentajeMenos / 100;
+      let subtotalImpresion = 0;
+      let itbisImpresion = 0;
+      let totalImpresion = 0;
 
       items.forEach((item: any) => {
-        const desc = item.producto?.in_desmerc || item.df_desMerc || '';
-        const cant = item.cantidad || item.df_canMerc || 0;
+        const codigo = item.producto?.in_codmerc || item.df_codMerc || item.df_codmerc || '';
+        const desc = item.producto?.in_desmerc || item.df_desMerc || item.df_desmerc || '';
+        const cant = item.cantidad || item.df_canMerc || item.df_canmerc || 0;
         const totalItem = itemTotal(item);
         const itbisGuardado = Number(
           item.df_itbiMerc ??
@@ -242,18 +266,34 @@ export class PrintingService {
             item.montoItbis ??
             0
         );
+        const precioOriginal = Number(
+          item.precio ?? item.df_preMerc ?? item.df_premerc ?? 0
+        );
         const totalItbisFactura = Number(f.fa_itbiFact ?? f.fa_itbifact ?? 0);
-        const itbisItem = itbisGuardado ||
+        const itbisItem = (tasaRestar > 0 ? precioOriginal * tasaRestar * Number(cant || 0) : 0) ||
+          itbisGuardado ||
           (totalDetalle > 0 && totalItbisFactura > 0
             ? totalItbisFactura * (totalItem / totalDetalle)
             : 0);
+        const precioSinItbis = Number(cant || 0) > 0
+          ? (tasaRestar > 0
+            ? precioOriginal - (precioOriginal * tasaRestar)
+            : (totalItem - itbisItem) / Number(cant || 1))
+          : 0;
+        const subtotalItem = precioSinItbis * Number(cant || 0);
+        subtotalImpresion += subtotalItem;
+        itbisImpresion += itbisItem;
+        totalImpresion += totalItem;
 
-        // Split description
-        const descLines = doc.splitTextToSize(desc, 30); // Narrower width for desc
-        doc.text(descLines, xDesc, yPos);
+        const codigoCorto = truncateText(codigo, 11);
+        const descCorta = truncateText(desc, 37);
+        const itemY = yPos;
+        doc.text(codigoCorto, xCod, itemY);
+        doc.text(descCorta, xDesc, yPos);
 
-        // Align numbers with first line of description
-        doc.text(String(cant), xCant, yPos, { align: 'right' });
+        doc.text(formatoMoneda.format(Number(cant || 0)), xCant, yPos, { align: 'right' });
+        yPos += 4;
+        doc.text(formatoMoneda.format(precioSinItbis), xPrecio, yPos, { align: 'right' });
         doc.text(formatoMoneda.format(itbisItem), xItbis, yPos, {
           align: 'right',
         });
@@ -261,16 +301,17 @@ export class PrintingService {
           align: 'right',
         });
 
-        yPos += Math.max(descLines.length * 4, 4) + 2;
+        yPos += 5;
       });
 
       drawDashedLine(yPos);
       yPos += 5;
+      doc.setFontSize(8);
 
       // --- 5. TOTALS ---
-      const subTotal = f.fa_subFact || 0;
-      const totalItbis = f.fa_itbiFact || 0;
-      const totalGral = f.fa_valFact || 0;
+      const subTotal = subtotalImpresion || f.fa_subFact || 0;
+      const totalItbis = itbisImpresion || f.fa_itbiFact || 0;
+      const totalGral = totalImpresion || f.fa_valFact || 0;
 
       const labelX = 35;
       const valueX = pageWidth - rightMargin;

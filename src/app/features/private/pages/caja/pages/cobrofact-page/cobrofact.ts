@@ -13,7 +13,7 @@ import {
   FormGroup,
   Validators,
 } from '@angular/forms';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, firstValueFrom } from 'rxjs';
 import Swal from 'sweetalert2';
 import { ServicioRnc } from 'src/app/core/services/mantenimientos/rnc/rnc.service';
 import { ServicioUsuario } from 'src/app/core/services/mantenimientos/usuario/usuario.service';
@@ -40,6 +40,7 @@ import { PrintingService } from 'src/app/core/services/utils/printing.service';
 import { ServicioConfiguracionGlobal } from 'src/app/core/services/mantenimientos/configuracion-global/configuracion-global.service';
 import { ServicioSalidafactura } from 'src/app/core/services/almacen/salidafactura/salidafactura.service';
 import { ServicioOrigenPago } from 'src/app/core/services/mantenimientos/origenpago/origenpago.service';
+import { ServicioItbis } from 'src/app/core/services/mantenimientos/itbis/itbis.service';
 
 declare var $: any;
 
@@ -348,6 +349,7 @@ export class CobroFact implements OnInit {
     private printingService: PrintingService,
     private servicioSalidaFactura: ServicioSalidafactura,
     private servicioOrigenPago: ServicioOrigenPago,
+    private servicioItbis: ServicioItbis,
   ) {
     this.form = this.fb.group({
       fa_codVend: ['', Validators.required], // El campo es requerido
@@ -1133,12 +1135,13 @@ export class CobroFact implements OnInit {
       const itbis = itbisGuardado ||
         (totalDetalle > 0 && totalItbis > 0 ? totalItbis * (total / totalDetalle) : 0);
       const tasaItbis = total > 0 ? itbis / total : 0;
+      const precioSinItbis = cantidad > 0 ? (total - itbis) / cantidad : 0;
 
       scenario[`NumeroLinea[${i}]`] = i;
       scenario[`NombreItem[${i}]`] = nombre;
       scenario[`IndicadorBienoServicio[${i}]`] = '1';
       scenario[`CantidadItem[${i}]`] = cantidad.toFixed(2);
-      scenario[`PrecioUnitarioItem[${i}]`] = precio.toFixed(2);
+      scenario[`PrecioUnitarioItem[${i}]`] = precioSinItbis.toFixed(2);
       scenario[`MontoItem[${i}]`] = total.toFixed(2);
       scenario[`MontoITBIS[${i}]`] = itbis.toFixed(2);
       scenario[`TasaITBIS[${i}]`] = tasaItbis.toFixed(4);
@@ -1213,6 +1216,15 @@ export class CobroFact implements OnInit {
         );
         payloadDgii.fa_status = 'F';
 
+        if (!this.tieneRespuestaDgiiParaImprimir(payloadDgii)) {
+          Swal.fire(
+            'DGII incompleto',
+            'El comprobante fue enviado, pero no se recibieron datos DGII suficientes para imprimir.',
+            'warning',
+          );
+          return;
+        }
+
         // Actualizar mensaje de loading
         Swal.update({
           text: 'Actualizando datos de factura...',
@@ -1222,7 +1234,7 @@ export class CobroFact implements OnInit {
         this.servicioFacturacion
           .actualizarDatosDgii(facturaData.fa_codFact, payloadDgii)
           .subscribe({
-            next: (res) => {
+            next: async (res) => {
               console.log('Datos DGII guardados correctamente', res);
               this.DatosSeleccionado = {
                 ...(this.DatosSeleccionado || {}),
@@ -1242,6 +1254,11 @@ export class CobroFact implements OnInit {
                 ...(res?.data || {}),
                 ...datosLocalesImpresion,
                 ...payloadDgii,
+                porcentaje_menos: await this.obtenerPorcentajeMenosItbis(
+                  facturaData?.fa_tipoitbis ??
+                    (res?.data || {})?.fa_tipoitbis ??
+                    datosLocalesImpresion?.fa_tipoitbis,
+                ),
               };
               this.printingService.imprimirFactura80mm(
                 datosParaImprimir,
@@ -1254,18 +1271,7 @@ export class CobroFact implements OnInit {
                 'Error',
                 'Se generó el comprobante pero falló al guardar los datos en el sistema.',
                 'warning',
-              ).then(() => {
-                // Opcional: imprimir de todos modos o detenerse
-                // Por seguridad, imprimimos para que no se pierda el comprobante generado
-                const datosParaImprimir = {
-                  ...datosLocalesImpresion,
-                  ...payloadDgii,
-                };
-                this.printingService.imprimirFactura80mm(
-                  datosParaImprimir,
-                  this.items,
-                );
-              });
+              );
             },
           });
       },
@@ -1275,14 +1281,35 @@ export class CobroFact implements OnInit {
           title: 'DGII no respondió',
           text: `${this.extraerMensajeError(error)}. Se imprimirá con los datos locales de la factura.`,
           icon: 'warning',
-        }).then(() => {
-          this.printingService.imprimirFactura80mm(
-            datosLocalesImpresion,
-            this.items,
-          );
         });
       },
     );
+  }
+
+  private tieneRespuestaDgiiParaImprimir(payload: any): boolean {
+    return Boolean(
+      String(payload?.qr_link || payload?.qrUrl || payload?.link_original || '').trim() ||
+      String(payload?.fec_firma || payload?.signatureDateTime || '').trim() ||
+      String(payload?.codseguridad || '').trim() ||
+      String(payload?.ecf || payload?.rfce || '').trim() ||
+      String(payload?.estado_dgii || payload?.estado_envio_dgii || '').trim()
+    );
+  }
+
+  private async obtenerPorcentajeMenosItbis(codigoItbis: any): Promise<number> {
+    const codigo = String(codigoItbis || '').trim();
+    if (!codigo) return 0;
+
+    try {
+      const lista = await firstValueFrom(this.servicioItbis.buscarTodos());
+      const itbis = lista.find((row) =>
+        String(row.codigo || '').trim().toLowerCase() === codigo.toLowerCase()
+      );
+      return Number(itbis?.porcentaje_menos || 0);
+    } catch (error) {
+      console.error('Error buscando porcentaje_menos de ITBIS:', error);
+      return 0;
+    }
   }
 
   toggleCheckPagado() {

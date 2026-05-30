@@ -645,7 +645,6 @@ export class ServicioFacturacion {
         reservation = await this.reserveNextEncf(codEmpresa, tipoNcf);
         const patch: any = {
           fa_ncffact: reservation.ncf,
-          fa_tiponcf: reservation.tipoNumero ?? this.toNumberOrNull(tipoNcf),
           fa_fecncf: this.normalizeDate(new Date()),
         };
 

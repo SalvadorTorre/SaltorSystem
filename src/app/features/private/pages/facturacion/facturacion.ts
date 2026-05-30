@@ -658,10 +658,11 @@ export class Facturacion implements OnInit {
   editardetFacturacion(detFactura: detFacturaData) {
     this.facturacionid = detFactura.df_codFact;
   }
-  editarFacturacion(Factura: FacturacionModelData) {
+  async editarFacturacion(Factura: FacturacionModelData) {
     this.facturacionid = Factura.fa_codFact;
     this.modoedicionFacturacion = true;
     this.formularioFacturacion.patchValue(Factura);
+    await this.cargarItbisDeFactura(Factura);
     this.tituloModalFacturacion = 'Editando Facturacion';
     $('#modalfacturacion').modal('show');
     this.habilitarFormulario = true;
@@ -746,7 +747,7 @@ export class Facturacion implements OnInit {
       console.log(this.facturacionList.length);
     });
   }
-  consultarFacturacion(factura: FacturacionModelData) {
+  async consultarFacturacion(factura: FacturacionModelData) {
     this.modoconsultaFacturacion = true;
     this.facturaConsultaActual = String(factura.fa_codFact || '').trim();
     this.detallePendienteConsulta = [];
@@ -756,6 +757,7 @@ export class Facturacion implements OnInit {
     this.formularioFacturacion.reset();
     this.crearFormularioFacturacion();
     this.formularioFacturacion.patchValue(factura);
+    await this.cargarItbisDeFactura(factura);
     // Asegurar formato de fecha dd/MM/yyyy al consultar
     const fechaFormateada = this.formatFecha((factura as any).fa_fecFact);
     this.formularioFacturacion.patchValue({ fa_fecFact: fechaFormateada });
@@ -2372,14 +2374,34 @@ export class Facturacion implements OnInit {
   }
 
   private tasaItbisRestar(): number {
-    const porcentajeMenos = Number(this.itbisActual?.porcentaje_menos || 0);
-    if (porcentajeMenos) return porcentajeMenos / 100;
-    const porcentaje = Number(this.itbisActual?.porcentaje || 0);
-    return porcentaje ? (porcentaje / (1 + porcentaje / 100)) / 100 : 0;
+    return Number(this.itbisActual?.porcentaje_menos || 0) / 100;
   }
 
   private redondear(value: number): number {
     return Math.round((Number(value || 0) + Number.EPSILON) * 100) / 100;
+  }
+
+  private async cargarItbisDeFactura(factura: any): Promise<void> {
+    const codigoItbis = String(factura?.fa_tipoitbis || '').trim();
+    try {
+      if (codigoItbis) {
+        const lista = await firstValueFrom(this.servicioItbis.buscarTodos());
+        const itbisPorCodigo = lista.find((row) =>
+          String(row.codigo || '').trim().toLowerCase() === codigoItbis.toLowerCase()
+        );
+        if (itbisPorCodigo) {
+          this.itbisActual = itbisPorCodigo;
+          return;
+        }
+      }
+
+      const itbisPorNivel = await this.obtenerItbisParaComprobante(factura?.fa_tipoNcf, false);
+      if (itbisPorNivel) {
+        this.itbisActual = itbisPorNivel;
+      }
+    } catch (error) {
+      console.error('Error cargando ITBIS de factura:', error);
+    }
   }
 
   async guardarFacturacion() {
@@ -2655,8 +2677,9 @@ export class Facturacion implements OnInit {
     return num.toLocaleString('en-US', { minimumFractionDigits: 2 });
   }
 
-  generatePDF(factura: FacturacionModelData) {
+  async generatePDF(factura: FacturacionModelData) {
     console.log(factura);
+    await this.cargarItbisDeFactura(factura);
     this.servicioFacturacion
       .buscarFacturaDetalle(factura.fa_codFact)
       .subscribe((response) => {
