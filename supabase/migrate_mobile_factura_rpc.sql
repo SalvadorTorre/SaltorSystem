@@ -17,18 +17,35 @@ declare
   v_codigo text := btrim(coalesce(p_codigo, ''));
   v_header myappdb.factura%rowtype;
   v_details jsonb := '[]'::jsonb;
+  v_auth_user_id uuid := auth.uid();
+  v_cod_empre text := '';
 begin
   if v_codigo = '' then
     return null;
   end if;
 
+  if v_auth_user_id is not null then
+    select coalesce(u.cod_empre, '')
+      into v_cod_empre
+    from myappdb.usuario u
+    where u.auth_user_id = v_auth_user_id
+    limit 1;
+  end if;
+
   select *
     into v_header
   from myappdb.factura f
-  where f.fa_codfact = v_codigo
-     or f.fa_ncffact = v_codigo
-     or f.fa_codfact ilike '%' || v_codigo || '%'
-     or f.fa_ncffact ilike '%' || v_codigo || '%'
+  where
+    (
+      f.fa_codfact = v_codigo
+      or f.fa_ncffact = v_codigo
+      or f.fa_codfact ilike '%' || v_codigo || '%'
+      or f.fa_ncffact ilike '%' || v_codigo || '%'
+    )
+    and (
+      v_cod_empre = ''
+      or coalesce(f.fa_codempr, '') = v_cod_empre
+    )
   order by
     case
       when f.fa_codfact = v_codigo then 1
