@@ -37,9 +37,16 @@ export class AuthService {
 
   isLoggedIn(): boolean {
     const token = String(localStorage.getItem('authToken') || '').trim();
-    if (!token) return false;
+    if (!token) {
+      if (this.hasRecoverableSupabaseSession()) {
+        void this.supabaseService.recoverSession();
+        return true;
+      }
+      return false;
+    }
     if (!this.isActiveJwt(token)) {
       if (this.hasRecoverableSupabaseSession()) {
+        void this.supabaseService.recoverSession();
         return true;
       }
       this.clearSessionStorage();
@@ -319,6 +326,7 @@ export class AuthService {
     localStorage.setItem('dashboardRole', appRole);
 
     this.loggedIn = true;
+    void this.supabaseService.recoverSession();
   }
 
   private resolveRoleFromUsuario(usuario: any, roleHint = ''): AppRole {

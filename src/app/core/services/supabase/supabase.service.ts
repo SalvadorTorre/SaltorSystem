@@ -9,6 +9,8 @@ export class SupabaseService {
   private readonly storageKey = 'saltorsystem-auth-token';
   private clientInstance: ReturnType<typeof createClient> | null = null;
   private authListenerBound = false;
+  private keepAliveTimer: ReturnType<typeof setInterval> | null = null;
+  private visibilityListenerBound = false;
 
   get url(): string {
     return environment?.supabase?.url || '';
@@ -52,17 +54,40 @@ export class SupabaseService {
         options
       );
       this.bindAuthListener(this.clientInstance as any);
+      this.bindSessionKeepAlive();
     }
     return this.clientInstance;
   }
 
+  async recoverSession(): Promise<void> {
+    const client = this.client;
+    if (!client?.auth) return;
+
+    try {
+      const { data } = await client.auth.getSession();
+      const session = data?.session;
+      if (!session) return;
+
+      if (this.isJwtExpired(session.access_token)) {
+        await client.auth.refreshSession();
+        return;
+      }
+
+      localStorage.setItem('authToken', String(session.access_token || '').trim());
+    } catch {
+      // Si el refresh token ya no es valido, la app seguira el flujo normal de login.
+    }
+  }
+
   clearAuthSession(): void {
     localStorage.removeItem(this.storageKey);
+    localStorage.removeItem('authToken');
     const client = this.clientInstance as any;
     if (client?.auth?.signOut) {
       void client.auth.signOut({ scope: 'local' }).catch(() => undefined);
     }
     this.clientInstance = null;
+    this.authListenerBound = false;
   }
 
   private bindAuthListener(client: any): void {
@@ -82,5 +107,40 @@ export class SupabaseService {
     });
 
     this.authListenerBound = true;
+  }
+
+  private bindSessionKeepAlive(): void {
+    if (!this.keepAliveTimer && typeof window !== 'undefined') {
+      this.keepAliveTimer = setInterval(() => {
+        void this.recoverSession();
+      }, 4 * 60 * 1000);
+    }
+
+    if (this.visibilityListenerBound || typeof window === 'undefined') {
+      return;
+    }
+
+    const refresh = () => void this.recoverSession();
+    window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        refresh();
+      }
+    });
+
+    this.visibilityListenerBound = true;
+  }
+
+  private isJwtExpired(token: string): boolean {
+    try {
+      const parts = String(token || '').split('.');
+      if (parts.length !== 3) return true;
+      const payload = JSON.parse(atob(parts[1]));
+      const exp = Number(payload?.exp || 0);
+      if (!exp) return true;
+      return exp <= Math.floor(Date.now() / 1000) + 45;
+    } catch {
+      return true;
+    }
   }
 }

@@ -245,6 +245,51 @@ export class Usuario implements OnInit {
     );
   }
 
+  get totalRecursosPermisosNuevoUsuario(): number {
+    return Array.isArray(this.permisosMatrizNuevoUsuario) ? this.permisosMatrizNuevoUsuario.length : 0;
+  }
+
+  get totalAccionesActivasNuevoUsuario(): number {
+    return (this.permisosMatrizNuevoUsuario || []).reduce((acc: number, fila: PermisoMatrizFila) => {
+      return acc + this.contarAccionesActivas(fila);
+    }, 0);
+  }
+
+  get totalRecursosActivosNuevoUsuario(): number {
+    return (this.permisosMatrizNuevoUsuario || []).filter((fila: PermisoMatrizFila) =>
+      this.contarAccionesActivas(fila) > 0
+    ).length;
+  }
+
+  contarAccionesActivas(fila?: PermisoMatrizFila | null): number {
+    return Object.values(fila?.acciones || {}).filter((valor: any) => !!valor).length;
+  }
+
+  tieneAccionActiva(fila?: PermisoMatrizFila | null): boolean {
+    return this.contarAccionesActivas(fila) > 0;
+  }
+
+  alternarFilaPermisos(fila: PermisoMatrizFila, activo: boolean): void {
+    Object.keys(fila?.acciones || {}).forEach((key: string) => {
+      fila.acciones[key] = activo;
+    });
+  }
+
+  alternarTodosPermisosNuevoUsuario(activo: boolean): void {
+    (this.permisosMatrizNuevoUsuario || []).forEach((fila: PermisoMatrizFila) => {
+      this.alternarFilaPermisos(fila, activo);
+    });
+  }
+
+  limpiarPermisosNuevoUsuario(): void {
+    this.alternarTodosPermisosNuevoUsuario(false);
+  }
+
+  reAplicarPlantillaTipoNuevoUsuario(): void {
+    this.limpiarPermisosNuevoUsuario();
+    this.aplicarPermisosTipoSeleccionadoEnMatriz(this.detallesTipoSeleccionado);
+  }
+
   descModulo(id?: number): string {
     if (!id) return '-';
     const m = this.modulos.find((x: any) => x?.idmodulo === id);

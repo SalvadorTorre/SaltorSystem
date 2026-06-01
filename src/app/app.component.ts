@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { SupabaseService } from './core/services/supabase/supabase.service';
 
 @Component({
   selector: 'app-root',
@@ -7,4 +8,9 @@ import { Component } from '@angular/core';
 })
 export class AppComponent {
   title = 'SaltorSystem';
+
+  constructor(private supabaseService: SupabaseService) {
+    void this.supabaseService.client;
+    void this.supabaseService.recoverSession();
+  }
 }

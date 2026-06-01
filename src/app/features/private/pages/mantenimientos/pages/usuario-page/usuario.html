@@ -546,7 +546,7 @@
 
 <!-- Modal: Nuevo Usuario -->
 <div class="modal fade" id="modalNuevoUsuario" tabindex="-1" aria-labelledby="modalNuevoUsuarioLabel" aria-hidden="true">
-  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+  <div class="modal-dialog modal-xxl modal-dialog-scrollable usuario-modal-wide">
     <div class="modal-content modal-modern">
       <div class="modal-header modal-header-degradado text-white">
         <h5 class="modal-title" id="modalNuevoUsuarioLabel">
@@ -556,121 +556,199 @@
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <form #nuevoUsuarioForm="ngForm" (ngSubmit)="guardarNuevoUsuario(nuevoUsuarioForm)">
-        <div class="modal-body">
-          <div class="row g-3">
-            <div class="col-md-4">
-              <label class="form-label">Usuario</label>
-              <input
-                type="text"
-                class="form-control"
-                name="idUsuario"
-                [(ngModel)]="nuevoUsuario.idUsuario"
-                (ngModelChange)="onNuevoIdUsuarioInput($event)"
-                required
-                autocomplete="off"
-                spellcheck="false"
-                style="text-transform: uppercase;"
-              >
-              <small class="text-muted d-block mt-1" *ngIf="validandoUsername">Validando usuario...</small>
-              <small class="text-danger d-block mt-1" *ngIf="usernameMensaje">{{ usernameMensaje }}</small>
-            </div>
-            <div class="col-md-8">
-              <label class="form-label">Nombre</label>
-              <input type="text" class="form-control" name="nombreUsuario" [(ngModel)]="nuevoUsuario.nombreUsuario" required>
-            </div>
-          </div>
+        <div class="modal-body usuario-modal-layout">
+          <div class="row g-4 align-items-start">
+            <div class="col-xl-4">
+              <section class="usuario-modal-panel">
+                <div class="usuario-modal-panel__header">
+                  <p class="usuario-modal-panel__eyebrow mb-1">Datos principales</p>
+                  <h6 class="mb-1">Cuenta del usuario</h6>
+                  <p class="mb-0 text-muted small">Configura acceso, empresa, sucursal y el tipo de perfil que tomará la plantilla de permisos.</p>
+                </div>
 
-          <div class="row g-3 mt-0">
-            <div class="col-md-3 col-lg-2">
-              <label class="form-label">Clave</label>
-              <input
-                type="password"
-                class="form-control"
-                name="claveUsuario"
-                [(ngModel)]="nuevoUsuario.claveUsuario"
-                (ngModelChange)="onNuevoClaveUsuarioInput($event)"
-                minlength="4"
-                maxlength="4"
-                required
-                autocomplete="new-password"
-              >
-              <small class="text-muted d-block mt-1" *ngIf="validandoClave">Validando clave...</small>
-              <small class="text-danger d-block mt-1" *ngIf="claveMensaje">{{ claveMensaje }}</small>
+                <div class="row g-3">
+                  <div class="col-12">
+                    <label class="form-label">Usuario</label>
+                    <input
+                      type="text"
+                      class="form-control"
+                      name="idUsuario"
+                      [(ngModel)]="nuevoUsuario.idUsuario"
+                      (ngModelChange)="onNuevoIdUsuarioInput($event)"
+                      required
+                      autocomplete="off"
+                      spellcheck="false"
+                      style="text-transform: uppercase;"
+                    >
+                    <small class="text-muted d-block mt-1" *ngIf="validandoUsername">Validando usuario...</small>
+                    <small class="text-danger d-block mt-1" *ngIf="usernameMensaje">{{ usernameMensaje }}</small>
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label">Nombre</label>
+                    <input type="text" class="form-control" name="nombreUsuario" [(ngModel)]="nuevoUsuario.nombreUsuario" required>
+                  </div>
+                  <div class="col-sm-6">
+                    <label class="form-label">Clave</label>
+                    <input
+                      type="password"
+                      class="form-control"
+                      name="claveUsuario"
+                      [(ngModel)]="nuevoUsuario.claveUsuario"
+                      (ngModelChange)="onNuevoClaveUsuarioInput($event)"
+                      minlength="4"
+                      maxlength="4"
+                      required
+                      autocomplete="new-password"
+                    >
+                    <small class="text-muted d-block mt-1" *ngIf="validandoClave">Validando clave...</small>
+                    <small class="text-danger d-block mt-1" *ngIf="claveMensaje">{{ claveMensaje }}</small>
+                  </div>
+                  <div class="col-sm-6">
+                    <label class="form-label">Nivel</label>
+                    <input type="number" class="form-control" name="nivel" [(ngModel)]="nuevoUsuario.nivel" required>
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label">Empresa</label>
+                    <select class="form-select" name="cod_empre" [(ngModel)]="nuevoUsuario.cod_empre" (ngModelChange)="onEmpresaChange($event, 'nuevo')" required>
+                      <option [ngValue]="undefined">Seleccione una empresa</option>
+                      <option *ngFor="let e of empresas" [ngValue]="e.cod_empre">{{ e.nom_empre }} ({{ e.cod_empre }})</option>
+                    </select>
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label">Sucursal</label>
+                    <select class="form-select" name="sucursalid" [(ngModel)]="nuevoUsuario.sucursalid" (ngModelChange)="onSucursalChange($event, 'nuevo')" required>
+                      <option [ngValue]="undefined">Seleccione una sucursal</option>
+                      <option *ngFor="let s of sucursalesFiltradasNuevo" [ngValue]="s.cod_sucursal">{{ s.nom_sucursal }} ({{ s.cod_empre }})</option>
+                    </select>
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label">Tipo de usuario</label>
+                    <select class="form-select" name="idtipoUsuario" [(ngModel)]="nuevoUsuario.idtipoUsuario" (ngModelChange)="onTipoUsuarioChange($event)" required>
+                      <option [ngValue]="undefined">Seleccione un tipo</option>
+                      <option *ngFor="let t of tipousuarios" [ngValue]="t.id">{{ t.descripcion || t.id }}</option>
+                    </select>
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label">Correo</label>
+                    <input type="email" class="form-control" name="correo" [(ngModel)]="nuevoUsuario.correo">
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label">Clave de correo</label>
+                    <input type="password" class="form-control" name="claveCorreo" [(ngModel)]="nuevoUsuario.claveCorreo">
+                  </div>
+                </div>
+              </section>
             </div>
-            <div class="col-md-3 col-lg-2">
-              <label class="form-label">Nivel</label>
-              <input type="number" class="form-control" name="nivel" [(ngModel)]="nuevoUsuario.nivel" required>
-            </div>
-            <div class="col-md-6 col-lg-4">
-              <label class="form-label">Empresa (cod_empre)</label>
-              <select class="form-select" name="cod_empre" [(ngModel)]="nuevoUsuario.cod_empre" (ngModelChange)="onEmpresaChange($event, 'nuevo')" required>
-                <option [ngValue]="undefined">Seleccione una empresa</option>
-                <option *ngFor="let e of empresas" [ngValue]="e.cod_empre">{{ e.nom_empre }} ({{ e.cod_empre }})</option>
-              </select>
-            </div>
-            <div class="col-md-6 col-lg-4">
-              <label class="form-label">Sucursal (sucursalid)</label>
-              <select class="form-select" name="sucursalid" [(ngModel)]="nuevoUsuario.sucursalid" (ngModelChange)="onSucursalChange($event, 'nuevo')" required>
-                <option [ngValue]="undefined">Seleccione una sucursal</option>
-                <option *ngFor="let s of sucursalesFiltradasNuevo" [ngValue]="s.cod_sucursal">{{ s.nom_sucursal }} ({{ s.cod_empre }})</option>
-              </select>
-            </div>
-          </div>
 
-          <div class="row g-3 mt-0">
-            <div class="col-md-6">
-              <label class="form-label">Correo</label>
-              <input type="email" class="form-control" name="correo" [(ngModel)]="nuevoUsuario.correo">
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">Clave de correo (claveCorreo)</label>
-              <input type="password" class="form-control" name="claveCorreo" [(ngModel)]="nuevoUsuario.claveCorreo">
-            </div>
-          </div>
+            <div class="col-xl-8">
+              <section class="usuario-modal-panel usuario-modal-panel--permissions" *ngIf="permisosMatrizNuevoUsuario?.length; else permisosPendientesTpl">
+                <div class="usuario-modal-panel__header">
+                  <p class="usuario-modal-panel__eyebrow mb-1">Acceso detallado</p>
+                  <h6 class="mb-1">Permisos por módulo y pantalla</h6>
+                  <p class="mb-0 text-muted small">Aquí defines exactamente qué pantallas puede abrir y qué acciones puede realizar este usuario.</p>
+                </div>
 
-          <div class="row g-3 mt-0">
-            <div class="col-md-6">
-              <label class="form-label">Tipo de usuario (idtipoUsuario)</label>
-              <select class="form-select" name="idtipoUsuario" [(ngModel)]="nuevoUsuario.idtipoUsuario" (ngModelChange)="onTipoUsuarioChange($event)" required>
-                <option [ngValue]="undefined">Seleccione un tipo</option>
-                <option *ngFor="let t of tipousuarios" [ngValue]="t.id">{{ t.descripcion || t.id }}</option>
-              </select>
-            </div>
-          </div>
+                <section class="permisos-builder">
+              <div class="permisos-builder__header">
+                <div>
+                  <p class="permisos-builder__eyebrow mb-1">Control de acceso</p>
+                  <h6 class="mb-1">Matriz de permisos visible</h6>
+                  <p class="mb-0 text-muted small">
+                    Usa las acciones rápidas o ajusta cada recurso de forma individual.
+                  </p>
+                </div>
+                <div class="permisos-builder__stats">
+                  <div class="permisos-builder__stat">
+                    <span>Recursos</span>
+                    <strong>{{ totalRecursosPermisosNuevoUsuario }}</strong>
+                  </div>
+                  <div class="permisos-builder__stat">
+                    <span>Configurados</span>
+                    <strong>{{ totalRecursosActivosNuevoUsuario }}</strong>
+                  </div>
+                  <div class="permisos-builder__stat">
+                    <span>Acciones activas</span>
+                    <strong>{{ totalAccionesActivasNuevoUsuario }}</strong>
+                  </div>
+                </div>
+              </div>
 
-          <div class="mt-3" *ngIf="permisosMatrizNuevoUsuario?.length">
-            <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
-              <h6 class="mb-0">Permisos por módulo/pantalla</h6>
-              <span class="badge text-bg-light">{{ permisosMatrizNuevoUsuario.length }} recurso(s)</span>
-            </div>
-            <div class="table-responsive modal-table-wrap permisos-modulo-wrap">
-              <table class="table table-sm table-hover align-middle mb-0">
-                <thead>
-                  <tr>
-                    <th>Módulo</th>
-                    <th>Pantalla</th>
-                    <th *ngFor="let a of accionesPermisosCatalogo">{{ a.descripcion }}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr *ngFor="let f of permisosMatrizNuevoUsuario; let i = index">
-                    <td class="text-nowrap">{{ f.modulo_nombre || '-' }}</td>
-                    <td>{{ f.pantalla_nombre || '-' }}</td>
-                    <td *ngFor="let a of accionesPermisosCatalogo" class="text-center">
+              <div class="permisos-builder__toolbar">
+                <div class="permisos-builder__chips">
+                  <span class="permisos-builder__chip" *ngFor="let a of accionesPermisosCatalogo">
+                    {{ a.descripcion }}
+                  </span>
+                </div>
+                <div class="permisos-builder__actions">
+                  <button type="button" class="btn btn-outline-primary btn-sm" (click)="alternarTodosPermisosNuevoUsuario(true)">
+                    <i class="bi bi-check2-square me-1"></i> Marcar todo
+                  </button>
+                  <button type="button" class="btn btn-outline-secondary btn-sm" (click)="reAplicarPlantillaTipoNuevoUsuario()">
+                    <i class="bi bi-magic me-1"></i> Reaplicar tipo
+                  </button>
+                  <button type="button" class="btn btn-outline-danger btn-sm" (click)="limpiarPermisosNuevoUsuario()">
+                    <i class="bi bi-eraser me-1"></i> Limpiar
+                  </button>
+                </div>
+              </div>
+
+              <div class="permisos-builder__list">
+                <article class="permiso-card" *ngFor="let f of permisosMatrizNuevoUsuario; let i = index" [class.permiso-card--active]="tieneAccionActiva(f)">
+                  <div class="permiso-card__top">
+                    <div class="permiso-card__identity">
+                      <span class="permiso-card__module">{{ f.modulo_nombre || '-' }}</span>
+                      <h6 class="mb-1">{{ f.pantalla_nombre || '-' }}</h6>
+                      <p class="mb-0 text-muted small">
+                        {{ contarAccionesActivas(f) }} de {{ accionesPermisosCatalogo.length }} acciones activas
+                      </p>
+                    </div>
+                    <div class="permiso-card__toggles">
+                      <button
+                        type="button"
+                        class="btn btn-outline-primary btn-sm"
+                        (click)="alternarFilaPermisos(f, true)"
+                      >
+                        Todo
+                      </button>
+                      <button
+                        type="button"
+                        class="btn btn-outline-secondary btn-sm"
+                        (click)="alternarFilaPermisos(f, false)"
+                      >
+                        Nada
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="permiso-card__actions">
+                    <label class="permiso-toggle" *ngFor="let a of accionesPermisosCatalogo" [class.permiso-toggle--checked]="f.acciones[a.accion_key]">
                       <input
                         type="checkbox"
-                        class="form-check-input"
+                        class="permiso-toggle__input"
                         [(ngModel)]="f.acciones[a.accion_key]"
                         [name]="'perm-' + i + '-' + a.accion_key"
                       >
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+                      <span class="permiso-toggle__label">{{ a.descripcion }}</span>
+                    </label>
+                  </div>
+                </article>
+              </div>
+                </section>
+
+                <small class="text-muted d-block mt-2">
+                  Si no activas nada, se intentará aplicar la plantilla base del tipo de usuario seleccionado.
+                </small>
+              </section>
+              <ng-template #permisosPendientesTpl>
+                <section class="usuario-modal-panel usuario-modal-panel--empty">
+                  <div class="usuario-modal-panel__header mb-0">
+                    <p class="usuario-modal-panel__eyebrow mb-1">Permisos</p>
+                    <h6 class="mb-1">Selecciona un tipo de usuario</h6>
+                    <p class="mb-0 text-muted small">Cuando elijas el tipo, aquí se cargará la matriz de módulos y pantallas para configurarla cómodamente.</p>
+                  </div>
+                </section>
+              </ng-template>
             </div>
-            <small class="text-muted d-block mt-2">
-              Marca exactamente lo que el usuario puede hacer. Si no marcas nada, se intentará aplicar la plantilla del tipo de usuario.
-            </small>
           </div>
         </div>
         <div class="modal-footer usuario-modal-save-footer">
