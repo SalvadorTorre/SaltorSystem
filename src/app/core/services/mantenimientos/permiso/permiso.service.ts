@@ -22,8 +22,10 @@ export interface RecursoCatalogoPermiso {
 export interface PermisoMatrizFila {
   codusuario?: number | null;
   recurso_key?: string | null;
+  modulo_key?: string | null;
   pantalla_nombre?: string;
   modulo_nombre?: string;
+  ruta?: string | null;
   idmodulo?: number | null; // fallback legacy
   cod_empre?: string | null;
   sucursalid?: number | null;
@@ -297,6 +299,7 @@ export class ServicioPermiso {
             idmodulo: Number(m.idmodulo),
             pantalla_nombre: m.descmodulo,
             modulo_nombre: "Legacy",
+            ruta: null,
             acciones: {
               acceso: String(p?.acceso || "N").toUpperCase() === "S",
               lectura: String(p?.lectura || "N").toUpperCase() === "S",
@@ -357,8 +360,10 @@ export class ServicioPermiso {
         return {
           codusuario: userId,
           recurso_key: r.recurso_key,
+          modulo_key: r.modulo_key,
           pantalla_nombre: r.pantalla_nombre,
           modulo_nombre: r.modulo_nombre,
+          ruta: r.ruta || null,
           cod_empre: String(codEmpre || "").trim() || null,
           sucursalid: Number(sucursalid || 0) || null,
           acciones: base,

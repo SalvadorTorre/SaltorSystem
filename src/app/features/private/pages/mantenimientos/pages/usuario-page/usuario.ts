@@ -370,7 +370,6 @@ export class Usuario implements OnInit {
       correo: u.correo,
       claveCorreo: (u as any).claveCorreo,
       idtipoUsuario: Number((u as any).idtipoUsuario || 0) || undefined,
-      idpermiso: Number((u as any).idpermiso || 0) || undefined,
       cod_empre: codEmpre || undefined,
       empresa: emp?.nom_empre || u.empresa || '',
       sucursalid,
@@ -505,7 +504,6 @@ export class Usuario implements OnInit {
     payload.nombreUsuario = String(payload.nombreUsuario || '').trim();
     payload.cod_empre = String(payload.cod_empre || '').trim() || null;
     payload.idtipoUsuario = Number(payload.idtipoUsuario || 0) || null;
-    payload.idpermiso = Number(payload.idpermiso || 0) || null;
 
     const sucursalid = Number(payload.sucursalid ?? payload.sucursal ?? 0) || null;
     payload.sucursalid = sucursalid;
@@ -569,7 +567,6 @@ export class Usuario implements OnInit {
       claveCorreo: '',
       idtipoUsuario: undefined,
       sucursalid: undefined,
-      idpermiso: undefined,
       cod_empre: undefined,
       empresa: '',
     } as any;
@@ -723,7 +720,6 @@ export class Usuario implements OnInit {
     payload.nombreUsuario = String(payload.nombreUsuario || '').trim();
     payload.cod_empre = String(payload.cod_empre || '').trim() || null;
     payload.idtipoUsuario = Number(payload.idtipoUsuario || 0) || null;
-    payload.idpermiso = Number(payload.idpermiso || 0) || null;
     const sucursalid = Number(payload.sucursalid ?? payload.sucursal ?? 0) || null;
     payload.sucursalid = sucursalid;
     payload.sucursal = sucursalid;

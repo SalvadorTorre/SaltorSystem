@@ -187,7 +187,6 @@
                   <li class="list-group-item d-flex justify-content-between"><span>Empresa</span><strong>{{ descEmpresaUsuario(user) }}</strong></li>
                   <li class="list-group-item d-flex justify-content-between"><span>Código empresa</span><strong>{{ user.cod_empre || '-' }}</strong></li>
                   <li class="list-group-item d-flex justify-content-between"><span>Sucursal</span><strong>{{ descSucursalUsuario(user) }}</strong></li>
-                  <li class="list-group-item d-flex justify-content-between"><span>ID permiso</span><strong>{{ user.idpermiso || '-' }}</strong></li>
                   <li class="list-group-item d-flex justify-content-between">
                     <span>Vendedor</span>
                     <span [class]="claseEstadoBooleano(user.vendedor)">{{ estadoBooleano(user.vendedor) }}</span>
@@ -522,12 +521,6 @@
             </div>
           </div>
 
-          <div class="row g-3 mt-0">
-            <div class="col-md-4">
-              <label class="form-label">ID Permiso (idpermiso)</label>
-              <input type="number" class="form-control" name="idpermiso" [(ngModel)]="editableUsuario.idpermiso">
-            </div>
-          </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
@@ -540,7 +533,7 @@
               || validandoEditClave
               || editUsernameExiste
               || editClaveExiste
-              || ('' + (editableUsuario?.claveUsuario || '')).length !== 4
+              || ('' + (editableUsuario.claveUsuario || '')).length !== 4
             "
           >
             <i class="bi bi-save me-1"></i> Guardar
@@ -643,10 +636,6 @@
                 <option *ngFor="let t of tipousuarios" [ngValue]="t.id">{{ t.descripcion || t.id }}</option>
               </select>
             </div>
-            <div class="col-md-6">
-              <label class="form-label">ID Permiso (idpermiso)</label>
-              <input type="number" class="form-control" name="idpermiso" [(ngModel)]="nuevoUsuario.idpermiso">
-            </div>
           </div>
 
           <div class="mt-3" *ngIf="permisosMatrizNuevoUsuario?.length">
@@ -695,7 +684,7 @@
               || validandoClave
               || usernameExiste
               || claveExiste
-              || ('' + (nuevoUsuario?.claveUsuario || '')).length !== 4
+              || ('' + (nuevoUsuario.claveUsuario || '')).length !== 4
             "
           >
             <i class="bi bi-save me-1"></i> Guardar

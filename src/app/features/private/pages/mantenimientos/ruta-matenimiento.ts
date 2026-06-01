@@ -1,6 +1,7 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { Mantenimiento } from './mantenimiento';
+import { permissionGuard } from 'src/app/core/guards/permission/permission.guard';
 
 const routes: Routes = [
   {
@@ -15,6 +16,8 @@ const routes: Routes = [
     children: [
       {
         path: 'inventario',
+        canActivate: [permissionGuard],
+        data: { accessPath: '/private/mantenimientos/inventario' },
         loadChildren: () =>
           import('./pages/inventario-page/inventario-modulo').then(
             (m) => m.ModuloInventario
@@ -22,6 +25,8 @@ const routes: Routes = [
       },
       {
         path: 'inventario-sucursal',
+        canActivate: [permissionGuard],
+        data: { accessPath: '/private/mantenimientos/inventario-sucursal' },
         loadChildren: () =>
           import('./pages/inventario-sucursal/inventario-sucursal-modulo').then(
             (m) => m.ModuloInventarioSucursal
@@ -30,6 +35,8 @@ const routes: Routes = [
 
       {
         path: 'cliente',
+        canActivate: [permissionGuard],
+        data: { accessPath: '/private/mantenimientos/cliente' },
         loadChildren: () =>
           import('./pages/cliente-page/cliente-modulo').then(
             (m) => m.ModuloCliente
@@ -37,6 +44,8 @@ const routes: Routes = [
       },
       {
         path: 'sucursales',
+        canActivate: [permissionGuard],
+        data: { accessPath: '/private/mantenimientos/sucursales' },
         loadChildren: () =>
           import('./pages/sucursales/sucursales-modulo').then(
             (m) => m.ModuloSucursales
@@ -45,6 +54,8 @@ const routes: Routes = [
 
       {
         path: 'suplidor',
+        canActivate: [permissionGuard],
+        data: { accessPath: '/private/mantenimientos/suplidor' },
         loadChildren: () =>
           import('./pages/suplidor-page/suplidor-modulo').then(
             (m) => m.ModuloSuplidor
@@ -53,12 +64,16 @@ const routes: Routes = [
 
       {
         path: 'zona',
+        canActivate: [permissionGuard],
+        data: { accessPath: '/private/mantenimientos/zona' },
         loadChildren: () =>
           import('./pages/zona-page/zona-modulo').then((m) => m.ModuloZona),
       },
 
       {
         path: 'sector',
+        canActivate: [permissionGuard],
+        data: { accessPath: '/private/mantenimientos/sector' },
         loadChildren: () =>
           import('./pages/sector-page/sector-modulo').then(
             (m) => m.ModuloSector
@@ -66,6 +81,8 @@ const routes: Routes = [
       },
       {
         path: 'usuario',
+        canActivate: [permissionGuard],
+        data: { accessPath: '/private/mantenimientos/usuario' },
         loadChildren: () =>
           import('./pages/usuario-page/usuario-modulo').then(
             (m) => m.ModuloUsuario
@@ -74,6 +91,8 @@ const routes: Routes = [
 
       {
         path: 'choferes',
+        canActivate: [permissionGuard],
+        data: { accessPath: '/private/mantenimientos/choferes' },
         loadChildren: () =>
           import('./pages/choferes-page/choferes-modulo').then(
             (m) => m.ModuloChoferes
@@ -81,6 +100,8 @@ const routes: Routes = [
       },
       {
         path: 'despachadores',
+        canActivate: [permissionGuard],
+        data: { accessPath: '/private/mantenimientos/despachadores' },
         loadChildren: () =>
           import('./pages/despachadores-page/despachadores-modulo').then(
             (m) => m.ModuloDespachadores
@@ -88,6 +109,8 @@ const routes: Routes = [
       },
       {
         path: 'Empresas',
+        canActivate: [permissionGuard],
+        data: { accessPath: '/private/mantenimientos/Empresas' },
         loadChildren: () =>
           import('./pages/empresas-page/empresas-modulo').then(
             (m) => m.ModuloEmpresas
@@ -95,6 +118,8 @@ const routes: Routes = [
       },
       {
         path: 'grupo-mercancias',
+        canActivate: [permissionGuard],
+        data: { accessPath: '/private/mantenimientos/grupo-mercancias' },
         loadChildren: () =>
           import('./pages/grupormerc/grupomerc-modulo').then(
             (m) => m.ModuloGrupoMercancias
@@ -102,11 +127,15 @@ const routes: Routes = [
       },
       {
         path: 'encf',
+        canActivate: [permissionGuard],
+        data: { accessPath: '/private/mantenimientos/encf' },
         loadChildren: () =>
           import('./pages/encf/encf-modulo').then((m) => m.ModuloEncf),
       },
       {
         path: 'modulo',
+        canActivate: [permissionGuard],
+        data: { accessPath: '/private/mantenimientos/modulo' },
         loadChildren: () =>
           import('./pages/configuracion/modulo/modulo-modulo').then(
             (m) => m.ModuloModulo
@@ -114,6 +143,8 @@ const routes: Routes = [
       },
       {
         path: 'permiso',
+        canActivate: [permissionGuard],
+        data: { accessPath: '/private/mantenimientos/permiso' },
         loadChildren: () =>
           import('./pages/configuracion/permiso/permiso-modulo').then(
             (m) => m.PermisoModulo
@@ -121,6 +152,8 @@ const routes: Routes = [
       },
       {
         path: 'tipousuario',
+        canActivate: [permissionGuard],
+        data: { accessPath: '/private/mantenimientos/tipousuario' },
         loadChildren: () =>
           import('./pages/configuracion/tipousuario/tipousuario-modulo').then(
             (m) => m.TipousuarioModulo
@@ -128,6 +161,8 @@ const routes: Routes = [
       },
       {
         path: 'contfactura',
+        canActivate: [permissionGuard],
+        data: { accessPath: '/private/mantenimientos/contfactura' },
         loadChildren: () =>
           import('./pages/configuracion/contfactura/contfactura-modulo').then(
             (m) => m.ContFacturaModulo
@@ -135,6 +170,8 @@ const routes: Routes = [
       },
       {
         path: 'tasa-itbis',
+        canActivate: [permissionGuard],
+        data: { accessPath: '/private/mantenimientos/tasa-itbis' },
         loadChildren: () =>
           import('./pages/configuracion/itbis/itbis-modulo').then(
             (m) => m.ItbisModulo
@@ -142,6 +179,8 @@ const routes: Routes = [
       },
       {
         path: 'fentrega',
+        canActivate: [permissionGuard],
+        data: { accessPath: '/private/mantenimientos/fentrega' },
         loadChildren: () =>
           import('./pages/fentrega-page/fentrega-modulo').then(
             (m) => m.ModuloFentrega
@@ -149,11 +188,15 @@ const routes: Routes = [
       },
       {
         path: 'rnc',
+        canActivate: [permissionGuard],
+        data: { accessPath: '/private/mantenimientos/rnc' },
         loadChildren: () =>
           import('./pages/rnc-page/rnc-modulo').then((m) => m.ModuloRnc),
       },
       {
         path: 'configuracion-global',
+        canActivate: [permissionGuard],
+        data: { accessPath: '/private/mantenimientos/configuracion-global' },
         loadChildren: () =>
           import(
             './pages/configuracion-global/configuracion-global-modulo'

@@ -21,57 +21,57 @@
     </div>
 
     <nav class="maintenance-nav">
-      <a class="maintenance-link" routerLinkActive="active" [routerLink]="['inventario']">
+      <a *ngIf="canView('/private/mantenimientos/inventario')" class="maintenance-link" routerLinkActive="active" [routerLink]="['inventario']">
         <i class="bi bi-box-seam"></i>
         <span>Productos</span>
       </a>
 
-      <a class="maintenance-link" routerLinkActive="active" [routerLink]="['inventario-sucursal']">
+      <a *ngIf="canView('/private/mantenimientos/inventario-sucursal')" class="maintenance-link" routerLinkActive="active" [routerLink]="['inventario-sucursal']">
         <i class="bi bi-boxes"></i>
         <span>Inventario sucursal</span>
       </a>
 
-      <a class="maintenance-link" routerLinkActive="active" [routerLink]="['cliente']">
+      <a *ngIf="canView('/private/mantenimientos/cliente')" class="maintenance-link" routerLinkActive="active" [routerLink]="['cliente']">
         <i class="bi bi-people"></i>
         <span>Clientes</span>
       </a>
 
-      <a class="maintenance-link" routerLinkActive="active" [routerLink]="['sucursales']">
+      <a *ngIf="canView('/private/mantenimientos/sucursales')" class="maintenance-link" routerLinkActive="active" [routerLink]="['sucursales']">
         <i class="bi bi-diagram-3"></i>
         <span>Sucursales</span>
       </a>
 
-      <a class="maintenance-link" routerLinkActive="active" [routerLink]="['suplidor']">
+      <a *ngIf="canView('/private/mantenimientos/suplidor')" class="maintenance-link" routerLinkActive="active" [routerLink]="['suplidor']">
         <i class="bi bi-truck"></i>
         <span>Suplidores</span>
       </a>
 
-      <a class="maintenance-link" routerLinkActive="active" [routerLink]="['zona']">
+      <a *ngIf="canView('/private/mantenimientos/zona')" class="maintenance-link" routerLinkActive="active" [routerLink]="['zona']">
         <i class="bi bi-geo-alt"></i>
         <span>Zonas</span>
       </a>
 
-      <a class="maintenance-link" routerLinkActive="active" [routerLink]="['sector']">
+      <a *ngIf="canView('/private/mantenimientos/sector')" class="maintenance-link" routerLinkActive="active" [routerLink]="['sector']">
         <i class="bi bi-map"></i>
         <span>Sectores</span>
       </a>
 
-      <a class="maintenance-link" routerLinkActive="active" [routerLink]="['choferes']">
+      <a *ngIf="canView('/private/mantenimientos/choferes')" class="maintenance-link" routerLinkActive="active" [routerLink]="['choferes']">
         <i class="bi bi-car-front"></i>
         <span>Choferes</span>
       </a>
 
-      <a class="maintenance-link" routerLinkActive="active" [routerLink]="['despachadores']">
+      <a *ngIf="canView('/private/mantenimientos/despachadores')" class="maintenance-link" routerLinkActive="active" [routerLink]="['despachadores']">
         <i class="bi bi-send"></i>
         <span>Despachadores</span>
       </a>
 
-      <a class="maintenance-link" routerLinkActive="active" [routerLink]="['grupo-mercancias']">
+      <a *ngIf="canView('/private/mantenimientos/grupo-mercancias')" class="maintenance-link" routerLinkActive="active" [routerLink]="['grupo-mercancias']">
         <i class="bi bi-collection"></i>
         <span>Grupo de mercancías</span>
       </a>
 
-      <a class="maintenance-link" routerLinkActive="active" [routerLink]="['Empresas']">
+      <a *ngIf="canView('/private/mantenimientos/Empresas')" class="maintenance-link" routerLinkActive="active" [routerLink]="['Empresas']">
         <i class="bi bi-building"></i>
         <span>Empresas</span>
       </a>
@@ -96,47 +96,47 @@
       </button>
 
       <div class="maintenance-submenu" [class.show]="openMenu === 'configuracion'">
-        <a class="maintenance-sublink" routerLinkActive="active" [routerLink]="['encf']">
+        <a *ngIf="canView('/private/mantenimientos/encf')" class="maintenance-sublink" routerLinkActive="active" [routerLink]="['encf']">
           <i class="bi bi-file-text"></i>
           <span>ENCF</span>
         </a>
-        <a class="maintenance-sublink" routerLinkActive="active" [routerLink]="['tasa-itbis']">
+        <a *ngIf="canView('/private/mantenimientos/tasa-itbis')" class="maintenance-sublink" routerLinkActive="active" [routerLink]="['tasa-itbis']">
           <i class="bi bi-percent"></i>
           <span>Tasa de ITBIS</span>
         </a>
-        <a class="maintenance-sublink" routerLinkActive="active" [routerLink]="['usuario']">
+        <a *ngIf="canView('/private/mantenimientos/usuario')" class="maintenance-sublink" routerLinkActive="active" [routerLink]="['usuario']">
           <i class="bi bi-person"></i>
           <span>Usuarios</span>
         </a>
-        <a class="maintenance-sublink" routerLinkActive="active" [routerLink]="['tipousuario']">
+        <a *ngIf="canView('/private/mantenimientos/tipousuario')" class="maintenance-sublink" routerLinkActive="active" [routerLink]="['tipousuario']">
           <i class="bi bi-person-badge"></i>
           <span>Tipo de usuario</span>
         </a>
-        <a class="maintenance-sublink" routerLinkActive="active" [routerLink]="['modulo']">
+        <a *ngIf="canView('/private/mantenimientos/modulo')" class="maintenance-sublink" routerLinkActive="active" [routerLink]="['modulo']">
           <i class="bi bi-ui-checks-grid"></i>
           <span>Módulos</span>
         </a>
-        <a class="maintenance-sublink" routerLinkActive="active" [routerLink]="['permiso']">
+        <a *ngIf="canView('/private/mantenimientos/permiso')" class="maintenance-sublink" routerLinkActive="active" [routerLink]="['permiso']">
           <i class="bi bi-shield-lock"></i>
           <span>Permisos</span>
         </a>
-        <a class="maintenance-sublink" routerLinkActive="active" [routerLink]="['fentrega']">
+        <a *ngIf="canView('/private/mantenimientos/fentrega')" class="maintenance-sublink" routerLinkActive="active" [routerLink]="['fentrega']">
           <i class="bi bi-truck"></i>
           <span>Tipo de entrega</span>
         </a>
-        <a class="maintenance-sublink" routerLinkActive="active" [routerLink]="['fpago']">
+        <a *ngIf="canView('/private/mantenimientos/fpago')" class="maintenance-sublink" routerLinkActive="active" [routerLink]="['fpago']">
           <i class="bi bi-credit-card"></i>
           <span>Forma de pago</span>
         </a>
-        <a class="maintenance-sublink" routerLinkActive="active" [routerLink]="['rnc']">
+        <a *ngIf="canView('/private/mantenimientos/rnc')" class="maintenance-sublink" routerLinkActive="active" [routerLink]="['rnc']">
           <i class="bi bi-card-heading"></i>
           <span>RNC</span>
         </a>
-        <a class="maintenance-sublink" routerLinkActive="active" [routerLink]="['configuracion-global']">
+        <a *ngIf="canView('/private/mantenimientos/configuracion-global')" class="maintenance-sublink" routerLinkActive="active" [routerLink]="['configuracion-global']">
           <i class="bi bi-file-earmark-lock2"></i>
           <span>Firma digital DGII</span>
         </a>
-        <a class="maintenance-sublink" routerLinkActive="active" [routerLink]="['contfactura']">
+        <a *ngIf="canView('/private/mantenimientos/contfactura')" class="maintenance-sublink" routerLinkActive="active" [routerLink]="['contfactura']">
           <i class="bi bi-123"></i>
           <span>Cont. Factura</span>
         </a>
@@ -162,57 +162,57 @@
 
     <div class="offcanvas-body">
       <nav class="maintenance-nav">
-        <a class="maintenance-link" routerLinkActive="active" [routerLink]="['inventario']" data-bs-dismiss="offcanvas">
+        <a *ngIf="canView('/private/mantenimientos/inventario')" class="maintenance-link" routerLinkActive="active" [routerLink]="['inventario']" data-bs-dismiss="offcanvas">
           <i class="bi bi-box-seam"></i>
           <span>Productos</span>
         </a>
 
-        <a class="maintenance-link" routerLinkActive="active" [routerLink]="['inventario-sucursal']" data-bs-dismiss="offcanvas">
+        <a *ngIf="canView('/private/mantenimientos/inventario-sucursal')" class="maintenance-link" routerLinkActive="active" [routerLink]="['inventario-sucursal']" data-bs-dismiss="offcanvas">
           <i class="bi bi-boxes"></i>
           <span>Inventario sucursal</span>
         </a>
 
-        <a class="maintenance-link" routerLinkActive="active" [routerLink]="['cliente']" data-bs-dismiss="offcanvas">
+        <a *ngIf="canView('/private/mantenimientos/cliente')" class="maintenance-link" routerLinkActive="active" [routerLink]="['cliente']" data-bs-dismiss="offcanvas">
           <i class="bi bi-people"></i>
           <span>Clientes</span>
         </a>
 
-        <a class="maintenance-link" routerLinkActive="active" [routerLink]="['sucursales']" data-bs-dismiss="offcanvas">
+        <a *ngIf="canView('/private/mantenimientos/sucursales')" class="maintenance-link" routerLinkActive="active" [routerLink]="['sucursales']" data-bs-dismiss="offcanvas">
           <i class="bi bi-diagram-3"></i>
           <span>Sucursales</span>
         </a>
 
-        <a class="maintenance-link" routerLinkActive="active" [routerLink]="['suplidor']" data-bs-dismiss="offcanvas">
+        <a *ngIf="canView('/private/mantenimientos/suplidor')" class="maintenance-link" routerLinkActive="active" [routerLink]="['suplidor']" data-bs-dismiss="offcanvas">
           <i class="bi bi-truck"></i>
           <span>Suplidores</span>
         </a>
 
-        <a class="maintenance-link" routerLinkActive="active" [routerLink]="['zona']" data-bs-dismiss="offcanvas">
+        <a *ngIf="canView('/private/mantenimientos/zona')" class="maintenance-link" routerLinkActive="active" [routerLink]="['zona']" data-bs-dismiss="offcanvas">
           <i class="bi bi-geo-alt"></i>
           <span>Zonas</span>
         </a>
 
-        <a class="maintenance-link" routerLinkActive="active" [routerLink]="['sector']" data-bs-dismiss="offcanvas">
+        <a *ngIf="canView('/private/mantenimientos/sector')" class="maintenance-link" routerLinkActive="active" [routerLink]="['sector']" data-bs-dismiss="offcanvas">
           <i class="bi bi-map"></i>
           <span>Sectores</span>
         </a>
 
-        <a class="maintenance-link" routerLinkActive="active" [routerLink]="['choferes']" data-bs-dismiss="offcanvas">
+        <a *ngIf="canView('/private/mantenimientos/choferes')" class="maintenance-link" routerLinkActive="active" [routerLink]="['choferes']" data-bs-dismiss="offcanvas">
           <i class="bi bi-car-front"></i>
           <span>Choferes</span>
         </a>
 
-        <a class="maintenance-link" routerLinkActive="active" [routerLink]="['despachadores']" data-bs-dismiss="offcanvas">
+        <a *ngIf="canView('/private/mantenimientos/despachadores')" class="maintenance-link" routerLinkActive="active" [routerLink]="['despachadores']" data-bs-dismiss="offcanvas">
           <i class="bi bi-send"></i>
           <span>Despachadores</span>
         </a>
 
-        <a class="maintenance-link" routerLinkActive="active" [routerLink]="['grupo-mercancias']" data-bs-dismiss="offcanvas">
+        <a *ngIf="canView('/private/mantenimientos/grupo-mercancias')" class="maintenance-link" routerLinkActive="active" [routerLink]="['grupo-mercancias']" data-bs-dismiss="offcanvas">
           <i class="bi bi-collection"></i>
           <span>Grupo de mercancías</span>
         </a>
 
-        <a class="maintenance-link" routerLinkActive="active" [routerLink]="['Empresas']" data-bs-dismiss="offcanvas">
+        <a *ngIf="canView('/private/mantenimientos/Empresas')" class="maintenance-link" routerLinkActive="active" [routerLink]="['Empresas']" data-bs-dismiss="offcanvas">
           <i class="bi bi-building"></i>
           <span>Empresas</span>
         </a>
@@ -237,47 +237,47 @@
         </button>
 
         <div class="maintenance-submenu" [class.show]="openMenu === 'configuracion'">
-          <a class="maintenance-sublink" routerLinkActive="active" [routerLink]="['encf']" data-bs-dismiss="offcanvas">
+          <a *ngIf="canView('/private/mantenimientos/encf')" class="maintenance-sublink" routerLinkActive="active" [routerLink]="['encf']" data-bs-dismiss="offcanvas">
             <i class="bi bi-file-text"></i>
             <span>ENCF</span>
           </a>
-          <a class="maintenance-sublink" routerLinkActive="active" [routerLink]="['tasa-itbis']" data-bs-dismiss="offcanvas">
+          <a *ngIf="canView('/private/mantenimientos/tasa-itbis')" class="maintenance-sublink" routerLinkActive="active" [routerLink]="['tasa-itbis']" data-bs-dismiss="offcanvas">
             <i class="bi bi-percent"></i>
             <span>Tasa de ITBIS</span>
           </a>
-          <a class="maintenance-sublink" routerLinkActive="active" [routerLink]="['usuario']" data-bs-dismiss="offcanvas">
+          <a *ngIf="canView('/private/mantenimientos/usuario')" class="maintenance-sublink" routerLinkActive="active" [routerLink]="['usuario']" data-bs-dismiss="offcanvas">
             <i class="bi bi-person"></i>
             <span>Usuarios</span>
           </a>
-          <a class="maintenance-sublink" routerLinkActive="active" [routerLink]="['tipousuario']" data-bs-dismiss="offcanvas">
+          <a *ngIf="canView('/private/mantenimientos/tipousuario')" class="maintenance-sublink" routerLinkActive="active" [routerLink]="['tipousuario']" data-bs-dismiss="offcanvas">
             <i class="bi bi-person-badge"></i>
             <span>Tipo de usuario</span>
           </a>
-          <a class="maintenance-sublink" routerLinkActive="active" [routerLink]="['modulo']" data-bs-dismiss="offcanvas">
+          <a *ngIf="canView('/private/mantenimientos/modulo')" class="maintenance-sublink" routerLinkActive="active" [routerLink]="['modulo']" data-bs-dismiss="offcanvas">
             <i class="bi bi-ui-checks-grid"></i>
             <span>Módulos</span>
           </a>
-          <a class="maintenance-sublink" routerLinkActive="active" [routerLink]="['permiso']" data-bs-dismiss="offcanvas">
+          <a *ngIf="canView('/private/mantenimientos/permiso')" class="maintenance-sublink" routerLinkActive="active" [routerLink]="['permiso']" data-bs-dismiss="offcanvas">
             <i class="bi bi-shield-lock"></i>
             <span>Permisos</span>
           </a>
-          <a class="maintenance-sublink" routerLinkActive="active" [routerLink]="['fentrega']" data-bs-dismiss="offcanvas">
+          <a *ngIf="canView('/private/mantenimientos/fentrega')" class="maintenance-sublink" routerLinkActive="active" [routerLink]="['fentrega']" data-bs-dismiss="offcanvas">
             <i class="bi bi-truck"></i>
             <span>Tipo de entrega</span>
           </a>
-          <a class="maintenance-sublink" routerLinkActive="active" [routerLink]="['fpago']" data-bs-dismiss="offcanvas">
+          <a *ngIf="canView('/private/mantenimientos/fpago')" class="maintenance-sublink" routerLinkActive="active" [routerLink]="['fpago']" data-bs-dismiss="offcanvas">
             <i class="bi bi-credit-card"></i>
             <span>Forma de pago</span>
           </a>
-          <a class="maintenance-sublink" routerLinkActive="active" [routerLink]="['rnc']" data-bs-dismiss="offcanvas">
+          <a *ngIf="canView('/private/mantenimientos/rnc')" class="maintenance-sublink" routerLinkActive="active" [routerLink]="['rnc']" data-bs-dismiss="offcanvas">
             <i class="bi bi-card-heading"></i>
             <span>RNC</span>
           </a>
-          <a class="maintenance-sublink" routerLinkActive="active" [routerLink]="['configuracion-global']" data-bs-dismiss="offcanvas">
+          <a *ngIf="canView('/private/mantenimientos/configuracion-global')" class="maintenance-sublink" routerLinkActive="active" [routerLink]="['configuracion-global']" data-bs-dismiss="offcanvas">
             <i class="bi bi-file-earmark-lock2"></i>
             <span>Firma digital DGII</span>
           </a>
-          <a class="maintenance-sublink" routerLinkActive="active" [routerLink]="['contfactura']" data-bs-dismiss="offcanvas">
+          <a *ngIf="canView('/private/mantenimientos/contfactura')" class="maintenance-sublink" routerLinkActive="active" [routerLink]="['contfactura']" data-bs-dismiss="offcanvas">
             <i class="bi bi-123"></i>
             <span>Cont. Factura</span>
           </a>

@@ -3,6 +3,7 @@ import { Observable, from, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { SupabaseService } from '../supabase/supabase.service';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { AccessControlService } from '../access/access-control.service';
 
 type AppRole = 'root' | 'admin' | 'vendedor';
 
@@ -29,7 +30,10 @@ export class AuthService {
   private loggedIn!: boolean;
   private readonly supabaseStorageKey = 'saltorsystem-auth-token';
 
-  constructor(private supabaseService: SupabaseService) {}
+  constructor(
+    private supabaseService: SupabaseService,
+    private accessControl: AccessControlService,
+  ) {}
 
   isLoggedIn(): boolean {
     const token = String(localStorage.getItem('authToken') || '').trim();
@@ -279,6 +283,8 @@ export class AuthService {
     const empresa = payload.empresa;
     const sucursal = payload.sucursal;
 
+    this.accessControl.reset();
+
     localStorage.setItem('authToken', String(payload.token || ''));
     localStorage.setItem(
       'username',
@@ -393,6 +399,7 @@ export class AuthService {
 
   logout(): void {
     this.clearSessionStorage();
+    this.accessControl.reset();
     this.loggedIn = false;
     console.log(this.isLoggedIn());
   }

@@ -1,6 +1,7 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { Almacen } from './almacen';
+import { permissionGuard } from 'src/app/core/guards/permission/permission.guard';
 
 // const routes: Routes = [
 //   {path:"",
@@ -22,6 +23,8 @@ const routes: Routes = [
     children: [
       {
         path: 'controlfact',
+        canActivate: [permissionGuard],
+        data: { accessPath: '/private/almacen/controlfact' },
         loadChildren: () =>
           import('./pages/controlfact-page/controlfact-modulo').then(
             (m) => m.ModuloControlFact
@@ -29,6 +32,8 @@ const routes: Routes = [
       },
       {
         path: 'entradamerc',
+        canActivate: [permissionGuard],
+        data: { accessPath: '/private/almacen/entradamerc' },
         loadChildren: () =>
           import('./pages/entradamerc-page/entradamerc-modulo').then(
             (m) => m.ModuloEntradaMerc
@@ -37,6 +42,8 @@ const routes: Routes = [
 
       {
         path: 'ventainterna',
+        canActivate: [permissionGuard],
+        data: { accessPath: '/private/almacen/ventainterna' },
         loadChildren: () =>
           import('./pages/ventainterna/ventainterna-modulo').then(
             (m) => m.ModuloVentainterna
@@ -45,6 +52,8 @@ const routes: Routes = [
 
       {
         path: 'pendiente',
+        canActivate: [permissionGuard],
+        data: { accessPath: '/private/almacen/pendiente' },
         loadChildren: () =>
           import('./pages/pendienteentrega/pendienteentrega-modulo').then(
             (m) => m.ModuloPendienteEntrega
@@ -53,6 +62,8 @@ const routes: Routes = [
 
       {
         path: 'salidafactura',
+        canActivate: [permissionGuard],
+        data: { accessPath: '/private/almacen/salidafactura' },
         loadChildren: () =>
           import('./pages/salidafactura/salidafactura-modulo').then(
             (m) => m.ModuloSalidafactura
@@ -60,6 +71,8 @@ const routes: Routes = [
       },
       {
         path: 'devoluciones',
+        canActivate: [permissionGuard],
+        data: { accessPath: '/private/almacen/devoluciones' },
         loadChildren: () =>
           import('./pages/devoluciones/devoluciones-modulo').then(
             (m) => m.ModuloDevoluciones
@@ -67,6 +80,8 @@ const routes: Routes = [
       },
       {
         path: 'solicitudprestamo',
+        canActivate: [permissionGuard],
+        data: { accessPath: '/private/almacen/solicitudprestamo' },
         loadChildren: () =>
           import('./pages/solicitudprestamo/solicitudprestamo-modulo').then(
             (m) => m.ModuloSolicitudPrestamo

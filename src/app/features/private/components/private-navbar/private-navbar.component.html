@@ -20,14 +20,14 @@
     <div class="collapse navbar-collapse" id="navbarMainPrivate">
       <ul class="navbar-nav ms-3 me-auto align-items-center flex-row gap-1">
         <li class="nav-item"><a class="nav-link d-flex align-items-center" [routerLink]="['/private/home']" routerLinkActive="active"><i class="bi bi-house-fill me-2"></i><span>Inicio</span></a></li>
-        <li class="nav-item"><a class="nav-link d-flex align-items-center" [routerLink]="['/private/mantenimientos']" routerLinkActive="active"><i class="bi bi-gear-fill me-2"></i><span>Mantenimientos</span></a></li>
-        <li class="nav-item"><a class="nav-link d-flex align-items-center" [routerLink]="['/private/facturacion']" routerLinkActive="active"><i class="bi bi-receipt me-2"></i><span>Facturación</span></a></li>
-        <li class="nav-item"><a class="nav-link d-flex align-items-center" [routerLink]="['/private/cotizacion']" routerLinkActive="active"><i class="bi bi-file-text me-2"></i><span>Cotización</span></a></li>
-        <li class="nav-item"><a class="nav-link d-flex align-items-center" [routerLink]="['/private/caja']" routerLinkActive="active"><i class="bi bi-cash-stack me-2"></i><span>Caja</span></a></li>
-        <li class="nav-item"><a class="nav-link d-flex align-items-center" [routerLink]="['/private/almacen']" routerLinkActive="active"><i class="bi bi-box-seam me-2"></i><span>Almacén</span></a></li>
-        <li class="nav-item"><a class="nav-link d-flex align-items-center" [routerLink]="['/private/despacho']" routerLinkActive="active"><i class="bi bi-truck me-2"></i><span>Despacho</span></a></li>
-        <li class="nav-item"><a class="nav-link d-flex align-items-center" [routerLink]="['/private/contabilidad']" routerLinkActive="active"><i class="bi bi-calculator me-2"></i><span>Contabilidad</span></a></li>
-        <li class="nav-item"><a class="nav-link d-flex align-items-center" [routerLink]="['/private/reporte']" routerLinkActive="active"><i class="bi bi-graph-up me-2"></i><span>Reportes</span></a></li>
+        <li class="nav-item" *ngIf="canViewModule('/private/mantenimientos')"><a class="nav-link d-flex align-items-center" [routerLink]="['/private/mantenimientos']" routerLinkActive="active"><i class="bi bi-gear-fill me-2"></i><span>Mantenimientos</span></a></li>
+        <li class="nav-item" *ngIf="canViewModule('/private/facturacion')"><a class="nav-link d-flex align-items-center" [routerLink]="['/private/facturacion']" routerLinkActive="active"><i class="bi bi-receipt me-2"></i><span>Facturación</span></a></li>
+        <li class="nav-item" *ngIf="canViewModule('/private/cotizacion')"><a class="nav-link d-flex align-items-center" [routerLink]="['/private/cotizacion']" routerLinkActive="active"><i class="bi bi-file-text me-2"></i><span>Cotización</span></a></li>
+        <li class="nav-item" *ngIf="canViewModule('/private/caja')"><a class="nav-link d-flex align-items-center" [routerLink]="['/private/caja']" routerLinkActive="active"><i class="bi bi-cash-stack me-2"></i><span>Caja</span></a></li>
+        <li class="nav-item" *ngIf="canViewModule('/private/almacen')"><a class="nav-link d-flex align-items-center" [routerLink]="['/private/almacen']" routerLinkActive="active"><i class="bi bi-box-seam me-2"></i><span>Almacén</span></a></li>
+        <li class="nav-item" *ngIf="canViewModule('/private/despacho')"><a class="nav-link d-flex align-items-center" [routerLink]="['/private/despacho']" routerLinkActive="active"><i class="bi bi-truck me-2"></i><span>Despacho</span></a></li>
+        <li class="nav-item" *ngIf="canViewModule('/private/contabilidad')"><a class="nav-link d-flex align-items-center" [routerLink]="['/private/contabilidad']" routerLinkActive="active"><i class="bi bi-calculator me-2"></i><span>Contabilidad</span></a></li>
+        <li class="nav-item" *ngIf="canViewModule('/private/reporte')"><a class="nav-link d-flex align-items-center" [routerLink]="['/private/reporte']" routerLinkActive="active"><i class="bi bi-graph-up me-2"></i><span>Reportes</span></a></li>
       </ul>
 
       <div class="ms-auto d-flex align-items-center gap-2">

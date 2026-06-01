@@ -1,6 +1,7 @@
 import { RouterModule, Routes } from '@angular/router';
 import { Reporte, } from './reporte';
 import { NgModule } from '@angular/core';
+import { permissionGuard } from 'src/app/core/guards/permission/permission.guard';
 
 const routes: Routes = [
   {
@@ -9,6 +10,8 @@ const routes: Routes = [
     children: [
       {
         path: 'movproducto',
+        canActivate: [permissionGuard],
+        data: { accessPath: '/private/reporte/movproducto' },
         loadChildren: () =>
           import('./pages/movproducto/movproducto-modulo')
             .then(m => m.MovimientoProductoModule),
