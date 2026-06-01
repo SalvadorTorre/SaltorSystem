@@ -45,7 +45,9 @@ jobs:
           lftp -u "$FTP_USERNAME","$FTP_PASSWORD" -p 21 "$FTP_SERVER" <<'EOF'
           set ftp:ssl-force true
           set ftp:ssl-protect-data true
-          set ssl:verify-certificate true
+          # El hosting FTP usa un certificado compartido cuyo nombre no coincide
+          # con ftp.grupohierro.net. Conservamos FTPS, pero aceptamos ese certificado.
+          set ssl:verify-certificate false
           mirror --reverse --verbose dist/saltor-system/ ./
           bye
           EOF
