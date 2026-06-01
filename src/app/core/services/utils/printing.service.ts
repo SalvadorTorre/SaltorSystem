@@ -1272,7 +1272,28 @@ items.forEach((it: any) => {
       doc.setFont('helvetica', 'bold');
       doc.text('TOTAL', leftMargin, yPos);
       doc.text(formatoMoneda.format(total || Number(f.fa_valFact || 0)), pageWidth - rightMargin, yPos, { align: 'right' });
-      yPos += 12;
+      yPos += 6;
+
+      const numeroFactura = String(f.fa_codFact || '').trim();
+      if (numeroFactura) {
+        try {
+          const canvas = document.createElement('canvas');
+          JsBarcode(canvas, numeroFactura, {
+            format: 'CODE128',
+            displayValue: true,
+            fontSize: 12,
+            height: 42,
+            margin: 0,
+          });
+          const barcodeData = canvas.toDataURL('image/png');
+          doc.addImage(barcodeData, 'PNG', centerX - 25, yPos, 50, 15);
+          yPos += 18;
+        } catch (error) {
+          console.error('Error generando codigo de barras del conduce:', error);
+        }
+      }
+
+      yPos += 6;
       doc.setLineWidth(0.3);
       doc.line(leftMargin, yPos, pageWidth - rightMargin, yPos);
       yPos += 5;
