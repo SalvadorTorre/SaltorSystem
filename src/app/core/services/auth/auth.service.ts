@@ -13,6 +13,7 @@ interface LoginResponseData {
   sucursal: any;
   empresa: any;
   role?: AppRole;
+  roleDescription?: string;
   source?: 'supabase';
 }
 
@@ -108,6 +109,7 @@ export class AuthService {
         sucursal: sucursal || null,
         empresa: empresa || null,
         role,
+        roleDescription: roleDesc || '',
         source: 'supabase',
       };
 
@@ -324,6 +326,10 @@ export class AuthService {
     const appRole = this.resolveRoleFromUsuario(usuario, payload.role);
     localStorage.setItem('role', appRole);
     localStorage.setItem('dashboardRole', appRole);
+    localStorage.setItem(
+      'roleDescription',
+      String(payload.roleDescription || '').trim(),
+    );
 
     this.loggedIn = true;
     void this.supabaseService.recoverSession();
@@ -430,6 +436,7 @@ export class AuthService {
       'codigoempresa',
       'role',
       'dashboardRole',
+      'roleDescription',
     ];
     keys.forEach((k) => localStorage.removeItem(k));
     this.supabaseService.clearAuthSession();

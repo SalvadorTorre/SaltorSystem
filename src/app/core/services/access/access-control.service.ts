@@ -7,6 +7,12 @@ import {
 
 type KnownRole = 'root' | 'admin' | 'vendedor';
 
+interface DefaultPermissionTemplate {
+  matchers: string[];
+  allowAll?: boolean;
+  allowedPaths: string[];
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -39,6 +45,33 @@ export class AccessControlService {
     this.loadingPromise = null;
   }
 
+  applyDefaultTemplate(
+    filas: PermisoMatrizFila[],
+    roleLabel: string,
+  ): PermisoMatrizFila[] {
+    const template = this.getDefaultTemplate(roleLabel);
+    if (!template) return filas;
+
+    return (filas || []).map((fila) => {
+      const canView = template.allowAll
+        ? true
+        : this.templateAllowsPath(template, this.resolveRouteForPermiso(fila));
+
+      const nextActions = { ...(fila?.acciones || {}) };
+      Object.keys(nextActions).forEach((key) => {
+        const normalized = this.normalizeLabel(key);
+        nextActions[key] = canView
+          ? ['ver', 'acceso', 'lectura'].includes(normalized)
+          : false;
+      });
+
+      return {
+        ...fila,
+        acciones: nextActions,
+      };
+    });
+  }
+
   canViewPath(path: string): boolean {
     const normalizedPath = this.normalizePath(path);
     if (!normalizedPath) return false;
@@ -49,7 +82,7 @@ export class AccessControlService {
 
     const allowed = this.getAllowedPermisos();
     if (!allowed.length) {
-      return normalizedPath === '/private/home';
+      return this.canViewByDefaultRole(normalizedPath);
     }
 
     return allowed.some((permiso) => {
@@ -69,7 +102,7 @@ export class AccessControlService {
 
     const allowed = this.getAllowedPermisos();
     if (!allowed.length) {
-      return normalizedPrefix === '/private/home';
+      return this.canViewByDefaultRole(normalizedPrefix, true);
     }
 
     return allowed.some((permiso) => {
@@ -161,6 +194,15 @@ export class AccessControlService {
     return role === 'root' || role === 'admin';
   }
 
+  private canViewByDefaultRole(path: string, treatAsPrefix = false): boolean {
+    const template = this.getDefaultTemplate(this.currentRoleLabel());
+    if (!template) {
+      return path === '/private/home';
+    }
+    if (template.allowAll) return true;
+    return this.templateAllowsPath(template, path, treatAsPrefix);
+  }
+
   private currentRole(): KnownRole {
     const raw = String(
       localStorage.getItem('role') ||
@@ -173,6 +215,94 @@ export class AccessControlService {
     if (raw.includes('root')) return 'root';
     if (raw.includes('admin')) return 'admin';
     return 'vendedor';
+  }
+
+  private currentRoleLabel(): string {
+    return String(
+      localStorage.getItem('roleDescription') ||
+        localStorage.getItem('role') ||
+        localStorage.getItem('dashboardRole') ||
+        'vendedor',
+    ).trim();
+  }
+
+  private getDefaultTemplate(roleLabel: string): DefaultPermissionTemplate | null {
+    const normalizedRole = this.normalizeLabel(roleLabel);
+    const templates: DefaultPermissionTemplate[] = [
+      {
+        matchers: ['root', 'admin', 'computos', 'gerencia', 'supervisor'],
+        allowAll: true,
+        allowedPaths: [],
+      },
+      {
+        matchers: ['cajera', 'caja', 'cobros'],
+        allowedPaths: [
+          '/private/home',
+          '/private/caja',
+          '/private/mantenimientos/cliente',
+        ],
+      },
+      {
+        matchers: ['vendedor', 'ventas', 'digitador'],
+        allowedPaths: [
+          '/private/home',
+          '/private/facturacion',
+          '/private/cotizacion',
+          '/private/mantenimientos/cliente',
+        ],
+      },
+      {
+        matchers: ['despacho', 'despachador', 'desp hierro', 'despachoforjas', 'despacho forjas'],
+        allowedPaths: [
+          '/private/home',
+          '/private/despacho',
+          '/private/almacen',
+        ],
+      },
+      {
+        matchers: ['almacen', 'inventario', 'deposito'],
+        allowedPaths: [
+          '/private/home',
+          '/private/almacen',
+          '/private/mantenimientos/inventario',
+          '/private/mantenimientos/inventario-sucursal',
+          '/private/mantenimientos/suplidor',
+          '/private/mantenimientos/grupo-mercancias',
+        ],
+      },
+      {
+        matchers: ['contabilidad', 'contable'],
+        allowedPaths: [
+          '/private/home',
+          '/private/contabilidad',
+          '/private/caja',
+        ],
+      },
+      {
+        matchers: ['chofer'],
+        allowedPaths: ['/private/home'],
+      },
+    ];
+
+    return templates.find((template) =>
+      template.matchers.some((matcher) => normalizedRole.includes(this.normalizeLabel(matcher))),
+    ) || null;
+  }
+
+  private templateAllowsPath(
+    template: DefaultPermissionTemplate,
+    path: string | null,
+    treatAsPrefix = false,
+  ): boolean {
+    const normalizedPath = this.normalizePath(path || '');
+    if (!normalizedPath) return false;
+    return template.allowedPaths.some((allowedPath) => {
+      const normalizedAllowed = this.normalizePath(allowedPath);
+      if (treatAsPrefix) {
+        return normalizedAllowed.startsWith(normalizedPath) || normalizedPath.startsWith(normalizedAllowed);
+      }
+      return normalizedPath === normalizedAllowed || normalizedPath.startsWith(`${normalizedAllowed}/`);
+    });
   }
 
   private resolveRouteForPermiso(permiso: PermisoMatrizFila): string | null {

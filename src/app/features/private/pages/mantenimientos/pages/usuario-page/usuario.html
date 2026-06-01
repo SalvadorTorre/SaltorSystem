@@ -123,6 +123,18 @@
   </section>
 </div>
 
+<ng-template #permisosPendientesTpl>
+  <div class="usuario-modal-empty-state">
+    <div class="usuario-modal-empty-state__icon">
+      <i class="bi bi-shield-check"></i>
+    </div>
+    <h6 class="mb-1">La matriz de permisos se mantiene visible aquí</h6>
+    <p class="mb-0 text-muted small">
+      Elige un tipo de usuario y los checkboxes se marcarán o limpiarán automáticamente según su plantilla.
+    </p>
+  </div>
+</ng-template>
+
 <!-- Modal: Consulta Usuario -->
 <div class="modal fade" id="modalConsultaUsuario" tabindex="-1" aria-labelledby="modalConsultaUsuarioLabel" aria-hidden="true">
   <div class="modal-dialog modal-xl modal-dialog-scrollable">
@@ -641,14 +653,8 @@
             </div>
 
             <div class="col-xl-8">
-              <section class="usuario-modal-panel usuario-modal-panel--permissions" *ngIf="permisosMatrizNuevoUsuario?.length; else permisosPendientesTpl">
-                <div class="usuario-modal-panel__header">
-                  <p class="usuario-modal-panel__eyebrow mb-1">Acceso detallado</p>
-                  <h6 class="mb-1">Permisos por módulo y pantalla</h6>
-                  <p class="mb-0 text-muted small">Aquí defines exactamente qué pantallas puede abrir y qué acciones puede realizar este usuario.</p>
-                </div>
-
-                <section class="permisos-builder">
+              <section class="usuario-modal-panel usuario-modal-panel--permissions">
+                <section class="permisos-builder" *ngIf="permisosMatrizNuevoUsuario?.length; else permisosPendientesTpl">
               <div class="permisos-builder__header">
                 <div>
                   <p class="permisos-builder__eyebrow mb-1">Control de acceso</p>
@@ -674,11 +680,6 @@
               </div>
 
               <div class="permisos-builder__toolbar">
-                <div class="permisos-builder__chips">
-                  <span class="permisos-builder__chip" *ngFor="let a of accionesPermisosCatalogo">
-                    {{ a.descripcion }}
-                  </span>
-                </div>
                 <div class="permisos-builder__actions">
                   <button type="button" class="btn btn-outline-primary btn-sm" (click)="alternarTodosPermisosNuevoUsuario(true)">
                     <i class="bi bi-check2-square me-1"></i> Marcar todo
@@ -739,15 +740,6 @@
                   Si no activas nada, se intentará aplicar la plantilla base del tipo de usuario seleccionado.
                 </small>
               </section>
-              <ng-template #permisosPendientesTpl>
-                <section class="usuario-modal-panel usuario-modal-panel--empty">
-                  <div class="usuario-modal-panel__header mb-0">
-                    <p class="usuario-modal-panel__eyebrow mb-1">Permisos</p>
-                    <h6 class="mb-1">Selecciona un tipo de usuario</h6>
-                    <p class="mb-0 text-muted small">Cuando elijas el tipo, aquí se cargará la matriz de módulos y pantallas para configurarla cómodamente.</p>
-                  </div>
-                </section>
-              </ng-template>
             </div>
           </div>
         </div>

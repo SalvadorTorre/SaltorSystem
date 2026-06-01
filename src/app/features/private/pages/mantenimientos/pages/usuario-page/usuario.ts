@@ -15,6 +15,7 @@ import { ServicioTipousuario } from 'src/app/core/services/mantenimientos/tipous
 import { ServicioEmpresa } from 'src/app/core/services/mantenimientos/empresas/empresas.service';
 import { ServicioChofer } from 'src/app/core/services/mantenimientos/choferes/choferes.service';
 import { forkJoin, of } from 'rxjs';
+import { AccessControlService } from 'src/app/core/services/access/access-control.service';
 declare var $: any;
 
 @Component({
@@ -77,6 +78,7 @@ export class Usuario implements OnInit {
     private tipoSrv: ServicioTipousuario,
     private empresaSrv: ServicioEmpresa,
     private choferSrv: ServicioChofer,
+    private accessControl: AccessControlService,
   ) {}
 
   ngOnInit(): void {
@@ -200,6 +202,7 @@ export class Usuario implements OnInit {
             modo: r?.recurso_key ? 'v2' : 'legacy',
           } as PermisoMatrizFila;
         });
+        this.reAplicarTipoActualEnMatrizNuevoUsuario();
       },
       error: () => {
         this.accionesPermisosCatalogo = [
@@ -214,8 +217,15 @@ export class Usuario implements OnInit {
           acciones: { acceso: false, lectura: false },
           modo: 'legacy',
         }));
+        this.reAplicarTipoActualEnMatrizNuevoUsuario();
       }
     });
+  }
+
+  private reAplicarTipoActualEnMatrizNuevoUsuario(): void {
+    const idtipo = Number((this.nuevoUsuario as any)?.idtipoUsuario || 0) || undefined;
+    this.aplicarPlantillaPredeterminadaTipo(idtipo);
+    this.aplicarPermisosTipoSeleccionadoEnMatriz(this.detallesTipoSeleccionado);
   }
 
   private aplicarPermisosTipoSeleccionadoEnMatriz(detalles: any[]): void {
@@ -287,6 +297,9 @@ export class Usuario implements OnInit {
 
   reAplicarPlantillaTipoNuevoUsuario(): void {
     this.limpiarPermisosNuevoUsuario();
+    this.aplicarPlantillaPredeterminadaTipo(
+      Number((this.nuevoUsuario as any)?.idtipoUsuario || 0) || undefined,
+    );
     this.aplicarPermisosTipoSeleccionadoEnMatriz(this.detallesTipoSeleccionado);
   }
 
@@ -712,17 +725,29 @@ export class Usuario implements OnInit {
 
   onTipoUsuarioChange(idtipo: number | undefined): void {
     this.detallesTipoSeleccionado = [];
+    this.aplicarPlantillaPredeterminadaTipo(idtipo);
     if (!idtipo) return;
     this.tipoSrv.buscarTipousuario(Number(idtipo)).subscribe({
       next: (res: any) => {
         const tipo = Array.isArray(res?.data) ? res.data[0] : (res?.data ?? res);
         this.detallesTipoSeleccionado = Array.isArray(tipo?.dtipousuarios) ? tipo.dtipousuarios : [];
-        this.aplicarPermisosTipoSeleccionadoEnMatriz(this.detallesTipoSeleccionado);
+        this.reAplicarTipoActualEnMatrizNuevoUsuario();
       },
       error: () => {
         this.detallesTipoSeleccionado = [];
+        this.reAplicarTipoActualEnMatrizNuevoUsuario();
       }
     });
+  }
+
+  private aplicarPlantillaPredeterminadaTipo(idtipo: number | undefined): void {
+    if (!this.permisosMatrizNuevoUsuario.length) return;
+
+    const descripcion = this.descTipoUsuario(idtipo);
+    this.permisosMatrizNuevoUsuario = this.accessControl.applyDefaultTemplate(
+      this.permisosMatrizNuevoUsuario,
+      descripcion,
+    );
   }
 
   guardarNuevoUsuario(form: NgForm): void {
