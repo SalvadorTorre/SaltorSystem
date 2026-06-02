@@ -29,17 +29,19 @@
                 </thead>
                 <tbody>
                   <tr
+                    #filaSeleccionada
                     *ngFor="let factura of facturacionList; let i = index"
-                    [ngClass]="{ 'table-primary': factura.fa_codFact === codFacturaselecte }"
-                    class="align-middle"
+                    [ngClass]="{ 'table-primary': i === selectedFacturaIndex }"
+                    (click)="seleccionarFacturaLista(factura, i)"
+                    class="align-middle cursor-pointer"
                   >
                     <!-- Número -->
-                    <td (click)="consultarFacturacion(factura)" class="cursor-pointer">
+                    <td>
                       <div class="fw-bold">{{ factura.fa_codFact }}</div>
                     </td>
 
                     <!-- Nombre del cliente y Fecha -->
-                    <td (click)="consultarFacturacion(factura)" class="cursor-pointer">
+                    <td>
                       <div class="d-flex align-items-center">
                         <span class="fw-semibold me-2">{{ factura.fa_nomClie || 'Sin nombre' }}</span>
                         <span class="badge rounded-pill" [ngClass]="{'bg-success': factura.fa_envio === 'Envio', 'bg-danger': factura.fa_envio === 'Retiro'}">
@@ -51,7 +53,7 @@
                     </td>
 
                     <!-- Tipo -->
-                    <td (click)="consultarFacturacion(factura)" class="text-center align-middle cursor-pointer">
+                    <td class="text-center align-middle">
                       <span class="badge bg-secondary" *ngIf="factura.fa_status === 'C'">Conduce</span>
                       <span class="badge bg-primary" *ngIf="factura.fa_status === 'F'">Factura</span>
                     </td>
@@ -76,14 +78,14 @@
                       <button
                         *ngIf="!esFacturaPagadaConsulta(factura)"
                         class="btn btn-outline-primary"
-                        (click)="editarFacturacion(factura)"
+                        (click)="$event.stopPropagation(); editarFacturacion(factura)"
                         title="Editar factura"
                       >
                         <i class="bi bi-pencil-square"></i>
                       </button>
                       <button
                         class="btn btn-outline-success"
-                        (click)="consultarFacturacion(factura)"
+                        (click)="$event.stopPropagation(); seleccionarFacturaLista(factura, i)"
                         title="Ver detalles"
                       >
                         <i class="bi bi-card-list"></i>

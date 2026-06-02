@@ -180,6 +180,7 @@ export class CobroFact implements OnInit {
   private numfacturaSubject = new BehaviorSubject<string>('');
   private nomclienteSubject = new BehaviorSubject<string>('');
   selectedRow: number = 0; // Para rastrear la fila seleccionada
+  selectedFacturaIndex: number = -1;
 
   isDisabled: boolean = true;
   form: FormGroup;
@@ -518,6 +519,8 @@ export class CobroFact implements OnInit {
     this.nomChoferSalida = '';
     this.facturaSelecionada = null;
     this.DatosSeleccionado = undefined as any;
+    this.selectedFacturaIndex = -1;
+    this.codFacturaselecte = ' ';
     // volver a ejecutar la lógica de inicio
     this.buscarFacturasNoImpresas();
     this.obtenerNcf();
@@ -674,7 +677,8 @@ export class CobroFact implements OnInit {
             ...(row as any),
             caja_pendiente_pago: this.esPendientePago(row),
             caja_status: this.statusCaja(row),
-          }));
+          }))
+          .sort((a: any, b: any) => this.compararNumeroFacturaDesc(a, b));
       },
       error: async (err) => {
         console.error('Error cargando facturas de caja:', err);
@@ -940,6 +944,26 @@ export class CobroFact implements OnInit {
   // --- Funciones para manejar teclas ---
   @HostListener('window:keydown', ['$event'])
   handleKeyboardEvent(event: KeyboardEvent) {
+    if (
+      (event.key === 'ArrowUp' || event.key === 'ArrowDown') &&
+      this.selectedFacturaIndex >= 0 &&
+      this.facturacionList.length > 0
+    ) {
+      const target = event.target as HTMLElement | null;
+      const tag = String(target?.tagName || '').toLowerCase();
+      if (!['input', 'select', 'textarea'].includes(tag)) {
+        event.preventDefault();
+        const movimiento = event.key === 'ArrowUp' ? -1 : 1;
+        const siguiente = Math.max(
+          0,
+          Math.min(this.facturacionList.length - 1, this.selectedFacturaIndex + movimiento),
+        );
+        if (siguiente !== this.selectedFacturaIndex) {
+          this.seleccionarFacturaLista(this.facturacionList[siguiente], siguiente);
+        }
+        return;
+      }
+    }
     if (event.key === 'F2') {
       this.limpia();
     }
@@ -1130,6 +1154,25 @@ export class CobroFact implements OnInit {
     return this.esErrorJwtVencido(error)
       ? 'Tu sesión venció. Inicia sesión nuevamente para continuar.'
       : String(msg);
+  }
+
+  seleccionarFacturaLista(factura: FacturacionModelData, index: number): void {
+    this.selectedFacturaIndex = index;
+    this.consultarFacturacion(factura);
+    setTimeout(() => {
+      this.filas?.get(index)?.nativeElement?.scrollIntoView({
+        block: 'nearest',
+      });
+    });
+  }
+
+  private compararNumeroFacturaDesc(a: any, b: any): number {
+    const numero = (valor: any) => {
+      const digitos = String(valor || '').match(/\d+/g)?.join('') || '0';
+      return Number(digitos);
+    };
+    const diferencia = numero(b?.fa_codFact) - numero(a?.fa_codFact);
+    return diferencia || String(b?.fa_codFact || '').localeCompare(String(a?.fa_codFact || ''));
   }
 
   private esErrorJwtVencido(error: any): boolean {
@@ -1392,6 +1435,7 @@ export class CobroFact implements OnInit {
       datosParaImprimir,
       this.items,
     );
+    this.limpia();
   }
 
   private tieneRespuestaDgiiParaImprimir(payload: any): boolean {
@@ -1698,12 +1742,12 @@ export class CobroFact implements OnInit {
           },
           { emitEvent: false },
         );
-        this.sincronizarSalidaCaja(facturaActualizada, () => {
-          this.buscarFacturasNoImpresas();
-          this.printingService.imprimirConduceFactura80mm(
+        this.sincronizarSalidaCaja(facturaActualizada, async () => {
+          await this.printingService.imprimirConduceFactura80mm(
             facturaActualizada,
             this.items,
           );
+          this.limpia();
         });
       },
       error: (err) => {
