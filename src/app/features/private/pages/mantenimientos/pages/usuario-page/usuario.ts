@@ -111,6 +111,26 @@ export class Usuario implements OnInit {
     if (msg.includes('password should be at least') || msg.includes('password must be at least')) {
       return 'La clave no cumple los requisitos internos de seguridad.';
     }
+    if (
+      msg.includes('supabase_service_role_key') ||
+      msg.includes('faltan supabase_url') ||
+      msg.includes('service role')
+    ) {
+      return 'La funcion de creacion de usuarios no tiene configurada la clave administrativa de Supabase.';
+    }
+    if (
+      msg.includes('jwt expired') ||
+      msg.includes('token has expired') ||
+      msg.includes('invalid jwt')
+    ) {
+      return 'Tu sesion vencio. Inicia sesion nuevamente e intenta guardar el usuario.';
+    }
+    if (
+      msg.includes('email') &&
+      (msg.includes('registered') || msg.includes('already') || msg.includes('exists'))
+    ) {
+      return 'Ese correo ya esta registrado en Supabase Auth. Utiliza otro correo para el usuario.';
+    }
     if (msg.includes('already exists') || msg.includes('duplicate key')) {
       return 'Ya existe un registro con esos datos.';
     }

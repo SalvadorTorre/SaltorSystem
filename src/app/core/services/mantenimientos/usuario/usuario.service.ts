@@ -66,7 +66,7 @@ export class ServicioUsuario {
   private sanitizeEmail(email: any): string {
     const raw = String(email ?? '').trim().toLowerCase();
     if (!raw) return '';
-    if (!raw.includes('@')) return '';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(raw)) return '';
     return raw;
   }
 
@@ -75,9 +75,13 @@ export class ServicioUsuario {
     if (correo) return correo;
     const idUsuario = String(input?.idUsuario ?? input?.idusuario ?? '')
       .trim()
-      .toLowerCase();
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9._-]+/g, '.')
+      .replace(/^\.+|\.+$/g, '');
     if (!idUsuario) return '';
-    return `${idUsuario}@saltorsystem.local`;
+    return `${idUsuario}@usuarios.saltorsystem.com`;
   }
 
   private buildAuthPassword(input: any): string {
@@ -119,6 +123,26 @@ export class ServicioUsuario {
     }
     if (msg.includes('email rate limit')) {
       return 'Límite de correos alcanzado en Auth. Intenta de nuevo en unos minutos.';
+    }
+    if (
+      msg.includes('supabase_service_role_key') ||
+      msg.includes('faltan supabase_url') ||
+      msg.includes('service role')
+    ) {
+      return 'La funcion de creacion de usuarios no tiene configurada la clave administrativa de Supabase.';
+    }
+    if (
+      msg.includes('jwt expired') ||
+      msg.includes('token has expired') ||
+      msg.includes('invalid jwt')
+    ) {
+      return 'Tu sesion vencio. Inicia sesion nuevamente e intenta guardar el usuario.';
+    }
+    if (
+      msg.includes('email') &&
+      (msg.includes('registered') || msg.includes('already') || msg.includes('exists'))
+    ) {
+      return 'Ese correo ya esta registrado en Supabase Auth. Utiliza otro correo para el usuario.';
     }
     if (msg.includes('duplicate key value') || msg.includes('already exists')) {
       if (msg.includes('idusuario') || msg.includes('usuario')) return 'Ese nombre de usuario ya existe.';
@@ -195,7 +219,8 @@ export class ServicioUsuario {
     if (!authEmail) {
       throw new Error('No se pudo generar un correo para Supabase Auth');
     }
-    const { data, error } = await client.functions.invoke(
+    await this.supabase.recoverSession();
+    const { data, error, response } = await client.functions.invoke(
       'create-confirmed-platform-user',
       {
         body: {
@@ -212,13 +237,14 @@ export class ServicioUsuario {
       let details =
         e?.context?.statusText || e?.message || 'No se pudo crear el usuario en Supabase Auth';
       const ctx = e?.context;
-      if (ctx && typeof ctx?.json === 'function') {
+      const errorResponse = ctx || response;
+      if (errorResponse && typeof errorResponse?.json === 'function') {
         try {
-          const body = await ctx.json();
+          const body = await errorResponse.clone().json();
           const bodyMsg =
-            body?.message ||
             body?.details ||
             body?.error?.message ||
+            body?.message ||
             null;
           if (bodyMsg) details = String(bodyMsg);
         } catch {
@@ -231,7 +257,7 @@ export class ServicioUsuario {
     if (!data?.ok) {
       throw new Error(
         this.traducirError(
-          data?.message || data?.details || 'No se pudo crear el usuario en Supabase Auth',
+          data?.details || data?.message || 'No se pudo crear el usuario en Supabase Auth',
           'No se pudo crear el usuario en Supabase Auth'
         )
       );

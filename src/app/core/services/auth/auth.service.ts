@@ -77,10 +77,10 @@ export class AuthService {
         throw new Error('Credenciales incompletas');
       }
 
-      const email = await this.resolveEmailForSupabase(client, identifier);
+      const emails = await this.resolveEmailsForSupabase(client, identifier);
       const authData = await this.signInWithCandidates(
         client,
-        email,
+        emails,
         identifier,
         password,
       );
@@ -90,7 +90,7 @@ export class AuthService {
       }
 
       const token = authData.session.access_token;
-      const usuarioRaw = await this.fetchSupabaseUsuario(client, email, identifier);
+      const usuarioRaw = await this.fetchSupabaseUsuario(client, authData.email, identifier);
       if (!usuarioRaw) {
         throw new Error('No se encontró el usuario en myappdb.usuario');
       }
@@ -138,7 +138,7 @@ export class AuthService {
 
   private async signInWithCandidates(
     client: SupabaseClient,
-    email: string,
+    emails: string[],
     identifier: string,
     plainPassword: string,
   ): Promise<any> {
@@ -148,26 +148,28 @@ export class AuthService {
     );
 
     let lastError: any = null;
-    for (const candidate of candidates) {
-      const { data, error } = await client.auth.signInWithPassword({
-        email,
-        password: candidate,
-      });
-      if (!error && data?.session) {
-        return data;
+    for (const email of emails) {
+      for (const candidate of candidates) {
+        const { data, error } = await client.auth.signInWithPassword({
+          email,
+          password: candidate,
+        });
+        if (!error && data?.session) {
+          return { ...data, email };
+        }
+        lastError = error || lastError;
       }
-      lastError = error || lastError;
     }
 
     throw lastError || new Error('No fue posible iniciar sesión');
   }
 
-  private async resolveEmailForSupabase(
+  private async resolveEmailsForSupabase(
     client: SupabaseClient,
     identifier: string,
-  ): Promise<string> {
+  ): Promise<string[]> {
     if (identifier.includes('@')) {
-      return identifier;
+      return [identifier];
     }
     const normalizedId = String(identifier || '')
       .trim()
@@ -175,6 +177,8 @@ export class AuthService {
     if (!normalizedId) {
       throw new Error('No se encontró usuario para Supabase Auth');
     }
+
+    const candidates: string[] = [];
 
     // Primero intenta el correo real guardado en usuario.
     try {
@@ -187,14 +191,18 @@ export class AuthService {
         .trim()
         .toLowerCase();
       if (correo.includes('@')) {
-        return correo;
+        candidates.push(correo);
       }
     } catch {
       // Si falla consulta (schema cache/RLS), cae al alias interno.
     }
 
-    // Login por username usando alias de correo interno.
-    return `${normalizedId}@saltorsystem.local`;
+    // Alias actual y alias legado para usuarios creados antes de la migracion.
+    candidates.push(
+      `${normalizedId}@usuarios.saltorsystem.com`,
+      `${normalizedId}@saltorsystem.local`,
+    );
+    return Array.from(new Set(candidates));
   }
 
   private async fetchSupabaseUsuario(
