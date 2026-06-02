@@ -474,7 +474,14 @@
                 <button class="btn btn-outline-secondary flex-fill" (click)="limpia()">
                   <i class="bi bi-arrow-counterclockwise me-1"></i>Deshacer
                 </button>
-                <button class="btn btn-success flex-fill" (click)="guardarFacturacion()" [disabled]="isLoading">
+                <button
+                  *ngIf="puedeEditarFacturaConsultada"
+                  class="btn btn-warning flex-fill"
+                  (click)="activarEdicionFacturaConsultada()"
+                >
+                  <i class="bi bi-pencil-square me-1"></i>Editar
+                </button>
+                <button class="btn btn-success flex-fill" (click)="guardarFacturacion()" [disabled]="isLoading || modoconsultaFacturacion">
                   <ng-container *ngIf="!isLoading"><i class="bi bi-check-circle me-1"></i>Guardar</ng-container>
                   <ng-container *ngIf="isLoading"><span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Guardando...</ng-container>
                 </button>

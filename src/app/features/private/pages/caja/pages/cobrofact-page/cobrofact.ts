@@ -41,6 +41,9 @@ import { ServicioConfiguracionGlobal } from 'src/app/core/services/mantenimiento
 import { ServicioSalidafactura } from 'src/app/core/services/almacen/salidafactura/salidafactura.service';
 import { ServicioOrigenPago } from 'src/app/core/services/mantenimientos/origenpago/origenpago.service';
 import { ServicioItbis } from 'src/app/core/services/mantenimientos/itbis/itbis.service';
+import { SupabaseService } from 'src/app/core/services/supabase/supabase.service';
+import { AuthService } from 'src/app/core/services/auth/auth.service';
+import { Router } from '@angular/router';
 
 declare var $: any;
 
@@ -218,6 +221,22 @@ export class CobroFact implements OnInit {
     return pago === 'S' || pago === 'P';
   }
 
+  get facturaSoloConsulta(): boolean {
+    const datosFormulario = this.formularioFacturacion?.getRawValue?.() || {};
+    return this.esFacturaPagadaConsulta({
+      ...(this.DatosSeleccionado || {}),
+      ...datosFormulario,
+    });
+  }
+
+  esFacturaPagadaConsulta(factura: any): boolean {
+    return (
+      this.normalizeImpresa(factura?.fa_fpago) === 'S' &&
+      this.normalizeImpresa(factura?.fa_impresa) === 'S' &&
+      this.normalizarStatusFactura(factura?.fa_status) === 'C'
+    );
+  }
+
   private aplicarEstadoPagoUi(factura: any): void {
     const estaPagada = this.normalizeImpresa(factura?.fa_fpago) === 'S' ||
       this.normalizeImpresa(factura?.fa_fpago) === 'P';
@@ -350,6 +369,9 @@ export class CobroFact implements OnInit {
     private servicioSalidaFactura: ServicioSalidafactura,
     private servicioOrigenPago: ServicioOrigenPago,
     private servicioItbis: ServicioItbis,
+    private supabase: SupabaseService,
+    private authService: AuthService,
+    private router: Router,
   ) {
     this.form = this.fb.group({
       fa_codVend: ['', Validators.required], // El campo es requerido
@@ -505,10 +527,37 @@ export class CobroFact implements OnInit {
     $('#input1').select();
   }
 
+  private reiniciarCobroAlCambiarFactura(codigoFactura: any): void {
+    const codigoActual = String(
+      this.formularioFacturacion?.get('fa_codFact')?.value || '',
+    ).trim();
+    const codigoNuevo = String(codigoFactura || '').trim();
+    if (!codigoActual || codigoActual === codigoNuevo) return;
+
+    this.chekPagado = false;
+    this.txtvalPagado = true;
+    this.valorPagado = 0;
+    this.cambio = 0;
+    this.valCambio = 0;
+    this.fentrega = '';
+    this.ftipoPago = '';
+    this.origenPagoSeleccionado = '';
+    this.confirmacionPago = '';
+    this.notaPago = '';
+    this.bloquearReimpresion = false;
+    this.permitirImpresion = false;
+    this.nomChoferSalida = '';
+  }
+
   editardetFacturacion(detFactura: detFacturaData) {
     this.facturacionid = detFactura.df_codFact;
   }
   editarFacturacion(Factura: FacturacionModelData) {
+    this.reiniciarCobroAlCambiarFactura(Factura.fa_codFact);
+    if (this.esFacturaPagadaConsulta(Factura)) {
+      this.consultarFacturacion(Factura);
+      return;
+    }
     this.facturacionid = Factura.fa_codFact;
     this.facturaSelecionada = Factura;
     this.modoedicionFacturacion = true;
@@ -614,7 +663,7 @@ export class CobroFact implements OnInit {
         this.totalGral = totalGeneral;
       });
   }
-  buscarFacturasNoImpresas() {
+  buscarFacturasNoImpresas(reintentarSesion = true) {
     this.servicioFacturacion.obtenerFacturasNoImpresas().subscribe({
       next: (resp) => {
         console.log('Facturas recibidas:', resp.data);
@@ -627,8 +676,24 @@ export class CobroFact implements OnInit {
             caja_status: this.statusCaja(row),
           }));
       },
-      error: (err) => {
+      error: async (err) => {
         console.error('Error cargando facturas de caja:', err);
+        if (reintentarSesion && this.esErrorJwtVencido(err)) {
+          const recuperada = await this.supabase.recoverSession();
+          if (recuperada) {
+            this.buscarFacturasNoImpresas(false);
+            return;
+          }
+
+          this.authService.logout();
+          await Swal.fire(
+            'Sesión vencida',
+            'Tu sesión venció. Inicia sesión nuevamente para continuar.',
+            'warning',
+          );
+          void this.router.navigate(['/public/sign-in']);
+          return;
+        }
         this.facturacionList = [];
         Swal.fire('Error', this.extraerMensajeError(err), 'error');
       },
@@ -636,6 +701,7 @@ export class CobroFact implements OnInit {
   }
 
   consultarFacturacion(factura: FacturacionModelData) {
+    this.reiniciarCobroAlCambiarFactura(factura.fa_codFact);
     this.modoconsultaFacturacion = true;
     this.formularioFacturacion.reset();
     this.crearFormularioFacturacion();
@@ -664,6 +730,7 @@ export class CobroFact implements OnInit {
       Number((factura as any)?.fa_envio) === 1 &&
       this.normalizeImpresa((factura as any)?.fa_impresa) === 'N';
     this.aplicarEstadoPagoUi(factura);
+    this.chekpagada = this.esFacturaPagadaConsulta(factura);
     this.cargarChoferDeSalida(idSalida);
     this.completarDatosSalidaFactura(factura);
     if (this.bloquearReimpresion) {
@@ -1060,7 +1127,20 @@ export class CobroFact implements OnInit {
       error?.message ||
       error?.statusText ||
       'No se pudo generar el comprobante electrónico.';
-    return String(msg);
+    return this.esErrorJwtVencido(error)
+      ? 'Tu sesión venció. Inicia sesión nuevamente para continuar.'
+      : String(msg);
+  }
+
+  private esErrorJwtVencido(error: any): boolean {
+    const texto = String(
+      error?.error?.message ||
+        error?.error?.details ||
+        error?.message ||
+        error?.statusText ||
+        '',
+    ).toLowerCase();
+    return texto.includes('jwt expired') || texto.includes('token has expired');
   }
 
   /**
@@ -1209,7 +1289,7 @@ export class CobroFact implements OnInit {
 
     // Envío server-side (Edge Function) para evitar CORS en navegador.
     this.servicioConfiguracionGlobal.enviarDgiiDirectCert([dgiiData], rncEmisor).subscribe(
-      (response: any) => {
+      async (response: any) => {
         console.log('Respuesta DGII:', response);
         const payloadDgii = this.normalizarRespuestaDgii(
           response?.data ?? response
@@ -1219,8 +1299,13 @@ export class CobroFact implements OnInit {
         if (!this.tieneRespuestaDgiiParaImprimir(payloadDgii)) {
           Swal.fire(
             'DGII incompleto',
-            'El comprobante fue enviado, pero no se recibieron datos DGII suficientes para imprimir.',
+            'El comprobante fue enviado, pero no se recibieron todos los datos DGII. Se imprimirá con los datos locales de la factura.',
             'warning',
+          );
+          await this.imprimirFacturaConDatosDisponibles(
+            facturaData,
+            datosLocalesImpresion,
+            payloadDgii,
           );
           return;
         }
@@ -1248,41 +1333,64 @@ export class CobroFact implements OnInit {
               Swal.close();
               this.buscarFacturasNoImpresas();
 
-              // Combinar respuesta con datos de factura para impresión
-              const datosParaImprimir = {
-                ...facturaData,
-                ...(res?.data || {}),
-                ...datosLocalesImpresion,
-                ...payloadDgii,
-                porcentaje_menos: await this.obtenerPorcentajeMenosItbis(
-                  facturaData?.fa_tipoitbis ??
-                    (res?.data || {})?.fa_tipoitbis ??
-                    datosLocalesImpresion?.fa_tipoitbis,
-                ),
-              };
-              this.printingService.imprimirFactura80mm(
-                datosParaImprimir,
-                this.items,
+              await this.imprimirFacturaConDatosDisponibles(
+                facturaData,
+                datosLocalesImpresion,
+                {
+                  ...(res?.data || {}),
+                  ...payloadDgii,
+                },
               );
             },
-            error: (err) => {
+            error: async (err) => {
               console.error('Error guardando datos DGII', err);
               Swal.fire(
                 'Error',
-                'Se generó el comprobante pero falló al guardar los datos en el sistema.',
+                'Se generó el comprobante pero falló al guardar los datos en el sistema. Se imprimirá con los datos disponibles.',
                 'warning',
+              );
+              await this.imprimirFacturaConDatosDisponibles(
+                facturaData,
+                datosLocalesImpresion,
+                payloadDgii,
               );
             },
           });
       },
-      (error) => {
+      async (error) => {
         console.error('Error obteniendo datos DGII:', error);
         Swal.fire({
           title: 'DGII no respondió',
           text: `${this.extraerMensajeError(error)}. Se imprimirá con los datos locales de la factura.`,
           icon: 'warning',
         });
+        await this.imprimirFacturaConDatosDisponibles(
+          facturaData,
+          datosLocalesImpresion,
+        );
       },
+    );
+  }
+
+  private async imprimirFacturaConDatosDisponibles(
+    facturaData: any,
+    datosLocalesImpresion: any,
+    datosAdicionales: any = {},
+  ): Promise<void> {
+    const datosParaImprimir = {
+      ...(facturaData || {}),
+      ...(datosLocalesImpresion || {}),
+      ...(datosAdicionales || {}),
+      porcentaje_menos: await this.obtenerPorcentajeMenosItbis(
+        datosAdicionales?.fa_tipoitbis ??
+          facturaData?.fa_tipoitbis ??
+          datosLocalesImpresion?.fa_tipoitbis,
+      ),
+    };
+
+    await this.printingService.imprimirFactura80mm(
+      datosParaImprimir,
+      this.items,
     );
   }
 
@@ -1313,6 +1421,7 @@ export class CobroFact implements OnInit {
   }
 
   toggleCheckPagado() {
+    if (this.facturaSoloConsulta) return;
     this.chekPagado = !this.chekPagado;
     if (this.chekPagado) {
       this.valorPagado =
@@ -1435,6 +1544,7 @@ export class CobroFact implements OnInit {
   }
 
   guardarPagoEntrega() {
+    if (this.facturaSoloConsulta) return;
     this.formularioFacturacion.get('fa_codFact')?.enable();
     const cod = this.formularioFacturacion.get('fa_codFact')?.value;
     if (!cod) {
@@ -1531,6 +1641,7 @@ export class CobroFact implements OnInit {
   }
 
   imprimirConduceFactura() {
+    if (this.facturaSoloConsulta) return;
     if (!this.hayFacturaSeleccionada) {
       Swal.fire('Aviso', 'Seleccione una factura primero.', 'warning');
       return;
@@ -1548,7 +1659,7 @@ export class CobroFact implements OnInit {
       fa_status: 'C',
       fa_envio: this.fentrega,
       fa_codfpago: this.ftipoPago,
-      fa_fpago: this.normalizeImpresa((this.DatosSeleccionado as any)?.fa_fpago) || 'N',
+      fa_fpago: this.chekPagado ? 'S' : 'N',
       fa_origenpago: this.origenPagoSeleccionado,
       fa_confirpago: this.confirmacionPago,
       fa_notapago: this.notaPago,
@@ -1561,6 +1672,7 @@ export class CobroFact implements OnInit {
       fa_codfpago: this.ftipoPago,
       fa_impresa: 'S',
       fa_status: 'C',
+      fa_fpago: payload.fa_fpago,
       fa_origenpago: this.origenPagoSeleccionado,
       fa_confirpago: this.confirmacionPago,
       fa_notapago: this.notaPago,
@@ -1573,6 +1685,7 @@ export class CobroFact implements OnInit {
           ...(resp?.data || {}),
           fa_impresa: 'S',
           fa_status: 'C',
+          fa_fpago: payload.fa_fpago,
         };
         this.DatosSeleccionado = facturaActualizada;
         this.formularioFacturacion.patchValue(
@@ -1581,6 +1694,7 @@ export class CobroFact implements OnInit {
             fa_status: 'C',
             fa_envio: this.fentrega,
             fa_codfpago: this.ftipoPago,
+            fa_fpago: payload.fa_fpago,
           },
           { emitEvent: false },
         );
@@ -1626,14 +1740,14 @@ export class CobroFact implements OnInit {
     if (statusFactura !== 'C') return '';
     if (this.normalizeImpresa(factura?.fa_impresa) !== 'S') return '';
 
-    if (fpago === 'S' || fpago === 'P') return 'Factura pagada';
+    if (fpago === 'S' || fpago === 'P') return 'Fact. Pagada';
     if (fpago === 'N' || fpago === '') return 'Pend. pago';
     return '';
   }
 
   claseStatusCaja(factura: any): string {
     const status = this.statusCaja(factura);
-    if (status === 'Factura pagada') return 'bg-success';
+    if (status === 'Fact. Pagada') return 'bg-success';
     if (status === 'Pend. pago') return 'bg-danger';
     return 'bg-secondary';
   }
@@ -1641,9 +1755,14 @@ export class CobroFact implements OnInit {
   private cumpleFiltroListaCaja(factura: any): boolean {
     const statusFactura = this.normalizarStatusFactura(factura?.fa_status);
     const fpago = this.normalizeImpresa(factura?.fa_fpago);
+    const impresa = this.normalizeImpresa(factura?.fa_impresa);
+
+    if (statusFactura === 'F' && fpago === 'S' && impresa === 'S') {
+      return false;
+    }
 
     return (
-      this.normalizeImpresa(factura?.fa_impresa) === 'N' ||
+      impresa === 'N' ||
       this.esPendientePago(factura) ||
       statusFactura === 'C' ||
       (statusFactura === 'F' && fpago === 'N')
@@ -1673,6 +1792,7 @@ export class CobroFact implements OnInit {
   }
 
   buscarFactura() {
+    if (this.facturaSoloConsulta) return;
     if (this.bloquearReimpresion) return;
 
     const cod = this.formularioFacturacion.get('fa_codFact')?.value;

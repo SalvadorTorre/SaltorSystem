@@ -11,6 +11,10 @@ export class SupabaseService {
   private authListenerBound = false;
   private keepAliveTimer: ReturnType<typeof setInterval> | null = null;
   private visibilityListenerBound = false;
+  private readonly refreshIntervalMs = 3 * 60 * 1000;
+  private readonly refreshBeforeExpirationSeconds = 10 * 60;
+  private refreshHandler: (() => void) | null = null;
+  private visibilityHandler: (() => void) | null = null;
 
   get url(): string {
     return environment?.supabase?.url || '';
@@ -59,23 +63,27 @@ export class SupabaseService {
     return this.clientInstance;
   }
 
-  async recoverSession(): Promise<void> {
+  async recoverSession(): Promise<boolean> {
     const client = this.client;
-    if (!client?.auth) return;
+    if (!client?.auth) return false;
 
     try {
       const { data } = await client.auth.getSession();
       const session = data?.session;
-      if (!session) return;
+      if (!session) return false;
 
-      if (this.isJwtExpired(session.access_token)) {
-        await client.auth.refreshSession();
-        return;
+      if (this.shouldRefreshJwt(session.access_token)) {
+        const { data: refreshed, error } = await client.auth.refreshSession();
+        if (error || !refreshed?.session?.access_token) return false;
+        localStorage.setItem('authToken', String(refreshed.session.access_token).trim());
+        return true;
       }
 
       localStorage.setItem('authToken', String(session.access_token || '').trim());
+      return true;
     } catch {
       // Si el refresh token ya no es valido, la app seguira el flujo normal de login.
+      return false;
     }
   }
 
@@ -88,6 +96,20 @@ export class SupabaseService {
     }
     this.clientInstance = null;
     this.authListenerBound = false;
+    if (this.keepAliveTimer) {
+      clearInterval(this.keepAliveTimer);
+      this.keepAliveTimer = null;
+    }
+    if (typeof window !== 'undefined' && this.refreshHandler) {
+      window.removeEventListener('focus', this.refreshHandler);
+      window.removeEventListener('online', this.refreshHandler);
+    }
+    if (typeof document !== 'undefined' && this.visibilityHandler) {
+      document.removeEventListener('visibilitychange', this.visibilityHandler);
+    }
+    this.refreshHandler = null;
+    this.visibilityHandler = null;
+    this.visibilityListenerBound = false;
   }
 
   private bindAuthListener(client: any): void {
@@ -113,32 +135,35 @@ export class SupabaseService {
     if (!this.keepAliveTimer && typeof window !== 'undefined') {
       this.keepAliveTimer = setInterval(() => {
         void this.recoverSession();
-      }, 4 * 60 * 1000);
+      }, this.refreshIntervalMs);
     }
 
     if (this.visibilityListenerBound || typeof window === 'undefined') {
       return;
     }
 
-    const refresh = () => void this.recoverSession();
-    window.addEventListener('focus', refresh);
-    document.addEventListener('visibilitychange', () => {
+    this.refreshHandler = () => void this.recoverSession();
+    this.visibilityHandler = () => {
       if (document.visibilityState === 'visible') {
-        refresh();
+        this.refreshHandler?.();
       }
-    });
+    };
+    window.addEventListener('focus', this.refreshHandler);
+    window.addEventListener('online', this.refreshHandler);
+    document.addEventListener('visibilitychange', this.visibilityHandler);
 
     this.visibilityListenerBound = true;
   }
 
-  private isJwtExpired(token: string): boolean {
+  private shouldRefreshJwt(token: string): boolean {
     try {
       const parts = String(token || '').split('.');
       if (parts.length !== 3) return true;
       const payload = JSON.parse(atob(parts[1]));
       const exp = Number(payload?.exp || 0);
       if (!exp) return true;
-      return exp <= Math.floor(Date.now() / 1000) + 45;
+      return exp <=
+        Math.floor(Date.now() / 1000) + this.refreshBeforeExpirationSeconds;
     } catch {
       return true;
     }

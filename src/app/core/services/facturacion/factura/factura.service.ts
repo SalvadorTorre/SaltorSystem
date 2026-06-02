@@ -961,9 +961,27 @@ export class ServicioFacturacion {
       return this.http.PutRequest(`/facturacion/${cod}`, payload);
     }
 
-      const cod = String(payload?.factura?.fa_codFact || '').trim();
+    const cod = String(payload?.factura?.fa_codFact || '').trim();
     return from((async () => {
-      const facturaDbPayload = this.mapFacturaUiToDb(payload?.factura || {});
+      const facturaRaw = { ...(payload?.factura || {}) };
+      const detalleRaw = Array.isArray(payload?.detalle) ? payload.detalle : [];
+      let facturaActualQuery = this.db
+        .from('factura')
+        .select('fa_impresa,fa_fpago,fa_codsucu')
+        .eq('fa_codfact', cod);
+      facturaActualQuery = this.applyTenantFilter(facturaActualQuery);
+      const { data: facturaActual, error: facturaActualError } =
+        await facturaActualQuery.maybeSingle();
+      if (facturaActualError) throw facturaActualError;
+      if (!facturaActual) throw new Error(`No se encontrÃ³ la factura ${cod}.`);
+      if (
+        String(facturaActual.fa_impresa || '').trim().toUpperCase() !== 'N' ||
+        String(facturaActual.fa_fpago || '').trim().toUpperCase() !== 'N'
+      ) {
+        throw new Error('Solo se pueden editar facturas no impresas y no pagadas.');
+      }
+
+      const facturaDbPayload = this.mapFacturaUiToDb(facturaRaw);
       delete facturaDbPayload.fa_codfact;
 
       let updateQuery = this.db
@@ -974,6 +992,81 @@ export class ServicioFacturacion {
       updateQuery = this.applyTenantFilter(updateQuery);
       const { data, error } = await updateQuery.maybeSingle();
       if (error) throw error;
+
+      let detalleAnteriorQuery = this.db
+        .from('detfactura')
+        .select('df_codmerc,df_canmerc')
+        .eq('df_codfact', cod);
+      detalleAnteriorQuery = this.applyTenantFilterDetalle(detalleAnteriorQuery);
+      const { data: detalleAnterior, error: detalleAnteriorError } =
+        await detalleAnteriorQuery;
+      if (detalleAnteriorError) throw detalleAnteriorError;
+
+      const idsucursal = this.toNumber(facturaRaw?.fa_codSucu ?? facturaActual.fa_codsucu);
+      const cantidades = new Map<string, number>();
+      for (const item of detalleAnterior || []) {
+        const codigo = String(item?.df_codmerc || '').trim();
+        cantidades.set(codigo, (cantidades.get(codigo) || 0) - this.toNumber(item?.df_canmerc));
+      }
+      for (const item of detalleRaw) {
+        const producto = item?.producto || {};
+        const codigo = String(producto?.in_codmerc ?? item?.df_codMerc ?? '').trim();
+        cantidades.set(codigo, (cantidades.get(codigo) || 0) + this.toNumber(item?.cantidad ?? item?.df_canMerc));
+      }
+      for (const [codigoProducto, diferencia] of cantidades) {
+        if (!codigoProducto || !diferencia) continue;
+        const { data: inventario, error: inventarioError } = await this.db
+          .from('inventario')
+          .select('id,inv_existencia')
+          .eq('inv_codsucu', idsucursal)
+          .eq('inv_codprod', codigoProducto)
+          .limit(1)
+          .maybeSingle();
+        if (inventarioError) throw inventarioError;
+        if (!inventario) continue;
+        const { error: inventarioUpdateError } = await this.db
+          .from('inventario')
+          .update({
+            inv_existencia: this.toNumber(inventario.inv_existencia) - diferencia,
+            inv_fechamov: new Date().toISOString(),
+          })
+          .eq('id', Number(inventario.id));
+        if (inventarioUpdateError) throw inventarioUpdateError;
+      }
+
+      let detalleDelete = this.db.from('detfactura').delete().eq('df_codfact', cod);
+      detalleDelete = this.applyTenantFilterDetalle(detalleDelete);
+      const { error: detalleDeleteError } = await detalleDelete;
+      if (detalleDeleteError) throw detalleDeleteError;
+
+      if (detalleRaw.length > 0) {
+        const tenant = this.currentTenant();
+        const detallePayload = detalleRaw.map((item: any) => {
+          const producto = item?.producto || {};
+          const cantidad = this.toNumber(item?.cantidad ?? item?.df_canMerc);
+          const precio = this.toNumber(item?.precio ?? item?.df_preMerc);
+          return {
+            df_codfact: cod,
+            df_fecfact: this.normalizeDate(facturaRaw?.fa_fecFact),
+            df_codmerc: this.toStringMax(producto?.in_codmerc ?? item?.df_codMerc, 15) || '',
+            df_desmerc: this.toStringMax(producto?.in_desmerc ?? item?.df_desMerc, 30),
+            df_canmerc: cantidad,
+            df_premerc: precio,
+            df_valmerc: this.toNumber(item?.total ?? item?.df_valMerc) || cantidad * precio,
+            df_cosmerc: this.toNumberOrNull(item?.costo ?? item?.df_cosMerc ?? producto?.in_cosmerc),
+            df_codclie: this.toNumberOrNull(facturaRaw?.fa_codClie),
+            df_status: this.toStringMax(item?.df_status, 3) || 'A',
+            df_codepr: this.toStringMax(tenant.codEmpre, 6),
+            tenant_rnc: this.toStringOrNull(tenant.rncEmpre),
+            df_codsucu: this.toStringMax(idsucursal, 10),
+          };
+        });
+        const { error: detalleInsertError } = await this.db
+          .from('detfactura')
+          .insert(detallePayload);
+        if (detalleInsertError) throw detalleInsertError;
+      }
+
       return { status: 'success', code: 200, data: this.mapFacturaDbToUi(data) };
     })());
   }

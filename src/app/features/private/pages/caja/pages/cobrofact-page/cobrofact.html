@@ -65,7 +65,7 @@
 
                   <!-- Status -->
                   <td class="text-center align-middle">
-                    <span *ngIf="factura.caja_status" class="badge bg-danger">
+                    <span *ngIf="factura.caja_status" class="badge" [ngClass]="claseStatusCaja(factura)">
                       {{ factura.caja_status }}
                     </span>
                   </td>
@@ -74,6 +74,7 @@
                   <td class="text-center align-middle">
                     <div class="btn-group btn-group-sm">
                       <button
+                        *ngIf="!esFacturaPagadaConsulta(factura)"
                         class="btn btn-outline-primary"
                         (click)="editarFacturacion(factura)"
                         title="Editar factura"
@@ -151,7 +152,7 @@
                         name="formapago"
                         [(ngModel)]="ftipoPago"
                         class="form-select"
-                        [disabled]="!chekPagado"
+                        [disabled]="!chekPagado || facturaSoloConsulta"
                       >
                         <option
                           [value]="fpago.fp_codfpago"
@@ -167,7 +168,7 @@
                       <select
                         class="form-select"
                         [(ngModel)]="fentrega"
-                        [disabled]="!chekPagado || bloquearReimpresion"
+                        [disabled]="!chekPagado || bloquearReimpresion || facturaSoloConsulta"
                       >
                         <option [value]="fe.idfentrega" *ngFor="let fe of resultadoFentrega">{{ fe.desentrega }}</option>
                       </select>
@@ -229,13 +230,13 @@
                 <div class="action-bar d-flex justify-content-between gap-2 mt-1">
                 <button
                   class="btn btn-success flex-fill"
-                  [disabled]="!hayFacturaSeleccionada || !chekPagado || valorPagado < formularioFacturacion.get('fa_valFact')?.value"
+                  [disabled]="facturaSoloConsulta || !hayFacturaSeleccionada || !chekPagado || valorPagado < formularioFacturacion.get('fa_valFact')?.value"
                   (click)="guardarPagoEntrega()"  >
                   <i class="bi bi-save me-1"></i>Guardar
                 </button>
                 <button
                   class="btn btn-warning flex-fill"
-                  [disabled]="!hayFacturaSeleccionada || !esEntregaEnvio || facturaEstaImpresa || bloquearReimpresion"
+                  [disabled]="facturaSoloConsulta || !hayFacturaSeleccionada || !esEntregaEnvio || facturaEstaImpresa || bloquearReimpresion"
                   [title]="facturaEstaImpresa ? 'La factura ya estÃ¡ impresa' : ''"
                   (click)="imprimirConduceFactura()">
                   <i class="bi bi-printer me-1"></i> Imprimir conduce
@@ -247,7 +248,7 @@
                 </button>
                 <button
                   class="btn btn-primary flex-fill"
-                  [disabled]="(!chekPagado && !permitirImpresion) || bloquearReimpresion"
+                  [disabled]="facturaSoloConsulta || (!chekPagado && !permitirImpresion) || bloquearReimpresion"
                   [title]="bloquearReimpresion ? 'Pendiente de pago: impresión deshabilitada' : ''"
                   (click)="buscarFactura()">
                   <i class="bi bi-cash-stack me-1"></i> Cobrar y enviar DGII

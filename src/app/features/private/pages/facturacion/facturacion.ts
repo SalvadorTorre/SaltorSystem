@@ -101,6 +101,7 @@ export class Facturacion implements OnInit {
   modoedicionFacturacion: boolean = false;
   facturacionid!: string;
   modoconsultaFacturacion: boolean = false;
+  facturaConsultaSeleccionada: FacturacionModelData | null = null;
   facturacionList: FacturacionModelData[] = [];
   detFacturaList: detFacturaData[] = [];
   selectedFacturacion: any = null;
@@ -645,6 +646,8 @@ export class Facturacion implements OnInit {
     this.costoGral = 0;
     this.factxt = 0;
     this.modoconsultaFacturacion = false;
+    this.modoedicionFacturacion = false;
+    this.facturaConsultaSeleccionada = null;
     this.resumenConsultaFactura = null;
     this.detallePendienteConsulta = [];
     this.cargandoDetallePendienteConsulta = false;
@@ -661,17 +664,18 @@ export class Facturacion implements OnInit {
   async editarFacturacion(Factura: FacturacionModelData) {
     this.facturacionid = Factura.fa_codFact;
     this.modoedicionFacturacion = true;
+    this.modoconsultaFacturacion = false;
+    this.facturaConsultaSeleccionada = Factura;
+    this.formularioFacturacion.enable();
     this.formularioFacturacion.patchValue(Factura);
     await this.cargarItbisDeFactura(Factura);
     this.tituloModalFacturacion = 'Editando Facturacion';
     $('#modalfacturacion').modal('show');
     this.habilitarFormulario = true;
-    const inputs = document.querySelectorAll('.seccion-productos input');
-    inputs.forEach((input) => {
-      (input as HTMLInputElement).disabled = true;
-    });
+    this.habilitarIcono = true;
     // Limpiar los items antes de agregar los nuevos
     this.items = [];
+    this.totalItbis = 0;
     this.servicioFacturacion
       .buscarFacturaDetalle(Factura.fa_codFact)
       .subscribe((response) => {
@@ -716,7 +720,7 @@ export class Facturacion implements OnInit {
             precio: precio,
             total: totalItem,
             fecfactActual: new Date(),
-            costo: this.costotxt,
+            costo: item.df_cosMerc,
           });
           //fecfactActual: new Date(),
           // Calcular el subtotal
@@ -732,6 +736,7 @@ export class Facturacion implements OnInit {
         this.subTotal = subtotal;
         this.totalItbis = this.totalItbis;
         this.totalGral = totalGeneral;
+        this.actualizarTotales();
       });
   }
 
@@ -749,6 +754,8 @@ export class Facturacion implements OnInit {
   }
   async consultarFacturacion(factura: FacturacionModelData) {
     this.modoconsultaFacturacion = true;
+    this.modoedicionFacturacion = false;
+    this.facturaConsultaSeleccionada = factura;
     this.facturaConsultaActual = String(factura.fa_codFact || '').trim();
     this.detallePendienteConsulta = [];
     this.cargandoDetallePendienteConsulta = false;
@@ -842,6 +849,23 @@ export class Facturacion implements OnInit {
           factura.fa_cosFact;
         this.actualizarTotales();
       });
+  }
+
+  get puedeEditarFacturaConsultada(): boolean {
+    const factura = this.facturaConsultaSeleccionada;
+    return Boolean(
+      this.modoconsultaFacturacion &&
+      factura &&
+      this.normalizarBandera((factura as any).fa_impresa) === 'N' &&
+      this.normalizarBandera((factura as any).fa_fpago) === 'N'
+    );
+  }
+
+  activarEdicionFacturaConsultada(): void {
+    if (!this.puedeEditarFacturaConsultada || !this.facturaConsultaSeleccionada) {
+      return;
+    }
+    void this.editarFacturacion(this.facturaConsultaSeleccionada);
   }
 
   private crearResumenConsultaFactura(
@@ -2471,12 +2495,17 @@ export class Facturacion implements OnInit {
 
     if (this.formularioFacturacion.valid) {
       this.isLoading = true;
-      this.servicioFacturacion.guardarFacturacion(datosParaGuardar).subscribe(
+      const operacion = this.modoedicionFacturacion
+        ? this.servicioFacturacion.editarFacturacion(datosParaGuardar)
+        : this.servicioFacturacion.guardarFacturacion(datosParaGuardar);
+      operacion.subscribe(
         (response) => {
           this.isLoading = false;
           Swal.fire({
             title: 'Excelente!',
-            text: 'Facturacion creada correctamente.',
+            text: this.modoedicionFacturacion
+              ? 'Facturacion actualizada correctamente.'
+              : 'Facturacion creada correctamente.',
             icon: 'success',
             timer: 1000,
             showConfirmButton: false,
