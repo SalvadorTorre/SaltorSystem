@@ -498,9 +498,7 @@ export class PrintingService {
       // --- PRINT ---
       doc.autoPrint();
       const pdfBlob = doc.output('blob');
-      const pdfUrl = URL.createObjectURL(pdfBlob);
-
-      this.printPdf(pdfUrl, 'factura');
+      await this.printBlob(pdfBlob, 'factura');
     } catch (error) {
       console.error('Error fatal al generar factura:', error);
     }
@@ -702,8 +700,7 @@ export class PrintingService {
 
       doc.autoPrint();
       const pdfBlob = doc.output('blob');
-      const pdfUrl = URL.createObjectURL(pdfBlob);
-      this.printPdf(pdfUrl, 'ticket');
+      await this.printBlob(pdfBlob, 'ticket');
     } catch (error) {
       console.error('Error al generar entrada:', error);
     }
@@ -873,8 +870,7 @@ items.forEach((it: any) => {
       doc.text('.', leftMargin, yPos, { align: 'left' });
       doc.autoPrint();
       const pdfBlob = doc.output('blob');
-      const pdfUrl = URL.createObjectURL(pdfBlob);
-      this.printPdf(pdfUrl, 'ticket');
+      await this.printBlob(pdfBlob, 'ticket');
     } catch {}
   }
 
@@ -1057,8 +1053,7 @@ items.forEach((it: any) => {
       doc.text('.', leftMargin, yPos, { align: 'left' });
       doc.autoPrint();
       const pdfBlob = doc.output('blob');
-      const pdfUrl = URL.createObjectURL(pdfBlob);
-      this.printPdf(pdfUrl, 'ticket');
+      await this.printBlob(pdfBlob, 'ticket');
     } catch {}
   }
 
@@ -1190,8 +1185,7 @@ items.forEach((it: any) => {
       doc.text('.', leftMargin, yPos, { align: 'left' });
       doc.autoPrint();
       const pdfBlob = doc.output('blob');
-      const pdfUrl = URL.createObjectURL(pdfBlob);
-      this.printPdf(pdfUrl, 'ticket');
+      await this.printBlob(pdfBlob, 'ticket');
     } catch {}
   }
 
@@ -1354,8 +1348,7 @@ items.forEach((it: any) => {
 
       doc.autoPrint();
       const pdfBlob = doc.output('blob');
-      const pdfUrl = URL.createObjectURL(pdfBlob);
-      this.printPdf(pdfUrl, 'reporte');
+      await this.printBlob(pdfBlob, 'reporte');
     } catch (error) {
       console.error('Error al generar conduce:', error);
     }
@@ -1422,6 +1415,32 @@ items.forEach((it: any) => {
   }
 
   async printBlob(blob: Blob, profileKey: DesktopPrintProfileKey): Promise<void> {
+    const isDesktop = typeof window !== 'undefined' && !!window.electronAPI?.isDesktop;
+    if (isDesktop && window.electronAPI?.printPdfSilently) {
+      try {
+        const base64Data = await this.blobToBase64(blob);
+        const deviceName = await this.desktopPrintSettings.getProfileDeviceName(profileKey);
+        const result = await window.electronAPI.printPdfSilently({
+          base64Data,
+          deviceName,
+          profileKey,
+        });
+
+        if (!result?.success) {
+          console.error('[PrintingService] Falló printPdfSilently desde printBlob', result);
+          throw new Error(
+            result?.error ||
+              'No se pudo imprimir en silencio con la impresora configurada.'
+          );
+        }
+
+        return;
+      } catch (error) {
+        console.error('[PrintingService] Error imprimiendo blob en desktop', error);
+        throw error;
+      }
+    }
+
     const pdfUrl = URL.createObjectURL(blob);
     try {
       await this.printPdf(pdfUrl, profileKey);
@@ -1511,6 +1530,10 @@ items.forEach((it: any) => {
   private async blobUrlToBase64(blobUrl: string): Promise<string> {
     const response = await fetch(blobUrl);
     const blob = await response.blob();
+    return this.blobToBase64(blob);
+  }
+
+  private async blobToBase64(blob: Blob): Promise<string> {
     const arrayBuffer = await blob.arrayBuffer();
     let binary = '';
     const bytes = new Uint8Array(arrayBuffer);

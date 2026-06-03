@@ -248,7 +248,17 @@ async function printPdfSilently({ base64Data, deviceName, profileKey } = {}) {
     const configuredDeviceName = resolvePrintDeviceName(deviceName, profileKey);
     const copies = getProfileCopies(profileKey);
     fs.writeFileSync(tmpFile, Buffer.from(base64Data, 'base64'));
+    const fileSize = fs.statSync(tmpFile).size;
     const resolvedDeviceName = await validatePrinterDeviceName(printWindow, configuredDeviceName);
+
+    console.log('[Electron printPdfSilently]', {
+      profileKey,
+      configuredDeviceName,
+      resolvedDeviceName,
+      copies,
+      fileSize,
+      tmpFile,
+    });
 
     if (configuredDeviceName && !resolvedDeviceName) {
       return {
@@ -263,6 +273,8 @@ async function printPdfSilently({ base64Data, deviceName, profileKey } = {}) {
         copies,
         silent: true,
       });
+
+      console.log('[Electron printPdfSilently] PDF enviado a impresora por pdf-to-printer');
 
       return {
         success: true,
