@@ -377,11 +377,21 @@ export class PrintingService {
         return null;
       };
 
+      const responseXML =
+        facturaData?.responseXML && typeof facturaData.responseXML === 'object'
+          ? facturaData.responseXML
+          : f?.responseXML && typeof f.responseXML === 'object'
+          ? f.responseXML
+          : null;
+
       const securityCode = pickText(
         facturaData.codseguridad,
         facturaData.codigoSeguridad,
         facturaData.codigoSeguridadeCF,
         facturaData.securityCode,
+        responseXML?.codigoSeguridad,
+        responseXML?.codigoSeguridadeCF,
+        responseXML?.codseguridad,
         f.codseguridad,
         f.codigoSeguridad,
         f.codigoSeguridadeCF,
@@ -393,6 +403,10 @@ export class PrintingService {
         facturaData.link_original,
         facturaData.qrUrl,
         facturaData.qrLink,
+        responseXML?.qrUrl,
+        responseXML?.qr_link,
+        responseXML?.urlQr,
+        responseXML?.link_original,
         f.qr_link,
         f.link_original,
         f.qrUrl,
@@ -403,10 +417,19 @@ export class PrintingService {
         facturaData.fec_firma,
         facturaData.fechaHoraFirmaRFCE,
         facturaData.signatureDateTime,
+        responseXML?.fechaHoraFirma,
+        responseXML?.fec_firma,
         f.fec_firma,
         f.fechaHoraFirmaRFCE,
         f.signatureDateTime
       );
+
+      console.log('[PrintingService] DGII print data', {
+        codFact,
+        qrUrl,
+        securityCode,
+        signatureDateTime,
+      });
 
       // 1. BARCODE (Primero, antes del QR cuando exista)
       if (codFact) {

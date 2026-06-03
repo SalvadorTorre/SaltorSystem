@@ -1079,9 +1079,15 @@ export class CobroFact implements OnInit {
       nested?.responseRFCE && typeof nested.responseRFCE === 'object'
         ? nested.responseRFCE
         : {};
+    const responseXML =
+      nested?.responseXML && typeof nested.responseXML === 'object'
+        ? nested.responseXML
+        : {};
     const dgiiResponse =
       responseRFCE?.dgiiResponse && typeof responseRFCE.dgiiResponse === 'object'
         ? responseRFCE.dgiiResponse
+        : responseXML?.dgiiResponse && typeof responseXML.dgiiResponse === 'object'
+        ? responseXML.dgiiResponse
         : {};
 
     const qrLink = pick(
@@ -1095,6 +1101,10 @@ export class CobroFact implements OnInit {
       rfceInfo?.qrUrl,
       rfceInfo?.urlQr,
       rfceInfo?.qr_link,
+      responseXML?.qrUrl,
+      responseXML?.urlQr,
+      responseXML?.qr_link,
+      responseXML?.link_original,
       ecfInfo?.qrUrl,
       ecfInfo?.urlQr,
       ecfInfo?.qr_link,
@@ -1113,6 +1123,9 @@ export class CobroFact implements OnInit {
       nested?.securityCode,
       rfceInfo?.codigoSeguridad,
       rfceInfo?.codigoSeguridadeCF,
+      responseXML?.codigoSeguridad,
+      responseXML?.codigoSeguridadeCF,
+      responseXML?.codseguridad,
       ecfInfo?.codigoSeguridad,
       ecfInfo?.codigoSeguridadeCF,
       ecfInfo?.codseguridad,
@@ -1130,6 +1143,8 @@ export class CobroFact implements OnInit {
       nested?.fecha_firma,
       rfceInfo?.fechaHoraFirma,
       rfceInfo?.fec_firma,
+      responseXML?.fechaHoraFirma,
+      responseXML?.fec_firma,
       ecfInfo?.fechaHoraFirma,
       ecfInfo?.fec_firma,
       responseRFCE?.fechaHoraFirma,
