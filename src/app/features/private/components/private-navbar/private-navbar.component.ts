@@ -1,5 +1,6 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { AccessControlService } from 'src/app/core/services/access/access-control.service';
+import { environment } from '@env/environment';
 
 @Component({
   selector: 'private-navbar',
@@ -12,6 +13,7 @@ export class PrivateNavbarComponent implements OnInit {
   @Output() profileRequested = new EventEmitter<void>();
   @Output() aboutRequested = new EventEmitter<void>();
   @Output() logoutRequested = new EventEmitter<void>();
+  readonly appVersion = environment.appVersion || '1.0.0';
 
   constructor(private readonly access: AccessControlService) {}
 

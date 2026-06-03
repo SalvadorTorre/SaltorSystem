@@ -1,6 +1,6 @@
 {
   "name": "saltor-system",
-  "version": "0.0.0",
+  "version": "1.0.1",
   "description": "Sistema de facturacion, caja e inventario para multi-sucursal.",
   "author": "Saltor System",
   "main": "electron/main.js",
@@ -8,7 +8,10 @@
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
+    "prepare": "node scripts/install-git-hooks.js",
     "build:icon": "node scripts/generate-icons.js",
+    "version:sync": "node scripts/sync-version.js",
+    "version:bump:commit": "node scripts/bump-version.js",
     "desktop": "yarn build --configuration production --base-href ./ && electron electron/main.js",
     "desktop:dev": "cross-env ELECTRON_START_URL=http://localhost:4200 electron electron/main.js",
     "desktop:pack": "yarn build:icon && yarn build --configuration production --base-href ./ && electron-builder --publish never",
