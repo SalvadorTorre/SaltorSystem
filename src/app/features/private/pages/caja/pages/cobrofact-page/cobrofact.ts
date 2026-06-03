@@ -1347,6 +1347,11 @@ export class CobroFact implements OnInit {
     }
     scenario.MontoExento = montoExento.toFixed(2);
     scenario.MontoGravadoTotal = montoGravado.toFixed(2);
+    if (montoGravado > 0 && totalItbis > 0) {
+      scenario.MontoGravadoI1 = montoGravado.toFixed(2);
+      scenario.ITBIS1 = '18';
+      scenario.TotalITBIS1 = totalItbis.toFixed(2);
+    }
     scenario.TotalITBIS = totalItbis.toFixed(2);
     scenario.MontoTotal = montoTotal.toFixed(2);
     scenario.RegimenPagos = '0';
@@ -1377,17 +1382,18 @@ export class CobroFact implements OnInit {
       const itbisGuardado = Number(item.df_itbiMerc ?? item.df_itbimerc ?? item.itbis ?? 0);
       const itbis = itbisGuardado ||
         (totalDetalle > 0 && totalItbis > 0 ? totalItbis * (total / totalDetalle) : 0);
-      const tasaItbis = total > 0 ? itbis / total : 0;
-      const precioSinItbis = cantidad > 0 ? (total - itbis) / cantidad : 0;
+      const montoGravadoLinea = Math.max(0, total - itbis);
+      const tasaItbis = montoGravadoLinea > 0 ? (itbis / montoGravadoLinea) * 100 : 0;
+      const precioSinItbis = cantidad > 0 ? montoGravadoLinea / cantidad : 0;
 
       scenario[`NumeroLinea[${i}]`] = i;
       scenario[`NombreItem[${i}]`] = nombre;
       scenario[`IndicadorBienoServicio[${i}]`] = '1';
       scenario[`CantidadItem[${i}]`] = cantidad.toFixed(2);
       scenario[`PrecioUnitarioItem[${i}]`] = precioSinItbis.toFixed(2);
-      scenario[`MontoItem[${i}]`] = total.toFixed(2);
+      scenario[`MontoItem[${i}]`] = montoGravadoLinea.toFixed(2);
       scenario[`MontoITBIS[${i}]`] = itbis.toFixed(2);
-      scenario[`TasaITBIS[${i}]`] = tasaItbis.toFixed(4);
+      scenario[`TasaITBIS[${i}]`] = tasaItbis.toFixed(2);
       scenario[`IndicadorFacturacion[${i}]`] = '1';
     });
 
