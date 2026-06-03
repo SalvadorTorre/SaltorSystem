@@ -385,6 +385,73 @@ export class ServicioPermiso {
     );
   }
 
+  obtenerMatrizPermisosTipoUsuario(idtipousuario: number): Observable<any> {
+    return from((async () => {
+      const tipoId = Number(idtipousuario || 0);
+      if (!tipoId) {
+        return { acciones: [], recursos: [], filas: [], modo: "tipo" as const };
+      }
+
+      const [{ data: modulos, error: errM }, { data: detalles, error: errD }] = await Promise.all([
+        this.db
+          .from("modulo")
+          .select("idmodulo,descmodulo")
+          .order("idmodulo", { ascending: true }),
+        this.db
+          .from("dtipousuario")
+          .select("id,idtipousuario,idmodulo,acceso,lectura")
+          .eq("idtipousuario", tipoId)
+          .order("idmodulo", { ascending: true }),
+      ]);
+      if (errM) throw errM;
+      if (errD) throw errD;
+
+      const modMap = new Map<number, any>();
+      (modulos || []).forEach((m: any) => modMap.set(Number(m.idmodulo), m));
+
+      const filas: PermisoMatrizFila[] = (detalles || [])
+        .filter((d: any) => String(d?.acceso || "N").toUpperCase() === "S")
+        .map((d: any) => {
+          const modulo = modMap.get(Number(d.idmodulo)) || {};
+          const acceso = String(d?.acceso || "N").toUpperCase() === "S";
+          const lectura = String(d?.lectura || "N").toUpperCase() === "S";
+          return {
+            codusuario: null,
+            idmodulo: Number(d.idmodulo),
+            pantalla_nombre: modulo?.descmodulo || `Modulo ${d.idmodulo}`,
+            modulo_nombre: modulo?.descmodulo || `Modulo ${d.idmodulo}`,
+            ruta: null,
+            acciones: {
+              acceso,
+              lectura,
+              ver: acceso,
+              editar: acceso && !lectura,
+              eliminar: acceso && !lectura,
+              guardar: acceso && !lectura,
+            },
+            modo: "legacy",
+            legacyIdPermiso: Number(d.id || 0) || null,
+          };
+        });
+
+      return {
+        acciones: [
+          { accion_key: "acceso", descripcion: "Acceso", orden: 10 },
+          { accion_key: "lectura", descripcion: "Solo consulta", orden: 20 },
+        ],
+        recursos: modulos || [],
+        filas,
+        modo: "tipo" as const,
+      };
+    })()).pipe(
+      map((payload: any) => ({
+        status: "success",
+        code: 200,
+        data: payload
+      }))
+    );
+  }
+
   guardarMatrizPermisosUsuario(
     codusuario: number,
     filas: PermisoMatrizFila[],

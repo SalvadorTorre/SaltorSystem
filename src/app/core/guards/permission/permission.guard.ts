@@ -21,6 +21,11 @@ export const permissionGuard: CanActivateFn = (route, state) => {
         : access.canViewModule(modulePrefix);
 
       if (allowed) {
+        const path = exactPath || modulePrefix || state.url || '';
+        sessionStorage.setItem(
+          'currentAccessReadOnly',
+          access.isReadOnlyPath(path) ? 'S' : 'N',
+        );
         return true;
       }
 

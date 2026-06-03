@@ -75,6 +75,7 @@ export class AccessControlService {
   canViewPath(path: string): boolean {
     const normalizedPath = this.normalizePath(path);
     if (!normalizedPath) return false;
+    if (normalizedPath === '/private/home') return true;
 
     if (this.shouldBypassByRole()) {
       return true;
@@ -82,19 +83,20 @@ export class AccessControlService {
 
     const allowed = this.getAllowedPermisos();
     if (!allowed.length) {
-      return this.canViewByDefaultRole(normalizedPath);
+      return false;
     }
 
     return allowed.some((permiso) => {
       const ruta = this.resolveRouteForPermiso(permiso);
       if (!ruta) return false;
-      return normalizedPath === ruta;
+      return normalizedPath === ruta || normalizedPath.startsWith(`${ruta}/`);
     });
   }
 
   canViewModule(modulePrefix: string): boolean {
     const normalizedPrefix = this.normalizePath(modulePrefix);
     if (!normalizedPrefix) return false;
+    if (normalizedPrefix === '/private/home') return true;
 
     if (this.shouldBypassByRole()) {
       return true;
@@ -102,7 +104,7 @@ export class AccessControlService {
 
     const allowed = this.getAllowedPermisos();
     if (!allowed.length) {
-      return this.canViewByDefaultRole(normalizedPrefix, true);
+      return false;
     }
 
     return allowed.some((permiso) => {
@@ -136,6 +138,20 @@ export class AccessControlService {
     return firstAllowed || '/private/home';
   }
 
+  canWritePath(path: string): boolean {
+    const permiso = this.findPermisoForPath(path);
+    if (!permiso) return this.shouldBypassByRole();
+    const acciones = permiso?.acciones || {};
+    return !!acciones['acceso'] && !acciones['lectura'];
+  }
+
+  isReadOnlyPath(path: string): boolean {
+    const permiso = this.findPermisoForPath(path);
+    if (!permiso) return false;
+    const acciones = permiso?.acciones || {};
+    return !!acciones['acceso'] && !!acciones['lectura'];
+  }
+
   private async loadPermisos(force: boolean): Promise<void> {
     if (force) {
       this.permisos = [];
@@ -143,6 +159,7 @@ export class AccessControlService {
     }
 
     const codusuario = Number(localStorage.getItem('codigousuario') || 0) || 0;
+    const idtipousuario = Number(localStorage.getItem('idtipousuario') || 0) || 0;
     const codEmpre =
       String(
         localStorage.getItem('codigoempresa') ||
@@ -158,13 +175,17 @@ export class AccessControlService {
     }
 
     try {
-      const response: any = await firstValueFrom(
-        this.permisoSrv.obtenerMatrizPermisosUsuario(
-          codusuario,
-          codEmpre,
-          sucursalid,
-        ),
-      );
+      const response: any = idtipousuario
+        ? await firstValueFrom(
+            this.permisoSrv.obtenerMatrizPermisosTipoUsuario(idtipousuario),
+          )
+        : await firstValueFrom(
+            this.permisoSrv.obtenerMatrizPermisosUsuario(
+              codusuario,
+              codEmpre,
+              sucursalid,
+            ),
+          );
       this.permisos = Array.isArray(response?.data?.filas)
         ? response.data.filas
         : [];
@@ -182,16 +203,14 @@ export class AccessControlService {
 
   private hasViewAccess(permiso: PermisoMatrizFila): boolean {
     const acciones = permiso?.acciones || {};
-    return !!(acciones['ver'] || acciones['acceso'] || acciones['lectura']);
+    if (Object.prototype.hasOwnProperty.call(acciones, 'acceso')) {
+      return !!acciones['acceso'];
+    }
+    return !!acciones['ver'];
   }
 
   private shouldBypassByRole(): boolean {
-    const role = this.currentRole();
-    const hasExplicitPermissions = this.getAllowedPermisos().length > 0;
-    if (hasExplicitPermissions) {
-      return false;
-    }
-    return role === 'root' || role === 'admin';
+    return false;
   }
 
   private canViewByDefaultRole(path: string, treatAsPrefix = false): boolean {
@@ -201,6 +220,17 @@ export class AccessControlService {
     }
     if (template.allowAll) return true;
     return this.templateAllowsPath(template, path, treatAsPrefix);
+  }
+
+  private findPermisoForPath(path: string): PermisoMatrizFila | null {
+    const normalizedPath = this.normalizePath(path);
+    if (!normalizedPath) return null;
+
+    return this.getAllowedPermisos().find((permiso) => {
+      const ruta = this.resolveRouteForPermiso(permiso);
+      if (!ruta) return false;
+      return normalizedPath === ruta || normalizedPath.startsWith(`${ruta}/`);
+    }) || null;
   }
 
   private currentRole(): KnownRole {
@@ -235,7 +265,7 @@ export class AccessControlService {
         allowedPaths: [],
       },
       {
-        matchers: ['cajera', 'caja', 'cobros'],
+        matchers: ['cajero', 'cajeros', 'cajera', 'cajeras', 'caja', 'cobros'],
         allowedPaths: [
           '/private/home',
           '/private/caja',
@@ -316,7 +346,9 @@ export class AccessControlService {
 
     const legacyMap: Array<[string, string]> = [
       ['dashboard', '/private/home'],
+      ['ventas', '/private/facturacion'],
       ['facturacion', '/private/facturacion'],
+      ['cotizaciones', '/private/cotizacion'],
       ['cotizacion', '/private/cotizacion'],
       ['cobro factura', '/private/caja/CobroFact'],
       ['control salida', '/private/caja/ControlSalida'],
@@ -361,6 +393,7 @@ export class AccessControlService {
       ['rnc', '/private/mantenimientos/rnc'],
       ['configuracion global dgii', '/private/mantenimientos/configuracion-global'],
       ['mantenimientos', '/private/mantenimientos'],
+      ['mantenimiento', '/private/mantenimientos'],
     ];
 
     for (const [needle, route] of legacyMap) {

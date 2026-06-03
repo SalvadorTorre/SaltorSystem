@@ -1,7 +1,8 @@
 import { Component, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
+import { NavigationEnd, Router } from '@angular/router';
 import { AuthService } from 'src/app/core/services/auth/auth.service';
 import Swal from 'sweetalert2';
+import { filter } from 'rxjs/operators';
 
 @Component({
   selector: 'private-root',
@@ -20,6 +21,56 @@ export class PrivatePage implements OnInit {
 
   ngOnInit() {
     this.initials = this.getInitialsFromName();
+    this.router.events
+      .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
+      .subscribe(() => this.programarModoConsulta());
+    this.programarModoConsulta();
+  }
+
+  private programarModoConsulta(): void {
+    setTimeout(() => this.aplicarModoConsulta(), 250);
+  }
+
+  private aplicarModoConsulta(): void {
+    const soloConsulta = sessionStorage.getItem('currentAccessReadOnly') === 'S';
+    const root = document.querySelector('private-root');
+    if (!root) return;
+
+    const accionesEscritura = /(guardar|nuevo|editar|eliminar|borrar|actualizar|cobrar|enviar|generar|marcar)/i;
+    const elementos = Array.from(
+      root.querySelectorAll<HTMLButtonElement | HTMLAnchorElement>('button, a.btn, a.dropdown-item'),
+    );
+
+    elementos.forEach((el) => {
+      const text = `${el.textContent || ''} ${el.getAttribute('title') || ''} ${el.getAttribute('aria-label') || ''}`.trim();
+      const esAccionEscritura = accionesEscritura.test(text);
+      const esNavegacion =
+        !!el.closest('nav') ||
+        !!el.closest('.navbar') ||
+        !!el.closest('.swal2-container') ||
+        el.hasAttribute('data-bs-dismiss') ||
+        el.classList.contains('btn-close');
+
+      if (!esAccionEscritura || esNavegacion) {
+        return;
+      }
+
+      if (soloConsulta) {
+        el.setAttribute('data-readonly-disabled', 'S');
+        el.setAttribute('aria-disabled', 'true');
+        el.classList.add('disabled');
+        if (el instanceof HTMLButtonElement) {
+          el.disabled = true;
+        }
+      } else if (el.getAttribute('data-readonly-disabled') === 'S') {
+        el.removeAttribute('data-readonly-disabled');
+        el.removeAttribute('aria-disabled');
+        el.classList.remove('disabled');
+        if (el instanceof HTMLButtonElement) {
+          el.disabled = false;
+        }
+      }
+    });
   }
 
   getInitialsFromName(): string {

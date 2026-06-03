@@ -330,6 +330,7 @@ export class AuthService {
     localStorage.setItem('codigousuario', String(usuario.codUsuario || ''));
     localStorage.setItem('idSucursal', String(usuario.sucursalid || ''));
     localStorage.setItem('codigoempresa', String(usuario.cod_empre || ''));
+    localStorage.setItem('idtipousuario', String(usuario.idtipoUsuario || ''));
 
     const appRole = this.resolveRoleFromUsuario(usuario, payload.role);
     localStorage.setItem('role', appRole);
@@ -442,6 +443,7 @@ export class AuthService {
       'codigousuario',
       'idSucursal',
       'codigoempresa',
+      'idtipousuario',
       'role',
       'dashboardRole',
       'roleDescription',
