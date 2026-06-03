@@ -1186,6 +1186,15 @@ export class CobroFact implements OnInit {
     return texto.includes('jwt expired') || texto.includes('token has expired');
   }
 
+  private parseStorageJson(value: string | null): any {
+    if (!value) return null;
+    try {
+      return JSON.parse(value);
+    } catch {
+      return null;
+    }
+  }
+
   /**
    * Construye el payload para el servicio de DGII (QR/eCF)
    * basado en la factura seleccionada y los items cargados.
@@ -1200,6 +1209,16 @@ export class CobroFact implements OnInit {
 
     const rncEmisor = localStorage.getItem('rnc_empresa') || '';
     const razonSocialEmisor = localStorage.getItem('nombre_empresa') || '';
+    const direccionEmisor = String(
+      localStorage.getItem('direccion_empresa') || '',
+    ).trim();
+    const sucursalRaw = this.parseStorageJson(localStorage.getItem('sucursal'));
+    const nombreSucursal = String(
+      sucursalRaw?.nom_sucursal ??
+        sucursalRaw?.descripcion ??
+        sucursalRaw?.nombre ??
+        '',
+    ).trim();
 
     // Normalizar fecha
     const fechaEmision = this.formatearFechaDgii(factura.fa_fecFact);
@@ -1214,6 +1233,8 @@ export class CobroFact implements OnInit {
       Version: '1.0',
       RNCEmisor: rncEmisorLimpio,
       RazonSocialEmisor: razonSocialEmisor,
+      NombreComercial: razonSocialEmisor,
+      DireccionEmisor: direccionEmisor,
       RncComprador: String(factura.fa_rncFact || '')
         .trim()
         .replace(/-/g, ''),
@@ -1231,6 +1252,16 @@ export class CobroFact implements OnInit {
       IndicadorMontoGravado: '1',
       CasoPrueba: `${rncEmisorLimpio}${encf}`,
     };
+
+    if (!direccionEmisor) {
+      throw new Error(
+        'La empresa activa no tiene Dirección del emisor configurada para DGII.',
+      );
+    }
+
+    if (nombreSucursal) {
+      scenario.Sucursal = nombreSucursal;
+    }
 
     const itemTotal = (item: any): number => Number(
       item.total ??
