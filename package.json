@@ -1,6 +1,6 @@
 {
   "name": "saltor-system",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Sistema de facturacion, caja e inventario para multi-sucursal.",
   "author": "Saltor System",
   "main": "electron/main.js",
@@ -101,7 +101,6 @@
     "@types/qrcode": "^1.5.6",
     "cross-env": "^10.1.0",
     "electron": "^42.2.0",
-    "electron-updater": "^6.8.3",
     "electron-builder": "^26.8.1",
     "gh-pages": "^6.3.0",
     "jasmine-core": "~4.6.0",
@@ -111,7 +110,6 @@
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.1.0",
     "kill-port": "^2.0.1",
-    "pdf-to-printer": "^5.8.0",
     "png-to-ico": "^3.0.1",
     "sharp": "^0.34.5",
     "typescript": "~5.1.3"
