@@ -1,10 +1,15 @@
-const { app, BrowserWindow, ipcMain, shell } = require('electron');
+const { app, BrowserWindow, dialog, ipcMain, shell } = require('electron');
 const fs = require('node:fs');
 const path = require('node:path');
 const os = require('node:os');
+const { autoUpdater } = require('electron-updater');
 
 const isDev = !!process.env.ELECTRON_START_URL;
 const PRINT_PROFILE_KEYS = ['factura', 'ticket', 'reporte'];
+const isWindows = process.platform === 'win32';
+const pdfPrinter = isWindows ? require('pdf-to-printer') : null;
+let mainWindow = null;
+let autoUpdaterReady = false;
 
 function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -36,12 +41,18 @@ function getDefaultPrintSettings() {
 }
 
 function normalizeProfile(profile, fallback) {
+  const deviceName =
+    typeof profile?.deviceName === 'string'
+      ? profile.deviceName.trim()
+      : fallback.deviceName;
+
   return {
-    deviceName: typeof profile?.deviceName === 'string' ? profile.deviceName.trim() : fallback.deviceName,
-    useSystemDefault:
-      typeof profile?.useSystemDefault === 'boolean'
-        ? profile.useSystemDefault
-        : fallback.useSystemDefault,
+    deviceName,
+    useSystemDefault: deviceName
+      ? false
+      : typeof profile?.useSystemDefault === 'boolean'
+      ? profile.useSystemDefault
+      : fallback.useSystemDefault,
     copies: Math.max(1, Math.min(5, Number(profile?.copies) || fallback.copies)),
   };
 }
@@ -101,16 +112,60 @@ function resolvePrintDeviceName(deviceName, profileKey) {
   return savedDevice || undefined;
 }
 
+function getFocusedWindow() {
+  return BrowserWindow.getFocusedWindow() || mainWindow || BrowserWindow.getAllWindows()[0] || null;
+}
+
+async function listAvailablePrinters(browserWindow) {
+  if (isWindows && pdfPrinter?.getPrinters) {
+    try {
+      const [printers, defaultPrinter] = await Promise.all([
+        pdfPrinter.getPrinters(),
+        pdfPrinter.getDefaultPrinter().catch(() => null),
+      ]);
+      const defaultName = String(defaultPrinter?.name || '').trim();
+
+      return (printers || []).map((printer) => {
+        const name = String(printer.name || '').trim();
+        return {
+          name,
+          displayName: name,
+          isDefault: name === defaultName,
+          status: 0,
+        };
+      });
+    } catch (error) {
+      console.warn('[Electron] No se pudo listar impresoras con pdf-to-printer:', error);
+    }
+  }
+
+  const focused = browserWindow || getFocusedWindow();
+  if (!focused) return [];
+
+  try {
+    const printers = await focused.webContents.getPrintersAsync();
+    return printers.map((printer) => ({
+      name: String(printer.name || '').trim(),
+      displayName: printer.displayName,
+      isDefault: !!printer.isDefault,
+      status: printer.status,
+    }));
+  } catch (error) {
+    console.warn('[Electron] No se pudo listar impresoras con Electron:', error);
+    return [];
+  }
+}
+
 async function validatePrinterDeviceName(browserWindow, deviceName) {
   const requested = String(deviceName || '').trim();
   if (!requested) return undefined;
 
   try {
-    const printers = await browserWindow.webContents.getPrintersAsync();
-    const exists = printers.some((printer) => String(printer.name || '').trim() === requested);
-    return exists ? requested : undefined;
+    const printers = await listAvailablePrinters(browserWindow);
+    const match = printers.find((printer) => String(printer.name || '').trim() === requested);
+    return match ? match.name : undefined;
   } catch {
-    return requested;
+    return undefined;
   }
 }
 
@@ -157,6 +212,13 @@ function createMainWindow() {
     win.loadFile(path.join(__dirname, '..', 'dist', 'saltor-system', 'index.html'));
   }
 
+  mainWindow = win;
+  win.on('closed', () => {
+    if (mainWindow === win) {
+      mainWindow = null;
+    }
+  });
+
   return win;
 }
 
@@ -186,9 +248,30 @@ async function printPdfSilently({ base64Data, deviceName, profileKey } = {}) {
     const configuredDeviceName = resolvePrintDeviceName(deviceName, profileKey);
     const copies = getProfileCopies(profileKey);
     fs.writeFileSync(tmpFile, Buffer.from(base64Data, 'base64'));
+    const resolvedDeviceName = await validatePrinterDeviceName(printWindow, configuredDeviceName);
+
+    if (configuredDeviceName && !resolvedDeviceName) {
+      return {
+        success: false,
+        error: `La impresora guardada para ${profileKey || 'este perfil'} no existe en esta computadora. Revisa la configuración desktop.`,
+      };
+    }
+
+    if (isWindows && pdfPrinter?.print) {
+      await pdfPrinter.print(tmpFile, {
+        printer: resolvedDeviceName,
+        copies,
+        silent: true,
+      });
+
+      return {
+        success: true,
+        error: null,
+      };
+    }
+
     await printWindow.loadURL(`file://${tmpFile}`);
     await wait(700);
-    const resolvedDeviceName = await validatePrinterDeviceName(printWindow, configuredDeviceName);
 
     const printResult = await new Promise((resolve) => {
       printWindow.webContents.print(
@@ -265,6 +348,13 @@ async function printTestPage({ profileKey, deviceName } = {}) {
     await wait(250);
     const validatedDeviceName = await validatePrinterDeviceName(printWindow, resolvedDeviceName);
 
+    if (resolvedDeviceName && !validatedDeviceName) {
+      return {
+        success: false,
+        error: `La impresora guardada para ${resolvedProfileKey} no existe en esta computadora.`,
+      };
+    }
+
     const printResult = await new Promise((resolve) => {
       printWindow.webContents.print(
         {
@@ -315,6 +405,13 @@ async function printHtmlSilently({ html, deviceName, profileKey } = {}) {
     await wait(250);
     const validatedDeviceName = await validatePrinterDeviceName(printWindow, resolvedDeviceName);
 
+    if (resolvedDeviceName && !validatedDeviceName) {
+      return {
+        success: false,
+        error: `La impresora guardada para ${resolvedProfileKey} no existe en esta computadora.`,
+      };
+    }
+
     const printResult = await new Promise((resolve) => {
       printWindow.webContents.print(
         {
@@ -344,26 +441,12 @@ async function printHtmlSilently({ html, deviceName, profileKey } = {}) {
 }
 
 ipcMain.handle('print:list-printers', async () => {
-  const focused = BrowserWindow.getFocusedWindow() || BrowserWindow.getAllWindows()[0];
-  if (!focused) return [];
-
-  try {
-    const printers = await focused.webContents.getPrintersAsync();
-    return printers
-      .map((p) => ({
-      name: p.name,
-      displayName: p.displayName,
-      isDefault: !!p.isDefault,
-      status: p.status,
-      }))
-      .sort((a, b) => {
-        if (a.isDefault && !b.isDefault) return -1;
-        if (!a.isDefault && b.isDefault) return 1;
-        return String(a.displayName || a.name).localeCompare(String(b.displayName || b.name));
-      });
-  } catch {
-    return [];
-  }
+  const printers = await listAvailablePrinters(getFocusedWindow());
+  return printers.sort((a, b) => {
+    if (a.isDefault && !b.isDefault) return -1;
+    if (!a.isDefault && b.isDefault) return 1;
+    return String(a.displayName || a.name).localeCompare(String(b.displayName || b.name));
+  });
 });
 
 ipcMain.handle('print:get-settings', async () => readPrintSettings());
@@ -372,8 +455,58 @@ ipcMain.handle('print:pdf:silent', async (_evt, payload) => printPdfSilently(pay
 ipcMain.handle('print:test-page', async (_evt, payload) => printTestPage(payload));
 ipcMain.handle('print:html:silent', async (_evt, payload) => printHtmlSilently(payload));
 
+function setupAutoUpdater() {
+  if (autoUpdaterReady || isDev || !app.isPackaged) {
+    return;
+  }
+
+  autoUpdaterReady = true;
+  autoUpdater.autoDownload = true;
+  autoUpdater.autoInstallOnAppQuit = true;
+
+  autoUpdater.on('checking-for-update', () => {
+    console.log('[autoUpdater] Buscando actualizaciones...');
+  });
+
+  autoUpdater.on('update-available', (info) => {
+    console.log('[autoUpdater] Actualización disponible:', info?.version);
+  });
+
+  autoUpdater.on('update-not-available', () => {
+    console.log('[autoUpdater] No hay actualizaciones nuevas.');
+  });
+
+  autoUpdater.on('error', (error) => {
+    console.error('[autoUpdater] Error:', error);
+  });
+
+  autoUpdater.on('update-downloaded', async (info) => {
+    console.log('[autoUpdater] Actualización descargada:', info?.version);
+    const result = await dialog.showMessageBox(getFocusedWindow() || undefined, {
+      type: 'info',
+      buttons: ['Reiniciar ahora', 'Más tarde'],
+      defaultId: 0,
+      cancelId: 1,
+      title: 'Actualización lista',
+      message: `Se descargó la versión ${info?.version || app.getVersion()} de Saltor System.`,
+      detail: 'La actualización se instalará al reiniciar la aplicación.',
+    });
+
+    if (result.response === 0) {
+      setImmediate(() => autoUpdater.quitAndInstall());
+    }
+  });
+
+  setTimeout(() => {
+    autoUpdater.checkForUpdatesAndNotify().catch((error) => {
+      console.error('[autoUpdater] No se pudo iniciar la búsqueda de actualizaciones:', error);
+    });
+  }, 3000);
+}
+
 app.whenReady().then(() => {
   createMainWindow();
+  setupAutoUpdater();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createMainWindow();

@@ -53,14 +53,18 @@ export class DesktopPrintSettingsService {
     const normalizeProfile = (
       profile: Partial<DesktopPrintProfileSettings> | undefined,
       base: DesktopPrintProfileSettings
-    ): DesktopPrintProfileSettings => ({
-      deviceName: String(profile?.deviceName || base.deviceName || '').trim(),
-      useSystemDefault:
-        typeof profile?.useSystemDefault === 'boolean'
+    ): DesktopPrintProfileSettings => {
+      const deviceName = String(profile?.deviceName || base.deviceName || '').trim();
+      return {
+        deviceName,
+        useSystemDefault: deviceName
+          ? false
+          : typeof profile?.useSystemDefault === 'boolean'
           ? profile.useSystemDefault
           : base.useSystemDefault,
-      copies: Math.max(1, Math.min(5, Number(profile?.copies) || base.copies)),
-    });
+        copies: Math.max(1, Math.min(5, Number(profile?.copies) || base.copies)),
+      };
+    };
 
     return {
       version: 1,

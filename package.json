@@ -1,6 +1,6 @@
 {
   "name": "saltor-system",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Sistema de facturacion, caja e inventario para multi-sucursal.",
   "author": "Saltor System",
   "main": "electron/main.js",
@@ -16,6 +16,7 @@
     "desktop:dev": "cross-env ELECTRON_START_URL=http://localhost:4200 electron electron/main.js",
     "desktop:pack": "yarn build:icon && yarn build --configuration production --base-href ./ && electron-builder --publish never",
     "desktop:pack:win": "yarn build:icon && yarn build --configuration production --base-href ./ && electron-builder --win nsis --x64 --publish never",
+    "desktop:pack:win:publish": "yarn build:icon && yarn build --configuration production --base-href ./ && electron-builder --win nsis --x64 --publish always",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "dev": "cross-env PORT=3390 npx kill-port 3390 && nodemon src/index.js",
@@ -28,7 +29,14 @@
       "output": "release",
       "buildResources": "build"
     },
-    "publish": null,
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "SalvadorTorre",
+        "repo": "SaltorSystem",
+        "releaseType": "release"
+      }
+    ],
     "files": [
       "dist/saltor-system/**/*",
       "electron/**/*",
@@ -46,7 +54,7 @@
       "icon": "build/icon.ico"
     },
     "nsis": {
-      "artifactName": "SaltorSystem-Desktop-Setup.${ext}",
+      "artifactName": "SaltorSystem-Desktop-Setup-${version}.${ext}",
       "installerIcon": "build/icon.ico",
       "uninstallerIcon": "build/icon.ico",
       "installerHeaderIcon": "build/icon.ico"
@@ -67,6 +75,7 @@
     "@supabase/supabase-js": "^2.103.3",
     "bootstrap": "^5.3.7",
     "bootstrap-icons": "^1.11.3",
+    "electron-updater": "^6.8.3",
     "html2canvas": "^1.4.1",
     "html2pdf.js": "^0.10.3",
     "inputmask": "^5.0.9",
@@ -75,6 +84,7 @@
     "jspdf": "^2.5.2",
     "jspdf-autotable": "^3.8.4",
     "ngx-mask": "^18.0.0",
+    "pdf-to-printer": "^5.8.0",
     "pdfmake": "^0.2.20",
     "qrcode": "^1.5.4",
     "rxjs": "~7.8.0",
@@ -91,6 +101,7 @@
     "@types/qrcode": "^1.5.6",
     "cross-env": "^10.1.0",
     "electron": "^42.2.0",
+    "electron-updater": "^6.8.3",
     "electron-builder": "^26.8.1",
     "gh-pages": "^6.3.0",
     "jasmine-core": "~4.6.0",
@@ -100,6 +111,7 @@
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.1.0",
     "kill-port": "^2.0.1",
+    "pdf-to-printer": "^5.8.0",
     "png-to-ico": "^3.0.1",
     "sharp": "^0.34.5",
     "typescript": "~5.1.3"

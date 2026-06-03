@@ -234,6 +234,7 @@
                         class="form-select"
                         [(ngModel)]="getProfileSettings(profile.key).deviceName"
                         [ngModelOptions]="{ standalone: true }"
+                        (ngModelChange)="onDesktopPrinterSelectionChange(profile.key)"
                         [disabled]="getProfileSettings(profile.key).useSystemDefault"
                       >
                         <option value="">Selecciona una impresora</option>

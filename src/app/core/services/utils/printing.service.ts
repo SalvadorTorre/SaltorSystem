@@ -1366,6 +1366,14 @@ items.forEach((it: any) => {
     if (silentPrinted) return;
 
     const isDesktop = typeof window !== 'undefined' && !!window.electronAPI?.isDesktop;
+    if (isDesktop) {
+      try {
+        URL.revokeObjectURL(pdfUrl);
+      } catch {}
+      throw new Error(
+        'No se pudo imprimir en silencio con la impresora configurada. Revisa la configuración desktop o prueba la impresora desde Configuración global.'
+      );
+    }
 
     if (!isDesktop) {
       // Intento 1 web: abrir en nueva pestaña y disparar impresión
@@ -1429,6 +1437,13 @@ items.forEach((it: any) => {
     const silentPrinted = await this.trySilentPrintHtmlDesktop(html, profileKey);
     if (silentPrinted) return;
 
+    const isDesktop = typeof window !== 'undefined' && !!window.electronAPI?.isDesktop;
+    if (isDesktop) {
+      throw new Error(
+        'No se pudo imprimir en silencio con la impresora configurada. Revisa la configuración desktop o prueba la impresora desde Configuración global.'
+      );
+    }
+
     const win = window.open('', '_blank', 'width=900,height=700');
     if (!win) {
       throw new Error('No se pudo abrir la ventana de impresión.');
@@ -1458,6 +1473,9 @@ items.forEach((it: any) => {
       const base64Data = await this.blobUrlToBase64(pdfUrl);
       const deviceName = await this.desktopPrintSettings.getProfileDeviceName(profileKey);
       const result = await window.electronAPI.printPdfSilently({ base64Data, deviceName, profileKey });
+      if (!result?.success) {
+        console.error('[PrintingService] Falló printPdfSilently', result);
+      }
       return !!result?.success;
     } catch (error) {
       console.warn('No se pudo imprimir en modo silencioso con Electron:', error);
@@ -1480,6 +1498,9 @@ items.forEach((it: any) => {
         deviceName,
         profileKey,
       });
+      if (!result?.success) {
+        console.error('[PrintingService] Falló printHtmlSilently', result);
+      }
       return !!result?.success;
     } catch (error) {
       console.warn('No se pudo imprimir HTML en modo silencioso con Electron:', error);

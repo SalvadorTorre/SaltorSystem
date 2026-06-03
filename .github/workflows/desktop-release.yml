@@ -1,4 +1,4 @@
-name: Build Desktop Installer
+name: Build And Publish Desktop Release
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
   workflow_dispatch: {}
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build-windows-installer:
@@ -26,12 +26,16 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
-      - name: Build Windows installer (.exe)
-        run: yarn desktop:pack:win
+      - name: Build Windows installer and publish release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: yarn desktop:pack:win:publish
 
       - name: Upload workflow artifact
         uses: actions/upload-artifact@v4
         with:
-          name: SaltorSystem-Desktop-Setup
-          path: release/SaltorSystem-Desktop-Setup.exe
+          name: SaltorSystem-Desktop-Release
+          path: |
+            release/*.exe
+            release/latest*.yml
           if-no-files-found: error

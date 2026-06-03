@@ -198,6 +198,13 @@ export class ConfiguracionGlobal implements OnInit {
     }
   }
 
+  onDesktopPrinterSelectionChange(profileKey: DesktopPrintProfileKey): void {
+    const profile = this.getProfileSettings(profileKey);
+    if (profile.deviceName) {
+      profile.useSystemDefault = false;
+    }
+  }
+
   private async cargarConfiguracionImpresionDesktop(): Promise<void> {
     this.desktopPrintingSupported = this.desktopPrintSettingsService.isSupported();
     if (!this.desktopPrintingSupported) return;
