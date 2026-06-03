@@ -1217,6 +1217,19 @@ export class CobroFact implements OnInit {
       .replace(/-/g, '');
   }
 
+  private roundHalfEven(value: number, decimals: number): number {
+    const factor = 10 ** decimals;
+    const scaled = value * factor;
+    const floor = Math.floor(scaled);
+    const diff = scaled - floor;
+    const epsilon = 1e-8;
+
+    if (diff > 0.5 + epsilon) return (floor + 1) / factor;
+    if (diff < 0.5 - epsilon) return floor / factor;
+
+    return (floor % 2 === 0 ? floor : floor + 1) / factor;
+  }
+
   private async obtenerFechaVencimientoSecuencia(
     codEmpresa: string,
     tipoeCF: string,
@@ -1283,9 +1296,6 @@ export class CobroFact implements OnInit {
     // Normalizar fecha
     const fechaEmision = this.formatearFechaDgii(factura.fa_fecFact);
     const montoTotal = Number(factura.fa_valFact || 0);
-    const totalItbis = Number(factura.fa_itbiFact || 0);
-    const montoGravado = Number(factura.fa_subFact || 0);
-    const montoExento = Math.max(0, montoTotal - montoGravado - totalItbis);
     const rncEmisorLimpio = this.normalizeRnc(rncEmisor);
     const rncComprador = this.normalizeRnc(factura.fa_rncFact);
     const razonSocialComprador = String(factura.fa_nomClie || '').trim();
@@ -1345,15 +1355,6 @@ export class CobroFact implements OnInit {
     if (razonSocialComprador) {
       scenario.RazonSocialComprador = razonSocialComprador;
     }
-    scenario.MontoExento = montoExento.toFixed(2);
-    scenario.MontoGravadoTotal = montoGravado.toFixed(2);
-    if (montoGravado > 0 && totalItbis > 0) {
-      scenario.MontoGravadoI1 = montoGravado.toFixed(2);
-      scenario.ITBIS1 = '18';
-      scenario.TotalITBIS1 = totalItbis.toFixed(2);
-    }
-    scenario.TotalITBIS = totalItbis.toFixed(2);
-    scenario.MontoTotal = montoTotal.toFixed(2);
     scenario.RegimenPagos = '0';
     scenario.CasoPrueba = `${rncEmisorLimpio}${encf}`;
 
@@ -1369,6 +1370,8 @@ export class CobroFact implements OnInit {
       (sum: number, item: any) => sum + itemTotal(item),
       0
     );
+    let totalGravado18 = 0;
+    let totalItbis18 = 0;
 
     // 3. Agregar items
     items.forEach((item, index) => {
@@ -1381,21 +1384,40 @@ export class CobroFact implements OnInit {
       // Calcular o usar ITBIS
       const itbisGuardado = Number(item.df_itbiMerc ?? item.df_itbimerc ?? item.itbis ?? 0);
       const itbis = itbisGuardado ||
-        (totalDetalle > 0 && totalItbis > 0 ? totalItbis * (total / totalDetalle) : 0);
-      const montoGravadoLinea = Math.max(0, total - itbis);
-      const tasaItbis = montoGravadoLinea > 0 ? (itbis / montoGravadoLinea) * 100 : 0;
-      const precioSinItbis = cantidad > 0 ? montoGravadoLinea / cantidad : 0;
+        (totalDetalle > 0 && Number(factura.fa_itbiFact || 0) > 0 ? Number(factura.fa_itbiFact || 0) * (total / totalDetalle) : 0);
+      const montoGravadoRaw = Math.max(0, total - itbis);
+      const precioSinItbis = cantidad > 0 ? montoGravadoRaw / cantidad : 0;
+      const precioUnitarioGravado = this.roundHalfEven(precioSinItbis, 4);
+      const montoGravadoLinea = this.roundHalfEven(precioUnitarioGravado * cantidad, 2);
+      const montoItbisLinea = this.roundHalfEven(total - montoGravadoLinea, 2);
+      const tasaItbis = montoGravadoLinea > 0 ? (montoItbisLinea / montoGravadoLinea) * 100 : 0;
+      totalGravado18 += montoGravadoLinea;
+      totalItbis18 += montoItbisLinea;
 
       scenario[`NumeroLinea[${i}]`] = i;
       scenario[`NombreItem[${i}]`] = nombre;
       scenario[`IndicadorBienoServicio[${i}]`] = '1';
       scenario[`CantidadItem[${i}]`] = cantidad.toFixed(2);
-      scenario[`PrecioUnitarioItem[${i}]`] = precioSinItbis.toFixed(2);
+      scenario[`PrecioUnitarioItem[${i}]`] = precioUnitarioGravado.toFixed(4);
       scenario[`MontoItem[${i}]`] = montoGravadoLinea.toFixed(2);
-      scenario[`MontoITBIS[${i}]`] = itbis.toFixed(2);
+      scenario[`MontoITBIS[${i}]`] = montoItbisLinea.toFixed(2);
       scenario[`TasaITBIS[${i}]`] = tasaItbis.toFixed(2);
       scenario[`IndicadorFacturacion[${i}]`] = '1';
     });
+
+    const totalGravado = this.roundHalfEven(totalGravado18, 2);
+    const totalItbis = this.roundHalfEven(totalItbis18, 2);
+    const montoExento = this.roundHalfEven(Math.max(0, montoTotal - totalGravado - totalItbis), 2);
+
+    scenario.MontoExento = montoExento.toFixed(2);
+    scenario.MontoGravadoTotal = totalGravado.toFixed(2);
+    if (totalGravado > 0 && totalItbis > 0) {
+      scenario.MontoGravadoI1 = totalGravado.toFixed(2);
+      scenario.ITBIS1 = '18';
+      scenario.TotalITBIS1 = totalItbis.toFixed(2);
+    }
+    scenario.TotalITBIS = totalItbis.toFixed(2);
+    scenario.MontoTotal = montoTotal.toFixed(2);
 
     scenario['FormaPago[1]'] = String((factura as any).fa_codfpago || factura.fa_fpago || '1');
     scenario['MontoPago[1]'] = montoTotal.toFixed(2);
