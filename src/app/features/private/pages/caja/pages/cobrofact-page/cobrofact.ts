@@ -1195,11 +1195,63 @@ export class CobroFact implements OnInit {
     }
   }
 
+  private get db(): any {
+    const client = this.supabase.client;
+    if (!client) {
+      throw new Error('Supabase no está configurado');
+    }
+    const anyClient = client as any;
+    if (typeof anyClient?.schema === 'function') {
+      try {
+        return anyClient.schema(this.supabase.schema);
+      } catch {
+        return anyClient;
+      }
+    }
+    return anyClient;
+  }
+
+  private normalizeRnc(value: any): string {
+    return String(value || '')
+      .trim()
+      .replace(/-/g, '');
+  }
+
+  private async obtenerFechaVencimientoSecuencia(
+    codEmpresa: string,
+    tipoeCF: string,
+  ): Promise<string> {
+    const codigoEmpresa = String(codEmpresa || '').trim().toUpperCase();
+    const tipoEncf = tipoeCF ? `E${tipoeCF}` : '';
+    if (!codigoEmpresa || !tipoEncf) {
+      return '';
+    }
+
+    const { data, error } = await this.db
+      .from('encf')
+      .select('fechaencf,id')
+      .eq('codempr', codigoEmpresa)
+      .eq('tipoencf', tipoEncf)
+      .order('id', { ascending: false })
+      .limit(1);
+
+    if (error) {
+      throw error;
+    }
+
+    const row = Array.isArray(data) ? data[0] : null;
+    const fecha = row?.fechaencf ?? '';
+    return fecha ? this.formatearFechaDgii(fecha) : '';
+  }
+
   /**
    * Construye el payload para el servicio de DGII (QR/eCF)
    * basado en la factura seleccionada y los items cargados.
    */
-  private buildDGIIRequest(factura: FacturacionModelData, items: any[]): any {
+  private async buildDGIIRequest(
+    factura: FacturacionModelData,
+    items: any[],
+  ): Promise<any> {
     // 1. Obtener datos de cabecera
     const encf = String(factura.fa_ncfFact || '').trim();
     let tipoeCF = '';
@@ -1209,6 +1261,14 @@ export class CobroFact implements OnInit {
 
     const rncEmisor = localStorage.getItem('rnc_empresa') || '';
     const razonSocialEmisor = localStorage.getItem('nombre_empresa') || '';
+    const codEmpresa = String(
+      factura?.fa_codEmpr ||
+        localStorage.getItem('cod_empre') ||
+        localStorage.getItem('codigoempresa') ||
+        '',
+    )
+      .trim()
+      .toUpperCase();
     const direccionEmisor = String(
       localStorage.getItem('direccion_empresa') || '',
     ).trim();
@@ -1226,32 +1286,13 @@ export class CobroFact implements OnInit {
     const totalItbis = Number(factura.fa_itbiFact || 0);
     const montoGravado = Number(factura.fa_subFact || 0);
     const montoExento = Math.max(0, montoTotal - montoGravado - totalItbis);
-    const rncEmisorLimpio = rncEmisor.replace(/-/g, '');
-
-    // 2. Construir el escenario base
-    const scenario: any = {
-      Version: '1.0',
-      RNCEmisor: rncEmisorLimpio,
-      RazonSocialEmisor: razonSocialEmisor,
-      NombreComercial: razonSocialEmisor,
-      DireccionEmisor: direccionEmisor,
-      RncComprador: String(factura.fa_rncFact || '')
-        .trim()
-        .replace(/-/g, ''),
-      RazonSocialComprador: String(factura.fa_nomClie || '').trim(),
-      ENCF: encf,
-      TipoeCF: tipoeCF,
-      FechaEmision: fechaEmision,
-      MontoExento: montoExento.toFixed(2),
-      MontoGravadoTotal: montoGravado.toFixed(2),
-      TotalITBIS: totalItbis.toFixed(2),
-      MontoTotal: montoTotal.toFixed(2),
-      TipoIngresos: '01',
-      TipoPago: String((factura as any).fa_codfpago || factura.fa_fpago || '1'),
-      RegimenPagos: '0',
-      IndicadorMontoGravado: '1',
-      CasoPrueba: `${rncEmisorLimpio}${encf}`,
-    };
+    const rncEmisorLimpio = this.normalizeRnc(rncEmisor);
+    const rncComprador = this.normalizeRnc(factura.fa_rncFact);
+    const razonSocialComprador = String(factura.fa_nomClie || '').trim();
+    const fechaVencimientoSecuencia = await this.obtenerFechaVencimientoSecuencia(
+      codEmpresa,
+      tipoeCF,
+    );
 
     if (!direccionEmisor) {
       throw new Error(
@@ -1259,9 +1300,57 @@ export class CobroFact implements OnInit {
       );
     }
 
+    if (tipoeCF === '31') {
+      if (!fechaVencimientoSecuencia) {
+        throw new Error(
+          `No se encontró la fecha de vencimiento de la secuencia ENCF para ${codEmpresa} (${tipoeCF}).`,
+        );
+      }
+      if (!rncComprador) {
+        throw new Error(
+          'La factura E31 requiere el RNC/Cédula del comprador para enviar a DGII.',
+        );
+      }
+      if (!razonSocialComprador) {
+        throw new Error(
+          'La factura E31 requiere la razón social o nombre del comprador para enviar a DGII.',
+        );
+      }
+    }
+
+    // 2. Construir el escenario base respetando el orden esperado por DGII.
+    const scenario: any = {};
+    scenario.Version = '1.0';
+    scenario.RNCEmisor = rncEmisorLimpio;
+    scenario.RazonSocialEmisor = razonSocialEmisor;
+    scenario.NombreComercial = razonSocialEmisor;
+    scenario.TipoeCF = tipoeCF;
+    scenario.ENCF = encf;
+    if (fechaVencimientoSecuencia) {
+      scenario.FechaVencimientoSecuencia = fechaVencimientoSecuencia;
+    }
+    scenario.IndicadorMontoGravado = '1';
+    scenario.TipoIngresos = '01';
+    scenario.TipoPago = String(
+      (factura as any).fa_codfpago || factura.fa_fpago || '1',
+    );
     if (nombreSucursal) {
       scenario.Sucursal = nombreSucursal;
     }
+    scenario.DireccionEmisor = direccionEmisor;
+    scenario.FechaEmision = fechaEmision;
+    if (rncComprador) {
+      scenario.RNCComprador = rncComprador;
+    }
+    if (razonSocialComprador) {
+      scenario.RazonSocialComprador = razonSocialComprador;
+    }
+    scenario.MontoExento = montoExento.toFixed(2);
+    scenario.MontoGravadoTotal = montoGravado.toFixed(2);
+    scenario.TotalITBIS = totalItbis.toFixed(2);
+    scenario.MontoTotal = montoTotal.toFixed(2);
+    scenario.RegimenPagos = '0';
+    scenario.CasoPrueba = `${rncEmisorLimpio}${encf}`;
 
     const itemTotal = (item: any): number => Number(
       item.total ??
@@ -1332,7 +1421,7 @@ export class CobroFact implements OnInit {
     // Construir payload DGII
     let dgiiData: any = {};
     try {
-      dgiiData = this.buildDGIIRequest(facturaData, this.items);
+      dgiiData = await this.buildDGIIRequest(facturaData, this.items);
     } catch (error) {
       console.error('Error construyendo datos DGII', error);
       Swal.fire('Error', 'Error construyendo datos para DGII', 'error');

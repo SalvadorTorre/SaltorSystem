@@ -106,8 +106,8 @@
                 <button class="btn btn-outline-danger btn-sm" (click)="eliminarUsuario(u)" title="Eliminar">
                   <i class="bi bi-trash"></i>
                 </button>
-                <button class="btn btn-outline-secondary btn-sm" (click)="abrirPermisosUsuario(u)" title="Permisos">
-                  <i class="bi bi-shield-lock"></i>
+                <button class="btn btn-outline-secondary btn-sm" (click)="abrirEditorAccesosUsuario(u)" title="Editar accesos">
+                  <i class="bi bi-sliders"></i>
                 </button>
               </td>
             </tr>
@@ -333,6 +333,151 @@
     </div>
   </div>
 </div>
+
+<!-- Modal: Editar accesos por usuario -->
+<div class="modal fade" id="modalEditarAccesosUsuario" tabindex="-1" aria-labelledby="modalEditarAccesosUsuarioLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xxl modal-dialog-scrollable usuario-modal-wide">
+    <div class="modal-content modal-modern">
+      <div class="modal-header modal-header-degradado text-white">
+        <h5 class="modal-title" id="modalEditarAccesosUsuarioLabel">
+          <i class="bi bi-sliders me-2"></i>
+          Editar accesos de {{ selectedUsuario?.nombreUsuario || selectedUsuario?.idUsuario }}
+        </h5>
+        <button type="button" class="btn-close btn-close-white" (click)="cerrarEditorAccesosUsuario()" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body usuario-modal-layout">
+        <div class="row g-4 align-items-start">
+          <div class="col-xl-4">
+            <section class="usuario-modal-panel">
+              <div class="usuario-modal-panel__header">
+                <p class="usuario-modal-panel__eyebrow mb-1">Perfil actual</p>
+                <h6 class="mb-1">{{ selectedUsuario?.nombreUsuario || '-' }}</h6>
+                <p class="mb-0 text-muted small">
+                  Usuario {{ selectedUsuario?.idUsuario || '-' }} · {{ descTipoUsuario(selectedUsuario?.idtipoUsuario) }}
+                </p>
+              </div>
+
+              <div class="row g-3">
+                <div class="col-12">
+                  <label class="form-label">Empresa</label>
+                  <input type="text" class="form-control" [value]="descEmpresaUsuario(selectedUsuario)" readonly>
+                </div>
+                <div class="col-12">
+                  <label class="form-label">Sucursal</label>
+                  <input type="text" class="form-control" [value]="descSucursalUsuario(selectedUsuario)" readonly>
+                </div>
+                <div class="col-12">
+                  <label class="form-label">Tipo de usuario</label>
+                  <input type="text" class="form-control" [value]="descTipoUsuario(selectedUsuario?.idtipoUsuario)" readonly>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <div class="col-xl-8">
+            <section class="usuario-modal-panel usuario-modal-panel--permissions">
+              <section class="permisos-builder" *ngIf="permisosMatrizEdicionUsuario?.length; else permisosEdicionPendientesTpl">
+                <div class="permisos-builder__header">
+                  <div>
+                    <p class="permisos-builder__eyebrow mb-1">Control de acceso</p>
+                    <h6 class="mb-1">Matriz de permisos del usuario</h6>
+                    <p class="mb-0 text-muted small">
+                      Ajusta exactamente los módulos y acciones que podrá usar este usuario.
+                    </p>
+                  </div>
+                  <div class="permisos-builder__stats">
+                    <div class="permisos-builder__stat">
+                      <span>Recursos</span>
+                      <strong>{{ totalRecursosPermisosEdicionUsuario }}</strong>
+                    </div>
+                    <div class="permisos-builder__stat">
+                      <span>Configurados</span>
+                      <strong>{{ totalRecursosActivosEdicionUsuario }}</strong>
+                    </div>
+                    <div class="permisos-builder__stat">
+                      <span>Acciones activas</span>
+                      <strong>{{ totalAccionesActivasEdicionUsuario }}</strong>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="permisos-builder__toolbar">
+                  <div class="permisos-builder__actions">
+                    <button type="button" class="btn btn-outline-primary btn-sm" (click)="alternarTodosPermisosEdicionUsuario(true)">
+                      <i class="bi bi-check2-square me-1"></i> Marcar todo
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" (click)="reAplicarPlantillaTipoEdicionUsuario()">
+                      <i class="bi bi-magic me-1"></i> Reaplicar tipo
+                    </button>
+                    <button type="button" class="btn btn-outline-danger btn-sm" (click)="limpiarPermisosEdicionUsuario()">
+                      <i class="bi bi-eraser me-1"></i> Limpiar
+                    </button>
+                  </div>
+                </div>
+
+                <div class="permisos-builder__list">
+                  <article class="permiso-card" *ngFor="let f of permisosMatrizEdicionUsuario; let i = index" [class.permiso-card--active]="tieneAccionActiva(f)">
+                    <div class="permiso-card__top">
+                      <div class="permiso-card__identity">
+                        <span class="permiso-card__module">{{ f.modulo_nombre || '-' }}</span>
+                        <h6 class="mb-1">{{ f.pantalla_nombre || '-' }}</h6>
+                        <p class="mb-0 text-muted small">
+                          {{ contarAccionesActivas(f) }} de {{ accionesPermisosCatalogoEdicion.length }} acciones activas
+                        </p>
+                      </div>
+                      <div class="permiso-card__toggles">
+                        <button type="button" class="btn btn-outline-primary btn-sm" (click)="alternarFilaPermisos(f, true)">
+                          Todo
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" (click)="alternarFilaPermisos(f, false)">
+                          Nada
+                        </button>
+                      </div>
+                    </div>
+
+                    <div class="permiso-card__actions">
+                      <label class="permiso-toggle" *ngFor="let a of accionesPermisosCatalogoEdicion" [class.permiso-toggle--checked]="f.acciones[a.accion_key]">
+                        <input
+                          type="checkbox"
+                          class="permiso-toggle__input"
+                          [(ngModel)]="f.acciones[a.accion_key]"
+                          [name]="'perm-edit-' + i + '-' + a.accion_key"
+                        >
+                        <span class="permiso-toggle__label">{{ a.descripcion }}</span>
+                      </label>
+                    </div>
+                  </article>
+                </div>
+              </section>
+
+              <small class="text-muted d-block mt-2">
+                Puedes empezar desde la plantilla del tipo de usuario y luego personalizar lo que necesites.
+              </small>
+            </section>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer usuario-modal-save-footer">
+        <button type="button" class="btn btn-outline-secondary" (click)="cerrarEditorAccesosUsuario()" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-success" (click)="guardarAccesosUsuario()" [disabled]="cargandoPermisosEdicion">
+          <i class="bi bi-save me-1"></i> Guardar accesos
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<ng-template #permisosEdicionPendientesTpl>
+  <div class="usuario-modal-empty-state">
+    <div class="usuario-modal-empty-state__icon">
+      <i class="bi bi-shield-check"></i>
+    </div>
+    <h6 class="mb-1">{{ cargandoPermisosEdicion ? 'Cargando accesos...' : 'No se pudo cargar la matriz' }}</h6>
+    <p class="mb-0 text-muted small">
+      {{ cargandoPermisosEdicion ? 'Espera un momento mientras se prepara la matriz de permisos del usuario.' : 'Vuelve a intentarlo para editar los módulos y acciones del usuario.' }}
+    </p>
+  </div>
+</ng-template>
 
 <!-- Modal: Permisos del Usuario -->
 <div class="modal fade" id="modalPermisosUsuario" tabindex="-1" aria-labelledby="modalPermisosUsuarioLabel" aria-hidden="true">

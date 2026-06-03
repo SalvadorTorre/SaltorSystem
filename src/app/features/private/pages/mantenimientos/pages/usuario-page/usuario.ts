@@ -44,6 +44,9 @@ export class Usuario implements OnInit {
   detallesTipoSeleccionado: any[] = [];
   accionesPermisosCatalogo: AccionCatalogoPermiso[] = [];
   permisosMatrizNuevoUsuario: PermisoMatrizFila[] = [];
+  accionesPermisosCatalogoEdicion: AccionCatalogoPermiso[] = [];
+  permisosMatrizEdicionUsuario: PermisoMatrizFila[] = [];
+  cargandoPermisosEdicion = false;
   usernameExiste = false;
   claveExiste = false;
   usernameMensaje = '';
@@ -279,14 +282,30 @@ export class Usuario implements OnInit {
     return Array.isArray(this.permisosMatrizNuevoUsuario) ? this.permisosMatrizNuevoUsuario.length : 0;
   }
 
+  get totalRecursosPermisosEdicionUsuario(): number {
+    return Array.isArray(this.permisosMatrizEdicionUsuario) ? this.permisosMatrizEdicionUsuario.length : 0;
+  }
+
   get totalAccionesActivasNuevoUsuario(): number {
     return (this.permisosMatrizNuevoUsuario || []).reduce((acc: number, fila: PermisoMatrizFila) => {
       return acc + this.contarAccionesActivas(fila);
     }, 0);
   }
 
+  get totalAccionesActivasEdicionUsuario(): number {
+    return (this.permisosMatrizEdicionUsuario || []).reduce((acc: number, fila: PermisoMatrizFila) => {
+      return acc + this.contarAccionesActivas(fila);
+    }, 0);
+  }
+
   get totalRecursosActivosNuevoUsuario(): number {
     return (this.permisosMatrizNuevoUsuario || []).filter((fila: PermisoMatrizFila) =>
+      this.contarAccionesActivas(fila) > 0
+    ).length;
+  }
+
+  get totalRecursosActivosEdicionUsuario(): number {
+    return (this.permisosMatrizEdicionUsuario || []).filter((fila: PermisoMatrizFila) =>
       this.contarAccionesActivas(fila) > 0
     ).length;
   }
@@ -321,6 +340,26 @@ export class Usuario implements OnInit {
       Number((this.nuevoUsuario as any)?.idtipoUsuario || 0) || undefined,
     );
     this.aplicarPermisosTipoSeleccionadoEnMatriz(this.detallesTipoSeleccionado);
+  }
+
+  alternarTodosPermisosEdicionUsuario(activo: boolean): void {
+    (this.permisosMatrizEdicionUsuario || []).forEach((fila: PermisoMatrizFila) => {
+      this.alternarFilaPermisos(fila, activo);
+    });
+  }
+
+  limpiarPermisosEdicionUsuario(): void {
+    this.alternarTodosPermisosEdicionUsuario(false);
+  }
+
+  reAplicarPlantillaTipoEdicionUsuario(): void {
+    this.limpiarPermisosEdicionUsuario();
+    const idtipo = Number((this.selectedUsuario as any)?.idtipoUsuario || 0) || undefined;
+    const descripcion = this.descTipoUsuario(idtipo);
+    this.permisosMatrizEdicionUsuario = this.accessControl.applyDefaultTemplate(
+      this.permisosMatrizEdicionUsuario,
+      descripcion,
+    );
   }
 
   descModulo(id?: number): string {
@@ -455,6 +494,66 @@ export class Usuario implements OnInit {
     };
     this.resetValidacionesEditarUsuario();
     $('#modalEditarUsuario').modal('show');
+  }
+
+  abrirEditorAccesosUsuario(u: ModeloUsuarioData): void {
+    this.selectedUsuario = u;
+    this.cargandoPermisosEdicion = true;
+    this.permisosMatrizEdicionUsuario = [];
+    this.accionesPermisosCatalogoEdicion = [];
+
+    const codusuario = Number(u?.codUsuario || 0);
+    const codEmpre = String((u as any)?.cod_empre || '').trim() || null;
+    const sucursalid = Number((u as any)?.sucursalid ?? (u as any)?.sucursal ?? 0) || null;
+
+    this.permisoSrv.obtenerMatrizPermisosUsuario(codusuario, codEmpre, sucursalid).subscribe({
+      next: (res: any) => {
+        const data = res?.data || {};
+        this.accionesPermisosCatalogoEdicion = this.unwrapList(data?.acciones || res?.acciones);
+        this.permisosMatrizEdicionUsuario = Array.isArray(data?.filas) ? data.filas : [];
+        this.cargandoPermisosEdicion = false;
+        $('#modalEditarAccesosUsuario').modal('show');
+      },
+      error: () => {
+        this.cargandoPermisosEdicion = false;
+        this.permisosMatrizEdicionUsuario = [];
+        this.accionesPermisosCatalogoEdicion = [];
+        this.fireToast({ title: 'No se pudo cargar la matriz de permisos', icon: 'error' });
+      }
+    });
+  }
+
+  guardarAccesosUsuario(): void {
+    if (!this.selectedUsuario) {
+      this.fireToast({ title: 'Usuario no seleccionado', icon: 'warning' });
+      return;
+    }
+
+    const codusuario = Number(this.selectedUsuario.codUsuario || 0);
+    const codEmpre = String((this.selectedUsuario as any)?.cod_empre || '').trim() || null;
+    const sucursalid = Number((this.selectedUsuario as any)?.sucursalid ?? (this.selectedUsuario as any)?.sucursal ?? 0) || null;
+
+    this.permisoSrv.guardarMatrizPermisosUsuario(
+      codusuario,
+      this.permisosMatrizEdicionUsuario,
+      codEmpre,
+      sucursalid,
+    ).subscribe({
+      next: () => {
+        $('#modalEditarAccesosUsuario').modal('hide');
+        this.fireToast({ title: 'Accesos actualizados', icon: 'success' });
+      },
+      error: () => {
+        this.fireToast({ title: 'No se pudieron guardar los accesos', icon: 'error' });
+      }
+    });
+  }
+
+  cerrarEditorAccesosUsuario(): void {
+    $('#modalEditarAccesosUsuario').modal('hide');
+    this.cargandoPermisosEdicion = false;
+    this.permisosMatrizEdicionUsuario = [];
+    this.accionesPermisosCatalogoEdicion = [];
   }
 
   private resetValidacionesEditarUsuario(): void {
