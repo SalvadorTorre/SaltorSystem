@@ -67,6 +67,7 @@ export class CobroFact implements OnInit {
   facturaData: any = null; // objeto con la factura que devuelve el backend
   mensaje: string = '';
   facturas: any[] = []; // ✅ Declaración de la propiedad
+  procesandoCobroDgii = false;
   botonEditar = true; // Empieza deshabilitado
   botonImprimir = true; // Empieza deshabilitado
   botonaddItems = true; // Empieza deshabilitado
@@ -248,6 +249,32 @@ export class CobroFact implements OnInit {
     const total = Number(factura?.fa_valFact || this.formularioFacturacion?.get('fa_valFact')?.value || 0);
     this.valorPagado = total;
     this.valCambio = 0;
+  }
+
+  private iniciarProcesamientoCobroDgii(text = 'Preparando cobro y envío a DGII...'): void {
+    this.procesandoCobroDgii = true;
+    Swal.fire({
+      title: 'Procesando...',
+      text,
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+      didOpen: () => {
+        Swal.showLoading();
+      },
+    });
+  }
+
+  private actualizarProcesamientoCobroDgii(text: string): void {
+    if (Swal.isVisible()) {
+      Swal.update({ text });
+      return;
+    }
+
+    this.iniciarProcesamientoCobroDgii(text);
+  }
+
+  private finalizarProcesamientoCobroDgii(): void {
+    this.procesandoCobroDgii = false;
   }
 
   private getIdSalidaFromFactura(factura: any): string {
@@ -1490,6 +1517,7 @@ export class CobroFact implements OnInit {
       dgiiData = await this.buildDGIIRequest(facturaData, this.items);
     } catch (error) {
       console.error('Error construyendo datos DGII', error);
+      this.finalizarProcesamientoCobroDgii();
       Swal.fire('Error', 'Error construyendo datos para DGII', 'error');
       return;
     }
@@ -1498,6 +1526,7 @@ export class CobroFact implements OnInit {
       .trim()
       .replace(/-/g, '');
     if (!rncEmisor) {
+      this.finalizarProcesamientoCobroDgii();
       Swal.fire(
         'Configuración incompleta',
         'No se encontró el RNC emisor activo en la sesión.',
@@ -1506,15 +1535,7 @@ export class CobroFact implements OnInit {
       return;
     }
 
-    // Mostrar Loading
-    Swal.fire({
-      title: 'Procesando...',
-      text: 'Generando comprobante electrónico...',
-      allowOutsideClick: false,
-      didOpen: () => {
-        Swal.showLoading();
-      },
-    });
+    this.actualizarProcesamientoCobroDgii('Generando comprobante electrónico...');
 
     // Envío server-side (Edge Function) para evitar CORS en navegador.
     this.servicioConfiguracionGlobal.enviarDgiiDirectCert([dgiiData], rncEmisor).subscribe(
@@ -1526,6 +1547,7 @@ export class CobroFact implements OnInit {
         payloadDgii.fa_status = 'F';
 
         if (!this.tieneRespuestaDgiiParaImprimir(payloadDgii)) {
+          this.finalizarProcesamientoCobroDgii();
           Swal.fire(
             'DGII incompleto',
             'El comprobante fue enviado, pero no se recibieron todos los datos DGII. Se imprimirá con los datos locales de la factura.',
@@ -1540,9 +1562,7 @@ export class CobroFact implements OnInit {
         }
 
         // Actualizar mensaje de loading
-        Swal.update({
-          text: 'Actualizando datos de factura...',
-        });
+        this.actualizarProcesamientoCobroDgii('Actualizando datos de factura...');
 
         // Llamar a nuestro backend para guardar los datos DGII
         this.servicioFacturacion
@@ -1560,6 +1580,7 @@ export class CobroFact implements OnInit {
                 { emitEvent: false },
               );
               Swal.close();
+              this.finalizarProcesamientoCobroDgii();
               this.buscarFacturasNoImpresas();
 
               await this.imprimirFacturaConDatosDisponibles(
@@ -1573,6 +1594,7 @@ export class CobroFact implements OnInit {
             },
             error: async (err) => {
               console.error('Error guardando datos DGII', err);
+              this.finalizarProcesamientoCobroDgii();
               Swal.fire(
                 'Error',
                 'Se generó el comprobante pero falló al guardar los datos en el sistema. Se imprimirá con los datos disponibles.',
@@ -1588,6 +1610,7 @@ export class CobroFact implements OnInit {
       },
       async (error) => {
         console.error('Error obteniendo datos DGII:', error);
+        this.finalizarProcesamientoCobroDgii();
         Swal.fire({
           title: 'DGII no respondió',
           text: `${this.extraerMensajeError(error)}. Se imprimirá con los datos locales de la factura.`,
@@ -2024,6 +2047,7 @@ export class CobroFact implements OnInit {
   buscarFactura() {
     if (this.facturaSoloConsulta) return;
     if (this.bloquearReimpresion) return;
+    if (this.procesandoCobroDgii) return;
 
     const cod = this.formularioFacturacion.get('fa_codFact')?.value;
     if (!cod) {
@@ -2046,8 +2070,11 @@ export class CobroFact implements OnInit {
       fa_notapago: this.notaPago,
     };
 
+    this.iniciarProcesamientoCobroDgii();
+
     this.servicioFacturacion.asignarEncfFactura(cod).subscribe({
       next: (encfResp: any) => {
+        this.actualizarProcesamientoCobroDgii('Reservando ENCF y guardando la factura...');
         const facturaConEncf = {
           ...(this.DatosSeleccionado || {}),
           ...(encfResp?.data || {}),
@@ -2095,12 +2122,14 @@ export class CobroFact implements OnInit {
           },
           error: (err) => {
             console.error('Error guardando factura antes de imprimir:', err);
+            this.finalizarProcesamientoCobroDgii();
             Swal.fire('Error', this.extraerMensajeError(err), 'error');
           },
         });
       },
       error: (err) => {
         console.error('Error generando ENCF antes de enviar DGII:', err);
+        this.finalizarProcesamientoCobroDgii();
         Swal.fire('Error', this.extraerMensajeError(err), 'error');
       },
     });

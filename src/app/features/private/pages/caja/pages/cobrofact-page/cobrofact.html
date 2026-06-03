@@ -250,10 +250,11 @@
                 </button>
                 <button
                   class="btn btn-primary flex-fill"
-                  [disabled]="facturaSoloConsulta || (!chekPagado && !permitirImpresion) || bloquearReimpresion"
+                  [disabled]="facturaSoloConsulta || (!chekPagado && !permitirImpresion) || bloquearReimpresion || procesandoCobroDgii"
                   [title]="bloquearReimpresion ? 'Pendiente de pago: impresión deshabilitada' : ''"
                   (click)="buscarFactura()">
-                  <i class="bi bi-cash-stack me-1"></i> Cobrar y enviar DGII
+                  <i class="bi" [ngClass]="procesandoCobroDgii ? 'bi-hourglass-split me-1' : 'bi-cash-stack me-1'"></i>
+                  {{ procesandoCobroDgii ? 'Procesando...' : 'Cobrar y enviar DGII' }}
                 </button>
               </div>
             </div>
