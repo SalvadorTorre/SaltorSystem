@@ -1093,8 +1093,18 @@ export class CobroFact implements OnInit {
       nested?.link_original,
       rfceInfo?.link_original,
       rfceInfo?.qrUrl,
+      rfceInfo?.urlQr,
+      rfceInfo?.qr_link,
       ecfInfo?.qrUrl,
-      responseRFCE?.qrUrl
+      ecfInfo?.urlQr,
+      ecfInfo?.qr_link,
+      ecfInfo?.link_original,
+      responseRFCE?.qrUrl,
+      responseRFCE?.urlQr,
+      responseRFCE?.qr_link,
+      dgiiResponse?.qrUrl,
+      dgiiResponse?.urlQr,
+      dgiiResponse?.qr_link
     );
     const codigoSeguridad = pick(
       nested?.codseguridad,
@@ -1103,8 +1113,14 @@ export class CobroFact implements OnInit {
       nested?.securityCode,
       rfceInfo?.codigoSeguridad,
       rfceInfo?.codigoSeguridadeCF,
+      ecfInfo?.codigoSeguridad,
+      ecfInfo?.codigoSeguridadeCF,
+      ecfInfo?.codseguridad,
       responseRFCE?.codigoSeguridad,
-      responseRFCE?.codigoSeguridadeCF
+      responseRFCE?.codigoSeguridadeCF,
+      dgiiResponse?.codigoSeguridad,
+      dgiiResponse?.codigoSeguridadeCF,
+      dgiiResponse?.codseguridad
     );
     const fechaFirma = pick(
       nested?.fec_firma,
@@ -1112,7 +1128,14 @@ export class CobroFact implements OnInit {
       nested?.fechaHoraFirma,
       nested?.fechaFirma,
       nested?.fecha_firma,
-      rfceInfo?.fechaHoraFirma
+      rfceInfo?.fechaHoraFirma,
+      rfceInfo?.fec_firma,
+      ecfInfo?.fechaHoraFirma,
+      ecfInfo?.fec_firma,
+      responseRFCE?.fechaHoraFirma,
+      responseRFCE?.fec_firma,
+      dgiiResponse?.fechaHoraFirma,
+      dgiiResponse?.fec_firma
     );
     const estadoDgii = pick(
       nested?.estado_dgii,

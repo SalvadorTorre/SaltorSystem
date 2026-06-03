@@ -13,6 +13,29 @@ import {
 export class PrintingService {
   constructor(private desktopPrintSettings: DesktopPrintSettingsService) {}
 
+  private parseInvoiceDateTime(...values: any[]): Date {
+    for (const value of values) {
+      if (value === null || value === undefined) continue;
+      const text = String(value).trim();
+      if (!text) continue;
+
+      if (/^\d{4}-\d{2}-\d{2}$/.test(text)) {
+        const [year, month, day] = text.split('-').map(Number);
+        return new Date(year, (month || 1) - 1, day || 1, 0, 0, 0, 0);
+      }
+
+      const normalized = text.includes(' ') && !text.includes('T')
+        ? text.replace(' ', 'T')
+        : text;
+      const parsed = new Date(normalized);
+      if (!isNaN(parsed.getTime())) {
+        return parsed;
+      }
+    }
+
+    return new Date();
+  }
+
   /**
    * Generates a PDF for a receipt/invoice in 80mm format and prints it.
    * @param facturaData The invoice header data.
@@ -142,7 +165,12 @@ export class PrintingService {
       // Handle data structure variations
       const f = facturaData.data || facturaData;
       const ncf = f.fa_ncfFact || f.ncf || '';
-      const fecha = f.fa_fecFact ? new Date(f.fa_fecFact) : new Date();
+      const fecha = this.parseInvoiceDateTime(
+        f.fa_fehora,
+        f.fa_fecHora,
+        f.fa_fechora,
+        f.fa_fecFact,
+      );
       const cliente = f.fa_nomClie || 'CLIENTE GENERICO';
       const rncCliente = f.fa_rncFact || '';
       const codFact = f.barcodeValue || f.fa_codFact || '';
