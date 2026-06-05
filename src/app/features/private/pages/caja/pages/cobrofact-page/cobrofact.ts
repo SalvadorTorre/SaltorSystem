@@ -217,13 +217,58 @@ export class CobroFact implements OnInit {
   }
 
   get facturaEstaPagada(): boolean {
-    const valorFormulario = this.formularioFacturacion?.get('fa_fpago')?.value;
-    const valorFactura = (this.DatosSeleccionado as any)?.fa_fpago;
-    const pago = this.normalizeImpresa(valorFormulario || valorFactura);
-    return pago === 'S' || pago === 'P';
+    return this.chekPagado;
+  }
+
+  get puedeGuardarPagoEntregaEstado(): boolean {
+    const impresa = this.normalizeImpresa((this.DatosSeleccionado as any)?.fa_impresa);
+    const fpago = this.normalizeImpresa((this.DatosSeleccionado as any)?.fa_fpago);
+    return this.hayFacturaSeleccionada && impresa === 'S' && fpago === 'N';
+  }
+
+  get bloquearConducePorImpresaSinPago(): boolean {
+    return this.hayFacturaSeleccionada && this.facturaEstaImpresa && !this.facturaEstaPagada;
+  }
+
+  get bloquearConducePorImpresa(): boolean {
+    return this.hayFacturaSeleccionada && this.facturaEstaImpresa;
+  }
+
+  get bloquearConducePorRetiroSinPago(): boolean {
+    return this.hayFacturaSeleccionada && !this.esEntregaEnvio && !this.facturaEstaPagada;
+  }
+
+  private tipoNcfFacturaSeleccionada(): string {
+    return String(
+      this.formularioFacturacion?.get('fa_tipoNcf')?.value ??
+      (this.DatosSeleccionado as any)?.fa_tipoNcf ??
+      (this.DatosSeleccionado as any)?.fa_tiponcf ??
+      '',
+    ).trim();
+  }
+
+  get bloquearCobroDgiiPorEnvioNcf32(): boolean {
+    return (
+      this.hayFacturaSeleccionada &&
+      this.esEntregaEnvio &&
+      this.tipoNcfFacturaSeleccionada() === '32'
+    );
+  }
+
+  get bloquearCobroDgiiPorEnvioNcfSinPago(): boolean {
+    const tipoNcf = this.tipoNcfFacturaSeleccionada();
+
+    return (
+      this.hayFacturaSeleccionada &&
+      this.esEntregaEnvio &&
+      tipoNcf !== '32' &&
+      !this.chekPagado
+    );
   }
 
   get facturaSoloConsulta(): boolean {
+    if (this.puedeGuardarPagoEntregaEstado) return false;
+
     const datosFormulario = this.formularioFacturacion?.getRawValue?.() || {};
     return this.esFacturaPagadaConsulta({
       ...(this.DatosSeleccionado || {}),
@@ -1676,6 +1721,10 @@ export class CobroFact implements OnInit {
   toggleCheckPagado() {
     if (this.facturaSoloConsulta) return;
     this.chekPagado = !this.chekPagado;
+    this.formularioFacturacion.patchValue(
+      { fa_fpago: this.chekPagado ? 'S' : 'N' },
+      { emitEvent: false },
+    );
     if (this.chekPagado) {
       this.valorPagado =
         this.formularioFacturacion.get('fa_valFact')?.value || 0;
@@ -1804,6 +1853,14 @@ export class CobroFact implements OnInit {
       Swal.fire('Aviso', 'Seleccione una factura primero.', 'warning');
       return;
     }
+    if (!this.puedeGuardarPagoEntregaEstado) {
+      Swal.fire(
+        'Aviso',
+        'Solo puede guardar cuando la factura esta impresa y pendiente de pago.',
+        'warning',
+      );
+      return;
+    }
 
     const total = Number(this.formularioFacturacion.get('fa_valFact')?.value || 0);
     if (this.chekPagado && this.valorPagado < total) {
@@ -1899,8 +1956,12 @@ export class CobroFact implements OnInit {
       Swal.fire('Aviso', 'Seleccione una factura primero.', 'warning');
       return;
     }
-    if (!this.esEntregaEnvio) {
-      Swal.fire('Aviso', 'El conduce solo aplica para entrega por envio.', 'warning');
+    if (this.bloquearConducePorImpresa) {
+      Swal.fire('Aviso', 'La factura ya tiene el conduce impreso.', 'warning');
+      return;
+    }
+    if (this.bloquearConducePorRetiroSinPago) {
+      Swal.fire('Aviso', 'Para entrega retirada por el cliente debe marcar la factura como pagada antes de imprimir el conduce.', 'warning');
       return;
     }
     if (!this.validarOrigenPagoSiAplica()) return;
@@ -2048,6 +2109,22 @@ export class CobroFact implements OnInit {
     if (this.facturaSoloConsulta) return;
     if (this.bloquearReimpresion) return;
     if (this.procesandoCobroDgii) return;
+    if (this.bloquearCobroDgiiPorEnvioNcf32) {
+      Swal.fire(
+        'Aviso',
+        'Las facturas de envio con comprobante 32 no se envian a DGII desde este boton.',
+        'warning',
+      );
+      return;
+    }
+    if (this.bloquearCobroDgiiPorEnvioNcfSinPago) {
+      Swal.fire(
+        'Aviso',
+        'Para enviar a DGII una factura de envio con tipo NCF diferente a 32 debe marcarla como pagada.',
+        'warning',
+      );
+      return;
+    }
 
     const cod = this.formularioFacturacion.get('fa_codFact')?.value;
     if (!cod) {
