@@ -67,6 +67,17 @@ export class ServicioFacturacion {
     return s.length > max ? s.slice(0, max) : s;
   }
 
+  private tipoMercanciaDetalle(item: any): string | null {
+    const producto = item?.producto || {};
+    return this.toStringMax(
+      producto?.in_tramo ??
+        producto?.IN_TRAMO ??
+        item?.df_tipoMerc ??
+        item?.df_tipomerc,
+      1,
+    );
+  }
+
   private normalizeDate(input: any): string | null {
     if (!input) return null;
     if (input instanceof Date && !isNaN(input.getTime())) {
@@ -784,7 +795,7 @@ export class ServicioFacturacion {
                 df_codfact: this.toStringMax(codigo, 12) || '',
                 df_fecfact: this.normalizeDate(facturaRaw?.fa_fecFact),
                 df_codmerc: this.toStringMax(producto?.in_codmerc ?? item?.df_codMerc, 15) || '',
-                df_tipomerc: this.toStringMax(item?.df_tipoMerc, 1),
+                df_tipomerc: this.tipoMercanciaDetalle(item),
                 df_codgrupo: this.toStringMax(item?.df_codGrupo, 10),
                 df_desmerc: this.toStringMax(producto?.in_desmerc ?? item?.df_desMerc, 30),
                 df_canmerc: cantidad,
@@ -1049,6 +1060,7 @@ export class ServicioFacturacion {
             df_codfact: cod,
             df_fecfact: this.normalizeDate(facturaRaw?.fa_fecFact),
             df_codmerc: this.toStringMax(producto?.in_codmerc ?? item?.df_codMerc, 15) || '',
+            df_tipomerc: this.tipoMercanciaDetalle(item),
             df_desmerc: this.toStringMax(producto?.in_desmerc ?? item?.df_desMerc, 30),
             df_canmerc: cantidad,
             df_premerc: precio,

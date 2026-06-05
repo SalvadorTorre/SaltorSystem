@@ -25,4 +25,5 @@ export interface interfaceDetalleModel {
   fa_fpago?: string;
   df_canpend?: number;
   df_pendiente?:string
+  df_tipoMerc?: string;
 }

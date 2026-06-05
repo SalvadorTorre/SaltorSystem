@@ -1334,7 +1334,7 @@ export class Facturacion implements OnInit {
       obj[key] || obj[key.toUpperCase()] || obj[key.toLowerCase()];
 
     this.codmerc = getProp(inventario, 'in_codmerc');
-    this.tipomerc = getProp(inventario, 'in_tipoproduct');
+    this.tipomerc = getProp(inventario, 'in_tramo');
     this.descripcionmerc = getProp(inventario, 'in_desmerc');
     this.costotxt = getProp(inventario, 'in_cosmerc');
     this.margenVentatxt = getProp(inventario, 'in_porgana');
@@ -1373,6 +1373,7 @@ export class Facturacion implements OnInit {
 
     this.productoselect = {
       ...inventario,
+      in_tramo: this.tipomerc,
       in_canmerc: 0,
       in_premerc: this.preciomerc,
     };
@@ -2247,6 +2248,7 @@ export class Facturacion implements OnInit {
       this.itemToEdit.total = this.cantidadmerc * this.preciomerc;
       this.itemToEdit.totalcosto += this.costotxt * this.cantidadmerc;
       this.itemToEdit.fecfactActual = fechaActual; // Actualiza la fecha del ítem existente
+      this.itemToEdit.df_tipoMerc = this.tipomerc;
       // Actualizar los totales
       this.actualizarTotales();
       // Restablecer el estado de edición
@@ -2265,6 +2267,7 @@ export class Facturacion implements OnInit {
       this.protxt = ((this.preciomerc - this.costotxt) * 100) / this.costotxt;
       this.items.push({
         producto: this.productoselect,
+        df_tipoMerc: this.tipomerc,
         cantidad: this.cantidadmerc,
         precio: this.preciomerc,
         total,
