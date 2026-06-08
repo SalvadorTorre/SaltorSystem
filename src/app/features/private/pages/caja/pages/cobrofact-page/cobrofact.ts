@@ -1730,10 +1730,20 @@ export class CobroFact implements OnInit {
         this.formularioFacturacion.get('fa_valFact')?.value || 0;
       this.txtvalPagado = false;
       this.actualizarCambio();
+      if (this.esPagoDiferenteEfectivo()) {
+        this.abrirModalOrigenPago();
+      }
     } else {
       this.valorPagado = 0;
       this.txtvalPagado = true;
       this.valCambio = 0;
+      this.origenPagoSeleccionado = '';
+      this.confirmacionPago = '';
+      this.notaPago = '';
+      this.formularioFacturacion.patchValue(
+        { fa_origenpago: '', fa_confirpago: '', fa_notapago: '' },
+        { emitEvent: false },
+      );
     }
   }
 
@@ -1754,7 +1764,7 @@ export class CobroFact implements OnInit {
       { fa_codfpago: this.ftipoPago },
       { emitEvent: false },
     );
-    if (this.esPagoDiferenteEfectivo()) {
+    if (this.chekPagado && this.esPagoDiferenteEfectivo()) {
       this.abrirModalOrigenPago();
     } else {
       this.origenPagoSeleccionado = '';

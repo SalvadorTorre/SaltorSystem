@@ -155,6 +155,7 @@
                         [(ngModel)]="ftipoPago"
                         class="form-select"
                         [disabled]="!chekPagado || facturaSoloConsulta"
+                        (change)="onTipoPagoChange()"
                       >
                         <option
                           [value]="fpago.fp_codfpago"
@@ -654,4 +655,67 @@
         </div>
       </div>
     </div>
+</div>
+
+<div
+  class="modal fade"
+  id="modalOrigenPago"
+  tabindex="-1"
+  aria-labelledby="modalOrigenPagoLabel"
+  aria-hidden="true"
+  data-bs-backdrop="static"
+>
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title" id="modalOrigenPagoLabel">Datos del pago</h5>
+        <button
+          type="button"
+          class="btn-close btn-close-white"
+          data-bs-dismiss="modal"
+          aria-label="Cerrar"
+        ></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label fw-bold">Origen de pago</label>
+          <select class="form-select" [(ngModel)]="origenPagoSeleccionado">
+            <option value="">Seleccione...</option>
+            <option
+              *ngFor="let origen of resultadoOrigenPago"
+              [value]="origen.codigo"
+            >
+              {{ origen.descripcion }}
+            </option>
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-bold">No. Confirmacion</label>
+          <input
+            type="text"
+            class="form-control"
+            [(ngModel)]="confirmacionPago"
+          />
+        </div>
+
+        <div class="mb-0">
+          <label class="form-label fw-bold">Notas</label>
+          <textarea
+            class="form-control"
+            rows="3"
+            [(ngModel)]="notaPago"
+          ></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+          Cancelar
+        </button>
+        <button type="button" class="btn btn-primary" (click)="guardarOrigenPagoModal()">
+          Aceptar
+        </button>
+      </div>
+    </div>
+  </div>
 </div>
