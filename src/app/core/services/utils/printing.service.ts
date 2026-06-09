@@ -36,6 +36,37 @@ export class PrintingService {
     return new Date();
   }
 
+  private facturaEsEnvio(factura: any): boolean {
+    const raw = String(
+      factura?.fa_envio ??
+        factura?.faEnvio ??
+        factura?.fentrega ??
+        factura?.formaEntrega ??
+        ''
+    )
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim()
+      .toLowerCase();
+
+    return raw === '1' || raw === 'envio';
+  }
+
+  private datosFacturaImpresion(facturaData: any): any {
+    const nested =
+      facturaData?.data && typeof facturaData.data === 'object'
+        ? facturaData.data
+        : {};
+    return {
+      ...nested,
+      ...(facturaData || {}),
+    };
+  }
+
+  private usarTrabajosSeparadosParaCorte(): boolean {
+    return typeof window !== 'undefined' && !!window.electronAPI?.isDesktop;
+  }
+
   /**
    * Generates a PDF for a receipt/invoice in 80mm format and prints it.
    * @param facturaData The invoice header data.
@@ -45,11 +76,79 @@ export class PrintingService {
     try {
       console.log('Iniciando impresión de factura...', facturaData);
       console.log('JsBarcode loaded:', !!JsBarcode);
-      const doc = new jsPDF({
-        orientation: 'p',
-        unit: 'mm',
-        format: [80, 297], // 80mm width, dynamic height would be better but fixed is okay for thermal
-      });
+      const facturaRoot = this.datosFacturaImpresion(facturaData);
+      const fpago = String(
+        facturaRoot?.fa_fpago ?? facturaData?.fa_fpago ?? ''
+      )
+        .trim()
+        .toUpperCase();
+      const facturaPagada = fpago === 'S' || fpago === 'P';
+
+      if (facturaPagada && !facturaData?.__singlePrintCopy) {
+        const copias = this.facturaEsEnvio(facturaRoot)
+          ? [
+              { label: 'CLIENTE', hideDetails: false },
+              { label: 'CONDUCTOR', hideDetails: false },
+              { label: 'CAJA', hideDetails: true },
+            ]
+          : [
+              { label: 'CLIENTE', hideDetails: false },
+              { label: 'CAJA', hideDetails: true },
+            ];
+
+        if (this.usarTrabajosSeparadosParaCorte()) {
+          for (const copia of copias) {
+            await this.imprimirFactura80mm(
+              {
+                ...facturaData,
+                __singlePrintCopy: true,
+                __copyLabel: copia.label,
+                __hideInvoiceDetails: copia.hideDetails,
+              },
+              items,
+            );
+          }
+          return;
+        }
+
+        const doc = new jsPDF({
+          orientation: 'p',
+          unit: 'mm',
+          format: [80, 297],
+        });
+
+        for (const [index, copia] of copias.entries()) {
+          if (index > 0) {
+            (doc as any).addPage([80, 297], 'p');
+          }
+          await this.imprimirFactura80mm(
+            {
+              ...facturaData,
+              __singlePrintCopy: true,
+              __copyLabel: copia.label,
+              __hideInvoiceDetails: copia.hideDetails,
+              __sharedDoc: doc,
+              __deferPrint: true,
+            },
+            items,
+          );
+        }
+
+        doc.autoPrint();
+        const pdfBlob = doc.output('blob');
+        await this.printBlob(pdfBlob, 'factura');
+        return;
+      }
+
+      const copyLabel = String(facturaData?.__copyLabel || '').trim();
+      const hideInvoiceDetails = !!facturaData?.__hideInvoiceDetails;
+      const doc =
+        facturaData?.__sharedDoc ||
+        new jsPDF({
+          orientation: 'p',
+          unit: 'mm',
+          format: [80, 297], // 80mm width, dynamic height would be better but fixed is okay for thermal
+        });
 
       const pageWidth = 74; // Adjusted to safer printable area width
       const centerX = pageWidth / 2;
@@ -68,6 +167,12 @@ export class PrintingService {
       const centerText = (text: string, y: number, options?: any) => {
         doc.text(text, centerX, y, { align: 'center', ...options });
       };
+
+      if (copyLabel) {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        doc.text(copyLabel, leftMargin, yPos);
+      }
 
       // --- 1. LOGO ---
       try {
@@ -163,7 +268,7 @@ export class PrintingService {
 
       // --- 3. FACTURA DETAILS ---
       // Handle data structure variations
-      const f = facturaData.data || facturaData;
+      const f = this.datosFacturaImpresion(facturaData);
       const ncf = f.fa_ncfFact || f.ncf || '';
       const fecha = this.parseInvoiceDateTime(
         f.fa_fehora,
@@ -224,8 +329,6 @@ export class PrintingService {
       yPos += 5;
 
       // --- 4. ITEMS TABLE ---
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(6.5);
       const xCod = leftMargin;
       const xDesc = 17;
       const xCant = pageWidth - rightMargin;
@@ -233,16 +336,20 @@ export class PrintingService {
       const xItbis = 49;
       const xValor = pageWidth - rightMargin;
 
-      doc.text('COD', xCod, yPos);
-      doc.text('DESC', xDesc, yPos);
-      doc.text('CANT', xCant, yPos, { align: 'right' });
-      yPos += 4;
-      doc.text('PRECIO', xPrecio, yPos, { align: 'right' });
-      doc.text('ITBIS', xItbis, yPos, { align: 'right' });
-      doc.text('VALOR', xValor, yPos, { align: 'right' });
-      yPos += 2;
-      drawDashedLine(yPos);
-      yPos += 4;
+      if (!hideInvoiceDetails) {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(6.5);
+        doc.text('COD', xCod, yPos);
+        doc.text('DESC', xDesc, yPos);
+        doc.text('CANT', xCant, yPos, { align: 'right' });
+        yPos += 4;
+        doc.text('PRECIO', xPrecio, yPos, { align: 'right' });
+        doc.text('ITBIS', xItbis, yPos, { align: 'right' });
+        doc.text('VALOR', xValor, yPos, { align: 'right' });
+        yPos += 2;
+        drawDashedLine(yPos);
+        yPos += 4;
+      }
 
       doc.setFont('helvetica', 'normal');
 
@@ -313,24 +420,33 @@ export class PrintingService {
         itbisImpresion += itbisItem;
         totalImpresion += totalItem;
 
-        const codigoCorto = truncateText(codigo, 11);
-        const descCorta = truncateText(desc, 37);
-        const itemY = yPos;
-        doc.text(codigoCorto, xCod, itemY);
-        doc.text(descCorta, xDesc, yPos);
+        if (!hideInvoiceDetails) {
+          const codigoCorto = truncateText(codigo, 11);
+          const descCorta = truncateText(desc, 37);
+          const itemY = yPos;
+          doc.text(codigoCorto, xCod, itemY);
+          doc.text(descCorta, xDesc, yPos);
 
-        doc.text(formatoMoneda.format(Number(cant || 0)), xCant, yPos, { align: 'right' });
-        yPos += 4;
-        doc.text(formatoMoneda.format(precioSinItbis), xPrecio, yPos, { align: 'right' });
-        doc.text(formatoMoneda.format(itbisItem), xItbis, yPos, {
-          align: 'right',
-        });
-        doc.text(formatoMoneda.format(totalItem), xValor, yPos, {
-          align: 'right',
-        });
+          doc.text(formatoMoneda.format(Number(cant || 0)), xCant, yPos, { align: 'right' });
+          yPos += 4;
+          doc.text(formatoMoneda.format(precioSinItbis), xPrecio, yPos, { align: 'right' });
+          doc.text(formatoMoneda.format(itbisItem), xItbis, yPos, {
+            align: 'right',
+          });
+          doc.text(formatoMoneda.format(totalItem), xValor, yPos, {
+            align: 'right',
+          });
 
-        yPos += 5;
+          yPos += 5;
+        }
       });
+
+      if (hideInvoiceDetails) {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8);
+        centerText('COPIA SIN DETALLE DE ARTÍCULOS', yPos);
+        yPos += 5;
+      }
 
       drawDashedLine(yPos);
       yPos += 5;
@@ -487,7 +603,7 @@ export class PrintingService {
       // --- 6. FOOTER ---
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(8);
-      doc.text(`Artículos: ${items.length}`, leftMargin, yPos);
+      doc.text(`Artículos: ${hideInvoiceDetails ? 0 : (items || []).length}`, leftMargin, yPos);
       yPos += 4;
       centerText('*** GRACIAS POR SU COMPRA ***', yPos);
 
@@ -496,9 +612,11 @@ export class PrintingService {
       doc.text('.', leftMargin, yPos, { align: 'left' }); // Un punto casi invisible para forzar el largo
 
       // --- PRINT ---
-      doc.autoPrint();
-      const pdfBlob = doc.output('blob');
-      await this.printBlob(pdfBlob, 'factura');
+      if (!facturaData?.__deferPrint) {
+        doc.autoPrint();
+        const pdfBlob = doc.output('blob');
+        await this.printBlob(pdfBlob, 'factura');
+      }
     } catch (error) {
       console.error('Error fatal al generar factura:', error);
     }
@@ -1191,7 +1309,75 @@ items.forEach((it: any) => {
 
   async imprimirConduceFactura80mm(facturaData: any, items: any[]) {
     try {
-      const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: [80, 297] });
+      const facturaRoot = this.datosFacturaImpresion(facturaData);
+      const fpago = String(
+        facturaRoot?.fa_fpago ?? facturaData?.fa_fpago ?? ''
+      )
+        .trim()
+        .toUpperCase();
+      const conducePagado = fpago === 'S' || fpago === 'P';
+
+      if (conducePagado && !facturaData?.__singlePrintCopy) {
+        const copias = this.facturaEsEnvio(facturaRoot)
+          ? [
+              { label: 'CLIENTE', hideDetails: false },
+              { label: 'CONDUCTOR', hideDetails: false },
+              { label: 'CAJA', hideDetails: true },
+            ]
+          : [
+              { label: 'CLIENTE', hideDetails: false },
+              { label: 'CAJA', hideDetails: true },
+            ];
+
+        if (this.usarTrabajosSeparadosParaCorte()) {
+          for (const copia of copias) {
+            await this.imprimirConduceFactura80mm(
+              {
+                ...facturaData,
+                __singlePrintCopy: true,
+                __copyLabel: copia.label,
+                __hideInvoiceDetails: copia.hideDetails,
+              },
+              items,
+            );
+          }
+          return;
+        }
+
+        const doc = new jsPDF({
+          orientation: 'p',
+          unit: 'mm',
+          format: [80, 297],
+        });
+
+        for (const [index, copia] of copias.entries()) {
+          if (index > 0) {
+            (doc as any).addPage([80, 297], 'p');
+          }
+          await this.imprimirConduceFactura80mm(
+            {
+              ...facturaData,
+              __singlePrintCopy: true,
+              __copyLabel: copia.label,
+              __hideInvoiceDetails: copia.hideDetails,
+              __sharedDoc: doc,
+              __deferPrint: true,
+            },
+            items,
+          );
+        }
+
+        doc.autoPrint();
+        const pdfBlob = doc.output('blob');
+        await this.printBlob(pdfBlob, 'reporte');
+        return;
+      }
+
+      const copyLabel = String(facturaData?.__copyLabel || '').trim();
+      const hideInvoiceDetails = !!facturaData?.__hideInvoiceDetails;
+      const doc =
+        facturaData?.__sharedDoc ||
+        new jsPDF({ orientation: 'p', unit: 'mm', format: [80, 297] });
       const pageWidth = 74;
       const centerX = pageWidth / 2;
       const leftMargin = 5;
@@ -1205,6 +1391,12 @@ items.forEach((it: any) => {
       const centerText = (text: any, y: number, options?: any) => {
         doc.text(String(text), centerX, y, { align: 'center', ...options });
       };
+
+      if (copyLabel) {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        doc.text(copyLabel, leftMargin, yPos);
+      }
 
       try {
         const imgData = 'assets/logo2.png';
@@ -1254,7 +1446,7 @@ items.forEach((it: any) => {
       drawDashedLine(yPos);
       yPos += 5;
 
-      const f = facturaData?.data || facturaData || {};
+      const f = this.datosFacturaImpresion(facturaData);
       const fecha = f.fa_fecFact ? new Date(f.fa_fecFact) : new Date();
       const formatDateShort = (date: Date) => {
         const d = new Date(date);
@@ -1289,14 +1481,21 @@ items.forEach((it: any) => {
 
       drawDashedLine(yPos);
       yPos += 5;
-      doc.setFont('helvetica', 'bold');
-      doc.text('Cant', leftMargin, yPos);
-      doc.text('Descripcion', leftMargin + 12, yPos);
-      doc.text('Total', pageWidth - rightMargin, yPos, { align: 'right' });
-      yPos += 2;
-      drawDashedLine(yPos);
-      yPos += 4;
-      doc.setFont('helvetica', 'normal');
+      if (!hideInvoiceDetails) {
+        doc.setFont('helvetica', 'bold');
+        doc.text('Cant', leftMargin, yPos);
+        doc.text('Descripcion', leftMargin + 12, yPos);
+        doc.text('Total', pageWidth - rightMargin, yPos, { align: 'right' });
+        yPos += 2;
+        drawDashedLine(yPos);
+        yPos += 4;
+        doc.setFont('helvetica', 'normal');
+      } else {
+        doc.setFont('helvetica', 'bold');
+        centerText('COPIA SIN DETALLE DE ARTICULOS', yPos);
+        doc.setFont('helvetica', 'normal');
+        yPos += 5;
+      }
 
       let total = 0;
       (items || []).forEach((item: any) => {
@@ -1306,10 +1505,12 @@ items.forEach((it: any) => {
         total += val;
         const descLines = doc.splitTextToSize(desc, 35);
 
-        doc.text(String(cantidad), leftMargin, yPos);
-        doc.text(descLines, leftMargin + 12, yPos);
-        doc.text(formatoMoneda.format(val), pageWidth - rightMargin, yPos, { align: 'right' });
-        yPos += Math.max(descLines.length * 4, 4) + 2;
+        if (!hideInvoiceDetails) {
+          doc.text(String(cantidad), leftMargin, yPos);
+          doc.text(descLines, leftMargin + 12, yPos);
+          doc.text(formatoMoneda.format(val), pageWidth - rightMargin, yPos, { align: 'right' });
+          yPos += Math.max(descLines.length * 4, 4) + 2;
+        }
       });
 
       drawDashedLine(yPos);
@@ -1346,9 +1547,11 @@ items.forEach((it: any) => {
       yPos += 15;
       doc.text('.', leftMargin, yPos);
 
-      doc.autoPrint();
-      const pdfBlob = doc.output('blob');
-      await this.printBlob(pdfBlob, 'reporte');
+      if (!facturaData?.__deferPrint) {
+        doc.autoPrint();
+        const pdfBlob = doc.output('blob');
+        await this.printBlob(pdfBlob, 'reporte');
+      }
     } catch (error) {
       console.error('Error al generar conduce:', error);
     }
