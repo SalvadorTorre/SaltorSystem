@@ -1449,7 +1449,9 @@ export class CobroFact implements OnInit {
     if (fechaVencimientoSecuencia) {
       scenario.FechaVencimientoSecuencia = fechaVencimientoSecuencia;
     }
-    scenario.IndicadorMontoGravado = '1';
+    // Enviamos las lineas como base gravada neta. Con indicador 1 DGII asume
+    // que MontoItem incluye ITBIS y recalcula una base menor.
+    scenario.IndicadorMontoGravado = '0';
     scenario.TipoIngresos = '01';
     scenario.TipoPago = String(
       (factura as any).fa_codfpago || factura.fa_fpago || '1',
