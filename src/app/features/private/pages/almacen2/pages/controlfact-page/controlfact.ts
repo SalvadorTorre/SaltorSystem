@@ -20,6 +20,7 @@ import {
   filter,
   from,
   skip,
+  Subject,
   switchMap,
   tap,
 } from 'rxjs';
@@ -95,6 +96,8 @@ export class ControlFact implements OnInit {
   facturacionList: FacturacionModelData[] = [];
   detFacturaList: detFacturaData[] = [];
   selectedFacturacion: any = null;
+  facturaOriginalEdicion: any = null;
+  detalleOriginalEdicion = '';
   items: interfaceDetalleModel[] = [];
   ncflist: ModeloNcfData[] = [];
   selectedItem: any = null;
@@ -152,6 +155,10 @@ export class ControlFact implements OnInit {
   rncValue: string = '';
   cancelarBusquedaDescripcion: boolean = false;
   cancelarBusquedaCodigo: boolean = false;
+  private buscadorProductoConfigurado = false;
+  private codigoProductoBusqueda$ = new Subject<string>();
+  private descripcionProductoBusqueda$ = new Subject<string>();
+  private productoCargadoDesdeCodigoEnter = false;
   private numfacturaSubject = new BehaviorSubject<string>('');
   private nomclienteSubject = new BehaviorSubject<string>('');
   selectedRow: number = 0; // Para rastrear la fila seleccionada
@@ -166,6 +173,68 @@ export class ControlFact implements OnInit {
   get paginatedData() {
     const startIndex = (this.currentPage - 1) * this.pageSize;
     return this.facturacionList.slice(startIndex, startIndex + this.pageSize);
+  }
+
+  private normalizarStatusFactura(value: any): string {
+    return String(value ?? '').trim().toUpperCase();
+  }
+
+  private normalizarFlagFactura(value: any): string {
+    if (typeof value === 'boolean') return value ? 'S' : 'N';
+    return String(value ?? '').trim().toUpperCase();
+  }
+
+  private tipoNcfFactura(factura: any): string {
+    return String(
+      factura?.fa_tipoNcf ??
+      factura?.fa_tiponcf ??
+      factura?.fa_tipoNCF ??
+      '',
+    ).trim();
+  }
+
+  private esComprobanteE32(value: any): boolean {
+    const tipo = String(value ?? '').trim().toUpperCase();
+    return tipo === '32' || tipo === 'E32';
+  }
+
+  private rncRequeridoParaComprobante(): boolean {
+    return !this.esComprobanteE32(this.formularioFacturacion.get('fa_tipoNcf')?.value);
+  }
+
+  private normalizarComparacion(value: any): string {
+    if (value instanceof Date) return value.toISOString();
+    if (typeof value === 'boolean') return value ? 'S' : 'N';
+    if (value === null || value === undefined) return '';
+    return String(value).trim();
+  }
+
+  private serializarDetalle(items: interfaceDetalleModel[]): string {
+    return JSON.stringify((items || []).map((item: any) => ({
+      codigo: this.normalizarComparacion(item?.producto?.in_codmerc ?? item?.df_codMerc),
+      descripcion: this.normalizarComparacion(item?.producto?.in_desmerc ?? item?.df_desMerc),
+      cantidad: Number(item?.cantidad ?? item?.df_canMerc ?? 0),
+      precio: Number(item?.precio ?? item?.df_preMerc ?? 0),
+      costo: Number(item?.costo ?? item?.df_cosMerc ?? 0),
+      total: Number(item?.total ?? item?.df_valMerc ?? 0),
+      tipoMerc: this.normalizarComparacion(item?.producto?.in_tramo ?? item?.df_tipoMerc ?? item?.df_tipomerc),
+    })));
+  }
+
+  private detalleFueModificado(): boolean {
+    return this.serializarDetalle(this.items) !== this.detalleOriginalEdicion;
+  }
+
+  private obtenerCambiosFactura(actual: any): any {
+    const original = this.facturaOriginalEdicion || {};
+    const cambios: any = {};
+    Object.keys(actual || {}).forEach((key) => {
+      if (key === 'fa_codFact') return;
+      if (this.normalizarComparacion(actual[key]) !== this.normalizarComparacion(original[key])) {
+        cambios[key] = actual[key];
+      }
+    });
+    return cambios;
   }
 
   constructor(
@@ -266,6 +335,10 @@ export class ControlFact implements OnInit {
     // $("#input1").select()
     this.obtenerNcf();
     this.obtenerfpago();
+    if (!this.buscadorProductoConfigurado) {
+      this.configurarBuscadorProducto();
+      this.buscadorProductoConfigurado = true;
+    }
     this.buscardescripcionmerc.valueChanges
       .pipe(
         debounceTime(50),
@@ -341,6 +414,74 @@ export class ControlFact implements OnInit {
         }
       });
   }
+
+  private configurarBuscadorProducto(): void {
+    this.codigoProductoBusqueda$
+      .pipe(
+        debounceTime(150),
+        distinctUntilChanged(),
+        tap(() => {
+          this.resultadoCodmerc = [];
+          this.codnotfound = false;
+        }),
+        filter(
+          (query: string) =>
+            query.trim() !== '' &&
+            !this.cancelarBusquedaCodigo &&
+            !this.isEditing &&
+            this.habilitarCampos
+        ),
+        switchMap((query: string) =>
+          this.ServicioInventario.buscarporCodigoMerc(query.trim())
+        )
+      )
+      .subscribe({
+        next: (results: any) => {
+          const data = Array.isArray(results?.data) ? results.data : [];
+          this.resultadoCodmerc = data;
+          this.selectedIndexcodmerc = data.length ? 0 : -1;
+          this.codnotfound = data.length === 0;
+        },
+        error: (error) => {
+          console.error('Error buscando producto por codigo:', error);
+          this.resultadoCodmerc = [];
+          this.codnotfound = true;
+        },
+      });
+
+    this.descripcionProductoBusqueda$
+      .pipe(
+        debounceTime(150),
+        distinctUntilChanged(),
+        tap(() => {
+          this.resultadodescripcionmerc = [];
+          this.desnotfound = false;
+        }),
+        filter(
+          (query: string) =>
+            query.trim() !== '' &&
+            !this.cancelarBusquedaDescripcion &&
+            !this.isEditing &&
+            this.habilitarCampos
+        ),
+        switchMap((query: string) =>
+          this.ServicioInventario.buscarPorDescripcionMerc(query.trim())
+        )
+      )
+      .subscribe({
+        next: (results: any) => {
+          const data = Array.isArray(results?.data) ? results.data : [];
+          this.resultadodescripcionmerc = data;
+          this.selectedIndexdescripcionmerc = data.length ? 0 : -1;
+          this.desnotfound = data.length === 0;
+        },
+        error: (error) => {
+          console.error('Error buscando producto por descripcion:', error);
+          this.resultadodescripcionmerc = [];
+          this.desnotfound = true;
+        },
+      });
+  }
   obtenerfpago() {
     this.servicioFpago.obtenerTodosFpago().subscribe((response) => {
       this.resultadoFpago = response.data;
@@ -398,6 +539,8 @@ export class ControlFact implements OnInit {
     this.botonEditar = true; // Deshabilita de nuevo
     this.botonGuardar = true; // Deshabilita el botón
     this.botonaddItems = true;
+    this.facturaOriginalEdicion = null;
+    this.detalleOriginalEdicion = '';
     this.productoselect;
     this.codmerc = '';
     this.descripcionmerc = '';
@@ -510,7 +653,12 @@ export class ControlFact implements OnInit {
     this.modoconsultaFacturacion = true;
     this.formularioFacturacion.reset();
     this.crearFormularioFacturacion();
-    this.formularioFacturacion.patchValue(factura);
+    const facturaConsulta = {
+      ...factura,
+      fa_tipoNcf: this.tipoNcfFactura(factura),
+    };
+    this.formularioFacturacion.patchValue(facturaConsulta);
+    this.facturaOriginalEdicion = { ...facturaConsulta };
     this.tituloModalFacturacion = 'Consulta Factura';
     // $('#modalfacturacion').modal('show');
     this.habilitarFormulario = true;
@@ -518,7 +666,7 @@ export class ControlFact implements OnInit {
     this.codFacturaselecte = factura.fa_codFact;
     console.log('ff', factura);
     this.habilitarIcono = false;
-    this.botonEditar = false; // Habilita el botón
+    this.botonEditar = this.normalizarStatusFactura((factura as any)?.fa_status) !== 'C';
     this.botonGuardar = true; // Habilita el botón
     this.botonaddItems = true;
     const inputs = document.querySelectorAll('.seccion-productos input');
@@ -596,6 +744,7 @@ export class ControlFact implements OnInit {
           ((factura.fa_valFact - factura.fa_cosFact) * 100) /
           factura.fa_cosFact;
         this.actualizarTotales();
+        this.detalleOriginalEdicion = this.serializarDetalle(this.items);
         console.log(factura.fa_valFact);
         console.log(factura.fa_cosFact);
         console.log(this.factxt);
@@ -629,6 +778,23 @@ export class ControlFact implements OnInit {
     });
   }
   editarFactura() {
+    const facturaActual = this.formularioFacturacion.getRawValue();
+    if (
+      this.normalizarFlagFactura(facturaActual?.fa_impresa) === 'S' &&
+      this.normalizarFlagFactura(facturaActual?.fa_despacho) === 'N'
+    ) {
+      Swal.fire(
+        'Aviso',
+        'La factura de despacho no se ha imprimido. No puede editar esta factura.',
+        'warning',
+      );
+      return;
+    }
+
+    if (this.normalizarStatusFactura(this.formularioFacturacion.get('fa_status')?.value) !== 'C') {
+      Swal.fire('Aviso', 'Solo puede editar facturas con status C.', 'warning');
+      return;
+    }
     console.log('Modo edición activado');
     this.botonEditar = true; // Deshabilita de nuevo
     this.botonGuardar = false; // Habilita el botón
@@ -643,6 +809,14 @@ export class ControlFact implements OnInit {
     this.formularioFacturacion.get('fa_entrega')?.disable();
     this.formularioFacturacion.get('fa_impresa')?.disable();
     this.formularioFacturacion.get('fa_facturada')?.disable();
+
+    this.limpiarCampos();
+    this.habilitarCampos = true;
+    this.habilitarCantidad = true;
+    setTimeout(() => {
+      this.codigoInput?.nativeElement.focus();
+      this.codigoInput?.nativeElement.select();
+    });
 
     //this.codMercselecte = detactura.fa_codFact;
   }
@@ -729,6 +903,34 @@ export class ControlFact implements OnInit {
     }
   }
 
+  onCodigoProductoInput(event: Event): void {
+    this.convertToUpperCase(event);
+    const value = (event.target as HTMLInputElement).value.trim();
+    this.codmerc = value;
+    this.cancelarBusquedaCodigo = false;
+    this.resultadodescripcionmerc = [];
+    if (!value) {
+      this.resultadoCodmerc = [];
+      this.codnotfound = false;
+      return;
+    }
+    this.codigoProductoBusqueda$.next(value);
+  }
+
+  onDescripcionProductoInput(event: Event): void {
+    this.convertToUpperCase(event);
+    const value = (event.target as HTMLInputElement).value.trim();
+    this.descripcionmerc = value;
+    this.cancelarBusquedaDescripcion = false;
+    this.resultadoCodmerc = [];
+    if (!value) {
+      this.resultadodescripcionmerc = [];
+      this.desnotfound = false;
+      return;
+    }
+    this.descripcionProductoBusqueda$.next(value);
+  }
+
   moveFocus(
     event: KeyboardEvent,
     nextElement: HTMLInputElement | HTMLSelectElement
@@ -743,6 +945,11 @@ export class ControlFact implements OnInit {
     console.log('move focus');
     if (event.key === 'Enter' || event.key === 'Tab') {
       event.preventDefault(); // Previene el comportamiento predeterminado de Enter
+      if (this.productoCargadoDesdeCodigoEnter) {
+        this.productoCargadoDesdeCodigoEnter = false;
+        this.enfocarCantidad();
+        return;
+      }
       // const currentControl = this.formularioFacturacion.get('ct_codvend');
       const currentInputValue = (event.target as HTMLInputElement).value.trim();
       if (currentInputValue === '') {
@@ -750,6 +957,22 @@ export class ControlFact implements OnInit {
         console.log('vacio');
       } else {
         this.codmerVacio = false;
+      }
+      if (this.productoSeleccionadoCorresponde(currentInputValue)) {
+        this.enfocarCantidad();
+        this.codmerVacio = false;
+        return;
+      }
+      const productoExacto = this.buscarProductoExactoEnResultados(currentInputValue);
+      if (productoExacto) {
+        this.cargarDatosInventario(productoExacto);
+        this.codmerVacio = false;
+        return;
+      }
+      if (currentInputValue && event.key === 'Enter') {
+        this.buscarProductoExactoPorCodigo(currentInputValue);
+        this.codmerVacio = false;
+        return;
       }
       if (!this.codnotfound === false) {
         console.log(this.codnotfound);
@@ -774,13 +997,73 @@ export class ControlFact implements OnInit {
           this.codmerVacio = false;
           console.log('vedadero');
         } else {
-          $('#input8').focus();
-          $('#input8').select();
+          this.enfocarCantidad();
         }
         this.codmerVacio = false;
       }
     }
   }
+
+  private productoSeleccionadoCorresponde(codigo: string): boolean {
+    const codigoActual = String(codigo || '').trim().toUpperCase();
+    const codigoSeleccionado = String(this.productoselect?.in_codmerc || '').trim().toUpperCase();
+    return !!codigoActual && !!codigoSeleccionado && codigoActual === codigoSeleccionado;
+  }
+
+  private buscarProductoExactoEnResultados(codigo: string): ModeloInventarioData | null {
+    const codigoActual = String(codigo || '').trim().toUpperCase();
+    if (!codigoActual) return null;
+    return (
+      this.resultadoCodmerc.find(
+        (item) => String(item?.in_codmerc || '').trim().toUpperCase() === codigoActual
+      ) || null
+    );
+  }
+
+  private buscarProductoExactoPorCodigo(codigo: string): void {
+    const codigoActual = String(codigo || '').trim();
+    if (!codigoActual) return;
+
+    this.ServicioInventario.obtenerProductoPorId(codigoActual).subscribe({
+      next: (resp: any) => {
+        const producto = resp?.data || resp;
+        if (producto) {
+          this.cargarDatosInventario(producto);
+          return;
+        }
+        this.mostrarCodigoInvalido();
+      },
+      error: (error) => {
+        console.error('Error buscando producto exacto:', error);
+        this.mostrarCodigoInvalido();
+      },
+    });
+  }
+
+  private mostrarCodigoInvalido(): void {
+    this.mensagePantalla = true;
+    Swal.fire({
+      icon: 'error',
+      title: 'A V I S O',
+      text: 'Codigo invalido.',
+      focusConfirm: true,
+      allowEnterKey: true,
+    }).then(() => {
+      this.mensagePantalla = false;
+    });
+    this.codmerVacio = false;
+    this.codnotfound = false;
+    this.codmerc = '';
+    this.descripcionmerc = '';
+  }
+
+  private enfocarCantidad(): void {
+    setTimeout(() => {
+      this.cantidadInput?.nativeElement?.focus();
+      this.cantidadInput?.nativeElement?.select();
+    }, 0);
+  }
+
   handleKeydownInventario(event: KeyboardEvent): void {
     console.log('handle');
     const key = event.key;
@@ -807,8 +1090,15 @@ export class ControlFact implements OnInit {
         this.selectedIndexcodmerc >= 0 &&
         this.selectedIndexcodmerc <= maxIndex
       ) {
+        const codigoActual = String(
+          this.codmerc || (event.target as HTMLInputElement).value || ''
+        )
+          .trim()
+          .toUpperCase();
+        const productoExacto = this.buscarProductoExactoEnResultados(codigoActual);
+        this.productoCargadoDesdeCodigoEnter = true;
         this.cargarDatosInventario(
-          this.resultadoCodmerc[this.selectedIndexcodmerc]
+          productoExacto || this.resultadoCodmerc[this.selectedIndexcodmerc]
         );
       }
       event.preventDefault();
@@ -856,8 +1146,7 @@ export class ControlFact implements OnInit {
       df_cosMerc: inventario.in_cosmerc,
       df_unidad: inventario.in_unidad,
     });
-    $('#input8').focus();
-    $('#input8').select();
+    this.enfocarCantidad();
   }
 
   buscarUsuario(event: Event, nextElement: HTMLInputElement | null): void {
@@ -1052,7 +1341,7 @@ export class ControlFact implements OnInit {
   }
   handleKeydownInventariosdesc(event: KeyboardEvent): void {
     const key = event.key;
-    const maxIndex = this.resultadodescripcionmerc.length;
+    const maxIndex = this.resultadodescripcionmerc.length - 1;
     if (this.resultadodescripcionmerc.length === 1) {
       this.selectedIndexdescripcionmerc = 0;
       console.log('prueba');
@@ -1314,7 +1603,7 @@ export class ControlFact implements OnInit {
     this.protxt = ((this.preciomerc - this.costotxt) * 100) / this.costotxt; // Aquí puedes hacer cualquier cálculo
   }
   limpiarCampos() {
-    this.productoselect;
+    this.productoselect = null as any;
     this.codmerc = '';
     this.descripcionmerc = '';
     this.preciomerc = 0;
@@ -1434,42 +1723,78 @@ export class ControlFact implements OnInit {
   }
   guardarFacturacion() {
     const codFact = this.formularioFacturacion.get('fa_codFact')?.value;
+    const detalleModificado = this.detalleFueModificado();
 
-    // Asignar totales al formulario
-    this.formularioFacturacion.patchValue({
-      fa_valFact: this.totalGral,
-      fa_itbiFact: this.totalItbis,
-      fa_cosFact: this.totalcosto,
-      fa_subFact: this.subTotal,
-    });
-    this.formularioFacturacion.get('fa_valFact')?.patchValue(this.totalGral);
-    this.formularioFacturacion.get('fa_itbiFact')?.patchValue(this.totalItbis);
-    this.formularioFacturacion.get('fa_cosFact')?.patchValue(this.totalcosto);
-    this.formularioFacturacion.get('fa_subFact')?.patchValue(this.subTotal);
+    if (!codFact || detalleModificado) {
+      // Asignar totales al formulario solo cuando el detalle cambia o es una factura nueva.
+      this.formularioFacturacion.patchValue({
+        fa_valFact: this.totalGral,
+        fa_itbiFact: this.totalItbis,
+        fa_cosFact: this.totalcosto,
+        fa_subFact: this.subTotal,
+      });
+      this.formularioFacturacion.get('fa_valFact')?.patchValue(this.totalGral);
+      this.formularioFacturacion.get('fa_itbiFact')?.patchValue(this.totalItbis);
+      this.formularioFacturacion.get('fa_cosFact')?.patchValue(this.totalcosto);
+      this.formularioFacturacion.get('fa_subFact')?.patchValue(this.subTotal);
+    }
 
     this.formularioFacturacion.get('fa_tipoNcf')!.enable();
     this.formularioFacturacion.get('fa_codFact')!.enable();
     this.formularioFacturacion.get('fa_fecFact')!.enable();
     this.formularioFacturacion.get('fa_nomVend')!.enable();
     this.formularioFacturacion.get('fa_ncfFact')!.enable();
+
+    const rnc = String(this.formularioFacturacion.get('fa_rncFact')?.value || '').trim();
+    if (codFact && this.rncRequeridoParaComprobante() && !rnc) {
+      Swal.fire(
+        'Aviso',
+        'Debe ingresar el RNC para cambiar la factura a un comprobante diferente de E32.',
+        'warning',
+      );
+      this.formularioFacturacion.get('fa_rncFact')?.enable();
+      setTimeout(() => $('#inputrnc').focus(), 0);
+      return;
+    }
+
+    const facturaActual = this.formularioFacturacion.getRawValue();
+    const facturaCambios = codFact ? this.obtenerCambiosFactura(facturaActual) : null;
+    if (codFact && Object.keys(facturaCambios).length === 0 && !detalleModificado) {
+      Swal.fire('Aviso', 'No hay cambios para guardar.', 'info');
+      return;
+    }
+
     const payload = {
-      factura: this.formularioFacturacion.value,
-      detalle: this.items,
+      factura: facturaActual,
+      facturaCambios: codFact ? { fa_codFact: codFact, ...facturaCambios } : undefined,
+      detalle: detalleModificado || !codFact ? this.items : [],
+      actualizarDetalle: !codFact || detalleModificado,
+      permitirEditarStatusC: true,
     };
     if (this.formularioFacturacion.valid) {
       if (codFact) {
         // 🔁 Modo edición
         this.servicioFacturacion
           .editarFacturacion(payload)
-          .subscribe((response) => {
-            Swal.fire({
-              title: 'Actualizado!',
-              text: 'Factura modificada correctamente.',
-              icon: 'success',
-              timer: 1000,
-              showConfirmButton: false,
-            });
-            this.refrescarFormulario();
+          .subscribe({
+            next: (response) => {
+              Swal.fire({
+                title: 'Actualizado!',
+                text: 'Factura modificada correctamente.',
+                icon: 'success',
+                timer: 1000,
+                showConfirmButton: false,
+              });
+              this.refrescarFormulario();
+            },
+            error: (err) => {
+              console.error('Error editando factura:', err);
+              Swal.fire(
+                'Error',
+                err?.message || err?.error?.message || 'No se pudo guardar la factura.',
+                'error',
+              );
+            },
           });
       } else {
         // 🆕 Modo creación
@@ -1724,14 +2049,14 @@ export class ControlFact implements OnInit {
   }
 
   onTableKeydown(event: KeyboardEvent) {
-    const max = this.paginatedData.length - 1;
+    const max = this.facturacionList.length - 1;
 
     switch (event.key) {
       case 'ArrowDown':
         if (this.selectedRow < max) {
           this.selectedRow++;
           this.scrollToRow(this.selectedRow);
-          this.consultarFacturacion(this.paginatedData[this.selectedRow]);
+          this.consultarFacturacion(this.facturacionList[this.selectedRow]);
         }
         event.preventDefault();
         break;
@@ -1740,13 +2065,13 @@ export class ControlFact implements OnInit {
         if (this.selectedRow > 0) {
           this.selectedRow--;
           this.scrollToRow(this.selectedRow);
-          this.consultarFacturacion(this.paginatedData[this.selectedRow]);
+          this.consultarFacturacion(this.facturacionList[this.selectedRow]);
         }
         event.preventDefault();
         break;
 
       case 'Enter':
-        this.consultarFacturacion(this.paginatedData[this.selectedRow]);
+        this.consultarFacturacion(this.facturacionList[this.selectedRow]);
         event.preventDefault();
         break;
     }

@@ -44,6 +44,7 @@ export class ServicioNcf {
           desNcf: String(row?.desncf ?? row?.desNcf ?? "").trim(),
           tipo: String(row?.tipo ?? "").trim(),
           codigo: Number(row?.codigo ?? 0),
+          codNcf: Number(row?.codigo ?? row?.codNcf ?? row?.idncf ?? row?.idNcf ?? 0),
           grupo: row?.grupo === null || row?.grupo === undefined || row?.grupo === ""
             ? null
             : Number(row.grupo),

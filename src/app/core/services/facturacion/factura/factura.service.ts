@@ -67,6 +67,15 @@ export class ServicioFacturacion {
     return s.length > max ? s.slice(0, max) : s;
   }
 
+  private toDbFlag(value: any): string | null {
+    if (value === null || value === undefined || value === '') return null;
+    if (typeof value === 'boolean') return value ? 'S' : 'N';
+    const text = String(value).trim().toUpperCase();
+    if (['S', 'SI', 'TRUE', '1'].includes(text)) return 'S';
+    if (['N', 'NO', 'FALSE', '0'].includes(text)) return 'N';
+    return text.slice(0, 1);
+  }
+
   private tipoMercanciaDetalle(item: any): string | null {
     const producto = item?.producto || {};
     return this.toStringMax(
@@ -292,6 +301,7 @@ export class ServicioFacturacion {
       fa_codClie: row.fa_codclie ?? row.fa_codClie ?? null,
       fa_nomClie: row.fa_nomclie ?? row.fa_nomClie ?? '',
       fa_telClie: row.fa_telclie ?? row.fa_telClie ?? '',
+      fa_telClie2: row.fa_telclie2 ?? row.fa_telClie2 ?? '',
       fa_dirClie: row.fa_dirclie ?? row.fa_dirClie ?? '',
       fa_contacto: row.fa_contacto ?? '',
       fa_codZona: row.fa_codzona ?? row.fa_codZona ?? null,
@@ -387,6 +397,7 @@ export class ServicioFacturacion {
       fa_codclie: this.toNumberOrNull(input?.fa_codClie),
       fa_nomclie: this.toStringMax(input?.fa_nomClie, 39),
       fa_telclie: this.toStringMax(input?.fa_telClie, 26),
+      fa_telclie2: this.toStringMax(input?.fa_telClie2, 26),
       fa_dirclie: this.toStringMax(input?.fa_dirClie, 40),
       fa_contacto: this.toStringMax(input?.fa_contacto, 30),
       fa_codzona: this.toNumberOrNull(input?.fa_codZona),
@@ -411,14 +422,14 @@ export class ServicioFacturacion {
       fa_codsucu: this.toNumberOrNull(input?.fa_codSucu),
       fa_correo: this.toStringMax(input?.fa_correo, 30),
       fa_codempr: this.toStringMax(input?.fa_codEmpr, 6),
-      fa_impresa: this.toStringMax(input?.fa_impresa, 1),
-      fa_reimpresa: this.toStringMax(input?.fa_reimpresa, 1),
-      fa_entrega: this.toStringMax(input?.fa_entrega, 1),
-      fa_impalmaf: this.toStringMax(input?.fa_impalmaf, 1),
-      fa_impalmap: this.toStringMax(input?.fa_impalmap, 1),
-      fa_facturada: this.toStringMax(input?.fa_facturada, 1),
-      fa_pendiente: this.toStringMax(input?.fa_pendiente, 1),
-      fa_despacho: this.toStringMax(input?.fa_despacho, 1),
+      fa_impresa: this.toDbFlag(input?.fa_impresa),
+      fa_reimpresa: this.toDbFlag(input?.fa_reimpresa),
+      fa_entrega: this.toDbFlag(input?.fa_entrega),
+      fa_impalmaf: this.toDbFlag(input?.fa_impalmaf),
+      fa_impalmap: this.toDbFlag(input?.fa_impalmap),
+      fa_facturada: this.toDbFlag(input?.fa_facturada),
+      fa_pendiente: this.toDbFlag(input?.fa_pendiente),
+      fa_despacho: this.toDbFlag(input?.fa_despacho),
       estado_dgii: this.toStringOrNull(input?.estado_dgii),
       codseguridad: this.toStringOrNull(input?.codseguridad),
       qr_link: this.toStringOrNull(input?.qr_link),
@@ -437,6 +448,82 @@ export class ServicioFacturacion {
       }
     });
 
+    return payload;
+  }
+
+  private mapFacturaUiPatchToDb(input: any): any {
+    const has = (key: string) => Object.prototype.hasOwnProperty.call(input || {}, key);
+    const payload: any = {};
+    const set = (uiKey: string, dbKey: string, mapper: (value: any) => any) => {
+      if (has(uiKey)) payload[dbKey] = mapper(input[uiKey]);
+    };
+
+    set('fa_codFact', 'fa_codfact', (v) => this.toStringMax(v, 12));
+    set('fa_ncfFact', 'fa_ncffact', (v) => this.toStringMax(v, 19));
+    set('fa_rncFact', 'fa_rncfact', (v) => this.toStringMax(v, 13));
+    set('fa_fecNcf', 'fa_fecncf', (v) => this.normalizeDate(v));
+    set('fa_tipoNcf', 'fa_tiponcf', (v) => this.toNumberOrNull(v));
+    set('fa_tipoitbis', 'fa_tipoitbis', (v) => this.toStringMax(v, 20));
+    set('fa_fecFact', 'fa_fecfact', (v) => this.normalizeDate(v));
+    set('fa_fecHora', 'fa_fechora', (v) => v || null);
+    set('fa_fehora', 'fa_fehora', (v) => v || new Date().toISOString());
+    set('fa_valFact', 'fa_valfact', (v) => this.toNumberOrNull(v));
+    set('fa_itbiFact', 'fa_itbifact', (v) => this.toNumberOrNull(v));
+    set('fa_subFact', 'fa_subfact', (v) => this.toNumberOrNull(v));
+    set('fa_desFact', 'fa_desfact', (v) => this.toNumberOrNull(v));
+    set('fa_cosFact', 'fa_cosfact', (v) => this.toNumberOrNull(v));
+    set('fa_aboFact', 'fa_abofact', (v) => this.toNumberOrNull(v));
+    set('fa_expFact', 'fa_expfact', (v) => this.normalizeDate(v));
+    set('fa_codClie', 'fa_codclie', (v) => this.toNumberOrNull(v));
+    set('fa_nomClie', 'fa_nomclie', (v) => this.toStringMax(v, 39));
+    set('fa_telClie', 'fa_telclie', (v) => this.toStringMax(v, 26));
+    set('fa_telClie2', 'fa_telclie2', (v) => this.toStringMax(v, 26));
+    set('fa_dirClie', 'fa_dirclie', (v) => this.toStringMax(v, 40));
+    set('fa_contacto', 'fa_contacto', (v) => this.toStringMax(v, 30));
+    set('fa_codZona', 'fa_codzona', (v) => this.toNumberOrNull(v));
+    set('fa_desZona', 'fa_deszona', (v) => this.toStringMax(v, 25));
+    set('fa_codSect', 'fa_codsect', (v) => this.toNumberOrNull(v));
+    set('fa_sector', 'fa_sector', (v) => this.toStringMax(v, 35));
+    set('fa_codVend', 'fa_codvend', (v) => this.toStringMax(v, 10));
+    set('fa_nomVend', 'fa_nomvend', (v) => this.toStringMax(v, 15));
+    set('fa_notaFact', 'fa_notafact', (v) => this.toStringOrNull(v));
+    set('fa_usuario', 'fa_usuario', (v) => this.toStringMax(v, 30));
+    set('fa_envio', 'fa_envio', (v) => this.toNumberOrNull(v));
+    set('fa_fpago', 'fa_fpago', (v) => this.toStringMax(v, 20));
+    set('fa_codfpago', 'fa_codfpago', (v) => this.toNumberOrNull(v));
+    set('fa_origenpago', 'fa_origenpago', (v) => this.toStringMax(v, 30));
+    set('fa_confirpago', 'fa_confirpago', (v) => this.toStringMax(v, 50));
+    set('fa_notapago', 'fa_notapago', (v) => this.toStringOrNull(v));
+    set('fa_status', 'fa_status', (v) => this.toStringMax(v, 3));
+    set('fa_tipoFact', 'fa_tipofact', (v) => this.toNumberOrNull(v));
+    set('fa_imp', 'fa_imp', (v) => this.toStringMax(v, 1));
+    set('fa_tipoRnc', 'fa_tipornc', (v) => this.toNumberOrNull(v));
+    set('fa_fecha', 'fa_fecha', (v) => this.toStringMax(v, 8));
+    set('fa_codSucu', 'fa_codsucu', (v) => this.toNumberOrNull(v));
+    set('fa_correo', 'fa_correo', (v) => this.toStringMax(v, 30));
+    set('fa_codEmpr', 'fa_codempr', (v) => this.toStringMax(v, 6));
+    set('fa_impresa', 'fa_impresa', (v) => this.toDbFlag(v));
+    set('fa_reimpresa', 'fa_reimpresa', (v) => this.toDbFlag(v));
+    set('fa_entrega', 'fa_entrega', (v) => this.toDbFlag(v));
+    set('fa_impalmaf', 'fa_impalmaf', (v) => this.toDbFlag(v));
+    set('fa_impalmap', 'fa_impalmap', (v) => this.toDbFlag(v));
+    set('fa_facturada', 'fa_facturada', (v) => this.toDbFlag(v));
+    set('fa_pendiente', 'fa_pendiente', (v) => this.toDbFlag(v));
+    set('fa_despacho', 'fa_despacho', (v) => this.toDbFlag(v));
+    set('estado_dgii', 'estado_dgii', (v) => this.toStringOrNull(v));
+    set('codseguridad', 'codseguridad', (v) => this.toStringOrNull(v));
+    set('qr_link', 'qr_link', (v) => this.toStringOrNull(v));
+    set('fec_firma', 'fec_firma', (v) => this.toStringOrNull(v));
+    set('ecf', 'ecf', (v) => this.toStringOrNull(v));
+    set('rfce', 'rfce', (v) => this.toStringOrNull(v));
+    set('estado_envio_dgii', 'estado_envio_dgii', (v) => this.toStringMax(v, 50));
+    set('fa_cierre', 'fa_cierre', (v) => this.toStringMax(v, 20));
+    set('fa_salida', 'fa_salida', (v) => this.toStringMax(v, 1));
+    set('idsalida', 'idsalida', (v) => this.toStringOrNull(v));
+
+    Object.keys(payload).forEach((k) => {
+      if (payload[k] === undefined) delete payload[k];
+    });
     return payload;
   }
 
@@ -977,34 +1064,54 @@ export class ServicioFacturacion {
     const cod = String(payload?.factura?.fa_codFact || '').trim();
     return from((async () => {
       const facturaRaw = { ...(payload?.factura || {}) };
+      const facturaCambios = payload?.facturaCambios && typeof payload.facturaCambios === 'object'
+        ? { ...payload.facturaCambios }
+        : null;
+      const actualizarDetalle = payload?.actualizarDetalle !== false;
       const detalleRaw = Array.isArray(payload?.detalle) ? payload.detalle : [];
       let facturaActualQuery = this.db
         .from('factura')
-        .select('fa_impresa,fa_fpago,fa_codsucu')
+        .select('*')
         .eq('fa_codfact', cod);
       facturaActualQuery = this.applyTenantFilter(facturaActualQuery);
       const { data: facturaActual, error: facturaActualError } =
         await facturaActualQuery.maybeSingle();
       if (facturaActualError) throw facturaActualError;
       if (!facturaActual) throw new Error(`No se encontrÃ³ la factura ${cod}.`);
-      if (
+      const permitirEditarStatusC =
+        payload?.permitirEditarStatusC === true &&
+        String(facturaActual.fa_status || '').trim().toUpperCase() === 'C';
+      if (!permitirEditarStatusC && (
         String(facturaActual.fa_impresa || '').trim().toUpperCase() !== 'N' ||
         String(facturaActual.fa_fpago || '').trim().toUpperCase() !== 'N'
-      ) {
+      )) {
         throw new Error('Solo se pueden editar facturas no impresas y no pagadas.');
       }
 
-      const facturaDbPayload = this.mapFacturaUiToDb(facturaRaw);
+      const facturaDbPayload = facturaCambios
+        ? this.mapFacturaUiPatchToDb(facturaCambios)
+        : this.mapFacturaUiToDb(facturaRaw);
       delete facturaDbPayload.fa_codfact;
 
-      let updateQuery = this.db
-        .from('factura')
-        .update(facturaDbPayload)
-        .eq('fa_codfact', cod)
-        .select('*');
-      updateQuery = this.applyTenantFilter(updateQuery);
-      const { data, error } = await updateQuery.maybeSingle();
-      if (error) throw error;
+      let data: any = facturaActual;
+      if (Object.keys(facturaDbPayload).length > 0) {
+        let updateQuery = this.db
+          .from('factura')
+          .update(facturaDbPayload)
+          .eq('fa_codfact', cod)
+          .select('*');
+        updateQuery = this.applyTenantFilter(updateQuery);
+        const { data: updatedData, error } = await updateQuery.maybeSingle();
+        if (error) throw error;
+        if (!updatedData) {
+          throw new Error(`Supabase no devolviÃ³ una factura actualizada para ${cod}. Revise permisos o filtros de empresa/sucursal.`);
+        }
+        data = updatedData;
+      }
+
+      if (!actualizarDetalle) {
+        return { status: 'success', code: 200, data: this.mapFacturaDbToUi(data) };
+      }
 
       let detalleAnteriorQuery = this.db
         .from('detfactura')

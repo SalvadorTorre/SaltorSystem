@@ -70,7 +70,7 @@
                 (keydown)="moveFocus($event, inputdireccion)"
                 class="form-select form-control-sm"
               >
-                <option [value]="ncf.codNcf" *ngFor="let ncf of ncflist">
+                <option [value]="ncf.codigo || ncf.codNcf" *ngFor="let ncf of ncflist">
                   {{ncf.desNcf}}
                 </option>
               </select>
@@ -173,28 +173,18 @@
             <div class="col-2">
               <label for="" class="label">Telefono</label>
             </div>
-            <div class="col-3">
+            <div class="col-4">
               <input
                 type="text"
                 id="inputtelefono"
-                (keydown)="moveFocus($event, inputtelefono2)"
+                (keydown)="moveFocus($event, inputsector)"
                 formControlName="fa_telClie"
                 #inputtelefono
-                placeholder="Tel. 1"
+                placeholder="Telefono"
                 class="form-control form-control-sm"
               />
             </div>
-            <div class="col-3">
-              <input
-                type="text"
-                formControlName="fa_telClie2"
-                #inputtelefono2
-                (keydown)="moveFocus($event, inputsector)"
-                placeholder="Tel. 2"
-                class="form-control form-control-sm"
-              />
-            </div>
-            <div class="col-4">
+            <div class="col-6">
               <input
                 type="text"
                 formControlName="fa_sector"
@@ -360,7 +350,7 @@
         <div class="row mt-1">
           <div
             class="table-container"
-            style="position: relative; height: 300px"
+            style="position: relative"
           >
             <div
               class="table-responsive"
@@ -389,7 +379,7 @@
                 </thead>
                 <tbody>
                   <tr
-                    *ngFor="let factura of paginatedData"
+                    *ngFor="let factura of facturacionList"
                     [ngClass]="{'table-primary': factura.fa_codFact === codFacturaselecte}"
                   >
                     <td (click)="consultarFacturacion(factura)">
@@ -410,71 +400,16 @@
                 </tbody>
               </table>
             </div>
-
-            <!--  🌟 CONTROLES DE PAGINACIÓN FIJOS EN EL FONDO DE LA TABLA 🌟 -->
-            <div
-              class="pagination-controls"
-              style="
-                position: absolute;
-                bottom: 0;
-                left: 0;
-                right: 0;
-                background: linear-gradient(90deg, #fafafa, #f1f1f1);
-                padding: 8px 12px;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                border-top: 1px solid #ccc;
-              "
-            >
-              <div>
-                <button
-                  class="btn btn-sm btn-primary"
-                  (click)="goToFirstPage()"
-                  [disabled]="currentPage === 1"
-                >
-                  ⏮️ Inicio
-                </button>
-                <button
-                  class="btn btn-sm btn-primary"
-                  (click)="prevPage()"
-                  [disabled]="currentPage <= 1"
-                >
-                  ⏪ Anterior
-                </button>
-              </div>
-
-              <span style="font-weight: bold; font-size: 14px">
-                Página {{ currentPage }} de {{ totalPages }}
-              </span>
-
-              <div>
-                <button
-                  class="btn btn-sm btn-primary"
-                  (click)="nextPage()"
-                  [disabled]="currentPage >= totalPages"
-                >
-                  Siguiente ⏩
-                </button>
-                <button
-                  class="btn btn-sm btn-primary"
-                  (click)="goToLastPage()"
-                  [disabled]="currentPage >= totalPages"
-                >
-                  Fin ⏭️
-                </button>
-              </div>
-            </div>
           </div>
         </div>
       </div>
       <!-- ***************** -->
-      <div class="row mt-0">
+      <div class="row mt-1">
         <div class="col">
-          <div class="card">
+          <div class="card border-0 shadow-sm">
             <div
-              class="card-body"
-              style="height: 60px; background-color: #f7eeeebd"
+              class="card-body py-2"
+              style="background-color: #f7eeeebd"
             >
               <div class="d-flex justify-content-center align-items-center gap-3 mt-0">
                 <button
@@ -534,7 +469,7 @@
                 [disabled]="!habilitarCampos"
                 #codigoInput
                 autocomplete="off"
-                (input)="convertToUpperCase($event)"
+                (input)="onCodigoProductoInput($event)"
                 (keydown)="handleKeydownInventario($event)"
                 (keydown)="moveFocuscodmerc($event, descripcionInput)"
                 [(ngModel)]="codmerc"
@@ -570,8 +505,8 @@
                     "
                     class="px-3 cp"
                   >
-                    <i class="far fa-user-circle mr-5"></i>  {{
-                    result.in_codmerc }}
+                    <i class="far fa-user-circle mr-5"></i>&nbsp;&nbsp;{{
+                    result.in_codmerc }} - {{ result.in_desmerc }}
                   </a>
                 </div>
               </div>
@@ -586,7 +521,7 @@
                 type="text"
                 [disabled]="!habilitarCampos"
                 autocomplete="off"
-                (input)="convertToUpperCase($event)"
+                (input)="onDescripcionProductoInput($event)"
                 (keydown)="moveFocusdesc($event, cantidadInput)"
                 (keydown)="handleKeydownInventariosdesc($event)"
                 #descripcionInput
@@ -633,6 +568,7 @@
               type="number"
               [disabled]="!habilitarCantidad"
               placeholder="Cantidad"
+              id="input8"
               #cantidadInput
               [(ngModel)]="cantidadmerc"
               (keydown)="moveFocusCantidad($event, precioInput)"
