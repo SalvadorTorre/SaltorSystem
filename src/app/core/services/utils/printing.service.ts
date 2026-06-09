@@ -67,6 +67,10 @@ export class PrintingService {
     return typeof window !== 'undefined' && !!window.electronAPI?.isDesktop;
   }
 
+  private esperarEntreTrabajosImpresion(): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, 900));
+  }
+
   /**
    * Generates a PDF for a receipt/invoice in 80mm format and prints it.
    * @param facturaData The invoice header data.
@@ -97,7 +101,7 @@ export class PrintingService {
             ];
 
         if (this.usarTrabajosSeparadosParaCorte()) {
-          for (const copia of copias) {
+          for (const [index, copia] of copias.entries()) {
             await this.imprimirFactura80mm(
               {
                 ...facturaData,
@@ -107,6 +111,9 @@ export class PrintingService {
               },
               items,
             );
+            if (index < copias.length - 1) {
+              await this.esperarEntreTrabajosImpresion();
+            }
           }
           return;
         }
@@ -608,7 +615,7 @@ export class PrintingService {
       centerText('*** GRACIAS POR SU COMPRA ***', yPos);
 
       // Espacio adicional al final para el corte de papel
-      yPos += 15;
+      yPos += 25;
       doc.text('.', leftMargin, yPos, { align: 'left' }); // Un punto casi invisible para forzar el largo
 
       // --- PRINT ---
@@ -1330,7 +1337,7 @@ items.forEach((it: any) => {
             ];
 
         if (this.usarTrabajosSeparadosParaCorte()) {
-          for (const copia of copias) {
+          for (const [index, copia] of copias.entries()) {
             await this.imprimirConduceFactura80mm(
               {
                 ...facturaData,
@@ -1340,6 +1347,9 @@ items.forEach((it: any) => {
               },
               items,
             );
+            if (index < copias.length - 1) {
+              await this.esperarEntreTrabajosImpresion();
+            }
           }
           return;
         }
@@ -1544,7 +1554,7 @@ items.forEach((it: any) => {
       doc.line(leftMargin, yPos, pageWidth - rightMargin, yPos);
       yPos += 5;
       centerText('Recibido Conforme', yPos);
-      yPos += 15;
+      yPos += 25;
       doc.text('.', leftMargin, yPos);
 
       if (!facturaData?.__deferPrint) {
