@@ -521,6 +521,7 @@ export class ControlFact implements OnInit {
       fa_envio: [{ value: '', disabled: true }],
       fa_ncfFact: [{ value: '', disabled: true }],
       fa_tipoNcf: [{ value: '', disabled: true }],
+      fa_notaFact: [{ value: '', disabled: true }],
       fa_contacto: [{ value: '', disabled: true }],
       fa_despacho: [{ value: '', disabled: true }],
       fa_reimpresa: [{ value: '', disabled: true }],
@@ -1721,7 +1722,30 @@ export class ControlFact implements OnInit {
     this.itbitxt = formatCurrency(this.totalItbis);
     this.totalgraltxt = formatCurrency(this.totalGral);
   }
-  guardarFacturacion() {
+
+  private async pedirCausaReimpresion(): Promise<string | null> {
+    const result = await Swal.fire({
+      title: 'Causa de reimpresiÃ³n',
+      input: 'textarea',
+      inputPlaceholder: 'Digite la causa de la reimpresiÃ³n',
+      inputAttributes: {
+        maxlength: '500',
+      },
+      showCancelButton: true,
+      confirmButtonText: 'Aceptar',
+      cancelButtonText: 'Cancelar',
+      inputValidator: (value) => {
+        if (!String(value || '').trim()) {
+          return 'Debe digitar la causa de la reimpresiÃ³n.';
+        }
+        return null;
+      },
+    });
+
+    return result.isConfirmed ? String(result.value || '').trim() : null;
+  }
+
+  async guardarFacturacion() {
     const codFact = this.formularioFacturacion.get('fa_codFact')?.value;
     const detalleModificado = this.detalleFueModificado();
 
@@ -1757,11 +1781,24 @@ export class ControlFact implements OnInit {
       return;
     }
 
-    const facturaActual = this.formularioFacturacion.getRawValue();
-    const facturaCambios = codFact ? this.obtenerCambiosFactura(facturaActual) : null;
+    let facturaActual = this.formularioFacturacion.getRawValue();
+    let facturaCambios = codFact ? this.obtenerCambiosFactura(facturaActual) : null;
     if (codFact && Object.keys(facturaCambios).length === 0 && !detalleModificado) {
       Swal.fire('Aviso', 'No hay cambios para guardar.', 'info');
       return;
+    }
+
+    if (codFact) {
+      const causaReimpresion = await this.pedirCausaReimpresion();
+      if (!causaReimpresion) {
+        return;
+      }
+      this.formularioFacturacion.patchValue({
+        fa_reimpresa: 'S',
+        fa_notaFact: causaReimpresion,
+      });
+      facturaActual = this.formularioFacturacion.getRawValue();
+      facturaCambios = this.obtenerCambiosFactura(facturaActual);
     }
 
     const payload = {
