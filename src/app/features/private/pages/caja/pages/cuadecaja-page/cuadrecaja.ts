@@ -6,6 +6,7 @@ import { ServicioFpago } from 'src/app/core/services/mantenimientos/fpago/fpago.
 import Swal from 'sweetalert2';
 import { ReporteCierreBuilder } from './reporte-builder';
 
+
 @Component({
   selector: 'app-cuadrecaja',
   templateUrl: './cuadrecaja.html',
