@@ -363,6 +363,7 @@ export class AuthService {
     );
     if (idTipo === 1) return 'root';
     if (idTipo === 2) return 'admin';
+    if (idTipo === 9) return 'admin';
 
     return 'vendedor';
   }
@@ -383,7 +384,15 @@ export class AuthService {
     ) {
       return 'root';
     }
-    if (value.includes('admin')) return 'admin';
+    if (
+      value.includes('admin') ||
+      value.includes('cajero') ||
+      value.includes('cajera') ||
+      value.includes('caja') ||
+      value.includes('cobro')
+    ) {
+      return 'admin';
+    }
     if (value.includes('vendedor') || value.includes('venta'))
       return 'vendedor';
     return null;
