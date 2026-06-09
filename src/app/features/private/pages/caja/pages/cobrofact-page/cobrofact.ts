@@ -1844,6 +1844,7 @@ export class CobroFact implements OnInit {
   }
 
   private validarOrigenPagoSiAplica(): boolean {
+    if (!this.chekPagado) return true;
     if (!this.esPagoDiferenteEfectivo()) return true;
     if (this.origenPagoSeleccionado) return true;
 
@@ -1890,9 +1891,9 @@ export class CobroFact implements OnInit {
       fa_envio: this.fentrega,
       fa_codfpago: this.ftipoPago,
       fa_fpago: this.chekPagado ? 'S' : 'N',
-      fa_origenpago: this.origenPagoSeleccionado,
-      fa_confirpago: this.confirmacionPago,
-      fa_notapago: this.notaPago,
+      fa_origenpago: this.chekPagado ? this.origenPagoSeleccionado : '',
+      fa_confirpago: this.chekPagado ? this.confirmacionPago : '',
+      fa_notapago: this.chekPagado ? this.notaPago : '',
     };
 
     this.servicioFacturacion.actualizarPagoEntregaCaja(payload).subscribe({
@@ -1986,9 +1987,9 @@ export class CobroFact implements OnInit {
       fa_envio: this.fentrega,
       fa_codfpago: this.ftipoPago,
       fa_fpago: this.chekPagado ? 'S' : 'N',
-      fa_origenpago: this.origenPagoSeleccionado,
-      fa_confirpago: this.confirmacionPago,
-      fa_notapago: this.notaPago,
+      fa_origenpago: this.chekPagado ? this.origenPagoSeleccionado : '',
+      fa_confirpago: this.chekPagado ? this.confirmacionPago : '',
+      fa_notapago: this.chekPagado ? this.notaPago : '',
     };
 
     const facturaData = {
@@ -1999,9 +2000,9 @@ export class CobroFact implements OnInit {
       fa_impresa: 'S',
       fa_status: 'C',
       fa_fpago: payload.fa_fpago,
-      fa_origenpago: this.origenPagoSeleccionado,
-      fa_confirpago: this.confirmacionPago,
-      fa_notapago: this.notaPago,
+      fa_origenpago: payload.fa_origenpago,
+      fa_confirpago: payload.fa_confirpago,
+      fa_notapago: payload.fa_notapago,
     };
 
     this.servicioFacturacion.marcarFacturaComoImpresa(payload).subscribe({
@@ -2082,8 +2083,10 @@ export class CobroFact implements OnInit {
     const statusFactura = this.normalizarStatusFactura(factura?.fa_status);
     const fpago = this.normalizeImpresa(factura?.fa_fpago);
     const impresa = this.normalizeImpresa(factura?.fa_impresa);
+    const estaImpresa = ['S', '1', 'TRUE', 'SI', 'Y'].includes(impresa);
+    const estaPagada = ['S', 'P', '1', 'TRUE', 'SI', 'Y'].includes(fpago);
 
-    if (statusFactura === 'F' && fpago === 'S' && impresa === 'S') {
+    if (estaPagada && (estaImpresa || statusFactura === 'C')) {
       return false;
     }
 
@@ -2154,9 +2157,9 @@ export class CobroFact implements OnInit {
       fa_fpago: this.chekPagado ? 'S' : 'N',
       fa_envio: this.fentrega,
       fa_codfpago: this.ftipoPago,
-      fa_origenpago: this.origenPagoSeleccionado,
-      fa_confirpago: this.confirmacionPago,
-      fa_notapago: this.notaPago,
+      fa_origenpago: this.chekPagado ? this.origenPagoSeleccionado : '',
+      fa_confirpago: this.chekPagado ? this.confirmacionPago : '',
+      fa_notapago: this.chekPagado ? this.notaPago : '',
     };
 
     this.iniciarProcesamientoCobroDgii();

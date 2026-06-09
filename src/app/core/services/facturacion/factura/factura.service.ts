@@ -76,6 +76,21 @@ export class ServicioFacturacion {
     return text.slice(0, 1);
   }
 
+  private esFacturaImpresaYPagada(factura: any): boolean {
+    const impresa = String(factura?.fa_impresa ?? factura?.faImpresa ?? '')
+      .trim()
+      .toUpperCase();
+    const fpago = String(factura?.fa_fpago ?? factura?.faFpago ?? '')
+      .trim()
+      .toUpperCase();
+    const status = String(factura?.fa_status ?? factura?.faStatus ?? '')
+      .trim()
+      .toUpperCase();
+    const estaImpresa = ['S', '1', 'TRUE', 'SI', 'Y'].includes(impresa);
+    const estaPagada = ['S', 'P', '1', 'TRUE', 'SI', 'Y'].includes(fpago);
+    return estaPagada && (estaImpresa || status === 'C');
+  }
+
   private tipoMercanciaDetalle(item: any): string | null {
     const producto = item?.producto || {};
     return this.toStringMax(
@@ -942,23 +957,31 @@ export class ServicioFacturacion {
     if (!this.useSupabase) {
       const endpoint = '/facturas-no-impresas';
       const params = new HttpParams();
-      return this.http.get(endpoint, params);
+      return this.http.get(endpoint, params).pipe(
+        map((resp: any) => ({
+          ...resp,
+          data: Array.isArray(resp?.data)
+            ? resp.data.filter((row: any) => !this.esFacturaImpresaYPagada(row))
+            : resp?.data,
+        })),
+      );
     }
 
     return from((async () => {
       let query = this.db
         .from('factura')
         .select('*')
-        .or('fa_impresa.eq.N,and(fa_impresa.eq.S,fa_fpago.eq.N),fa_status.eq.C,and(fa_status.eq.F,fa_fpago.eq.N)')
+        .or('fa_impresa.eq.N,and(fa_impresa.eq.S,fa_fpago.eq.N),and(fa_status.eq.C,fa_fpago.eq.N),and(fa_status.eq.F,fa_fpago.eq.N)')
         .order('fa_fecfact', { ascending: false })
         .limit(500);
       query = this.applyTenantFilter(query);
       const { data, error } = await query;
       if (error) throw error;
+      const mapped = (data || []).map((row: any) => this.mapFacturaDbToUi(row));
       return {
         status: 'success',
         code: 200,
-        data: (data || []).map((row: any) => this.mapFacturaDbToUi(row)),
+        data: mapped.filter((row: any) => !this.esFacturaImpresaYPagada(row)),
       };
     })());
   }

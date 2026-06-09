@@ -87,16 +87,22 @@ export class PrintingService {
         .trim()
         .toUpperCase();
       const facturaPagada = fpago === 'S' || fpago === 'P';
+      const facturaEnvio = this.facturaEsEnvio(facturaRoot);
 
-      if (facturaPagada && !facturaData?.__singlePrintCopy) {
-        const copias = this.facturaEsEnvio(facturaRoot)
-          ? [
-              { label: 'CLIENTE', hideDetails: false },
-              { label: 'CONDUCTOR', hideDetails: false },
-              { label: 'CAJA', hideDetails: true },
-            ]
+      if ((facturaPagada || facturaEnvio) && !facturaData?.__singlePrintCopy) {
+        const copias = facturaPagada
+          ? facturaEnvio
+            ? [
+                { label: 'CLIENTE', hideDetails: false },
+                { label: 'CONDUCTOR', hideDetails: false },
+                { label: 'CAJA', hideDetails: true },
+              ]
+            : [
+                { label: 'CLIENTE', hideDetails: false },
+                { label: 'CAJA', hideDetails: true },
+              ]
           : [
-              { label: 'CLIENTE', hideDetails: false },
+              { label: 'CONDUCTOR', hideDetails: false },
               { label: 'CAJA', hideDetails: true },
             ];
 
