@@ -50,6 +50,7 @@ export class Usuario implements OnInit {
   filtroPermisosEdicion = '';
   mostrarSoloActivosEdicion = false;
   plantillaAutoAplicadaEdicion = false;
+  gruposPermisosEdicionUsuario: Array<{ nombre: string; filas: PermisoMatrizFila[] }> = [];
   usernameExiste = false;
   claveExiste = false;
   usernameMensaje = '';
@@ -313,7 +314,7 @@ export class Usuario implements OnInit {
     ).length;
   }
 
-  get permisosMatrizEdicionFiltrados(): PermisoMatrizFila[] {
+  private get permisosMatrizEdicionFiltrados(): PermisoMatrizFila[] {
     const filtro = this.normalizarTexto(this.filtroPermisosEdicion);
     return (this.permisosMatrizEdicionUsuario || []).filter((fila: PermisoMatrizFila) => {
       if (this.mostrarSoloActivosEdicion && !this.tieneAccionActiva(fila)) {
@@ -327,7 +328,7 @@ export class Usuario implements OnInit {
     });
   }
 
-  get gruposPermisosEdicionUsuario(): Array<{ nombre: string; filas: PermisoMatrizFila[] }> {
+  actualizarGruposPermisosEdicion(): void {
     const grupos = new Map<string, PermisoMatrizFila[]>();
     this.permisosMatrizEdicionFiltrados.forEach((fila: PermisoMatrizFila) => {
       const nombre = String(fila?.modulo_nombre || 'General').trim() || 'General';
@@ -336,14 +337,32 @@ export class Usuario implements OnInit {
       }
       grupos.get(nombre)!.push(fila);
     });
-    return Array.from(grupos.entries())
+    this.gruposPermisosEdicionUsuario = Array.from(grupos.entries())
       .map(([nombre, filas]) => ({
         nombre,
-        filas: filas.sort((a: PermisoMatrizFila, b: PermisoMatrizFila) =>
+        filas: [...filas].sort((a: PermisoMatrizFila, b: PermisoMatrizFila) =>
           String(a?.pantalla_nombre || '').localeCompare(String(b?.pantalla_nombre || ''), 'es', { sensitivity: 'base' })
         ),
       }))
       .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }));
+  }
+
+  trackPermisoFila(index: number, fila: PermisoMatrizFila): string {
+    return String(fila?.recurso_key || fila?.idmodulo || fila?.pantalla_nombre || index);
+  }
+
+  trackAccionPermiso(index: number, accion: AccionCatalogoPermiso): string {
+    return String(accion?.accion_key || index);
+  }
+
+  trackGrupoPermiso(index: number, grupo: { nombre: string }): string {
+    return String(grupo?.nombre || index);
+  }
+
+  onCambioPermisoEdicion(): void {
+    if (this.mostrarSoloActivosEdicion) {
+      this.actualizarGruposPermisosEdicion();
+    }
   }
 
   contarAccionesActivas(fila?: PermisoMatrizFila | null): number {
@@ -382,6 +401,7 @@ export class Usuario implements OnInit {
     (this.permisosMatrizEdicionUsuario || []).forEach((fila: PermisoMatrizFila) => {
       this.alternarFilaPermisos(fila, activo);
     });
+    this.actualizarGruposPermisosEdicion();
   }
 
   limpiarPermisosEdicionUsuario(): void {
@@ -396,6 +416,7 @@ export class Usuario implements OnInit {
       this.permisosMatrizEdicionUsuario,
       descripcion,
     );
+    this.actualizarGruposPermisosEdicion();
   }
 
   descModulo(id?: number): string {
@@ -537,6 +558,7 @@ export class Usuario implements OnInit {
     this.cargandoPermisosEdicion = true;
     this.permisosMatrizEdicionUsuario = [];
     this.accionesPermisosCatalogoEdicion = [];
+    this.gruposPermisosEdicionUsuario = [];
     this.filtroPermisosEdicion = '';
     this.mostrarSoloActivosEdicion = false;
     this.plantillaAutoAplicadaEdicion = false;
@@ -554,6 +576,7 @@ export class Usuario implements OnInit {
           this.reAplicarPlantillaTipoEdicionUsuario();
           this.plantillaAutoAplicadaEdicion = this.hayPermisosSeleccionados(this.permisosMatrizEdicionUsuario);
         }
+        this.actualizarGruposPermisosEdicion();
         this.cargandoPermisosEdicion = false;
         $('#modalEditarAccesosUsuario').modal('show');
       },
@@ -561,6 +584,7 @@ export class Usuario implements OnInit {
         this.cargandoPermisosEdicion = false;
         this.permisosMatrizEdicionUsuario = [];
         this.accionesPermisosCatalogoEdicion = [];
+        this.gruposPermisosEdicionUsuario = [];
         this.fireToast({ title: 'No se pudo cargar la matriz de permisos', icon: 'error' });
       }
     });
@@ -598,6 +622,7 @@ export class Usuario implements OnInit {
     this.cargandoPermisosEdicion = false;
     this.permisosMatrizEdicionUsuario = [];
     this.accionesPermisosCatalogoEdicion = [];
+    this.gruposPermisosEdicionUsuario = [];
     this.filtroPermisosEdicion = '';
     this.mostrarSoloActivosEdicion = false;
     this.plantillaAutoAplicadaEdicion = false;

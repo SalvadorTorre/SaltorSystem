@@ -415,6 +415,7 @@
                         class="form-control"
                         placeholder="Buscar pantalla o módulo..."
                         [(ngModel)]="filtroPermisosEdicion"
+                        (ngModelChange)="actualizarGruposPermisosEdicion()"
                         name="filtroPermisosEdicion"
                       >
                     </div>
@@ -424,6 +425,7 @@
                         type="checkbox"
                         id="soloActivosEdicion"
                         [(ngModel)]="mostrarSoloActivosEdicion"
+                        (ngModelChange)="actualizarGruposPermisosEdicion()"
                         name="mostrarSoloActivosEdicion"
                       >
                       <label class="form-check-label small" for="soloActivosEdicion">
@@ -445,7 +447,7 @@
                 </div>
 
                 <div class="permisos-builder__groups" *ngIf="gruposPermisosEdicionUsuario.length; else permisosEdicionSinFiltroTpl">
-                  <section class="permisos-builder__group" *ngFor="let grupo of gruposPermisosEdicionUsuario">
+                  <section class="permisos-builder__group" *ngFor="let grupo of gruposPermisosEdicionUsuario; trackBy: trackGrupoPermiso">
                     <div class="permisos-builder__group-header">
                       <div>
                         <h6 class="mb-0">{{ grupo.nombre }}</h6>
@@ -453,7 +455,7 @@
                       </div>
                     </div>
                     <div class="permisos-builder__list">
-                      <article class="permiso-card" *ngFor="let f of grupo.filas; let i = index" [class.permiso-card--active]="tieneAccionActiva(f)">
+                      <article class="permiso-card" *ngFor="let f of grupo.filas; let i = index; trackBy: trackPermisoFila" [class.permiso-card--active]="tieneAccionActiva(f)">
                         <div class="permiso-card__top">
                           <div class="permiso-card__identity">
                             <span class="permiso-card__module">{{ f.recurso_key || f.modulo_nombre || '-' }}</span>
@@ -468,21 +470,22 @@
                             </div>
                           </div>
                           <div class="permiso-card__toggles">
-                            <button type="button" class="btn btn-outline-primary btn-sm" (click)="alternarFilaPermisos(f, true)">
+                            <button type="button" class="btn btn-outline-primary btn-sm" (click)="alternarFilaPermisos(f, true); onCambioPermisoEdicion()">
                               Todo
                             </button>
-                            <button type="button" class="btn btn-outline-secondary btn-sm" (click)="alternarFilaPermisos(f, false)">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" (click)="alternarFilaPermisos(f, false); onCambioPermisoEdicion()">
                               Nada
                             </button>
                           </div>
                         </div>
 
                         <div class="permiso-card__actions">
-                          <label class="permiso-toggle" *ngFor="let a of accionesPermisosCatalogoEdicion" [class.permiso-toggle--checked]="f.acciones[a.accion_key]">
+                          <label class="permiso-toggle" *ngFor="let a of accionesPermisosCatalogoEdicion; trackBy: trackAccionPermiso" [class.permiso-toggle--checked]="f.acciones[a.accion_key]">
                             <input
                               type="checkbox"
                               class="permiso-toggle__input"
                               [(ngModel)]="f.acciones[a.accion_key]"
+                              (ngModelChange)="onCambioPermisoEdicion()"
                               [name]="'perm-edit-' + grupo.nombre + '-' + i + '-' + a.accion_key"
                             >
                             <span class="permiso-toggle__label">{{ a.descripcion }}</span>

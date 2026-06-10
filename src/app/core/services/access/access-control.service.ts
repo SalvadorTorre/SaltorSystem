@@ -171,6 +171,12 @@ export class AccessControlService {
       ).trim() || null;
     const sucursalid = Number(localStorage.getItem('idSucursal') || 0) || null;
 
+    if (this.shouldBypassByRole()) {
+      this.permisos = [];
+      this.loaded$.next(true);
+      return;
+    }
+
     if (!codusuario) {
       this.permisos = [];
       this.loaded$.next(true);
@@ -226,7 +232,8 @@ export class AccessControlService {
   }
 
   private shouldBypassByRole(): boolean {
-    return false;
+    const template = this.getDefaultTemplate(this.currentRoleLabel());
+    return !!template?.allowAll;
   }
 
   private canViewByDefaultRole(path: string, treatAsPrefix = false): boolean {
