@@ -160,7 +160,7 @@ export class ServicioFacturacion {
   }
 
   private applyTenantFilter(query: any): any {
-    const { role, codEmpre, sucursal, rncEmpre } = this.currentTenant();
+    const { codEmpre, sucursal, rncEmpre } = this.currentTenant();
     let scoped = query;
     if (codEmpre) {
       scoped = scoped.eq('fa_codempr', codEmpre);
@@ -170,14 +170,14 @@ export class ServicioFacturacion {
       // Failsafe: sin tenant activo no devolvemos ni tocamos facturas.
       scoped = scoped.eq('fa_codempr', '__NO_TENANT__');
     }
-    if (role === 'vendedor' && Number.isFinite(sucursal) && sucursal > 0) {
+    if (Number.isFinite(sucursal) && sucursal > 0) {
       scoped = scoped.eq('fa_codsucu', sucursal);
     }
     return scoped;
   }
 
   private applyTenantFilterDetalle(query: any): any {
-    const { role, codEmpre, sucursal, rncEmpre } = this.currentTenant();
+    const { codEmpre, sucursal, rncEmpre } = this.currentTenant();
     let scoped = query;
     if (codEmpre) {
       scoped = scoped.eq('df_codepr', codEmpre);
@@ -186,7 +186,7 @@ export class ServicioFacturacion {
     } else {
       scoped = scoped.eq('df_codepr', '__NO_TENANT__');
     }
-    if (role === 'vendedor' && Number.isFinite(sucursal) && sucursal > 0) {
+    if (Number.isFinite(sucursal) && sucursal > 0) {
       scoped = scoped.eq('df_codsucu', String(sucursal));
     }
     return scoped;

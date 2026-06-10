@@ -1,7 +1,5 @@
 import { Component, ElementRef, ViewChild } from '@angular/core';
 import { ServicioFacturacion } from 'src/app/core/services/facturacion/factura/factura.service';
-import { ModeloDespachadorData } from 'src/app/core/services/mantenimientos/despachadores';
-import { ServicioDespachador } from 'src/app/core/services/mantenimientos/despachadores/despachador.service';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -11,58 +9,22 @@ import autoTable from 'jspdf-autotable';
   styleUrls: ['./despacho.css'],
 })
 export class DespachoComponent {
-  @ViewChild('cedulaInput') cedulaInput!: ElementRef<HTMLInputElement>;
   @ViewChild('facturaInput') facturaInputRef!: ElementRef<HTMLInputElement>;
 
-  cedula = '';
-  despacho: ModeloDespachadorData | null = null;
   mensaje = '';
   facturaNumero = '';
   clienteNombre = '';
   facturaData: any = null;
 
   constructor(
-    private despachoService: ServicioDespachador,
     private serviciofacturacion: ServicioFacturacion
   ) {}
 
-  buscarDespachador() {
-    const cedula = this.cedula.trim();
-    if (!cedula) {
-      this.mensaje = 'Debe ingresar una cedula';
-      return;
-    }
-
-    this.despachoService.buscarPorCedula(cedula).subscribe({
-      next: (response) => {
-        const despachador = response?.data || null;
-        if (!despachador) {
-          this.despacho = null;
-          this.mensaje = 'No se encontro un despachador con esa cedula';
-          return;
-        }
-
-        this.despacho = despachador;
-        this.mensaje = '';
-        this.facturaInputRef?.nativeElement.focus();
-      },
-      error: (error) => {
-        this.despacho = null;
-        this.mensaje = error?.message || 'No se pudo consultar el despachador';
-      },
-    });
-  }
-
   buscarFactura() {
     const numeroFactura = this.facturaNumero.trim();
-    if (!this.despacho) {
-      this.mensaje = 'Primero debe buscar un despachador valido';
-      this.cedulaInput?.nativeElement.focus();
-      return;
-    }
-
     if (!numeroFactura) {
       this.mensaje = 'Debe ingresar un numero de factura';
+      this.facturaInputRef?.nativeElement.focus();
       return;
     }
 
@@ -79,7 +41,7 @@ export class DespachoComponent {
         if (String(factura.fa_impresa || '').trim().toUpperCase() === 'N') {
           this.facturaData = null;
           this.mensaje = 'La factura no ha sido impresa';
-          this.cedulaInput?.nativeElement.focus();
+          this.facturaInputRef?.nativeElement.focus();
           return;
         }
 
@@ -93,13 +55,11 @@ export class DespachoComponent {
   }
 
   limpiarCampos() {
-    this.cedula = '';
-    this.despacho = null;
     this.facturaNumero = '';
     this.facturaData = null;
     this.mensaje = 'Campos reiniciados';
     this.clienteNombre = '';
-    setTimeout(() => this.cedulaInput?.nativeElement.focus(), 0);
+    setTimeout(() => this.facturaInputRef?.nativeElement.focus(), 0);
   }
 
   imprimirConduce() {
@@ -139,7 +99,7 @@ export class DespachoComponent {
     y += 6;
     doc.setFontSize(12);
     doc.setTextColor(0, 0, 0);
-    doc.text('CONDUCE DE DESPACHO', centerX, y, { align: 'center' });
+    doc.text('FACTURA DE DESPACHO', centerX, y, { align: 'center' });
     y += 8;
 
     doc.setFont('helvetica', 'normal');
@@ -155,10 +115,6 @@ export class DespachoComponent {
     doc.text(`Direccion: ${f.fa_dirClie || ''}`, 2, y);
     y += 5;
     doc.text(`Telefono: ${f.fa_telClie || ''}`, 2, y);
-    y += 5;
-    doc.text(`Despachador: ${this.despacho?.nomDesp || ''}`, 2, y);
-    y += 5;
-    doc.text(`Cedula: ${this.despacho?.cedDesp || ''}`, 2, y);
     y += 3;
 
     const tableColumn = ['Cant.', 'Precio', 'Itbis', 'Total', ''];
@@ -250,7 +206,15 @@ export class DespachoComponent {
               ? factura.detalles
               : [];
 
-        this.facturaData = { ...factura, detalles };
+        const detallesFiltrados = this.filtrarDetallesPorTipoUsuario(detalles);
+        if (!detallesFiltrados.length) {
+          this.facturaData = { ...factura, detalles: [] };
+          this.clienteNombre = factura.fa_nomClie || '';
+          this.mensaje = 'La factura no tiene detalles para imprimir con el tipo de usuario.';
+          return;
+        }
+
+        this.facturaData = { ...factura, detalles: detallesFiltrados };
         this.clienteNombre = factura.fa_nomClie || '';
         this.mensaje = '';
         this.imprimirConduce();
@@ -277,12 +241,12 @@ export class DespachoComponent {
   }
 
   private registrarImpresionDespacho(codigoFactura: string) {
-    const tipoDespachador = String(this.despacho?.tipoDesp || '').trim().toUpperCase();
-    if (!codigoFactura || (tipoDespachador !== 'H' && tipoDespachador !== 'F')) {
+    const tipoDespacho = this.tramoPermitidoPorTipoUsuario();
+    if (!codigoFactura || (tipoDespacho !== 'H' && tipoDespacho !== 'F')) {
       return;
     }
 
-    this.serviciofacturacion.registrarImpresionDespacho(codigoFactura, tipoDespachador).subscribe({
+    this.serviciofacturacion.registrarImpresionDespacho(codigoFactura, tipoDespacho).subscribe({
       next: (response: any) => {
         if (response?.data) {
           this.facturaData = {
@@ -296,5 +260,46 @@ export class DespachoComponent {
         this.mensaje = error?.message || 'El conduce se imprimio, pero no se marco la factura';
       },
     });
+  }
+
+  private filtrarDetallesPorTipoUsuario(detalles: any[]): any[] {
+    const tramoPermitido = this.tramoPermitidoPorTipoUsuario();
+    if (!tramoPermitido) return detalles || [];
+
+    return (detalles || []).filter((item: any) => {
+      const tramo = this.normalizarTexto(
+        item?.df_tipomerc ??
+          item?.df_tipoMerc ??
+          item?.fa_tramo ??
+          item?.in_tramo ??
+          item?.producto?.in_tramo,
+      ).toUpperCase();
+      return tramo === tramoPermitido;
+    });
+  }
+
+  private tramoPermitidoPorTipoUsuario(): 'F' | 'H' | null {
+    const tipoUsuarioText = this.normalizarTexto([
+      localStorage.getItem('roleDescription'),
+      localStorage.getItem('tipoUsuario'),
+      localStorage.getItem('tipousuario'),
+      localStorage.getItem('descripcionTipoUsuario'),
+      localStorage.getItem('role'),
+      localStorage.getItem('dashboardRole'),
+    ].filter(Boolean).join(' '));
+
+    if (tipoUsuarioText.includes('despacho') && tipoUsuarioText.includes('forja')) return 'F';
+    if (tipoUsuarioText.includes('despacho') && tipoUsuarioText.includes('hierro')) return 'H';
+    if (tipoUsuarioText.includes('forja')) return 'F';
+    if (tipoUsuarioText.includes('hierro')) return 'H';
+    return null;
+  }
+
+  private normalizarTexto(value: any): string {
+    return String(value ?? '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim()
+      .toLowerCase();
   }
 }

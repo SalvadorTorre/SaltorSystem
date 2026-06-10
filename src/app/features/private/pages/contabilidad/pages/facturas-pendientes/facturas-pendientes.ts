@@ -60,7 +60,7 @@ export class FacturasPendientesComponent implements OnInit {
   }
 
   esPendiente(factura: any): boolean {
-    return this.normalizarBandera(factura?.fa_pendiente) === 'S';
+    return ['S', 'P'].includes(this.normalizarBandera(factura?.fa_pendiente));
   }
 
   esCobrada(factura: any): boolean {

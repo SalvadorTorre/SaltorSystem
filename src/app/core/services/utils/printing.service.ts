@@ -1364,16 +1364,22 @@ items.forEach((it: any) => {
         .trim()
         .toUpperCase();
       const conducePagado = fpago === 'S' || fpago === 'P';
+      const conduceEnvio = this.facturaEsEnvio(facturaRoot);
 
-      if (conducePagado && !facturaData?.__singlePrintCopy) {
-        const copias = this.facturaEsEnvio(facturaRoot)
-          ? [
-              { label: 'CLIENTE', hideDetails: false },
-              { label: 'CONDUCTOR', hideDetails: false },
-              { label: 'CAJA', hideDetails: true },
-            ]
+      if ((conducePagado || conduceEnvio) && !facturaData?.__singlePrintCopy) {
+        const copias = conducePagado
+          ? conduceEnvio
+            ? [
+                { label: 'CLIENTE', hideDetails: false },
+                { label: 'CONDUCTOR', hideDetails: false },
+                { label: 'CAJA', hideDetails: true },
+              ]
+            : [
+                { label: 'CLIENTE', hideDetails: false },
+                { label: 'CAJA', hideDetails: true },
+              ]
           : [
-              { label: 'CLIENTE', hideDetails: false },
+              { label: 'CONDUCTOR', hideDetails: false },
               { label: 'CAJA', hideDetails: true },
             ];
 
