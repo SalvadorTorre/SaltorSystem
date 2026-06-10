@@ -414,7 +414,7 @@ ALTER TABLE "myappdb"."contfactura" OWNER TO "postgres";
 -- ----------------------------
 DROP TABLE IF EXISTS "myappdb"."cotizacion";
 CREATE TABLE "myappdb"."cotizacion" (
-  "ct_codcoti" char(10) COLLATE "pg_catalog"."default" NOT NULL,
+  "ct_codcoti" varchar(11) COLLATE "pg_catalog"."default" NOT NULL,
   "ct_feccoti" date,
   "ct_valcoti" numeric(9,2),
   "ct_itbis" numeric(9,2),
@@ -514,7 +514,7 @@ ALTER TABLE "myappdb"."despachadores" OWNER TO "postgres";
 DROP TABLE IF EXISTS "myappdb"."detcotizacion";
 CREATE TABLE "myappdb"."detcotizacion" (
   "id" int4 NOT NULL DEFAULT nextval('"myappdb".detcotizacion_id_seq'::regclass),
-  "dc_codcoti" varchar(10) COLLATE "pg_catalog"."default" NOT NULL,
+  "dc_codcoti" varchar(11) COLLATE "pg_catalog"."default" NOT NULL,
   "dc_codmerc" varchar(15) COLLATE "pg_catalog"."default" NOT NULL,
   "dc_descrip" varchar(40) COLLATE "pg_catalog"."default",
   "dc_canmerc" numeric(10,2),

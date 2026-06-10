@@ -159,6 +159,19 @@
   padding: 1.5rem;
 }
 
+#modalcotizacion .modal-header {
+  padding-top: 0.65rem;
+  padding-bottom: 0.65rem;
+}
+
+#modalcotizacion .modal-title {
+  font-size: 1rem;
+}
+
+#modalcotizacion .modal-body {
+  padding-top: 0.75rem !important;
+}
+
 /* Paginación */
 .pagination {
   gap: 0.25rem;

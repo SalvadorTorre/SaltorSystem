@@ -391,6 +391,15 @@ export class ServicioFacturacion {
     };
   }
 
+  private telefonoFactura(input: any): string | null {
+    const telefono1 = String(input?.fa_telClie ?? input?.fa_telclie ?? '')
+      .trim();
+    const telefono2 = String(input?.fa_telClie2 ?? input?.fa_telclie2 ?? '')
+      .trim();
+    const telefonos = [telefono1, telefono2].filter(Boolean).join('    ');
+    return this.toStringMax(telefonos, 26);
+  }
+
   private mapFacturaUiToDb(input: any): any {
     const payload: any = {
       fa_codfact: this.toStringMax(input?.fa_codFact, 12),
@@ -411,8 +420,7 @@ export class ServicioFacturacion {
       fa_expfact: this.normalizeDate(input?.fa_expFact),
       fa_codclie: this.toNumberOrNull(input?.fa_codClie),
       fa_nomclie: this.toStringMax(input?.fa_nomClie, 39),
-      fa_telclie: this.toStringMax(input?.fa_telClie, 26),
-      fa_telclie2: this.toStringMax(input?.fa_telClie2, 26),
+      fa_telclie: this.telefonoFactura(input),
       fa_dirclie: this.toStringMax(input?.fa_dirClie, 40),
       fa_contacto: this.toStringMax(input?.fa_contacto, 30),
       fa_codzona: this.toNumberOrNull(input?.fa_codZona),
@@ -491,8 +499,9 @@ export class ServicioFacturacion {
     set('fa_expFact', 'fa_expfact', (v) => this.normalizeDate(v));
     set('fa_codClie', 'fa_codclie', (v) => this.toNumberOrNull(v));
     set('fa_nomClie', 'fa_nomclie', (v) => this.toStringMax(v, 39));
-    set('fa_telClie', 'fa_telclie', (v) => this.toStringMax(v, 26));
-    set('fa_telClie2', 'fa_telclie2', (v) => this.toStringMax(v, 26));
+    if (has('fa_telClie') || has('fa_telClie2')) {
+      payload.fa_telclie = this.telefonoFactura(input);
+    }
     set('fa_dirClie', 'fa_dirclie', (v) => this.toStringMax(v, 40));
     set('fa_contacto', 'fa_contacto', (v) => this.toStringMax(v, 30));
     set('fa_codZona', 'fa_codzona', (v) => this.toNumberOrNull(v));
@@ -542,35 +551,96 @@ export class ServicioFacturacion {
     return payload;
   }
 
-  private async nextFacturaCode(): Promise<string> {
+  private buildFacturaCodeFromContFactura(
+    ano: number,
+    idsucursal: number,
+    contfact: number,
+  ): string {
+    const anoStr = String(ano || new Date().getFullYear()).padStart(4, '0').slice(-4);
+    const sucursalStr = String(idsucursal || 0).padStart(2, '0').slice(-2);
+    const contStr = String(contfact || 0).padStart(5, '0').slice(-5);
+    return `${anoStr}${sucursalStr}${contStr}`;
+  }
+
+  private contfacturaCounterField(row: any): string {
+    if (Object.prototype.hasOwnProperty.call(row || {}, 'contfact')) return 'contfact';
+    if (Object.prototype.hasOwnProperty.call(row || {}, 'contador')) return 'contador';
+    throw new Error('El registro de contfactura no tiene el campo contfact.');
+  }
+
+  private contfacturaIdField(row: any): string {
+    if (Object.prototype.hasOwnProperty.call(row || {}, 'id')) return 'id';
+    if (Object.prototype.hasOwnProperty.call(row || {}, 'cod')) return 'cod';
+    if (Object.prototype.hasOwnProperty.call(row || {}, 'idcontfact')) return 'idcontfact';
+    if (Object.prototype.hasOwnProperty.call(row || {}, 'idContFact')) return 'idContFact';
+    return '';
+  }
+
+  private async getOrPickContFacturaRow(idsucursal: number): Promise<any | null> {
     const year = new Date().getFullYear();
-    const { data: current, error: readError } = await this.db
-      .from('ctr_factura')
-      .select('year,last_number')
-      .eq('year', year)
-      .limit(1)
-      .maybeSingle();
+    const { data, error } = await this.db
+      .from('contfactura')
+      .select('*')
+      .order('id', { ascending: false })
+      .limit(200);
+    if (error) throw error;
 
-    if (readError) throw readError;
+    const rows = Array.isArray(data) ? data : [];
+    return (
+      rows.find(
+        (r: any) =>
+          this.toNumber(r?.idsucursal) === idsucursal &&
+          this.toNumber(r?.ano) === year,
+      ) ||
+      rows.find((r: any) => this.toNumber(r?.idsucursal) === idsucursal) ||
+      rows.find(
+        (r: any) =>
+          r?.idsucursal === null ||
+          r?.idsucursal === undefined ||
+          this.toNumber(r?.idsucursal) === 0,
+      ) ||
+      null
+    );
+  }
 
-    const nextNumber = this.toNumber(current?.last_number) + 1;
-
-    if (!current) {
-      const { error: insertError } = await this.db
-        .from('ctr_factura')
-        .insert({ year, last_number: nextNumber })
-        .select('year')
-        .maybeSingle();
-      if (insertError) throw insertError;
-    } else {
-      const { error: updateError } = await this.db
-        .from('ctr_factura')
-        .update({ last_number: nextNumber })
-        .eq('year', year);
-      if (updateError) throw updateError;
+  private async nextFacturaCode(idsucursal: number): Promise<string> {
+    if (!Number.isFinite(idsucursal) || idsucursal <= 0) {
+      throw new Error('Sucursal invalida para generar el numero de factura.');
     }
 
-    return `${year}${String(nextNumber).padStart(6, '0')}`;
+    const contRow = await this.getOrPickContFacturaRow(idsucursal);
+    if (!contRow) {
+      throw new Error(`No existe contfactura para la sucursal ${idsucursal}.`);
+    }
+
+    const idField = this.contfacturaIdField(contRow);
+    const contId = this.toNumberOrNull(
+      contRow?.id ?? contRow?.cod ?? contRow?.idcontfact ?? contRow?.idContFact,
+    );
+    if (!idField || !contId) {
+      throw new Error('contfactura sin id.');
+    }
+
+    const counterField = this.contfacturaCounterField(contRow);
+    const ano = this.toNumber(contRow?.ano) || new Date().getFullYear();
+    const contActual = this.toNumber(contRow?.[counterField]);
+
+    for (let step = 1; step <= 50; step += 1) {
+      const next = contActual + step;
+      const codigo = this.buildFacturaCodeFromContFactura(ano, idsucursal, next);
+      const existe = await this.facturaExisteEnTenant(codigo);
+      if (existe) continue;
+
+      const { error: updateError } = await this.db
+        .from('contfactura')
+        .update({ [counterField]: next })
+        .eq(idField, contId);
+      if (updateError) throw updateError;
+
+      return codigo;
+    }
+
+    throw new Error('No se pudo generar un numero de factura disponible desde contfactura.');
   }
 
   private normalizeTipoEncfFromTipoNcf(tipoNcf: any): { tipoNumero: number | null; tipoencf: string } {
@@ -852,10 +922,10 @@ export class ServicioFacturacion {
           throw new Error('No hay tenant activo para registrar facturas.');
         }
 
-        let codigo = String(facturaRaw?.fa_codFact || '').trim();
-        if (!codigo) {
-          codigo = await this.nextFacturaCode();
-        }
+        const idsucursalFactura = this.toNumber(
+          facturaRaw?.fa_codSucu ?? tenantSucursal,
+        );
+        const codigo = await this.nextFacturaCode(idsucursalFactura);
 
         facturaRaw.fa_codFact = codigo;
         facturaRaw.fa_codEmpr = tenantCodEmpre;

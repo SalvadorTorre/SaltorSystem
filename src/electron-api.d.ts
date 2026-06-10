@@ -9,6 +9,18 @@ interface ElectronPrintResult {
   error?: string | null;
 }
 
+interface ElectronSavePdfRequest {
+  base64Data: string;
+  directory?: string;
+  filename?: string;
+}
+
+interface ElectronSavePdfResult {
+  success: boolean;
+  filepath?: string;
+  error?: string | null;
+}
+
 type ElectronPrintProfileKey = 'factura' | 'ticket' | 'reporte';
 
 interface ElectronPrinterInfo {
@@ -46,6 +58,7 @@ interface ElectronAPI {
     deviceName?: string;
   }) => Promise<ElectronPrintResult>;
   openDevTools: () => Promise<ElectronPrintResult>;
+  savePdfFile: (payload: ElectronSavePdfRequest) => Promise<ElectronSavePdfResult>;
 }
 
 declare global {

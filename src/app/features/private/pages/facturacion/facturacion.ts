@@ -1702,6 +1702,17 @@ export class Facturacion implements OnInit {
     });
   }
 
+  private extraerMensajeError(error: any): string {
+    return String(
+      error?.error?.message ||
+        error?.message ||
+        error?.details ||
+        error?.hint ||
+        error?.error ||
+        'Hubo un error al guardar la factura.',
+    );
+  }
+
   handleKeydown(event: KeyboardEvent): void {
     const key = event.key;
     const maxIndex = this.resultadoNombre.length - 1; // Ajustamos el límite máximo
@@ -2397,11 +2408,31 @@ export class Facturacion implements OnInit {
   }
 
   private tasaItbisSumar(): number {
-    return Number(this.itbisActual?.porcentaje || 0) / 100;
+    const itbis: any = this.itbisActual || {};
+    return Number(
+      itbis?.porcentaje ??
+        itbis?.itebis ??
+        itbis?.itbis ??
+        0
+    ) / 100;
   }
 
   private tasaItbisRestar(): number {
-    return Number(this.itbisActual?.porcentaje_menos || 0) / 100;
+    const itbis: any = this.itbisActual || {};
+    const porcentaje = Number(
+      itbis?.porcentaje ??
+        itbis?.itebis ??
+        itbis?.itbis ??
+        0
+    );
+    const porcentajeMenos = Number(
+      itbis?.porcentaje_menos ??
+        itbis?.itbismeno ??
+        itbis?.itbis_menos ??
+        itbis?.porcentajemenos ??
+        (porcentaje ? porcentaje / (1 + porcentaje / 100) : 0)
+    );
+    return porcentajeMenos / 100;
   }
 
   private redondear(value: number): number {
@@ -2530,7 +2561,7 @@ export class Facturacion implements OnInit {
           Swal.fire({
             icon: 'error',
             title: 'Error',
-            text: 'Hubo un error al guardar la factura.',
+            text: this.extraerMensajeError(error),
           });
         },
       );

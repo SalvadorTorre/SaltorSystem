@@ -12,6 +12,7 @@ import {
   debounceTime,
   distinctUntilChanged,
   filter,
+  firstValueFrom,
   switchMap,
   tap,
 } from 'rxjs';
@@ -34,6 +35,7 @@ import {
 } from 'src/app/core/services/mantenimientos/clientes';
 import { interfaceDetalleModel } from 'src/app/core/services/cotizaciones/cotizacion/cotizacion';
 import { ServicioInventario } from 'src/app/core/services/mantenimientos/inventario/inventario.service';
+import { ServicioItbis } from 'src/app/core/services/mantenimientos/itbis/itbis.service';
 import {
   ModeloInventario,
   ModeloInventarioData,
@@ -121,6 +123,7 @@ export class Cotizacion implements OnInit {
     private ServicioUsuario: ServicioUsuario,
     private ServicioRnc: ServicioRnc,
     private printingService: PrintingService,
+    private servicioItbis: ServicioItbis,
   ) {
     this.form = this.fb.group({
       ct_codvend: ['', Validators.required], // El campo es requerido
@@ -563,7 +566,62 @@ export class Cotizacion implements OnInit {
       });
   }
 
-  generarPDF(Cotizacion: CotizacionModelData) {
+  async generarPDF(Cotizacion: CotizacionModelData) {
+    const codigo = String(Cotizacion?.ct_codcoti || '').trim();
+    if (!codigo) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'A V I S O',
+        text: 'Debe seleccionar una cotizacion valida para generar el PDF.',
+      });
+      return;
+    }
+
+    try {
+      const detalleResponse = await firstValueFrom(
+        this.servicioCotizacion.buscarCotizacionDetalle(codigo),
+      );
+      const detalle = Array.isArray(detalleResponse?.data)
+        ? detalleResponse.data
+        : [];
+      const pdfBlob = this.crearCotizacionA4Pdf(Cotizacion, detalle);
+      const isDesktop =
+        typeof window !== 'undefined' && !!window.electronAPI?.isDesktop;
+
+      if (!isDesktop) {
+        await this.printingService.printBlob(pdfBlob, 'reporte');
+        Swal.fire({
+          icon: 'info',
+          title: 'PDF generado',
+          text: 'El navegador no permite guardar directamente en C:\\cotizacion. Se abrio el PDF para imprimir.',
+        });
+        return;
+      }
+
+      const filepath = await this.printingService.savePdfBlobToDesktop(
+        pdfBlob,
+        `cotizacion-${codigo}.pdf`,
+        'C:\\cotizacion',
+      );
+
+      Swal.fire({
+        icon: 'success',
+        title: 'PDF creado',
+        text: `El archivo PDF fue creado correctamente.\nUbicacion: ${filepath}`,
+      });
+    } catch (error: any) {
+      console.error('Error generando PDF de cotizacion:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'A V I S O',
+        text:
+          error?.error?.message ||
+          error?.message ||
+          'No se pudo generar el PDF de la cotizacion.',
+      });
+    }
+    return;
+
     console.log('No. Cotizacion', Cotizacion);
     if (!Cotizacion.ct_codcoti || Cotizacion.ct_codcoti.trim() === '') {
       alert('Debe ingresar un número de cotizacion');
@@ -590,6 +648,49 @@ export class Cotizacion implements OnInit {
         }
       });
   }
+  async imprimirCotizacion(cotizacion: CotizacionModelData) {
+    if (!cotizacion?.ct_codcoti || !String(cotizacion.ct_codcoti).trim()) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'A V I S O',
+        text: 'Debe seleccionar una cotizacion valida para imprimir.',
+      });
+      return;
+    }
+
+    try {
+      const [detalleResponse, itbisRows] = await Promise.all([
+        firstValueFrom(this.servicioCotizacion.buscarCotizacionDetalle(cotizacion.ct_codcoti)),
+        firstValueFrom(this.servicioItbis.buscarTodos()),
+      ]);
+      const detalle = Array.isArray(detalleResponse?.data) ? detalleResponse.data : [];
+      const itbisGeneral =
+        (itbisRows || []).find(
+          (row: any) => String(row?.codigo || '').trim().toUpperCase() === 'ITBIS-01',
+        ) ||
+        (itbisRows || []).find(
+          (row: any) => String(row?.nivel || '').trim().toLowerCase() === 'general',
+        ) ||
+        { codigo: 'ITBIS-01', porcentaje: 18, porcentaje_menos: 15.2542 };
+
+      await this.printingService.imprimirCotizacion80mm(
+        cotizacion,
+        detalle,
+        itbisGeneral,
+      );
+    } catch (error: any) {
+      console.error('Error imprimiendo cotizacion:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'A V I S O',
+        text:
+          error?.error?.message ||
+          error?.message ||
+          'No se pudo imprimir la cotizacion.',
+      });
+    }
+  }
+
   eliminarCotizacion(CotizacionId: string) {
     Swal.fire({
       title: '¿Está seguro de eliminar este Cotizacion?',
@@ -634,6 +735,40 @@ export class Cotizacion implements OnInit {
     this.fechaBuscar.next(formatted);
   }
 
+  private extraerMensajeError(error: any): string {
+    return String(
+      error?.error?.message ||
+        error?.error?.error ||
+        error?.message ||
+        error?.details ||
+        error?.hint ||
+        error?.error ||
+        'No se pudo guardar la cotizacion.',
+    );
+  }
+
+  private detalleCotizacionPayload(cotizacion: any): any[] {
+    return (this.items || []).map((item: any) => {
+      const producto = item?.producto || {};
+      const cantidad = Number(item?.cantidad ?? item?.dc_canmerc ?? 0);
+      const precio = Number(item?.precio ?? item?.dc_premerc ?? 0);
+      const total = Number(item?.total ?? item?.dc_valmerc ?? cantidad * precio);
+
+      return {
+        dc_codcoti: cotizacion?.ct_codcoti || '',
+        dc_codmerc: producto?.in_codmerc ?? item?.dc_codmerc ?? '',
+        dc_descrip: producto?.in_desmerc ?? item?.dc_descrip ?? '',
+        dc_canmerc: cantidad,
+        dc_premerc: precio,
+        dc_valmerc: total,
+        dc_unidad: producto?.in_unidad ?? item?.dc_unidad ?? '',
+        dc_costmer: producto?.in_cosmerc ?? item?.dc_costmer ?? 0,
+        dc_codclie: cotizacion?.ct_codclie ?? item?.dc_codclie ?? '',
+        dc_status: item?.dc_status ?? 'A',
+      };
+    });
+  }
+
   guardarCotizacion() {
     const date = new Date();
     this.formularioCotizacion.get('ct_valcoti')?.patchValue(this.totalGral);
@@ -641,18 +776,20 @@ export class Cotizacion implements OnInit {
     // Refrescar estado de validación
     this.formularioCotizacion.markAllAsTouched();
     this.formularioCotizacion.updateValueAndValidity();
+    const cotizacionPayload = this.formularioCotizacion.getRawValue();
     const payload = {
       // Incluir valores de controles deshabilitados
-      cotizacion: this.formularioCotizacion.getRawValue(),
-      detalle: this.items,
-      idCotizacion: this.formularioCotizacion.get('ct_codcoti')?.value,
+      cotizacion: cotizacionPayload,
+      detalle: this.detalleCotizacionPayload(cotizacionPayload),
+      idCotizacion: cotizacionPayload.ct_codcoti,
     };
 
     if (this.formularioCotizacion.valid) {
       if (this.modoedicionCotizacion) {
+        const cotizacionEdit = this.formularioCotizacion.getRawValue();
         const payloadEdit = {
-          cotizacion: this.formularioCotizacion.getRawValue(),
-          detalle: this.items,
+          cotizacion: cotizacionEdit,
+          detalle: this.detalleCotizacionPayload(cotizacionEdit),
           idCotizacion: this.cotizacionid,
         };
         this.servicioCotizacion
@@ -672,10 +809,11 @@ export class Cotizacion implements OnInit {
               $('#modalcotizacion').modal('hide');
             },
             error: (err) => {
+              console.error('Error editando cotizacion:', err);
               Swal.fire({
                 icon: 'error',
                 title: 'A V I S O',
-                text: 'No se pudo editar la cotización.',
+                text: this.extraerMensajeError(err),
               });
             },
           });
@@ -697,10 +835,11 @@ export class Cotizacion implements OnInit {
               $('#modalcotizacion').modal('hide');
             },
             error: (err) => {
+              console.error('Error creando cotizacion:', err);
               Swal.fire({
                 icon: 'error',
                 title: 'A V I S O',
-                text: 'No se pudo crear la cotización.',
+                text: this.extraerMensajeError(err),
               });
             },
           });
@@ -1537,6 +1676,111 @@ export class Cotizacion implements OnInit {
   }
 
   // Método para convertir a mayúsculas en tiempo real
+  private crearCotizacionA4Pdf(
+    cotizacion: CotizacionModelData,
+    detalle: any[],
+  ): Blob {
+    const formatCurrency = (value: any) =>
+      Number(value || 0).toLocaleString('es-DO', {
+        style: 'currency',
+        currency: 'DOP',
+      });
+    const formatText = (value: any) => String(value ?? '');
+    const doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4',
+    });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const imgWidth = 20;
+    const imgHeight = 20;
+    const imgX = (pageWidth - imgWidth) / 2;
+
+    try {
+      doc.addImage('assets/logo2.png', 'PNG', imgX, 10, imgWidth, imgHeight);
+    } catch (error) {
+      console.warn('No se pudo agregar el logo al PDF de cotizacion:', error);
+    }
+
+    doc.setFontSize(16);
+    doc.text('CENTRAL HIERRO, SRL', 105, 40, { align: 'center' });
+    doc.setFontSize(10);
+    doc.text('#172 Esq. Albert Thomas', 105, 47, { align: 'center' });
+    doc.text('809-384-2000, 809-384-200', 105, 52, { align: 'center' });
+    doc.text('1-30-29922-6', 105, 57, { align: 'center' });
+
+    doc.setFontSize(14);
+    doc.text('COTIZACION', 105, 70, { align: 'center' });
+
+    doc.setFontSize(10);
+    doc.text(`No. ${formatText(cotizacion.ct_codcoti)}`, 14, 80);
+    doc.text(`Fecha: ${this.formatFechaFiltro(cotizacion.ct_feccoti)}`, 14, 85);
+    doc.text(`Vendido por: ${formatText(cotizacion.ct_nomvend)}`, 14, 90);
+
+    doc.setFontSize(12);
+    doc.text('CLIENTE', 14, 100);
+    doc.setFontSize(10);
+    doc.text(formatText(cotizacion.ct_nomclie), 14, 106);
+    doc.text(`RNC: ${formatText(cotizacion.ct_rnc)}`, 14, 111);
+    doc.text(`Telefono: ${formatText(cotizacion.ct_telclie)}`, 14, 116);
+    doc.text(`Direccion: ${formatText(cotizacion.ct_dirclie)}`, 14, 121);
+
+    let subtotal = 0;
+    const body = (detalle || []).map((item: any) => {
+      const cantidad = Number(item?.dc_canmerc || 0);
+      const precio = Number(item?.dc_premerc || 0);
+      const total = cantidad * precio;
+      subtotal += total;
+
+      return [
+        cantidad.toString(),
+        formatText(item?.dc_descrip),
+        formatCurrency(precio),
+        formatCurrency(total),
+      ];
+    });
+    const itbis = Number(cotizacion.ct_itbis || 0);
+    const totalGeneral =
+      Number(cotizacion.ct_valcoti || 0) || subtotal + itbis;
+
+    autoTable(doc, {
+      head: [['Cantidad', 'Descripcion', 'Precio Unitario', 'Total']],
+      body,
+      startY: 130,
+    });
+
+    const finalY = (doc as any).lastAutoTable?.finalY || 130;
+
+    doc.setFontSize(12);
+    doc.text('Subtotal:', 118, finalY + 10);
+    doc.setFontSize(10);
+    doc.text(formatCurrency(subtotal), 160, finalY + 10);
+    doc.setFontSize(12);
+    doc.text('ITBIS:', 118, finalY + 16);
+    doc.setFontSize(10);
+    doc.text(formatCurrency(itbis), 160, finalY + 16);
+    doc.setFontSize(12);
+    doc.text('TOTAL A PAGAR:', 118, finalY + 22);
+    doc.setFontSize(14);
+    doc.text(formatCurrency(totalGeneral), 160, finalY + 22);
+
+    doc.setFontSize(12);
+    doc.text(
+      'Estos Precios Estan Sujetos a Cambio Sin Previo Aviso',
+      105,
+      finalY + 40,
+      { align: 'center' },
+    );
+    doc.setFontSize(14);
+    doc.text('WWW.GRUPOHIERRO.COM', 105, finalY + 47, { align: 'center' });
+    doc.setFontSize(12);
+    doc.text('*** Gracias por Preferirnos ***', 105, finalY + 55, {
+      align: 'center',
+    });
+
+    return doc.output('blob');
+  }
+
   onUpperCase(fieldName: string, value: string): void {
     if (value) {
       const upperValue = value.toUpperCase();
