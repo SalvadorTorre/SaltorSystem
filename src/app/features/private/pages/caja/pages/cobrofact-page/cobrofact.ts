@@ -1809,6 +1809,14 @@ export class CobroFact implements OnInit {
     return String(fpago?.fp_descfpago || '').trim();
   }
 
+  private descripcionFormaEntregaActual(): string {
+    const actual = String(this.fentrega || '').trim();
+    const entrega = this.resultadoFentrega.find(
+      (item) => String(item.idfentrega ?? '').trim() === actual,
+    );
+    return String(entrega?.desentrega || '').trim();
+  }
+
   esPagoDiferenteEfectivo(): boolean {
     if (!this.ftipoPago) return false;
     const descripcion = this.descripcionTipoPagoActual()
@@ -1997,6 +2005,8 @@ export class CobroFact implements OnInit {
       ...this.formularioFacturacion.getRawValue(),
       fa_envio: this.fentrega,
       fa_codfpago: this.ftipoPago,
+      descripcionFormaPago: this.descripcionTipoPagoActual(),
+      descripcionFormaEntrega: this.descripcionFormaEntregaActual(),
       fa_impresa: 'S',
       fa_status: 'C',
       fa_fpago: payload.fa_fpago,
@@ -2013,6 +2023,8 @@ export class CobroFact implements OnInit {
           fa_impresa: 'S',
           fa_status: 'C',
           fa_fpago: payload.fa_fpago,
+          descripcionFormaPago: this.descripcionTipoPagoActual(),
+          descripcionFormaEntrega: this.descripcionFormaEntregaActual(),
         };
         this.DatosSeleccionado = facturaActualizada;
         this.formularioFacturacion.patchValue(

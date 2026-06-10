@@ -52,6 +52,41 @@ export class PrintingService {
     return raw === '1' || raw === 'envio';
   }
 
+  private etiquetaPagoConduce(factura: any): string {
+    const descripcion = String(
+      factura?.descripcionFormaPago ??
+        factura?.formaPagoDescripcion ??
+        factura?.fp_descfpago ??
+        factura?.tipoPago ??
+        ''
+    ).trim();
+    if (descripcion) return descripcion;
+
+    const codigo = String(factura?.fa_codfpago ?? factura?.fa_codFpago ?? '').trim();
+    if (codigo === '1') return 'Efectivo';
+
+    const pagado = String(factura?.fa_fpago ?? '').trim().toUpperCase();
+    if (pagado === 'S' || pagado === 'P') return codigo ? `Pagada (${codigo})` : 'Pagada';
+    if (pagado === 'N') return codigo ? `Pendiente (${codigo})` : 'Pendiente';
+    return codigo || pagado || 'No indicado';
+  }
+
+  private etiquetaEnvioConduce(factura: any): string {
+    const descripcion = String(
+      factura?.descripcionFormaEntrega ??
+        factura?.formaEntregaDescripcion ??
+        factura?.desentrega ??
+        factura?.tipoEnvio ??
+        ''
+    ).trim();
+    if (descripcion) return descripcion;
+
+    const codigo = String(factura?.fa_envio ?? factura?.faEnvio ?? '').trim();
+    if (codigo === '1') return 'Envio';
+    if (codigo === '2') return 'Retiro';
+    return codigo || 'No indicado';
+  }
+
   private datosFacturaImpresion(facturaData: any): any {
     const nested =
       facturaData?.data && typeof facturaData.data === 'object'
@@ -1463,13 +1498,31 @@ items.forEach((it: any) => {
       yPos += 5;
 
       const f = this.datosFacturaImpresion(facturaData);
-      const fecha = f.fa_fecFact ? new Date(f.fa_fecFact) : new Date();
+      const fecha = this.parseInvoiceDateTime(
+        f.fa_fecFact,
+        f.fa_fecfact,
+        f.fa_fehora,
+        f.fa_fechora,
+      );
+      const fechaHora = this.parseInvoiceDateTime(
+        f.fa_fehora,
+        f.fa_fechora,
+        f.fa_fecFact,
+        f.fa_fecfact,
+      );
+      const tieneHoraFactura = Boolean(String(f.fa_fehora ?? f.fa_fechora ?? '').trim());
       const formatDateShort = (date: Date) => {
         const d = new Date(date);
         const day = d.getDate().toString().padStart(2, '0');
         const month = (d.getMonth() + 1).toString().padStart(2, '0');
         const year = d.getFullYear();
         return `${day}/${month}/${year}`;
+      };
+      const formatTimeShort = (date: Date) => {
+        const d = new Date(date);
+        const hours = d.getHours().toString().padStart(2, '0');
+        const minutes = d.getMinutes().toString().padStart(2, '0');
+        return `${hours}:${minutes}`;
       };
       const formatoMoneda = new Intl.NumberFormat('es-DO', {
         minimumFractionDigits: 2,
@@ -1483,7 +1536,21 @@ items.forEach((it: any) => {
       doc.text(`Factura: ${f.fa_codFact || ''}`, leftMargin, yPos);
       doc.text(formatDateShort(fecha), pageWidth - rightMargin, yPos, { align: 'right' });
       yPos += 4;
+      if (tieneHoraFactura) {
+        doc.text(`Hora: ${formatTimeShort(fechaHora)}`, leftMargin, yPos);
+        yPos += 4;
+      }
       doc.text(`Cliente: ${String(f.fa_nomClie || '')}`, leftMargin, yPos);
+      yPos += 4;
+      const vendedor = String(f.fa_nomVend || f.fa_codVend || '').trim();
+      if (vendedor) {
+        const vendedorLines = doc.splitTextToSize(`Vendedor: ${vendedor}`, pageWidth - (leftMargin + rightMargin));
+        doc.text(vendedorLines, leftMargin, yPos);
+        yPos += vendedorLines.length * 4;
+      }
+      doc.text(`Pago: ${this.etiquetaPagoConduce(f)}`, leftMargin, yPos);
+      yPos += 4;
+      doc.text(`Envio: ${this.etiquetaEnvioConduce(f)}`, leftMargin, yPos);
       yPos += 4;
       if (f.fa_dirClie) {
         const dirCliente = doc.splitTextToSize(`Dir: ${String(f.fa_dirClie)}`, pageWidth - (leftMargin + rightMargin));
@@ -1513,12 +1580,12 @@ items.forEach((it: any) => {
         yPos += 5;
       }
 
-      let total = 0;
+      let totalDetalle = 0;
       (items || []).forEach((item: any) => {
         const cantidad = Number(item.cantidad ?? item.df_canMerc ?? 0);
         const desc = String(item.producto?.in_desmerc ?? item.df_desMerc ?? '');
         const val = Number(item.total ?? item.df_valMerc ?? 0);
-        total += val;
+        totalDetalle += val;
         const descLines = doc.splitTextToSize(desc, 35);
 
         if (!hideInvoiceDetails) {
@@ -1532,8 +1599,10 @@ items.forEach((it: any) => {
       drawDashedLine(yPos);
       yPos += 5;
       doc.setFont('helvetica', 'bold');
+      const totalFactura = Number(f.fa_valFact ?? f.fa_valfact ?? 0);
+      const totalConduce = totalFactura > 0 ? totalFactura : totalDetalle;
       doc.text('TOTAL', leftMargin, yPos);
-      doc.text(formatoMoneda.format(total || Number(f.fa_valFact || 0)), pageWidth - rightMargin, yPos, { align: 'right' });
+      doc.text(formatoMoneda.format(totalConduce), pageWidth - rightMargin, yPos, { align: 'right' });
       yPos += 6;
 
       const numeroFactura = String(f.fa_codFact || '').trim();
