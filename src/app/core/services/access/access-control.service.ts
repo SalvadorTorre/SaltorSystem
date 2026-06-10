@@ -11,6 +11,7 @@ interface DefaultPermissionTemplate {
   matchers: string[];
   allowAll?: boolean;
   allowedPaths: string[];
+  actionMap?: Record<string, string[]>;
 }
 
 @Injectable({
@@ -57,11 +58,13 @@ export class AccessControlService {
         ? true
         : this.templateAllowsPath(template, this.resolveRouteForPermiso(fila));
 
+      const route = this.resolveRouteForPermiso(fila);
+      const allowedActions = this.defaultActionsForRoute(template, route);
       const nextActions = { ...(fila?.acciones || {}) };
       Object.keys(nextActions).forEach((key) => {
         const normalized = this.normalizeLabel(key);
         nextActions[key] = canView
-          ? ['ver', 'acceso', 'lectura'].includes(normalized)
+          ? allowedActions.includes(normalized)
           : false;
       });
 
@@ -175,20 +178,27 @@ export class AccessControlService {
     }
 
     try {
-      const response: any = idtipousuario
-        ? await firstValueFrom(
-            this.permisoSrv.obtenerMatrizPermisosTipoUsuario(idtipousuario),
-          )
-        : await firstValueFrom(
-            this.permisoSrv.obtenerMatrizPermisosUsuario(
-              codusuario,
-              codEmpre,
-              sucursalid,
-            ),
-          );
-      this.permisos = Array.isArray(response?.data?.filas)
-        ? response.data.filas
+      const userResponse: any = await firstValueFrom(
+        this.permisoSrv.obtenerMatrizPermisosUsuario(
+          codusuario,
+          codEmpre,
+          sucursalid,
+        ),
+      );
+      const userRows = Array.isArray(userResponse?.data?.filas)
+        ? userResponse.data.filas
         : [];
+
+      if (this.hasAnyConfiguredAction(userRows) || !idtipousuario) {
+        this.permisos = userRows;
+      } else {
+        const typeResponse: any = await firstValueFrom(
+          this.permisoSrv.obtenerMatrizPermisosTipoUsuario(idtipousuario),
+        );
+        this.permisos = Array.isArray(typeResponse?.data?.filas)
+          ? typeResponse.data.filas
+          : [];
+      }
     } catch (error) {
       console.error('No se pudieron cargar los permisos del usuario actual', error);
       this.permisos = [];
@@ -199,6 +209,12 @@ export class AccessControlService {
 
   private getAllowedPermisos(): PermisoMatrizFila[] {
     return this.permisos.filter((permiso) => this.hasViewAccess(permiso));
+  }
+
+  private hasAnyConfiguredAction(filas: PermisoMatrizFila[]): boolean {
+    return (filas || []).some((fila) =>
+      Object.values(fila?.acciones || {}).some((value) => !!value),
+    );
   }
 
   private hasViewAccess(permiso: PermisoMatrizFila): boolean {
@@ -271,6 +287,12 @@ export class AccessControlService {
           '/private/caja',
           '/private/mantenimientos/cliente',
         ],
+        actionMap: {
+          '/private/caja': ['ver', 'acceso', 'lectura', 'editar', 'imprimir', 'cobrar'],
+          '/private/caja/cobrofact': ['ver', 'acceso', 'lectura', 'editar', 'imprimir', 'cobrar', 'enviar_dgii'],
+          '/private/caja/reciboingreso': ['ver', 'acceso', 'lectura', 'crear', 'editar', 'imprimir', 'cobrar'],
+          '/private/mantenimientos/cliente': ['ver', 'acceso', 'lectura', 'crear', 'editar'],
+        },
       },
       {
         matchers: ['vendedor', 'ventas', 'digitador'],
@@ -280,6 +302,11 @@ export class AccessControlService {
           '/private/cotizacion',
           '/private/mantenimientos/cliente',
         ],
+        actionMap: {
+          '/private/facturacion': ['ver', 'acceso', 'lectura', 'crear', 'editar', 'imprimir'],
+          '/private/cotizacion': ['ver', 'acceso', 'lectura', 'crear', 'editar', 'imprimir', 'exportar'],
+          '/private/mantenimientos/cliente': ['ver', 'acceso', 'lectura', 'crear', 'editar'],
+        },
       },
       {
         matchers: ['despacho', 'despachador', 'desp hierro', 'despachoforjas', 'despacho forjas'],
@@ -307,6 +334,10 @@ export class AccessControlService {
           '/private/contabilidad',
           '/private/caja',
         ],
+        actionMap: {
+          '/private/contabilidad': ['ver', 'acceso', 'lectura', 'imprimir', 'exportar'],
+          '/private/caja': ['ver', 'acceso', 'lectura', 'editar', 'imprimir', 'cobrar', 'enviar_dgii', 'cerrar_caja'],
+        },
       },
       {
         matchers: ['chofer'],
@@ -333,6 +364,43 @@ export class AccessControlService {
       }
       return normalizedPath === normalizedAllowed || normalizedPath.startsWith(`${normalizedAllowed}/`);
     });
+  }
+
+  private defaultActionsForRoute(template: DefaultPermissionTemplate, route: string | null): string[] {
+    const base = ['ver', 'acceso', 'lectura'];
+    if (template.allowAll) return [
+      'ver',
+      'acceso',
+      'lectura',
+      'crear',
+      'editar',
+      'eliminar',
+      'imprimir',
+      'exportar',
+      'aprobar',
+      'anular',
+      'enviar_dgii',
+      'cobrar',
+      'cerrar_caja',
+      'configurar',
+    ];
+    const normalizedRoute = this.normalizePath(route || '');
+    if (!normalizedRoute || !template.actionMap) return base;
+
+    let selected: { path: string; actions: string[] } | null = null;
+    for (const [path, actions] of Object.entries(template.actionMap)) {
+      const normalizedPath = this.normalizePath(path);
+      if (
+        normalizedPath &&
+        (normalizedRoute === normalizedPath || normalizedRoute.startsWith(`${normalizedPath}/`))
+      ) {
+        if (!selected || normalizedPath.length > selected.path.length) {
+          selected = { path: normalizedPath, actions };
+        }
+      }
+    }
+
+    return (selected?.actions || base).map((action) => this.normalizeLabel(action));
   }
 
   private resolveRouteForPermiso(permiso: PermisoMatrizFila): string | null {

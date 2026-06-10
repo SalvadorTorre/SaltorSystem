@@ -541,6 +541,7 @@ export class Usuario implements OnInit {
     ).subscribe({
       next: () => {
         $('#modalEditarAccesosUsuario').modal('hide');
+        this.accessControl.reset();
         this.fireToast({ title: 'Accesos actualizados', icon: 'success' });
       },
       error: () => {
@@ -1081,6 +1082,7 @@ export class Usuario implements OnInit {
 
     this.permisoSrv.guardarMatrizPermisosUsuario(codusuario, filas, codEmpre, sucursalid).subscribe({
       next: () => {
+        this.accessControl.reset();
         this.fireToast({ title: 'Permisos del usuario guardados', icon: 'success' });
       },
       error: () => {
