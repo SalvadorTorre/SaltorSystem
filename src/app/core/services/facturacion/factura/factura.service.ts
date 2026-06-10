@@ -1795,6 +1795,88 @@ export class ServicioFacturacion {
     })());
   }
 
+  buscarReporte607Dgii(params: {
+    page?: number;
+    pageSize?: number;
+    search?: string;
+    fecha?: string;
+    fechaDesde?: string;
+    fechaHasta?: string;
+  } = {}): Observable<any> {
+    const safePage = Math.max(1, Number(params.page) || 1);
+    const safeLimit = Math.max(10, Number(params.pageSize) || 20);
+    const search = String(params.search || '').trim();
+    const fecha = this.normalizeDate(params.fecha);
+    const fechaDesde = this.normalizeDate(params.fechaDesde);
+    const fechaHasta = this.normalizeDate(params.fechaHasta);
+
+    if (!this.useSupabase) {
+      const query = new URLSearchParams({
+        page: String(safePage),
+        limit: String(safeLimit),
+      });
+      if (search) query.set('search', search);
+      if (fecha) query.set('fecha', fecha);
+      if (fechaDesde) query.set('fechaDesde', fechaDesde);
+      if (fechaHasta) query.set('fechaHasta', fechaHasta);
+      return this.http.GetRequest<any>(`/facturacion/reporte-607?${query.toString()}`);
+    }
+
+    const offset = (safePage - 1) * safeLimit;
+
+    return from((async () => {
+      let query = this.db
+        .from('factura')
+        .select('*', { count: 'exact' })
+        .not('estado_envio_dgii', 'is', null)
+        .neq('estado_envio_dgii', 'PENDIENTE')
+        .order('fa_fecfact', { ascending: false })
+        .order('fa_codfact', { ascending: false })
+        .range(offset, offset + safeLimit - 1);
+
+      query = this.applyTenantFilter(query);
+
+      if (search) {
+        const safeSearch = search.replace(/[%_]/g, '\\$&');
+        query = query.or(
+          [
+            `fa_codfact.ilike.%${safeSearch}%`,
+            `fa_ncffact.ilike.%${safeSearch}%`,
+            `fa_nomclie.ilike.%${safeSearch}%`,
+            `codseguridad.ilike.%${safeSearch}%`,
+            `estado_dgii.ilike.%${safeSearch}%`,
+            `estado_envio_dgii.ilike.%${safeSearch}%`,
+          ].join(',')
+        );
+      }
+
+      if (fecha) {
+        query = query.eq('fa_fecfact', fecha);
+      } else {
+        if (fechaDesde) query = query.gte('fa_fecfact', fechaDesde);
+        if (fechaHasta) query = query.lte('fa_fecfact', fechaHasta);
+      }
+
+      const { data, error, count } = await query;
+      if (error) throw error;
+
+      const rows = (data || []).map((row: any) => this.mapFacturaDbToUi(row));
+      const total = Number(count || rows.length || 0);
+
+      return {
+        status: 'success',
+        code: 200,
+        data: rows,
+        pagination: {
+          total,
+          page: safePage,
+          pageSize: safeLimit,
+          totalPages: Math.max(1, Math.ceil(total / safeLimit)),
+        },
+      };
+    })());
+  }
+
   actualizarDatosDgii(fa_codFact: string, payload: any): Observable<any> {
     if (!this.useSupabase) {
       return this.http.PatchRequest(

@@ -365,6 +365,8 @@ export class AccessControlService {
       ['almacen', '/private/almacen'],
       ['despacho', '/private/despacho'],
       ['facturas pendientes', '/private/contabilidad/facturas-pendientes'],
+      ['rep 607', '/private/contabilidad/reporte-607'],
+      ['reporte 607', '/private/contabilidad/reporte-607'],
       ['contabilidad', '/private/contabilidad'],
       ['movimiento de productos', '/private/reporte/movproducto'],
       ['reportes', '/private/reporte'],

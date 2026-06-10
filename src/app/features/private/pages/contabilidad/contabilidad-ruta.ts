@@ -2,6 +2,7 @@ import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { Contabilidad } from './contabilidad';
 import { FacturasPendientesComponent } from './pages/facturas-pendientes/facturas-pendientes';
+import { Reporte607Component } from './pages/reporte-607/reporte-607';
 import { permissionGuard } from 'src/app/core/guards/permission/permission.guard';
 
 const routes: Routes = [
@@ -14,6 +15,12 @@ const routes: Routes = [
         component: FacturasPendientesComponent,
         canActivate: [permissionGuard],
         data: { accessPath: '/private/contabilidad/facturas-pendientes' },
+      },
+      {
+        path: 'reporte-607',
+        component: Reporte607Component,
+        canActivate: [permissionGuard],
+        data: { accessPath: '/private/contabilidad/reporte-607' },
       },
       {
         path: '',

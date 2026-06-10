@@ -1,0 +1,207 @@
+<section class="rep607-shell">
+  <div class="rep607-hero">
+    <div>
+      <span class="eyebrow">Contabilidad fiscal</span>
+      <h2>Rep. 607</h2>
+      <p>Facturas enviadas a DGII con estado, codigo de seguridad y enlace QR para consulta.</p>
+    </div>
+    <button class="btn btn-light hero-action" type="button" (click)="cargarReporte()" [disabled]="loading">
+      <i class="bi bi-arrow-clockwise me-2" [class.spin]="loading"></i>
+      Actualizar
+    </button>
+  </div>
+
+  <div class="summary-grid">
+    <div class="summary-card">
+      <span>Registros</span>
+      <strong>{{ total | number }}</strong>
+    </div>
+    <div class="summary-card">
+      <span>Pagina actual</span>
+      <strong>{{ page }} / {{ totalPages }}</strong>
+    </div>
+    <div class="summary-card wide">
+      <span>Periodo</span>
+      <strong>{{ rangoActual }}</strong>
+    </div>
+  </div>
+
+  <div class="filter-panel">
+    <div class="search-box">
+      <i class="bi bi-search"></i>
+      <input
+        type="search"
+        class="form-control"
+        placeholder="Buscar factura, NCF, cliente, estado o codigo de seguridad..."
+        [(ngModel)]="search"
+        (keyup.enter)="aplicarFiltros()"
+      />
+    </div>
+
+    <div class="date-mode">
+      <button
+        class="mode-btn"
+        type="button"
+        [class.active]="modoFecha === 'fecha'"
+        (click)="cambiarModoFecha('fecha')"
+      >
+        Fecha unica
+      </button>
+      <button
+        class="mode-btn"
+        type="button"
+        [class.active]="modoFecha === 'rango'"
+        (click)="cambiarModoFecha('rango')"
+      >
+        Entre fechas
+      </button>
+    </div>
+
+    <div class="date-fields" *ngIf="modoFecha === 'fecha'">
+      <label>
+        <span>Fecha</span>
+        <input type="date" class="form-control" [(ngModel)]="fecha" />
+      </label>
+    </div>
+
+    <div class="date-fields date-range" *ngIf="modoFecha === 'rango'">
+      <label>
+        <span>Desde</span>
+        <input type="date" class="form-control" [(ngModel)]="fechaDesde" />
+      </label>
+      <label>
+        <span>Hasta</span>
+        <input type="date" class="form-control" [(ngModel)]="fechaHasta" />
+      </label>
+    </div>
+
+    <div class="filter-actions">
+      <button class="btn btn-primary" type="button" (click)="aplicarFiltros()" [disabled]="loading">
+        <i class="bi bi-funnel me-2"></i>Filtrar
+      </button>
+      <button class="btn btn-outline-secondary" type="button" (click)="limpiarFiltros()" [disabled]="loading">
+        Limpiar
+      </button>
+    </div>
+  </div>
+
+  <div class="report-card">
+    <div class="report-toolbar">
+      <div>
+        <h3>Facturas reportadas</h3>
+        <p>Solo se muestran comprobantes con informacion DGII registrada.</p>
+      </div>
+      <label class="page-size">
+        Mostrar
+        <select class="form-select" [(ngModel)]="pageSize" (change)="cambiarTamanoPagina()">
+          <option [ngValue]="10">10</option>
+          <option [ngValue]="20">20</option>
+          <option [ngValue]="50">50</option>
+          <option [ngValue]="100">100</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="table-responsive report-table-wrap">
+      <table class="table report-table align-middle mb-0">
+        <thead>
+          <tr>
+            <th>Factura</th>
+            <th>Fecha</th>
+            <th>NCF/e-CF</th>
+            <th>Cliente</th>
+            <th class="text-end">Monto</th>
+            <th>Estado DGII</th>
+            <th>Cod. seguridad</th>
+            <th class="text-center">QR</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngIf="loading">
+            <td colspan="8" class="empty-cell">
+              <div class="spinner-border text-primary" role="status"></div>
+              <span>Cargando Rep. 607...</span>
+            </td>
+          </tr>
+
+          <tr *ngIf="!loading && facturas.length === 0">
+            <td colspan="8" class="empty-cell">
+              <i class="bi bi-inbox"></i>
+              <span>No hay facturas DGII para los filtros seleccionados.</span>
+            </td>
+          </tr>
+
+          <tr *ngFor="let factura of facturas">
+            <td>
+              <div class="invoice-code">{{ factura.fa_codFact || factura.fa_codfact }}</div>
+              <small>{{ factura.fa_codEmpr || factura.fa_codempr || 'Sin empresa' }}</small>
+            </td>
+            <td>{{ formatFecha(factura.fa_fecFact || factura.fa_fecfact) }}</td>
+            <td>
+              <span class="ncf-chip">{{ factura.fa_ncfFact || factura.fa_ncffact || 'N/A' }}</span>
+            </td>
+            <td>
+              <div class="client-name">{{ factura.fa_nomClie || factura.fa_nomclie || 'Sin cliente' }}</div>
+              <small>{{ factura.fa_rncFact || factura.fa_rncfact || '' }}</small>
+            </td>
+            <td class="text-end amount">{{ factura.fa_valFact | currency:'DOP':'symbol':'1.2-2' }}</td>
+            <td>
+              <span [class]="estadoClase(factura)">{{ estadoTexto(factura) }}</span>
+            </td>
+            <td>
+              <span class="security-code" *ngIf="factura.codseguridad; else noCode">
+                {{ factura.codseguridad }}
+              </span>
+              <ng-template #noCode>
+                <span class="muted">No registrado</span>
+              </ng-template>
+            </td>
+            <td class="text-center">
+              <div class="qr-actions">
+                <button
+                  class="btn btn-sm btn-outline-primary"
+                  type="button"
+                  (click)="abrirQr(factura)"
+                  [disabled]="!factura.qr_link"
+                  title="Abrir QR en otra pestana"
+                >
+                  <i class="bi bi-box-arrow-up-right"></i>
+                </button>
+                <button
+                  class="btn btn-sm btn-outline-secondary"
+                  type="button"
+                  (click)="copiarQr(factura)"
+                  [disabled]="!factura.qr_link"
+                  title="Copiar link QR"
+                >
+                  <i class="bi bi-clipboard"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="report-footer" *ngIf="totalPages > 1">
+      <span>Mostrando pagina {{ page }} de {{ totalPages }}</span>
+      <div class="pagination-actions">
+        <button class="pager-btn" type="button" (click)="cambiarPagina(page - 1)" [disabled]="page === 1">
+          <i class="bi bi-chevron-left"></i>
+        </button>
+        <button
+          class="pager-number"
+          type="button"
+          *ngFor="let item of pageItems"
+          [class.active]="item === page"
+          (click)="cambiarPagina(item)"
+        >
+          {{ item }}
+        </button>
+        <button class="pager-btn" type="button" (click)="cambiarPagina(page + 1)" [disabled]="page === totalPages">
+          <i class="bi bi-chevron-right"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
