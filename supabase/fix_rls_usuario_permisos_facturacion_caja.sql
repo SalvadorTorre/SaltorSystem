@@ -32,6 +32,12 @@ SET descripcion = EXCLUDED.descripcion,
 INSERT INTO myappdb.permiso_recurso_catalogo
 (modulo_key, modulo_nombre, recurso_key, pantalla_nombre, ruta, activo, requiere_tenant, orden)
 VALUES
+  ('facturacion','Facturacion','facturacion.factura','Facturacion','/private/facturacion',true,true,20),
+  ('contabilidad','Contabilidad','contabilidad.facturas_pendientes','Facturas pendientes','/private/contabilidad/facturas-pendientes',true,true,50),
+  ('caja','Caja','caja.cobrofact','Cobro factura','/private/caja/CobroFact',true,true,70),
+  ('caja','Caja','caja.controlsalida','Control salida','/private/caja/ControlSalida',true,true,71),
+  ('caja','Caja','caja.cuadrecaja','Cuadre de caja','/private/caja/cuadrecaja',true,true,72),
+  ('caja','Caja','caja.reciboingreso','Recibo ingreso','/private/caja/reciboingreso',true,true,73),
   ('contabilidad','Contabilidad','contabilidad.reporte_607','Reporte 607','/private/contabilidad/reporte-607',true,true,138)
 ON CONFLICT (recurso_key) DO UPDATE
 SET modulo_key = EXCLUDED.modulo_key,
@@ -44,6 +50,33 @@ SET modulo_key = EXCLUDED.modulo_key,
 
 INSERT INTO myappdb.permiso_recurso_accion_catalogo(recurso_key, accion_key, activo)
 VALUES
+  ('facturacion.factura', 'ver', true),
+  ('facturacion.factura', 'crear', true),
+  ('facturacion.factura', 'editar', true),
+  ('facturacion.factura', 'anular', true),
+  ('facturacion.factura', 'imprimir', true),
+  ('facturacion.factura', 'exportar', true),
+  ('facturacion.factura', 'enviar_dgii', true),
+  ('contabilidad.facturas_pendientes', 'ver', true),
+  ('caja.cobrofact', 'ver', true),
+  ('caja.cobrofact', 'cobrar', true),
+  ('caja.cobrofact', 'editar', true),
+  ('caja.cobrofact', 'anular', true),
+  ('caja.cobrofact', 'imprimir', true),
+  ('caja.cobrofact', 'enviar_dgii', true),
+  ('caja.controlsalida', 'ver', true),
+  ('caja.controlsalida', 'imprimir', true),
+  ('caja.controlsalida', 'exportar', true),
+  ('caja.cuadrecaja', 'ver', true),
+  ('caja.cuadrecaja', 'imprimir', true),
+  ('caja.cuadrecaja', 'exportar', true),
+  ('caja.cuadrecaja', 'cerrar_caja', true),
+  ('caja.reciboingreso', 'ver', true),
+  ('caja.reciboingreso', 'crear', true),
+  ('caja.reciboingreso', 'editar', true),
+  ('caja.reciboingreso', 'cobrar', true),
+  ('caja.reciboingreso', 'anular', true),
+  ('caja.reciboingreso', 'imprimir', true),
   ('contabilidad.reporte_607', 'ver', true),
   ('contabilidad.reporte_607', 'imprimir', true),
   ('contabilidad.reporte_607', 'exportar', true)
@@ -106,6 +139,8 @@ AS $$
 DECLARE
   cu RECORD;
   v_branch int;
+  explicit_allowed boolean;
+  legacy_allowed boolean;
 BEGIN
   IF auth.uid() IS NULL THEN
     RETURN false;
@@ -130,7 +165,7 @@ BEGIN
     v_branch := NULLIF(regexp_replace(_branch_text, '[^0-9]', '', 'g'), '')::int;
   END IF;
 
-  RETURN EXISTS (
+  SELECT EXISTS (
     SELECT 1
     FROM myappdb.usuario_permiso_accion upa
     WHERE upa.codusuario = cu.codusuario
@@ -152,7 +187,51 @@ BEGIN
         OR (v_branch IS NOT NULL AND upa.sucursalid = v_branch)
       )
     LIMIT 1
+  ) INTO explicit_allowed;
+
+  IF explicit_allowed THEN
+    RETURN true;
+  END IF;
+
+  -- Fallback legacy:
+  -- Si el usuario aun no tiene filas en usuario_permiso_accion, respetar el
+  -- permiso heredado desde su tipo de usuario (dtipousuario + modulo).
+  -- Esto evita que vendedores con acceso a Facturacion/Caja queden bloqueados
+  -- por RLS mientras se termina la migracion de permisos v2.
+  legacy_allowed := EXISTS (
+    SELECT 1
+    FROM myappdb.dtipousuario dt
+    JOIN myappdb.modulo m
+      ON m.idmodulo = dt.idmodulo
+    WHERE dt.idtipousuario = cu.idtipousuario
+      AND (
+        (
+          _recurso_key LIKE 'facturacion.%'
+          AND (
+            translate(lower(coalesce(m.descmodulo, '')), 'áéíóúñ', 'aeioun') LIKE '%factur%'
+            OR translate(lower(coalesce(m.descmodulo, '')), 'áéíóúñ', 'aeioun') LIKE '%venta%'
+          )
+        )
+        OR (
+          _recurso_key LIKE 'caja.%'
+          AND (
+            translate(lower(coalesce(m.descmodulo, '')), 'áéíóúñ', 'aeioun') LIKE '%caja%'
+            OR translate(lower(coalesce(m.descmodulo, '')), 'áéíóúñ', 'aeioun') LIKE '%cobro%'
+          )
+        )
+      )
+      AND (
+        CASE
+          WHEN lower(coalesce(_accion_key, '')) = 'ver'
+            THEN upper(coalesce(dt.acceso, 'N')) = 'S' OR upper(coalesce(dt.lectura, 'N')) = 'S'
+          ELSE
+            upper(coalesce(dt.acceso, 'N')) = 'S' AND upper(coalesce(dt.lectura, 'N')) <> 'S'
+        END
+      )
+    LIMIT 1
   );
+
+  RETURN legacy_allowed;
 END;
 $$;
 
@@ -432,6 +511,131 @@ USING (
 )
 WITH CHECK (
   app_private.has_permission('caja.cuadrecaja', 'cerrar_caja')
+);
+
+-- MIGRACION: convertir permisos legacy por tipo de usuario a permisos v2 por usuario.
+-- Se enfoca en facturacion/caja para evitar bloqueos por RLS a vendedores/cajeros.
+WITH legacy_seed AS (
+  SELECT DISTINCT
+    u.codusuario,
+    NULLIF(btrim(u.cod_empre), '') AS cod_empre,
+    NULLIF(u.sucursalid, 0) AS sucursalid,
+    translate(lower(coalesce(m.descmodulo, '')), 'áéíóúñ', 'aeioun') AS modulo_norm,
+    upper(coalesce(dt.acceso, 'N')) AS acceso,
+    upper(coalesce(dt.lectura, 'N')) AS lectura
+  FROM myappdb.usuario u
+  JOIN myappdb.dtipousuario dt
+    ON dt.idtipousuario = u.idtipousuario
+  JOIN myappdb.modulo m
+    ON m.idmodulo = dt.idmodulo
+  WHERE u.codusuario IS NOT NULL
+),
+legacy_actions AS (
+  SELECT codusuario, cod_empre, sucursalid, 'facturacion.factura'::varchar(80) AS recurso_key, 'ver'::varchar(50) AS accion_key
+  FROM legacy_seed
+  WHERE modulo_norm LIKE '%factur%' OR modulo_norm LIKE '%venta%'
+
+  UNION ALL
+  SELECT codusuario, cod_empre, sucursalid, 'facturacion.factura', accion_key
+  FROM legacy_seed
+  CROSS JOIN (
+    VALUES ('crear'::varchar(50)), ('editar'::varchar(50)), ('imprimir'::varchar(50)), ('exportar'::varchar(50))
+  ) AS acciones(accion_key)
+  WHERE (modulo_norm LIKE '%factur%' OR modulo_norm LIKE '%venta%')
+    AND acceso = 'S'
+    AND lectura <> 'S'
+
+  UNION ALL
+  SELECT codusuario, cod_empre, sucursalid, 'contabilidad.facturas_pendientes', 'ver'
+  FROM legacy_seed
+  WHERE modulo_norm LIKE '%factur%' OR modulo_norm LIKE '%venta%'
+
+  UNION ALL
+  SELECT codusuario, cod_empre, sucursalid, 'caja.cobrofact', 'ver'
+  FROM legacy_seed
+  WHERE modulo_norm LIKE '%caja%' OR modulo_norm LIKE '%cobro%'
+
+  UNION ALL
+  SELECT codusuario, cod_empre, sucursalid, 'caja.cobrofact', accion_key
+  FROM legacy_seed
+  CROSS JOIN (
+    VALUES ('cobrar'::varchar(50)), ('editar'::varchar(50)), ('imprimir'::varchar(50))
+  ) AS acciones(accion_key)
+  WHERE (modulo_norm LIKE '%caja%' OR modulo_norm LIKE '%cobro%')
+    AND acceso = 'S'
+    AND lectura <> 'S'
+
+  UNION ALL
+  SELECT codusuario, cod_empre, sucursalid, 'caja.controlsalida', 'ver'
+  FROM legacy_seed
+  WHERE modulo_norm LIKE '%caja%' OR modulo_norm LIKE '%cobro%'
+
+  UNION ALL
+  SELECT codusuario, cod_empre, sucursalid, 'caja.controlsalida', accion_key
+  FROM legacy_seed
+  CROSS JOIN (
+    VALUES ('imprimir'::varchar(50)), ('exportar'::varchar(50))
+  ) AS acciones(accion_key)
+  WHERE (modulo_norm LIKE '%caja%' OR modulo_norm LIKE '%cobro%')
+    AND acceso = 'S'
+    AND lectura <> 'S'
+
+  UNION ALL
+  SELECT codusuario, cod_empre, sucursalid, 'caja.cuadrecaja', 'ver'
+  FROM legacy_seed
+  WHERE modulo_norm LIKE '%caja%' OR modulo_norm LIKE '%cobro%'
+
+  UNION ALL
+  SELECT codusuario, cod_empre, sucursalid, 'caja.cuadrecaja', accion_key
+  FROM legacy_seed
+  CROSS JOIN (
+    VALUES ('imprimir'::varchar(50)), ('exportar'::varchar(50)), ('cerrar_caja'::varchar(50))
+  ) AS acciones(accion_key)
+  WHERE (modulo_norm LIKE '%caja%' OR modulo_norm LIKE '%cobro%')
+    AND acceso = 'S'
+    AND lectura <> 'S'
+
+  UNION ALL
+  SELECT codusuario, cod_empre, sucursalid, 'caja.reciboingreso', 'ver'
+  FROM legacy_seed
+  WHERE modulo_norm LIKE '%caja%' OR modulo_norm LIKE '%cobro%'
+
+  UNION ALL
+  SELECT codusuario, cod_empre, sucursalid, 'caja.reciboingreso', accion_key
+  FROM legacy_seed
+  CROSS JOIN (
+    VALUES ('crear'::varchar(50)), ('editar'::varchar(50)), ('cobrar'::varchar(50)), ('imprimir'::varchar(50))
+  ) AS acciones(accion_key)
+  WHERE (modulo_norm LIKE '%caja%' OR modulo_norm LIKE '%cobro%')
+    AND acceso = 'S'
+    AND lectura <> 'S'
+)
+INSERT INTO myappdb.usuario_permiso_accion (
+  codusuario,
+  recurso_key,
+  accion_key,
+  permitido,
+  cod_empre,
+  sucursalid,
+  activo
+)
+SELECT DISTINCT
+  la.codusuario,
+  la.recurso_key,
+  la.accion_key,
+  true,
+  la.cod_empre,
+  la.sucursalid,
+  true
+FROM legacy_actions la
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM myappdb.usuario_permiso_accion upa
+  WHERE upa.codusuario = la.codusuario
+    AND upa.recurso_key = la.recurso_key
+    AND upa.accion_key = la.accion_key
+    AND coalesce(upa.cod_empre, '') = coalesce(la.cod_empre, '')
+    AND coalesce(upa.sucursalid, 0) = coalesce(la.sucursalid, 0)
 );
 
 COMMIT;

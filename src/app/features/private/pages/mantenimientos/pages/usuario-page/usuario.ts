@@ -47,6 +47,9 @@ export class Usuario implements OnInit {
   accionesPermisosCatalogoEdicion: AccionCatalogoPermiso[] = [];
   permisosMatrizEdicionUsuario: PermisoMatrizFila[] = [];
   cargandoPermisosEdicion = false;
+  filtroPermisosEdicion = '';
+  mostrarSoloActivosEdicion = false;
+  plantillaAutoAplicadaEdicion = false;
   usernameExiste = false;
   claveExiste = false;
   usernameMensaje = '';
@@ -310,6 +313,39 @@ export class Usuario implements OnInit {
     ).length;
   }
 
+  get permisosMatrizEdicionFiltrados(): PermisoMatrizFila[] {
+    const filtro = this.normalizarTexto(this.filtroPermisosEdicion);
+    return (this.permisosMatrizEdicionUsuario || []).filter((fila: PermisoMatrizFila) => {
+      if (this.mostrarSoloActivosEdicion && !this.tieneAccionActiva(fila)) {
+        return false;
+      }
+      if (!filtro) return true;
+      const texto = this.normalizarTexto(
+        `${fila?.modulo_nombre || ''} ${fila?.pantalla_nombre || ''} ${fila?.recurso_key || ''}`
+      );
+      return texto.includes(filtro);
+    });
+  }
+
+  get gruposPermisosEdicionUsuario(): Array<{ nombre: string; filas: PermisoMatrizFila[] }> {
+    const grupos = new Map<string, PermisoMatrizFila[]>();
+    this.permisosMatrizEdicionFiltrados.forEach((fila: PermisoMatrizFila) => {
+      const nombre = String(fila?.modulo_nombre || 'General').trim() || 'General';
+      if (!grupos.has(nombre)) {
+        grupos.set(nombre, []);
+      }
+      grupos.get(nombre)!.push(fila);
+    });
+    return Array.from(grupos.entries())
+      .map(([nombre, filas]) => ({
+        nombre,
+        filas: filas.sort((a: PermisoMatrizFila, b: PermisoMatrizFila) =>
+          String(a?.pantalla_nombre || '').localeCompare(String(b?.pantalla_nombre || ''), 'es', { sensitivity: 'base' })
+        ),
+      }))
+      .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }));
+  }
+
   contarAccionesActivas(fila?: PermisoMatrizFila | null): number {
     return Object.values(fila?.acciones || {}).filter((valor: any) => !!valor).length;
   }
@@ -501,6 +537,9 @@ export class Usuario implements OnInit {
     this.cargandoPermisosEdicion = true;
     this.permisosMatrizEdicionUsuario = [];
     this.accionesPermisosCatalogoEdicion = [];
+    this.filtroPermisosEdicion = '';
+    this.mostrarSoloActivosEdicion = false;
+    this.plantillaAutoAplicadaEdicion = false;
 
     const codusuario = Number(u?.codUsuario || 0);
     const codEmpre = String((u as any)?.cod_empre || '').trim() || null;
@@ -511,6 +550,10 @@ export class Usuario implements OnInit {
         const data = res?.data || {};
         this.accionesPermisosCatalogoEdicion = this.unwrapList(data?.acciones || res?.acciones);
         this.permisosMatrizEdicionUsuario = Array.isArray(data?.filas) ? data.filas : [];
+        if (!this.hayPermisosSeleccionados(this.permisosMatrizEdicionUsuario)) {
+          this.reAplicarPlantillaTipoEdicionUsuario();
+          this.plantillaAutoAplicadaEdicion = this.hayPermisosSeleccionados(this.permisosMatrizEdicionUsuario);
+        }
         this.cargandoPermisosEdicion = false;
         $('#modalEditarAccesosUsuario').modal('show');
       },
@@ -555,6 +598,29 @@ export class Usuario implements OnInit {
     this.cargandoPermisosEdicion = false;
     this.permisosMatrizEdicionUsuario = [];
     this.accionesPermisosCatalogoEdicion = [];
+    this.filtroPermisosEdicion = '';
+    this.mostrarSoloActivosEdicion = false;
+    this.plantillaAutoAplicadaEdicion = false;
+  }
+
+  resumenAccionesActivas(fila?: PermisoMatrizFila | null): string {
+    const activas = this.accionesActivasFila(fila);
+    return activas.length ? activas.join(', ') : 'Sin acciones activas';
+  }
+
+  accionesActivasFila(fila?: PermisoMatrizFila | null): string[] {
+    if (!fila) return [];
+    return this.accionesPermisosCatalogoEdicion
+      .filter((accion: AccionCatalogoPermiso) => !!fila.acciones?.[accion.accion_key])
+      .map((accion: AccionCatalogoPermiso) => accion.descripcion);
+  }
+
+  private normalizarTexto(valor: any): string {
+    return String(valor || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim()
+      .toLowerCase();
   }
 
   private resetValidacionesEditarUsuario(): void {
