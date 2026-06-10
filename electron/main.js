@@ -80,6 +80,38 @@ function readPrintSettings() {
   }
 }
 
+function sanitizePdfFilename(filename) {
+  const rawName =
+    typeof filename === 'string' && filename.trim()
+      ? filename.trim()
+      : `cotizacion-${Date.now()}.pdf`;
+  const sanitized = rawName.replace(/[\\/:*?"<>|]/g, '-');
+  return sanitized.toLowerCase().endsWith('.pdf') ? sanitized : `${sanitized}.pdf`;
+}
+
+function savePdfFile({ base64Data, directory, filename } = {}) {
+  if (!base64Data || typeof base64Data !== 'string') {
+    return { success: false, error: 'No se recibio el contenido del PDF.' };
+  }
+
+  const targetDir =
+    typeof directory === 'string' && directory.trim()
+      ? directory.trim()
+      : 'C:\\cotizacion';
+  const filepath = path.join(targetDir, sanitizePdfFilename(filename));
+
+  try {
+    fs.mkdirSync(targetDir, { recursive: true });
+    fs.writeFileSync(filepath, Buffer.from(base64Data, 'base64'));
+    return { success: true, filepath };
+  } catch (error) {
+    return {
+      success: false,
+      error: error?.message || 'No se pudo guardar el PDF.',
+    };
+  }
+}
+
 function savePrintSettings(input) {
   const current = readPrintSettings();
   const next = {
@@ -466,6 +498,7 @@ ipcMain.handle('print:save-settings', async (_evt, payload) => savePrintSettings
 ipcMain.handle('print:pdf:silent', async (_evt, payload) => printPdfSilently(payload));
 ipcMain.handle('print:test-page', async (_evt, payload) => printTestPage(payload));
 ipcMain.handle('print:html:silent', async (_evt, payload) => printHtmlSilently(payload));
+ipcMain.handle('file:save-pdf', async (_evt, payload) => savePdfFile(payload));
 
 function setupAutoUpdater() {
   if (autoUpdaterReady || isDev || !app.isPackaged) {

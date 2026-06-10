@@ -90,7 +90,7 @@ default:
 console.log(
 `Backend returned code ${errorResponse.status}, ` +
 `body was: ${errorResponse.error}`);
-alert('We are currently unable to complete your request. Please try again later.');
+this.handleError && alert('We are currently unable to complete your request. Please try again later.');
 break;
 }
 }

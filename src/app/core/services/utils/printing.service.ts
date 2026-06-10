@@ -1573,6 +1573,254 @@ items.forEach((it: any) => {
     }
   }
 
+  async imprimirCotizacion80mm(cotizacionData: any, items: any[], itbisGeneral?: any) {
+    try {
+      const doc = new jsPDF({
+        orientation: 'p',
+        unit: 'mm',
+        format: [80, 297],
+      });
+      const pageWidth = 74;
+      const centerX = pageWidth / 2;
+      const leftMargin = 5;
+      const rightMargin = 5;
+      let yPos = 5;
+
+      const formatoMoneda = new Intl.NumberFormat('es-DO', {
+        style: 'decimal',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+      const formatDate = (value: any): string => {
+        const date = this.parseInvoiceDateTime(value);
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+        return `${day}/${month}/${year}`;
+      };
+      const centerText = (text: string | string[], y: number, options?: any) => {
+        doc.text(text, centerX, y, { align: 'center', ...options });
+      };
+      const drawDashedLine = (y: number) => {
+        (doc as any).setLineDash([1, 1], 0);
+        doc.line(leftMargin, y, pageWidth - rightMargin, y);
+        (doc as any).setLineDash([], 0);
+      };
+      const pick = (...values: any[]): string => {
+        for (const value of values) {
+          const text = String(value ?? '').trim();
+          if (text) return text;
+        }
+        return '';
+      };
+      const porcentajeItbis = Number(
+        itbisGeneral?.porcentaje ??
+          itbisGeneral?.itebis ??
+          itbisGeneral?.itbis ??
+          18,
+      ) || 0;
+      const porcentajeMenos = Number(
+        itbisGeneral?.porcentaje_menos ??
+          itbisGeneral?.itbismeno ??
+          itbisGeneral?.itbis_menos ??
+          (porcentajeItbis ? porcentajeItbis / (1 + porcentajeItbis / 100) : 0),
+      ) || 0;
+      const tasaMenos = porcentajeMenos / 100;
+
+      let empresa = 'CENTRO HIERRO MARCOS SRL';
+      let direccion = 'CALLE 30 DE MARZO NO. 54';
+      let telefono = '809-547-0022';
+      let rncEmpresa = '101-66762-2';
+
+      try {
+        const empresaStorage = localStorage.getItem('empresa');
+        if (empresaStorage && empresaStorage !== '[object Object]') {
+          let parsedEmpresa = JSON.parse(empresaStorage);
+          if (Array.isArray(parsedEmpresa)) parsedEmpresa = parsedEmpresa[0];
+          if (parsedEmpresa) {
+            if (typeof parsedEmpresa === 'string') {
+              empresa = parsedEmpresa;
+              direccion = localStorage.getItem('direccion_empresa') || direccion;
+              telefono = localStorage.getItem('telefono_empresa') || telefono;
+              rncEmpresa = localStorage.getItem('rnc_empresa') || rncEmpresa;
+            } else {
+              empresa = parsedEmpresa.nom_empre || empresa;
+              direccion = parsedEmpresa.dir_empre || direccion;
+              telefono = parsedEmpresa.tel_empre || telefono;
+              rncEmpresa = parsedEmpresa.rnc_empre || rncEmpresa;
+            }
+          }
+        }
+      } catch (error) {
+        console.warn('Error recuperando datos de empresa para cotizacion', error);
+      }
+
+      try {
+        const imgData = 'assets/logo2.png';
+        const imgWidth = 20;
+        const imgHeight = 20;
+        doc.addImage(imgData, 'PNG', centerX - imgWidth / 2, yPos, imgWidth, imgHeight);
+        yPos += imgHeight + 4;
+      } catch {
+        yPos += 3;
+      }
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      centerText(empresa, yPos);
+      yPos += 4;
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7);
+      const dirSplit = doc.splitTextToSize(direccion, pageWidth - leftMargin - rightMargin);
+      centerText(dirSplit, yPos);
+      yPos += dirSplit.length * 3.5;
+      centerText(`Tel: ${telefono}`, yPos);
+      yPos += 3.5;
+      centerText(`RNC: ${rncEmpresa}`, yPos);
+      yPos += 5;
+
+      drawDashedLine(yPos);
+      yPos += 5;
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10);
+      centerText('COTIZACION', yPos);
+      yPos += 5;
+
+      const numero = pick(cotizacionData?.ct_codcoti, cotizacionData?.numero);
+      const fecha = pick(cotizacionData?.ct_feccoti, cotizacionData?.fecha);
+      const vendedor = pick(cotizacionData?.ct_nomvend, cotizacionData?.ct_codvend);
+      const cliente = pick(cotizacionData?.ct_nomclie, 'CLIENTE GENERICO');
+      const rncCliente = pick(cotizacionData?.ct_rnc);
+      const telefonoCliente = pick(cotizacionData?.ct_telclie);
+      const direccionCliente = pick(cotizacionData?.ct_dirclie);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7.5);
+      doc.text(`No.: ${numero}`, leftMargin, yPos);
+      yPos += 4;
+      doc.text(`Fecha: ${fecha ? formatDate(fecha) : formatDate(new Date())}`, leftMargin, yPos);
+      yPos += 4;
+      if (vendedor) {
+        doc.text(`Vendedor: ${vendedor}`, leftMargin, yPos);
+        yPos += 4;
+      }
+
+      drawDashedLine(yPos);
+      yPos += 5;
+
+      doc.setFont('helvetica', 'bold');
+      doc.text('CLIENTE', leftMargin, yPos);
+      yPos += 4;
+      doc.setFont('helvetica', 'normal');
+      const clienteSplit = doc.splitTextToSize(cliente, pageWidth - leftMargin - rightMargin);
+      doc.text(clienteSplit, leftMargin, yPos);
+      yPos += clienteSplit.length * 3.5;
+      if (rncCliente) {
+        doc.text(`RNC/Cedula: ${rncCliente}`, leftMargin, yPos);
+        yPos += 4;
+      }
+      if (telefonoCliente) {
+        doc.text(`Tel.: ${telefonoCliente}`, leftMargin, yPos);
+        yPos += 4;
+      }
+      if (direccionCliente) {
+        const direccionSplit = doc.splitTextToSize(`Dir.: ${direccionCliente}`, pageWidth - leftMargin - rightMargin);
+        doc.text(direccionSplit, leftMargin, yPos);
+        yPos += direccionSplit.length * 3.5;
+      }
+
+      drawDashedLine(yPos);
+      yPos += 5;
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(5.5);
+      const xCant = leftMargin;
+      const xDesc = 13;
+      const xPrecio = 41;
+      const xItbis = 55;
+      const xTotal = pageWidth - rightMargin;
+      doc.text('CANT', xCant, yPos);
+      doc.text('DESC', xDesc, yPos);
+      doc.text('P/S ITBIS', xPrecio, yPos, { align: 'right' });
+      doc.text(`ITBIS ${formatoMoneda.format(porcentajeItbis)}%`, xItbis, yPos, { align: 'right' });
+      doc.text('TOTAL', xTotal, yPos, { align: 'right' });
+      yPos += 3;
+      drawDashedLine(yPos);
+      yPos += 4;
+
+      doc.setFont('helvetica', 'normal');
+      let subtotal = 0;
+      let totalItbis = 0;
+      let totalIncluido = 0;
+
+      (items || []).forEach((item: any) => {
+        const cantidad = Number(item?.dc_canmerc ?? item?.cantidad ?? 0) || 0;
+        const precio = Number(item?.dc_premerc ?? item?.precio ?? 0) || 0;
+        const total = Number(item?.dc_valmerc ?? item?.total ?? cantidad * precio) || 0;
+        const itbisUnitario = precio * tasaMenos;
+        const precioSinItbis = precio - itbisUnitario;
+        const itbisItem = itbisUnitario * cantidad;
+        const subtotalItem = precioSinItbis * cantidad;
+        const descripcion = pick(
+          item?.dc_descrip,
+          item?.descripcion,
+          item?.producto?.in_desmerc,
+        );
+        subtotal += subtotalItem;
+        totalItbis += itbisItem;
+        totalIncluido += total || subtotalItem + itbisItem;
+
+        const descSplit = doc.splitTextToSize(descripcion, 24);
+        doc.text(formatoMoneda.format(cantidad), xCant, yPos);
+        doc.text(descSplit, xDesc, yPos);
+        doc.text(formatoMoneda.format(precioSinItbis), xPrecio, yPos, { align: 'right' });
+        doc.text(formatoMoneda.format(itbisItem), xItbis, yPos, { align: 'right' });
+        doc.text(formatoMoneda.format(total), xTotal, yPos, { align: 'right' });
+        yPos += Math.max(4, descSplit.length * 3.5 + 1);
+      });
+
+      const itbis = totalItbis || Number(cotizacionData?.ct_itbis ?? 0) || 0;
+      const totalGeneral = totalIncluido || Number(cotizacionData?.ct_valcoti ?? 0) || subtotal + itbis;
+
+      drawDashedLine(yPos);
+      yPos += 5;
+      doc.setFontSize(8);
+      const labelX = 43;
+      doc.text('Subtotal', labelX, yPos, { align: 'right' });
+      doc.text(formatoMoneda.format(subtotal), xTotal, yPos, { align: 'right' });
+      yPos += 4;
+      doc.text('ITBIS', labelX, yPos, { align: 'right' });
+      doc.text(formatoMoneda.format(itbis), xTotal, yPos, { align: 'right' });
+      yPos += 4;
+      doc.setFont('helvetica', 'bold');
+      doc.text('TOTAL', labelX, yPos, { align: 'right' });
+      doc.text(formatoMoneda.format(totalGeneral), xTotal, yPos, { align: 'right' });
+      yPos += 6;
+
+      drawDashedLine(yPos);
+      yPos += 5;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7);
+      centerText('Estos precios estan sujetos a cambio', yPos);
+      yPos += 3.5;
+      centerText('sin previo aviso.', yPos);
+      yPos += 5;
+      doc.setFont('helvetica', 'bold');
+      centerText('*** Gracias por preferirnos ***', yPos);
+      yPos += 8;
+      doc.text('.', leftMargin, yPos);
+
+      doc.autoPrint();
+      const pdfBlob = doc.output('blob');
+      await this.printBlob(pdfBlob, 'ticket');
+    } catch (error) {
+      console.error('Error al generar cotizacion 80mm:', error);
+      throw error;
+    }
+  }
+
   private async printPdf(pdfUrl: string, profileKey: DesktopPrintProfileKey): Promise<void> {
     const silentPrinted = await this.trySilentPrintDesktop(pdfUrl, profileKey);
     if (silentPrinted) return;
@@ -1669,6 +1917,31 @@ items.forEach((it: any) => {
       } catch {}
       throw error;
     }
+  }
+
+  async savePdfBlobToDesktop(
+    blob: Blob,
+    filename: string,
+    directory = 'C:\\cotizacion'
+  ): Promise<string> {
+    if (typeof window === 'undefined' || !window.electronAPI?.savePdfFile) {
+      throw new Error(
+        'Guardar el PDF en una carpeta local solo esta disponible en la app desktop.'
+      );
+    }
+
+    const base64Data = await this.blobToBase64(blob);
+    const result = await window.electronAPI.savePdfFile({
+      base64Data,
+      directory,
+      filename,
+    });
+
+    if (!result?.success || !result.filepath) {
+      throw new Error(result?.error || 'No se pudo guardar el PDF.');
+    }
+
+    return result.filepath;
   }
 
   async printHtmlContent(html: string, profileKey: DesktopPrintProfileKey): Promise<void> {

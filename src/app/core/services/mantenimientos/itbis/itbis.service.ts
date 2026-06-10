@@ -9,6 +9,8 @@ export interface ItbisData {
   descripcion: string;
   porcentaje: number;
   porcentaje_menos: number;
+  itbismeno?: number;
+  itebis?: number;
   nivel: string;
   estado: string;
   fecha_inicio: string;
@@ -45,8 +47,24 @@ export class ServicioItbis {
       id: row?.id ?? null,
       codigo: String(row?.codigo ?? row?.coditbis ?? '').trim(),
       descripcion: String(row?.descripcion ?? row?.desitbis ?? '').trim(),
-      porcentaje: Number(row?.porcentaje ?? row?.tasa ?? row?.valor ?? 0),
-      porcentaje_menos: Number(row?.porcentaje_menos ?? row?.porcentajemenos ?? row?.tasa_menos ?? 0),
+      porcentaje: Number(row?.porcentaje ?? row?.itebis ?? row?.itbis ?? row?.tasa ?? row?.valor ?? 0),
+      porcentaje_menos: Number(
+        row?.porcentaje_menos ??
+          row?.itbismeno ??
+          row?.itbis_menos ??
+          row?.porcentajemenos ??
+          row?.tasa_menos ??
+          0
+      ),
+      itbismeno: Number(
+        row?.itbismeno ??
+          row?.porcentaje_menos ??
+          row?.itbis_menos ??
+          row?.porcentajemenos ??
+          row?.tasa_menos ??
+          0
+      ),
+      itebis: Number(row?.itebis ?? row?.porcentaje ?? row?.itbis ?? row?.tasa ?? row?.valor ?? 0),
       nivel: String(row?.nivel ?? row?.nive ?? row?.nivel_uso ?? 'General').trim() || 'General',
       estado: String(row?.estado ?? row?.status ?? 'Activo').trim() || 'Activo',
       fecha_inicio: String(row?.fecha_inicio ?? row?.fecinicio ?? '').trim(),
