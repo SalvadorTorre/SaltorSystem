@@ -471,7 +471,7 @@
             </button>
 
             <div class="d-flex gap-2">
-                <button class="btn btn-outline-secondary flex-fill" (click)="limpia()">
+                <button class="btn btn-outline-secondary flex-fill" (click)="limpia()" [disabled]="isLoading">
                   <i class="bi bi-arrow-counterclockwise me-1"></i>Deshacer
                 </button>
                 <button

@@ -421,16 +421,23 @@
                   <i class="bi bi-arrow-clockwise"></i> Editar
                 </button>
                 <button
-                  [disabled]="botonGuardar"
+                  [disabled]="botonGuardar || guardandoFactura"
                   class="btn btn-success btn-lx"
                   style="min-width: 180px"
                   (click)="guardarFacturacion()"
                 >
-                  <i class="bi bi-check"></i> Guardar
+                  <ng-container *ngIf="!guardandoFactura">
+                    <i class="bi bi-check"></i> Guardar
+                  </ng-container>
+                  <ng-container *ngIf="guardandoFactura">
+                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    Guardando...
+                  </ng-container>
                 </button>
                 <button
                   class="btn btn-secondary btn-lx"
                   style="min-width: 180px"
+                  [disabled]="guardandoFactura"
                   (click)="limpia()"
                 >
                   <i class="bi bi-arrow-clockwise"></i> Deshacer

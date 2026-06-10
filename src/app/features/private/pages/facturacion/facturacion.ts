@@ -2432,6 +2432,11 @@ export class Facturacion implements OnInit {
   }
 
   async guardarFacturacion() {
+    if (this.isLoading) {
+      return;
+    }
+
+    this.isLoading = true;
     const date = new Date();
     this.formularioFacturacion.get('fa_valFact')?.patchValue(this.totalGral);
     this.formularioFacturacion.get('fa_itbiFact')?.patchValue(this.totalItbis);
@@ -2497,7 +2502,6 @@ export class Facturacion implements OnInit {
     }
 
     if (this.formularioFacturacion.valid) {
-      this.isLoading = true;
       const operacion = this.modoedicionFacturacion
         ? this.servicioFacturacion.editarFacturacion(datosParaGuardar)
         : this.servicioFacturacion.guardarFacturacion(datosParaGuardar);
@@ -2531,6 +2535,7 @@ export class Facturacion implements OnInit {
         },
       );
     } else {
+      this.isLoading = false;
       alert('Esta Factura no fue Guardada');
     }
   }

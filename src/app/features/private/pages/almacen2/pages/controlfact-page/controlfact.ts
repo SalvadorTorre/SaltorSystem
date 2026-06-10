@@ -70,6 +70,7 @@ export class ControlFact implements OnInit {
   @ViewChild('cantidadInput') cantidadInput!: ElementRef;
   botonEditar = true; // Empieza deshabilitado
   botonGuardar = true; // Empieza deshabilitado
+  guardandoFactura = false;
   botonaddItems = true; // Empieza deshabilitado
   totalItems = 0;
   pageSize = 6;
@@ -1746,6 +1747,11 @@ export class ControlFact implements OnInit {
   }
 
   async guardarFacturacion() {
+    if (this.guardandoFactura) {
+      return;
+    }
+
+    this.guardandoFactura = true;
     const codFact = this.formularioFacturacion.get('fa_codFact')?.value;
     const detalleModificado = this.detalleFueModificado();
 
@@ -1778,6 +1784,7 @@ export class ControlFact implements OnInit {
       );
       this.formularioFacturacion.get('fa_rncFact')?.enable();
       setTimeout(() => $('#inputrnc').focus(), 0);
+      this.guardandoFactura = false;
       return;
     }
 
@@ -1785,12 +1792,14 @@ export class ControlFact implements OnInit {
     let facturaCambios = codFact ? this.obtenerCambiosFactura(facturaActual) : null;
     if (codFact && Object.keys(facturaCambios).length === 0 && !detalleModificado) {
       Swal.fire('Aviso', 'No hay cambios para guardar.', 'info');
+      this.guardandoFactura = false;
       return;
     }
 
     if (codFact) {
       const causaReimpresion = await this.pedirCausaReimpresion();
       if (!causaReimpresion) {
+        this.guardandoFactura = false;
         return;
       }
       this.formularioFacturacion.patchValue({
@@ -1815,6 +1824,7 @@ export class ControlFact implements OnInit {
           .editarFacturacion(payload)
           .subscribe({
             next: (response) => {
+              this.guardandoFactura = false;
               Swal.fire({
                 title: 'Actualizado!',
                 text: 'Factura modificada correctamente.',
@@ -1825,6 +1835,7 @@ export class ControlFact implements OnInit {
               this.refrescarFormulario();
             },
             error: (err) => {
+              this.guardandoFactura = false;
               console.error('Error editando factura:', err);
               Swal.fire(
                 'Error',
@@ -1837,18 +1848,31 @@ export class ControlFact implements OnInit {
         // 🆕 Modo creación
         this.servicioFacturacion
           .guardarFacturacion(payload)
-          .subscribe((response) => {
-            Swal.fire({
-              title: 'Excelente!',
-              text: 'Factura creada correctamente.',
-              icon: 'success',
-              timer: 1000,
-              showConfirmButton: false,
-            });
-            this.refrescarFormulario();
+          .subscribe({
+            next: (response) => {
+              this.guardandoFactura = false;
+              Swal.fire({
+                title: 'Excelente!',
+                text: 'Factura creada correctamente.',
+                icon: 'success',
+                timer: 1000,
+                showConfirmButton: false,
+              });
+              this.refrescarFormulario();
+            },
+            error: (err) => {
+              this.guardandoFactura = false;
+              console.error('Error guardando factura:', err);
+              Swal.fire(
+                'Error',
+                err?.message || err?.error?.message || 'No se pudo guardar la factura.',
+                'error',
+              );
+            },
           });
       }
     } else {
+      this.guardandoFactura = false;
       alert('Esta Factura no fue guardada');
     }
   }
