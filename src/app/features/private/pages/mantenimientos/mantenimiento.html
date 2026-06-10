@@ -143,6 +143,16 @@
       </div>
 
     </nav>
+
+    <div class="maintenance-developer" *ngIf="isDesktop">
+      <button type="button" class="developer-button" (click)="abrirModoDeveloper()">
+        <span>
+          <i class="bi bi-terminal"></i>
+          Modo developer
+        </span>
+        <small>Ver consola</small>
+      </button>
+    </div>
   </aside>
 
   <section class="maintenance-main">
@@ -284,6 +294,20 @@
         </div>
 
       </nav>
+      <div class="maintenance-developer maintenance-developer--mobile" *ngIf="isDesktop">
+        <button
+          type="button"
+          class="developer-button"
+          data-bs-dismiss="offcanvas"
+          (click)="abrirModoDeveloper()"
+        >
+          <span>
+            <i class="bi bi-terminal"></i>
+            Modo developer
+          </span>
+          <small>Ver consola</small>
+        </button>
+      </div>
     </div>
   </div>
 </div>

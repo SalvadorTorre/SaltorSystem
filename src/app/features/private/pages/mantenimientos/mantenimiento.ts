@@ -8,11 +8,13 @@ import { AccessControlService } from 'src/app/core/services/access/access-contro
 })
 export class Mantenimiento implements OnInit {
   openMenu: string | null = null;
+  isDesktop = false;
 
   constructor(private readonly access: AccessControlService) {}
 
   ngOnInit(): void {
     void this.access.ensureLoaded();
+    this.isDesktop = !!window.electronAPI?.isDesktop;
   }
 
   toggleMenu(menu: string) {
@@ -25,5 +27,17 @@ export class Mantenimiento implements OnInit {
 
   canView(path: string): boolean {
     return this.access.canViewPath(path);
+  }
+
+  async abrirModoDeveloper(): Promise<void> {
+    if (!window.electronAPI?.openDevTools) {
+      console.warn('DevTools solo esta disponible en la version desktop.');
+      return;
+    }
+
+    const result = await window.electronAPI.openDevTools();
+    if (!result?.success) {
+      console.error(result?.error || 'No se pudo abrir la consola developer.');
+    }
   }
 }

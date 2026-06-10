@@ -1,6 +1,6 @@
 export const environment = {
   production: false,
-  appVersion: '1.0.11',
+  appVersion: '1.0.12',
   bypassAuth: false,
   // backendUrl: 'http://localhost:3390/api',
 

@@ -45,6 +45,7 @@ interface ElectronAPI {
     profileKey: ElectronPrintProfileKey;
     deviceName?: string;
   }) => Promise<ElectronPrintResult>;
+  openDevTools: () => Promise<ElectronPrintResult>;
 }
 
 declare global {

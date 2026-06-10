@@ -466,6 +466,15 @@ ipcMain.handle('print:save-settings', async (_evt, payload) => savePrintSettings
 ipcMain.handle('print:pdf:silent', async (_evt, payload) => printPdfSilently(payload));
 ipcMain.handle('print:test-page', async (_evt, payload) => printTestPage(payload));
 ipcMain.handle('print:html:silent', async (_evt, payload) => printHtmlSilently(payload));
+ipcMain.handle('desktop:open-devtools', async () => {
+  const win = getFocusedWindow();
+  if (!win || win.isDestroyed()) {
+    return { success: false, error: 'No hay una ventana activa para abrir DevTools.' };
+  }
+
+  win.webContents.openDevTools({ mode: 'detach' });
+  return { success: true, error: null };
+});
 
 function setupAutoUpdater() {
   if (autoUpdaterReady || isDev || !app.isPackaged) {

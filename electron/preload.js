@@ -8,4 +8,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
   printPdfSilently: (payload) => ipcRenderer.invoke('print:pdf:silent', payload),
   printHtmlSilently: (payload) => ipcRenderer.invoke('print:html:silent', payload),
   printTestPage: (payload) => ipcRenderer.invoke('print:test-page', payload),
+  openDevTools: () => ipcRenderer.invoke('desktop:open-devtools'),
 });
