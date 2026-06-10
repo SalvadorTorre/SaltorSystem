@@ -1,18 +1,53 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { NavigationEnd, Router } from '@angular/router';
 import { AuthService } from 'src/app/core/services/auth/auth.service';
 import Swal from 'sweetalert2';
 import { filter } from 'rxjs/operators';
+
+type DesktopUpdateStage =
+  | 'idle'
+  | 'unsupported'
+  | 'checking'
+  | 'available'
+  | 'downloading'
+  | 'downloaded'
+  | 'not-available'
+  | 'error';
+
+interface DesktopUpdateStatus {
+  supported: boolean;
+  stage: DesktopUpdateStage;
+  message: string;
+  currentVersion: string;
+  availableVersion?: string | null;
+  downloadedVersion?: string | null;
+  progress?: number | null;
+  checkedAt?: string | null;
+  error?: string | null;
+}
 
 @Component({
   selector: 'private-root',
   templateUrl: './private.page.html',
   styleUrls: ['./private.page.css'],
 })
-export class PrivatePage implements OnInit {
+export class PrivatePage implements OnInit, OnDestroy {
   initials: string = '';
   personName: string = '';
   sucursalName: string = '';
+  isDesktopApp: boolean = false;
+  updateStatus: DesktopUpdateStatus = {
+    supported: false,
+    stage: 'idle',
+    message: '',
+    currentVersion: '',
+    availableVersion: null,
+    downloadedVersion: null,
+    progress: null,
+    checkedAt: null,
+    error: null,
+  };
+  private removeUpdateListener: (() => void) | null = null;
 
   constructor(
     private readonly router: Router,
@@ -21,10 +56,19 @@ export class PrivatePage implements OnInit {
 
   ngOnInit() {
     this.initials = this.getInitialsFromName();
+    this.isDesktopApp = typeof window !== 'undefined' && !!window.electronAPI?.isDesktop;
     this.router.events
       .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
       .subscribe(() => this.programarModoConsulta());
     this.programarModoConsulta();
+    void this.initializeDesktopUpdater();
+  }
+
+  ngOnDestroy(): void {
+    if (this.removeUpdateListener) {
+      this.removeUpdateListener();
+      this.removeUpdateListener = null;
+    }
   }
 
   private programarModoConsulta(): void {
@@ -184,6 +228,131 @@ export class PrivatePage implements OnInit {
       title: 'Acerca de',
       html: '<strong>SaltorSystem</strong><br/>Módulo privado del sistema.',
       confirmButtonText: 'Aceptar',
+    });
+  }
+
+  async checkForUpdates(manual: boolean = true): Promise<void> {
+    if (!this.isDesktopApp || !window.electronAPI?.checkForUpdates) {
+      if (manual) {
+        this.showUpdateToast('info', 'Esta función solo está disponible en la app desktop.');
+      }
+      return;
+    }
+
+    try {
+      const status = await window.electronAPI.checkForUpdates();
+      this.applyUpdateStatus(status);
+
+      if (!manual) return;
+
+      if (status.stage === 'checking' || status.stage === 'downloading') {
+        this.showUpdateToast('info', status.message || 'Buscando actualizaciones...');
+        return;
+      }
+
+      if (status.stage === 'downloaded') {
+        this.showUpdateToast('success', 'La actualización ya está lista para instalar.');
+        return;
+      }
+
+      if (status.stage === 'not-available') {
+        this.showUpdateToast('info', 'No hay actualizaciones disponibles.');
+        return;
+      }
+
+      if (status.stage === 'unsupported') {
+        this.showUpdateToast('info', status.message || 'Actualizaciones no disponibles aquí.');
+        return;
+      }
+
+      if (status.stage === 'error') {
+        this.showUpdateToast('error', status.error || status.message || 'No se pudo buscar actualizaciones.');
+      }
+    } catch (error: any) {
+      this.showUpdateToast('error', error?.message || 'No se pudo buscar actualizaciones.');
+    }
+  }
+
+  async installPendingUpdate(): Promise<void> {
+    if (!this.isDesktopApp || !window.electronAPI?.installUpdate) {
+      this.showUpdateToast('info', 'Esta función solo está disponible en la app desktop.');
+      return;
+    }
+
+    try {
+      const result = await window.electronAPI.installUpdate();
+      if (result?.success) {
+        this.showUpdateToast('info', 'Reiniciando para instalar la actualización...');
+        return;
+      }
+      this.showUpdateToast(
+        'warning',
+        result?.error || 'Todavía no hay una actualización lista para instalar.',
+      );
+    } catch (error: any) {
+      this.showUpdateToast('error', error?.message || 'No se pudo instalar la actualización.');
+    }
+  }
+
+  get updateStage(): DesktopUpdateStage {
+    return this.updateStatus.stage;
+  }
+
+  get updateMessage(): string {
+    return this.updateStatus.message || '';
+  }
+
+  get updateVersionLabel(): string {
+    const version =
+      this.updateStatus.downloadedVersion ||
+      this.updateStatus.availableVersion ||
+      '';
+    return version ? `(v${version})` : '';
+  }
+
+  get updateProgressLabel(): string {
+    if (this.updateStatus.stage !== 'downloading') return '';
+    const progress = Number(this.updateStatus.progress || 0);
+    return `Descargando ${progress.toFixed(0)}%`;
+  }
+
+  private async initializeDesktopUpdater(): Promise<void> {
+    if (!this.isDesktopApp) return;
+
+    this.removeUpdateListener = window.electronAPI?.onUpdateStatus?.((status) => {
+      this.applyUpdateStatus(status);
+    }) || null;
+
+    if (window.electronAPI?.getUpdateStatus) {
+      try {
+        const status = await window.electronAPI.getUpdateStatus();
+        this.applyUpdateStatus(status);
+      } catch {
+        // Ignorar error inicial y seguir escuchando eventos.
+      }
+    }
+  }
+
+  private applyUpdateStatus(status?: Partial<DesktopUpdateStatus> | null): void {
+    if (!status) return;
+    this.updateStatus = {
+      ...this.updateStatus,
+      ...status,
+    };
+  }
+
+  private showUpdateToast(
+    icon: 'success' | 'info' | 'warning' | 'error',
+    title: string,
+  ): void {
+    void Swal.fire({
+      toast: true,
+      position: 'top-end',
+      icon,
+      title,
+      showConfirmButton: false,
+      timer: 2800,
+      timerProgressBar: true,
     });
   }
 

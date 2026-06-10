@@ -42,6 +42,28 @@ interface ElectronPrintSettings {
   profiles: Record<ElectronPrintProfileKey, ElectronPrintProfileSettings>;
 }
 
+type ElectronUpdateStage =
+  | 'idle'
+  | 'unsupported'
+  | 'checking'
+  | 'available'
+  | 'downloading'
+  | 'downloaded'
+  | 'not-available'
+  | 'error';
+
+interface ElectronUpdateStatus {
+  supported: boolean;
+  stage: ElectronUpdateStage;
+  message: string;
+  currentVersion: string;
+  availableVersion?: string | null;
+  downloadedVersion?: string | null;
+  progress?: number | null;
+  checkedAt?: string | null;
+  error?: string | null;
+}
+
 interface ElectronAPI {
   isDesktop: boolean;
   listPrinters: () => Promise<ElectronPrinterInfo[]>;
@@ -59,6 +81,12 @@ interface ElectronAPI {
   }) => Promise<ElectronPrintResult>;
   openDevTools: () => Promise<ElectronPrintResult>;
   savePdfFile: (payload: ElectronSavePdfRequest) => Promise<ElectronSavePdfResult>;
+  getUpdateStatus: () => Promise<ElectronUpdateStatus>;
+  checkForUpdates: () => Promise<ElectronUpdateStatus>;
+  installUpdate: () => Promise<{ success: boolean; error?: string | null }>;
+  onUpdateStatus: (
+    callback: (payload: ElectronUpdateStatus) => void
+  ) => () => void;
 }
 
 declare global {

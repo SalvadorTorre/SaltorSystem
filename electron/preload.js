@@ -10,4 +10,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
   printTestPage: (payload) => ipcRenderer.invoke('print:test-page', payload),
   openDevTools: () => ipcRenderer.invoke('desktop:open-devtools'),
   savePdfFile: (payload) => ipcRenderer.invoke('file:save-pdf', payload),
+  getUpdateStatus: () => ipcRenderer.invoke('app-update:get-status'),
+  checkForUpdates: () => ipcRenderer.invoke('app-update:check'),
+  installUpdate: () => ipcRenderer.invoke('app-update:install'),
+  onUpdateStatus: (callback) => {
+    if (typeof callback !== 'function') {
+      return () => {};
+    }
+    const listener = (_event, payload) => callback(payload);
+    ipcRenderer.on('app-update:status', listener);
+    return () => ipcRenderer.removeListener('app-update:status', listener);
+  },
 });

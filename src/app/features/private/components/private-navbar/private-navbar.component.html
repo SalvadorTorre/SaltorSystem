@@ -31,6 +31,15 @@
       </ul>
 
       <div class="ms-auto d-flex align-items-center gap-2">
+        <button
+          *ngIf="isDesktopApp && hasDownloadedUpdate"
+          type="button"
+          class="btn btn-warning btn-sm update-ready-btn"
+          (click)="emitInstallUpdate()"
+          title="Instalar actualización descargada"
+        >
+          <i class="bi bi-arrow-repeat me-1"></i>Reiniciar para actualizar
+        </button>
         <div class="dropdown">
           <button
             class="user-avatar-btn dropdown-toggle"
@@ -50,6 +59,28 @@
             </li>
             <li><button type="button" class="dropdown-item" (click)="emitProfile()"><i class="bi bi-person me-2"></i>Mi perfil</button></li>
             <li><button type="button" class="dropdown-item" (click)="emitAbout()"><i class="bi bi-info-circle me-2"></i>Acerca de</button></li>
+            <li *ngIf="isDesktopApp"><hr class="dropdown-divider" /></li>
+            <li *ngIf="isDesktopApp">
+              <button
+                type="button"
+                class="dropdown-item"
+                (click)="emitCheckUpdates()"
+                [disabled]="isCheckingUpdates || hasDownloadedUpdate || updateStage === 'unsupported'"
+              >
+                <i class="bi bi-cloud-arrow-down me-2"></i>{{ updateActionLabel }}
+              </button>
+            </li>
+            <li *ngIf="isDesktopApp && updateMessage">
+              <div class="dropdown-item-text small text-muted update-status-text">
+                <i class="bi bi-arrow-repeat me-2"></i>{{ updateMessage }}
+                <span *ngIf="updateVersionLabel"> {{ updateVersionLabel }}</span>
+              </div>
+            </li>
+            <li *ngIf="isDesktopApp && hasDownloadedUpdate">
+              <button type="button" class="dropdown-item text-warning" (click)="emitInstallUpdate()">
+                <i class="bi bi-bootstrap-reboot me-2"></i>Instalar ahora
+              </button>
+            </li>
             <li>
               <div class="dropdown-item-text small text-muted d-flex align-items-center">
                 <i class="bi bi-tag me-2"></i>

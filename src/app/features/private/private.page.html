@@ -1,8 +1,15 @@
 <private-navbar
   [initials]="initials"
   [personName]="personName"
+  [isDesktopApp]="isDesktopApp"
+  [updateStage]="updateStage"
+  [updateMessage]="updateMessage"
+  [updateVersionLabel]="updateVersionLabel"
+  [updateProgressLabel]="updateProgressLabel"
   (profileRequested)="openMyProfile()"
   (aboutRequested)="openAbout()"
+  (checkUpdatesRequested)="checkForUpdates()"
+  (installUpdateRequested)="installPendingUpdate()"
   (logoutRequested)="logout()"
 ></private-navbar>
 

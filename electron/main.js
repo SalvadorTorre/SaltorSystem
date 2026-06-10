@@ -10,6 +10,17 @@ const isWindows = process.platform === 'win32';
 const pdfPrinter = isWindows ? require('pdf-to-printer') : null;
 let mainWindow = null;
 let autoUpdaterReady = false;
+const updateState = {
+  supported: false,
+  stage: 'idle',
+  message: '',
+  currentVersion: app.getVersion(),
+  availableVersion: null,
+  downloadedVersion: null,
+  progress: null,
+  checkedAt: null,
+  error: null,
+};
 
 function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -148,6 +159,27 @@ function getFocusedWindow() {
   return BrowserWindow.getFocusedWindow() || mainWindow || BrowserWindow.getAllWindows()[0] || null;
 }
 
+function syncUpdateState(patch = {}) {
+  Object.assign(updateState, patch, {
+    currentVersion: app.getVersion(),
+  });
+  return { ...updateState };
+}
+
+function broadcastUpdateStatus() {
+  const payload = { ...updateState };
+  BrowserWindow.getAllWindows().forEach((win) => {
+    if (!win || win.isDestroyed()) return;
+    win.webContents.send('app-update:status', payload);
+  });
+}
+
+function setUpdateState(patch = {}) {
+  const payload = syncUpdateState(patch);
+  broadcastUpdateStatus();
+  return payload;
+}
+
 async function listAvailablePrinters(browserWindow) {
   if (isWindows && pdfPrinter?.getPrinters) {
     try {
@@ -243,6 +275,10 @@ function createMainWindow() {
   } else {
     win.loadFile(path.join(__dirname, '..', 'dist', 'saltor-system', 'index.html'));
   }
+
+  win.webContents.on('did-finish-load', () => {
+    win.webContents.send('app-update:status', { ...updateState });
+  });
 
   mainWindow = win;
   win.on('closed', () => {
@@ -508,9 +544,59 @@ ipcMain.handle('desktop:open-devtools', async () => {
   return { success: true, error: null };
 });
 ipcMain.handle('file:save-pdf', async (_evt, payload) => savePdfFile(payload));
+ipcMain.handle('app-update:get-status', async () => ({ ...updateState }));
+ipcMain.handle('app-update:check', async () => {
+  if (!updateState.supported) {
+    return setUpdateState({
+      stage: 'unsupported',
+      message: 'Las actualizaciones automáticas solo están disponibles en la app desktop instalada.',
+      error: null,
+    });
+  }
+
+  try {
+    setUpdateState({
+      stage: 'checking',
+      message: 'Buscando actualizaciones...',
+      checkedAt: new Date().toISOString(),
+      error: null,
+    });
+    await autoUpdater.checkForUpdates();
+  } catch (error) {
+    return setUpdateState({
+      stage: 'error',
+      message: 'No se pudo buscar actualizaciones.',
+      error: error?.message || String(error),
+      checkedAt: new Date().toISOString(),
+    });
+  }
+
+  return { ...updateState };
+});
+ipcMain.handle('app-update:install', async () => {
+  if (updateState.stage !== 'downloaded') {
+    return {
+      success: false,
+      error: 'Todavía no hay una actualización descargada para instalar.',
+    };
+  }
+
+  setImmediate(() => autoUpdater.quitAndInstall());
+  return { success: true, error: null };
+});
 
 function setupAutoUpdater() {
-  if (autoUpdaterReady || isDev || !app.isPackaged) {
+  const supported = !isDev && app.isPackaged;
+  setUpdateState({
+    supported,
+    stage: supported ? 'idle' : 'unsupported',
+    message: supported
+      ? 'Actualizador listo.'
+      : 'Las actualizaciones automáticas no están disponibles en este entorno.',
+    error: null,
+  });
+
+  if (autoUpdaterReady || !supported) {
     return;
   }
 
@@ -520,22 +606,70 @@ function setupAutoUpdater() {
 
   autoUpdater.on('checking-for-update', () => {
     console.log('[autoUpdater] Buscando actualizaciones...');
+    setUpdateState({
+      stage: 'checking',
+      message: 'Buscando actualizaciones...',
+      checkedAt: new Date().toISOString(),
+      progress: null,
+      error: null,
+    });
   });
 
   autoUpdater.on('update-available', (info) => {
     console.log('[autoUpdater] Actualización disponible:', info?.version);
+    setUpdateState({
+      stage: 'downloading',
+      message: `Descargando versión ${info?.version || ''}...`.trim(),
+      availableVersion: info?.version || null,
+      progress: 0,
+      error: null,
+    });
   });
 
   autoUpdater.on('update-not-available', () => {
     console.log('[autoUpdater] No hay actualizaciones nuevas.');
+    setUpdateState({
+      stage: 'not-available',
+      message: 'No hay actualizaciones disponibles.',
+      availableVersion: null,
+      progress: null,
+      error: null,
+      checkedAt: new Date().toISOString(),
+    });
+  });
+
+  autoUpdater.on('download-progress', (progress) => {
+    const percent = Number(progress?.percent || 0);
+    setUpdateState({
+      stage: 'downloading',
+      message: `Descargando actualización... ${percent.toFixed(0)}%`,
+      progress: percent,
+      error: null,
+    });
   });
 
   autoUpdater.on('error', (error) => {
     console.error('[autoUpdater] Error:', error);
+    setUpdateState({
+      stage: 'error',
+      message: 'Ocurrió un error al buscar o descargar la actualización.',
+      error: error?.message || String(error),
+      progress: null,
+      checkedAt: new Date().toISOString(),
+    });
   });
 
   autoUpdater.on('update-downloaded', async (info) => {
     console.log('[autoUpdater] Actualización descargada:', info?.version);
+    setUpdateState({
+      stage: 'downloaded',
+      message: `La versión ${info?.version || app.getVersion()} está lista para instalar.`,
+      downloadedVersion: info?.version || null,
+      availableVersion: info?.version || null,
+      progress: 100,
+      error: null,
+      checkedAt: new Date().toISOString(),
+    });
     const result = await dialog.showMessageBox(getFocusedWindow() || undefined, {
       type: 'info',
       buttons: ['Reiniciar ahora', 'Más tarde'],
@@ -552,7 +686,7 @@ function setupAutoUpdater() {
   });
 
   setTimeout(() => {
-    autoUpdater.checkForUpdatesAndNotify().catch((error) => {
+    autoUpdater.checkForUpdates().catch((error) => {
       console.error('[autoUpdater] No se pudo iniciar la búsqueda de actualizaciones:', error);
     });
   }, 3000);
