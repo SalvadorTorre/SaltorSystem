@@ -55,6 +55,18 @@ export class FacturasPendientesComponent implements OnInit {
     this.updatePaginatedFacturas();
   }
 
+  normalizarBandera(value: any): string {
+    return String(value ?? '').trim().toUpperCase();
+  }
+
+  esPendiente(factura: any): boolean {
+    return this.normalizarBandera(factura?.fa_pendiente) === 'S';
+  }
+
+  esCobrada(factura: any): boolean {
+    return this.normalizarBandera(factura?.fa_fpago) === 'S';
+  }
+
   enviar(factura: any) {
     // TODO: Implementar lógica de envío real
     Swal.fire('Info', 'Funcionalidad de envío en desarrollo', 'info');
