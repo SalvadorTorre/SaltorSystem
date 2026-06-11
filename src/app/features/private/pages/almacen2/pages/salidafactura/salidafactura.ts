@@ -767,9 +767,6 @@ agregarFactura() {
 
     peticion.subscribe({
       next: (resp: any) => {
-        // Avanzar contador de salida (contfactura.contsalida) para evitar códigos duplicados
-        this.actualizarContadorSalida();
-
         // Actualizar facturas con fa_salida='S' y idsalida=codSalida
         const actualizaciones = this.detallesSalida.map(detalle => {
             const updatePayload = {

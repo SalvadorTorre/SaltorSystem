@@ -17,6 +17,7 @@ import {
   of,
   map,
   firstValueFrom,
+  Subscription,
 } from 'rxjs';
 import Swal from 'sweetalert2';
 // import { ModeloUsuarioData } from 'src/app/core/services/mantenimientos/usuario';
@@ -176,6 +177,7 @@ export class Facturacion implements OnInit {
   cancelarBusquedaCodigo: boolean = false;
   private numfacturaSubject = new BehaviorSubject<string>('');
   private nomclienteSubject = new BehaviorSubject<string>('');
+  private clienteSearchSubscription?: Subscription;
   selectedRow: number = -1; // Para rastrear la fila seleccionada
 
   form: FormGroup;
@@ -617,7 +619,36 @@ export class Facturacion implements OnInit {
     this.formularioFacturacion.get('fa_tipoNcf')?.valueChanges.subscribe(() => {
       this.actualizarItbisPorComprobante();
     });
+    this.conectarBusquedaCliente();
   }
+
+  private conectarBusquedaCliente(): void {
+    this.clienteSearchSubscription?.unsubscribe();
+    this.clienteSearchSubscription = this.formularioFacturacion
+      .get('fa_nomClie')
+      ?.valueChanges.pipe(
+        debounceTime(500),
+        distinctUntilChanged(),
+        tap(() => {
+          this.resultadoNombre = [];
+        }),
+        filter((query: string) => String(query || '').trim() !== ''),
+        switchMap((query: string) =>
+          this.servicioCliente.buscarporNombre(query).pipe(
+            catchError((error) => {
+              console.error('Error en busqueda de cliente (Supabase):', error);
+              return of({ data: [] } as any);
+            }),
+          ),
+        ),
+      )
+      .subscribe((results: ModeloCliente) => {
+        this.resultadoNombre = results && Array.isArray(results.data)
+          ? results.data
+          : [];
+      });
+  }
+
   limpia(): void {
     //this.formularioFacturacion.reset();
     this.crearFormularioFacturacion();
@@ -2061,7 +2092,7 @@ export class Facturacion implements OnInit {
           fa_telClie: cliente.cl_telClie,
           fa_dirClie: cliente.cl_dirClie,
           fa_codZona: cliente.cl_codZona,
-          fa_sector: cliente.cl_codSect,
+          fa_sector: cliente.cl_sector || cliente.cl_codSect,
         },
         { emitEvent: false },
       );

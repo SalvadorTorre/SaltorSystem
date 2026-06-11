@@ -63,6 +63,42 @@ export class ServicioSalidafactura {
     return `${y}-${m}-${day}`;
   }
 
+  private contadorDesdeCodSalida(codsalida: string): number {
+    const raw = String(codsalida || '').replace(/\D/g, '');
+    if (raw.length <= 4) return 0;
+    const contador = Number(raw.slice(4));
+    return Number.isFinite(contador) ? contador : 0;
+  }
+
+  private async incrementarContSalida(idsucursal: number | null, codsalida: string): Promise<void> {
+    if (!Number.isFinite(Number(idsucursal)) || Number(idsucursal) <= 0) return;
+
+    const { data: contRow, error: contError } = await this.db
+      .from('contfactura')
+      .select('*')
+      .eq('idsucursal', Number(idsucursal))
+      .limit(1)
+      .maybeSingle();
+    if (contError) throw contError;
+    if (!contRow) return;
+
+    const id = this.toNumberOrNull(contRow?.id ?? contRow?.idcontfact ?? contRow?.idContFact);
+    if (id === null) return;
+
+    const contadorActual = this.toNumber(contRow?.contsalida ?? contRow?.contSalida ?? contRow?.cont_salida);
+    const contadorUsado = this.contadorDesdeCodSalida(codsalida);
+    const nuevoContador = contadorUsado > 0
+      ? Math.max(contadorActual, contadorUsado)
+      : contadorActual + 1;
+    if (nuevoContador <= contadorActual) return;
+
+    const { error: updateError } = await this.db
+      .from('contfactura')
+      .update({ contsalida: nuevoContador })
+      .eq('id', id);
+    if (updateError) throw updateError;
+  }
+
   private mapSalidaDbToUi(row: any): any {
     if (!row) return row;
     return {
@@ -333,6 +369,8 @@ export class ServicioSalidafactura {
           fa_salida: 'S',
         });
       }
+
+      await this.incrementarContSalida(idsucursal, codsalida);
 
       // Para compatibilidad con datos legacy, leemos por codsalida (no solo por idsalida)
       const { data: dets, error: detsError } = await this.db
