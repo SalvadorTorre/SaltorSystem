@@ -81,7 +81,7 @@ export class ServicioUsuario {
       .replace(/[^a-z0-9._-]+/g, '.')
       .replace(/^\.+|\.+$/g, '');
     if (!idUsuario) return '';
-    return `${idUsuario}@usuarios.saltorsystem.com`;
+    return `${idUsuario}@saltorsystem.local`;
   }
 
   private buildAuthPassword(input: any): string {

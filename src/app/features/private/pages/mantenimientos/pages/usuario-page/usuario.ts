@@ -50,7 +50,10 @@ export class Usuario implements OnInit {
   filtroPermisosEdicion = '';
   mostrarSoloActivosEdicion = false;
   plantillaAutoAplicadaEdicion = false;
+  gruposPermisosNuevoUsuario: Array<{ nombre: string; filas: PermisoMatrizFila[] }> = [];
   gruposPermisosEdicionUsuario: Array<{ nombre: string; filas: PermisoMatrizFila[] }> = [];
+  grupoAccesoAbiertoNuevo = '';
+  grupoAccesoAbiertoEdicion = '';
   usernameExiste = false;
   claveExiste = false;
   usernameMensaje = '';
@@ -230,6 +233,7 @@ export class Usuario implements OnInit {
           } as PermisoMatrizFila;
         });
         this.reAplicarTipoActualEnMatrizNuevoUsuario();
+        this.actualizarGruposPermisosNuevo();
       },
       error: () => {
         this.accionesPermisosCatalogo = [
@@ -245,6 +249,7 @@ export class Usuario implements OnInit {
           modo: 'legacy',
         }));
         this.reAplicarTipoActualEnMatrizNuevoUsuario();
+        this.actualizarGruposPermisosNuevo();
       }
     });
   }
@@ -274,6 +279,7 @@ export class Usuario implements OnInit {
         fila.acciones['ver'] = acceso || lectura;
       }
     });
+    this.actualizarGruposPermisosNuevo();
   }
 
   private hayPermisosSeleccionados(filas: PermisoMatrizFila[]): boolean {
@@ -328,16 +334,32 @@ export class Usuario implements OnInit {
     });
   }
 
+  actualizarGruposPermisosNuevo(): void {
+    this.gruposPermisosNuevoUsuario = this.construirGruposPermisos(this.permisosMatrizNuevoUsuario || []);
+    if (!this.grupoAccesoAbiertoNuevo && this.gruposPermisosNuevoUsuario.length) {
+      const activo = this.gruposPermisosNuevoUsuario.find((grupo) => this.contarRecursosActivosGrupo(grupo.filas) > 0);
+      this.grupoAccesoAbiertoNuevo = activo?.nombre || this.gruposPermisosNuevoUsuario[0].nombre;
+    }
+  }
+
   actualizarGruposPermisosEdicion(): void {
+    this.gruposPermisosEdicionUsuario = this.construirGruposPermisos(this.permisosMatrizEdicionFiltrados);
+    if (!this.grupoAccesoAbiertoEdicion && this.gruposPermisosEdicionUsuario.length) {
+      const activo = this.gruposPermisosEdicionUsuario.find((grupo) => this.contarRecursosActivosGrupo(grupo.filas) > 0);
+      this.grupoAccesoAbiertoEdicion = activo?.nombre || this.gruposPermisosEdicionUsuario[0].nombre;
+    }
+  }
+
+  private construirGruposPermisos(filasOrigen: PermisoMatrizFila[]): Array<{ nombre: string; filas: PermisoMatrizFila[] }> {
     const grupos = new Map<string, PermisoMatrizFila[]>();
-    this.permisosMatrizEdicionFiltrados.forEach((fila: PermisoMatrizFila) => {
+    (filasOrigen || []).forEach((fila: PermisoMatrizFila) => {
       const nombre = String(fila?.modulo_nombre || 'General').trim() || 'General';
       if (!grupos.has(nombre)) {
         grupos.set(nombre, []);
       }
       grupos.get(nombre)!.push(fila);
     });
-    this.gruposPermisosEdicionUsuario = Array.from(grupos.entries())
+    return Array.from(grupos.entries())
       .map(([nombre, filas]) => ({
         nombre,
         filas: [...filas].sort((a: PermisoMatrizFila, b: PermisoMatrizFila) =>
@@ -365,6 +387,10 @@ export class Usuario implements OnInit {
     }
   }
 
+  onCambioPermisoNuevo(): void {
+    this.actualizarGruposPermisosNuevo();
+  }
+
   contarAccionesActivas(fila?: PermisoMatrizFila | null): number {
     return Object.values(fila?.acciones || {}).filter((valor: any) => !!valor).length;
   }
@@ -379,10 +405,54 @@ export class Usuario implements OnInit {
     });
   }
 
+  alternarGrupoPermisos(filas: PermisoMatrizFila[], activo: boolean): void {
+    (filas || []).forEach((fila: PermisoMatrizFila) => this.alternarFilaPermisos(fila, activo));
+  }
+
+  aplicarConsultaGrupoPermisos(filas: PermisoMatrizFila[]): void {
+    (filas || []).forEach((fila: PermisoMatrizFila) => {
+      Object.keys(fila?.acciones || {}).forEach((key: string) => {
+        const normalizada = this.normalizarTexto(key);
+        fila.acciones[key] = ['ver', 'acceso', 'lectura', 'consultar'].includes(normalizada);
+      });
+    });
+  }
+
+  contarRecursosActivosGrupo(filas: PermisoMatrizFila[]): number {
+    return (filas || []).filter((fila: PermisoMatrizFila) => this.tieneAccionActiva(fila)).length;
+  }
+
+  contarAccionesActivasGrupo(filas: PermisoMatrizFila[]): number {
+    return (filas || []).reduce((total: number, fila: PermisoMatrizFila) => total + this.contarAccionesActivas(fila), 0);
+  }
+
+  resumenGrupoPermisos(filas: PermisoMatrizFila[]): string {
+    const total = (filas || []).length;
+    const activos = this.contarRecursosActivosGrupo(filas);
+    if (!activos) return 'Sin acceso';
+    if (activos === total) return 'Activo completo';
+    return `${activos} de ${total} pantallas`;
+  }
+
+  abrirGrupoPermisos(modo: 'nuevo' | 'edicion', nombre: string): void {
+    if (modo === 'nuevo') {
+      this.grupoAccesoAbiertoNuevo = this.grupoAccesoAbiertoNuevo === nombre ? '' : nombre;
+      return;
+    }
+    this.grupoAccesoAbiertoEdicion = this.grupoAccesoAbiertoEdicion === nombre ? '' : nombre;
+  }
+
+  estaGrupoPermisoAbierto(modo: 'nuevo' | 'edicion', nombre: string): boolean {
+    return modo === 'nuevo'
+      ? this.grupoAccesoAbiertoNuevo === nombre
+      : this.grupoAccesoAbiertoEdicion === nombre;
+  }
+
   alternarTodosPermisosNuevoUsuario(activo: boolean): void {
     (this.permisosMatrizNuevoUsuario || []).forEach((fila: PermisoMatrizFila) => {
       this.alternarFilaPermisos(fila, activo);
     });
+    this.actualizarGruposPermisosNuevo();
   }
 
   limpiarPermisosNuevoUsuario(): void {
@@ -395,6 +465,7 @@ export class Usuario implements OnInit {
       Number((this.nuevoUsuario as any)?.idtipoUsuario || 0) || undefined,
     );
     this.aplicarPermisosTipoSeleccionadoEnMatriz(this.detallesTipoSeleccionado);
+    this.actualizarGruposPermisosNuevo();
   }
 
   alternarTodosPermisosEdicionUsuario(activo: boolean): void {
@@ -559,6 +630,7 @@ export class Usuario implements OnInit {
     this.permisosMatrizEdicionUsuario = [];
     this.accionesPermisosCatalogoEdicion = [];
     this.gruposPermisosEdicionUsuario = [];
+    this.grupoAccesoAbiertoEdicion = '';
     this.filtroPermisosEdicion = '';
     this.mostrarSoloActivosEdicion = false;
     this.plantillaAutoAplicadaEdicion = false;
@@ -585,6 +657,7 @@ export class Usuario implements OnInit {
         this.permisosMatrizEdicionUsuario = [];
         this.accionesPermisosCatalogoEdicion = [];
         this.gruposPermisosEdicionUsuario = [];
+        this.grupoAccesoAbiertoEdicion = '';
         this.fireToast({ title: 'No se pudo cargar la matriz de permisos', icon: 'error' });
       }
     });
@@ -623,6 +696,7 @@ export class Usuario implements OnInit {
     this.permisosMatrizEdicionUsuario = [];
     this.accionesPermisosCatalogoEdicion = [];
     this.gruposPermisosEdicionUsuario = [];
+    this.grupoAccesoAbiertoEdicion = '';
     this.filtroPermisosEdicion = '';
     this.mostrarSoloActivosEdicion = false;
     this.plantillaAutoAplicadaEdicion = false;
@@ -842,6 +916,8 @@ export class Usuario implements OnInit {
     this.detallesTipoSeleccionado = [];
     this.accionesPermisosCatalogo = [];
     this.permisosMatrizNuevoUsuario = [];
+    this.gruposPermisosNuevoUsuario = [];
+    this.grupoAccesoAbiertoNuevo = '';
     this.resetValidacionesNuevoUsuario();
     this.construirPlantillaPermisosNuevoUsuario();
     $('#modalNuevoUsuario').modal('show');
@@ -937,6 +1013,7 @@ export class Usuario implements OnInit {
   onTipoUsuarioChange(idtipo: number | undefined): void {
     this.detallesTipoSeleccionado = [];
     this.aplicarPlantillaPredeterminadaTipo(idtipo);
+    this.actualizarGruposPermisosNuevo();
     if (!idtipo) return;
     this.tipoSrv.buscarTipousuario(Number(idtipo)).subscribe({
       next: (res: any) => {
@@ -959,6 +1036,7 @@ export class Usuario implements OnInit {
       this.permisosMatrizNuevoUsuario,
       descripcion,
     );
+    this.actualizarGruposPermisosNuevo();
   }
 
   guardarNuevoUsuario(form: NgForm): void {

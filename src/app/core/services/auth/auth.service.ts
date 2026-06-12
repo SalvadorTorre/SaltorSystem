@@ -199,8 +199,9 @@ export class AuthService {
 
     // Alias actual y alias legado para usuarios creados antes de la migracion.
     candidates.push(
-      `${normalizedId}@usuarios.saltorsystem.com`,
       `${normalizedId}@saltorsystem.local`,
+      `${normalizedId}@usuario.saltorsystem.local`,
+      `${normalizedId}@usuarios.saltorsystem.com`,
     );
     return Array.from(new Set(candidates));
   }

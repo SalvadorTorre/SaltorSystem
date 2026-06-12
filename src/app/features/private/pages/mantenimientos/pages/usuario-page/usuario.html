@@ -380,9 +380,9 @@
                 <div class="permisos-builder__header">
                   <div>
                     <p class="permisos-builder__eyebrow mb-1">Control de acceso</p>
-                    <h6 class="mb-1">Matriz de permisos del usuario</h6>
+                    <h6 class="mb-1">Accesos por módulo</h6>
                     <p class="mb-0 text-muted small">
-                      Ajusta exactamente los módulos y acciones que podrá usar este usuario.
+                      Activa módulos completos o abre solo el módulo que quieras ajustar pantalla por pantalla.
                     </p>
                   </div>
                   <div class="permisos-builder__stats">
@@ -448,13 +448,32 @@
 
                 <div class="permisos-builder__groups" *ngIf="gruposPermisosEdicionUsuario.length; else permisosEdicionSinFiltroTpl">
                   <section class="permisos-builder__group" *ngFor="let grupo of gruposPermisosEdicionUsuario; trackBy: trackGrupoPermiso">
-                    <div class="permisos-builder__group-header">
+                    <div
+                      class="permisos-builder__group-header permisos-builder__group-header--button"
+                      role="button"
+                      tabindex="0"
+                      (click)="abrirGrupoPermisos('edicion', grupo.nombre)"
+                    >
                       <div>
                         <h6 class="mb-0">{{ grupo.nombre }}</h6>
-                        <small class="text-muted">{{ grupo.filas.length }} pantalla(s)</small>
+                        <small class="text-muted">
+                          {{ resumenGrupoPermisos(grupo.filas) }} · {{ contarAccionesActivasGrupo(grupo.filas) }} acciones activas
+                        </small>
+                      </div>
+                      <div class="permisos-builder__group-actions" (click)="$event.stopPropagation()">
+                        <button type="button" class="btn btn-primary btn-sm" (click)="alternarGrupoPermisos(grupo.filas, true); actualizarGruposPermisosEdicion()">
+                          Activar módulo
+                        </button>
+                        <button type="button" class="btn btn-outline-primary btn-sm" (click)="aplicarConsultaGrupoPermisos(grupo.filas); actualizarGruposPermisosEdicion()">
+                          Solo consultar
+                        </button>
+                        <button type="button" class="btn btn-outline-danger btn-sm" (click)="alternarGrupoPermisos(grupo.filas, false); actualizarGruposPermisosEdicion()">
+                          Quitar
+                        </button>
+                        <i class="bi" [ngClass]="estaGrupoPermisoAbierto('edicion', grupo.nombre) ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
                       </div>
                     </div>
-                    <div class="permisos-builder__list">
+                    <div class="permisos-builder__list" *ngIf="estaGrupoPermisoAbierto('edicion', grupo.nombre)">
                       <article class="permiso-card" *ngFor="let f of grupo.filas; let i = index; trackBy: trackPermisoFila" [class.permiso-card--active]="tieneAccionActiva(f)">
                         <div class="permiso-card__top">
                           <div class="permiso-card__identity">
@@ -862,9 +881,9 @@
               <div class="permisos-builder__header">
                 <div>
                   <p class="permisos-builder__eyebrow mb-1">Control de acceso</p>
-                  <h6 class="mb-1">Matriz de permisos visible</h6>
+                  <h6 class="mb-1">Accesos por módulo</h6>
                   <p class="mb-0 text-muted small">
-                    Usa las acciones rápidas o ajusta cada recurso de forma individual.
+                    Elige una plantilla por tipo o ajusta los módulos sin tener todo abierto a la vez.
                   </p>
                 </div>
                 <div class="permisos-builder__stats">
@@ -897,46 +916,77 @@
                 </div>
               </div>
 
-              <div class="permisos-builder__list">
-                <article class="permiso-card" *ngFor="let f of permisosMatrizNuevoUsuario; let i = index" [class.permiso-card--active]="tieneAccionActiva(f)">
-                  <div class="permiso-card__top">
-                    <div class="permiso-card__identity">
-                      <span class="permiso-card__module">{{ f.modulo_nombre || '-' }}</span>
-                      <h6 class="mb-1">{{ f.pantalla_nombre || '-' }}</h6>
-                      <p class="mb-0 text-muted small">
-                        {{ contarAccionesActivas(f) }} de {{ accionesPermisosCatalogo.length }} acciones activas
-                      </p>
+              <div class="permisos-builder__groups" *ngIf="gruposPermisosNuevoUsuario.length; else permisosPendientesTpl">
+                <section class="permisos-builder__group" *ngFor="let grupo of gruposPermisosNuevoUsuario; trackBy: trackGrupoPermiso">
+                  <div
+                    class="permisos-builder__group-header permisos-builder__group-header--button"
+                    role="button"
+                    tabindex="0"
+                    (click)="abrirGrupoPermisos('nuevo', grupo.nombre)"
+                  >
+                    <div>
+                      <h6 class="mb-0">{{ grupo.nombre }}</h6>
+                      <small class="text-muted">
+                        {{ resumenGrupoPermisos(grupo.filas) }} · {{ contarAccionesActivasGrupo(grupo.filas) }} acciones activas
+                      </small>
                     </div>
-                    <div class="permiso-card__toggles">
-                      <button
-                        type="button"
-                        class="btn btn-outline-primary btn-sm"
-                        (click)="alternarFilaPermisos(f, true)"
-                      >
-                        Todo
+                    <div class="permisos-builder__group-actions" (click)="$event.stopPropagation()">
+                      <button type="button" class="btn btn-primary btn-sm" (click)="alternarGrupoPermisos(grupo.filas, true); actualizarGruposPermisosNuevo()">
+                        Activar módulo
                       </button>
-                      <button
-                        type="button"
-                        class="btn btn-outline-secondary btn-sm"
-                        (click)="alternarFilaPermisos(f, false)"
-                      >
-                        Nada
+                      <button type="button" class="btn btn-outline-primary btn-sm" (click)="aplicarConsultaGrupoPermisos(grupo.filas); actualizarGruposPermisosNuevo()">
+                        Solo consultar
                       </button>
+                      <button type="button" class="btn btn-outline-danger btn-sm" (click)="alternarGrupoPermisos(grupo.filas, false); actualizarGruposPermisosNuevo()">
+                        Quitar
+                      </button>
+                      <i class="bi" [ngClass]="estaGrupoPermisoAbierto('nuevo', grupo.nombre) ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
                     </div>
                   </div>
 
-                  <div class="permiso-card__actions">
-                    <label class="permiso-toggle" *ngFor="let a of accionesPermisosCatalogo" [class.permiso-toggle--checked]="f.acciones[a.accion_key]">
-                      <input
-                        type="checkbox"
-                        class="permiso-toggle__input"
-                        [(ngModel)]="f.acciones[a.accion_key]"
-                        [name]="'perm-' + i + '-' + a.accion_key"
-                      >
-                      <span class="permiso-toggle__label">{{ a.descripcion }}</span>
-                    </label>
+                  <div class="permisos-builder__list" *ngIf="estaGrupoPermisoAbierto('nuevo', grupo.nombre)">
+                    <article class="permiso-card" *ngFor="let f of grupo.filas; let i = index; trackBy: trackPermisoFila" [class.permiso-card--active]="tieneAccionActiva(f)">
+                      <div class="permiso-card__top">
+                        <div class="permiso-card__identity">
+                          <span class="permiso-card__module">{{ f.modulo_nombre || '-' }}</span>
+                          <h6 class="mb-1">{{ f.pantalla_nombre || '-' }}</h6>
+                          <p class="mb-0 text-muted small">
+                            {{ contarAccionesActivas(f) }} de {{ accionesPermisosCatalogo.length }} acciones activas
+                          </p>
+                        </div>
+                        <div class="permiso-card__toggles">
+                          <button
+                            type="button"
+                            class="btn btn-outline-primary btn-sm"
+                            (click)="alternarFilaPermisos(f, true); onCambioPermisoNuevo()"
+                          >
+                            Todo
+                          </button>
+                          <button
+                            type="button"
+                            class="btn btn-outline-secondary btn-sm"
+                            (click)="alternarFilaPermisos(f, false); onCambioPermisoNuevo()"
+                          >
+                            Nada
+                          </button>
+                        </div>
+                      </div>
+
+                      <div class="permiso-card__actions">
+                        <label class="permiso-toggle" *ngFor="let a of accionesPermisosCatalogo; trackBy: trackAccionPermiso" [class.permiso-toggle--checked]="f.acciones[a.accion_key]">
+                          <input
+                            type="checkbox"
+                            class="permiso-toggle__input"
+                            [(ngModel)]="f.acciones[a.accion_key]"
+                            (ngModelChange)="onCambioPermisoNuevo()"
+                            [name]="'perm-' + grupo.nombre + '-' + i + '-' + a.accion_key"
+                          >
+                          <span class="permiso-toggle__label">{{ a.descripcion }}</span>
+                        </label>
+                      </div>
+                    </article>
                   </div>
-                </article>
+                </section>
               </div>
                 </section>
 

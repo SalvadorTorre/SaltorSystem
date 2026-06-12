@@ -391,7 +391,31 @@
   justify-content: space-between;
   align-items: center;
   gap: 0.75rem;
-  margin-bottom: 0.8rem;
+  margin-bottom: 0;
+}
+
+.permisos-builder__group-header--button {
+  cursor: pointer;
+  border-radius: 0.85rem;
+  padding: 0.1rem;
+}
+
+.permisos-builder__group-header--button:hover h6 {
+  color: #0f4fbe;
+}
+
+.permisos-builder__group-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.permisos-builder__group-actions .bi {
+  color: #42618f;
+  font-size: 1rem;
+  padding: 0 0.15rem;
 }
 
 .permisos-builder__list {
@@ -400,6 +424,7 @@
   max-height: 48vh;
   overflow: auto;
   padding-right: 0.15rem;
+  margin-top: 0.85rem;
 }
 
 .permiso-card {
@@ -593,7 +618,17 @@
     width: 100%;
   }
 
+  .permisos-builder__group-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .permisos-builder__group-actions {
+    justify-content: stretch;
+  }
+
   .permisos-builder__actions .btn,
+  .permisos-builder__group-actions .btn,
   .permiso-card__toggles .btn {
     flex: 1 1 140px;
   }
