@@ -878,6 +878,34 @@ export class ServicioFacturacion {
     })());
   }
 
+  obtenerNcfFactura(numero: string): Observable<string> {
+    const codigo = String(numero || '').trim();
+    if (!this.useSupabase) {
+      return this.http
+        .GetRequest<any>(`/factura-numero/${encodeURIComponent(codigo)}`, false)
+        .pipe(
+          map((response: any) => {
+            const factura = Array.isArray(response?.data)
+              ? response.data[0]
+              : response?.data || response;
+            return String(factura?.fa_ncffact ?? '').trim();
+          }),
+        );
+    }
+
+    return from((async () => {
+      let query = this.db
+        .from('factura')
+        .select('fa_ncffact')
+        .eq('fa_codfact', codigo)
+        .limit(1);
+      query = this.applyTenantFilter(query);
+      const { data, error } = await query.maybeSingle();
+      if (error) throw error;
+      return String(data?.fa_ncffact ?? '').trim();
+    })());
+  }
+
   marcarImpresa(
     numero: string,
     body: { fa_envio?: string; fa_fpago?: string; fa_codfpago?: string }

@@ -292,6 +292,7 @@ export class Facturacion implements OnInit {
   nativeElement = new FormControl();
   resultadoCodmerc: ModeloInventarioData[] = [];
   selectedIndexcodmerc = 1;
+  private ocultarResultadosCodmerc = false;
   selectedIndexfpago = 1;
   resultadodescripcionmerc: ModeloInventarioData[] = [];
   selectedIndexdescripcionmerc = 1;
@@ -305,6 +306,7 @@ export class Facturacion implements OnInit {
       .pipe(
         tap((v) => {
           console.log('DEBUG: Input Code Change:', v);
+          this.ocultarResultadosCodmerc = false;
           this.resultadoCodmerc = [];
         }),
         debounceTime(300),
@@ -324,6 +326,10 @@ export class Facturacion implements OnInit {
       )
       .subscribe((results: ModeloInventario) => {
         console.log(results.data);
+        if (this.ocultarResultadosCodmerc) {
+          this.resultadoCodmerc = [];
+          return;
+        }
         if (results) {
           if (Array.isArray(results.data) && results.data.length) {
             // Aquí ordenamos los resultados por el campo 'nombre' (puedes cambiar el campo según tus necesidades)
@@ -783,7 +789,36 @@ export class Facturacion implements OnInit {
       console.log(this.facturacionList.length);
     });
   }
+
   async consultarFacturacion(factura: FacturacionModelData) {
+    const codigoFactura = String(factura?.fa_codFact || '').trim();
+    let encfConsulta = '';
+    try {
+      const [response, faNcfFact] = codigoFactura
+        ? await Promise.all([
+            firstValueFrom(this.servicioFacturacion.getByNumero(codigoFactura)),
+            firstValueFrom(this.servicioFacturacion.obtenerNcfFactura(codigoFactura)),
+          ])
+        : [null, ''];
+      const facturaCompleta = Array.isArray(response?.data)
+        ? response.data[0] || {}
+        : response?.data || response || {};
+      encfConsulta = String(faNcfFact ?? '').trim();
+
+      factura = {
+        ...factura,
+        ...facturaCompleta,
+        fa_ncfFact: encfConsulta,
+      } as FacturacionModelData;
+    } catch (error) {
+      console.warn('No se pudo consultar factura.fa_ncffact:', error);
+      encfConsulta = String((factura as any)?.fa_ncffact ?? '').trim();
+      factura = {
+        ...factura,
+        fa_ncfFact: encfConsulta,
+      } as FacturacionModelData;
+    }
+
     this.modoconsultaFacturacion = true;
     this.modoedicionFacturacion = false;
     this.facturaConsultaSeleccionada = factura;
@@ -798,11 +833,17 @@ export class Facturacion implements OnInit {
     await this.cargarItbisDeFactura(factura);
     // Asegurar formato de fecha dd/MM/yyyy al consultar
     const fechaFormateada = this.formatFecha((factura as any).fa_fecFact);
-    this.formularioFacturacion.patchValue({ fa_fecFact: fechaFormateada });
+    this.formularioFacturacion.patchValue({
+      fa_fecFact: fechaFormateada,
+      fa_ncfFact: encfConsulta,
+    });
     this.tituloModalFacturacion = 'Consulta Factura';
     // $('#modalfacturacion').modal('show');
     this.habilitarFormulario = true;
     this.formularioFacturacion.disable();
+    this.formularioFacturacion.get('fa_ncfFact')?.setValue(encfConsulta, {
+      emitEvent: false,
+    });
     console.log('ff', factura);
     this.habilitarIcono = false;
     const inputs = document.querySelectorAll('.seccion-productos input');
@@ -1226,6 +1267,7 @@ export class Facturacion implements OnInit {
     // Enter: buscar por cadena (prefijo). Si coincide o hay selección en grid -> ir a cantidad.
     // Si vacío -> ir a descripción. Si no hay coincidencias -> error y pasar a descripción.
     event.preventDefault();
+    this.ocultarResultadosCodmerc = true;
     const currentInputValue = (event.target as HTMLInputElement).value.trim();
 
     if (currentInputValue === '') {
@@ -1284,7 +1326,6 @@ export class Facturacion implements OnInit {
               sensitivity: 'base',
             });
           });
-          this.resultadoCodmerc = ordenados;
           this.selectedIndexcodmerc = 0;
           const candidatos = ordenados.filter((r) =>
             String(r.in_codmerc).toLowerCase().startsWith(queryLower),

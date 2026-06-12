@@ -80,8 +80,18 @@
               </td>
               <td class="text-end pe-4">
                 <div class="btn-group btn-group-sm">
-                  <button class="btn btn-outline-success" (click)="enviar(f)" title="Enviar a DGII">
-                    <i class="bi bi-send"></i>
+                  <button
+                    class="btn btn-outline-success"
+                    [disabled]="!!facturaEnviando"
+                    (click)="enviar(f)"
+                    title="Cobrar, enviar a DGII e imprimir"
+                  >
+                    <span
+                      *ngIf="facturaEnviando === f.fa_codFact"
+                      class="spinner-border spinner-border-sm"
+                      aria-hidden="true"
+                    ></span>
+                    <i *ngIf="facturaEnviando !== f.fa_codFact" class="bi bi-send"></i>
                   </button>
                   <button class="btn btn-outline-secondary" (click)="verXml(f)" title="Ver XML">
                     <i class="bi bi-file-earmark-code"></i>

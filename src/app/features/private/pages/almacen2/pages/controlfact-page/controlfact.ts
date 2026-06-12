@@ -18,6 +18,7 @@ import {
   debounceTime,
   distinctUntilChanged,
   filter,
+  firstValueFrom,
   from,
   skip,
   Subject,
@@ -56,6 +57,7 @@ import autoTable from 'jspdf-autotable';
 import { disableDebugTools } from '@angular/platform-browser';
 import { ServicioNcf } from 'src/app/core/services/mantenimientos/ncf/ncf.service';
 import { ModeloNcfData } from 'src/app/core/services/mantenimientos/ncf';
+import { PrintingService } from 'src/app/core/services/utils/printing.service';
 declare var $: any;
 
 @Component({
@@ -163,6 +165,7 @@ export class ControlFact implements OnInit {
   private numfacturaSubject = new BehaviorSubject<string>('');
   private nomclienteSubject = new BehaviorSubject<string>('');
   selectedRow: number = 0; // Para rastrear la fila seleccionada
+  reimprimiendoFactura = '';
 
   isDisabled: boolean = true;
   form: FormGroup;
@@ -248,7 +251,8 @@ export class ControlFact implements OnInit {
     private ServicioRnc: ServicioRnc,
     private ServicioSector: ServicioSector,
     private servicioFpago: ServicioFpago,
-    private servicioNcf: ServicioNcf
+    private servicioNcf: ServicioNcf,
+    private printingService: PrintingService
   ) {
     this.form = this.fb.group({
       fa_codVend: ['', Validators.required], // El campo es requerido
@@ -319,6 +323,80 @@ export class ControlFact implements OnInit {
   selectedIndexdescripcionmerc = 1;
   seleccionarFacturacion(facturacion: any) {
     this.selectedFacturacion = facturacion;
+  }
+
+  puedeImprimirCopia(factura: any): boolean {
+    const status = this.normalizarStatusFactura(factura?.fa_status);
+    return (
+      this.normalizarFlagFactura(factura?.fa_impresa) === 'S' &&
+      (status === 'F' || status === 'C')
+    );
+  }
+
+  async imprimirCopiaDocumento(factura: FacturacionModelData): Promise<void> {
+    const codigo = String(factura?.fa_codFact || '').trim();
+    const status = this.normalizarStatusFactura((factura as any)?.fa_status);
+    if (!codigo || !this.puedeImprimirCopia(factura)) return;
+
+    this.reimprimiendoFactura = codigo;
+    Swal.fire({
+      title: 'Preparando impresión...',
+      text: status === 'C'
+        ? 'Cargando el conduce y sus detalles.'
+        : 'Cargando la factura y sus detalles.',
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+      didOpen: () => Swal.showLoading(),
+    });
+
+    try {
+      const [facturaResponse, detalleResponse] = await Promise.all([
+        firstValueFrom(this.servicioFacturacion.getByNumero(codigo)),
+        firstValueFrom(this.servicioFacturacion.buscarFacturaDetalle(codigo)),
+      ]);
+      const facturaCompleta = facturaResponse?.data || facturaResponse || factura;
+      const detalles = Array.isArray(detalleResponse?.data)
+        ? detalleResponse.data
+        : Array.isArray(detalleResponse)
+          ? detalleResponse
+          : [];
+
+      if (!facturaCompleta?.fa_codFact) {
+        throw new Error(`No se encontró la factura ${codigo}.`);
+      }
+
+      const datosImpresion = {
+        ...factura,
+        ...facturaCompleta,
+        barcodeValue: codigo,
+        __singlePrintCopy: true,
+        __copyLabel: status === 'C' ? 'CONDUCTOR' : 'CLIENTE',
+        __hideInvoiceDetails: false,
+      };
+
+      Swal.close();
+      if (status === 'C') {
+        await this.printingService.imprimirConduceFactura80mm(
+          datosImpresion,
+          detalles,
+        );
+      } else {
+        await this.printingService.imprimirFactura80mm(
+          datosImpresion,
+          detalles,
+        );
+      }
+    } catch (error: any) {
+      console.error('Error imprimiendo copia de factura o conduce:', error);
+      const mensaje =
+        error?.error?.message ||
+        error?.error?.details ||
+        error?.message ||
+        'No se pudo imprimir la copia.';
+      Swal.fire('Error', String(mensaje), 'error');
+    } finally {
+      this.reimprimiendoFactura = '';
+    }
   }
 
   ngOnInit(): void {

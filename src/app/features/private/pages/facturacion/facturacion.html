@@ -20,6 +20,7 @@
         </div>
         <div class="card-body bg-light">
           <form
+            class="datos-factura-form"
             [formGroup]="formularioFacturacion"
             (ngSubmit)="guardarFacturacion()"
           >
@@ -32,7 +33,7 @@
             <!-- RNC y Tipo NCF -->
             <div class="row g-3 mb-3">
               <div class="col-md-4">
-                <label class="form-label small text-muted fw-semibold">RNC</label>
+                <label class="form-label small text-muted fw-semibold">Rnc</label>
                 <input
                   type="text"
                   #input1
@@ -44,7 +45,7 @@
                 />
               </div>
               <div class="col-md-5">
-                <label class="form-label small text-muted fw-semibold">Tipo NCF</label>
+                <label class="form-label small text-muted fw-semibold">Tipo eNCF</label>
                 <select
                   name="tipoNcf"
                   formControlName="fa_tipoNcf"
@@ -57,7 +58,7 @@
                 </select>
               </div>
               <div class="col-md-3">
-                <label class="form-label small text-muted fw-semibold">NCF</label>
+                <label class="form-label small text-muted fw-semibold">eNCF</label>
                 <input
                   type="text"
                   class="form-control"

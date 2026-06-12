@@ -393,8 +393,27 @@
                         (click)="consultarFacturacion(factura)"
                         class="bi bi-card-list text-success"
                         style="padding: 10px"
+                        title="Ver detalles"
                       >
                       </i>
+                      <button
+                        *ngIf="puedeImprimirCopia(factura)"
+                        type="button"
+                        class="btn btn-sm btn-outline-dark"
+                        [disabled]="reimprimiendoFactura === factura.fa_codFact"
+                        (click)="imprimirCopiaDocumento(factura)"
+                        [title]="factura.fa_status === 'C' ? 'Imprimir copia del conduce' : 'Imprimir copia de la factura'"
+                      >
+                        <span
+                          *ngIf="reimprimiendoFactura === factura.fa_codFact"
+                          class="spinner-border spinner-border-sm"
+                          aria-hidden="true"
+                        ></span>
+                        <i
+                          *ngIf="reimprimiendoFactura !== factura.fa_codFact"
+                          class="bi bi-printer"
+                        ></i>
+                      </button>
                     </td>
                   </tr>
                 </tbody>

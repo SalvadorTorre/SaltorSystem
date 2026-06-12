@@ -218,7 +218,7 @@ export class PrintingService {
 
       if (copyLabel) {
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(9);
+        doc.setFontSize(10);
         doc.text(copyLabel, leftMargin, yPos);
       }
 
@@ -249,7 +249,7 @@ export class PrintingService {
 
       // --- 2. COMPANY INFO ---
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(8);
+      doc.setFontSize(9);
 
       let empresa = 'CENTRO HIERRO MARCOS SRL';
       let direccion = 'CALLE 30 DE MARZO NO. 54';
@@ -328,6 +328,13 @@ export class PrintingService {
       const rncCliente = f.fa_rncFact || '';
       const codFact = f.barcodeValue || f.fa_codFact || '';
       const vendedor = f.fa_nomVend || f.fa_codVend || '';
+      const textoCampo = (...values: any[]): string => {
+        for (const value of values) {
+          const text = String(value ?? '').trim();
+          if (text) return text;
+        }
+        return '';
+      };
 
       // Title logic
       let tituloFactura = 'FACTURA PARA CONSUMIDOR FINAL';
@@ -654,6 +661,33 @@ export class PrintingService {
       doc.text(`Artículos: ${hideInvoiceDetails ? 0 : (items || []).length}`, leftMargin, yPos);
       yPos += 4;
       centerText('*** GRACIAS POR SU COMPRA ***', yPos);
+      yPos += 6;
+
+      if (facturaEnvio && copyLabel.toUpperCase() === 'CONDUCTOR') {
+        drawDashedLine(yPos);
+        yPos += 5;
+        doc.setFont('helvetica', 'bold');
+        doc.text('DATOS DE ENVIO', leftMargin, yPos);
+        yPos += 4;
+        doc.setFont('helvetica', 'normal');
+
+        const datosEnvio = [
+          ['Direccion', textoCampo(f.fa_dirClie, f.fa_dirclie)],
+          ['Sector', textoCampo(f.fa_sector)],
+          ['Telefono', textoCampo(f.fa_telClie, f.fa_telclie, f.fa_telClie2, f.fa_telclie2)],
+          ['Contacto', textoCampo(f.fa_contacto, f.fa_contactoClie, f.contacto)],
+          ['Zona', textoCampo(f.fa_desZona, f.fa_deszona, f.fa_codZona, f.fa_codzona)],
+        ].filter(([, value]) => value);
+
+        datosEnvio.forEach(([label, value]) => {
+          const lines = doc.splitTextToSize(
+            `${label}: ${value}`,
+            pageWidth - (leftMargin + rightMargin),
+          );
+          doc.text(lines, leftMargin, yPos);
+          yPos += lines.length * 4;
+        });
+      }
 
       // Espacio adicional al final para el corte de papel
       yPos += 25;
@@ -1536,10 +1570,14 @@ items.forEach((it: any) => {
       });
 
       doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10);
       centerText('CONDUCE DE FACTURA', yPos);
       yPos += 5;
-      doc.setFont('helvetica', 'normal');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
       doc.text(`Factura: ${f.fa_codFact || ''}`, leftMargin, yPos);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
       doc.text(formatDateShort(fecha), pageWidth - rightMargin, yPos, { align: 'right' });
       yPos += 4;
       if (tieneHoraFactura) {
@@ -1554,24 +1592,12 @@ items.forEach((it: any) => {
         doc.text(vendedorLines, leftMargin, yPos);
         yPos += vendedorLines.length * 4;
       }
-      doc.text(`Pago: ${this.etiquetaPagoConduce(f)}`, leftMargin, yPos);
-      yPos += 4;
-      doc.text(`Envio: ${this.etiquetaEnvioConduce(f)}`, leftMargin, yPos);
-      yPos += 4;
-      if (f.fa_dirClie) {
-        const dirCliente = doc.splitTextToSize(`Dir: ${String(f.fa_dirClie)}`, pageWidth - (leftMargin + rightMargin));
-        doc.text(dirCliente, leftMargin, yPos);
-        yPos += dirCliente.length * 4;
-      }
-      if (f.fa_telClie) {
-        doc.text(`Tel: ${String(f.fa_telClie)}`, leftMargin, yPos);
-        yPos += 4;
-      }
 
       drawDashedLine(yPos);
       yPos += 5;
       if (!hideInvoiceDetails) {
         doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
         doc.text('Cant', leftMargin, yPos);
         doc.text('Descripcion', leftMargin + 12, yPos);
         doc.text('Total', pageWidth - rightMargin, yPos, { align: 'right' });
@@ -1605,6 +1631,7 @@ items.forEach((it: any) => {
       drawDashedLine(yPos);
       yPos += 5;
       doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
       const totalFactura = Number(f.fa_valFact ?? f.fa_valfact ?? 0);
       const totalConduce = totalFactura > 0 ? totalFactura : totalDetalle;
       doc.text('TOTAL', leftMargin, yPos);
@@ -1634,8 +1661,45 @@ items.forEach((it: any) => {
       doc.setLineWidth(0.3);
       doc.line(leftMargin, yPos, pageWidth - rightMargin, yPos);
       yPos += 5;
+      doc.setFontSize(9);
       centerText('Recibido Conforme', yPos);
-      yPos += 25;
+      yPos += 7;
+
+      const imprimirDatosEnvio =
+        copyLabel.toUpperCase() === 'CONDUCTOR' &&
+        Number(f.fa_envio ?? f.faEnvio) === 1;
+
+      if (imprimirDatosEnvio) {
+        drawDashedLine(yPos);
+        yPos += 5;
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(10);
+        doc.text('DATOS DE ENVIO', leftMargin, yPos);
+        yPos += 4;
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
+
+        const datosEnvio = [
+          ['Direccion', f.fa_dirClie ?? f.fa_dirclie],
+          ['Sector', f.fa_sector],
+          ['Telefono', f.fa_telClie ?? f.fa_telclie],
+          ['Contacto', f.fa_contacto],
+          ['Zona', f.fa_desZona ?? f.fa_deszona ?? f.fa_codZona ?? f.fa_codzona],
+        ];
+
+        datosEnvio.forEach(([label, rawValue]) => {
+          const value = String(rawValue ?? '').trim();
+          if (!value) return;
+          const lines = doc.splitTextToSize(
+            `${label}: ${value}`,
+            pageWidth - (leftMargin + rightMargin),
+          );
+          doc.text(lines, leftMargin, yPos);
+          yPos += lines.length * 4;
+        });
+      }
+
+      yPos += 18;
       doc.text('.', leftMargin, yPos);
 
       if (!facturaData?.__deferPrint) {
