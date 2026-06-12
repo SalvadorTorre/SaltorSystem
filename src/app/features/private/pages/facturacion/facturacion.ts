@@ -2329,7 +2329,7 @@ export class Facturacion implements OnInit {
       this.itemToEdit.precio = this.preciomerc;
       this.itemToEdit.cantidad = this.cantidadmerc;
       this.itemToEdit.total = this.cantidadmerc * this.preciomerc;
-      this.itemToEdit.totalcosto += this.costotxt * this.cantidadmerc;
+      this.itemToEdit.costo = this.costotxt * this.cantidadmerc;
       this.itemToEdit.fecfactActual = fechaActual; // Actualiza la fecha del ítem existente
       this.itemToEdit.df_tipoMerc = this.tipomerc;
       // Actualizar los totales
@@ -2448,19 +2448,30 @@ export class Facturacion implements OnInit {
     this.cantidadform.setValue(this.cantidadmerc, { emitEvent: false });
   }
   actualizarTotales() {
-    this.totalGral = this.items.reduce((sum, item) => sum + item.total, 0);
+    this.totalGral = this.items.reduce(
+      (sum, item) => sum + (Number(item.total) || 0),
+      0,
+    );
     this.totalItbis = this.items.reduce(
-      (sum, item) => sum + this.calcularItbisRestando(item.total),
+      (sum, item) =>
+        sum + this.calcularItbisRestando(Number(item.total) || 0),
       0,
     );
     this.subTotal = this.items.reduce(
-      (sum, item) => sum + (item.total - this.calcularItbisRestando(item.total)),
+      (sum, item) => {
+        const totalItem = Number(item.total) || 0;
+        return sum + (totalItem - this.calcularItbisRestando(totalItem));
+      },
       0,
     );
     this.totalcosto = this.items.reduce(
-      (sum, item) => sum + this.costotxt * item.cantidad,
+      (sum, item) => sum + (Number(item.costo) || 0),
       0,
     );
+    this.factxt =
+      this.totalcosto > 0
+        ? ((this.totalGral - this.totalcosto) * 100) / this.totalcosto
+        : 0;
     const formatCurrency = (value: number) =>
       value.toLocaleString('es-DO', {
         style: 'currency',
