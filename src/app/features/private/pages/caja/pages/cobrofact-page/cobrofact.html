@@ -668,7 +668,7 @@
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
       <div class="modal-header bg-primary text-white">
-        <h5 class="modal-title" id="modalOrigenPagoLabel">Datos del pago</h5>
+        <h5 class="modal-title" id="modalOrigenPagoLabel">Datos bancarios del pago</h5>
         <button
           type="button"
           class="btn-close btn-close-white"
@@ -678,7 +678,7 @@
       </div>
       <div class="modal-body">
         <div class="mb-3">
-          <label class="form-label fw-bold">Origen de pago</label>
+          <label class="form-label fw-bold">Cuenta bancaria</label>
           <select class="form-select" [(ngModel)]="origenPagoSeleccionado">
             <option value="">Seleccione...</option>
             <option
@@ -688,10 +688,16 @@
               {{ origen.descripcion }}
             </option>
           </select>
+          <small *ngIf="cargandoOrigenPago" class="text-muted d-block mt-1">
+            Cargando cuentas bancarias...
+          </small>
+          <small *ngIf="!cargandoOrigenPago && resultadoOrigenPago.length === 0" class="text-danger d-block mt-1">
+            No hay cuentas bancarias activas. Cree una en Mantenimientos > Configuracion > Cuentas bancarias.
+          </small>
         </div>
 
         <div class="mb-3">
-          <label class="form-label fw-bold">No. Confirmacion</label>
+          <label class="form-label fw-bold">Referencia / No. confirmacion</label>
           <input
             type="text"
             class="form-control"

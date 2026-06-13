@@ -187,6 +187,24 @@ const routes: Routes = [
           ),
       },
       {
+        path: 'fpago',
+        canActivate: [permissionGuard],
+        data: { accessPath: '/private/mantenimientos/fpago' },
+        loadChildren: () =>
+          import('./pages/fpago-page/fpago-modulo').then(
+            (m) => m.FpagoModulo
+          ),
+      },
+      {
+        path: 'cuentas-bancarias',
+        canActivate: [permissionGuard],
+        data: { accessPath: '/private/mantenimientos/cuentas-bancarias' },
+        loadChildren: () =>
+          import(
+            './pages/configuracion/cuentas-bancarias/cuentas-bancarias-modulo'
+          ).then((m) => m.CuentasBancariasModulo),
+      },
+      {
         path: 'rnc',
         canActivate: [permissionGuard],
         data: { accessPath: '/private/mantenimientos/rnc' },

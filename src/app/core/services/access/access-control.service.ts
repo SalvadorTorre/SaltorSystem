@@ -467,6 +467,8 @@ export class AccessControlService {
       ['tasa de itbis', '/private/mantenimientos/tasa-itbis'],
       ['forma entrega', '/private/mantenimientos/fentrega'],
       ['forma pago', '/private/mantenimientos/fpago'],
+      ['cuentas bancarias', '/private/mantenimientos/cuentas-bancarias'],
+      ['cuentas banco', '/private/mantenimientos/cuentas-bancarias'],
       ['rnc', '/private/mantenimientos/rnc'],
       ['configuracion global dgii', '/private/mantenimientos/configuracion-global'],
       ['mantenimientos', '/private/mantenimientos'],

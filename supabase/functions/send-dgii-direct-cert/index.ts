@@ -44,6 +44,10 @@ function normalizeAmbiente(value: unknown): "test" | "prod" {
   return raw === "prod" ? "prod" : "test";
 }
 
+function normalizeRnc(value: unknown): string {
+  return String(value || "").replace(/[^0-9]/g, "");
+}
+
 function isMissingColumnError(error: unknown, column: string): boolean {
   const col = String(column || "").trim().toLowerCase();
   const msg = String((error as any)?.message || "").toLowerCase();
@@ -52,6 +56,14 @@ function isMissingColumnError(error: unknown, column: string): boolean {
     msg.includes(`column "${col}"`) ||
     msg.includes(col)
   );
+}
+
+function isMissingTableError(error: unknown): boolean {
+  const code = String((error as any)?.code || "").trim();
+  const msg = String((error as any)?.message || "").toLowerCase();
+  return code === "42P01" || code === "PGRST205" ||
+    msg.includes("does not exist") || msg.includes("not exist") ||
+    msg.includes("could not find the table");
 }
 
 Deno.serve(async (req: Request) => {
@@ -117,7 +129,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const dgiiBaseUrl = cleanUrl(cfg?.dgii_base_url || "");
-    const dgiiAmbiente = normalizeAmbiente(cfg?.dgii_ambiente);
+    let dgiiAmbiente = normalizeAmbiente(cfg?.dgii_ambiente);
     const certB64 = String(cfg?.certificado_p12_base64 || "").trim();
     const certPassword = String(cfg?.certificado_password || "").trim();
 
@@ -149,14 +161,47 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const rncBody = String(body?.rncEmisor || "").replace(/[^0-9]/g, "");
-    const rncScenario = String(scenarios?.[0]?.RNCEmisor || "").replace(/[^0-9]/g, "");
+    const rncBody = normalizeRnc(body?.rncEmisor);
+    const rncScenario = normalizeRnc(scenarios?.[0]?.RNCEmisor);
     const certRnc = rncBody || rncScenario;
     if (!certRnc) {
       return jsonResponse(422, {
         ok: false,
         message: "No se encontró RNC emisor para enviar a DGII.",
       });
+    }
+
+    let empresaAmbiente: any = null;
+    const { data: empresasRows, error: empresasError } = await db
+      .from("empresas")
+      .select("cod_empre,nom_empre,rnc_empre")
+      .limit(2000);
+
+    if (empresasError) {
+      throw new Error(`No se pudo leer empresas: ${empresasError.message}`);
+    }
+
+    const empresa = (empresasRows || []).find((row: any) =>
+      normalizeRnc(row?.rnc_empre) === certRnc
+    );
+
+    if (empresa?.cod_empre) {
+      const { data: cfgEmpresa, error: cfgEmpresaError } = await db
+        .from("configuracion_dgii_empresa")
+        .select("cod_empre,dgii_ambiente,activo")
+        .eq("cod_empre", empresa.cod_empre)
+        .maybeSingle();
+
+      if (cfgEmpresaError && !isMissingTableError(cfgEmpresaError)) {
+        throw new Error(
+          `No se pudo leer configuracion_dgii_empresa: ${cfgEmpresaError.message}`,
+        );
+      }
+
+      if (cfgEmpresa?.activo !== false && cfgEmpresa?.dgii_ambiente) {
+        empresaAmbiente = cfgEmpresa;
+        dgiiAmbiente = normalizeAmbiente(cfgEmpresa.dgii_ambiente);
+      }
     }
 
     const payload = { scenarios };
@@ -219,6 +264,8 @@ Deno.serve(async (req: Request) => {
         details: upstreamBody,
         endpoint,
         ambiente: dgiiAmbiente,
+        empresa: empresa?.cod_empre || null,
+        ambiente_origen: empresaAmbiente ? "empresa" : "global",
         endpoints_intentados: tried,
       });
     }
@@ -229,6 +276,8 @@ Deno.serve(async (req: Request) => {
       data: upstreamBody,
       endpoint,
       ambiente: dgiiAmbiente,
+      empresa: empresa?.cod_empre || null,
+      ambiente_origen: empresaAmbiente ? "empresa" : "global",
     });
   } catch (error) {
     return jsonResponse(500, {

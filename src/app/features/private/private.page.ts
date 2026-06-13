@@ -223,11 +223,79 @@ export class PrivatePage implements OnInit, OnDestroy {
   }
 
   openAbout(): void {
+    const version = this.escapeHtml(this.updateStatus.currentVersion || '1.0.0');
     Swal.fire({
-      icon: 'info',
-      title: 'Acerca de',
-      html: '<strong>SaltorSystem</strong><br/>Módulo privado del sistema.',
-      confirmButtonText: 'Aceptar',
+      width: 620,
+      showConfirmButton: true,
+      confirmButtonText: 'Cerrar',
+      buttonsStyling: false,
+      customClass: {
+        popup: 'rounded-4',
+        confirmButton: 'btn btn-primary px-4',
+      },
+      html: `
+        <div style="text-align:left;color:#172033;">
+          <div style="
+            margin:-6px -6px 18px;
+            padding:22px;
+            border-radius:22px;
+            color:#fff;
+            background:linear-gradient(135deg,#0f172a 0%,#164e63 56%,#0e7490 100%);
+            box-shadow:0 18px 38px rgba(15,23,42,.18);
+          ">
+            <div style="display:flex;align-items:center;gap:14px;">
+              <div style="
+                width:58px;height:58px;border-radius:18px;
+                display:grid;place-items:center;
+                background:rgba(255,255,255,.15);
+                border:1px solid rgba(255,255,255,.22);
+                font-size:28px;font-weight:900;
+              ">S</div>
+              <div>
+                <div style="font-size:12px;text-transform:uppercase;letter-spacing:.14em;opacity:.78;">Sistema ERP privado</div>
+                <div style="font-size:30px;font-weight:900;line-height:1;">Saltor System</div>
+                <div style="margin-top:6px;font-size:13px;opacity:.84;">Versión ${version}</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;">
+            <div style="padding:14px;border:1px solid #e4ecf7;border-radius:16px;background:#f8fbff;">
+              <div style="font-size:12px;color:#64748b;font-weight:800;text-transform:uppercase;letter-spacing:.06em;">Creación y desarrollo</div>
+              <div style="margin-top:8px;font-size:16px;font-weight:850;color:#0f172a;">Lic. Salvador Torres</div>
+              <div style="font-size:12px;color:#64748b;">Autor principal del sistema</div>
+            </div>
+            <div style="padding:14px;border:1px solid #e4ecf7;border-radius:16px;background:#f8fbff;">
+              <div style="font-size:12px;color:#64748b;font-weight:800;text-transform:uppercase;letter-spacing:.06em;">Asistencia de desarrollo</div>
+              <div style="margin-top:8px;font-size:16px;font-weight:850;color:#0f172a;">Eliu Ortega</div>
+              <div style="font-size:12px;color:#64748b;">Ayudante de desarrollo</div>
+            </div>
+          </div>
+
+          <div style="
+            margin-top:14px;
+            padding:14px 16px;
+            border-radius:16px;
+            border:1px solid #bbf7d0;
+            background:linear-gradient(180deg,#f0fdf4,#ffffff);
+          ">
+            <div style="display:flex;align-items:flex-start;gap:10px;">
+              <div style="
+                min-width:34px;height:34px;border-radius:12px;
+                display:grid;place-items:center;
+                background:#dcfce7;color:#166534;font-weight:900;
+              ">✓</div>
+              <div>
+                <div style="font-weight:900;color:#14532d;">Licencia exclusiva</div>
+                <div style="margin-top:3px;color:#334155;font-size:13px;line-height:1.45;">
+                  Este sistema es de uso exclusivo de <strong>Salvador Torres</strong> y <strong>Saltor System</strong>.
+                  Su distribución, copia o uso fuera de esta licencia requiere autorización expresa.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `,
     });
   }
 

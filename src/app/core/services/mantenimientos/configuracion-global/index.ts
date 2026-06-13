@@ -20,3 +20,14 @@ export interface CertificadoInspeccion {
   subjectCn?: string | null;
   issuerCn?: string | null;
 }
+
+export interface ConfiguracionDgiiEmpresaData {
+  codEmpre: string;
+  nombreEmpresa: string;
+  rncEmpresa?: string | null;
+  dgiiAmbiente: 'test' | 'prod';
+  activo: boolean;
+  notas?: string | null;
+  updatedAt?: string | null;
+  updatedBy?: string | null;
+}

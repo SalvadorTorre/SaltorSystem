@@ -39,7 +39,8 @@ import { ModeloNcfData } from 'src/app/core/services/mantenimientos/ncf';
 import { PrintingService } from 'src/app/core/services/utils/printing.service';
 import { ServicioConfiguracionGlobal } from 'src/app/core/services/mantenimientos/configuracion-global/configuracion-global.service';
 import { ServicioSalidafactura } from 'src/app/core/services/almacen/salidafactura/salidafactura.service';
-import { ServicioOrigenPago } from 'src/app/core/services/mantenimientos/origenpago/origenpago.service';
+import { CuentaBancariaData } from 'src/app/core/services/mantenimientos/cuenta-bancaria';
+import { ServicioCuentaBancaria } from 'src/app/core/services/mantenimientos/cuenta-bancaria/cuenta-bancaria.service';
 import { ServicioItbis } from 'src/app/core/services/mantenimientos/itbis/itbis.service';
 import { SupabaseService } from 'src/app/core/services/supabase/supabase.service';
 import { AuthService } from 'src/app/core/services/auth/auth.service';
@@ -95,7 +96,7 @@ export class CobroFact implements OnInit {
   codFacturaselecte = ' ';
   txtdescripcion: string = '';
   descripcionFormaPago: string = '';
-  resultadoOrigenPago: any[] = [];
+  resultadoOrigenPago: CuentaBancariaData[] = [];
   cargandoOrigenPago = false;
   txtcodigo = '';
   // txtFecha: string = '';
@@ -440,7 +441,7 @@ export class CobroFact implements OnInit {
     private servicioConfiguracionGlobal: ServicioConfiguracionGlobal,
     private printingService: PrintingService,
     private servicioSalidaFactura: ServicioSalidafactura,
-    private servicioOrigenPago: ServicioOrigenPago,
+    private servicioCuentaBancaria: ServicioCuentaBancaria,
     private servicioItbis: ServicioItbis,
     private supabase: SupabaseService,
     private authService: AuthService,
@@ -493,13 +494,13 @@ export class CobroFact implements OnInit {
   }
   obtenerOrigenPago() {
     this.cargandoOrigenPago = true;
-    this.servicioOrigenPago.obtenerTodosOrigenPago().subscribe({
+    this.servicioCuentaBancaria.obtenerActivas().subscribe({
       next: (response) => {
         this.resultadoOrigenPago = response.data || [];
         this.cargandoOrigenPago = false;
       },
       error: (err) => {
-        console.error('Error cargando origenes de pago', err);
+        console.error('Error cargando cuentas bancarias', err);
         this.resultadoOrigenPago = [];
         this.cargandoOrigenPago = false;
       },
@@ -1732,7 +1733,7 @@ export class CobroFact implements OnInit {
         this.formularioFacturacion.get('fa_valFact')?.value || 0;
       this.txtvalPagado = false;
       this.actualizarCambio();
-      if (this.esPagoDiferenteEfectivo()) {
+      if (this.requiereCuentaBancaria()) {
         this.abrirModalOrigenPago();
       }
     } else {
@@ -1766,7 +1767,7 @@ export class CobroFact implements OnInit {
       { fa_codfpago: this.ftipoPago },
       { emitEvent: false },
     );
-    if (this.chekPagado && this.esPagoDiferenteEfectivo()) {
+    if (this.chekPagado && this.requiereCuentaBancaria()) {
       this.abrirModalOrigenPago();
     } else {
       this.origenPagoSeleccionado = '';
@@ -1819,12 +1820,27 @@ export class CobroFact implements OnInit {
 
   esPagoDiferenteEfectivo(): boolean {
     if (!this.ftipoPago) return false;
-    const descripcion = this.descripcionTipoPagoActual()
+    const descripcion = this.normalizarTexto(this.descripcionTipoPagoActual());
+    return descripcion ? descripcion !== 'efectivo' : String(this.ftipoPago).trim() !== '1';
+  }
+
+  requiereCuentaBancaria(): boolean {
+    if (!this.ftipoPago) return false;
+
+    const descripcion = this.normalizarTexto(this.descripcionTipoPagoActual());
+    const codigo = String(this.ftipoPago || '').trim();
+    const palabrasBancarias = ['transferencia', 'transfer', 'deposito', 'cheque'];
+
+    return palabrasBancarias.some((palabra) => descripcion.includes(palabra)) ||
+      codigo === '2';
+  }
+
+  private normalizarTexto(value: any): string {
+    return String(value || '')
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
       .trim()
       .toLowerCase();
-    return descripcion ? descripcion !== 'efectivo' : String(this.ftipoPago).trim() !== '1';
   }
 
   private abrirModalOrigenPago(): void {
@@ -1836,7 +1852,7 @@ export class CobroFact implements OnInit {
 
   guardarOrigenPagoModal(): void {
     if (!this.origenPagoSeleccionado) {
-      Swal.fire('Aviso', 'Seleccione el origen de pago.', 'warning');
+      Swal.fire('Aviso', 'Seleccione la cuenta bancaria.', 'warning');
       return;
     }
 
@@ -1853,10 +1869,10 @@ export class CobroFact implements OnInit {
 
   private validarOrigenPagoSiAplica(): boolean {
     if (!this.chekPagado) return true;
-    if (!this.esPagoDiferenteEfectivo()) return true;
+    if (!this.requiereCuentaBancaria()) return true;
     if (this.origenPagoSeleccionado) return true;
 
-    Swal.fire('Aviso', 'Debe indicar el origen de pago.', 'warning').then(() => {
+    Swal.fire('Aviso', 'Debe indicar la cuenta bancaria.', 'warning').then(() => {
       this.abrirModalOrigenPago();
     });
     return false;

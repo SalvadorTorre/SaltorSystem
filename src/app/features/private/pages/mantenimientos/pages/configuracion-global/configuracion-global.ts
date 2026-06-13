@@ -4,6 +4,7 @@ import Swal from 'sweetalert2';
 import { firstValueFrom } from 'rxjs';
 import {
   CertificadoInspeccion,
+  ConfiguracionDgiiEmpresaData,
   ConfiguracionGlobalData,
 } from 'src/app/core/services/mantenimientos/configuracion-global';
 import { ServicioConfiguracionGlobal } from 'src/app/core/services/mantenimientos/configuracion-global/configuracion-global.service';
@@ -24,6 +25,7 @@ export class ConfiguracionGlobal implements OnInit {
   isLoading = false;
   isSaving = false;
   isValidatingCert = false;
+  isLoadingAmbientesEmpresa = false;
   hasDatosCargados = false;
   isEditMode = true;
 
@@ -31,6 +33,9 @@ export class ConfiguracionGlobal implements OnInit {
   logoPreview = this.logoPorDefecto;
 
   configActual: ConfiguracionGlobalData | null = null;
+  ambientesEmpresa: ConfiguracionDgiiEmpresaData[] = [];
+  filtroAmbienteEmpresa = '';
+  savingAmbienteEmpresa: string | null = null;
 
   pendingLogoDataUrl: string | null | undefined = undefined;
   pendingLogoNombre: string | null = null;
@@ -78,6 +83,7 @@ export class ConfiguracionGlobal implements OnInit {
 
   ngOnInit(): void {
     this.cargarConfiguracion();
+    this.cargarAmbientesEmpresa();
     this.cargarConfiguracionImpresionDesktop();
   }
 
@@ -85,12 +91,26 @@ export class ConfiguracionGlobal implements OnInit {
     const base = String(this.formulario?.get('dgiiBaseUrl')?.value || '')
       .trim()
       .replace(/\/+$/, '');
-    const ambRaw = String(this.formulario?.get('dgiiAmbiente')?.value || 'test')
-      .trim()
-      .toLowerCase();
-    const ambiente = ambRaw === 'prod' ? 'prod' : 'test';
     if (!base) return '';
-    return `${base}/${ambiente}/api/test-body-direct-cert`;
+    return `${base}/{test|prod}/api/test-body-direct-cert`;
+  }
+
+  get ambientesEmpresaFiltrados(): ConfiguracionDgiiEmpresaData[] {
+    const q = this.normalizarTexto(this.filtroAmbienteEmpresa);
+    return this.ambientesEmpresa.filter((item) => {
+      const texto = this.normalizarTexto(
+        `${item.codEmpre} ${item.nombreEmpresa} ${item.rncEmpresa || ''} ${item.dgiiAmbiente}`,
+      );
+      return !q || texto.includes(q);
+    });
+  }
+
+  get totalEmpresasProd(): number {
+    return this.ambientesEmpresa.filter((item) => item.dgiiAmbiente === 'prod').length;
+  }
+
+  get totalEmpresasTest(): number {
+    return this.ambientesEmpresa.filter((item) => item.dgiiAmbiente !== 'prod').length;
   }
 
   private crearFormulario(): void {
@@ -325,6 +345,72 @@ export class ConfiguracionGlobal implements OnInit {
         );
       },
     });
+  }
+
+  cargarAmbientesEmpresa(): void {
+    this.isLoadingAmbientesEmpresa = true;
+    this.servicioConfiguracionGlobal.obtenerAmbientesEmpresa().subscribe({
+      next: (response) => {
+        this.ambientesEmpresa = response?.data || [];
+        this.isLoadingAmbientesEmpresa = false;
+      },
+      error: (error) => {
+        this.isLoadingAmbientesEmpresa = false;
+        console.error(error);
+        Swal.fire(
+          'Ambiente por empresa',
+          'No se pudieron cargar las empresas. Ejecuta la migración configuracion_dgii_empresa si aún no existe.',
+          'warning'
+        );
+      },
+    });
+  }
+
+  cambiarAmbienteEmpresa(
+    empresa: ConfiguracionDgiiEmpresaData,
+    ambiente: 'test' | 'prod' | string,
+  ): void {
+    const nuevoAmbiente = String(ambiente || 'test').trim().toLowerCase() === 'prod'
+      ? 'prod'
+      : 'test';
+
+    if (!empresa?.codEmpre) return;
+    if (empresa.dgiiAmbiente === nuevoAmbiente) return;
+
+    const ambienteAnterior = empresa.dgiiAmbiente;
+    empresa.dgiiAmbiente = nuevoAmbiente;
+    this.savingAmbienteEmpresa = empresa.codEmpre;
+
+    this.servicioConfiguracionGlobal
+      .guardarAmbienteEmpresa(
+        empresa.codEmpre,
+        nuevoAmbiente,
+        empresa.notas || null,
+        this.usuarioActual(),
+      )
+      .subscribe({
+        next: () => {
+          this.savingAmbienteEmpresa = null;
+          Swal.fire({
+            icon: 'success',
+            title: 'Ambiente actualizado',
+            text: `${empresa.nombreEmpresa || empresa.codEmpre} quedó en ${nuevoAmbiente.toUpperCase()}.`,
+            timer: 1500,
+            showConfirmButton: false,
+          });
+          this.cargarAmbientesEmpresa();
+        },
+        error: (error) => {
+          empresa.dgiiAmbiente = ambienteAnterior;
+          this.savingAmbienteEmpresa = null;
+          console.error(error);
+          Swal.fire(
+            'Error',
+            error?.message || 'No se pudo guardar el ambiente de la empresa.',
+            'error'
+          );
+        },
+      });
   }
 
   async onLogoSeleccionado(event: Event): Promise<void> {
@@ -617,6 +703,14 @@ export class ConfiguracionGlobal implements OnInit {
     return String(
       localStorage.getItem('username') || localStorage.getItem('usuario') || 'sistema'
     ).trim();
+  }
+
+  private normalizarTexto(value: any): string {
+    return String(value || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim()
+      .toLowerCase();
   }
 
   private toIsoDate(input: any): string | null {

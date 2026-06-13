@@ -4,6 +4,7 @@ import { map } from 'rxjs/operators';
 import { SupabaseService } from '../../supabase/supabase.service';
 import {
   CertificadoInspeccion,
+  ConfiguracionDgiiEmpresaData,
   ConfiguracionGlobalData,
 } from './index';
 
@@ -45,6 +46,12 @@ export class ServicioConfiguracionGlobal {
     const m = String(dt.getMonth() + 1).padStart(2, '0');
     const d = String(dt.getDate()).padStart(2, '0');
     return `${y}-${m}-${d}`;
+  }
+
+  private normalizeAmbiente(input: any): 'test' | 'prod' {
+    return String(input || 'test').trim().toLowerCase() === 'prod'
+      ? 'prod'
+      : 'test';
   }
 
   private isMissingColumnError(error: any, column: string): boolean {
@@ -194,6 +201,113 @@ export class ServicioConfiguracionGlobal {
         message: 'Configuración global actualizada',
         data: row,
       }))
+    );
+  }
+
+  obtenerAmbientesEmpresa(): Observable<any> {
+    return from(
+      (async () => {
+        const [{ data: empresas, error: empresasError }, { data: ambientes, error: ambientesError }] =
+          await Promise.all([
+            this.db
+              .from('empresas')
+              .select('cod_empre,nom_empre,rnc_empre')
+              .order('cod_empre', { ascending: true }),
+            this.db
+              .from('configuracion_dgii_empresa')
+              .select('*')
+              .order('cod_empre', { ascending: true }),
+          ]);
+
+        if (empresasError) throw empresasError;
+
+        let ambientesRows = ambientes || [];
+        if (ambientesError) {
+          if (!this.esTablaNoExiste(ambientesError)) {
+            throw ambientesError;
+          }
+          ambientesRows = [];
+        }
+
+        const ambientePorEmpresa = new Map<string, any>(
+          ambientesRows.map((row: any) => [String(row?.cod_empre || '').trim(), row]),
+        );
+
+        return (empresas || []).map((empresa: any) => {
+          const codEmpre = String(empresa?.cod_empre || '').trim();
+          const cfg = ambientePorEmpresa.get(codEmpre);
+          return this.mapEmpresaAmbiente(empresa, cfg);
+        });
+      })()
+    ).pipe(
+      map((rows: ConfiguracionDgiiEmpresaData[]) => ({
+        status: 'success',
+        code: 200,
+        message: 'Ambientes DGII por empresa cargados',
+        data: rows,
+      }))
+    );
+  }
+
+  guardarAmbienteEmpresa(
+    codEmpre: string,
+    ambiente: 'test' | 'prod' | string,
+    notas?: string | null,
+    updatedBy?: string | null,
+  ): Observable<any> {
+    const codigo = String(codEmpre || '').trim();
+    const payload = {
+      cod_empre: codigo,
+      dgii_ambiente: this.normalizeAmbiente(ambiente),
+      activo: true,
+      notas: this.toStringOrNull(notas),
+      updated_at: new Date().toISOString(),
+      updated_by: this.toStringOrNull(updatedBy),
+    };
+
+    return from(
+      (async () => {
+        const { data, error } = await this.db
+          .from('configuracion_dgii_empresa')
+          .upsert(payload, { onConflict: 'cod_empre', ignoreDuplicates: false })
+          .select('*')
+          .maybeSingle();
+
+        if (error) throw error;
+        return data || payload;
+      })()
+    ).pipe(
+      map((row: any) => ({
+        status: 'success',
+        code: 200,
+        message: 'Ambiente DGII actualizado',
+        data: row,
+      }))
+    );
+  }
+
+  private mapEmpresaAmbiente(empresa: any, cfg: any): ConfiguracionDgiiEmpresaData {
+    return {
+      codEmpre: String(empresa?.cod_empre || cfg?.cod_empre || '').trim(),
+      nombreEmpresa: String(empresa?.nom_empre || '').trim(),
+      rncEmpresa: empresa?.rnc_empre ?? null,
+      dgiiAmbiente: this.normalizeAmbiente(cfg?.dgii_ambiente),
+      activo: cfg?.activo !== false,
+      notas: cfg?.notas ?? null,
+      updatedAt: cfg?.updated_at ?? null,
+      updatedBy: cfg?.updated_by ?? null,
+    };
+  }
+
+  private esTablaNoExiste(error: any): boolean {
+    const code = String(error?.code || '').trim();
+    const msg = String(error?.message || '').toLowerCase();
+    return (
+      code === '42P01' ||
+      code === 'PGRST205' ||
+      msg.includes('does not exist') ||
+      msg.includes('not exist') ||
+      msg.includes('could not find the table')
     );
   }
 

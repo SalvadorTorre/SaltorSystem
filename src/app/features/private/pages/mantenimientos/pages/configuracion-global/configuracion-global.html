@@ -6,7 +6,7 @@
           <i class="bi bi-shield-lock me-2"></i>Firma Digital y DGII
         </h1>
         <p class="mb-0 small opacity-75">
-          Configuración global para todas las empresas del sistema
+          Certificado compartido, endpoint base y ambiente DGII por empresa
         </p>
       </div>
       <div class="d-flex gap-2 align-items-center">
@@ -140,7 +140,7 @@
               </h2>
 
               <div class="row g-3">
-                <div class="col-12 col-lg-8">
+                <div class="col-12">
                   <label class="form-label small fw-semibold text-muted">Base URL para envío de e-CF</label>
                   <input
                     type="url"
@@ -153,22 +153,119 @@
                     Debes colocar una URL válida (http:// o https://).
                   </div>
                 </div>
-                <div class="col-12 col-lg-4">
-                  <label class="form-label small fw-semibold text-muted">Ambiente DGII</label>
-                  <select class="form-select" formControlName="dgiiAmbiente" [disabled]="hasDatosCargados && !isEditMode">
-                    <option value="test">Test</option>
-                    <option value="prod">Producción</option>
-                  </select>
-                </div>
                 <div class="col-12">
-                  <label class="form-label small fw-semibold text-muted">Endpoint final (direct cert)</label>
+                  <label class="form-label small fw-semibold text-muted">Formato del endpoint final</label>
                   <input
                     type="text"
                     class="form-control"
                     [value]="endpointDirectCertPreview"
                     readonly
                   />
+                  <small class="text-muted d-block mt-1">
+                    El sistema reemplaza <strong>{{ '{test|prod}' }}</strong> según el ambiente configurado en cada empresa.
+                  </small>
                 </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12">
+            <div class="config-block dgii-company-block" [class.opacity-50]="isLoadingAmbientesEmpresa">
+              <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+                <div>
+                  <h2 class="h6 mb-1">
+                    <i class="bi bi-buildings me-2"></i>Ambiente DGII por empresa
+                  </h2>
+                  <p class="small text-muted mb-0">
+                    Usa el mismo certificado y endpoint, pero decide qué empresa emite en TEST o PROD.
+                  </p>
+                </div>
+                <div class="d-flex flex-wrap gap-2 align-items-center">
+                  <span class="dgii-env-counter test">{{ totalEmpresasTest }} TEST</span>
+                  <span class="dgii-env-counter prod">{{ totalEmpresasProd }} PROD</span>
+                  <button
+                    type="button"
+                    class="btn btn-outline-secondary btn-sm"
+                    (click)="cargarAmbientesEmpresa()"
+                    [disabled]="isLoadingAmbientesEmpresa"
+                  >
+                    <i class="bi bi-arrow-clockwise me-1"></i>Recargar
+                  </button>
+                </div>
+              </div>
+
+              <div class="alert alert-warning py-2 px-3 small mb-3">
+                <strong>Importante:</strong> cambia a <strong>PROD</strong> solo cuando esa empresa ya esté lista para emitir comprobantes reales.
+                Las empresas en <strong>TEST</strong> seguirán enviando pruebas.
+              </div>
+
+              <div class="dgii-company-toolbar mb-3">
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text"><i class="bi bi-search"></i></span>
+                  <input
+                    type="text"
+                    class="form-control"
+                    [(ngModel)]="filtroAmbienteEmpresa"
+                    [ngModelOptions]="{ standalone: true }"
+                    placeholder="Buscar empresa, código o RNC..."
+                  />
+                </div>
+              </div>
+
+              <div class="dgii-company-table">
+                <table class="table table-sm align-middle mb-0">
+                  <thead>
+                    <tr>
+                      <th>Empresa</th>
+                      <th>RNC</th>
+                      <th>Ambiente actual</th>
+                      <th style="width: 220px;">Cambiar ambiente</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngIf="isLoadingAmbientesEmpresa">
+                      <td colspan="4" class="text-center text-muted py-3">
+                        Cargando ambientes por empresa...
+                      </td>
+                    </tr>
+                    <tr *ngFor="let empresa of ambientesEmpresaFiltrados">
+                      <td>
+                        <div class="fw-semibold">{{ empresa.nombreEmpresa || 'Sin nombre' }}</div>
+                        <small class="text-muted">{{ empresa.codEmpre }}</small>
+                      </td>
+                      <td>{{ empresa.rncEmpresa || '-' }}</td>
+                      <td>
+                        <span class="dgii-env-pill" [class.prod]="empresa.dgiiAmbiente === 'prod'">
+                          {{ empresa.dgiiAmbiente === 'prod' ? 'PROD' : 'TEST' }}
+                        </span>
+                      </td>
+                      <td>
+                        <div class="d-flex align-items-center gap-2">
+                          <select
+                            class="form-select form-select-sm"
+                            [ngModel]="empresa.dgiiAmbiente"
+                            [ngModelOptions]="{ standalone: true }"
+                            (ngModelChange)="cambiarAmbienteEmpresa(empresa, $event)"
+                            [disabled]="savingAmbienteEmpresa === empresa.codEmpre"
+                          >
+                            <option value="test">TEST</option>
+                            <option value="prod">PROD</option>
+                          </select>
+                          <span
+                            *ngIf="savingAmbienteEmpresa === empresa.codEmpre"
+                            class="spinner-border spinner-border-sm text-primary"
+                            aria-hidden="true"
+                          ></span>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr *ngIf="!isLoadingAmbientesEmpresa && ambientesEmpresaFiltrados.length === 0">
+                      <td colspan="4" class="text-center text-muted py-3">
+                        No hay empresas para mostrar.
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>

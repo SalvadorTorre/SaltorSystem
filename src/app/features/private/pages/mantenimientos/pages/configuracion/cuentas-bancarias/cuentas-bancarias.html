@@ -1,0 +1,188 @@
+<div class="bank-page">
+  <header class="bank-hero">
+    <div class="bank-title">
+      <div class="bank-icon"><i class="bi bi-bank"></i></div>
+      <div>
+        <span>Configuracion de caja</span>
+        <h1>Cuentas bancarias</h1>
+        <p>Catalogo usado al cobrar con transferencia, deposito o cheque.</p>
+      </div>
+    </div>
+
+    <div class="bank-summary">
+      <div>
+        <small>Total</small>
+        <strong>{{ totalCuentas }}</strong>
+      </div>
+      <div>
+        <small>Activas</small>
+        <strong>{{ totalActivas }}</strong>
+      </div>
+      <div class="summary-default">
+        <small>Default</small>
+        <strong>{{ cuentaDefault?.codigo || '-' }}</strong>
+      </div>
+    </div>
+  </header>
+
+  <section class="bank-grid">
+    <form class="bank-form-card" #cuentaForm="ngForm" (ngSubmit)="guardar(cuentaForm)">
+      <div class="form-head">
+        <div>
+          <h2>{{ editandoId ? 'Editar cuenta' : 'Nueva cuenta' }}</h2>
+          <p>Estos datos saldran en el modal de Caja.</p>
+        </div>
+        <span class="mode-pill" [class.edit]="editandoId">{{ editandoId ? 'Editando' : 'Nuevo' }}</span>
+      </div>
+
+      <div class="form-grid">
+        <label>
+          Codigo
+          <input #codigoInput type="text" name="codigo" [(ngModel)]="actual.codigo" required placeholder="BHD-001" />
+        </label>
+
+        <label>
+          Alias
+          <input type="text" name="nombre" [(ngModel)]="actual.nombre" required placeholder="Cuenta principal" />
+        </label>
+
+        <label>
+          Banco
+          <input type="text" name="banco" [(ngModel)]="actual.banco" required placeholder="Banco Popular" />
+        </label>
+
+        <label>
+          Numero de cuenta
+          <input type="text" name="numero_cuenta" [(ngModel)]="actual.numero_cuenta" required placeholder="000000000000" />
+        </label>
+
+        <label>
+          Tipo
+          <select name="tipo_cuenta" [(ngModel)]="actual.tipo_cuenta" required>
+            <option *ngFor="let tipo of tipos" [value]="tipo">{{ tipo }}</option>
+          </select>
+        </label>
+
+        <label>
+          Moneda
+          <select name="moneda" [(ngModel)]="actual.moneda" required>
+            <option *ngFor="let moneda of monedas" [value]="moneda">{{ moneda }}</option>
+          </select>
+        </label>
+
+        <label>
+          Titular
+          <input type="text" name="titular" [(ngModel)]="actual.titular" placeholder="Nombre del titular" />
+        </label>
+
+        <label>
+          Empresa
+          <input type="text" name="cod_empre" [(ngModel)]="actual.cod_empre" placeholder="Opcional, ej. H0002" />
+        </label>
+
+        <label>
+          Alcance de sucursal
+          <select name="alcanceSucursal" [(ngModel)]="alcanceSucursal" (ngModelChange)="onAlcanceSucursalChange()">
+            <option value="todas">Todas las sucursales</option>
+            <option value="sucursal">Una sucursal especifica</option>
+          </select>
+        </label>
+
+        <label *ngIf="alcanceSucursal === 'sucursal'">
+          Codigo de sucursal
+          <input type="number" min="1" name="sucursalid" [(ngModel)]="actual.sucursalid" placeholder="Ej. 1" />
+        </label>
+
+        <label class="field-notes">
+          Notas
+          <textarea name="notas" rows="3" [(ngModel)]="actual.notas" placeholder="Uso interno, observaciones o instrucciones"></textarea>
+        </label>
+      </div>
+
+      <div class="switch-row">
+        <label class="soft-check">
+          <input type="checkbox" name="activo" [(ngModel)]="actual.activo" />
+          <span>Cuenta activa</span>
+        </label>
+        <label class="soft-check">
+          <input type="checkbox" name="es_default" [(ngModel)]="actual.es_default" />
+          <span>Usar como default</span>
+        </label>
+      </div>
+
+      <div class="actions">
+        <button type="submit" class="btn-save"><i class="bi bi-floppy"></i> Guardar</button>
+        <button type="button" class="btn-new" (click)="nuevo(cuentaForm)"><i class="bi bi-plus-lg"></i> Nuevo</button>
+        <button type="button" class="btn-cancel" (click)="cancelar(cuentaForm)"><i class="bi bi-x-lg"></i> Cancelar</button>
+      </div>
+    </form>
+
+    <section class="list-card">
+      <div class="list-head">
+        <div>
+          <h2><i class="bi bi-credit-card-2-front"></i> Listado de cuentas</h2>
+          <p>Seleccionables desde Caja al registrar referencia bancaria.</p>
+        </div>
+        <div class="list-tools">
+          <label class="search-box">
+            <i class="bi bi-search"></i>
+            <input type="text" [(ngModel)]="busqueda" placeholder="Buscar cuenta, banco o titular..." />
+          </label>
+          <label class="active-filter">
+            <input type="checkbox" [(ngModel)]="soloActivas" />
+            Solo activas
+          </label>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Codigo</th>
+              <th>Banco / Cuenta</th>
+              <th>Tipo</th>
+              <th>Moneda</th>
+              <th>Alcance</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngIf="cargando">
+              <td colspan="7" class="empty-row">Cargando cuentas bancarias...</td>
+            </tr>
+            <tr *ngFor="let cuenta of filtradas">
+              <td>
+                <b>{{ cuenta.codigo }}</b>
+                <span *ngIf="cuenta.es_default" class="default-dot">Default</span>
+              </td>
+              <td>
+                <strong>{{ cuenta.banco }}</strong>
+                <small>{{ cuenta.nombre }} · {{ formatearCuenta(cuenta) }}</small>
+              </td>
+              <td>{{ cuenta.tipo_cuenta }}</td>
+              <td><span class="money-pill">{{ cuenta.moneda }}</span></td>
+              <td>{{ alcance(cuenta) }}</td>
+              <td>
+                <span class="status" [class.inactive]="cuenta.activo === false">
+                  {{ cuenta.activo === false ? 'Inactiva' : 'Activa' }}
+                </span>
+              </td>
+              <td>
+                <div class="row-actions">
+                  <button type="button" class="view" (click)="ver(cuenta)" title="Ver"><i class="bi bi-eye-fill"></i></button>
+                  <button type="button" class="edit" (click)="editar(cuenta)" title="Editar"><i class="bi bi-pencil-fill"></i></button>
+                  <button type="button" class="trash" (click)="eliminar(cuenta)" title="Eliminar"><i class="bi bi-trash3-fill"></i></button>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="!cargando && filtradas.length === 0">
+              <td colspan="7" class="empty-row">No hay cuentas bancarias para mostrar.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </section>
+</div>
