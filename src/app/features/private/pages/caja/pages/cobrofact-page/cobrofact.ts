@@ -248,6 +248,14 @@ export class CobroFact implements OnInit {
     ).trim();
   }
 
+  get bloquearAccionesPorNcf31Pagada(): boolean {
+    return (
+      this.hayFacturaSeleccionada &&
+      this.tipoNcfFacturaSeleccionada() === '31' &&
+      this.chekPagado
+    );
+  }
+
   get bloquearCobroDgiiPorEnvioNcf32(): boolean {
     return (
       this.hayFacturaSeleccionada &&
@@ -1991,6 +1999,14 @@ export class CobroFact implements OnInit {
     if (this.facturaSoloConsulta) return;
     if (!this.hayFacturaSeleccionada) {
       Swal.fire('Aviso', 'Seleccione una factura primero.', 'warning');
+      return;
+    }
+    if (this.bloquearAccionesPorNcf31Pagada) {
+      Swal.fire(
+        'Aviso',
+        'Las facturas con tipo NCF 31 marcadas como pagadas solo se procesan con Cobrar y enviar DGII.',
+        'warning',
+      );
       return;
     }
     if (this.bloquearConducePorImpresa) {
