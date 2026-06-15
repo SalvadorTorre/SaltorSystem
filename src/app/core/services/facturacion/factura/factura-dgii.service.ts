@@ -102,11 +102,6 @@ export class FacturaDgiiService {
     const pago = String(factura?.fa_fpago ?? '').trim().toUpperCase();
     const pagada = pago === 'S' || pago === 'P';
 
-    if (envio && tipo === '32') {
-      throw new Error(
-        'Las facturas de envio con comprobante 32 no se envian a DGII desde este boton.',
-      );
-    }
     if (envio && tipo !== '32' && !pagada) {
       throw new Error(
         'Para enviar a DGII una factura de envio con tipo NCF diferente a 32 debe estar cobrada.',

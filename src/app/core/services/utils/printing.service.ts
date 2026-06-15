@@ -528,11 +528,13 @@ export class PrintingService {
       yPos += 4;
 
       doc.setFont('helvetica', 'bold');
+      doc.setFontSize(13);
       doc.text('TOTAL', labelX, yPos, { align: 'right' });
       doc.text(formatoMoneda.format(totalGral), valueX, yPos, {
         align: 'right',
       });
-      yPos += 4;
+      yPos += 6;
+      doc.setFontSize(8);
 
       drawDashedLine(yPos);
       yPos += 5;
@@ -1631,12 +1633,13 @@ items.forEach((it: any) => {
       drawDashedLine(yPos);
       yPos += 5;
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(9);
+      doc.setFontSize(13);
       const totalFactura = Number(f.fa_valFact ?? f.fa_valfact ?? 0);
       const totalConduce = totalFactura > 0 ? totalFactura : totalDetalle;
       doc.text('TOTAL', leftMargin, yPos);
       doc.text(formatoMoneda.format(totalConduce), pageWidth - rightMargin, yPos, { align: 'right' });
-      yPos += 6;
+      yPos += 7;
+      doc.setFontSize(9);
 
       const numeroFactura = String(f.fa_codFact || '').trim();
       if (numeroFactura) {

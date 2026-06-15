@@ -163,7 +163,7 @@
                 class="table-responsive rounded-3 shadow-sm border"
                 style="background: white; min-height: 250px"
               >
-                <table class="table table-hover align-middle mb-0">
+                <table class="table table-hover align-middle mb-0 control-salida-table">
                   <thead class="table-dark">
                     <tr>
                       <th style="width: 9%">Factura</th>
@@ -213,9 +213,8 @@
                           (click)="togglePagado(d)"
                         >
                              <i 
-                               class="bi" 
+                               class="bi control-salida-check"
                                [ngClass]="d.pagado ? 'bi-check-square-fill text-success' : 'bi-square text-secondary'" 
-                               style="font-size: 1.8rem;" 
                                title="{{ d.pagadoOriginal ? 'Pagada en facturacion' : (d.pagado ? 'Pagada' : 'Pendiente') }}"
                              ></i>
                         </div>
@@ -236,9 +235,8 @@
                           (click)="toggleEntrega(d)"
                         >
                              <i 
-                               class="bi" 
+                               class="bi control-salida-check"
                                [ngClass]="d.entregada ? 'bi-check-square-fill text-primary' : 'bi-square text-secondary'" 
-                               style="font-size: 1.8rem;" 
                                title="{{ d.entregada ? 'Entregada' : 'Pendiente de entrega' }}"
                              ></i>
                         </div>

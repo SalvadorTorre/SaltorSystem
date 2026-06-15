@@ -972,10 +972,14 @@ export class ServicioFacturacion {
         // Al grabar facturas: siempre quedan pendientes de pago
         // (la forma de pago vive en fa_codfpago; fa_fpago se usa como flag/estado).
         facturaPayload.fa_fpago = 'N';
-        facturaPayload.fa_impresa = facturaPayload.fa_impresa || 'N';
-        facturaPayload.fa_reimpresa = facturaPayload.fa_reimpresa || 'N';
-        facturaPayload.fa_entrega = facturaPayload.fa_entrega || 'N';
-        facturaPayload.fa_salida = facturaPayload.fa_salida || 'N';
+        facturaPayload.fa_impresa = 'N';
+        facturaPayload.fa_reimpresa = 'N';
+        facturaPayload.fa_entrega = 'N';
+        facturaPayload.fa_impalmaf = 'N';
+        facturaPayload.fa_impalmap = 'N';
+        facturaPayload.fa_pendiente = 'N';
+        facturaPayload.fa_despacho = 'N';
+        facturaPayload.fa_salida = 'N';
 
         const { data: insertedFactura, error: facturaError } = await this.db
           .from('factura')

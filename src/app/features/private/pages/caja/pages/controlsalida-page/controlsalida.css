@@ -1,1 +1,15 @@
 /* Styles for ControlSalidaCajaComponent */
+
+.control-salida-table > :not(caption) > * > * {
+  padding: 0.28rem 0.45rem;
+  line-height: 1.1;
+}
+
+.control-salida-table .badge {
+  padding: 0.25rem 0.4rem;
+}
+
+.control-salida-table .control-salida-check {
+  font-size: 1.25rem;
+  line-height: 1;
+}

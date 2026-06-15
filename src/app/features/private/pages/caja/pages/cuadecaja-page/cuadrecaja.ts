@@ -89,7 +89,16 @@ export class CuadreCaja implements OnInit {
     return this.obtenerDescripcionPago(factura.fa_codfpago || factura.fa_fpago);
   }
 
+  obtenerCodigoPagoVisible(factura: any): string {
+    if (!this.facturaEstaPagada(factura)) return '';
+    return String(factura?.fa_codfpago ?? '').trim();
+  }
+
   esFacturaCredito(factura: any): boolean {
+    if (Number(factura?.fa_codfpago) === 3) {
+      return false;
+    }
+
     const descripcion = this.obtenerDescripcionPago(factura?.fa_codfpago || factura?.fa_fpago)
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
@@ -234,6 +243,16 @@ export class CuadreCaja implements OnInit {
 
     this.facturasFiltradas.forEach(f => {
       const monto = Number(f.fa_valFact) || 0;
+      const codigoFormaPago = Number(f.fa_codfpago);
+
+      if (codigoFormaPago === 3) {
+        if (this.facturaEstaPagada(f)) {
+          this.totales.tarjeta += monto;
+        } else {
+          this.totales.pendiente += monto;
+        }
+        return;
+      }
 
       if (this.esFacturaCredito(f)) {
         this.totales.credito += monto;
@@ -251,8 +270,6 @@ export class CuadreCaja implements OnInit {
 
       if (metodo.includes('efectivo') || metodo.includes('contado')) {
         this.totales.efectivo += monto;
-      } else if (metodo.includes('tarjeta') || metodo.includes('t/c')) {
-        this.totales.tarjeta += monto;
       } else if (metodo.includes('credito')) {
         this.totales.credito += monto;
       } else if (metodo.includes('deposito') || metodo.includes('transferencia')) {
@@ -270,10 +287,12 @@ export class CuadreCaja implements OnInit {
 
   generarReporte() {
     const builder = new ReporteCierreBuilder();
-    builder.iniciarDocumento('Cierre de Caja')
+    const nombreEmpresa = String(localStorage.getItem('nombre_empresa') || '').trim();
+    builder.iniciarDocumento('Cierre de Caja', nombreEmpresa)
            .agregarDatosGenerales(`Desde Factura ${this.inicioFactura} hasta ${this.finFactura}`, `Última Cuadrada: ${this.ultimaFacturaCuadrada || 'Ninguna'}`)
            .agregarTotales(this.totales, this.formatoMoneda)
-           .agregarTablaDetalle(this.facturasFiltradas, this.formatoMoneda, (factura) => this.obtenerFormaPagoVisible(factura))
+           .agregarTablaDetalle(this.facturasFiltradas, this.formatoMoneda, (factura) => this.obtenerCodigoPagoVisible(factura))
+           .agregarLeyendaFormasPago(this.formasPago)
            .agregarFirma()
            .build('cierre_caja.pdf');
   }

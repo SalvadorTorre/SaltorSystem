@@ -93,7 +93,7 @@ describe('Facturacion Component', () => {
     expect(component.totalItbis).toBeCloseTo(54);
     expect(component.subTotal).toBeCloseTo(246);
     expect(component.totalcosto).toBe(100);
-    expect(component.factxt).toBe(200);
+    expect(component.factxt).toBeCloseTo(66.67, 1);
   });
 
   it('should open modal when abrirModalDetalle is called', () => {

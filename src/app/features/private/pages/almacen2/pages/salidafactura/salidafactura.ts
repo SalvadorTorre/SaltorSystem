@@ -916,38 +916,42 @@ agregarFactura() {
     let y = 10; // Posición vertical inicial
 
     // Encabezado
-    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13);
     doc.text(nombreSucursal, centroPagina, y, { align: 'center', maxWidth: 70 });
-    y += 4;
+    y += 5;
     
     if (zonaSucursal) {
-        doc.setFontSize(7);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
         doc.text(zonaSucursal, centroPagina, y, { align: 'center', maxWidth: 70 });
-        y += 4;
+        y += 5;
     } else {
-        y += 2;
+        y += 3;
     }
     
-    doc.setFontSize(7);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
     doc.text('REPORTE DE CONTROL DE SALIDA', centroPagina, y, { align: 'center' });
-    y += 6;
+    y += 7;
 
     // Datos Generales
-    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9.5);
     doc.text(`Código Salida: ${data.codSalida}`, margenIzquierdo, y);
-    y += 3.5;
-    doc.text(`Fecha: ${fmtFecha(data.fecSalida)} ${fmtHora(data.horaSalida)}`, margenIzquierdo, y);
-    y += 3.5;
-    doc.text(`Chofer: ${data.nomChofer}`, margenIzquierdo, y);
     y += 4.5;
+    doc.text(`Fecha: ${fmtFecha(data.fecSalida)} ${fmtHora(data.horaSalida)}`, margenIzquierdo, y);
+    y += 4.5;
+    doc.text(`Chofer: ${data.nomChofer}`, margenIzquierdo, y);
+    y += 5;
 
     // Totales cabecera
     doc.text(`Cant. Facturas: ${data.canFact || data.CanFact}`, margenIzquierdo, y);
-    y += 3.5;
+    y += 4.5;
     doc.text(`Valor Total: $${fmt(data.valFact || data.ValFact)}`, margenIzquierdo, y);
-    y += 3.5;
+    y += 4.5;
     doc.text(`Valor Pagado: $${fmt(data.valPagado || 0)}`, margenIzquierdo, y);
-    y += 5;
+    y += 6;
 
     // Tabla de Detalles
     // Para 80mm, ajustamos columnas para incluir cliente y fecha
@@ -955,7 +959,7 @@ agregarFactura() {
     const filas = data.detalles.map((d: any) => [
       d.codFact,
       fmtFecha(d.fecFact), // Usar formato completo dd/mm/aaaa
-      (d.nomClie || '').substring(0, 15), // Truncar nombre cliente para no romper formato
+      (d.nomClie || '').substring(0, 12), // Truncar nombre cliente para no romper formato
       d.fpago === 'P' ? 'PAG' : (d.fpago || '').substring(0, 3), // Abreviar más F.Pago
       `$${fmt(d.valFact)}`
     ]);
@@ -966,8 +970,9 @@ agregarFactura() {
       body: filas,
       theme: 'plain', // Tema simple para impresoras térmicas
       styles: { 
-        fontSize: 5, // Reducir un poco más la fuente para que quepa todo
-        cellPadding: 0.5, 
+        fontSize: 7,
+        cellPadding: 0.8,
+        minCellHeight: 4,
         overflow: 'linebreak' 
       },
       headStyles: { 
@@ -977,11 +982,11 @@ agregarFactura() {
         halign: 'center'
       },
       columnStyles: {
-        0: { cellWidth: 13 }, // Factura
-        1: { cellWidth: 15 }, // Fecha - un poco más ancho para dd/mm/aaaa
-        2: { cellWidth: 18 }, // Cliente - reducido ligeramente
-        3: { cellWidth: 8 },  // Estado
-        4: { cellWidth: 18, halign: 'right' } // Valor
+        0: { cellWidth: 14 },
+        1: { cellWidth: 14 },
+        2: { cellWidth: 17 },
+        3: { cellWidth: 8, halign: 'center' },
+        4: { cellWidth: 19, halign: 'right' }
       },
       margin: { left: margenIzquierdo, right: 2 },
       tableWidth: 72 // Ajustar al ancho disponible (80 - margenes)
@@ -991,19 +996,19 @@ agregarFactura() {
     const finalY = (doc as any).lastAutoTable.finalY + 5;
 
     // Total final
-    doc.setFontSize(8);
+    doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
     doc.text(`Total: $${fmt(data.valFact || data.ValFact)}`, 70, finalY, { align: 'right' });
     
-    let currentY = finalY + 6;
+    let currentY = finalY + 8;
 
     // Declaración de Responsabilidad
-    doc.setFontSize(7);
+    doc.setFontSize(9);
     doc.setFont('helvetica', 'bold');
     doc.text('DECLARACIÓN DE RESPONSABILIDAD', centroPagina, currentY, { align: 'center' });
-    currentY += 3;
+    currentY += 4.5;
 
-    doc.setFontSize(6); // Fuente pequeña para el texto legal
+    doc.setFontSize(7.5);
     doc.setFont('helvetica', 'normal');
     
     // Línea 1: Yo, [Nombre], (subrayado)
@@ -1019,7 +1024,7 @@ agregarFactura() {
     doc.line(margenIzquierdo + anchoYo, currentY + 0.5, margenIzquierdo + anchoYo + anchoNombre, currentY + 0.5); // Subrayado
     doc.text(textoComa, margenIzquierdo + anchoYo + anchoNombre, currentY);
     
-    currentY += 2.5;
+    currentY += 3.5;
 
     // Línea 2: portador(a) de la Cédula... (Cédula subrayada)
     const textoPortador = 'portador(a) de la Cédula de Identidad No. ';
@@ -1034,7 +1039,7 @@ agregarFactura() {
     doc.line(margenIzquierdo + anchoPortador, currentY + 0.5, margenIzquierdo + anchoPortador + anchoCedula, currentY + 0.5); // Subrayado
     doc.text(textoComa2, margenIzquierdo + anchoPortador + anchoCedula, currentY);
 
-    currentY += 2.5;
+    currentY += 3.5;
 
     // Resto del texto
     const textoLegal = `declaro bajo juramento que me responsabilizo plenamente por las mercancías y valores correspondientes a las facturas detalladas anteriormente en este documento. Me comprometo a entregar, dentro de un plazo máximo de veinticuatro (24) horas , el equivalente en pesos dominicanos de los valores consignados, o en su defecto, a realizar la devolución íntegra de las mercancías entregadas a la persona debidamente designada por la empresa. En caso de incumplimiento de lo aquí establecido, AUTORIZO EXPRESAMENTE a la empresa a descontar de mi salario el monto correspondiente a los valores consignados, conforme a las disposiciones legales vigentes. Para los fines legales correspondientes, firmo la presente declaración en la fecha indicada en este documento.`;
@@ -1048,7 +1053,7 @@ agregarFactura() {
     // Espacio para firma
     doc.setLineWidth(0.5);
     doc.line(10, currentY, 70, currentY);
-    doc.setFontSize(7);
+    doc.setFontSize(9);
     doc.text('Firma Recibido', centroPagina, currentY + 4, { align: 'center' });
     
     const blob = doc.output('blob') as Blob;

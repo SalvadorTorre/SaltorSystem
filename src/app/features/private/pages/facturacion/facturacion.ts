@@ -178,6 +178,8 @@ export class Facturacion implements OnInit {
   private numfacturaSubject = new BehaviorSubject<string>('');
   private nomclienteSubject = new BehaviorSubject<string>('');
   private clienteSearchSubscription?: Subscription;
+  private facturaOriginalEdicion: Record<string, any> | null = null;
+  private detalleOriginalEdicion = '';
   selectedRow: number = -1; // Para rastrear la fila seleccionada
 
   form: FormGroup;
@@ -689,6 +691,8 @@ export class Facturacion implements OnInit {
     this.detallePendienteConsulta = [];
     this.cargandoDetallePendienteConsulta = false;
     this.facturaConsultaActual = '';
+    this.facturaOriginalEdicion = null;
+    this.detalleOriginalEdicion = '';
     this.habilitarIcono = true;
     this.actualizarTotales();
     $('#input1').focus();
@@ -706,6 +710,10 @@ export class Facturacion implements OnInit {
     this.formularioFacturacion.enable();
     this.formularioFacturacion.patchValue(Factura);
     await this.cargarItbisDeFactura(Factura);
+    this.facturaOriginalEdicion = {
+      ...this.formularioFacturacion.getRawValue(),
+    };
+    this.detalleOriginalEdicion = '';
     this.tituloModalFacturacion = 'Editando Facturacion';
     $('#modalfacturacion').modal('show');
     this.habilitarFormulario = true;
@@ -774,6 +782,7 @@ export class Facturacion implements OnInit {
         this.totalItbis = this.totalItbis;
         this.totalGral = totalGeneral;
         this.actualizarTotales();
+        this.detalleOriginalEdicion = this.serializarDetalleEdicion(this.items);
       });
   }
 
@@ -1361,6 +1370,13 @@ export class Facturacion implements OnInit {
   handleKeydownInventario(event: KeyboardEvent): void {
     console.log('handle');
     const key = event.key;
+    if (key === 'Escape') {
+      event.preventDefault();
+      event.stopPropagation();
+      this.salirDetalleProducto();
+      return;
+    }
+
     const maxIndex = this.resultadoCodmerc.length - 1;
     if (this.resultadoCodmerc.length === 1) {
       this.selectedIndexcodmerc = 0;
@@ -2345,8 +2361,7 @@ export class Facturacion implements OnInit {
       this.subTotal += total - itbis;
       const tcosto = this.costotxt * this.cantidadmerc;
       this.totalcosto += this.costotxt * this.cantidadmerc;
-      this.factxt =
-        ((this.totalGral - this.totalcosto) * 100) / this.totalcosto;
+      this.factxt = this.calcularMargenFactura();
       this.protxt = ((this.preciomerc - this.costotxt) * 100) / this.costotxt;
       this.items.push({
         producto: this.productoselect,
@@ -2468,10 +2483,7 @@ export class Facturacion implements OnInit {
       (sum, item) => sum + (Number(item.costo) || 0),
       0,
     );
-    this.factxt =
-      this.totalcosto > 0
-        ? ((this.totalGral - this.totalcosto) * 100) / this.totalcosto
-        : 0;
+    this.factxt = this.calcularMargenFactura();
     const formatCurrency = (value: number) =>
       value.toLocaleString('es-DO', {
         style: 'currency',
@@ -2480,6 +2492,23 @@ export class Facturacion implements OnInit {
     this.subtotaltxt = formatCurrency(this.subTotal);
     this.itbitxt = formatCurrency(this.totalItbis);
     this.totalgraltxt = formatCurrency(this.totalGral);
+  }
+
+  salirDetalleProducto(): void {
+    this.resultadoCodmerc = [];
+    this.resultadodescripcionmerc = [];
+    this.ocultarResultadosCodmerc = true;
+    try {
+      $('#modalDetalleFactura').modal('hide');
+    } catch (e) {
+      console.warn('No se pudo cerrar #modalDetalleFactura:', e);
+    }
+  }
+
+  private calcularMargenFactura(): number {
+    return this.totalGral > 0
+      ? ((this.totalGral - this.totalcosto) * 100) / this.totalGral
+      : 0;
   }
 
   private calcularItbisSumando(subtotal: number): number {
@@ -2566,6 +2595,16 @@ export class Facturacion implements OnInit {
       ...this.formularioFacturacion.getRawValue(),
     } as any;
     facturaPayload.fa_status = 'C';
+    if (!this.modoedicionFacturacion) {
+      facturaPayload.fa_salida = 'N';
+      facturaPayload.fa_impresa = 'N';
+      facturaPayload.fa_reimpresa = 'N';
+      facturaPayload.fa_entrega = 'N';
+      facturaPayload.fa_impalmaf = 'N';
+      facturaPayload.fa_impalmap = 'N';
+      facturaPayload.fa_pendiente = 'N';
+      facturaPayload.fa_despacho = 'N';
+    }
     facturaPayload.fa_codEmpr = localStorage.getItem('codigoempresa');
     facturaPayload.fa_codSucu = parseInt(
       localStorage.getItem('idSucursal') || '0',
@@ -2594,7 +2633,24 @@ export class Facturacion implements OnInit {
     this.formularioFacturacion.patchValue({ fa_tipoitbis: itbisFactura.codigo }, { emitEvent: false });
     facturaPayload.fa_fecFact = this.toPrismaDate(facturaPayload.fa_fecFact);
     facturaPayload.fa_rncFact = facturaPayload.fa_rncFact || '';
-    const datosParaGuardar = { factura: facturaPayload, detalle: this.items };
+    const detalleModificado =
+      this.modoedicionFacturacion &&
+      this.serializarDetalleEdicion(this.items) !== this.detalleOriginalEdicion;
+    const datosParaGuardar: any = {
+      factura: facturaPayload,
+      detalle: this.items,
+    };
+    if (this.modoedicionFacturacion) {
+      const facturaCambios = this.construirCambiosFactura(facturaPayload);
+      if (detalleModificado) {
+        facturaCambios['fa_valFact'] = facturaPayload.fa_valFact;
+        facturaCambios['fa_itbiFact'] = facturaPayload.fa_itbiFact;
+        facturaCambios['fa_cosFact'] = this.totalcosto;
+        facturaCambios['fa_subFact'] = facturaPayload.fa_subFact;
+      }
+      datosParaGuardar.facturaCambios = facturaCambios;
+      datosParaGuardar.actualizarDetalle = detalleModificado;
+    }
     console.log('Datos', datosParaGuardar);
 
     const codCliente = this.formularioFacturacion.get('fa_codClie')?.value;
@@ -2652,6 +2708,72 @@ export class Facturacion implements OnInit {
       this.isLoading = false;
       alert('Esta Factura no fue Guardada');
     }
+  }
+
+  private construirCambiosFactura(actual: Record<string, any>): Record<string, any> {
+    const original = this.facturaOriginalEdicion || {};
+    const calculados = new Set([
+      'fa_valFact',
+      'fa_itbiFact',
+      'fa_cosFact',
+      'fa_subFact',
+    ]);
+    const cambios: Record<string, any> = {};
+
+    Object.keys(this.formularioFacturacion.getRawValue()).forEach((campo) => {
+      if (campo === 'fa_codFact' || calculados.has(campo)) return;
+      const valorActual = actual[campo];
+      const valorOriginal = original[campo];
+      if (
+        this.normalizarValorEdicion(campo, valorActual) !==
+        this.normalizarValorEdicion(campo, valorOriginal)
+      ) {
+        cambios[campo] = valorActual;
+      }
+    });
+
+    return cambios;
+  }
+
+  private normalizarValorEdicion(campo: string, valor: any): string {
+    if (campo === 'fa_fecFact' || campo === 'fa_fecNcf' || campo === 'fa_expFact') {
+      return this.toPrismaDate(valor);
+    }
+
+    const camposNumericos = new Set([
+      'fa_tipoNcf',
+      'fa_codClie',
+      'fa_codZona',
+      'fa_codSect',
+      'fa_codfpago',
+      'fa_envio',
+      'fa_tipoFact',
+      'fa_tipoRnc',
+    ]);
+    if (camposNumericos.has(campo)) {
+      const numero = Number(valor);
+      return Number.isFinite(numero) ? String(numero) : '';
+    }
+
+    return String(valor ?? '').trim();
+  }
+
+  private serializarDetalleEdicion(items: interfaceDetalleModel[]): string {
+    return JSON.stringify(
+      (items || []).map((item: any) => ({
+        codigo: String(
+          item?.producto?.in_codmerc ?? item?.df_codMerc ?? '',
+        ).trim(),
+        descripcion: String(
+          item?.producto?.in_desmerc ?? item?.df_desMerc ?? '',
+        ).trim(),
+        cantidad: Number(item?.cantidad ?? item?.df_canMerc ?? 0) || 0,
+        precio: Number(item?.precio ?? item?.df_preMerc ?? 0) || 0,
+        total: Number(item?.total ?? item?.df_valMerc ?? 0) || 0,
+        costo: Number(item?.costo ?? item?.df_cosMerc ?? 0) || 0,
+        tipo: String(item?.df_tipoMerc ?? '').trim(),
+      })),
+    );
   }
 
   private async obtenerItbisParaComprobante(tipoNcf: any, mostrarAviso: boolean): Promise<ItbisData | null> {
