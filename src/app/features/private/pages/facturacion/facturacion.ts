@@ -1679,8 +1679,13 @@ export class Facturacion implements OnInit {
     });
   }
 
-  private actualizarTipoNcfPorRnc(value: any) {
+  private normalizarRnc(value: any): string {
     const rnc = String(value || '').replace(/\D/g, '').trim();
+    return rnc && !/^0+$/.test(rnc) ? rnc : '';
+  }
+
+  private actualizarTipoNcfPorRnc(value: any) {
+    const rnc = this.normalizarRnc(value);
     if (rnc) {
       this.seleccionarTipoNcfRnc();
       return;
@@ -2153,6 +2158,7 @@ export class Facturacion implements OnInit {
         },
         { emitEvent: false },
       );
+      this.actualizarTipoNcfPorRnc(cliente.cl_rnc);
       console.log(cliente);
       console.log('Formulario actualizado:', this.formularioFacturacion.value);
     }
@@ -2590,6 +2596,7 @@ export class Facturacion implements OnInit {
     this.formularioFacturacion.get('fa_fecFact')!.enable();
     this.formularioFacturacion.get('fa_nomVend')!.enable();
     this.formularioFacturacion.get('fa_ncfFact')!.enable();
+    this.actualizarTipoNcfPorRnc(this.formularioFacturacion.get('fa_rncFact')?.value);
     // Construir payload asegurando fecha en formato Prisma (YYYY-MM-DD)
     const facturaPayload = {
       ...this.formularioFacturacion.getRawValue(),
