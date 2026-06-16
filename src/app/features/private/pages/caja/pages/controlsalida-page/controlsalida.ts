@@ -670,9 +670,10 @@ export class ControlSalidaCajaComponent implements OnInit, OnDestroy {
       unit: 'mm',
       format: [80, 297],
     });
-    const left = 5;
-    const right = 75;
-    const center = 40;
+    const left = 8;
+    const right = 76;
+    const center = 42;
+    const contentWidth = right - left;
     let y = 8;
 
     const line = () => {
@@ -682,8 +683,21 @@ export class ControlSalidaCajaComponent implements OnInit, OnDestroy {
     const centerText = (text: string, size = 8, bold = false) => {
       doc.setFontSize(size);
       doc.setFont('helvetica', bold ? 'bold' : 'normal');
-      doc.text(text, center, y, { align: 'center', maxWidth: 70 });
+      doc.text(text, center, y, { align: 'center', maxWidth: contentWidth });
       y += 4;
+    };
+    const fitText = (value: any, maxWidth: number) => {
+      const original = String(value || '').trim();
+      if (doc.getTextWidth(original) <= maxWidth) return original;
+
+      let shortened = original;
+      while (
+        shortened.length > 1 &&
+        doc.getTextWidth(`${shortened}...`) > maxWidth
+      ) {
+        shortened = shortened.slice(0, -1);
+      }
+      return `${shortened.trim()}...`;
     };
 
     centerText('CONTROL DE COBRO', 10, true);
@@ -693,7 +707,7 @@ export class ControlSalidaCajaComponent implements OnInit, OnDestroy {
 
     doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
-    doc.text(`Chofer: ${data.chofer}`, left, y, { maxWidth: 70 });
+    doc.text(`Chofer: ${data.chofer}`, left, y, { maxWidth: contentWidth });
     y += 5;
     doc.text(`Codigo: ${data.codChofer}`, left, y);
     y += 5;
@@ -711,42 +725,87 @@ export class ControlSalidaCajaComponent implements OnInit, OnDestroy {
         y += 5;
       });
     } else {
-      doc.text('No hay cobros gestionados en esta salida.', left, y, { maxWidth: 70 });
+      doc.text('No hay cobros gestionados en esta salida.', left, y, {
+        maxWidth: contentWidth,
+      });
       y += 6;
     }
 
-    line();
-    doc.setFont('helvetica', 'bold');
-    doc.text('Total a pagar:', left, y);
-    doc.text(fmt(data.totalPagado), right, y, { align: 'right' });
-    y += 5;
-    doc.setFont('helvetica', 'normal');
-    if (data.totalNoGestionable > 0) {
-      doc.text('Facturas ya pagadas:', left, y);
-      doc.text(fmt(data.totalNoGestionable), right, y, { align: 'right' });
-      y += 5;
-    }
+    const totalPagadoReporte = data.detalles.reduce(
+      (sum: number, d: DetalleSalidaCaja) =>
+        sum + (d.pagado ? Number(d.valFact) || 0 : 0),
+      0
+    );
+    const totalPendienteReporte = data.detalles.reduce(
+      (sum: number, d: DetalleSalidaCaja) =>
+        sum + (!d.pagado ? Number(d.valFact) || 0 : 0),
+      0
+    );
+    const totalGeneralReporte = totalPagadoReporte + totalPendienteReporte;
 
     line();
+    doc.setFont('helvetica', 'bold');
+    doc.text('Total pagado:', left, y);
+    doc.text(fmt(totalPagadoReporte), right, y, { align: 'right' });
+    y += 5;
+    doc.text('Total pendiente de pago:', left, y);
+    doc.text(fmt(totalPendienteReporte), right, y, { align: 'right' });
+    y += 5;
+    doc.text('Total general:', left, y);
+    doc.text(fmt(totalGeneralReporte), right, y, { align: 'right' });
+    y += 5;
+
+    line();
+    doc.setFontSize(9);
     doc.setFont('helvetica', 'bold');
     doc.text('Facturas', left, y);
     y += 5;
+    doc.setFontSize(8);
+    doc.text('Factura', left, y);
+    doc.text('Fecha', left + 29, y);
+    doc.text('Status', right, y, { align: 'right' });
+    y += 4;
+    doc.line(left, y, right, y);
+    y += 4;
+
+    const imprimirEncabezadoDetalle = () => {
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Factura', left, y);
+      doc.text('Fecha', left + 29, y);
+      doc.text('Status', right, y, { align: 'right' });
+      y += 4;
+      doc.line(left, y, right, y);
+      y += 4;
+    };
+
+    doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
     data.detalles.forEach((d: DetalleSalidaCaja) => {
-      if (y > 275) {
+      if (y > 273) {
         doc.addPage([80, 297], 'portrait');
         y = 8;
+        imprimirEncabezadoDetalle();
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
       }
       doc.text(String(d.codFact), left, y);
-      doc.text(fmt(d.valFact), right, y, { align: 'right' });
-      y += 4;
-      const estado = d.pagadoOriginal ? 'Ya pagada' : 'Cobrada en salida';
-      doc.text(`${d.descfpago || 'Sin forma'} - ${estado}`, left, y, { maxWidth: 70 });
+      doc.text(formatDate(d.fecFact), left + 29, y);
+      doc.setFont('helvetica', 'bold');
+      doc.text(d.pagado ? 'Pagada' : '', right, y, { align: 'right' });
       y += 5;
+      doc.setFont('helvetica', 'normal');
+      doc.text(fitText(d.nomClie, contentWidth - 24), left, y);
+      doc.text(fmt(d.valFact), right, y, { align: 'right' });
+      y += 6;
     });
 
+    if (y > 278) {
+      doc.addPage([80, 297], 'portrait');
+      y = 12;
+    }
     y += 8;
-    doc.line(10, y, 70, y);
+    doc.line(left + 2, y, right - 2, y);
     y += 5;
     doc.text('Firma recibido', center, y, { align: 'center' });
 

@@ -1455,6 +1455,103 @@ export class ServicioFacturacion {
     })());
   }
 
+  anularFacturacion(factura: any): Observable<any> {
+    const codigo = String(
+      typeof factura === 'string'
+        ? factura
+        : factura?.fa_codFact ?? factura?.fa_codfact ?? ''
+    ).trim();
+
+    if (!this.useSupabase) {
+      return this.http.PatchRequest(`/facturacion/anular/${codigo}`, factura || {});
+    }
+
+    return from((async () => {
+      let facturaQuery = this.db
+        .from('factura')
+        .select('*')
+        .eq('fa_codfact', codigo)
+        .limit(1);
+      facturaQuery = this.applyTenantFilter(facturaQuery);
+
+      const { data: facturaActual, error: facturaError } = await facturaQuery.maybeSingle();
+      if (facturaError) throw facturaError;
+      if (!facturaActual) {
+        throw new Error(`Factura ${codigo} no pertenece al tenant activo.`);
+      }
+
+      const statusActual = String(facturaActual.fa_status || '').trim().toUpperCase();
+      if (statusActual !== 'C') {
+        throw new Error('Solo se puede anular una factura con status C.');
+      }
+
+      const notaAnterior = String(facturaActual.fa_notafact || '').trim();
+      const notaAnulacion = [
+        'FACTURA ANULADA',
+        `Fecha anulacion: ${new Date().toISOString()}`,
+        `Cliente original: ${facturaActual.fa_nomclie || ''}`,
+        `Codigo cliente original: ${facturaActual.fa_codclie || ''}`,
+        `RNC original: ${facturaActual.fa_rncfact || ''}`,
+        `Telefono original: ${facturaActual.fa_telclie || ''}`,
+        `Direccion original: ${facturaActual.fa_dirclie || ''}`,
+        `Contacto original: ${facturaActual.fa_contacto || ''}`,
+        `Sector original: ${facturaActual.fa_sector || ''}`,
+        `Valor original: ${this.toNumber(facturaActual.fa_valfact).toFixed(2)}`,
+        `ITBIS original: ${this.toNumber(facturaActual.fa_itbifact).toFixed(2)}`,
+        `Subtotal original: ${this.toNumber(facturaActual.fa_subfact).toFixed(2)}`,
+        `Descuento original: ${this.toNumber(facturaActual.fa_desfact).toFixed(2)}`,
+        `Costo original: ${this.toNumber(facturaActual.fa_cosfact).toFixed(2)}`,
+        `Abono original: ${this.toNumber(facturaActual.fa_abofact).toFixed(2)}`,
+        notaAnterior ? `Nota anterior: ${notaAnterior}` : '',
+      ].filter(Boolean).join(' | ');
+
+      let facturaUpdate = this.db
+        .from('factura')
+        .update({
+          fa_status: 'N',
+          fa_notafact: notaAnulacion,
+          fa_codclie: null,
+          fa_nomclie: 'XXXXXXX',
+          fa_rncfact: null,
+          fa_telclie: null,
+          fa_dirclie: null,
+          fa_contacto: null,
+          fa_codzona: null,
+          fa_deszona: null,
+          fa_codsect: null,
+          fa_sector: null,
+          fa_correo: null,
+          fa_valfact: 0,
+          fa_itbifact: 0,
+          fa_subfact: 0,
+          fa_desfact: 0,
+          fa_cosfact: 0,
+          fa_abofact: 0,
+        })
+        .eq('fa_codfact', codigo)
+        .select('*')
+        .limit(1);
+      facturaUpdate = this.applyTenantFilter(facturaUpdate);
+
+      const { data, error } = await facturaUpdate.maybeSingle();
+      if (error) throw error;
+
+      let detDelete = this.db
+        .from('detfactura')
+        .delete()
+        .eq('df_codfact', codigo);
+      detDelete = this.applyTenantFilterDetalle(detDelete);
+      const { error: detError } = await detDelete;
+      if (detError) throw detError;
+
+      return {
+        status: 'success',
+        code: 200,
+        data: data ? this.mapFacturaDbToUi(data) : null,
+      };
+    })());
+  }
+
   buscarFacturacionPorNombre(
     currentPage: number,
     pageSize: number,

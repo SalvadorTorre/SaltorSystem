@@ -99,6 +99,26 @@ export class ServicioSalidafactura {
     if (updateError) throw updateError;
   }
 
+  private async validarCodSalidaDisponible(codsalida: string): Promise<void> {
+    const codigo = String(codsalida || '').trim();
+    if (!codigo || !this.useSupabase) return;
+
+    const { data, error } = await this.db
+      .from('salida')
+      .select('id,codsalida')
+      .eq('codsalida', codigo)
+      .limit(1)
+      .maybeSingle();
+    if (error) throw error;
+    if (data) {
+      throw {
+        status: 409,
+        code: 'DUPLICATE_CODSALIDA',
+        message: `El codigo de salida ${codigo} ya existe.`,
+      };
+    }
+  }
+
   private mapSalidaDbToUi(row: any): any {
     if (!row) return row;
     return {
@@ -293,6 +313,7 @@ export class ServicioSalidafactura {
     return from((async () => {
       const codsalida = String(payload?.codsalida ?? payload?.codSalida ?? '').trim();
       if (!codsalida) throw new Error('codsalida requerido');
+      await this.validarCodSalidaDisponible(codsalida);
 
       const idsucursal = this.toNumberOrNull(payload?.idsucursal ?? payload?.idSucursal);
       const codchofer = this.toNumberOrNull(payload?.codchofer ?? payload?.codChofer);

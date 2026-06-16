@@ -718,10 +718,10 @@ export class PrintingService {
         unit: 'mm',
         format: [80, 297],
       });
-      const pageWidth = 74;
+      const pageWidth = 80;
       const centerX = pageWidth / 2;
-      const leftMargin = 5;
-      const rightMargin = 5;
+      const leftMargin = 8;
+      const rightMargin = 4;
       let yPos = 5;
 
       const drawDashedLine = (y: number) => {
@@ -834,10 +834,11 @@ export class PrintingService {
       drawDashedLine(yPos);
       yPos += 5;
 
+      doc.setFontSize(9);
       doc.setFont('helvetica', 'bold');
       const xDesc = leftMargin;
-      const xCant = 38;
-      const xPrecio = 52;
+      const xCant = 42;
+      const xPrecio = 57;
       const xValor = pageWidth - rightMargin;
       doc.text('Cantidad / Descrip', xDesc, yPos);
       doc.text('Cant', xCant, yPos, { align: 'right' });
@@ -848,6 +849,7 @@ export class PrintingService {
       yPos += 4;
 
       doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
       const formatoMoneda = new Intl.NumberFormat('es-DO', {
         style: 'decimal',
         minimumFractionDigits: 2,
@@ -858,12 +860,12 @@ export class PrintingService {
         const cant = item.cantidad ?? item.de_canEntr ?? 0;
         const precio = item.precio ?? item.de_preMerc ?? 0;
         const totalItem = item.total ?? item.de_valEntr ?? (cant * precio) ?? 0;
-        const descLines = doc.splitTextToSize(desc, 30);
+        const descLines = doc.splitTextToSize(desc, 31);
         doc.text(descLines, xDesc, yPos);
         doc.text(String(cant), xCant, yPos, { align: 'right' });
         doc.text(formatoMoneda.format(precio), xPrecio, yPos, { align: 'right' });
         doc.text(formatoMoneda.format(totalItem), xValor, yPos, { align: 'right' });
-        yPos += Math.max(descLines.length * 4, 4) + 2;
+        yPos += Math.max(descLines.length * 4.5, 4.5) + 2;
       });
 
       drawDashedLine(yPos);
@@ -877,6 +879,7 @@ export class PrintingService {
       doc.text(formatoMoneda.format(totalGral), pageWidth - rightMargin, yPos, { align: 'right' });
       yPos += 8;
       doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
       doc.text('Nota:', leftMargin, yPos);
       yPos += 4;
       if (e.nota) {

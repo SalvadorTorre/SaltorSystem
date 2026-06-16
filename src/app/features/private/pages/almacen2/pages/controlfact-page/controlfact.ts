@@ -333,6 +333,10 @@ export class ControlFact implements OnInit {
     );
   }
 
+  puedeAnularFactura(factura: any): boolean {
+    return this.normalizarStatusFactura(factura?.fa_status) === 'C';
+  }
+
   async imprimirCopiaDocumento(factura: FacturacionModelData): Promise<void> {
     const codigo = String(factura?.fa_codFact || '').trim();
     const status = this.normalizarStatusFactura((factura as any)?.fa_status);
@@ -831,28 +835,55 @@ export class ControlFact implements OnInit {
       });
   }
 
-  eliminarFacturacion(facturacionId: string) {
+  anularFacturacion(factura: FacturacionModelData | string) {
+    const facturaFila = typeof factura === 'string'
+      ? this.facturacionList.find((item) => item.fa_codFact === factura)
+      : factura;
+    const facturacionId = String(
+      typeof factura === 'string' ? factura : factura?.fa_codFact || ''
+    ).trim();
+
+    if (!facturacionId) {
+      Swal.fire('Aviso', 'No se pudo identificar la factura.', 'warning');
+      return;
+    }
+
+    if (!this.puedeAnularFactura(facturaFila)) {
+      Swal.fire(
+        'Aviso',
+        'Por ahora solo se puede anular una factura con status C.',
+        'warning',
+      );
+      return;
+    }
+
     Swal.fire({
-      title: '¿Está seguro de eliminar este Facturacion?',
-      text: '¡No podrá revertir esto!',
+      title: 'Esta seguro de anular esta factura?',
+      text: 'La factura se conservara, pero quedara marcada como anulada.',
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#3085d6',
       cancelButtonColor: '#d33',
-      confirmButtonText: 'Si, eliminar!',
+      confirmButtonText: 'Si, anular',
     }).then((result) => {
       if (result.isConfirmed) {
         this.servicioFacturacion
-          .eliminarFacturacion(facturacionId)
-          .subscribe((response) => {
-            Swal.fire({
-              title: 'Excelente!',
-              text: 'Factura eliminada correctamente.',
-              icon: 'success',
-              timer: 2000,
-              showConfirmButton: false,
-            });
-            this.buscarTodasFacturacion();
+          .anularFacturacion(facturaFila || facturacionId)
+          .subscribe({
+            next: () => {
+              Swal.fire({
+                title: 'Excelente!',
+                text: 'Factura anulada correctamente.',
+                icon: 'success',
+                timer: 2000,
+                showConfirmButton: false,
+              });
+              this.buscarTodasFacturacion();
+            },
+            error: (error) => {
+              const mensaje = error?.message || error?.error?.message || 'No se pudo anular la factura.';
+              Swal.fire('Error', mensaje, 'error');
+            },
           });
       }
     });

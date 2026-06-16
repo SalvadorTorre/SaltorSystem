@@ -371,10 +371,10 @@
                 <thead class="sticky-header" style="position: sticky; top: 0; z-index: 10; background: linear-gradient(90deg, #0f172a, #334155); color: #fff;">
                   <tr>
                     <th style="width: 10%">Número</th>
-                    <th style="width: 40%">Nombre</th>
+                    <th style="width: 34%">Nombre</th>
                     <th class="text-center" style="width: 15%">Fecha</th>
                     <th class="text-end" style="width: 16%">Valor</th>
-                    <th style="width: 10%">Cobro</th>
+                    <th style="width: 16%">Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -388,7 +388,7 @@
                     <td>{{ factura.fa_nomClie }}</td>
                     <td class="text-center">{{ factura.fa_fecFact }}</td>
                     <td class="text-end">{{ factura.fa_valFact }}</td>
-                    <td>
+                    <td class="text-nowrap">
                       <i
                         (click)="consultarFacturacion(factura)"
                         class="bi bi-card-list text-success"
@@ -413,6 +413,15 @@
                           *ngIf="reimprimiendoFactura !== factura.fa_codFact"
                           class="bi bi-printer"
                         ></i>
+                      </button>
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-danger ms-1"
+                        [disabled]="!puedeAnularFactura(factura)"
+                        (click)="anularFacturacion(factura)"
+                        [title]="puedeAnularFactura(factura) ? 'Anular factura' : 'Solo se puede anular con status C'"
+                      >
+                        <i class="bi bi-x-circle"></i>
                       </button>
                     </td>
                   </tr>
