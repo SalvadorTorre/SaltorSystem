@@ -1909,6 +1909,8 @@ export class ServicioFacturacion {
         .from('factura')
         .select('*')
         .or('estado_envio_dgii.is.null,estado_envio_dgii.eq.PENDIENTE')
+        .not('fa_ncffact', 'is', null)
+        .neq('fa_ncffact', '')
         .order('fa_fecfact', { ascending: false })
         .limit(500);
 
@@ -2135,6 +2137,64 @@ export class ServicioFacturacion {
       const { error } = await base;
       if (error) throw error;
       return { status: 'success', code: 200, data: { updated: codigos.length } };
+    })());
+  }
+
+  buscarConsultaVentas(params: {
+    sucursal?: number | string | null;
+    fechaDesde?: string | null;
+    fechaHasta?: string | null;
+    pageSize?: number;
+    incluirTodasLasEmpresas?: boolean;
+  } = {}): Observable<any> {
+    if (!this.useSupabase) {
+      return this.buscarFacturacion(1, Number(params.pageSize || 500));
+    }
+
+    const safeLimit = Math.max(10, Number(params.pageSize) || 500);
+    const sucursal = this.toNumberOrNull(params.sucursal);
+    const fechaDesde = this.normalizeDate(params.fechaDesde);
+    const fechaHasta = this.normalizeDate(params.fechaHasta);
+
+    return from((async () => {
+      let query = this.db
+        .from('factura')
+        .select('*')
+        .order('fa_fecfact', { ascending: false })
+        .order('fa_codfact', { ascending: false })
+        .limit(safeLimit);
+
+      if (!params.incluirTodasLasEmpresas) {
+        const { codEmpre, rncEmpre } = this.currentTenant();
+        if (codEmpre) {
+          query = query.eq('fa_codempr', codEmpre);
+        } else if (rncEmpre) {
+          query = query.eq('tenant_rnc', rncEmpre);
+        } else {
+          query = query.eq('fa_codempr', '__NO_TENANT__');
+        }
+      }
+
+      if (sucursal && sucursal > 0) {
+        query = query.eq('fa_codsucu', sucursal);
+      }
+
+      if (fechaDesde) {
+        query = query.gte('fa_fecfact', fechaDesde);
+      }
+
+      if (fechaHasta) {
+        query = query.lte('fa_fecfact', fechaHasta);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      return {
+        status: 'success',
+        code: 200,
+        data: (data || []).map((row: any) => this.mapFacturaDbToUi(row)),
+      };
     })());
   }
 }

@@ -745,22 +745,20 @@ export class ControlSalidaCajaComponent implements OnInit, OnDestroy {
 
     line();
     doc.setFont('helvetica', 'bold');
-    doc.text('Total pagado:', left, y);
-    doc.text(fmt(totalPagadoReporte), right, y, { align: 'right' });
-    y += 5;
-    doc.text('Total pendiente de pago:', left, y);
-    doc.text(fmt(totalPendienteReporte), right, y, { align: 'right' });
-    y += 5;
-    doc.text('Total general:', left, y);
+    doc.text('Total valor:', left, y);
     doc.text(fmt(totalGeneralReporte), right, y, { align: 'right' });
     y += 5;
+    doc.text('Factura pagada:', left, y);
+    doc.text(fmt(totalPagadoReporte), right, y, { align: 'right' });
+    y += 5;
+    doc.text('Total Fact. pendiente de pago:', left, y);
+    doc.setFontSize(9);
+    doc.text(`(${fmt(totalPendienteReporte)})`, right, y, { align: 'right' });
+    y += 6;
 
     line();
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Facturas', left, y);
-    y += 5;
     doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
     doc.text('Factura', left, y);
     doc.text('Fecha', left + 29, y);
     doc.text('Status', right, y, { align: 'right' });
@@ -789,15 +787,18 @@ export class ControlSalidaCajaComponent implements OnInit, OnDestroy {
         doc.setFontSize(9);
         doc.setFont('helvetica', 'normal');
       }
-      doc.text(String(d.codFact), left, y);
+      const pendientePago = !d.pagado;
+      doc.setFont('helvetica', pendientePago ? 'bold' : 'normal');
+      doc.text(pendientePago ? `(${d.codFact})` : String(d.codFact), left, y);
       doc.text(formatDate(d.fecFact), left + 29, y);
       doc.setFont('helvetica', 'bold');
       doc.text(d.pagado ? 'Pagada' : '', right, y, { align: 'right' });
       y += 5;
-      doc.setFont('helvetica', 'normal');
+      doc.setFont('helvetica', pendientePago ? 'bold' : 'normal');
       doc.text(fitText(d.nomClie, contentWidth - 24), left, y);
-      doc.text(fmt(d.valFact), right, y, { align: 'right' });
+      doc.text(pendientePago ? `(${fmt(d.valFact)})` : fmt(d.valFact), right, y, { align: 'right' });
       y += 6;
+      doc.setFont('helvetica', 'normal');
     });
 
     if (y > 278) {

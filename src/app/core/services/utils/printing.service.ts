@@ -98,6 +98,20 @@ export class PrintingService {
     };
   }
 
+  private rncClienteFactura(factura: any): string {
+    return String(
+      factura?.fa_rncFact ??
+        factura?.fa_rncfact ??
+        factura?.fa_rnc ??
+        factura?.rncCliente ??
+        factura?.rnccliente ??
+        factura?.rnc ??
+        factura?.clienteRnc ??
+        factura?.cl_rnc ??
+        ''
+    ).trim();
+  }
+
   private usarTrabajosSeparadosParaCorte(): boolean {
     return typeof window !== 'undefined' && !!window.electronAPI?.isDesktop;
   }
@@ -317,17 +331,24 @@ export class PrintingService {
       // --- 3. FACTURA DETAILS ---
       // Handle data structure variations
       const f = this.datosFacturaImpresion(facturaData);
-      const ncf = f.fa_ncfFact || f.ncf || '';
+      const ncf =
+        f.fa_ncfFact ||
+        f.fa_ncffact ||
+        facturaData?.fa_ncfFact ||
+        facturaData?.fa_ncffact ||
+        f.ncf ||
+        '';
       const fecha = this.parseInvoiceDateTime(
         f.fa_fehora,
         f.fa_fecHora,
         f.fa_fechora,
         f.fa_fecFact,
       );
-      const cliente = f.fa_nomClie || 'CLIENTE GENERICO';
-      const rncCliente = f.fa_rncFact || '';
+      const cliente = f.fa_nomClie || f.fa_nomclie || 'CLIENTE GENERICO';
+      const rncCliente = this.rncClienteFactura(f);
       const codFact = f.barcodeValue || f.fa_codFact || '';
       const vendedor = f.fa_nomVend || f.fa_codVend || '';
+      const esCopiaCaja = copyLabel.toUpperCase() === 'CAJA';
       const textoCampo = (...values: any[]): string => {
         for (const value of values) {
           const text = String(value ?? '').trim();
@@ -337,9 +358,40 @@ export class PrintingService {
       };
 
       // Title logic
-      let tituloFactura = 'FACTURA PARA CONSUMIDOR FINAL';
-      if (String(ncf).startsWith('B01') || String(ncf).startsWith('E31')) {
-        tituloFactura = 'FACTURA DE CRÉDITO FISCAL';
+      const tipoNcf = String(
+        f.fa_tipoNcf ?? f.fa_tiponcf ?? facturaData?.fa_tipoNcf ?? facturaData?.fa_tiponcf ?? '',
+      ).trim().toUpperCase();
+      const ncfUpper = String(ncf).trim().toUpperCase();
+      const esCreditoFiscal =
+        ncfUpper.startsWith('B01') ||
+        ncfUpper.startsWith('E31') ||
+        tipoNcf === '1' ||
+        tipoNcf === '01' ||
+        tipoNcf === '31' ||
+        tipoNcf === 'B01' ||
+        tipoNcf === 'E31';
+      const esGubernamental =
+        ncfUpper.startsWith('B14') ||
+        ncfUpper.startsWith('B15') ||
+        ncfUpper.startsWith('E14') ||
+        ncfUpper.startsWith('E45') ||
+        tipoNcf === '14' ||
+        tipoNcf === '15' ||
+        tipoNcf === '45' ||
+        tipoNcf === 'B14' ||
+        tipoNcf === 'B15' ||
+        tipoNcf === 'E14' ||
+        tipoNcf === 'E45';
+      let tituloFactura = String(
+        facturaData?.__invoiceTitle ?? f.__invoiceTitle ?? '',
+      ).trim();
+      if (!tituloFactura) {
+        tituloFactura = 'FACTURA PARA CONSUMIDOR FINAL';
+      }
+      if (esGubernamental) {
+        tituloFactura = 'FACTURA GUBERNAMENTAL';
+      } else if (esCreditoFiscal && !facturaData?.__invoiceTitle && !f.__invoiceTitle) {
+        tituloFactura = 'FACTURA DE CREDITO FISCAL';
       }
 
       doc.setFont('helvetica', 'bold');
@@ -378,6 +430,12 @@ export class PrintingService {
       if (vendedor) {
         doc.text(`Vendedor: ${vendedor}`, leftMargin, yPos);
         yPos += 4;
+      }
+      if (esCopiaCaja) {
+        doc.setFont('helvetica', 'bold');
+        doc.text(`Forma pago: ${this.etiquetaPagoConduce(f)}`, leftMargin, yPos);
+        yPos += 4;
+        doc.setFont('helvetica', 'normal');
       }
 
       drawDashedLine(yPos);
@@ -1589,23 +1647,57 @@ items.forEach((it: any) => {
         doc.text(`Hora: ${formatTimeShort(fechaHora)}`, leftMargin, yPos);
         yPos += 4;
       }
-      doc.text(`Cliente: ${String(f.fa_nomClie || '')}`, leftMargin, yPos);
+      doc.text(`Cliente: ${String(f.fa_nomClie || f.fa_nomclie || '')}`, leftMargin, yPos);
       yPos += 4;
+      const rncCliente = this.rncClienteFactura(f);
+      if (rncCliente && rncCliente !== 'N/A') {
+        doc.text(`RNC/Cedula: ${rncCliente}`, leftMargin, yPos);
+        yPos += 4;
+      }
       const vendedor = String(f.fa_nomVend || f.fa_codVend || '').trim();
       if (vendedor) {
         const vendedorLines = doc.splitTextToSize(`Vendedor: ${vendedor}`, pageWidth - (leftMargin + rightMargin));
         doc.text(vendedorLines, leftMargin, yPos);
         yPos += vendedorLines.length * 4;
       }
+      const esCopiaCaja = copyLabel.toUpperCase() === 'CAJA';
+      const pagada = String(f.fa_fpago ?? '').trim().toUpperCase() === 'S';
+      if (pagada) {
+        const formaPago = this.etiquetaPagoConduce(f);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        doc.rect(leftMargin, yPos - 3, 3, 3);
+        doc.line(leftMargin + 0.6, yPos - 1.5, leftMargin + 1.3, yPos - 0.7);
+        doc.line(leftMargin + 1.3, yPos - 0.7, leftMargin + 2.7, yPos - 2.7);
+        doc.text(formaPago, leftMargin + 5, yPos);
+        yPos += 5;
+        doc.setFont('helvetica', 'normal');
+      } else if (esCopiaCaja) {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        doc.text(`Forma pago: ${this.etiquetaPagoConduce(f)}`, leftMargin, yPos);
+        yPos += 5;
+        doc.setFont('helvetica', 'normal');
+      }
 
       drawDashedLine(yPos);
       yPos += 5;
+      const xCod = leftMargin;
+      const xDesc = 17;
+      const xCant = pageWidth - rightMargin;
+      const xPrecio = 28;
+      const xItbis = 49;
+      const xValor = pageWidth - rightMargin;
       if (!hideInvoiceDetails) {
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(9);
-        doc.text('Cant', leftMargin, yPos);
-        doc.text('Descripcion', leftMargin + 12, yPos);
-        doc.text('Total', pageWidth - rightMargin, yPos, { align: 'right' });
+        doc.setFontSize(6.5);
+        doc.text('COD', xCod, yPos);
+        doc.text('DESC', xDesc, yPos);
+        doc.text('CANT', xCant, yPos, { align: 'right' });
+        yPos += 4;
+        doc.text('PRECIO', xPrecio, yPos, { align: 'right' });
+        doc.text('ITBIS', xItbis, yPos, { align: 'right' });
+        doc.text('VALOR', xValor, yPos, { align: 'right' });
         yPos += 2;
         drawDashedLine(yPos);
         yPos += 4;
@@ -1617,30 +1709,101 @@ items.forEach((it: any) => {
         yPos += 5;
       }
 
-      let totalDetalle = 0;
+      const itemTotal = (item: any): number => Number(
+        item.total ??
+          item.df_valMerc ??
+          item.df_valmerc ??
+          ((Number(item.cantidad ?? item.df_canMerc ?? item.df_canmerc ?? 0) || 0) *
+            (Number(item.precio ?? item.df_preMerc ?? item.df_premerc ?? 0) || 0)) ??
+          0
+      ) || 0;
+      const totalDetalle = (items || []).reduce(
+        (sum: number, item: any) => sum + itemTotal(item),
+        0
+      );
+      const truncateText = (text: string, maxWidth: number): string => {
+        let value = String(text || '').trim();
+        while (value && doc.getTextWidth(value) > maxWidth) {
+          value = value.slice(0, -1);
+        }
+        return value;
+      };
+      const porcentajeMenos = Number(
+        f.porcentaje_menos ??
+          f.itbis_porcentaje_menos ??
+          f.fa_porcentaje_menos ??
+          0
+      );
+      const tasaRestar = porcentajeMenos / 100;
+      let subtotalImpresion = 0;
+      let itbisImpresion = 0;
+      let totalImpresion = 0;
+
       (items || []).forEach((item: any) => {
-        const cantidad = Number(item.cantidad ?? item.df_canMerc ?? 0);
-        const desc = String(item.producto?.in_desmerc ?? item.df_desMerc ?? '');
-        const val = Number(item.total ?? item.df_valMerc ?? 0);
-        totalDetalle += val;
-        const descLines = doc.splitTextToSize(desc, 35);
+        const codigo = item.producto?.in_codmerc || item.df_codMerc || item.df_codmerc || '';
+        const desc = item.producto?.in_desmerc || item.df_desMerc || item.df_desmerc || '';
+        const cant = item.cantidad || item.df_canMerc || item.df_canmerc || 0;
+        const totalItem = itemTotal(item);
+        const itbisGuardado = Number(
+          item.df_itbiMerc ??
+            item.df_itbimerc ??
+            item.itbis ??
+            item.montoItbis ??
+            0
+        );
+        const precioOriginal = Number(
+          item.precio ?? item.df_preMerc ?? item.df_premerc ?? 0
+        );
+        const totalItbisFactura = Number(f.fa_itbiFact ?? f.fa_itbifact ?? 0);
+        const itbisItem = (tasaRestar > 0 ? precioOriginal * tasaRestar * Number(cant || 0) : 0) ||
+          itbisGuardado ||
+          (totalDetalle > 0 && totalItbisFactura > 0
+            ? totalItbisFactura * (totalItem / totalDetalle)
+            : 0);
+        const precioSinItbis = Number(cant || 0) > 0
+          ? (tasaRestar > 0
+            ? precioOriginal - (precioOriginal * tasaRestar)
+            : (totalItem - itbisItem) / Number(cant || 1))
+          : 0;
+        const subtotalItem = precioSinItbis * Number(cant || 0);
+        subtotalImpresion += subtotalItem;
+        itbisImpresion += itbisItem;
+        totalImpresion += totalItem;
 
         if (!hideInvoiceDetails) {
-          doc.text(String(cantidad), leftMargin, yPos);
-          doc.text(descLines, leftMargin + 12, yPos);
-          doc.text(formatoMoneda.format(val), pageWidth - rightMargin, yPos, { align: 'right' });
-          yPos += Math.max(descLines.length * 4, 4) + 2;
+          const codigoCorto = truncateText(codigo, 11);
+          const descCorta = truncateText(desc, 37);
+          doc.text(codigoCorto, xCod, yPos);
+          doc.text(descCorta, xDesc, yPos);
+          doc.text(formatoMoneda.format(Number(cant || 0)), xCant, yPos, { align: 'right' });
+          yPos += 4;
+          doc.text(formatoMoneda.format(precioSinItbis), xPrecio, yPos, { align: 'right' });
+          doc.text(formatoMoneda.format(itbisItem), xItbis, yPos, { align: 'right' });
+          doc.text(formatoMoneda.format(totalItem), xValor, yPos, { align: 'right' });
+          yPos += 5;
         }
       });
 
       drawDashedLine(yPos);
       yPos += 5;
+      const subTotal = subtotalImpresion || Number(f.fa_subFact ?? f.fa_subfact ?? 0);
+      const totalItbis = itbisImpresion || Number(f.fa_itbiFact ?? f.fa_itbifact ?? 0);
+      const totalGral = totalImpresion || Number(f.fa_valFact ?? f.fa_valfact ?? 0);
+      const labelX = 35;
+      const valueX = pageWidth - rightMargin;
+
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      doc.text('Subtotal', labelX, yPos, { align: 'right' });
+      doc.text(formatoMoneda.format(subTotal), valueX, yPos, { align: 'right' });
+      yPos += 4;
+      doc.text('ITBIS', labelX, yPos, { align: 'right' });
+      doc.text(formatoMoneda.format(totalItbis), valueX, yPos, { align: 'right' });
+      yPos += 4;
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(13);
-      const totalFactura = Number(f.fa_valFact ?? f.fa_valfact ?? 0);
-      const totalConduce = totalFactura > 0 ? totalFactura : totalDetalle;
-      doc.text('TOTAL', leftMargin, yPos);
-      doc.text(formatoMoneda.format(totalConduce), pageWidth - rightMargin, yPos, { align: 'right' });
+      doc.text('TOTAL', labelX, yPos, { align: 'right' });
+      doc.text(formatoMoneda.format(totalGral), valueX, yPos, { align: 'right' });
       yPos += 7;
       doc.setFontSize(9);
 

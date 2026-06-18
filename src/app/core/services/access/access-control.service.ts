@@ -444,6 +444,7 @@ export class AccessControlService {
       ['reporte 607', '/private/contabilidad/reporte-607'],
       ['contabilidad', '/private/contabilidad'],
       ['movimiento de productos', '/private/reporte/movproducto'],
+      ['consulta de ventas', '/private/reporte/consulta-ventas'],
       ['reportes', '/private/reporte'],
       ['inventario sucursal', '/private/mantenimientos/inventario-sucursal'],
       ['inventario', '/private/mantenimientos/inventario'],

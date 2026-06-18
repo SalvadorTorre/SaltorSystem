@@ -166,7 +166,6 @@ private pickContFacturaRow(rows: any[], idsucursal: number): any | null {
       this.contFacturaActual = null;
       return;
     }
-
     try {
       let rows: any[] = [];
       const resp: any = await firstValueFrom(this.servicioContFactura.buscarPorSucursal(idSucursal));
@@ -870,6 +869,9 @@ agregarFactura() {
     }
 
     // Ocultar botón al imprimir
+    this.imprimirControlSalidaFormatoControlCaja();
+    return;
+
     this.mostrarBotonImprimir = false;
 
     const doc = new jsPDF({
@@ -1056,6 +1058,182 @@ agregarFactura() {
     doc.setFontSize(9);
     doc.text('Firma Recibido', centroPagina, currentY + 4, { align: 'center' });
     
+    const blob = doc.output('blob') as Blob;
+    this.printingService.printBlob(blob, 'ticket');
+  }
+
+  private imprimirControlSalidaFormatoControlCaja() {
+    const data = this.datosUltimaSalida;
+    const detalles = Array.isArray(data?.detalles) ? data.detalles : [];
+    this.mostrarBotonImprimir = false;
+
+    const formatoMoneda = new Intl.NumberFormat('es-DO', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+    const fmt = (value: any) => formatoMoneda.format(Number(value) || 0);
+    const formatDate = (value: any) => {
+      if (typeof value === 'string') {
+        const datePart = value.includes('T') ? value.split('T')[0] : value.split(' ')[0];
+        const parts = datePart.split('-');
+        if (parts.length === 3) {
+          return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        }
+      }
+      const date = value instanceof Date ? value : new Date(value || new Date());
+      if (isNaN(date.getTime())) return '';
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const year = date.getFullYear();
+      return `${day}/${month}/${year}`;
+    };
+    const esPagada = (d: any) => {
+      const value = String(d?.pagado ?? d?.fpago ?? d?.fa_fpago ?? '')
+        .trim()
+        .toUpperCase();
+      return value === 'S' || value === 'P' || value === '1' || value === 'TRUE' || value === 'PAGADO';
+    };
+
+    const totalPagadoReporte = detalles.reduce(
+      (sum: number, d: any) => sum + (esPagada(d) ? Number(d.valFact ?? d.valfact) || 0 : 0),
+      0
+    );
+    const totalPendienteReporte = detalles.reduce(
+      (sum: number, d: any) => sum + (!esPagada(d) ? Number(d.valFact ?? d.valfact) || 0 : 0),
+      0
+    );
+    const totalGeneralReporte = totalPagadoReporte + totalPendienteReporte;
+
+    const doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: [80, 297],
+    });
+    const left = 8;
+    const right = 76;
+    const center = 42;
+    const contentWidth = right - left;
+    let y = 8;
+
+    const line = () => {
+      doc.line(left, y, right, y);
+      y += 4;
+    };
+    const centerText = (text: string, size = 8, bold = false) => {
+      doc.setFontSize(size);
+      doc.setFont('helvetica', bold ? 'bold' : 'normal');
+      doc.text(text, center, y, { align: 'center', maxWidth: contentWidth });
+      y += 4;
+    };
+    const fitText = (value: any, maxWidth: number) => {
+      const original = String(value || '').trim();
+      if (doc.getTextWidth(original) <= maxWidth) return original;
+
+      let shortened = original;
+      while (
+        shortened.length > 1 &&
+        doc.getTextWidth(`${shortened}...`) > maxWidth
+      ) {
+        shortened = shortened.slice(0, -1);
+      }
+      return `${shortened.trim()}...`;
+    };
+    const imprimirEncabezadoDetalle = () => {
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Factura', left, y);
+      doc.text('Fecha', left + 29, y);
+      doc.text('Status', right, y, { align: 'right' });
+      y += 4;
+      doc.line(left, y, right, y);
+      y += 4;
+    };
+
+    centerText(this.nombreSucursalActual || 'SUCURSAL PRINCIPAL', 10, true);
+    if (this.zonaSucursalActual) {
+      centerText(this.zonaSucursalActual, 8);
+    }
+    centerText('REPORTE DE CONTROL DE SALIDA', 10, true);
+    centerText(`Salida: ${data?.codSalida || data?.codsalida || ''}`, 8);
+    centerText(`Fecha: ${formatDate(data?.fecSalida || data?.fecsalida || new Date())}`, 8);
+    line();
+
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Chofer: ${data?.nomChofer || data?.nomchofer || ''}`, left, y, { maxWidth: contentWidth });
+    y += 5;
+    doc.text(`Codigo: ${data?.codChofer || data?.codchofer || ''}`, left, y);
+    y += 5;
+    doc.text(`Cant. facturas: ${detalles.length || data?.canFact || data?.canfact || 0}`, left, y);
+    y += 5;
+    line();
+
+    doc.setFont('helvetica', 'bold');
+    doc.text('Total valor:', left, y);
+    doc.text(fmt(totalGeneralReporte), right, y, { align: 'right' });
+    y += 5;
+    doc.text('Factura pagada:', left, y);
+    doc.text(fmt(totalPagadoReporte), right, y, { align: 'right' });
+    y += 5;
+    doc.text('Total Fact. pendiente de pago:', left, y);
+    doc.setFontSize(9);
+    doc.text(`(${fmt(totalPendienteReporte)})`, right, y, { align: 'right' });
+    y += 6;
+    line();
+
+    doc.setFontSize(8);
+    imprimirEncabezadoDetalle();
+
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    detalles.forEach((d: any) => {
+      if (y > 273) {
+        doc.addPage([80, 297], 'portrait');
+        y = 8;
+        imprimirEncabezadoDetalle();
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+      }
+      const pendientePago = !esPagada(d);
+      const codFact = String(d.codFact || d.codfact || '');
+      doc.setFont('helvetica', pendientePago ? 'bold' : 'normal');
+      doc.text(pendientePago ? `(${codFact})` : codFact, left, y);
+      doc.text(formatDate(d.fecFact || d.fecfact), left + 29, y);
+      doc.setFont('helvetica', 'bold');
+      doc.text(esPagada(d) ? 'Pagada' : '', right, y, { align: 'right' });
+      y += 5;
+      doc.setFont('helvetica', pendientePago ? 'bold' : 'normal');
+      doc.text(fitText(d.nomClie || d.nomclie, contentWidth - 24), left, y);
+      const valFact = fmt(d.valFact || d.valfact);
+      doc.text(pendientePago ? `(${valFact})` : valFact, right, y, { align: 'right' });
+      y += 6;
+      doc.setFont('helvetica', 'normal');
+    });
+
+    if (y > 278) {
+      doc.addPage([80, 297], 'portrait');
+      y = 12;
+    }
+    y += 8;
+    doc.line(left + 2, y, right - 2, y);
+    y += 5;
+    doc.text('Firma recibido', center, y, { align: 'center' });
+    y += 8;
+
+    if (y > 270) {
+      doc.addPage([80, 297], 'portrait');
+      y = 12;
+    }
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.text('DECLARACION DE RESPONSABILIDAD', center, y, { align: 'center' });
+    y += 5;
+    doc.setFontSize(7.5);
+    doc.setFont('helvetica', 'normal');
+    const textoLegal = `Yo, ${data?.nomChofer || data?.nomchofer || ''}, portador(a) de la cedula ${data?.cedChofer || data?.cedchofer || ''}, declaro que recibo las facturas detalladas en este control de salida y me responsabilizo por las mercancias y valores correspondientes.`;
+    const splitText = doc.splitTextToSize(textoLegal, contentWidth);
+    doc.text(splitText, left, y);
+
     const blob = doc.output('blob') as Blob;
     this.printingService.printBlob(blob, 'ticket');
   }

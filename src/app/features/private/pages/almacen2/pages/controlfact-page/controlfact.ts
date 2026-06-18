@@ -197,6 +197,57 @@ export class ControlFact implements OnInit {
     ).trim();
   }
 
+  private descripcionTipoNcfFactura(factura: any): string {
+    const tipo = this.tipoNcfFactura(factura).toUpperCase();
+    if (!tipo) return '';
+    const tipoSinPrefijo = tipo.startsWith('B') || tipo.startsWith('E')
+      ? tipo.slice(1).replace(/^0+/, '')
+      : tipo.replace(/^0+/, '');
+    const match = (this.ncflist || []).find((ncf: any) => {
+      const codigo = String(ncf?.codigo ?? ncf?.codNcf ?? '').trim().toUpperCase();
+      const codigoSinCero = codigo.replace(/^0+/, '');
+      const tipoCatalogo = String(ncf?.tipo ?? '').trim().toUpperCase();
+      return (
+        codigo === tipo ||
+        codigoSinCero === tipoSinPrefijo ||
+        tipoCatalogo === tipo ||
+        tipoCatalogo.slice(1).replace(/^0+/, '') === tipoSinPrefijo
+      );
+    });
+    return String(match?.desNcf ?? '').trim();
+  }
+
+  private tituloImpresionFactura(factura: any): string {
+    const tipo = this.tipoNcfFactura(factura).toUpperCase();
+    const descripcion = this.descripcionTipoNcfFactura(factura).toUpperCase();
+    const ncf = String(
+      factura?.fa_ncfFact ?? factura?.fa_ncffact ?? factura?.ncf ?? '',
+    ).trim().toUpperCase();
+
+    if (
+      descripcion.includes('GUBERN') ||
+      ncf.startsWith('B14') ||
+      ncf.startsWith('B15') ||
+      ncf.startsWith('E14') ||
+      ncf.startsWith('E45') ||
+      ['14', '15', '45', 'B14', 'B15', 'E14', 'E45'].includes(tipo)
+    ) {
+      return 'FACTURA GUBERNAMENTAL';
+    }
+
+    if (
+      descripcion.includes('CREDITO FISCAL') ||
+      descripcion.includes('CRÉDITO FISCAL') ||
+      ncf.startsWith('B01') ||
+      ncf.startsWith('E31') ||
+      ['1', '01', '31', 'B01', 'E31'].includes(tipo)
+    ) {
+      return 'FACTURA DE CREDITO FISCAL';
+    }
+
+    return 'FACTURA PARA CONSUMIDOR FINAL';
+  }
+
   private esComprobanteE32(value: any): boolean {
     const tipo = String(value ?? '').trim().toUpperCase();
     return tipo === '32' || tipo === 'E32';
@@ -373,6 +424,7 @@ export class ControlFact implements OnInit {
         ...factura,
         ...facturaCompleta,
         barcodeValue: codigo,
+        __invoiceTitle: this.tituloImpresionFactura(facturaCompleta),
         __singlePrintCopy: true,
         __copyLabel: status === 'C' ? 'CONDUCTOR' : 'CLIENTE',
         __hideInvoiceDetails: false,

@@ -108,9 +108,9 @@ export class DespachoComponent {
     y += 5;
     doc.text(`Fecha: ${f.fa_fecFact || ''}`, 2, y);
     y += 5;
-    doc.text(`Cliente: ${f.fa_nomClie || ''}`, 2, y);
+    doc.text(`Cliente: ${f.fa_nomClie || f.fa_nomclie || ''}`, 2, y);
     y += 5;
-    doc.text(`RNC: ${f.fa_rncFact || 'N/A'}`, 2, y);
+    doc.text(`RNC: ${this.rncClienteFactura(f) || 'N/A'}`, 2, y);
     y += 5;
     doc.text(`Direccion: ${f.fa_dirClie || ''}`, 2, y);
     y += 5;
@@ -196,7 +196,7 @@ export class DespachoComponent {
   }
 
   private cargarDetalleEImprimir(factura: any, codigoFactura: string) {
-    this.serviciofacturacion.buscarMercanciaPorFactura(codigoFactura).subscribe({
+    this.serviciofacturacion.buscarFacturaDetalle(codigoFactura).subscribe({
       next: (response) => {
         const detalles = Array.isArray(response?.data)
           ? response.data
@@ -238,6 +238,20 @@ export class DespachoComponent {
       return 'PNG';
     }
     return 'JPEG';
+  }
+
+  private rncClienteFactura(factura: any): string {
+    return String(
+      factura?.fa_rncFact ??
+        factura?.fa_rncfact ??
+        factura?.fa_rnc ??
+        factura?.rncCliente ??
+        factura?.rnccliente ??
+        factura?.rnc ??
+        factura?.clienteRnc ??
+        factura?.cl_rnc ??
+        ''
+    ).trim();
   }
 
   private registrarImpresionDespacho(codigoFactura: string) {

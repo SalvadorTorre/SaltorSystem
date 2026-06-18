@@ -248,10 +248,12 @@ export class CobroFact implements OnInit {
     ).trim();
   }
 
-  get bloquearAccionesPorNcf31Pagada(): boolean {
+  get bloquearAccionesPorNcfDgiiPagada(): boolean {
+    const tipoNcf = this.tipoNcfFacturaSeleccionada();
     return (
       this.hayFacturaSeleccionada &&
-      this.tipoNcfFacturaSeleccionada() === '31' &&
+      tipoNcf !== '' &&
+      tipoNcf !== '32' &&
       this.chekPagado
     );
   }
@@ -1561,6 +1563,12 @@ export class CobroFact implements OnInit {
         facturaData?.fa_codFact ||
         this.formularioFacturacion.get('fa_codFact')?.value ||
         '',
+      descripcionFormaPago:
+        (facturaData as any)?.descripcionFormaPago ||
+        this.descripcionTipoPagoActual(),
+      descripcionFormaEntrega:
+        (facturaData as any)?.descripcionFormaEntrega ||
+        this.descripcionFormaEntregaActual(),
       barcodeValue:
         facturaData?.fa_codFact ||
         this.formularioFacturacion.get('fa_codFact')?.value ||
@@ -1689,6 +1697,16 @@ export class CobroFact implements OnInit {
       ...(facturaData || {}),
       ...(datosLocalesImpresion || {}),
       ...(datosAdicionales || {}),
+      descripcionFormaPago:
+        datosAdicionales?.descripcionFormaPago ||
+        datosLocalesImpresion?.descripcionFormaPago ||
+        facturaData?.descripcionFormaPago ||
+        this.descripcionTipoPagoActual(),
+      descripcionFormaEntrega:
+        datosAdicionales?.descripcionFormaEntrega ||
+        datosLocalesImpresion?.descripcionFormaEntrega ||
+        facturaData?.descripcionFormaEntrega ||
+        this.descripcionFormaEntregaActual(),
       porcentaje_menos: await this.obtenerPorcentajeMenosItbis(
         datosAdicionales?.fa_tipoitbis ??
           facturaData?.fa_tipoitbis ??
@@ -1741,6 +1759,7 @@ export class CobroFact implements OnInit {
         this.formularioFacturacion.get('fa_valFact')?.value || 0;
       this.txtvalPagado = false;
       this.actualizarCambio();
+      this.enfocarValorPagado();
       if (this.requiereCuentaBancaria()) {
         this.abrirModalOrigenPago();
       }
@@ -1756,6 +1775,15 @@ export class CobroFact implements OnInit {
         { emitEvent: false },
       );
     }
+  }
+
+  private enfocarValorPagado(): void {
+    setTimeout(() => {
+      const input = this.valorPagadoInput?.nativeElement as HTMLInputElement | undefined;
+      if (!input || input.disabled) return;
+      input.focus();
+      input.select();
+    }, 0);
   }
 
   onValorPagadoChange(event: any) {
@@ -2001,20 +2029,12 @@ export class CobroFact implements OnInit {
       Swal.fire('Aviso', 'Seleccione una factura primero.', 'warning');
       return;
     }
-    if (this.bloquearAccionesPorNcf31Pagada) {
+    if (this.bloquearAccionesPorNcfDgiiPagada) {
       Swal.fire(
         'Aviso',
-        'Las facturas con tipo NCF 31 marcadas como pagadas solo se procesan con Cobrar y enviar DGII.',
+        'Las facturas con tipo NCF diferente a 32 marcadas como pagadas solo se procesan con Cobrar y enviar DGII.',
         'warning',
       );
-      return;
-    }
-    if (this.bloquearConducePorImpresa) {
-      Swal.fire('Aviso', 'La factura ya tiene el conduce impreso.', 'warning');
-      return;
-    }
-    if (this.bloquearConducePorRetiroSinPago) {
-      Swal.fire('Aviso', 'Para entrega retirada por el cliente debe marcar la factura como pagada antes de imprimir el conduce.', 'warning');
       return;
     }
     if (!this.validarOrigenPagoSiAplica()) return;
@@ -2168,14 +2188,6 @@ export class CobroFact implements OnInit {
     if (this.facturaSoloConsulta) return;
     if (this.bloquearReimpresion) return;
     if (this.procesandoCobroDgii) return;
-    if (this.bloquearCobroDgiiPorEnvioNcf32) {
-      Swal.fire(
-        'Aviso',
-        'Las facturas de envio con comprobante 32 no se envian a DGII desde este boton.',
-        'warning',
-      );
-      return;
-    }
     if (this.bloquearCobroDgiiPorEnvioNcfSinPago) {
       Swal.fire(
         'Aviso',
@@ -2236,6 +2248,8 @@ export class CobroFact implements OnInit {
               fa_origenpago: payload.fa_origenpago,
               fa_confirpago: payload.fa_confirpago,
               fa_notapago: payload.fa_notapago,
+              descripcionFormaPago: this.descripcionTipoPagoActual(),
+              descripcionFormaEntrega: this.descripcionFormaEntregaActual(),
             };
             this.DatosSeleccionado = facturaCobro;
             this.formularioFacturacion.patchValue(

@@ -30,14 +30,16 @@ export class FacturasPendientesComponent implements OnInit {
     this.loading = true;
     this.servicioFacturacion.buscarFacturasPendientesDgii().subscribe({
       next: (response: any) => {
-        this.allFacturas = (response.data || []).sort(
+        this.allFacturas = (response.data || [])
+          .filter((factura: any) => this.tieneNcf(factura))
+          .sort(
           (a: any, b: any) =>
             this.numeroFactura(b?.fa_codFact ?? b?.fa_codfact) -
               this.numeroFactura(a?.fa_codFact ?? a?.fa_codfact) ||
             String(b?.fa_codFact ?? b?.fa_codfact ?? '').localeCompare(
               String(a?.fa_codFact ?? a?.fa_codfact ?? ''),
             ),
-        );
+          );
         this.total = this.allFacturas.length;
         if (this.page > this.totalPages && this.totalPages > 0) {
           this.page = this.totalPages;
@@ -73,6 +75,13 @@ export class FacturasPendientesComponent implements OnInit {
 
   normalizarBandera(value: any): string {
     return String(value ?? '').trim().toUpperCase();
+  }
+
+  private tieneNcf(factura: any): boolean {
+    const ncf = String(
+      factura?.fa_ncfFact ?? factura?.fa_ncffact ?? '',
+    ).trim();
+    return !!ncf && !['NULL', 'UNDEFINED'].includes(ncf.toUpperCase());
   }
 
   private numeroFactura(value: any): number {

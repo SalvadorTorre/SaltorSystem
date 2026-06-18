@@ -15,6 +15,14 @@ const routes: Routes = [
         loadChildren: () =>
           import('./pages/movproducto/movproducto-modulo')
             .then(m => m.MovimientoProductoModule),
+      },
+      {
+        path: 'consulta-ventas',
+        canActivate: [permissionGuard],
+        data: { accessPath: '/private/reporte/consulta-ventas' },
+        loadChildren: () =>
+          import('./pages/consulta-ventas/consulta-ventas-modulo')
+            .then(m => m.ConsultaVentasModulo),
       }
     ]
   },

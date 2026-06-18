@@ -91,13 +91,8 @@
             <div class="collapse" [ngClass]="{'show': openMenu === 'ventas'}" id="submenuVentas">
               <ul class="nav flex-column submenu">
                 <li class="nav-item">
-                  <a class="nav-link submenu-item" [routerLink]="['consultaProducto']">
-                    <i class="bi bi-arrow-right-short"></i> Ventas
-                  </a>
-                </li>
-                <li class="nav-item">
-                  <a class="nav-link submenu-item" [routerLink]="['consultaProducto']">
-                    <i class="bi bi-arrow-right-short"></i> Ventas Por Vendedor
+                  <a class="nav-link submenu-item" routerLinkActive="active" [routerLink]="['consulta-ventas']">
+                    <i class="bi bi-arrow-right-short"></i> Consulta de Ventas
                   </a>
                 </li>
               </ul>
@@ -223,13 +218,8 @@
           <div class="collapse" [ngClass]="{'show': openMenu === 'ventas'}" id="mobileSubmenuVentas">
             <ul class="nav flex-column submenu">
               <li class="nav-item">
-                <a class="nav-link submenu-item" [routerLink]="['consultaProducto']" data-bs-dismiss="offcanvas">
-                  <i class="bi bi-arrow-right-short"></i> Ventas
-                </a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link submenu-item" [routerLink]="['consultaProducto']" data-bs-dismiss="offcanvas">
-                  <i class="bi bi-arrow-right-short"></i> Ventas Por Vendedor
+                <a class="nav-link submenu-item" routerLinkActive="active" [routerLink]="['consulta-ventas']" data-bs-dismiss="offcanvas">
+                  <i class="bi bi-arrow-right-short"></i> Consulta de Ventas
                 </a>
               </li>
             </ul>
