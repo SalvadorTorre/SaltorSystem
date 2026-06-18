@@ -118,6 +118,92 @@ export class FacturaDgiiService {
     return actualizada;
   }
 
+  async reenviar(
+    factura: any,
+    progreso?: (mensaje: string) => void,
+  ): Promise<any> {
+    const codigo = String(factura?.fa_codFact || factura?.fa_codfact || '').trim();
+    if (!codigo) throw new Error('La factura no tiene numero.');
+
+    progreso?.('Cargando factura rechazada...');
+    const [facturaResp, detalleResp] = await Promise.all([
+      firstValueFrom(this.facturacion.getByNumero(codigo)),
+      firstValueFrom(this.facturacion.buscarFacturaDetalle(codigo)),
+    ]);
+    const encabezado = {
+      ...factura,
+      ...(facturaResp?.data || facturaResp || {}),
+    };
+    this.validar(encabezado);
+
+    const detalles = Array.isArray(detalleResp?.data) ? detalleResp.data : [];
+    if (!detalles.length) {
+      throw new Error(`La factura ${codigo} no tiene detalles para reenviar a DGII.`);
+    }
+
+    let completa = { ...encabezado };
+    const encfActual = String(
+      completa?.fa_ncfFact || completa?.fa_ncffact || '',
+    ).trim();
+    if (!encfActual) {
+      progreso?.('Asignando ENCF antes del reenvio...');
+      const encfResp = await firstValueFrom(this.facturacion.asignarEncfFactura(codigo));
+      completa = {
+        ...completa,
+        ...(encfResp?.data || {}),
+      };
+    }
+
+    progreso?.('Reconstruyendo comprobante electronico...');
+    const escenario = await this.construirEscenario(completa, detalles);
+    const rnc = this.rnc(localStorage.getItem('rnc_empresa'));
+    if (!rnc) throw new Error('No se encontro el RNC emisor activo.');
+
+    let envioResp: any;
+    try {
+      progreso?.('Reenviando factura a DGII...');
+      envioResp = await firstValueFrom(
+        this.configuracion.enviarDgiiDirectCert([escenario], rnc),
+      );
+    } catch (error: any) {
+      const rawError = error?.dgiiResponse || error?.details || {
+        message: error?.message || String(error),
+      };
+      const normalizada = this.normalizarRespuesta(rawError);
+      const datosError = {
+        ...normalizada,
+        dgii_request_json: escenario,
+        dgii_response_raw: rawError,
+        estado_envio_dgii: normalizada?.estado_envio_dgii || 'Error',
+        estado_dgii: normalizada?.estado_dgii || 'Error',
+      };
+      try {
+        await firstValueFrom(this.facturacion.actualizarDatosDgii(codigo, datosError));
+      } catch (saveError) {
+        console.warn('No se pudo guardar el error DGII del reenvio:', saveError);
+      }
+      throw error;
+    }
+
+    const datosDgii = {
+      ...this.normalizarRespuesta(envioResp?.data ?? envioResp),
+      dgii_request_json: escenario,
+      dgii_response_raw: envioResp?.data ?? envioResp,
+      fa_status: 'F',
+    };
+
+    progreso?.('Guardando nueva respuesta de DGII...');
+    const actualizadaResp = await firstValueFrom(
+      this.facturacion.actualizarDatosDgii(codigo, datosDgii),
+    );
+    return {
+      ...completa,
+      ...(actualizadaResp?.data || {}),
+      ...datosDgii,
+      barcodeValue: codigo,
+    };
+  }
+
   private validar(factura: any): void {
     const envio = Number(factura?.fa_envio ?? 0) === 1;
     const tipo = String(factura?.fa_tipoNcf ?? factura?.fa_tiponcf ?? '').trim();

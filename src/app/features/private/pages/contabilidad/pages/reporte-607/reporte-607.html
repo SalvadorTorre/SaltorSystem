@@ -212,6 +212,21 @@
                   <i class="bi bi-braces"></i>
                 </button>
                 <button
+                  *ngIf="esRechazada(factura)"
+                  class="btn btn-sm btn-outline-danger"
+                  type="button"
+                  (click)="reenviarDgii(factura)"
+                  [disabled]="!!facturaReenviando || loading"
+                  title="Reenviar factura rechazada a DGII"
+                >
+                  <i
+                    class="bi"
+                    [class.bi-send]="facturaReenviando !== (factura.fa_codFact || factura.fa_codfact)"
+                    [class.bi-arrow-clockwise]="facturaReenviando === (factura.fa_codFact || factura.fa_codfact)"
+                    [class.spin]="facturaReenviando === (factura.fa_codFact || factura.fa_codfact)"
+                  ></i>
+                </button>
+                <button
                   class="btn btn-sm btn-outline-primary"
                   type="button"
                   (click)="abrirQr(factura)"

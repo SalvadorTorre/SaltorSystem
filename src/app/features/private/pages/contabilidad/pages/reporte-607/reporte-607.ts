@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { FacturaDgiiService } from 'src/app/core/services/facturacion/factura/factura-dgii.service';
 import { ServicioFacturacion } from 'src/app/core/services/facturacion/factura/factura.service';
 import Swal from 'sweetalert2';
 
@@ -23,6 +24,7 @@ export class Reporte607Component implements OnInit {
   pageSize = 20;
   total = 0;
   totalPages = 1;
+  facturaReenviando = '';
   readonly tiposComprobante = [
     { value: '31', label: 'E31 - Crédito Fiscal' },
     { value: '32', label: 'E32 - Consumo' },
@@ -41,7 +43,10 @@ export class Reporte607Component implements OnInit {
     'Error',
   ];
 
-  constructor(private servicioFacturacion: ServicioFacturacion) {}
+  constructor(
+    private servicioFacturacion: ServicioFacturacion,
+    private facturaDgiiService: FacturaDgiiService,
+  ) {}
 
   ngOnInit(): void {
     this.cargarReporte();
@@ -181,6 +186,59 @@ export class Reporte607Component implements OnInit {
     });
   }
 
+  async reenviarDgii(factura: any): Promise<void> {
+    if (!this.esRechazada(factura)) return;
+    const codigo = String(factura?.fa_codFact || factura?.fa_codfact || '').trim();
+    if (!codigo || this.facturaReenviando) return;
+
+    const confirmacion = await Swal.fire({
+      title: 'Reenviar a DGII',
+      text: `Se reenviara la factura ${codigo} usando el comprobante actual.`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Si, reenviar',
+      cancelButtonText: 'Cancelar',
+      reverseButtons: true,
+    });
+    if (!confirmacion.isConfirmed) return;
+
+    this.facturaReenviando = codigo;
+    try {
+      await this.facturaDgiiService.reenviar(factura, (text) => {
+        if (Swal.isVisible()) {
+          Swal.update({ title: 'Reenviando...', text });
+          return;
+        }
+        Swal.fire({
+          title: 'Reenviando...',
+          text,
+          allowOutsideClick: false,
+          allowEscapeKey: false,
+          didOpen: () => Swal.showLoading(),
+        });
+      });
+      Swal.close();
+      await Swal.fire('Completado', `La factura ${codigo} fue reenviada a DGII.`, 'success');
+      this.cargarReporte();
+    } catch (error: any) {
+      console.error('[Reporte607Component] Error reenviando factura a DGII', error);
+      Swal.fire(
+        'Error',
+        String(
+          error?.error?.message ||
+            error?.error?.details ||
+            error?.details?.message ||
+            error?.message ||
+            'No se pudo reenviar la factura a DGII.',
+        ),
+        'error',
+      );
+      this.cargarReporte();
+    } finally {
+      this.facturaReenviando = '';
+    }
+  }
+
   formatFecha(value: any): string {
     const text = String(value || '').trim();
     if (!text) return 'N/A';
@@ -201,6 +259,11 @@ export class Reporte607Component implements OnInit {
 
   estadoTexto(factura: any): string {
     return String(factura?.estado_dgii || factura?.estado_envio_dgii || 'Sin estado').trim();
+  }
+
+  esRechazada(factura: any): boolean {
+    const estado = this.estadoTexto(factura).toLowerCase();
+    return estado.includes('rechaz');
   }
 
   tipoComprobanteTexto(factura: any): string {
