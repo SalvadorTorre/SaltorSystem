@@ -31,7 +31,7 @@ export class FacturasPendientesComponent implements OnInit {
     this.servicioFacturacion.buscarFacturasPendientesDgii().subscribe({
       next: (response: any) => {
         this.allFacturas = (response.data || [])
-          .filter((factura: any) => this.tieneNcf(factura))
+          .filter((factura: any) => this.faltaNcf(factura) || this.esRechazadaDgii(factura))
           .sort(
           (a: any, b: any) =>
             this.numeroFactura(b?.fa_codFact ?? b?.fa_codfact) -
@@ -77,11 +77,36 @@ export class FacturasPendientesComponent implements OnInit {
     return String(value ?? '').trim().toUpperCase();
   }
 
-  private tieneNcf(factura: any): boolean {
+  private faltaNcf(factura: any): boolean {
     const ncf = String(
       factura?.fa_ncfFact ?? factura?.fa_ncffact ?? '',
     ).trim();
-    return !!ncf && !['NULL', 'UNDEFINED'].includes(ncf.toUpperCase());
+    return !ncf || ['NULL', 'UNDEFINED'].includes(ncf.toUpperCase());
+  }
+
+  esRechazadaDgii(factura: any): boolean {
+    return this.normalizarTexto(factura?.estado_dgii).includes('RECHAZADO');
+  }
+
+  estadoDgiiTexto(factura: any): string {
+    if (this.esRechazadaDgii(factura)) return 'Rechazado';
+    return String(factura?.estado_dgii || factura?.estado_envio_dgii || '').trim() || '-';
+  }
+
+  private normalizarTexto(value: any): string {
+    return String(value ?? '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim()
+      .toUpperCase();
+  }
+
+  irPrimeraPagina(): void {
+    this.cambiarPagina(1);
+  }
+
+  irUltimaPagina(): void {
+    this.cambiarPagina(this.totalPages);
   }
 
   private numeroFactura(value: any): number {

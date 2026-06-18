@@ -1942,11 +1942,8 @@ export class ServicioFacturacion {
       let query = this.db
         .from('factura')
         .select('*')
-        .or('estado_envio_dgii.is.null,estado_envio_dgii.eq.PENDIENTE')
-        .not('fa_ncffact', 'is', null)
-        .neq('fa_ncffact', '')
         .order('fa_fecfact', { ascending: false })
-        .limit(500);
+        .limit(5000);
 
       query = this.applyTenantFilter(query);
 

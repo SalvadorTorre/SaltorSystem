@@ -1,6 +1,6 @@
 <div class="container-fluid p-4">
   <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="h4 mb-0 text-primary">Facturas Pendientes de Envío DGII</h2>
+    <h2 class="h4 mb-0 text-primary">Facturas sin e-CF Pendientes de Envio DGII</h2>
     <button class="btn btn-outline-primary" (click)="cargarFacturas()">
       <i class="bi bi-arrow-clockwise me-2"></i>Actualizar
     </button>
@@ -20,13 +20,14 @@
               <th class="text-center">Pendiente</th>
               <th class="text-center">Cobrada</th>
               <th class="text-center">Entregada</th>
+              <th class="text-center">Estado DGII</th>
               <th class="text-center">Status</th>
               <th class="text-end pe-4">Acciones</th>
             </tr>
           </thead>
           <tbody>
             <tr *ngIf="loading">
-              <td colspan="10" class="text-center py-5">
+              <td colspan="11" class="text-center py-5">
                 <div class="spinner-border text-primary" role="status">
                   <span class="visually-hidden">Cargando...</span>
                 </div>
@@ -34,7 +35,7 @@
               </td>
             </tr>
             <tr *ngIf="!loading && facturas.length === 0">
-              <td colspan="10" class="text-center py-5 text-muted">
+              <td colspan="11" class="text-center py-5 text-muted">
                 <i class="bi bi-inbox fs-1 d-block mb-2"></i>
                 No hay facturas pendientes de envío
               </td>
@@ -73,6 +74,12 @@
               </td>
               <td class="text-center">
                 <span class="badge" [ngClass]="{
+                  'bg-danger': esRechazadaDgii(f),
+                  'bg-light text-dark border': !esRechazadaDgii(f)
+                }">{{ estadoDgiiTexto(f) }}</span>
+              </td>
+              <td class="text-center">
+                <span class="badge" [ngClass]="{
                   'bg-warning text-dark': (f.status || f.Status) === 'PENDIENTE',
                   'bg-danger': (f.status || f.Status) === 'ERROR',
                   'bg-success': (f.status || f.Status) === 'ENVIADO'
@@ -107,6 +114,11 @@
       <nav aria-label="Page navigation">
         <ul class="pagination justify-content-center mb-0">
           <li class="page-item" [class.disabled]="page === 1">
+            <button class="page-link border-0" (click)="irPrimeraPagina()" title="Primera pagina">
+              <i class="bi bi-chevron-double-left"></i>
+            </button>
+          </li>
+          <li class="page-item" [class.disabled]="page === 1">
             <button class="page-link border-0" (click)="cambiarPagina(page - 1)">
               <i class="bi bi-chevron-left"></i>
             </button>
@@ -119,6 +131,11 @@
           <li class="page-item" [class.disabled]="page === totalPages">
             <button class="page-link border-0" (click)="cambiarPagina(page + 1)">
               <i class="bi bi-chevron-right"></i>
+            </button>
+          </li>
+          <li class="page-item" [class.disabled]="page === totalPages">
+            <button class="page-link border-0" (click)="irUltimaPagina()" title="Ultima pagina">
+              <i class="bi bi-chevron-double-right"></i>
             </button>
           </li>
         </ul>
