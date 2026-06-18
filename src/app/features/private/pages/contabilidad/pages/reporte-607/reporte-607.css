@@ -7,6 +7,9 @@
   --rep-line: #dbe5ef;
   --rep-surface: #ffffff;
   color: var(--rep-ink);
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
 }
 
 .rep607-hero {
@@ -18,11 +21,16 @@
   box-shadow: 0 20px 45px rgba(15, 23, 42, 0.16);
   color: #fff;
   display: flex;
+  gap: 1rem;
   justify-content: space-between;
   margin-bottom: 18px;
   overflow: hidden;
   padding: 26px 28px;
   position: relative;
+}
+
+.rep607-hero > div {
+  min-width: 0;
 }
 
 .rep607-hero::after {
@@ -64,6 +72,7 @@
   border-radius: 999px;
   box-shadow: 0 12px 26px rgba(15, 23, 42, 0.16);
   color: #0f172a;
+  flex: 0 0 auto;
   font-weight: 800;
   position: relative;
   z-index: 1;
@@ -72,7 +81,7 @@
 .summary-grid {
   display: grid;
   gap: 12px;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
   margin-bottom: 14px;
 }
 
@@ -114,14 +123,18 @@
 
 .filter-panel {
   align-items: end;
-  display: grid;
+  display: flex;
+  flex-wrap: wrap;
   gap: 14px;
-  grid-template-columns: minmax(280px, 1.4fr) auto minmax(190px, 0.72fr) minmax(190px, 0.72fr) minmax(170px, 0.65fr) auto;
   margin-bottom: 16px;
+  max-width: 100%;
+  min-width: 0;
   padding: 16px;
 }
 
 .search-box {
+  flex: 1 1 300px;
+  min-width: min(100%, 260px);
   position: relative;
 }
 
@@ -143,6 +156,7 @@
   background: #f1f5f9;
   border-radius: 999px;
   display: flex;
+  flex: 0 1 250px;
   gap: 4px;
   padding: 4px;
 }
@@ -168,7 +182,9 @@
 
 .date-fields {
   display: grid;
+  flex: 1 1 190px;
   gap: 10px;
+  min-width: 0;
 }
 
 .date-fields.date-range {
@@ -193,11 +209,15 @@
 .select-filter {
   display: flex;
   flex-direction: column;
+  flex: 1 1 190px;
   gap: 4px;
+  min-width: 0;
 }
 
 .filter-actions {
   display: flex;
+  flex: 0 1 auto;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
@@ -210,12 +230,15 @@
 
 .report-card {
   overflow: hidden;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .report-toolbar {
   align-items: center;
   border-bottom: 1px solid var(--rep-line);
   display: flex;
+  gap: 1rem;
   justify-content: space-between;
   padding: 17px 18px;
 }
@@ -243,6 +266,13 @@
 
 .report-table-wrap {
   min-height: 260px;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.report-table {
+  min-width: 1120px;
 }
 
 .report-table thead th {
@@ -493,10 +523,6 @@
 }
 
 @media (max-width: 1200px) {
-  .filter-panel {
-    grid-template-columns: 1fr 1fr;
-  }
-
   .summary-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
@@ -512,7 +538,6 @@
   }
 
   .summary-grid,
-  .filter-panel,
   .date-fields.date-range {
     grid-template-columns: 1fr;
   }
@@ -521,7 +546,38 @@
     grid-column: auto;
   }
 
+  .filter-panel > *,
+  .filter-actions,
+  .filter-actions .btn {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+
+  .date-mode {
+    border-radius: 16px;
+    width: 100%;
+  }
+
+  .mode-btn {
+    flex: 1 1 0;
+  }
+
   .filter-actions {
     flex-wrap: wrap;
+  }
+
+  .hero-action {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .rep607-hero {
+    border-radius: 18px;
+    padding: 18px;
+  }
+
+  .summary-grid {
+    grid-template-columns: 1fr;
   }
 }
