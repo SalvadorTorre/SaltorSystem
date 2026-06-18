@@ -384,11 +384,13 @@ export class ServicioConfiguracionGlobal {
           const e: any = error;
           let details =
             e?.context?.statusText || e?.message || 'Error enviando a DGII';
+          let parsedBody: any = null;
 
           const ctx = e?.context;
           if (ctx && typeof ctx?.json === 'function') {
             try {
               const body = await ctx.json();
+              parsedBody = body;
               const bodyMsg =
                 body?.message ||
                 body?.error?.message ||
@@ -402,14 +404,20 @@ export class ServicioConfiguracionGlobal {
             }
           }
 
-          throw new Error(String(details));
+          const enriched = new Error(String(details)) as any;
+          enriched.dgiiResponse = parsedBody;
+          enriched.details = parsedBody?.details ?? parsedBody;
+          throw enriched;
         }
 
         if (!data?.ok) {
-          throw new Error(String(data?.message || 'Error enviando a DGII'));
+          const enriched = new Error(String(data?.message || 'Error enviando a DGII')) as any;
+          enriched.dgiiResponse = data;
+          enriched.details = data?.details ?? data;
+          throw enriched;
         }
 
-        return data?.data;
+        return data;
       })()
     ).pipe(
       map((resp: any) => ({

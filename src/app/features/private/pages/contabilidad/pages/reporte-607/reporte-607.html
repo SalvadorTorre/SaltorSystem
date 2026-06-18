@@ -20,6 +20,18 @@
       <span>Pagina actual</span>
       <strong>{{ page }} / {{ totalPages }}</strong>
     </div>
+    <div class="summary-card">
+      <span>Aceptadas</span>
+      <strong>{{ totalAceptadas | number }}</strong>
+    </div>
+    <div class="summary-card">
+      <span>Rechazadas/Error</span>
+      <strong>{{ totalRechazadas | number }}</strong>
+    </div>
+    <div class="summary-card">
+      <span>Condicionales</span>
+      <strong>{{ totalCondicionales | number }}</strong>
+    </div>
     <div class="summary-card wide">
       <span>Periodo</span>
       <strong>{{ rangoActual }}</strong>
@@ -56,6 +68,26 @@
         Entre fechas
       </button>
     </div>
+
+    <label class="select-filter">
+      <span>Tipo comprobante</span>
+      <select class="form-select" [(ngModel)]="tipoComprobante">
+        <option value="">Todos</option>
+        <option *ngFor="let tipo of tiposComprobante" [value]="tipo.value">
+          {{ tipo.label }}
+        </option>
+      </select>
+    </label>
+
+    <label class="select-filter">
+      <span>Estado DGII</span>
+      <select class="form-select" [(ngModel)]="estadoDgii">
+        <option value="">Todos</option>
+        <option *ngFor="let estado of estadosDgii" [value]="estado">
+          {{ estado }}
+        </option>
+      </select>
+    </label>
 
     <div class="date-fields" *ngIf="modoFecha === 'fecha'">
       <label>
@@ -108,24 +140,26 @@
           <tr>
             <th>Factura</th>
             <th>Fecha</th>
+            <th>Tipo</th>
             <th>NCF/e-CF</th>
             <th>Cliente</th>
             <th class="text-end">Monto</th>
             <th>Estado DGII</th>
+            <th>Diagnóstico</th>
             <th>Cod. seguridad</th>
-            <th class="text-center">QR</th>
+            <th class="text-center">Acciones</th>
           </tr>
         </thead>
         <tbody>
           <tr *ngIf="loading">
-            <td colspan="8" class="empty-cell">
+            <td colspan="10" class="empty-cell">
               <div class="spinner-border text-primary" role="status"></div>
               <span>Cargando Rep. 607...</span>
             </td>
           </tr>
 
           <tr *ngIf="!loading && facturas.length === 0">
-            <td colspan="8" class="empty-cell">
+            <td colspan="10" class="empty-cell">
               <i class="bi bi-inbox"></i>
               <span>No hay facturas DGII para los filtros seleccionados.</span>
             </td>
@@ -138,6 +172,9 @@
             </td>
             <td>{{ formatFecha(factura.fa_fecFact || factura.fa_fecfact) }}</td>
             <td>
+              <span class="type-chip">{{ tipoComprobanteTexto(factura) }}</span>
+            </td>
+            <td>
               <span class="ncf-chip">{{ factura.fa_ncfFact || factura.fa_ncffact || 'N/A' }}</span>
             </td>
             <td>
@@ -149,6 +186,14 @@
               <span [class]="estadoClase(factura)">{{ estadoTexto(factura) }}</span>
             </td>
             <td>
+              <div class="diagnostic-cell" *ngIf="primerMensajeDgii(factura); else sinDiagnostico">
+                {{ primerMensajeDgii(factura) }}
+              </div>
+              <ng-template #sinDiagnostico>
+                <span class="muted">Sin mensajes</span>
+              </ng-template>
+            </td>
+            <td>
               <span class="security-code" *ngIf="factura.codseguridad; else noCode">
                 {{ factura.codseguridad }}
               </span>
@@ -158,6 +203,14 @@
             </td>
             <td class="text-center">
               <div class="qr-actions">
+                <button
+                  class="btn btn-sm btn-outline-dark"
+                  type="button"
+                  (click)="verRespuestaDgii(factura)"
+                  title="Ver respuesta DGII completa"
+                >
+                  <i class="bi bi-braces"></i>
+                </button>
                 <button
                   class="btn btn-sm btn-outline-primary"
                   type="button"

@@ -1243,6 +1243,19 @@ export class CobroFact implements OnInit {
       nested?.status,
       nested?.estadoEnvio
     );
+    const mensajes = this.extraerMensajesDgii(nested, payload, root, dgiiResponse);
+    const errorMessage = pick(
+      nested?.error,
+      nested?.message,
+      nested?.mensaje,
+      payload?.error,
+      payload?.message,
+      payload?.mensaje,
+      root?.error,
+      root?.message,
+      root?.mensaje,
+      mensajes.join(' | ')
+    );
 
     return {
       ...nested,
@@ -1255,6 +1268,11 @@ export class CobroFact implements OnInit {
       signatureDateTime: fechaFirma,
       ecf: nested?.ecf ?? xmls?.ecf ?? null,
       rfce: nested?.rfce ?? xmls?.rfce ?? null,
+      dgii_response_json: nested,
+      dgii_mensajes: mensajes,
+      dgii_error_message: errorMessage,
+      dgii_track_id: pick(nested?.trackId, payload?.trackId, root?.trackId, dgiiResponse?.trackId),
+      dgii_codigo: pick(nested?.codigo, payload?.codigo, root?.codigo, dgiiResponse?.codigo),
       estado_envio_dgii: pick(
         nested?.estado_envio_dgii,
         nested?.estadoEnvio,
@@ -1263,6 +1281,37 @@ export class CobroFact implements OnInit {
         nested?.status
       ),
     };
+  }
+
+  private extraerMensajesDgii(...sources: any[]): string[] {
+    const mensajes: string[] = [];
+    const add = (value: any) => {
+      if (value === null || value === undefined) return;
+      if (Array.isArray(value)) {
+        value.forEach(add);
+        return;
+      }
+      if (typeof value === 'object') {
+        add(value.mensaje || value.message || value.error || value.descripcion);
+        return;
+      }
+      const text = String(value).trim();
+      if (text && !mensajes.includes(text)) mensajes.push(text);
+    };
+
+    sources.forEach((source) => {
+      if (!source || typeof source !== 'object') return;
+      add(source.mensajes);
+      add(source.mensaje);
+      add(source.message);
+      add(source.error);
+      add(source.errors);
+      add(source.detalles);
+      add(source.details);
+      add(source.observaciones);
+    });
+
+    return mensajes;
   }
 
   private extraerMensajeError(error: any): string {
@@ -1608,6 +1657,8 @@ export class CobroFact implements OnInit {
         const payloadDgii = this.normalizarRespuestaDgii(
           response?.data ?? response
         );
+        payloadDgii.dgii_request_json = dgiiData;
+        payloadDgii.dgii_response_raw = response?.data ?? response;
         payloadDgii.fa_status = 'F';
 
         if (!this.tieneRespuestaDgiiParaImprimir(payloadDgii)) {
@@ -1674,6 +1725,27 @@ export class CobroFact implements OnInit {
       },
       async (error) => {
         console.error('Error obteniendo datos DGII:', error);
+        const rawError = (error as any)?.dgiiResponse || (error as any)?.details || {
+          message: this.extraerMensajeError(error),
+        };
+        const payloadError = {
+          ...this.normalizarRespuestaDgii(rawError),
+          dgii_request_json: dgiiData,
+          dgii_response_raw: rawError,
+          estado_dgii: this.normalizarRespuestaDgii(rawError)?.estado_dgii || 'Error',
+          estado_envio_dgii:
+            this.normalizarRespuestaDgii(rawError)?.estado_envio_dgii || 'Error',
+        };
+        try {
+          await firstValueFrom(
+            this.servicioFacturacion.actualizarDatosDgii(
+              facturaData.fa_codFact,
+              payloadError,
+            ),
+          );
+        } catch (saveError) {
+          console.warn('No se pudo guardar el error DGII en la factura:', saveError);
+        }
         this.finalizarProcesamientoCobroDgii();
         Swal.fire({
           title: 'DGII no respondió',

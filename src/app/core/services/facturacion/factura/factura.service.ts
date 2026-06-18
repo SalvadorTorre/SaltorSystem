@@ -67,6 +67,16 @@ export class ServicioFacturacion {
     return s.length > max ? s.slice(0, max) : s;
   }
 
+  private toJsonOrNull(value: any): any | null {
+    if (value === null || value === undefined || value === '') return null;
+    if (typeof value === 'object') return value;
+    try {
+      return JSON.parse(String(value));
+    } catch {
+      return { value };
+    }
+  }
+
   private toDbFlag(value: any): string | null {
     if (value === null || value === undefined || value === '') return null;
     if (typeof value === 'boolean') return value ? 'S' : 'N';
@@ -354,6 +364,14 @@ export class ServicioFacturacion {
       codseguridad: row.codseguridad ?? '',
       qr_link: row.qr_link ?? '',
       fec_firma: row.fec_firma ?? '',
+      dgii_request_json: this.toJsonOrNull(row.dgii_request_json),
+      dgii_response_json: this.toJsonOrNull(row.dgii_response_json),
+      dgii_response_raw: this.toJsonOrNull(row.dgii_response_raw),
+      dgii_mensajes: this.toJsonOrNull(row.dgii_mensajes),
+      dgii_error_message: row.dgii_error_message ?? '',
+      dgii_track_id: row.dgii_track_id ?? '',
+      dgii_codigo: row.dgii_codigo ?? '',
+      dgii_updated_at: row.dgii_updated_at ?? null,
       ecf: row.ecf ?? '',
       rfce: row.rfce ?? '',
       estado_envio_dgii: row.estado_envio_dgii ?? '',
@@ -457,6 +475,14 @@ export class ServicioFacturacion {
       codseguridad: this.toStringOrNull(input?.codseguridad),
       qr_link: this.toStringOrNull(input?.qr_link),
       fec_firma: this.toStringOrNull(input?.fec_firma),
+      dgii_request_json: this.toJsonOrNull(input?.dgii_request_json),
+      dgii_response_json: this.toJsonOrNull(input?.dgii_response_json),
+      dgii_response_raw: this.toJsonOrNull(input?.dgii_response_raw),
+      dgii_mensajes: this.toJsonOrNull(input?.dgii_mensajes),
+      dgii_error_message: this.toStringOrNull(input?.dgii_error_message),
+      dgii_track_id: this.toStringOrNull(input?.dgii_track_id),
+      dgii_codigo: this.toStringOrNull(input?.dgii_codigo),
+      dgii_updated_at: input?.dgii_updated_at || null,
       ecf: this.toStringOrNull(input?.ecf),
       rfce: this.toStringOrNull(input?.rfce),
       estado_envio_dgii: this.toStringMax(input?.estado_envio_dgii, 50),
@@ -538,6 +564,14 @@ export class ServicioFacturacion {
     set('codseguridad', 'codseguridad', (v) => this.toStringOrNull(v));
     set('qr_link', 'qr_link', (v) => this.toStringOrNull(v));
     set('fec_firma', 'fec_firma', (v) => this.toStringOrNull(v));
+    set('dgii_request_json', 'dgii_request_json', (v) => this.toJsonOrNull(v));
+    set('dgii_response_json', 'dgii_response_json', (v) => this.toJsonOrNull(v));
+    set('dgii_response_raw', 'dgii_response_raw', (v) => this.toJsonOrNull(v));
+    set('dgii_mensajes', 'dgii_mensajes', (v) => this.toJsonOrNull(v));
+    set('dgii_error_message', 'dgii_error_message', (v) => this.toStringOrNull(v));
+    set('dgii_track_id', 'dgii_track_id', (v) => this.toStringOrNull(v));
+    set('dgii_codigo', 'dgii_codigo', (v) => this.toStringOrNull(v));
+    set('dgii_updated_at', 'dgii_updated_at', (v) => v || null);
     set('ecf', 'ecf', (v) => this.toStringOrNull(v));
     set('rfce', 'rfce', (v) => this.toStringOrNull(v));
     set('estado_envio_dgii', 'estado_envio_dgii', (v) => this.toStringMax(v, 50));
@@ -1933,6 +1967,8 @@ export class ServicioFacturacion {
     fecha?: string;
     fechaDesde?: string;
     fechaHasta?: string;
+    tipoComprobante?: string;
+    estadoDgii?: string;
   } = {}): Observable<any> {
     const safePage = Math.max(1, Number(params.page) || 1);
     const safeLimit = Math.max(10, Number(params.pageSize) || 20);
@@ -1940,6 +1976,8 @@ export class ServicioFacturacion {
     const fecha = this.normalizeDate(params.fecha);
     const fechaDesde = this.normalizeDate(params.fechaDesde);
     const fechaHasta = this.normalizeDate(params.fechaHasta);
+    const tipoComprobante = String(params.tipoComprobante || '').trim();
+    const estadoDgii = String(params.estadoDgii || '').trim();
 
     if (!this.useSupabase) {
       const query = new URLSearchParams({
@@ -1950,6 +1988,8 @@ export class ServicioFacturacion {
       if (fecha) query.set('fecha', fecha);
       if (fechaDesde) query.set('fechaDesde', fechaDesde);
       if (fechaHasta) query.set('fechaHasta', fechaHasta);
+      if (tipoComprobante) query.set('tipoComprobante', tipoComprobante);
+      if (estadoDgii) query.set('estadoDgii', estadoDgii);
       return this.http.GetRequest<any>(`/facturacion/reporte-607?${query.toString()}`);
     }
 
@@ -1977,7 +2017,21 @@ export class ServicioFacturacion {
             `codseguridad.ilike.%${safeSearch}%`,
             `estado_dgii.ilike.%${safeSearch}%`,
             `estado_envio_dgii.ilike.%${safeSearch}%`,
+            `dgii_codigo.ilike.%${safeSearch}%`,
+            `dgii_track_id.ilike.%${safeSearch}%`,
+            `dgii_error_message.ilike.%${safeSearch}%`,
           ].join(',')
+        );
+      }
+
+      if (tipoComprobante) {
+        query = query.eq('fa_tiponcf', Number(tipoComprobante));
+      }
+
+      if (estadoDgii) {
+        const safeEstado = estadoDgii.replace(/[%_]/g, '\\$&');
+        query = query.or(
+          `estado_dgii.ilike.%${safeEstado}%,estado_envio_dgii.ilike.%${safeEstado}%`
         );
       }
 
@@ -2026,6 +2080,14 @@ export class ServicioFacturacion {
         ecf: this.toStringOrNull(payload?.ecf) ?? undefined,
         rfce: this.toStringOrNull(payload?.rfce) ?? undefined,
         estado_envio_dgii: this.toStringOrNull(payload?.estado_envio_dgii) ?? undefined,
+        dgii_request_json: this.toJsonOrNull(payload?.dgii_request_json) ?? undefined,
+        dgii_response_json: this.toJsonOrNull(payload?.dgii_response_json) ?? undefined,
+        dgii_response_raw: this.toJsonOrNull(payload?.dgii_response_raw) ?? undefined,
+        dgii_mensajes: this.toJsonOrNull(payload?.dgii_mensajes) ?? undefined,
+        dgii_error_message: this.toStringOrNull(payload?.dgii_error_message) ?? undefined,
+        dgii_track_id: this.toStringOrNull(payload?.dgii_track_id) ?? undefined,
+        dgii_codigo: this.toStringOrNull(payload?.dgii_codigo) ?? undefined,
+        dgii_updated_at: new Date().toISOString(),
         fa_status: payload?.fa_status !== undefined ? this.toStringMax(payload.fa_status, 3) : undefined,
       };
 

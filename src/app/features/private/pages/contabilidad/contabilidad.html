@@ -1,84 +1,121 @@
-<div class="container-fluid p-0">
-  <div class="row g-0">
-    <!-- Botón para mostrar/ocultar sidebar en dispositivos móviles -->
-    <div class="d-block d-lg-none position-fixed start-0 top-0 p-2 z-index-1000">
-      <button class="btn btn-primary" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarContabilidad" aria-controls="sidebarContabilidad">
-        <i class="bi bi-list"></i> Menú
+<div class="accounting-shell">
+  <button
+    class="btn accounting-mobile-btn d-lg-none"
+    type="button"
+    data-bs-toggle="offcanvas"
+    data-bs-target="#sidebarContabilidad"
+    aria-controls="sidebarContabilidad"
+  >
+    <i class="bi bi-list"></i>
+    Menú
+  </button>
+
+  <aside class="accounting-sidebar d-none d-lg-flex">
+    <div class="accounting-sidebar__top">
+      <span class="accounting-badge">Gestión fiscal</span>
+      <h5>
+        <i class="bi bi-calculator me-2"></i>
+        Contabilidad
+      </h5>
+      <p>Reportes fiscales, cuentas y control de comprobantes.</p>
+    </div>
+
+    <nav class="accounting-nav">
+      <a class="accounting-link" routerLinkActive="active" [routerLink]="['facturas-pendientes']">
+        <i class="bi bi-receipt-cutoff"></i>
+        <span>
+          Facturas pendientes
+          <small>Seguimiento de documentos por cobrar</small>
+        </span>
+      </a>
+
+      <a class="accounting-link accounting-link--featured" routerLinkActive="active" [routerLink]="['reporte-607']">
+        <i class="bi bi-file-earmark-bar-graph"></i>
+        <span>
+          Rep. 607
+          <small>Estados DGII, QR y diagnóstico fiscal</small>
+        </span>
+      </a>
+
+      <div class="accounting-section-title">En preparación</div>
+
+      <button class="accounting-link disabled" type="button" disabled>
+        <i class="bi bi-file-earmark-minus"></i>
+        <span>
+          Nota de crédito
+          <small>Próximamente</small>
+        </span>
       </button>
-    </div>
 
-    <!-- Sidebar para pantallas grandes (lg y superiores) -->
-    <div class="col-lg-3 col-xl-2 d-none d-lg-block position-fixed start-0 overflow-auto border-end bg-light" style="z-index: 900; top: 80px; height: calc(100vh - 80px);">
-      <div class="sidebar">
-        <div class="sidebar-header bg-primary text-white p-3 d-flex align-items-center sticky-top">
-          <i class="bi bi-calculator me-2"></i>
-          <h5 class="mb-0">Contabilidad</h5>
-        </div>
-        <ul class="nav flex-column sidebar-nav nav-pills p-2">
-          <li class="nav-item">
-            <a class="nav-link d-flex align-items-center text-dark" routerLinkActive="active" [routerLink]="['facturas-pendientes']">
-              <i class="bi bi-receipt-cutoff me-2"></i>
-              <span>Facturas Pendientes</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link d-flex align-items-center text-dark" routerLinkActive="active" [routerLink]="['nota-credito']">
-              <i class="bi bi-file-earmark-minus me-2"></i>
-              <span>Nota de Crédito</span>
-            </a>
-          </li>
-          <li class="nav-item">
-             <a class="nav-link d-flex align-items-center text-dark" routerLinkActive="active" [routerLink]="['cuentas-por-cobrar']">
-              <i class="bi bi-cash-coin me-2"></i>
-              <span>Cuentas x Cobrar</span>
-            </a>
-          </li>
-          <li class="nav-item">
-             <a class="nav-link d-flex align-items-center text-dark" routerLinkActive="active" [routerLink]="['reporte-606']">
-              <i class="bi bi-file-earmark-spreadsheet me-2"></i>
-              <span>Rep. 606</span>
-            </a>
-          </li>
-          <li class="nav-item">
-             <a class="nav-link d-flex align-items-center text-dark" routerLinkActive="active" [routerLink]="['reporte-607']">
-              <i class="bi bi-file-earmark-bar-graph me-2"></i>
-              <span>Rep. 607</span>
-            </a>
-          </li>
-        </ul>
-      </div>
-    </div>
+      <button class="accounting-link disabled" type="button" disabled>
+        <i class="bi bi-cash-coin"></i>
+        <span>
+          Cuentas por cobrar
+          <small>Próximamente</small>
+        </span>
+      </button>
 
-    <!-- Sidebar para dispositivos móviles (offcanvas) -->
-    <div class="offcanvas offcanvas-start" tabindex="-1" id="sidebarContabilidad" aria-labelledby="sidebarContabilidadLabel">
-      <div class="offcanvas-header bg-primary text-white">
+      <button class="accounting-link disabled" type="button" disabled>
+        <i class="bi bi-file-earmark-spreadsheet"></i>
+        <span>
+          Rep. 606
+          <small>Próximamente</small>
+        </span>
+      </button>
+    </nav>
+
+    <div class="accounting-sidebar__bottom">
+      <i class="bi bi-shield-check"></i>
+      <span>Datos protegidos por tenant activo.</span>
+    </div>
+  </aside>
+
+  <main class="accounting-main">
+    <div class="accounting-main__inner">
+      <router-outlet></router-outlet>
+    </div>
+  </main>
+
+  <div class="offcanvas offcanvas-start accounting-offcanvas" tabindex="-1" id="sidebarContabilidad" aria-labelledby="sidebarContabilidadLabel">
+    <div class="offcanvas-header">
+      <div>
         <h5 class="offcanvas-title" id="sidebarContabilidadLabel">Contabilidad</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        <small>Navegación fiscal</small>
       </div>
-      <div class="offcanvas-body p-0">
-        <ul class="nav flex-column sidebar-nav">
-          <li class="nav-item">
-            <a class="nav-link d-flex align-items-center" routerLinkActive="active" [routerLink]="['facturas-pendientes']" data-bs-dismiss="offcanvas">
-              <i class="bi bi-receipt-cutoff me-2"></i>
-              <span>Facturas Pendientes</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link d-flex align-items-center" routerLinkActive="active" [routerLink]="['reporte-607']" data-bs-dismiss="offcanvas">
-              <i class="bi bi-file-earmark-bar-graph me-2"></i>
-              <span>Rep. 607</span>
-            </a>
-          </li>
-          <!-- TODO: Agregar el resto de los items para movil si es necesario -->
-        </ul>
-      </div>
+      <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
     </div>
+    <div class="offcanvas-body">
+      <nav class="accounting-nav">
+        <a class="accounting-link" routerLinkActive="active" [routerLink]="['facturas-pendientes']" data-bs-dismiss="offcanvas">
+          <i class="bi bi-receipt-cutoff"></i>
+          <span>
+            Facturas pendientes
+            <small>Seguimiento de documentos</small>
+          </span>
+        </a>
 
-    <!-- Contenido principal -->
-    <div class="col-12 col-lg-9 col-xl-10 offset-lg-3 offset-xl-2 main-content">
-      <div class="p-3">
-        <router-outlet></router-outlet>
-      </div>
+        <a class="accounting-link accounting-link--featured" routerLinkActive="active" [routerLink]="['reporte-607']" data-bs-dismiss="offcanvas">
+          <i class="bi bi-file-earmark-bar-graph"></i>
+          <span>
+            Rep. 607
+            <small>Estados DGII y respuesta completa</small>
+          </span>
+        </a>
+
+        <div class="accounting-section-title">En preparación</div>
+        <button class="accounting-link disabled" type="button" disabled>
+          <i class="bi bi-file-earmark-minus"></i>
+          <span>Nota de crédito<small>Próximamente</small></span>
+        </button>
+        <button class="accounting-link disabled" type="button" disabled>
+          <i class="bi bi-cash-coin"></i>
+          <span>Cuentas por cobrar<small>Próximamente</small></span>
+        </button>
+        <button class="accounting-link disabled" type="button" disabled>
+          <i class="bi bi-file-earmark-spreadsheet"></i>
+          <span>Rep. 606<small>Próximamente</small></span>
+        </button>
+      </nav>
     </div>
   </div>
 </div>

@@ -72,11 +72,33 @@ export class FacturaDgiiService {
     const rnc = this.rnc(localStorage.getItem('rnc_empresa'));
     if (!rnc) throw new Error('No se encontro el RNC emisor activo.');
 
-    const envioResp = await firstValueFrom(
-      this.configuracion.enviarDgiiDirectCert([escenario], rnc),
-    );
+    let envioResp: any;
+    try {
+      envioResp = await firstValueFrom(
+        this.configuracion.enviarDgiiDirectCert([escenario], rnc),
+      );
+    } catch (error: any) {
+      const rawError = error?.dgiiResponse || error?.details || {
+        message: error?.message || String(error),
+      };
+      const datosError = {
+        ...this.normalizarRespuesta(rawError),
+        dgii_request_json: escenario,
+        dgii_response_raw: rawError,
+        estado_envio_dgii: this.normalizarRespuesta(rawError)?.estado_envio_dgii || 'Error',
+        estado_dgii: this.normalizarRespuesta(rawError)?.estado_dgii || 'Error',
+      };
+      try {
+        await firstValueFrom(this.facturacion.actualizarDatosDgii(codigo, datosError));
+      } catch (saveError) {
+        console.warn('No se pudo guardar el error DGII en la factura:', saveError);
+      }
+      throw error;
+    }
     const datosDgii = {
       ...this.normalizarRespuesta(envioResp?.data ?? envioResp),
+      dgii_request_json: escenario,
+      dgii_response_raw: envioResp?.data ?? envioResp,
       fa_status: 'F',
     };
 
@@ -315,6 +337,19 @@ export class FacturaDgiiService {
     const responseXml = nested?.responseXML || {};
     const responseRfce = nested?.responseRFCE || {};
     const dgii = responseRfce?.dgiiResponse || responseXml?.dgiiResponse || {};
+    const mensajes = this.extraerMensajesDgii(nested, payload, root, dgii);
+    const errorMessage = pick(
+      nested?.error,
+      nested?.message,
+      nested?.mensaje,
+      payload?.error,
+      payload?.message,
+      payload?.mensaje,
+      root?.error,
+      root?.message,
+      root?.mensaje,
+      mensajes.join(' | '),
+    );
 
     return {
       ...nested,
@@ -354,6 +389,11 @@ export class FacturaDgiiService {
       ),
       ecf: nested?.ecf ?? xmls?.ecf ?? null,
       rfce: nested?.rfce ?? xmls?.rfce ?? null,
+      dgii_response_json: nested,
+      dgii_mensajes: mensajes,
+      dgii_error_message: errorMessage,
+      dgii_track_id: pick(nested?.trackId, payload?.trackId, root?.trackId, dgii?.trackId),
+      dgii_codigo: pick(nested?.codigo, payload?.codigo, root?.codigo, dgii?.codigo),
       estado_envio_dgii: pick(
         nested?.estado_envio_dgii,
         nested?.estadoEnvio,
@@ -362,5 +402,36 @@ export class FacturaDgiiService {
         nested?.status,
       ),
     };
+  }
+
+  private extraerMensajesDgii(...sources: any[]): string[] {
+    const mensajes: string[] = [];
+    const add = (value: any) => {
+      if (value === null || value === undefined) return;
+      if (Array.isArray(value)) {
+        value.forEach(add);
+        return;
+      }
+      if (typeof value === 'object') {
+        add(value.mensaje || value.message || value.error || value.descripcion);
+        return;
+      }
+      const text = String(value).trim();
+      if (text && !mensajes.includes(text)) mensajes.push(text);
+    };
+
+    sources.forEach((source) => {
+      if (!source || typeof source !== 'object') return;
+      add(source.mensajes);
+      add(source.mensaje);
+      add(source.message);
+      add(source.error);
+      add(source.errors);
+      add(source.detalles);
+      add(source.details);
+      add(source.observaciones);
+    });
+
+    return mensajes;
   }
 }
