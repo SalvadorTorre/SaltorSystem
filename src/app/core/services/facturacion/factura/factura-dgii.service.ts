@@ -331,6 +331,7 @@ export class FacturaDgiiService {
     if (fechaVencimiento) {
       escenario.FechaVencimientoSecuencia = fechaVencimiento;
     }
+
     if (nombreSucursal) escenario.Sucursal = nombreSucursal;
     if (rncComprador) escenario.RNCComprador = rncComprador;
     if (nombreComprador) escenario.RazonSocialComprador = nombreComprador;
