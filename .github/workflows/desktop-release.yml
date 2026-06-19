@@ -26,10 +26,23 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
+      - name: Bump desktop version
+        run: node scripts/bump-version.js
+
+      - name: Commit desktop version
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if ! git diff --cached --quiet; then
+            SKIP_VERSION_BUMP=1 git commit -m "chore: bump desktop version [skip ci]"
+            git push
+          fi
+
       - name: Build Windows installer and publish release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: yarn desktop:pack:win:publish
+        run: yarn build:icon && yarn build --configuration production --base-href ./ && electron-builder --win nsis --x64 --publish always
 
       - name: Upload workflow artifact
         uses: actions/upload-artifact@v4

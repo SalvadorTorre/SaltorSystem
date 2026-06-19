@@ -31,7 +31,7 @@ const nextVersion = bumpPatch(pkg.version);
 pkg.version = nextVersion;
 writeJson(packageJsonPath, pkg);
 
-execFileSync('node', [syncScriptPath], { cwd: root, stdio: 'inherit' });
+execFileSync(process.execPath, [syncScriptPath], { cwd: root, stdio: 'inherit' });
 execFileSync('git', ['add', 'package.json', 'src/environments/environment.ts', 'src/environments/environment.prod.ts'], {
   cwd: root,
   stdio: 'ignore',

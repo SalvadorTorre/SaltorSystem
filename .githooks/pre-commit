@@ -5,4 +5,17 @@ if [ "$SKIP_VERSION_BUMP" = "1" ]; then
   exit 0
 fi
 
-node scripts/bump-version.js
+NODE_BIN="${NODE_BINARY:-node}"
+
+if ! command -v "$NODE_BIN" >/dev/null 2>&1; then
+  if [ -x "/opt/homebrew/bin/node" ]; then
+    NODE_BIN="/opt/homebrew/bin/node"
+  elif [ -x "/usr/local/bin/node" ]; then
+    NODE_BIN="/usr/local/bin/node"
+  else
+    echo "No se encontro Node.js para subir la version automaticamente." >&2
+    exit 1
+  fi
+fi
+
+"$NODE_BIN" scripts/bump-version.js
