@@ -74,6 +74,7 @@ export class ControlFact implements OnInit {
   botonGuardar = true; // Empieza deshabilitado
   guardandoFactura = false;
   botonaddItems = true; // Empieza deshabilitado
+  edicionSoloEncabezado = false;
   totalItems = 0;
   pageSize = 6;
   currentPage = 1;
@@ -171,12 +172,21 @@ export class ControlFact implements OnInit {
   form: FormGroup;
 
   get totalPages() {
-    return Math.ceil(this.facturacionList.length / this.pageSize);
+    return Math.max(1, Math.ceil(this.facturacionList.length / this.pageSize));
   }
 
   get paginatedData() {
     const startIndex = (this.currentPage - 1) * this.pageSize;
     return this.facturacionList.slice(startIndex, startIndex + this.pageSize);
+  }
+
+  get pageStart() {
+    if (!this.facturacionList.length) return 0;
+    return (this.currentPage - 1) * this.pageSize + 1;
+  }
+
+  get pageEnd() {
+    return Math.min(this.currentPage * this.pageSize, this.facturacionList.length);
   }
 
   private normalizarStatusFactura(value: any): string {
@@ -195,6 +205,38 @@ export class ControlFact implements OnInit {
       factura?.fa_tipoNCF ??
       '',
     ).trim();
+  }
+
+  private normalizarCodigoPagoFactura(factura: any): string {
+    return String(
+      factura?.fa_codfpago ??
+      factura?.fa_codFpago ??
+      factura?.fa_codFPago ??
+      '',
+    ).trim();
+  }
+
+  private normalizarEnvioFactura(factura: any): string {
+    const value = String(factura?.fa_envio ?? '').trim().toUpperCase();
+    if (value === '1' || value === 'ENVIO' || value === 'ENVÍO') return '1';
+    if (
+      value === '2' ||
+      value === 'RETIRO' ||
+      value === 'RETIRAR' ||
+      value === 'RETIRAR POR EL CLIENTE'
+    ) {
+      return '2';
+    }
+    return value;
+  }
+
+  private normalizarFacturaParaFormulario(factura: any): any {
+    return {
+      ...factura,
+      fa_tipoNcf: this.tipoNcfFactura(factura),
+      fa_codfpago: this.normalizarCodigoPagoFactura(factura),
+      fa_envio: this.normalizarEnvioFactura(factura),
+    };
   }
 
   private descripcionTipoNcfFactura(factura: any): string {
@@ -524,7 +566,13 @@ export class ControlFact implements OnInit {
       )
       .subscribe((results: FacturacionModelData) => {
         console.log(results);
-        this.facturacionList = Array.isArray(results) ? results : [];
+        this.facturacionList = Array.isArray(results)
+          ? results
+          : Array.isArray((results as any)?.data)
+            ? (results as any).data
+            : [];
+        this.currentPage = 1;
+        this.selectedRow = 0;
       });
     this.buscarSector.valueChanges
       .pipe(
@@ -675,6 +723,7 @@ export class ControlFact implements OnInit {
     this.botonEditar = true; // Deshabilita de nuevo
     this.botonGuardar = true; // Deshabilita el botón
     this.botonaddItems = true;
+    this.edicionSoloEncabezado = false;
     this.facturaOriginalEdicion = null;
     this.detalleOriginalEdicion = '';
     this.productoselect;
@@ -782,6 +831,8 @@ export class ControlFact implements OnInit {
     this.servicioFacturacion.buscarTodasFacturacion().subscribe((response) => {
       console.log(response);
       this.facturacionList = response.data;
+      this.currentPage = 1;
+      this.selectedRow = 0;
       console.log(this.facturacionList.length);
     });
   }
@@ -789,10 +840,7 @@ export class ControlFact implements OnInit {
     this.modoconsultaFacturacion = true;
     this.formularioFacturacion.reset();
     this.crearFormularioFacturacion();
-    const facturaConsulta = {
-      ...factura,
-      fa_tipoNcf: this.tipoNcfFactura(factura),
-    };
+    const facturaConsulta = this.normalizarFacturaParaFormulario(factura);
     this.formularioFacturacion.patchValue(facturaConsulta);
     this.facturaOriginalEdicion = { ...facturaConsulta };
     this.tituloModalFacturacion = 'Consulta Factura';
@@ -942,17 +990,9 @@ export class ControlFact implements OnInit {
   }
   editarFactura() {
     const facturaActual = this.formularioFacturacion.getRawValue();
-    if (
+    const soloEncabezado =
       this.normalizarFlagFactura(facturaActual?.fa_impresa) === 'S' &&
-      this.normalizarFlagFactura(facturaActual?.fa_despacho) === 'N'
-    ) {
-      Swal.fire(
-        'Aviso',
-        'La factura de despacho no se ha imprimido. No puede editar esta factura.',
-        'warning',
-      );
-      return;
-    }
+      this.normalizarFlagFactura(facturaActual?.fa_despacho) === 'N';
 
     if (this.normalizarStatusFactura(this.formularioFacturacion.get('fa_status')?.value) !== 'C') {
       Swal.fire('Aviso', 'Solo puede editar facturas con status C.', 'warning');
@@ -962,7 +1002,9 @@ export class ControlFact implements OnInit {
     this.botonEditar = true; // Deshabilita de nuevo
     this.botonGuardar = false; // Habilita el botón
     this.botonaddItems = false; // Habilita el botón
-    this.habilitarIcono = true;
+    this.edicionSoloEncabezado = soloEncabezado;
+    this.botonaddItems = soloEncabezado;
+    this.habilitarIcono = !soloEncabezado;
     this.formularioFacturacion.enable();
     this.formularioFacturacion.get('fa_codFact')?.disable();
     this.formularioFacturacion.get('fa_fecFact')?.disable();
@@ -974,12 +1016,20 @@ export class ControlFact implements OnInit {
     this.formularioFacturacion.get('fa_facturada')?.disable();
 
     this.limpiarCampos();
-    this.habilitarCampos = true;
-    this.habilitarCantidad = true;
-    setTimeout(() => {
-      this.codigoInput?.nativeElement.focus();
-      this.codigoInput?.nativeElement.select();
-    });
+    this.habilitarCampos = !soloEncabezado;
+    this.habilitarCantidad = !soloEncabezado;
+    if (soloEncabezado) {
+      Swal.fire(
+        'Aviso',
+        'La factura de despacho no se ha imprimido. Solo puede editar el encabezado.',
+        'warning',
+      );
+    } else {
+      setTimeout(() => {
+        this.codigoInput?.nativeElement.focus();
+        this.codigoInput?.nativeElement.select();
+      });
+    }
 
     //this.codMercselecte = detactura.fa_codFact;
   }
@@ -1009,6 +1059,8 @@ export class ControlFact implements OnInit {
   buscarTodasFacturacion() {
     this.servicioFacturacion.buscarTodasFacturacion().subscribe((response) => {
       this.facturacionList = response.data;
+      this.currentPage = 1;
+      this.selectedRow = 0;
     });
   }
   // buscarTodasFacturacion() {
@@ -1029,6 +1081,8 @@ export class ControlFact implements OnInit {
       .buscarFacturacion(0, 0, c_codFact.value)
       .subscribe((resultado) => {
         this.facturacionList = resultado.data;
+        this.currentPage = 1;
+        this.selectedRow = 0;
       });
   }
 
@@ -1040,6 +1094,8 @@ export class ControlFact implements OnInit {
       .buscarFacturacion(0, 0, '', '', fechaStr)
       .subscribe((resultado) => {
         this.facturacionList = resultado.data;
+        this.currentPage = 1;
+        this.selectedRow = 0;
       });
   }
   // buscaFecha(event: Event) {
@@ -1675,7 +1731,6 @@ export class ControlFact implements OnInit {
     if (fpago.fp_descfpago !== '') {
       console.log(this.resultadoFpago);
       this.formularioFacturacion.patchValue({
-        fa_fpago: fpago.fp_descfpago,
         fa_codfpago: fpago.fp_codfpago,
       });
     }
@@ -1810,6 +1865,7 @@ export class ControlFact implements OnInit {
   //   }
   // }
   borarItem(item: any) {
+    if (this.edicionSoloEncabezado) return;
     const index = this.items.indexOf(item);
     if (index > -1) {
       this.items.splice(index, 1);
@@ -1834,6 +1890,7 @@ export class ControlFact implements OnInit {
   }
 
   editarItem(item: any) {
+    if (this.edicionSoloEncabezado) return;
     this.habilitarCampos = false;
     this.habilitarCantidad = true;
     this.index_item = this.items.indexOf(item);
@@ -1853,6 +1910,7 @@ export class ControlFact implements OnInit {
     });
   }
   agregarItem() {
+    if (this.edicionSoloEncabezado) return;
     this.habilitarCampos = true;
     this.habilitarCantidad = true;
     setTimeout(() => {
@@ -2252,33 +2310,44 @@ export class ControlFact implements OnInit {
   // Métodos para cambiar de página
   goToFirstPage() {
     this.currentPage = 1;
+    this.selectedRow = 0;
   }
 
   goToLastPage() {
     this.currentPage = this.totalPages;
+    this.selectedRow = 0;
   }
 
   nextPage() {
     if (this.currentPage < this.totalPages) {
       this.currentPage++;
+      this.selectedRow = 0;
     }
   }
 
   prevPage() {
     if (this.currentPage > 1) {
       this.currentPage--;
+      this.selectedRow = 0;
     }
   }
 
   onTableKeydown(event: KeyboardEvent) {
-    const max = this.facturacionList.length - 1;
+    const data = this.paginatedData;
+    const max = data.length - 1;
+    if (max < 0) return;
 
     switch (event.key) {
       case 'ArrowDown':
         if (this.selectedRow < max) {
           this.selectedRow++;
           this.scrollToRow(this.selectedRow);
-          this.consultarFacturacion(this.facturacionList[this.selectedRow]);
+          this.consultarFacturacion(data[this.selectedRow]);
+        } else if (this.currentPage < this.totalPages) {
+          this.currentPage++;
+          this.selectedRow = 0;
+          this.scrollToRow(this.selectedRow);
+          this.consultarFacturacion(this.paginatedData[this.selectedRow]);
         }
         event.preventDefault();
         break;
@@ -2287,13 +2356,18 @@ export class ControlFact implements OnInit {
         if (this.selectedRow > 0) {
           this.selectedRow--;
           this.scrollToRow(this.selectedRow);
-          this.consultarFacturacion(this.facturacionList[this.selectedRow]);
+          this.consultarFacturacion(data[this.selectedRow]);
+        } else if (this.currentPage > 1) {
+          this.currentPage--;
+          this.selectedRow = Math.max(0, this.paginatedData.length - 1);
+          this.scrollToRow(this.selectedRow);
+          this.consultarFacturacion(this.paginatedData[this.selectedRow]);
         }
         event.preventDefault();
         break;
 
       case 'Enter':
-        this.consultarFacturacion(this.facturacionList[this.selectedRow]);
+        this.consultarFacturacion(data[this.selectedRow]);
         event.preventDefault();
         break;
     }

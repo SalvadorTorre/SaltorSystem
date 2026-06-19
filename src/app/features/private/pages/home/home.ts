@@ -1,5 +1,11 @@
 import { Component, OnInit } from '@angular/core';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import Swal from 'sweetalert2';
+import { ServicioFacturacion } from 'src/app/core/services/facturacion/factura/factura.service';
+import { ServicioSucursal } from 'src/app/core/services/mantenimientos/sucursal/sucursal.service';
+import { ServicioUsuario } from 'src/app/core/services/mantenimientos/usuario/usuario.service';
+import { ServicioTipousuario } from 'src/app/core/services/mantenimientos/tipousuario/tipousuario.service';
 
 type DashboardRole = 'root' | 'admin' | 'vendedor';
 
@@ -132,12 +138,20 @@ export class Home implements OnInit {
     alertas: [],
   };
 
+  constructor(
+    private servicioFacturacion: ServicioFacturacion,
+    private servicioSucursal: ServicioSucursal,
+    private servicioUsuario: ServicioUsuario,
+    private servicioTipousuario: ServicioTipousuario,
+  ) {}
+
   ngOnInit(): void {
     this.isDesktopApp = typeof window !== 'undefined' && !!window.electronAPI?.isDesktop;
     this.periodoActual = new Intl.DateTimeFormat('es-DO', { month: 'long', year: 'numeric' }).format(new Date());
     this.loadSession();
     this.buildVendedorDashboard();
     this.buildGlobalDashboard();
+    this.cargarDashboardReal();
   }
 
   abrirInstaladorDesktop(): void {
@@ -723,6 +737,287 @@ export class Home implements OnInit {
         'Hay 17 facturas pendientes de cobro en el corte actual.',
       ],
     };
+  }
+
+  private cargarDashboardReal(): void {
+    forkJoin({
+      sucursales: this.servicioSucursal.buscarTodasSucursal().pipe(catchError(() => of({ data: [] }))),
+      facturas: this.servicioFacturacion.buscarFacturasParaCierre(10000).pipe(catchError(() => of({ data: [] }))),
+      usuarios: this.servicioUsuario.buscarTodosUsuario(1, 10000).pipe(catchError(() => of({ data: [] }))),
+      tipos: this.servicioTipousuario.obtenerTodosTipousuario().pipe(catchError(() => of({ data: [] }))),
+    }).subscribe(({ sucursales, facturas, usuarios, tipos }) => {
+      const sucursalesList = this.unwrapList(sucursales);
+      const facturasList = this.unwrapList(facturas);
+      const usuariosList = this.unwrapList(usuarios);
+      const tiposList = this.unwrapList(tipos);
+      const facturasMes = facturasList.filter((factura) => this.esFechaDelMesActual(factura?.fa_fecFact ?? factura?.fa_fecfact));
+
+      this.aplicarDashboardSucursal(sucursalesList, facturasMes, usuariosList, tiposList);
+      this.aplicarDashboardGlobal(sucursalesList, facturasMes, usuariosList, tiposList);
+    });
+  }
+
+  private aplicarDashboardSucursal(
+    sucursales: any[],
+    facturasMes: any[],
+    usuarios: any[],
+    tipos: any[],
+  ): void {
+    const sucursalId = this.currentSucursalId();
+    const sucursal = this.buscarSucursalActual(sucursales, sucursalId);
+    const facturasSucursal = sucursalId
+      ? facturasMes.filter((factura) => this.numeroSucursalFactura(factura) === sucursalId)
+      : facturasMes;
+    const vendedoresSucursal = this.filtrarVendedoresSucursal(usuarios, tipos, sucursalId);
+
+    const metaFacturar = this.metaVentaSucursal(sucursal);
+    const miembrosSucursal = vendedoresSucursal.length || 1;
+    const valorFacturadoReal = this.sumarCampo(facturasSucursal, 'fa_valFact', 'fa_valfact');
+    const costoFacturado = this.sumarCampo(facturasSucursal, 'fa_cosFact', 'fa_cosfact');
+    const totalFactura = facturasSucursal.length;
+    const ticketPromedio = totalFactura ? valorFacturadoReal / totalFactura : 0;
+    const margenVentaPct = valorFacturadoReal ? ((valorFacturadoReal - costoFacturado) / valorFacturadoReal) * 100 : 0;
+    const porcientoFacturado = metaFacturar ? (valorFacturadoReal / metaFacturar) * 100 : 0;
+    const metaPorVendedor = miembrosSucursal ? metaFacturar / miembrosSucursal : metaFacturar;
+
+    this.vendedor = {
+      ...this.vendedor,
+      metaFacturar,
+      metaFacturarMM: metaFacturar / 1000000,
+      miembrosSucursal,
+      metaPorVendedor,
+      metaPorVendedorMM: metaPorVendedor / 1000000,
+      totalFactura,
+      valorFacturadoReal,
+      valorFacturadoOculto: this.toObfuscatedMillions(valorFacturadoReal),
+      margenVentaPct,
+      porcientoFacturado,
+      ticketPromedio,
+      canales: [{ nombre: 'Ventas del mes', monto: valorFacturadoReal }],
+      facturasRecientes: this.mapFacturasRecientes(facturasSucursal),
+    };
+
+    if (sucursal?.nom_sucursal || sucursal?.descripcion) {
+      this.sucursalNombre = sucursal.nom_sucursal || sucursal.descripcion;
+    }
+  }
+
+  private aplicarDashboardGlobal(
+    sucursales: any[],
+    facturasMes: any[],
+    usuarios: any[],
+    tipos: any[],
+  ): void {
+    const sucursalRows = sucursales.map((sucursal) => {
+      const sucursalId = Number(sucursal?.cod_sucursal ?? sucursal?.id ?? 0);
+      const facturasSucursal = facturasMes.filter((factura) => this.numeroSucursalFactura(factura) === sucursalId);
+      const facturado = this.sumarCampo(facturasSucursal, 'fa_valFact', 'fa_valfact');
+      const costo = this.sumarCampo(facturasSucursal, 'fa_cosFact', 'fa_cosfact');
+      const vendedores = this.filtrarVendedoresSucursal(usuarios, tipos, sucursalId).length;
+      return {
+        nombre: String(sucursal?.nom_sucursal ?? sucursal?.descripcion ?? `Sucursal ${sucursalId}`),
+        vendedores,
+        facturas: facturasSucursal.length,
+        facturado,
+        margenPct: facturado ? ((facturado - costo) / facturado) * 100 : 0,
+      };
+    });
+
+    const metaMensual = sucursales.reduce((acc, sucursal) => acc + this.metaVentaSucursal(sucursal), 0);
+    const facturadoGeneral = this.sumarCampo(facturasMes, 'fa_valFact', 'fa_valfact');
+    const totalFacturas = facturasMes.length;
+    const ticketPromedio = totalFacturas ? facturadoGeneral / totalFacturas : 0;
+    const cumplimientoGeneralPct = metaMensual ? (facturadoGeneral / metaMensual) * 100 : 0;
+
+    this.global = {
+      ...this.global,
+      metaMensual,
+      facturadoGeneral,
+      cumplimientoGeneralPct,
+      totalFacturas,
+      ticketPromedio,
+      vendedoresActivos: this.filtrarVendedoresSucursal(usuarios, tipos, 0).length,
+      sucursalesActivas: sucursales.length,
+      sucursales: sucursalRows,
+      topVendedores: this.construirTopVendedores(facturasMes, usuarios, tipos, metaMensual),
+      formasPago: this.construirFormasPago(facturasMes),
+      alertas: this.construirAlertas(sucursalRows, metaMensual, facturadoGeneral),
+    };
+  }
+
+  private unwrapList(response: any): any[] {
+    if (Array.isArray(response)) return response;
+    if (Array.isArray(response?.data)) return response.data;
+    return [];
+  }
+
+  private currentSucursalId(): number {
+    const sucRaw = this.parseStorage(localStorage.getItem('sucursal'));
+    const value =
+      localStorage.getItem('idSucursal') ||
+      sucRaw?.cod_sucursal ||
+      sucRaw?.id ||
+      sucRaw?.sucursalid ||
+      localStorage.getItem('sucursalid') ||
+      '';
+    const id = Number(value);
+    return Number.isFinite(id) ? id : 0;
+  }
+
+  private buscarSucursalActual(sucursales: any[], sucursalId: number): any {
+    if (!sucursalId) return sucursales[0] || null;
+    return sucursales.find((sucursal) => Number(sucursal?.cod_sucursal ?? sucursal?.id ?? 0) === sucursalId) || null;
+  }
+
+  private metaVentaSucursal(sucursal: any): number {
+    return this.toNumber(
+      sucursal?.meta_vents ??
+      sucursal?.meta_venta ??
+      sucursal?.metaVenta ??
+      sucursal?.metaventa ??
+      0,
+    );
+  }
+
+  private numeroSucursalFactura(factura: any): number {
+    return this.toNumber(
+      factura?.fa_codSucu ??
+      factura?.fa_codsucu ??
+      factura?.cod_sucursal ??
+      factura?.sucursalid ??
+      0,
+    );
+  }
+
+  private esFechaDelMesActual(value: any): boolean {
+    if (!value) return false;
+    const fechaTexto = String(value).trim();
+    const fecha = fechaTexto.includes('T') ? new Date(fechaTexto) : new Date(`${fechaTexto}T00:00:00`);
+    if (Number.isNaN(fecha.getTime())) return false;
+    const hoy = new Date();
+    return fecha.getFullYear() === hoy.getFullYear() && fecha.getMonth() === hoy.getMonth();
+  }
+
+  private sumarCampo(rows: any[], ...keys: string[]): number {
+    return rows.reduce((acc, row) => {
+      const value = keys.map((key) => row?.[key]).find((item) => item !== undefined && item !== null);
+      return acc + this.toNumber(value);
+    }, 0);
+  }
+
+  private toNumber(value: any): number {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  private filtrarVendedoresSucursal(usuarios: any[], tipos: any[], sucursalId: number): any[] {
+    const tipoMap = new Map<number, string>(
+      tipos.map((tipo) => [
+        Number(tipo?.id ?? tipo?.idtipoUsuario ?? 0),
+        String(tipo?.descripcion ?? '').trim().toLowerCase(),
+      ]),
+    );
+
+    return usuarios.filter((usuario) => {
+      const usuarioSucursal = Number(usuario?.sucursalid ?? usuario?.sucursal ?? 0);
+      if (sucursalId && usuarioSucursal !== sucursalId) return false;
+      const tipoDesc = tipoMap.get(Number(usuario?.idtipoUsuario ?? usuario?.idtipousuario ?? 0)) || '';
+      const esTipoVendedor = tipoDesc.includes('vendedor') || tipoDesc.includes('venta');
+      const flagVendedor = usuario?.vendedor === true || String(usuario?.vendedor ?? '').toUpperCase() === 'S';
+      const codigoVendedor = String(usuario?.claveUsuario ?? usuario?.claveusuario ?? '').trim();
+      return esTipoVendedor || flagVendedor || !!codigoVendedor;
+    });
+  }
+
+  private mapFacturasRecientes(facturas: any[]): FacturaReciente[] {
+    return [...facturas]
+      .sort((a, b) => String(b?.fa_fecFact ?? b?.fa_fecfact ?? '').localeCompare(String(a?.fa_fecFact ?? a?.fa_fecfact ?? '')))
+      .slice(0, 12)
+      .map((factura) => {
+        const fpago = String(factura?.fa_fpago ?? '').trim().toUpperCase();
+        const pendiente = String(factura?.fa_pendiente ?? '').trim().toUpperCase();
+        const estado: FacturaReciente['estado'] =
+          fpago === 'S' ? 'Cobrada' : pendiente === 'P' ? 'Pendiente' : 'En ruta';
+        const codfpago = String(factura?.fa_codfpago ?? '').trim();
+        return {
+          numero: String(factura?.fa_codFact ?? factura?.fa_codfact ?? ''),
+          ncf: String(factura?.fa_ncfFact ?? factura?.fa_ncffact ?? '-'),
+          cliente: String(factura?.fa_nomClie ?? factura?.fa_nomclie ?? ''),
+          rnc: String(factura?.fa_rncFact ?? factura?.fa_rncfact ?? '-'),
+          fecha: String(factura?.fa_fecFact ?? factura?.fa_fecfact ?? '').slice(0, 10),
+          condicion: codfpago === '2' ? 'Crédito' : 'Contado',
+          monto: this.toNumber(factura?.fa_valFact ?? factura?.fa_valfact),
+          estado,
+        };
+      });
+  }
+
+  private construirTopVendedores(facturas: any[], usuarios: any[], tipos: any[], metaMensual: number): VendedorGlobal[] {
+    const vendedores = this.filtrarVendedoresSucursal(usuarios, tipos, 0);
+    const nombrePorCodigo = new Map<string, string>();
+    vendedores.forEach((usuario) => {
+      const claves = [
+        usuario?.claveUsuario,
+        usuario?.claveusuario,
+        usuario?.codUsuario,
+        usuario?.codusuario,
+        usuario?.idUsuario,
+        usuario?.idusuario,
+      ].map((v) => String(v ?? '').trim()).filter(Boolean);
+      claves.forEach((clave) => nombrePorCodigo.set(clave, String(usuario?.nombreUsuario ?? usuario?.nombreusuario ?? usuario?.idUsuario ?? clave)));
+    });
+
+    const grupos = new Map<string, VendedorGlobal>();
+    facturas.forEach((factura) => {
+      const codigo = String(factura?.fa_codVend ?? factura?.fa_codvend ?? factura?.fa_nomVend ?? factura?.fa_nomvend ?? 'SIN VENDEDOR').trim();
+      const nombre = String(factura?.fa_nomVend ?? factura?.fa_nomvend ?? nombrePorCodigo.get(codigo) ?? codigo);
+      const sucursal = String(factura?.fa_desSucu ?? factura?.sucursal ?? this.sucursalNombre ?? '');
+      const actual = grupos.get(codigo) || {
+        nombre,
+        sucursal,
+        facturas: 0,
+        facturado: 0,
+        cumplimientoPct: 0,
+      };
+      actual.facturas += 1;
+      actual.facturado += this.toNumber(factura?.fa_valFact ?? factura?.fa_valfact);
+      grupos.set(codigo, actual);
+    });
+
+    const metaPorVendedor = vendedores.length ? metaMensual / vendedores.length : metaMensual;
+    return [...grupos.values()]
+      .map((vendedor) => ({
+        ...vendedor,
+        cumplimientoPct: metaPorVendedor ? (vendedor.facturado / metaPorVendedor) * 100 : 0,
+      }))
+      .sort((a, b) => b.facturado - a.facturado)
+      .slice(0, 10);
+  }
+
+  private construirFormasPago(facturas: any[]): FormaPagoGlobal[] {
+    const grupos = new Map<string, number>();
+    facturas.forEach((factura) => {
+      const codigo = String(factura?.fa_codfpago ?? factura?.fa_codFpago ?? 'SIN PAGO').trim() || 'SIN PAGO';
+      grupos.set(codigo, (grupos.get(codigo) || 0) + this.toNumber(factura?.fa_valFact ?? factura?.fa_valfact));
+    });
+    return [...grupos.entries()].map(([nombre, monto]) => ({ nombre: `Pago ${nombre}`, monto }));
+  }
+
+  private construirAlertas(sucursales: SucursalGlobal[], metaMensual: number, facturadoGeneral: number): string[] {
+    const alertas: string[] = [];
+    const cumplimiento = metaMensual ? (facturadoGeneral / metaMensual) * 100 : 0;
+    if (cumplimiento < 50) {
+      alertas.push(`El cumplimiento mensual esta en ${cumplimiento.toFixed(1)}%.`);
+    }
+    const sinVentas = sucursales.filter((sucursal) => sucursal.facturado <= 0);
+    if (sinVentas.length) {
+      alertas.push(`${sinVentas.length} sucursal(es) sin ventas registradas este mes.`);
+    }
+    const pocosVendedores = sucursales.filter((sucursal) => sucursal.vendedores <= 0);
+    if (pocosVendedores.length) {
+      alertas.push(`${pocosVendedores.length} sucursal(es) sin vendedores asignados.`);
+    }
+    return alertas.length ? alertas : ['Ventas del mes actualizadas correctamente.'];
   }
 
   private loadFacturasFromStorage(): FacturaReciente[] {

@@ -368,9 +368,9 @@ export class Facturacion implements OnInit {
       if (!value) {
         this.resultadoFpago = this.listaFpago;
       } else {
-        const filterValue = value.toLowerCase();
+        const filterValue = String(value).toLowerCase();
         this.resultadoFpago = this.listaFpago.filter((option) =>
-          option.fp_descfpago.toLowerCase().includes(filterValue),
+          String(option.fp_descfpago || '').toLowerCase().includes(filterValue),
         );
       }
       this.selectedIndexfpago = 0;
@@ -380,9 +380,9 @@ export class Facturacion implements OnInit {
       if (!value) {
         this.resultadoEnvio = this.listaEnvio;
       } else {
-        const filterValue = value.toLowerCase();
+        const filterValue = String(value).toLowerCase();
         this.resultadoEnvio = this.listaEnvio.filter((option) =>
-          option.descripcion.toLowerCase().includes(filterValue),
+          String(option.descripcion || '').toLowerCase().includes(filterValue),
         );
       }
       this.selectedIndexEnvio = 0;
@@ -567,11 +567,14 @@ export class Facturacion implements OnInit {
       // Si hay un valor seleccionado, intentamos setear el nombre en el input
       const currentId = this.formularioFacturacion.get('fa_codfpago')?.value;
       if (currentId) {
-        const found = this.listaFpago.find((f) => f.fp_codfpago === currentId);
+        const found = this.listaFpago.find(
+          (f) => String(f.fp_codfpago) === String(currentId),
+        );
         if (found) {
           this.buscarFpago.setValue(found.fp_descfpago, { emitEvent: false });
         }
       }
+      this.sincronizarControlesPagoEntrega(this.formularioFacturacion.getRawValue());
     });
   }
   obtenerNcf() {
@@ -617,6 +620,7 @@ export class Facturacion implements OnInit {
       fa_desZona: [''],
       fa_fpago: [''],
       fa_codfpago: ['1'],
+      fa_expFact: [''],
       fa_envio: [''],
       fa_ncfFact: [{ value: '', disabled: true }],
       fa_tipoNcf: [{ value: '32', disabled: true }],
@@ -628,6 +632,52 @@ export class Facturacion implements OnInit {
       this.actualizarItbisPorComprobante();
     });
     this.conectarBusquedaCliente();
+  }
+
+  private normalizarFacturaParaFormulario(factura: any): any {
+    if (!factura) return factura;
+    return {
+      ...factura,
+      fa_codVend: String(factura?.fa_codVend ?? factura?.fa_codvend ?? '').trim(),
+      fa_codfpago: String(factura?.fa_codfpago ?? '').trim(),
+      fa_envio: String(factura?.fa_envio ?? '').trim(),
+    };
+  }
+
+  private sincronizarControlesPagoEntrega(factura: any): void {
+    const codPago = String(
+      factura?.fa_codfpago ?? this.formularioFacturacion?.get('fa_codfpago')?.value ?? '',
+    ).trim();
+    const formaPago = this.listaFpago.find(
+      (item) => String(item.fp_codfpago ?? '').trim() === codPago,
+    );
+    this.buscarFpago.setValue(
+      formaPago?.fp_descfpago || codPago || '',
+      { emitEvent: false },
+    );
+
+    const codEnvio = String(
+      factura?.fa_envio ?? this.formularioFacturacion?.get('fa_envio')?.value ?? '',
+    ).trim();
+    const entrega = this.listaEnvio.find(
+      (item) => String(item.codigo ?? '').trim() === codEnvio,
+    );
+    this.buscarEnvio.setValue(
+      entrega?.descripcion || codEnvio || '',
+      { emitEvent: false },
+    );
+  }
+
+  private setControlesPagoEntregaActivos(activos: boolean): void {
+    const accion = activos ? 'enable' : 'disable';
+    this.buscarFpago[accion]({ emitEvent: false });
+    this.buscarEnvio[accion]({ emitEvent: false });
+    if (!activos) {
+      this.mostrarDropdownFpago = false;
+      this.mostrarDropdownEnvio = false;
+      this.resultadoFpago = [];
+      this.resultadoEnvio = [];
+    }
   }
 
   private conectarBusquedaCliente(): void {
@@ -660,6 +710,7 @@ export class Facturacion implements OnInit {
   limpia(): void {
     //this.formularioFacturacion.reset();
     this.crearFormularioFacturacion();
+    this.setControlesPagoEntregaActivos(true);
     this.txtdescripcion = '';
     this.txtFactura = '';
     this.txtFecha = '';
@@ -706,9 +757,12 @@ export class Facturacion implements OnInit {
     this.facturacionid = Factura.fa_codFact;
     this.modoedicionFacturacion = true;
     this.modoconsultaFacturacion = false;
+    Factura = this.normalizarFacturaParaFormulario(Factura) as FacturacionModelData;
     this.facturaConsultaSeleccionada = Factura;
     this.formularioFacturacion.enable();
+    this.setControlesPagoEntregaActivos(true);
     this.formularioFacturacion.patchValue(Factura);
+    this.sincronizarControlesPagoEntrega(Factura);
     await this.cargarItbisDeFactura(Factura);
     this.facturaOriginalEdicion = {
       ...this.formularioFacturacion.getRawValue(),
@@ -827,6 +881,7 @@ export class Facturacion implements OnInit {
         fa_ncfFact: encfConsulta,
       } as FacturacionModelData;
     }
+    factura = this.normalizarFacturaParaFormulario(factura) as FacturacionModelData;
 
     this.modoconsultaFacturacion = true;
     this.modoedicionFacturacion = false;
@@ -839,6 +894,7 @@ export class Facturacion implements OnInit {
     this.formularioFacturacion.reset();
     this.crearFormularioFacturacion();
     this.formularioFacturacion.patchValue(factura);
+    this.sincronizarControlesPagoEntrega(factura);
     await this.cargarItbisDeFactura(factura);
     // Asegurar formato de fecha dd/MM/yyyy al consultar
     const fechaFormateada = this.formatFecha((factura as any).fa_fecFact);
@@ -846,10 +902,12 @@ export class Facturacion implements OnInit {
       fa_fecFact: fechaFormateada,
       fa_ncfFact: encfConsulta,
     });
+    this.sincronizarControlesPagoEntrega(this.formularioFacturacion.getRawValue());
     this.tituloModalFacturacion = 'Consulta Factura';
     // $('#modalfacturacion').modal('show');
     this.habilitarFormulario = true;
     this.formularioFacturacion.disable();
+    this.setControlesPagoEntregaActivos(false);
     this.formularioFacturacion.get('fa_ncfFact')?.setValue(encfConsulta, {
       emitEvent: false,
     });
@@ -1174,6 +1232,18 @@ export class Facturacion implements OnInit {
       return `${y}-${mo}-${da}`;
     }
     return s;
+  }
+
+  private calcularFechaExpiracionCredito(
+    fechaFactura: string | Date | null | undefined,
+  ): string {
+    const fechaBase = this.toPrismaDate(fechaFactura);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(fechaBase)) return '';
+
+    const [year, month, day] = fechaBase.split('-').map(Number);
+    const fecha = new Date(year, month - 1, day);
+    fecha.setDate(fecha.getDate() + 30);
+    return this.toPrismaDate(fecha);
   }
 
   crearformulariodetFactura() {
@@ -2185,7 +2255,7 @@ export class Facturacion implements OnInit {
     if (fpago.fp_descfpago !== '') {
       this.formularioFacturacion.patchValue({
         // fa_fpago: fpago.fp_descfpago, // Ya no se usa para el ID
-        fa_codfpago: fpago.fp_codfpago,
+        fa_codfpago: String(fpago.fp_codfpago),
       });
 
       // Mover foco al siguiente elemento si es necesario
@@ -2639,6 +2709,15 @@ export class Facturacion implements OnInit {
     facturaPayload.fa_tipoitbis = itbisFactura.codigo;
     this.formularioFacturacion.patchValue({ fa_tipoitbis: itbisFactura.codigo }, { emitEvent: false });
     facturaPayload.fa_fecFact = this.toPrismaDate(facturaPayload.fa_fecFact);
+    if (Number(facturaPayload.fa_codfpago) === 2) {
+      facturaPayload.fa_expFact = this.calcularFechaExpiracionCredito(
+        facturaPayload.fa_fecFact,
+      );
+      this.formularioFacturacion.patchValue(
+        { fa_expFact: facturaPayload.fa_expFact },
+        { emitEvent: false },
+      );
+    }
     facturaPayload.fa_rncFact = facturaPayload.fa_rncFact || '';
     const detalleModificado =
       this.modoedicionFacturacion &&

@@ -239,7 +239,7 @@
                 </button>
                 <button
                   class="btn btn-warning flex-fill"
-                  [disabled]="facturaSoloConsulta || !hayFacturaSeleccionada || bloquearAccionesPorNcfDgiiPagada"
+                  [disabled]="facturaSoloConsulta || !hayFacturaSeleccionada || bloquearAccionesPorNcfDgiiPagada || facturaEstaImpresa"
                   [title]="facturaEstaImpresa ? 'La factura ya estÃ¡ impresa' : ''"
                   (click)="imprimirConduceFactura()">
                   <i class="bi bi-printer me-1"></i> Imprimir conduce

@@ -94,16 +94,16 @@ export class DespachoComponent {
     }
 
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(9);
+    doc.setFontSize(10);
     doc.text(nombreEmpresa, centerX, y, { align: 'center', maxWidth: pageWidth - 6 });
     y += 6;
-    doc.setFontSize(12);
+    doc.setFontSize(13);
     doc.setTextColor(0, 0, 0);
     doc.text('FACTURA DE DESPACHO', centerX, y, { align: 'center' });
     y += 8;
 
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
+    doc.setFontSize(9.5);
     doc.text(`Factura No: ${f.fa_codFact}`, 2, y);
     y += 5;
     doc.text(`Fecha: ${f.fa_fecFact || ''}`, 2, y);
@@ -142,7 +142,7 @@ export class DespachoComponent {
       body: tableRows,
       theme: 'plain',
       headStyles: {
-        fontSize: 7,
+        fontSize: 8,
         textColor: 0,
         fontStyle: 'bold',
         fillColor: false,
@@ -150,7 +150,7 @@ export class DespachoComponent {
         lineWidth: { top: 0.3, right: 0, bottom: 0.3, left: 0 },
       },
       bodyStyles: {
-        fontSize: 7,
+        fontSize: 8,
         lineWidth: 0,
         cellPadding: { top: 0.5, bottom: 0.5 },
       },
@@ -165,12 +165,12 @@ export class DespachoComponent {
     });
 
     const finalY = (doc as any).lastAutoTable.finalY || 70;
-    doc.setFontSize(7);
+    doc.setFontSize(8);
     doc.text('Subtotal:', 5, finalY + 7);
     doc.text(formatoMoneda.format(Number(f.fa_subFact)), 17, finalY + 7);
     doc.text('ITBIS:', 5, finalY + 10);
     doc.text(formatoMoneda.format(Number(f.fa_itbiFact)), 17, finalY + 10);
-    doc.setFontSize(8);
+    doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
     doc.text('Total:', 5, finalY + 13);
     doc.text(formatoMoneda.format(Number(f.fa_valFact)), 17, finalY + 13);

@@ -221,10 +221,27 @@ export class CobroFact implements OnInit {
     return this.chekPagado;
   }
 
+  get facturaImpresaStatusFMarcadaPagada(): boolean {
+    const impresa = this.normalizeImpresa((this.DatosSeleccionado as any)?.fa_impresa);
+    const status = this.normalizarStatusFactura((this.DatosSeleccionado as any)?.fa_status);
+    return (
+      this.hayFacturaSeleccionada &&
+      impresa === 'S' &&
+      status === 'F' &&
+      this.chekPagado
+    );
+  }
+
   get puedeGuardarPagoEntregaEstado(): boolean {
     const impresa = this.normalizeImpresa((this.DatosSeleccionado as any)?.fa_impresa);
     const fpago = this.normalizeImpresa((this.DatosSeleccionado as any)?.fa_fpago);
-    return this.hayFacturaSeleccionada && impresa === 'S' && fpago === 'N';
+    const pagoPendiente = fpago === 'N' || fpago === '';
+
+    return (
+      this.hayFacturaSeleccionada &&
+      impresa === 'S' &&
+      (pagoPendiente || this.facturaImpresaStatusFMarcadaPagada)
+    );
   }
 
   get bloquearConducePorImpresaSinPago(): boolean {

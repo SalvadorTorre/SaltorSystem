@@ -16,6 +16,7 @@
               <th>Fecha</th>
               <th>Cliente</th>
               <th>Tipo e-CF</th>
+              <th class="text-center">Tipo pago</th>
               <th class="text-end">Monto Total</th>
               <th class="text-center">Pendiente</th>
               <th class="text-center">Cobrada</th>
@@ -27,7 +28,7 @@
           </thead>
           <tbody>
             <tr *ngIf="loading">
-              <td colspan="11" class="text-center py-5">
+              <td colspan="12" class="text-center py-5">
                 <div class="spinner-border text-primary" role="status">
                   <span class="visually-hidden">Cargando...</span>
                 </div>
@@ -35,7 +36,7 @@
               </td>
             </tr>
             <tr *ngIf="!loading && facturas.length === 0">
-              <td colspan="11" class="text-center py-5 text-muted">
+              <td colspan="12" class="text-center py-5 text-muted">
                 <i class="bi bi-inbox fs-1 d-block mb-2"></i>
                 No hay facturas pendientes de envío
               </td>
@@ -46,6 +47,9 @@
               <td>{{ f.fa_nomClie || 'Sin cliente' }}</td>
               <td>
                 <span class="badge bg-light text-dark border">{{ f.fa_tiponcf || 'N/A' }}</span>
+              </td>
+              <td class="text-center">
+                <span class="badge bg-light text-dark border">{{ f.fa_codfpago || 'N/A' }}</span>
               </td>
               <td class="text-end fw-bold">{{ f.fa_valFact | currency:'DOP':'symbol':'1.2-2' }}</td>
               <td class="text-center">

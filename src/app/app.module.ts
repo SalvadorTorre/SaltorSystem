@@ -26,13 +26,17 @@
 // export class AppModule { }
 
 
-import { NgModule } from '@angular/core';
+import { LOCALE_ID, NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
+import { registerLocaleData } from '@angular/common';
+import localeFr from '@angular/common/locales/fr';
 import { ServiceWorkerModule } from '@angular/service-worker';
 import { environment } from '../environments/environment';
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { HttpClientModule } from '@angular/common/http';
+
+registerLocaleData(localeFr);
 
 @NgModule({
   declarations: [
@@ -46,7 +50,9 @@ import { HttpClientModule } from '@angular/common/http';
       enabled: environment.production,
     }),
   ],
-  providers: [],
+  providers: [
+    { provide: LOCALE_ID, useValue: 'fr-FR' },
+  ],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

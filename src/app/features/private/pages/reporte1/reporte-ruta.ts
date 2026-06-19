@@ -23,6 +23,14 @@ const routes: Routes = [
         loadChildren: () =>
           import('./pages/consulta-ventas/consulta-ventas-modulo')
             .then(m => m.ConsultaVentasModulo),
+      },
+      {
+        path: 'ventas-vendedor',
+        canActivate: [permissionGuard],
+        data: { accessPath: '/private/reporte/ventas-vendedor' },
+        loadChildren: () =>
+          import('./pages/ventas-vendedor/ventas-vendedor-modulo')
+            .then(m => m.VentasVendedorModulo),
       }
     ]
   },

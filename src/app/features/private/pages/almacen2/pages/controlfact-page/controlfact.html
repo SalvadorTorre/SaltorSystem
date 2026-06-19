@@ -228,7 +228,7 @@
               <select
                 #inputfpago
                 name="formapago"
-                formControlName="fa_fpago"
+                formControlName="fa_codfpago"
                 (keydown)="moveFocus($event, inputenvio)"
                 class="form-control listbox"
               >
@@ -247,8 +247,8 @@
                 formControlName="fa_envio"
                 class="form-control listbox"
               >
-                <option value="Envio">Envio</option>
-                <option value="Retiro">Retirar por el Cliente</option>
+                <option value="1">Envio</option>
+                <option value="2">Retirar por el Cliente</option>
               </select>
             </div>
             <div class="col-2">
@@ -379,14 +379,14 @@
                 </thead>
                 <tbody>
                   <tr
-                    *ngFor="let factura of facturacionList"
+                    *ngFor="let factura of paginatedData"
                     [ngClass]="{'table-primary': factura.fa_codFact === codFacturaselecte}"
                   >
                     <td (click)="consultarFacturacion(factura)">
                       {{ factura.fa_codFact }}
                     </td>
                     <td>{{ factura.fa_nomClie }}</td>
-                    <td class="text-center">{{ factura.fa_fecFact }}</td>
+                    <td class="text-center">{{ factura.fa_fecFact | date:'dd/MM/yyyy' }}</td>
                     <td class="text-end">{{ factura.fa_valFact }}</td>
                     <td class="text-nowrap">
                       <i
@@ -427,6 +427,50 @@
                   </tr>
                 </tbody>
               </table>
+            </div>
+            <div
+              class="d-flex justify-content-between align-items-center flex-wrap gap-2 px-2 py-2 bg-white border rounded-bottom"
+            >
+              <span class="text-muted">
+                Mostrando {{ pageStart }} - {{ pageEnd }} de {{ facturacionList.length }} facturas
+              </span>
+              <div class="btn-group btn-group-sm" role="group" aria-label="Paginacion de facturas">
+                <button
+                  type="button"
+                  class="btn btn-outline-secondary"
+                  [disabled]="currentPage === 1"
+                  (click)="goToFirstPage()"
+                >
+                  Inicio
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-outline-secondary"
+                  [disabled]="currentPage === 1"
+                  (click)="prevPage()"
+                >
+                  Anterior
+                </button>
+                <button type="button" class="btn btn-outline-primary" disabled>
+                  {{ currentPage }} / {{ totalPages }}
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-outline-secondary"
+                  [disabled]="currentPage >= totalPages || !facturacionList.length"
+                  (click)="nextPage()"
+                >
+                  Siguiente
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-outline-secondary"
+                  [disabled]="currentPage >= totalPages || !facturacionList.length"
+                  (click)="goToLastPage()"
+                >
+                  Final
+                </button>
+              </div>
             </div>
           </div>
         </div>

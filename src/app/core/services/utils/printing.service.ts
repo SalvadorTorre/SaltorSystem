@@ -1548,7 +1548,7 @@ items.forEach((it: any) => {
 
       if (copyLabel) {
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(9);
+        doc.setFontSize(10);
         doc.text(copyLabel, leftMargin, yPos);
       }
 
@@ -1561,7 +1561,7 @@ items.forEach((it: any) => {
       }
 
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(8);
+      doc.setFontSize(9);
       let empresa = 'CENTRO HIERRO MARCOS SRL';
       let direccion = 'CALLE 30 DE MARZO NO. 54';
       let telefono = '809-547-0022';
@@ -1633,14 +1633,14 @@ items.forEach((it: any) => {
       });
 
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(10);
+      doc.setFontSize(11);
       centerText('CONDUCE DE FACTURA', yPos);
       yPos += 5;
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(11);
+      doc.setFontSize(12);
       doc.text(`Factura: ${f.fa_codFact || ''}`, leftMargin, yPos);
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(9);
+      doc.setFontSize(10);
       doc.text(formatDateShort(fecha), pageWidth - rightMargin, yPos, { align: 'right' });
       yPos += 4;
       if (tieneHoraFactura) {
@@ -1665,7 +1665,7 @@ items.forEach((it: any) => {
       if (pagada) {
         const formaPago = this.etiquetaPagoConduce(f);
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(9);
+        doc.setFontSize(10);
         doc.rect(leftMargin, yPos - 3, 3, 3);
         doc.line(leftMargin + 0.6, yPos - 1.5, leftMargin + 1.3, yPos - 0.7);
         doc.line(leftMargin + 1.3, yPos - 0.7, leftMargin + 2.7, yPos - 2.7);
@@ -1674,7 +1674,7 @@ items.forEach((it: any) => {
         doc.setFont('helvetica', 'normal');
       } else if (esCopiaCaja) {
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(9);
+        doc.setFontSize(10);
         doc.text(`Forma pago: ${this.etiquetaPagoConduce(f)}`, leftMargin, yPos);
         yPos += 5;
         doc.setFont('helvetica', 'normal');
@@ -1690,7 +1690,7 @@ items.forEach((it: any) => {
       const xValor = pageWidth - rightMargin;
       if (!hideInvoiceDetails) {
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(6.5);
+        doc.setFontSize(7.5);
         doc.text('COD', xCod, yPos);
         doc.text('DESC', xDesc, yPos);
         doc.text('CANT', xCant, yPos, { align: 'right' });
@@ -1702,8 +1702,10 @@ items.forEach((it: any) => {
         drawDashedLine(yPos);
         yPos += 4;
         doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
       } else {
         doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
         centerText('COPIA SIN DETALLE DE ARTICULOS', yPos);
         doc.setFont('helvetica', 'normal');
         yPos += 5;
@@ -1792,7 +1794,7 @@ items.forEach((it: any) => {
       const labelX = 35;
       const valueX = pageWidth - rightMargin;
 
-      doc.setFontSize(8);
+      doc.setFontSize(9);
       doc.setFont('helvetica', 'normal');
       doc.text('Subtotal', labelX, yPos, { align: 'right' });
       doc.text(formatoMoneda.format(subTotal), valueX, yPos, { align: 'right' });
@@ -1801,11 +1803,11 @@ items.forEach((it: any) => {
       doc.text(formatoMoneda.format(totalItbis), valueX, yPos, { align: 'right' });
       yPos += 4;
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(13);
+      doc.setFontSize(14);
       doc.text('TOTAL', labelX, yPos, { align: 'right' });
       doc.text(formatoMoneda.format(totalGral), valueX, yPos, { align: 'right' });
       yPos += 7;
-      doc.setFontSize(9);
+      doc.setFontSize(10);
 
       const numeroFactura = String(f.fa_codFact || '').trim();
       if (numeroFactura) {
@@ -1830,7 +1832,7 @@ items.forEach((it: any) => {
       doc.setLineWidth(0.3);
       doc.line(leftMargin, yPos, pageWidth - rightMargin, yPos);
       yPos += 5;
-      doc.setFontSize(9);
+      doc.setFontSize(10);
       centerText('Recibido Conforme', yPos);
       yPos += 7;
 
@@ -1842,11 +1844,11 @@ items.forEach((it: any) => {
         drawDashedLine(yPos);
         yPos += 5;
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(10);
+        doc.setFontSize(11);
         doc.text('DATOS DE ENVIO', leftMargin, yPos);
         yPos += 4;
         doc.setFont('helvetica', 'normal');
-        doc.setFontSize(9);
+        doc.setFontSize(10);
 
         const datosEnvio = [
           ['Direccion', f.fa_dirClie ?? f.fa_dirclie],

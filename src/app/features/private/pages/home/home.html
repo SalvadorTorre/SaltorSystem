@@ -35,15 +35,15 @@
   <ng-container *ngIf="role === 'vendedor'; else adminDashboard">
     <section class="kpi-grid">
       <article class="kpi-card">
-        <p>Meta a Facturar</p>
+        <p>Meta venta</p>
         <h3>{{ vendedor.metaFacturarMM | number:'1.2-2' }} MM</h3>
       </article>
       <article class="kpi-card">
-        <p>Total Factura</p>
+        <p>Facturas del mes</p>
         <h3>{{ vendedor.totalFactura }}</h3>
       </article>
       <article class="kpi-card">
-        <p>Valor facturado</p>
+        <p>Facturado del mes</p>
         <h3>{{ vendedor.valorFacturadoOculto }} MM</h3>
       </article>
       <article class="kpi-card">
@@ -51,12 +51,12 @@
         <h3>{{ vendedor.margenVentaPct | number:'1.1-2' }}%</h3>
       </article>
       <article class="kpi-card">
-        <p>Porciento Facturado</p>
+        <p>Cumplimiento</p>
         <h3>{{ vendedor.porcientoFacturado | number:'1.1-2' }}%</h3>
       </article>
       <article class="kpi-card">
-        <p>Valor a Pagar</p>
-        <h3>{{ currency(vendedor.valorPagar) }}</h3>
+        <p>Vendedores sucursal</p>
+        <h3>{{ vendedor.miembrosSucursal | number }}</h3>
       </article>
     </section>
 

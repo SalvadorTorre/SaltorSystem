@@ -234,7 +234,7 @@
             <tbody>
               <tr *ngFor="let e of entradamercList">
                 <td>{{ e.me_codentr || e.me_codEntr }}</td>
-                <td>{{ e.me_fecentr || e.me_fecEntr | date:'yyyy-MM-dd' }}</td>
+                <td>{{ (e.me_fecentr || e.me_fecEntr) | date:'dd/MM/yyyy' }}</td>
                 <td>{{ e.me_nomsupl || e.me_nomSupl }}</td>
                 <td class="text-end">{{ e.me_valentr || e.me_valEntr | currency }}</td>
                 <td class="text-center">

@@ -5,3 +5,21 @@
 #miTabla tr:hover {
   background-color: #e6f7ff;
 }
+
+:host .label,
+:host label {
+  color: #1f2937;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+:host .form-control,
+:host .form-select {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+:host .form-control-sm,
+:host .form-select.form-control-sm {
+  min-height: 34px;
+}

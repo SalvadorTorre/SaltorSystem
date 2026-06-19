@@ -322,7 +322,7 @@ export class FacturaDgiiService {
       ENCF: encf,
       IndicadorMontoGravado: '0',
       TipoIngresos: '01',
-      TipoPago: String(factura?.fa_codfpago || factura?.fa_fpago || '1'),
+      TipoPago:  '1',
       DireccionEmisor: direccion,
       FechaEmision: this.fecha(factura?.fa_fecFact),
       RegimenPagos: '0',

@@ -333,7 +333,7 @@ export class ServicioFacturacion {
       fa_desZona: row.fa_deszona ?? row.fa_desZona ?? '',
       fa_codSect: row.fa_codsect ?? row.fa_codSect ?? null,
       fa_sector: row.fa_sector ?? '',
-      fa_codVend: row.fa_codvend ?? row.fa_codVend ?? '',
+      fa_codVend: String(row.fa_codvend ?? row.fa_codVend ?? '').trim(),
       fa_nomVend: row.fa_nomvend ?? row.fa_nomVend ?? '',
       fa_notaFact: row.fa_notafact ?? row.fa_notaFact ?? '',
       fa_usuario: row.fa_usuario ?? '',
@@ -1418,7 +1418,7 @@ export class ServicioFacturacion {
         .select('*')
         .order('fa_fecfact', { ascending: false })
         .order('fa_codfact', { ascending: false })
-        .limit(1500);
+        .limit(10000);
       query = this.applyTenantFilter(query);
 
       const { data, error } = await query;
