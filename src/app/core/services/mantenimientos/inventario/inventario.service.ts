@@ -618,6 +618,7 @@ export class ServicioInventario {
       codigo: string | number;
       descripcion?: string | null;
       costo?: number | null;
+      precioAnterior?: number | string | null;
       precio: number | string;
     }>;
     sucursales: Array<number | string>;
@@ -628,6 +629,7 @@ export class ServicioInventario {
           codigo: String(producto?.codigo || "").trim(),
           descripcion: producto?.descripcion ?? null,
           costo: this.toNullableNumber(producto?.costo),
+          precioAnterior: this.toNullableNumber(producto?.precioAnterior),
           precio: this.toNullableNumber(producto?.precio),
         }))
         .filter((producto) => !!producto.codigo);
@@ -653,7 +655,28 @@ export class ServicioInventario {
         throw new Error(`Precio invalido para el producto ${productoInvalido.codigo}`);
       }
 
+      const { error: precioTableError } = await this.db
+        .from("precio")
+        .select("id")
+        .limit(1);
+      if (precioTableError) {
+        throw new Error(`No se pudo acceder a la tabla precio. Ejecute supabase/create_precio.sql en Supabase. ${precioTableError.message || ""}`.trim());
+      }
+
       const codigos = productos.map((producto) => producto.codigo);
+      const { data: productosCatalogo, error: productosError } = await this.db
+        .from("productos2")
+        .select("in_codmerc,in_porgana")
+        .in("in_codmerc", codigos);
+      if (productosError) throw productosError;
+
+      const gananciaMap = new Map<string, number>();
+      (productosCatalogo || []).forEach((row: any) => {
+        const codigo = String(row?.in_codmerc || "").trim();
+        if (!codigo) return;
+        gananciaMap.set(codigo, this.toNumber(row?.in_porgana));
+      });
+
       const { data: actuales, error: findError } = await this.db
         .from("inventario")
         .select("id,inv_codprod,inv_codsucu")
@@ -668,16 +691,29 @@ export class ServicioInventario {
 
       const now = new Date().toISOString();
       const filasInsertar: any[] = [];
+      const historialPrecios = productos.map((producto) => ({
+        codigo: producto.codigo,
+        descripcion: producto.descripcion,
+        precioactual: producto.precioAnterior ?? 0,
+        precionuevo: producto.precio,
+        fechacambio: now,
+        status: "A",
+      }));
       let actualizados = 0;
 
       for (const producto of productos) {
+        const porcentajeGanancia = gananciaMap.get(producto.codigo) ?? 0;
+        const precioNuevo = this.toNumber(producto.precio);
+        const precioVenta = Number((precioNuevo + (precioNuevo * porcentajeGanancia / 100)).toFixed(2));
+
         for (const sucursal of sucursales) {
           const current = actualesMap.get(`${sucursal}::${producto.codigo}`);
           if (current?.id) {
             const { error: updateError } = await this.db
               .from("inventario")
               .update({
-                inv_preprod: producto.precio,
+                inv_cosprod: precioNuevo,
+                inv_preprod: precioVenta,
                 inv_fechamov: now,
               })
               .eq("id", Number(current.id))
@@ -691,8 +727,8 @@ export class ServicioInventario {
               inv_codprod: producto.codigo,
               inv_desprod: producto.descripcion,
               inv_existencia: 0,
-              inv_cosprod: producto.costo,
-              inv_preprod: producto.precio,
+              inv_cosprod: precioNuevo,
+              inv_preprod: precioVenta,
               inv_fechamov: now,
               activo: true,
             });
@@ -704,9 +740,17 @@ export class ServicioInventario {
         ? await this.insertInBatches("inventario", filasInsertar)
         : 0;
 
+      if (historialPrecios.length) {
+        const { error: historialError } = await this.db
+          .from("precio")
+          .insert(historialPrecios);
+        if (historialError) throw historialError;
+      }
+
       return {
         actualizados,
         insertados,
+        historial: historialPrecios.length,
         total: actualizados + insertados,
       };
     })()).pipe(

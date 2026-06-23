@@ -450,6 +450,7 @@ export class Inventario implements OnInit {
         codigo: item.codigo,
         descripcion: item.descripcion,
         costo: item.costo,
+        precioAnterior: item.precioActual,
         precio: Number(item.nuevoPrecio),
       })),
       sucursales,
@@ -459,7 +460,7 @@ export class Inventario implements OnInit {
         const data = response?.data || {};
         Swal.fire({
           title: 'Precios actualizados',
-          text: `Actualizados: ${Number(data.actualizados || 0)}. Creados: ${Number(data.insertados || 0)}.`,
+          text: `Actualizados: ${Number(data.actualizados || 0)}. Creados: ${Number(data.insertados || 0)}. Historial: ${Number(data.historial || 0)}.`,
           icon: 'success',
           timer: 2500,
           showConfirmButton: false,

@@ -5,100 +5,124 @@
         <i class="bi bi-cash-coin"></i>
       </span>
       <div>
+
         <h4 class="mb-0">Cambio de precios</h4>
-        <small>Seleccione productos de productos2 y las sucursales donde se aplicara el precio</small>
+        <small>Seleccione los productos  y las sucursales donde se aplicara el precio</small>
       </div>
     </div>
-    <span class="price-header__meta">
-      {{ productosSeleccionados.length }} productos / {{ sucursalesSeleccionadasIds.length }} sucursales
-    </span>
+    <div class="price-header__badges">
+      <span class="price-header__meta">
+        {{ productosSeleccionados.length }} productos / {{ sucursalesSeleccionadasIds.length }} sucursales
+      </span>
+    </div>
   </div>
 
   <div class="card-body">
-    <div class="alert alert-info py-2">
-      Primero seleccione los productos y escriba el precio nuevo. Luego marque las sucursales a las que se cambiara el precio.
+    <!-- <div class="alert alert-info py-2">
+      Digite el codigo o la descripcion, presione Enter para seleccionar el producto y pasar a precio nuevo. Luego presione Enter en precio nuevo para agregarlo a la tabla.
+    </div> -->
+
+    <div class="alert alert-success py-2" *ngIf="ultimoResultado">
+      {{ ultimoResultado }}
     </div>
 
     <div class="card price-card mb-3">
       <div class="card-header price-card__header">
-        <h5 class="mb-0">1. Productos</h5>
+        <h5 class="mb-0">1. Buscar producto</h5>
       </div>
       <div class="card-body">
-        <div class="row g-3 align-items-end mb-3">
-          <div class="col-12 col-md-4">
+        <div class="row g-0 align-items-end">
+          <div class="col-12 col-lg-2">
             <label class="form-label" for="buscarCodigoPrecio">Codigo</label>
-            <input
-              type="text"
-              id="buscarCodigoPrecio"
-              class="form-control uppercase"
-              [(ngModel)]="codigoInput"
-              (input)="onCodigoInput($event)"
-              placeholder="Codigo del producto"
-            />
+            <div class="price-code-search">
+              <input
+                #codigoInputRef
+                type="text"
+                id="buscarCodigoPrecio"
+                class="form-control uppercase"
+                [(ngModel)]="codigoInput"
+                (input)="onCodigoInput($event)"
+                (keydown)="onCodigoKeydown($event)"
+                (focus)="mostrarSugerenciasCodigo = codigoSugerencias.length > 0"
+                [readonly]="!!editandoCodigo"
+                placeholder="Codigo del producto"
+                autocomplete="off"
+              />
+              <div class="price-code-suggestions price-code-suggestions--product shadow-sm" *ngIf="mostrarSugerenciasCodigo">
+                <button
+                  type="button"
+                  class="price-code-suggestion"
+                  *ngFor="let producto of codigoSugerencias; let i = index"
+                  [class.active]="i === sugerenciaCodigoActiva"
+                  (mousedown)="seleccionarSugerenciaCodigo(producto)"
+                >
+                  <span class="fw-semibold">{{ producto.in_codmerc }}</span>
+                  <span class="price-code-suggestion__description">{{ producto.in_desmerc }}</span>
+                  <small>{{ producto.in_premerc | number:'1.2-2' }}</small>
+                </button>
+              </div>
+            </div>
           </div>
-          <div class="col-12 col-md-6">
+
+          <div class="col-12 col-lg-4">
             <label class="form-label" for="buscarDescripcionPrecio">Descripcion</label>
+            <div class="price-code-search">
+              <input
+                #descripcionInputRef
+                type="text"
+                id="buscarDescripcionPrecio"
+                class="form-control uppercase"
+                [(ngModel)]="descripcionInput"
+                (input)="onDescripcionInput($event)"
+                (keydown)="onDescripcionKeydown($event)"
+                (focus)="mostrarSugerenciasDescripcion = descripcionSugerencias.length > 0"
+                [readonly]="!!editandoCodigo"
+                placeholder="Descripcion del producto"
+                autocomplete="off"
+              />
+              <div class="price-code-suggestions price-code-suggestions--product shadow-sm" *ngIf="mostrarSugerenciasDescripcion">
+                <button
+                  type="button"
+                  class="price-code-suggestion"
+                  *ngFor="let producto of descripcionSugerencias; let i = index"
+                  [class.active]="i === sugerenciaDescripcionActiva"
+                  (mousedown)="seleccionarSugerenciaDescripcion(producto)"
+                >
+                  <span class="fw-semibold">{{ producto.in_codmerc }}</span>
+                  <span class="price-code-suggestion__description">{{ producto.in_desmerc }}</span>
+                  <small>{{ producto.in_premerc | number:'1.2-2' }}</small>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 col-lg-2">
+            <label class="form-label" for="precioActualInfo">Precio actual</label>
             <input
-              type="text"
-              id="buscarDescripcionPrecio"
-              class="form-control uppercase"
-              [(ngModel)]="descripcionInput"
-              (input)="onDescripcionInput($event)"
-              placeholder="Descripcion del producto"
+              type="number"
+              id="precioActualInfo"
+              class="form-control text-end"
+              [ngModel]="precioActualInput"
+              placeholder="0.00"
+              readonly
             />
           </div>
-          <div class="col-12 col-md-2">
-            <button
-              type="button"
-              class="btn btn-primary w-100"
-              (click)="buscarProductos()"
-              [disabled]="buscandoProductos"
-            >
-              <span *ngIf="buscandoProductos" class="spinner-border spinner-border-sm me-1"></span>
-              Buscar
-            </button>
+          <div class="col-12 col-lg-2">
+            <label class="form-label" for="precioNuevoGeneral">Precio nuevo</label>
+            <input
+              #precioNuevoInputRef
+              type="number"
+              id="precioNuevoGeneral"
+              min="0.01"
+              step="0.01"
+              class="form-control text-end"
+              [(ngModel)]="precioNuevoInput"
+              (ngModelChange)="onPrecioNuevoInput()"
+              (keydown)="onPrecioNuevoKeydown($event)"
+              placeholder="0.00"
+            />
           </div>
         </div>
-
-        <div class="table-responsive price-product-list border rounded-3">
-          <table class="table table-sm table-hover align-middle mb-0">
-            <thead class="table-light">
-              <tr>
-                <th class="text-center">Sel.</th>
-                <th>Codigo</th>
-                <th>Descripcion</th>
-                <th class="text-end">Precio actual</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let producto of productosList">
-                <td class="text-center">
-                  <input
-                    type="checkbox"
-                    class="form-check-input"
-                    [checked]="productoSeleccionado(producto)"
-                    (change)="toggleProducto(producto, $event)"
-                  />
-                </td>
-                <td class="fw-semibold">{{ producto.in_codmerc }}</td>
-                <td>{{ producto.in_desmerc }}</td>
-                <td class="text-end">{{ producto.in_premerc | number:'1.2-2' }}</td>
-              </tr>
-              <tr *ngIf="!productosList.length && !buscandoProductos">
-                <td colspan="4" class="text-center text-muted py-3">
-                  No hay productos para mostrar.
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <div class="card price-card mb-3">
-      <div class="card-header price-card__header d-flex justify-content-between align-items-center gap-2">
-        <h5 class="mb-0">Productos seleccionados</h5>
-        <span class="badge text-bg-primary">{{ productosSeleccionados.length }} seleccionados</span>
       </div>
       <div class="card-body">
         <div class="table-responsive border rounded-3">
@@ -109,7 +133,7 @@
                 <th>Descripcion</th>
                 <th class="text-end">Precio actual</th>
                 <th class="text-end">Precio nuevo</th>
-                <th class="text-center">Accion</th>
+                <th class="text-center">Opciones</th>
               </tr>
             </thead>
             <tbody>
@@ -117,24 +141,21 @@
                 <td class="fw-semibold">{{ item.codigo }}</td>
                 <td>{{ item.descripcion }}</td>
                 <td class="text-end">{{ item.precioActual | number:'1.2-2' }}</td>
-                <td>
-                  <input
-                    type="number"
-                    min="0.01"
-                    step="0.01"
-                    class="form-control form-control-sm text-end"
-                    [(ngModel)]="item.nuevoPrecio"
-                  />
-                </td>
+                <td class="text-end">{{ item.nuevoPrecio | number:'1.2-2' }}</td>
                 <td class="text-center">
-                  <button type="button" class="btn btn-sm btn-outline-danger" (click)="quitarProducto(item.codigo)">
-                    Quitar
-                  </button>
+                  <div class="btn-group btn-group-sm">
+                    <button type="button" class="btn btn-outline-primary" (click)="editarProductoAgregado(item)">
+                      Editar
+                    </button>
+                    <button type="button" class="btn btn-outline-danger" (click)="quitarProducto(item.codigo)">
+                      Quitar
+                    </button>
+                  </div>
                 </td>
               </tr>
               <tr *ngIf="!productosSeleccionados.length">
                 <td colspan="5" class="text-center text-muted py-3">
-                  Seleccione al menos un producto de la tabla superior.
+                  Digite un codigo o descripcion, luego Enter en precio nuevo para agregar productos a esta tabla.
                 </td>
               </tr>
             </tbody>
