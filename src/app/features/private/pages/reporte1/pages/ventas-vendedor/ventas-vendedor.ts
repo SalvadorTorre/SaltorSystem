@@ -134,9 +134,9 @@ export class VentasVendedor implements OnInit {
   }
 
   formatMoney(valor: number): string {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('es-DO', {
       style: 'currency',
-      currency: 'USD',
+      currency: 'DOP',
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(valor || 0);

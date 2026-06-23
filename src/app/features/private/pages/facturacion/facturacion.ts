@@ -2685,7 +2685,6 @@ export class Facturacion implements OnInit {
     this.formularioFacturacion.get('fa_fecFact')!.enable();
     this.formularioFacturacion.get('fa_nomVend')!.enable();
     this.formularioFacturacion.get('fa_ncfFact')!.enable();
-    this.actualizarTipoNcfPorRnc(this.formularioFacturacion.get('fa_rncFact')?.value);
     // Construir payload asegurando fecha en formato Prisma (YYYY-MM-DD)
     const facturaPayload = {
       ...this.formularioFacturacion.getRawValue(),
@@ -2705,13 +2704,28 @@ export class Facturacion implements OnInit {
     facturaPayload.fa_codSucu = parseInt(
       localStorage.getItem('idSucursal') || '0',
     );
-    // Convertir fa_tipoNcf a entero
-    if (facturaPayload.fa_tipoNcf) {
-      facturaPayload.fa_tipoNcf = parseInt(
-        facturaPayload.fa_tipoNcf.toString(),
-        10,
-      );
+    const tipoNcfSeleccionado = String(facturaPayload.fa_tipoNcf ?? '').trim();
+    if (!tipoNcfSeleccionado) {
+      this.isLoading = false;
+      Swal.fire({
+        icon: 'error',
+        title: 'Tipo de comprobante requerido',
+        text: 'Debe seleccionar el tipo de comprobante antes de guardar la factura.',
+      });
+      return;
     }
+    // Convertir fa_tipoNcf a entero
+    const tipoNcfNumero = parseInt(tipoNcfSeleccionado, 10);
+    if (!Number.isFinite(tipoNcfNumero) || tipoNcfNumero <= 0) {
+      this.isLoading = false;
+      Swal.fire({
+        icon: 'error',
+        title: 'Tipo de comprobante invalido',
+        text: 'El tipo de comprobante seleccionado no es valido.',
+      });
+      return;
+    }
+    facturaPayload.fa_tipoNcf = tipoNcfNumero;
     const itbisFactura = await this.obtenerItbisParaComprobante(facturaPayload.fa_tipoNcf, true);
     if (!itbisFactura) {
       this.isLoading = false;
@@ -3052,7 +3066,7 @@ export class Facturacion implements OnInit {
     if (isNaN(num)) {
       return ' ';
     }
-    return num.toLocaleString('en-US', { minimumFractionDigits: 2 });
+    return num.toLocaleString('es-DO', { minimumFractionDigits: 2 });
   }
 
   async generatePDF(factura: FacturacionModelData) {

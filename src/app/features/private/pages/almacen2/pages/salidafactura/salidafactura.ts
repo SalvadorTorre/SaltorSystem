@@ -885,7 +885,7 @@ agregarFactura() {
     const zonaSucursal = this.zonaSucursalActual || '';
 
     // Helper para formato moneda 999,999,999.99
-    const fmt = (num: any) => Number(num).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const fmt = (num: any) => Number(num).toLocaleString('es-DO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     
     // Helper para formato fecha dd/mm/aaaa
     const fmtFecha = (fecha: string) => {
