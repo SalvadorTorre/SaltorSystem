@@ -891,6 +891,22 @@ export class ServicioFacturacion {
     })());
   }
 
+  reservarEncf(tipoNcf: any): Observable<any> {
+    if (!this.useSupabase) {
+      return from(Promise.reject(new Error('La reserva directa de ENCF solo esta disponible con Supabase.')));
+    }
+
+    return from((async () => {
+      const codEmpresa = await this.ensureTenantCodEmpre();
+      const reservation = await this.reserveNextEncf(codEmpresa, tipoNcf);
+      return {
+        status: 'success',
+        code: 200,
+        data: reservation,
+      };
+    })());
+  }
+
   getByNumero(numero: string): Observable<any> {
     if (!this.useSupabase) {
       return this.http.GetRequest<any>(`/factura-numero/${numero}`, false);
@@ -1097,7 +1113,12 @@ export class ServicioFacturacion {
         map((resp: any) => ({
           ...resp,
           data: Array.isArray(resp?.data)
-            ? resp.data.filter((row: any) => !this.esFacturaImpresaYPagada(row))
+            ? resp.data.filter((row: any) => {
+                const impresa = String(row?.fa_impresa ?? row?.faImpresa ?? '')
+                  .trim()
+                  .toUpperCase();
+                return impresa === 'N' || !this.esFacturaImpresaYPagada(row);
+              })
             : resp?.data,
         })),
       );
@@ -1117,7 +1138,12 @@ export class ServicioFacturacion {
       return {
         status: 'success',
         code: 200,
-        data: mapped.filter((row: any) => !this.esFacturaImpresaYPagada(row)),
+        data: mapped.filter((row: any) => {
+          const impresa = String(row?.fa_impresa ?? row?.faImpresa ?? '')
+            .trim()
+            .toUpperCase();
+          return impresa === 'N' || !this.esFacturaImpresaYPagada(row);
+        }),
       };
     })());
   }
@@ -1161,6 +1187,7 @@ export class ServicioFacturacion {
       const patch: any = {
         fa_impresa: 'S',
       };
+      if (payload?.fa_reimpresa !== undefined) patch.fa_reimpresa = this.toDbFlag(payload.fa_reimpresa);
       if (payload?.fa_fpago !== undefined) patch.fa_fpago = this.toStringOrNull(payload.fa_fpago);
       if (payload?.fa_envio !== undefined) patch.fa_envio = this.toNumberOrNull(payload.fa_envio);
       if (payload?.fa_codfpago !== undefined) patch.fa_codfpago = this.toNumberOrNull(payload.fa_codfpago);

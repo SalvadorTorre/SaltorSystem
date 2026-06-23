@@ -567,8 +567,8 @@
                     </td>
                     <td>{{ item.producto?.in_desmerc }}</td>
                     <td class="text-center">{{ item.cantidad }}</td>
-                    <td class="text-end">{{ item.precio | currency }}</td>
-                    <td class="text-end fw-semibold">{{ item.total | currency }}</td>
+                    <td class="text-end">{{ item.precio | number:'1.2-2' }}</td>
+                    <td class="text-end fw-semibold">{{ item.total | number:'1.2-2' }}</td>
                     <td class="text-center">
                       <div
                         class="d-flex flex-wrap justify-content-center gap-1"
@@ -609,17 +609,17 @@
       <div class="col-md-4">
         <div class="d-flex justify-content-between mb-2">
           <span class="text-muted">Sub-Total:</span>
-          <span class="fw-semibold">{{ subTotal | currency }}</span>
+          <span class="fw-semibold">{{ subTotal | number:'1.2-2' }}</span>
         </div>
 
         <div class="d-flex justify-content-between mb-2">
           <span class="text-muted">ITBIS (18%):</span>
-          <span class="fw-semibold">{{ totalItbis | currency }}</span>
+          <span class="fw-semibold">{{ totalItbis | number:'1.2-2' }}</span>
         </div>
 
         <div class="d-flex justify-content-between pt-2 border-top">
           <span class="fw-bold fs-5">Total General:</span>
-          <span class="fw-bold fs-5 text-primary">{{ totalGral | currency }}</span>
+          <span class="fw-bold fs-5 text-primary">{{ totalGral | number:'1.2-2' }}</span>
         </div>
       </div>
     </div>

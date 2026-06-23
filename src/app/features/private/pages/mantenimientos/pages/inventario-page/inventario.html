@@ -42,10 +42,14 @@
         </div>
       </div>
 
-      <div class="col-12 col-xl-3 d-flex align-items-end">
-        <button class="btn btn-primary inventory-btn-new w-100" (click)="nuevoProducto()">
+      <div class="col-12 col-xl-3 d-flex align-items-end gap-2">
+        <button class="btn btn-primary inventory-btn-new flex-fill" (click)="nuevoProducto()">
           <i class="bi bi-plus-circle me-2"></i>
           Nuevo producto
+        </button>
+        <button class="btn btn-warning inventory-btn-new flex-fill" (click)="abrirCambioPrecio()">
+          <i class="bi bi-cash-coin me-2"></i>
+          Precio
         </button>
       </div>
     </div>
@@ -459,6 +463,209 @@
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal cambio de precios -->
+<div
+  class="modal fade"
+  id="modalCambioPrecio"
+  tabindex="-1"
+  aria-labelledby="modalCambioPrecioLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-xl modal-dialog-scrollable modal-fullscreen-lg-down">
+    <div class="modal-content inventory-modal-content">
+      <div class="modal-header bg-warning text-dark">
+        <h5 class="modal-title fw-bold" id="modalCambioPrecioLabel">
+          Cambio de precios por sucursal
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-info py-2 mb-3">
+          Seleccione los productos desde productos2, escriba el precio nuevo y luego marque las sucursales donde se aplicara.
+        </div>
+
+        <div class="card inventory-form-card mb-3">
+          <div class="card-header inventory-form-card__header">
+            <h6 class="mb-0">1. Buscar y seleccionar productos</h6>
+          </div>
+          <div class="card-body">
+            <div class="row g-3 align-items-end mb-3">
+              <div class="col-12 col-md-4">
+                <label class="form-label" for="precioBuscarCodigo">Codigo</label>
+                <input
+                  type="text"
+                  id="precioBuscarCodigo"
+                  class="form-control uppercase"
+                  [(ngModel)]="precioCodigoInput"
+                  (input)="onPrecioCodigoInput($event)"
+                  placeholder="Codigo producto"
+                />
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label" for="precioBuscarDescripcion">Descripcion</label>
+                <input
+                  type="text"
+                  id="precioBuscarDescripcion"
+                  class="form-control uppercase"
+                  [(ngModel)]="precioDescripcionInput"
+                  (input)="onPrecioDescripcionInput($event)"
+                  placeholder="Descripcion producto"
+                />
+              </div>
+              <div class="col-12 col-md-2">
+                <button
+                  type="button"
+                  class="btn btn-primary w-100"
+                  (click)="buscarProductosCambioPrecio()"
+                  [disabled]="buscandoProductosPrecio"
+                >
+                  <span *ngIf="buscandoProductosPrecio" class="spinner-border spinner-border-sm me-1"></span>
+                  Buscar
+                </button>
+              </div>
+            </div>
+
+            <div class="table-responsive border rounded-3 inventory-price-products">
+              <table class="table table-sm table-hover align-middle mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th class="text-center">Sel.</th>
+                    <th>Codigo</th>
+                    <th>Descripcion</th>
+                    <th class="text-end">Precio actual</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let producto of precioProductosList">
+                    <td class="text-center">
+                      <input
+                        type="checkbox"
+                        class="form-check-input"
+                        [checked]="productoCambioPrecioSeleccionado(producto)"
+                        (change)="toggleProductoCambioPrecio(producto, $event)"
+                      />
+                    </td>
+                    <td class="fw-semibold">{{ producto.in_codmerc }}</td>
+                    <td>{{ producto.in_desmerc }}</td>
+                    <td class="text-end">{{ producto.in_premerc | number:'1.2-2' }}</td>
+                  </tr>
+                  <tr *ngIf="!precioProductosList.length && !buscandoProductosPrecio">
+                    <td colspan="4" class="text-center text-muted py-3">
+                      No hay productos para mostrar.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="card inventory-form-card mb-3">
+          <div class="card-header inventory-form-card__header d-flex justify-content-between align-items-center gap-2">
+            <h6 class="mb-0">Productos seleccionados</h6>
+            <span class="badge text-bg-primary">{{ precioProductosSeleccionados.length }} seleccionados</span>
+          </div>
+          <div class="card-body">
+            <div class="table-responsive border rounded-3">
+              <table class="table table-sm align-middle mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>Codigo</th>
+                    <th>Descripcion</th>
+                    <th class="text-end">Precio actual</th>
+                    <th class="text-end">Precio nuevo</th>
+                    <th class="text-center">Accion</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let item of precioProductosSeleccionados">
+                    <td class="fw-semibold">{{ item.codigo }}</td>
+                    <td>{{ item.descripcion }}</td>
+                    <td class="text-end">{{ item.precioActual | number:'1.2-2' }}</td>
+                    <td>
+                      <input
+                        type="number"
+                        min="0.01"
+                        step="0.01"
+                        class="form-control form-control-sm text-end"
+                        [(ngModel)]="item.nuevoPrecio"
+                      />
+                    </td>
+                    <td class="text-center">
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-outline-danger"
+                        (click)="quitarProductoCambioPrecio(item.codigo)"
+                      >
+                        Quitar
+                      </button>
+                    </td>
+                  </tr>
+                  <tr *ngIf="!precioProductosSeleccionados.length">
+                    <td colspan="5" class="text-center text-muted py-3">
+                      Seleccione al menos un producto de la lista superior.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="card inventory-form-card">
+          <div class="card-header inventory-form-card__header d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <h6 class="mb-0">2. Seleccionar sucursales</h6>
+            <div class="btn-group btn-group-sm" role="group">
+              <button type="button" class="btn btn-outline-primary" (click)="seleccionarTodasSucursalesCambioPrecio(true)">
+                Todas
+              </button>
+              <button type="button" class="btn btn-outline-secondary" (click)="seleccionarTodasSucursalesCambioPrecio(false)">
+                Limpiar
+              </button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="row g-2">
+              <div class="col-12 col-sm-6 col-lg-4" *ngFor="let sucursal of sucursalesList">
+                <label class="form-check border rounded-3 p-2 h-100 inventory-branch-check">
+                  <input
+                    type="checkbox"
+                    class="form-check-input me-2"
+                    [checked]="sucursalCambioPrecioSeleccionada(sucursal)"
+                    (change)="toggleSucursalCambioPrecio(sucursal, $event)"
+                  />
+                  <span class="form-check-label fw-semibold">
+                    {{ sucursal.cod_sucursal }} - {{ sucursal.nom_sucursal }}
+                  </span>
+                </label>
+              </div>
+              <div class="col-12" *ngIf="!sucursalesList.length">
+                <div class="text-center text-muted py-3 border rounded-3">
+                  No hay sucursales disponibles.
+                </div>
+              </div>
+            </div>
+            <div class="small text-muted mt-3">
+              Sucursales marcadas: {{ sucursalesCambioPrecioIds.length }}
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button
+          class="btn btn-success"
+          (click)="guardarCambioPrecio()"
+          [disabled]="!puedeGuardarCambioPrecio"
+        >
+          <span *ngIf="guardandoCambioPrecio" class="spinner-border spinner-border-sm me-1"></span>
+          Aplicar precios
+        </button>
       </div>
     </div>
   </div>

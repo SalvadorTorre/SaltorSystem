@@ -131,6 +131,22 @@
   border-radius: 9px;
 }
 
+.inventory-price-products {
+  max-height: 280px;
+  overflow: auto;
+}
+
+.inventory-branch-check {
+  cursor: pointer;
+  background: #ffffff;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.inventory-branch-check:hover {
+  background: #f8faff;
+  border-color: #9cb8e8 !important;
+}
+
 .inventory-mobile-meta .badge {
   font-weight: 500;
   color: #334768;

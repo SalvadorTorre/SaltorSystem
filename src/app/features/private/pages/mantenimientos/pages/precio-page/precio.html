@@ -1,0 +1,200 @@
+<section class="price-page card shadow-sm border-0">
+  <div class="price-header">
+    <div class="price-header__title">
+      <span class="price-header__icon">
+        <i class="bi bi-cash-coin"></i>
+      </span>
+      <div>
+        <h4 class="mb-0">Cambio de precios</h4>
+        <small>Seleccione productos de productos2 y las sucursales donde se aplicara el precio</small>
+      </div>
+    </div>
+    <span class="price-header__meta">
+      {{ productosSeleccionados.length }} productos / {{ sucursalesSeleccionadasIds.length }} sucursales
+    </span>
+  </div>
+
+  <div class="card-body">
+    <div class="alert alert-info py-2">
+      Primero seleccione los productos y escriba el precio nuevo. Luego marque las sucursales a las que se cambiara el precio.
+    </div>
+
+    <div class="card price-card mb-3">
+      <div class="card-header price-card__header">
+        <h5 class="mb-0">1. Productos</h5>
+      </div>
+      <div class="card-body">
+        <div class="row g-3 align-items-end mb-3">
+          <div class="col-12 col-md-4">
+            <label class="form-label" for="buscarCodigoPrecio">Codigo</label>
+            <input
+              type="text"
+              id="buscarCodigoPrecio"
+              class="form-control uppercase"
+              [(ngModel)]="codigoInput"
+              (input)="onCodigoInput($event)"
+              placeholder="Codigo del producto"
+            />
+          </div>
+          <div class="col-12 col-md-6">
+            <label class="form-label" for="buscarDescripcionPrecio">Descripcion</label>
+            <input
+              type="text"
+              id="buscarDescripcionPrecio"
+              class="form-control uppercase"
+              [(ngModel)]="descripcionInput"
+              (input)="onDescripcionInput($event)"
+              placeholder="Descripcion del producto"
+            />
+          </div>
+          <div class="col-12 col-md-2">
+            <button
+              type="button"
+              class="btn btn-primary w-100"
+              (click)="buscarProductos()"
+              [disabled]="buscandoProductos"
+            >
+              <span *ngIf="buscandoProductos" class="spinner-border spinner-border-sm me-1"></span>
+              Buscar
+            </button>
+          </div>
+        </div>
+
+        <div class="table-responsive price-product-list border rounded-3">
+          <table class="table table-sm table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th class="text-center">Sel.</th>
+                <th>Codigo</th>
+                <th>Descripcion</th>
+                <th class="text-end">Precio actual</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let producto of productosList">
+                <td class="text-center">
+                  <input
+                    type="checkbox"
+                    class="form-check-input"
+                    [checked]="productoSeleccionado(producto)"
+                    (change)="toggleProducto(producto, $event)"
+                  />
+                </td>
+                <td class="fw-semibold">{{ producto.in_codmerc }}</td>
+                <td>{{ producto.in_desmerc }}</td>
+                <td class="text-end">{{ producto.in_premerc | number:'1.2-2' }}</td>
+              </tr>
+              <tr *ngIf="!productosList.length && !buscandoProductos">
+                <td colspan="4" class="text-center text-muted py-3">
+                  No hay productos para mostrar.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="card price-card mb-3">
+      <div class="card-header price-card__header d-flex justify-content-between align-items-center gap-2">
+        <h5 class="mb-0">Productos seleccionados</h5>
+        <span class="badge text-bg-primary">{{ productosSeleccionados.length }} seleccionados</span>
+      </div>
+      <div class="card-body">
+        <div class="table-responsive border rounded-3">
+          <table class="table table-sm align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Codigo</th>
+                <th>Descripcion</th>
+                <th class="text-end">Precio actual</th>
+                <th class="text-end">Precio nuevo</th>
+                <th class="text-center">Accion</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of productosSeleccionados">
+                <td class="fw-semibold">{{ item.codigo }}</td>
+                <td>{{ item.descripcion }}</td>
+                <td class="text-end">{{ item.precioActual | number:'1.2-2' }}</td>
+                <td>
+                  <input
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    class="form-control form-control-sm text-end"
+                    [(ngModel)]="item.nuevoPrecio"
+                  />
+                </td>
+                <td class="text-center">
+                  <button type="button" class="btn btn-sm btn-outline-danger" (click)="quitarProducto(item.codigo)">
+                    Quitar
+                  </button>
+                </td>
+              </tr>
+              <tr *ngIf="!productosSeleccionados.length">
+                <td colspan="5" class="text-center text-muted py-3">
+                  Seleccione al menos un producto de la tabla superior.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="card price-card mb-3">
+      <div class="card-header price-card__header d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <h5 class="mb-0">2. Sucursales</h5>
+        <div class="btn-group btn-group-sm" role="group">
+          <button type="button" class="btn btn-outline-primary" (click)="seleccionarTodasSucursales(true)">
+            Todas
+          </button>
+          <button type="button" class="btn btn-outline-secondary" (click)="seleccionarTodasSucursales(false)">
+            Limpiar
+          </button>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="text-muted py-3 text-center" *ngIf="cargandoSucursales">
+          Cargando sucursales...
+        </div>
+
+        <div class="row g-2" *ngIf="!cargandoSucursales">
+          <div class="col-12 col-sm-6 col-lg-4 col-xxl-3" *ngFor="let sucursal of sucursalesList">
+            <label class="form-check border rounded-3 p-2 h-100 price-branch-check">
+              <input
+                type="checkbox"
+                class="form-check-input me-2"
+                [checked]="sucursalSeleccionada(sucursal)"
+                (change)="toggleSucursal(sucursal, $event)"
+              />
+              <span class="form-check-label fw-semibold">
+                {{ sucursal.cod_sucursal }} - {{ sucursal.nom_sucursal }}
+              </span>
+            </label>
+          </div>
+          <div class="col-12" *ngIf="!sucursalesList.length">
+            <div class="text-center text-muted py-3 border rounded-3">
+              No hay sucursales disponibles.
+            </div>
+          </div>
+        </div>
+
+        <div class="small text-muted mt-3">
+          Sucursales marcadas: {{ sucursalesSeleccionadasIds.length }}
+        </div>
+      </div>
+    </div>
+
+    <div class="d-flex flex-wrap justify-content-end gap-2">
+      <button type="button" class="btn btn-outline-secondary" (click)="limpiarSeleccion()" [disabled]="guardando">
+        Limpiar seleccion
+      </button>
+      <button type="button" class="btn btn-success" (click)="guardar()" [disabled]="!puedeGuardar">
+        <span *ngIf="guardando" class="spinner-border spinner-border-sm me-1"></span>
+        Aplicar precios
+      </button>
+    </div>
+  </div>
+</section>

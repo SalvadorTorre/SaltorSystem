@@ -613,6 +613,107 @@ export class ServicioInventario {
     );
   }
 
+  actualizarPreciosPorSucursales(payload: {
+    productos: Array<{
+      codigo: string | number;
+      descripcion?: string | null;
+      costo?: number | null;
+      precio: number | string;
+    }>;
+    sucursales: Array<number | string>;
+  }): Observable<any> {
+    return from((async () => {
+      const productos = (payload?.productos || [])
+        .map((producto) => ({
+          codigo: String(producto?.codigo || "").trim(),
+          descripcion: producto?.descripcion ?? null,
+          costo: this.toNullableNumber(producto?.costo),
+          precio: this.toNullableNumber(producto?.precio),
+        }))
+        .filter((producto) => !!producto.codigo);
+
+      const sucursales = Array.from(
+        new Set(
+          (payload?.sucursales || [])
+            .map((sucursal) => Number(sucursal))
+            .filter((sucursal) => !!sucursal && !Number.isNaN(sucursal))
+        )
+      );
+
+      if (!productos.length) {
+        throw new Error("Debe seleccionar al menos un producto");
+      }
+
+      if (!sucursales.length) {
+        throw new Error("Debe seleccionar al menos una sucursal");
+      }
+
+      const productoInvalido = productos.find((producto) => producto.precio === null || producto.precio <= 0);
+      if (productoInvalido) {
+        throw new Error(`Precio invalido para el producto ${productoInvalido.codigo}`);
+      }
+
+      const codigos = productos.map((producto) => producto.codigo);
+      const { data: actuales, error: findError } = await this.db
+        .from("inventario")
+        .select("id,inv_codprod,inv_codsucu")
+        .in("inv_codprod", codigos)
+        .in("inv_codsucu", sucursales);
+      if (findError) throw findError;
+
+      const actualesMap = new Map<string, any>();
+      (actuales || []).forEach((row: any) => {
+        actualesMap.set(`${Number(row?.inv_codsucu)}::${String(row?.inv_codprod || "").trim()}`, row);
+      });
+
+      const now = new Date().toISOString();
+      const filasInsertar: any[] = [];
+      let actualizados = 0;
+
+      for (const producto of productos) {
+        for (const sucursal of sucursales) {
+          const current = actualesMap.get(`${sucursal}::${producto.codigo}`);
+          if (current?.id) {
+            const { error: updateError } = await this.db
+              .from("inventario")
+              .update({
+                inv_preprod: producto.precio,
+                inv_fechamov: now,
+              })
+              .eq("id", Number(current.id))
+              .eq("inv_codsucu", sucursal)
+              .eq("inv_codprod", producto.codigo);
+            if (updateError) throw updateError;
+            actualizados += 1;
+          } else {
+            filasInsertar.push({
+              inv_codsucu: sucursal,
+              inv_codprod: producto.codigo,
+              inv_desprod: producto.descripcion,
+              inv_existencia: 0,
+              inv_cosprod: producto.costo,
+              inv_preprod: producto.precio,
+              inv_fechamov: now,
+              activo: true,
+            });
+          }
+        }
+      }
+
+      const insertados = filasInsertar.length
+        ? await this.insertInBatches("inventario", filasInsertar)
+        : 0;
+
+      return {
+        actualizados,
+        insertados,
+        total: actualizados + insertados,
+      };
+    })()).pipe(
+      map((data: any) => ({ status: "success", code: 200, data }))
+    );
+  }
+
   buscarInventario(codsucu: number, buscar: string) {
     const texto = String(buscar || "").trim();
     return from((async () => {

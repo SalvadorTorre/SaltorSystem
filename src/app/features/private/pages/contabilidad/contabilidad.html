@@ -37,15 +37,15 @@
         </span>
       </a>
 
-      <div class="accounting-section-title">En preparación</div>
-
-      <button class="accounting-link disabled" type="button" disabled>
+      <a class="accounting-link" routerLinkActive="active" [routerLink]="['nota-credito']">
         <i class="bi bi-file-earmark-minus"></i>
         <span>
           Nota de crédito
-          <small>Próximamente</small>
+          <small>Formulario E34 y envio DGII</small>
         </span>
-      </button>
+      </a>
+
+      <div class="accounting-section-title">En preparación</div>
 
       <button class="accounting-link disabled" type="button" disabled>
         <i class="bi bi-cash-coin"></i>
@@ -102,11 +102,12 @@
           </span>
         </a>
 
-        <div class="accounting-section-title">En preparación</div>
-        <button class="accounting-link disabled" type="button" disabled>
+        <a class="accounting-link" routerLinkActive="active" [routerLink]="['nota-credito']" data-bs-dismiss="offcanvas">
           <i class="bi bi-file-earmark-minus"></i>
-          <span>Nota de crédito<small>Próximamente</small></span>
-        </button>
+          <span>Nota de crédito<small>Formulario E34 y envio DGII</small></span>
+        </a>
+
+        <div class="accounting-section-title">En preparación</div>
         <button class="accounting-link disabled" type="button" disabled>
           <i class="bi bi-cash-coin"></i>
           <span>Cuentas por cobrar<small>Próximamente</small></span>

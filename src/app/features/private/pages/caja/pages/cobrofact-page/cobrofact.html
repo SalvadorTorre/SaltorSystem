@@ -31,7 +31,10 @@
                   <tr
                     #filaSeleccionada
                     *ngFor="let factura of facturacionList; let i = index"
-                    [ngClass]="{ 'table-primary': i === selectedFacturaIndex }"
+                    [ngClass]="{
+                      'table-primary': i === selectedFacturaIndex,
+                      'fila-reimpresa': facturaReimpresa(factura)
+                    }"
                     (click)="seleccionarFacturaLista(factura, i)"
                     class="align-middle cursor-pointer"
                   >
@@ -169,10 +172,13 @@
                     <div class="mb-2">
                       <label class="form-label">Forma de entrega</label>
                       <select
+                        #formaEntregaSelect
                         class="form-select"
                         [(ngModel)]="fentrega"
                         [disabled]="!chekPagado || bloquearReimpresion || facturaSoloConsulta"
+                        (change)="onEntregaChange()"
                       >
+                        <option value="">Seleccione forma de entrega</option>
                         <option [value]="fe.idfentrega" *ngFor="let fe of resultadoFentrega">{{ fe.desentrega }}</option>
                       </select>
                     </div>
@@ -233,14 +239,14 @@
                 <div class="action-bar d-flex justify-content-between gap-2 mt-1">
                 <button
                   class="btn btn-success flex-fill"
-                  [disabled]="facturaSoloConsulta || bloquearAccionesPorNcfDgiiPagada || !puedeGuardarPagoEntregaEstado || !chekPagado || valorPagado < formularioFacturacion.get('fa_valFact')?.value"
+                  [disabled]="!puedeActivarGuardarPagoEntrega"
                   (click)="guardarPagoEntrega()"  >
                   <i class="bi bi-save me-1"></i>Guardar
                 </button>
                 <button
                   class="btn btn-warning flex-fill"
-                  [disabled]="facturaSoloConsulta || !hayFacturaSeleccionada || bloquearAccionesPorNcfDgiiPagada || facturaEstaImpresa"
-                  [title]="facturaEstaImpresa ? 'La factura ya estÃ¡ impresa' : ''"
+                  [disabled]="!puedeImprimirConduceFactura"
+                  [title]="facturaEstaImpresa && !facturaSeleccionadaReimpresa ? 'La factura ya esta impresa' : ''"
                   (click)="imprimirConduceFactura()">
                   <i class="bi bi-printer me-1"></i> Imprimir conduce
                 </button>

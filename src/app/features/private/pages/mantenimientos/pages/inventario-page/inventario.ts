@@ -10,6 +10,13 @@ import { SucursalesData } from 'src/app/core/services/mantenimientos/sucursal';
 declare var $: any;
 import Swal from 'sweetalert2';
 
+interface ProductoPrecioSeleccionado {
+  codigo: string;
+  descripcion: string;
+  costo: number | null;
+  precioActual: number;
+  nuevoPrecio: number | null;
+}
 
 @Component({
   selector: 'Inventario',
@@ -45,6 +52,13 @@ export class Inventario implements OnInit {
   productoDetalleSucursal: ModeloInventarioData | null = null;
   guardandoSucursal: Record<number, boolean> = {};
   totalSucursales = 0;
+  precioCodigoInput = '';
+  precioDescripcionInput = '';
+  precioProductosList: ModeloInventarioData[] = [];
+  precioProductosSeleccionados: ProductoPrecioSeleccionado[] = [];
+  precioSucursalesSeleccionadas: Record<number, boolean> = {};
+  buscandoProductosPrecio = false;
+  guardandoCambioPrecio = false;
 
   constructor(
     private fb: FormBuilder,
@@ -282,6 +296,180 @@ export class Inventario implements OnInit {
       error: (err) => {
         this.guardandoSucursal[item.cod_sucursal] = false;
         const msg = String(err?.message || err?.error?.message || 'No se pudo guardar');
+        Swal.fire('Error', msg, 'error');
+      }
+    });
+  }
+
+  abrirCambioPrecio() {
+    this.precioCodigoInput = '';
+    this.precioDescripcionInput = '';
+    this.precioProductosList = [];
+    this.precioProductosSeleccionados = [];
+    this.precioSucursalesSeleccionadas = {};
+    this.guardandoCambioPrecio = false;
+
+    if (!this.sucursalesList.length) {
+      this.obtenerTodasSucursales();
+    }
+
+    this.buscarProductosCambioPrecio();
+    $('#modalCambioPrecio').modal('show');
+  }
+
+  buscarProductosCambioPrecio() {
+    this.buscandoProductosPrecio = true;
+    this.servicioInventario
+      .obtenerTodosInventario(1, 100, this.precioCodigoInput, this.precioDescripcionInput)
+      .subscribe({
+        next: (response) => {
+          this.precioProductosList = response?.data || [];
+          this.buscandoProductosPrecio = false;
+        },
+        error: () => {
+          this.precioProductosList = [];
+          this.buscandoProductosPrecio = false;
+          Swal.fire('Error', 'No se pudieron buscar los productos.', 'error');
+        }
+      });
+  }
+
+  onPrecioCodigoInput(event: Event) {
+    const value = ((event.target as HTMLInputElement)?.value || '').toUpperCase();
+    this.precioCodigoInput = value;
+  }
+
+  onPrecioDescripcionInput(event: Event) {
+    const value = ((event.target as HTMLInputElement)?.value || '').toUpperCase();
+    this.precioDescripcionInput = value;
+  }
+
+  productoCambioPrecioSeleccionado(producto: ModeloInventarioData): boolean {
+    const codigo = String((producto as any)?.in_codmerc || '').trim();
+    return this.precioProductosSeleccionados.some((item) => item.codigo === codigo);
+  }
+
+  toggleProductoCambioPrecio(producto: ModeloInventarioData, event: Event) {
+    const checked = !!((event.target as HTMLInputElement)?.checked);
+    const codigo = String((producto as any)?.in_codmerc || '').trim();
+    if (!codigo) {
+      return;
+    }
+
+    if (!checked) {
+      this.quitarProductoCambioPrecio(codigo);
+      return;
+    }
+
+    if (this.productoCambioPrecioSeleccionado(producto)) {
+      return;
+    }
+
+    const precioActual = Number((producto as any)?.in_premerc || 0);
+    const costo = (producto as any)?.in_cosmerc === null || (producto as any)?.in_cosmerc === undefined || (producto as any)?.in_cosmerc === ''
+      ? null
+      : Number((producto as any)?.in_cosmerc);
+
+    this.precioProductosSeleccionados.push({
+      codigo,
+      descripcion: String((producto as any)?.in_desmerc || ''),
+      costo: costo === null ? null : (Number.isFinite(Number(costo)) ? Number(costo) : null),
+      precioActual: Number.isFinite(precioActual) ? precioActual : 0,
+      nuevoPrecio: Number.isFinite(precioActual) && precioActual > 0 ? precioActual : null,
+    });
+  }
+
+  quitarProductoCambioPrecio(codigo: string) {
+    this.precioProductosSeleccionados = this.precioProductosSeleccionados
+      .filter((item) => item.codigo !== codigo);
+  }
+
+  toggleSucursalCambioPrecio(sucursal: SucursalesData, event: Event) {
+    const checked = !!((event.target as HTMLInputElement)?.checked);
+    const codigoSucursal = Number((sucursal as any)?.cod_sucursal || 0);
+    if (!codigoSucursal) {
+      return;
+    }
+    this.precioSucursalesSeleccionadas[codigoSucursal] = checked;
+  }
+
+  seleccionarTodasSucursalesCambioPrecio(checked: boolean) {
+    this.sucursalesList.forEach((sucursal) => {
+      const codigoSucursal = Number((sucursal as any)?.cod_sucursal || 0);
+      if (codigoSucursal) {
+        this.precioSucursalesSeleccionadas[codigoSucursal] = checked;
+      }
+    });
+  }
+
+  sucursalCambioPrecioSeleccionada(sucursal: SucursalesData): boolean {
+    const codigoSucursal = Number((sucursal as any)?.cod_sucursal || 0);
+    return !!this.precioSucursalesSeleccionadas[codigoSucursal];
+  }
+
+  get sucursalesCambioPrecioIds(): number[] {
+    return Object.keys(this.precioSucursalesSeleccionadas)
+      .filter((key) => !!this.precioSucursalesSeleccionadas[Number(key)])
+      .map((key) => Number(key));
+  }
+
+  get puedeGuardarCambioPrecio(): boolean {
+    return !this.guardandoCambioPrecio
+      && this.precioProductosSeleccionados.length > 0
+      && this.sucursalesCambioPrecioIds.length > 0
+      && this.precioProductosSeleccionados.every((item) => {
+        const precio = Number(item.nuevoPrecio);
+        return Number.isFinite(precio) && precio > 0;
+      });
+  }
+
+  guardarCambioPrecio() {
+    if (!this.precioProductosSeleccionados.length) {
+      Swal.fire('Productos requeridos', 'Debe seleccionar al menos un producto.', 'warning');
+      return;
+    }
+
+    const sucursales = this.sucursalesCambioPrecioIds;
+    if (!sucursales.length) {
+      Swal.fire('Sucursales requeridas', 'Debe seleccionar al menos una sucursal.', 'warning');
+      return;
+    }
+
+    const productoInvalido = this.precioProductosSeleccionados.find((item) => {
+      const precio = Number(item.nuevoPrecio);
+      return !Number.isFinite(precio) || precio <= 0;
+    });
+    if (productoInvalido) {
+      Swal.fire('Precio invalido', `Revise el precio del producto ${productoInvalido.codigo}.`, 'warning');
+      return;
+    }
+
+    this.guardandoCambioPrecio = true;
+    this.servicioInventario.actualizarPreciosPorSucursales({
+      productos: this.precioProductosSeleccionados.map((item) => ({
+        codigo: item.codigo,
+        descripcion: item.descripcion,
+        costo: item.costo,
+        precio: Number(item.nuevoPrecio),
+      })),
+      sucursales,
+    }).subscribe({
+      next: (response) => {
+        this.guardandoCambioPrecio = false;
+        const data = response?.data || {};
+        Swal.fire({
+          title: 'Precios actualizados',
+          text: `Actualizados: ${Number(data.actualizados || 0)}. Creados: ${Number(data.insertados || 0)}.`,
+          icon: 'success',
+          timer: 2500,
+          showConfirmButton: false,
+        });
+        $('#modalCambioPrecio').modal('hide');
+        this.obtenerTodosInventario(this.currentPage);
+      },
+      error: (err) => {
+        this.guardandoCambioPrecio = false;
+        const msg = String(err?.message || err?.error?.message || 'No se pudieron actualizar los precios');
         Swal.fire('Error', msg, 'error');
       }
     });

@@ -120,6 +120,16 @@
   color: #111827;
 }
 
+.cobrofact-page .facturas-table-wrap tbody tr.fila-reimpresa > td {
+  background-color: #fff3cd !important;
+  color: #664d03;
+}
+
+.cobrofact-page .facturas-table-wrap tbody tr.fila-reimpresa.table-primary > td {
+  background-color: #ffe08a !important;
+  color: #3f3200;
+}
+
 .input-destacado {
   font-weight: 700;
   font-size: 1.1rem;

@@ -77,6 +77,7 @@ export class ControlFact implements OnInit {
   edicionSoloEncabezado = false;
   totalItems = 0;
   pageSize = 6;
+  readonly limiteFacturasInicial = 100;
   currentPage = 1;
   maxPagesToShow = 5;
   txtdescripcion: string = '';
@@ -198,6 +199,14 @@ export class ControlFact implements OnInit {
     return String(value ?? '').trim().toUpperCase();
   }
 
+  facturaDespachada(factura: any): boolean {
+    return this.normalizarFlagFactura(factura?.fa_despacho) === 'S';
+  }
+
+  facturaEntregada(factura: any): boolean {
+    return this.normalizarFlagFactura(factura?.fa_entrega ?? factura?.fa_entregada) === 'S';
+  }
+
   private tipoNcfFactura(factura: any): string {
     return String(
       factura?.fa_tipoNcf ??
@@ -236,6 +245,11 @@ export class ControlFact implements OnInit {
       fa_tipoNcf: this.tipoNcfFactura(factura),
       fa_codfpago: this.normalizarCodigoPagoFactura(factura),
       fa_envio: this.normalizarEnvioFactura(factura),
+      fa_despacho: this.facturaDespachada(factura),
+      fa_entrega: this.facturaEntregada(factura),
+      fa_facturada: this.normalizarFlagFactura(factura?.fa_facturada) === 'S',
+      fa_impresa: this.normalizarFlagFactura(factura?.fa_impresa) === 'S',
+      fa_reimpresa: this.normalizarFlagFactura(factura?.fa_reimpresa) === 'S',
     };
   }
 
@@ -1057,8 +1071,9 @@ export class ControlFact implements OnInit {
   }
 
   buscarTodasFacturacion() {
-    this.servicioFacturacion.buscarTodasFacturacion().subscribe((response) => {
+    this.servicioFacturacion.buscarFacturacion(1, this.limiteFacturasInicial).subscribe((response) => {
       this.facturacionList = response.data;
+      this.totalItems = response.pagination?.total ?? response.data?.length ?? 0;
       this.currentPage = 1;
       this.selectedRow = 0;
     });
@@ -1994,6 +2009,13 @@ export class ControlFact implements OnInit {
     this.formularioFacturacion.get('fa_nomVend')!.enable();
     this.formularioFacturacion.get('fa_ncfFact')!.enable();
 
+    const statusFactura = this.normalizarStatusFactura(this.formularioFacturacion.get('fa_status')?.value);
+    if (codFact && statusFactura === 'S') {
+      Swal.fire('Aviso', 'Una factura con status S no se puede editar.', 'warning');
+      this.guardandoFactura = false;
+      return;
+    }
+
     const rnc = String(this.formularioFacturacion.get('fa_rncFact')?.value || '').trim();
     if (codFact && this.rncRequeridoParaComprobante() && !rnc) {
       Swal.fire(
@@ -2015,13 +2037,14 @@ export class ControlFact implements OnInit {
       return;
     }
 
-    if (codFact) {
+    if (codFact && detalleModificado) {
       const causaReimpresion = await this.pedirCausaReimpresion();
       if (!causaReimpresion) {
         this.guardandoFactura = false;
         return;
       }
       this.formularioFacturacion.patchValue({
+        fa_impresa: 'N',
         fa_reimpresa: 'S',
         fa_notaFact: causaReimpresion,
       });

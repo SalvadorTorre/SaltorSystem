@@ -371,10 +371,11 @@
                 <thead class="sticky-header" style="position: sticky; top: 0; z-index: 10; background: linear-gradient(90deg, #0f172a, #334155); color: #fff;">
                   <tr>
                     <th style="width: 10%">Número</th>
-                    <th style="width: 34%">Nombre</th>
-                    <th class="text-center" style="width: 15%">Fecha</th>
-                    <th class="text-end" style="width: 16%">Valor</th>
-                    <th style="width: 16%">Acciones</th>
+                    <th style="width: 28%">Nombre</th>
+                    <th class="text-center" style="width: 13%">Fecha</th>
+                    <th class="text-end" style="width: 14%">Valor</th>
+                    <th class="text-center" style="width: 20%">Estado</th>
+                    <th style="width: 15%">Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -388,6 +389,20 @@
                     <td>{{ factura.fa_nomClie }}</td>
                     <td class="text-center">{{ factura.fa_fecFact | date:'dd/MM/yyyy' }}</td>
                     <td class="text-end">{{ factura.fa_valFact }}</td>
+                    <td class="text-center">
+                      <span
+                        *ngIf="facturaDespachada(factura)"
+                        class="badge rounded-pill bg-primary me-1"
+                      >
+                        Despachado
+                      </span>
+                      <span
+                        *ngIf="facturaEntregada(factura)"
+                        class="badge rounded-pill bg-success"
+                      >
+                        Entregada
+                      </span>
+                    </td>
                     <td class="text-nowrap">
                       <i
                         (click)="consultarFacturacion(factura)"

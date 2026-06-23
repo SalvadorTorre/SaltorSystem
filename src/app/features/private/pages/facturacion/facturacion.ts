@@ -2394,6 +2394,17 @@ export class Facturacion implements OnInit {
     if (nextInput) nextInput.focus();
   }
 
+  private productoTieneTramoFacturable(): boolean {
+    const tramo = String(
+      this.tipomerc ||
+      this.productoselect?.in_tramo ||
+      (this.productoselect as any)?.IN_TRAMO ||
+      '',
+    ).trim().toUpperCase();
+
+    return tramo === 'F' || tramo === 'H';
+  }
+
   agregaItem(event: Event) {
     event.preventDefault();
     if (
@@ -2409,6 +2420,14 @@ export class Facturacion implements OnInit {
         text: 'Por favor complete todos los campos requeridos antes de agregar el ítem.',
       }).then(() => {
         this.mensagePantalla = false;
+      });
+      return;
+    }
+    if (!this.productoTieneTramoFacturable()) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Producto no permitido',
+        text: 'Solo se pueden agregar productos con tramo F o H.',
       });
       return;
     }

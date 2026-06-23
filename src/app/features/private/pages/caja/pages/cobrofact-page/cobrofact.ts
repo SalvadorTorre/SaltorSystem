@@ -65,6 +65,7 @@ export class CobroFact implements OnInit {
   @ViewChildren('filaSeleccionada') filas!: QueryList<ElementRef>;
   @ViewChild('contenedorScroll') contenedorScroll!: ElementRef;
   @ViewChild('valorPagadoInput') valorPagadoInput!: ElementRef;
+  @ViewChild('formaEntregaSelect') formaEntregaSelect!: ElementRef<HTMLSelectElement>;
   facturaData: any = null; // objeto con la factura que devuelve el backend
   mensaje: string = '';
   facturas: any[] = []; // ✅ Declaración de la propiedad
@@ -217,6 +218,24 @@ export class CobroFact implements OnInit {
     );
   }
 
+  get facturaSeleccionadaReimpresa(): boolean {
+    const valorFormulario = this.formularioFacturacion?.get('fa_reimpresa')?.value;
+    const valorFactura = (this.DatosSeleccionado as any)?.fa_reimpresa;
+    return (
+      this.normalizeImpresa(valorFormulario) === 'S' ||
+      this.normalizeImpresa(valorFactura) === 'S'
+    );
+  }
+
+  get puedeImprimirConduceFactura(): boolean {
+    return (
+      !this.facturaSoloConsulta &&
+      this.hayFacturaSeleccionada &&
+      !this.bloquearAccionesPorNcfDgiiPagada &&
+      (!this.facturaEstaImpresa || this.facturaSeleccionadaReimpresa)
+    );
+  }
+
   get facturaEstaPagada(): boolean {
     return this.chekPagado;
   }
@@ -241,6 +260,17 @@ export class CobroFact implements OnInit {
       this.hayFacturaSeleccionada &&
       impresa === 'S' &&
       (pagoPendiente || this.facturaImpresaStatusFMarcadaPagada)
+    );
+  }
+
+  get puedeActivarGuardarPagoEntrega(): boolean {
+    const total = Number(this.formularioFacturacion?.get('fa_valFact')?.value || 0);
+
+    return (
+      !this.facturaSoloConsulta &&
+      this.puedeGuardarPagoEntregaEstado &&
+      this.chekPagado &&
+      this.valorPagado >= total
     );
   }
 
@@ -1913,6 +1943,29 @@ export class CobroFact implements OnInit {
     this.actualizarPermisoImpresion();
   }
 
+  private validarFormaEntregaObligatoria(): boolean {
+    const formaEntrega = String(this.fentrega ?? '').trim();
+
+    if (formaEntrega) {
+      this.formularioFacturacion.patchValue(
+        { fa_envio: formaEntrega },
+        { emitEvent: false },
+      );
+      return true;
+    }
+
+    Swal.fire(
+      'Aviso',
+      'Debe indicar la forma de entrega antes de guardar.',
+      'warning',
+    ).then(() => {
+      const select = this.formaEntregaSelect?.nativeElement;
+      if (!select || select.disabled) return;
+      select.focus();
+    });
+    return false;
+  }
+
   private actualizarPermisoImpresion() {
     this.permitirImpresion =
       this.hayFacturaSeleccionada &&
@@ -2015,6 +2068,7 @@ export class CobroFact implements OnInit {
       Swal.fire('Aviso', 'Seleccione una factura primero.', 'warning');
       return;
     }
+    if (!this.validarFormaEntregaObligatoria()) return;
     if (!this.puedeGuardarPagoEntregaEstado) {
       Swal.fire(
         'Aviso',
@@ -2118,6 +2172,10 @@ export class CobroFact implements OnInit {
       Swal.fire('Aviso', 'Seleccione una factura primero.', 'warning');
       return;
     }
+    if (!this.puedeImprimirConduceFactura) {
+      Swal.fire('Aviso', 'La factura no esta disponible para imprimir conduce.', 'warning');
+      return;
+    }
     if (this.bloquearAccionesPorNcfDgiiPagada) {
       Swal.fire(
         'Aviso',
@@ -2126,12 +2184,14 @@ export class CobroFact implements OnInit {
       );
       return;
     }
+    if (!this.validarFormaEntregaObligatoria()) return;
     if (!this.validarOrigenPagoSiAplica()) return;
 
     const cod = this.formularioFacturacion.get('fa_codFact')?.value;
     const payload = {
       fa_codFact: cod,
       fa_impresa: 'S',
+      fa_reimpresa: 'N',
       fa_status: 'C',
       fa_envio: this.fentrega,
       fa_codfpago: this.ftipoPago,
@@ -2149,6 +2209,7 @@ export class CobroFact implements OnInit {
       descripcionFormaPago: this.descripcionTipoPagoActual(),
       descripcionFormaEntrega: this.descripcionFormaEntregaActual(),
       fa_impresa: 'S',
+      fa_reimpresa: 'N',
       fa_status: 'C',
       fa_fpago: payload.fa_fpago,
       fa_origenpago: payload.fa_origenpago,
@@ -2162,6 +2223,7 @@ export class CobroFact implements OnInit {
           ...facturaData,
           ...(resp?.data || {}),
           fa_impresa: 'S',
+          fa_reimpresa: 'N',
           fa_status: 'C',
           fa_fpago: payload.fa_fpago,
           descripcionFormaPago: this.descripcionTipoPagoActual(),
@@ -2171,6 +2233,7 @@ export class CobroFact implements OnInit {
         this.formularioFacturacion.patchValue(
           {
             fa_impresa: 'S',
+            fa_reimpresa: 'N',
             fa_status: 'C',
             fa_envio: this.fentrega,
             fa_codfpago: this.ftipoPago,
@@ -2232,19 +2295,27 @@ export class CobroFact implements OnInit {
     return 'bg-secondary';
   }
 
+  facturaReimpresa(factura: any): boolean {
+    return this.normalizeImpresa(factura?.fa_reimpresa) === 'S';
+  }
+
   private cumpleFiltroListaCaja(factura: any): boolean {
     const statusFactura = this.normalizarStatusFactura(factura?.fa_status);
     const fpago = this.normalizeImpresa(factura?.fa_fpago);
     const impresa = this.normalizeImpresa(factura?.fa_impresa);
+    const noImpresa = impresa === 'N';
     const estaImpresa = ['S', '1', 'TRUE', 'SI', 'Y'].includes(impresa);
     const estaPagada = ['S', 'P', '1', 'TRUE', 'SI', 'Y'].includes(fpago);
+
+    if (noImpresa) {
+      return true;
+    }
 
     if (estaPagada && (estaImpresa || statusFactura === 'C')) {
       return false;
     }
 
     return (
-      impresa === 'N' ||
       this.esPendientePago(factura) ||
       statusFactura === 'C' ||
       (statusFactura === 'F' && fpago === 'N')
@@ -2291,6 +2362,7 @@ export class CobroFact implements OnInit {
       Swal.fire('Aviso', 'Seleccione una factura primero.', 'warning');
       return;
     }
+    if (!this.validarFormaEntregaObligatoria()) return;
     if (!this.validarOrigenPagoSiAplica()) return;
 
     // Guardar estado antes de imprimir:

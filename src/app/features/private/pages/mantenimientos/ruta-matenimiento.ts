@@ -32,6 +32,15 @@ const routes: Routes = [
             (m) => m.ModuloInventarioSucursal
           ),
       },
+      {
+        path: 'precio',
+        canActivate: [permissionGuard],
+        data: { accessPath: '/private/mantenimientos/precio' },
+        loadChildren: () =>
+          import('./pages/precio-page/precio-modulo').then(
+            (m) => m.ModuloPrecio
+          ),
+      },
 
       {
         path: 'cliente',

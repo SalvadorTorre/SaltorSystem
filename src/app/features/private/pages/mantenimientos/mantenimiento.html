@@ -31,6 +31,11 @@
         <span>Inventario sucursal</span>
       </a>
 
+      <a *ngIf="canView('/private/mantenimientos/precio')" class="maintenance-link" routerLinkActive="active" [routerLink]="['precio']">
+        <i class="bi bi-cash-coin"></i>
+        <span>Precio</span>
+      </a>
+
       <a *ngIf="canView('/private/mantenimientos/cliente')" class="maintenance-link" routerLinkActive="active" [routerLink]="['cliente']">
         <i class="bi bi-people"></i>
         <span>Clientes</span>
@@ -184,6 +189,11 @@
         <a *ngIf="canView('/private/mantenimientos/inventario-sucursal')" class="maintenance-link" routerLinkActive="active" [routerLink]="['inventario-sucursal']" data-bs-dismiss="offcanvas">
           <i class="bi bi-boxes"></i>
           <span>Inventario sucursal</span>
+        </a>
+
+        <a *ngIf="canView('/private/mantenimientos/precio')" class="maintenance-link" routerLinkActive="active" [routerLink]="['precio']" data-bs-dismiss="offcanvas">
+          <i class="bi bi-cash-coin"></i>
+          <span>Precio</span>
         </a>
 
         <a *ngIf="canView('/private/mantenimientos/cliente')" class="maintenance-link" routerLinkActive="active" [routerLink]="['cliente']" data-bs-dismiss="offcanvas">

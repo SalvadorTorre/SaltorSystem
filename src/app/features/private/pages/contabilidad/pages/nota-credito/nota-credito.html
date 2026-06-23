@@ -1,0 +1,270 @@
+<div class="credit-note-page">
+  <header class="credit-note-hero">
+    <div>
+      <span class="eyebrow">Contabilidad fiscal</span>
+      <h2>Nota de credito electronica</h2>
+      <p>Completa la factura afectada, valida los datos del cliente y envia la nota de credito E34 a DGII.</p>
+    </div>
+
+    <div class="hero-actions">
+      <span class="status-chip" [class.status-chip--error]="lastStatus === 'Error'" [class.status-chip--ok]="lastStatus !== 'Sin enviar' && lastStatus !== 'Error'">
+        {{ lastStatus }}
+      </span>
+      <button class="btn btn-outline-secondary" type="button" (click)="resetForm()" [disabled]="isSending">
+        <i class="bi bi-arrow-counterclockwise me-1"></i>
+        Limpiar
+      </button>
+      <button class="btn btn-primary" type="button" (click)="sendToDgii()" [disabled]="isSending">
+        <i class="bi bi-send-check me-1"></i>
+        {{ isSending ? 'Enviando...' : 'Enviar a DGII' }}
+      </button>
+    </div>
+  </header>
+
+  <form class="credit-note-grid" #creditNoteForm="ngForm" (ngSubmit)="sendToDgii()">
+    <section class="panel-card panel-card--wide">
+      <div class="panel-card__header">
+        <div>
+          <h3>Datos de la nota</h3>
+          <p>Numero interno, fecha, tipo de modificacion y motivo fiscal.</p>
+        </div>
+        <span class="badge rounded-pill text-bg-info">Tipo e-CF 34</span>
+      </div>
+
+      <div class="form-grid">
+        <label class="form-field">
+          <span>No. nota de credito</span>
+          <input class="form-control" name="creditNoteNumber" [(ngModel)]="form.creditNoteNumber" required />
+        </label>
+
+        <label class="form-field">
+          <span>e-NCF nota de credito</span>
+          <input
+            class="form-control"
+            name="encf"
+            [(ngModel)]="form.encf"
+            placeholder="Se genera al enviar a DGII"
+            readonly
+          />
+        </label>
+
+        <label class="form-field">
+          <span>Fecha emision</span>
+          <input class="form-control" type="date" name="issueDate" [(ngModel)]="form.issueDate" required />
+        </label>
+
+        <label class="form-field">
+          <span>Vencimiento secuencia</span>
+          <input class="form-control" type="date" name="sequenceExpiration" [(ngModel)]="form.sequenceExpiration" />
+        </label>
+
+        <label class="form-field">
+          <span>Codigo modificacion</span>
+          <select class="form-select" name="modificationCode" [(ngModel)]="form.modificationCode" required>
+            <option *ngFor="let item of modificationCodes" [value]="item.value">{{ item.label }}</option>
+          </select>
+        </label>
+
+        <label class="form-field">
+          <span>Tipo ingreso</span>
+          <select class="form-select" name="incomeType" [(ngModel)]="form.incomeType">
+            <option *ngFor="let item of incomeTypes" [value]="item.value">{{ item.label }}</option>
+          </select>
+        </label>
+
+        <label class="form-field">
+          <span>Forma de pago</span>
+          <select class="form-select" name="paymentType" [(ngModel)]="form.paymentType">
+            <option *ngFor="let item of paymentTypes" [value]="item.value">{{ item.label }}</option>
+          </select>
+        </label>
+
+        <label class="form-field form-field--full">
+          <span>Motivo de la nota de credito</span>
+          <textarea class="form-control" name="reason" rows="3" [(ngModel)]="form.reason" placeholder="Ej.: Devolucion parcial de mercancia, correccion de monto, anulacion..." required></textarea>
+        </label>
+      </div>
+    </section>
+
+    <section class="panel-card">
+      <div class="panel-card__header">
+        <div>
+          <h3>Emisor</h3>
+          <p>Datos fiscales de la empresa activa.</p>
+        </div>
+      </div>
+
+      <div class="form-stack">
+        <label class="form-field">
+          <span>RNC emisor</span>
+          <input class="form-control" name="issuerRnc" [(ngModel)]="form.issuerRnc" required />
+        </label>
+        <label class="form-field">
+          <span>Razon social</span>
+          <input class="form-control" name="issuerName" [(ngModel)]="form.issuerName" required />
+        </label>
+        <label class="form-field">
+          <span>Nombre comercial</span>
+          <input class="form-control" name="issuerCommercialName" [(ngModel)]="form.issuerCommercialName" />
+        </label>
+        <label class="form-field">
+          <span>Direccion emisor</span>
+          <textarea class="form-control" name="issuerAddress" rows="3" [(ngModel)]="form.issuerAddress" required></textarea>
+        </label>
+      </div>
+    </section>
+
+    <section class="panel-card invoice-card">
+      <div class="panel-card__header">
+        <div>
+          <h3>Factura afectada</h3>
+          <p>{{ invoiceMessage }}</p>
+        </div>
+      </div>
+
+      <div class="form-stack">
+        <label class="form-field">
+          <span>No. factura</span>
+          <div class="input-action">
+            <input
+              class="form-control"
+              name="invoiceNumber"
+              [(ngModel)]="form.invoiceNumber"
+              (keydown.enter)="$event.preventDefault(); loadInvoice()"
+              placeholder="Ej.: 000001"
+              required
+            />
+            <button class="btn btn-outline-primary" type="button" (click)="loadInvoice()" [disabled]="isLoadingInvoice || !form.invoiceNumber">
+              <i class="bi bi-search"></i>
+            </button>
+          </div>
+        </label>
+
+        <label class="form-field">
+          <span>NCF/e-NCF afectado</span>
+          <input class="form-control" name="modifiedNcf" [(ngModel)]="form.modifiedNcf" placeholder="Se carga con la factura" required readonly />
+        </label>
+
+        <label class="form-field">
+          <span>Fecha comprobante afectado</span>
+          <input class="form-control" type="date" name="modifiedDate" [(ngModel)]="form.modifiedDate" required />
+        </label>
+
+        <label class="form-field">
+          <span>RNC/Cedula comprador</span>
+          <input class="form-control" name="buyerRnc" [(ngModel)]="form.buyerRnc" placeholder="Opcional para consumo" />
+        </label>
+        <label class="form-field">
+          <span>Nombre / razon social</span>
+          <input class="form-control" name="buyerName" [(ngModel)]="form.buyerName" required />
+        </label>
+        <label class="form-field">
+          <span>Correo</span>
+          <input class="form-control" type="email" name="buyerEmail" [(ngModel)]="form.buyerEmail" />
+        </label>
+        <label class="form-field">
+          <span>Direccion</span>
+          <textarea class="form-control" name="buyerAddress" rows="3" [(ngModel)]="form.buyerAddress"></textarea>
+        </label>
+      </div>
+    </section>
+
+    <section class="panel-card panel-card--wide">
+      <div class="panel-card__header">
+        <div>
+          <h3>Detalle de la nota</h3>
+          <p>Incluye los productos, descuentos e ITBIS que se acreditaran.</p>
+        </div>
+        <button class="btn btn-outline-primary btn-sm" type="button" (click)="addLine()">
+          <i class="bi bi-plus-lg me-1"></i>
+          Agregar linea
+        </button>
+      </div>
+
+      <div class="detail-table">
+        <div class="detail-row detail-row--head">
+          <span>Descripcion</span>
+          <span>Cant.</span>
+          <span>Precio</span>
+          <span>Desc.</span>
+          <span>ITBIS %</span>
+          <span>Total</span>
+          <span></span>
+        </div>
+
+        <div class="detail-row" *ngFor="let line of lines; let i = index">
+          <input class="form-control" [name]="'description' + line.id" [ngModel]="line.description" (ngModelChange)="updateLine(line, 'description', $event)" placeholder="Producto o servicio" />
+          <input class="form-control" type="number" min="0" step="0.01" [name]="'quantity' + line.id" [ngModel]="line.quantity" (ngModelChange)="updateLine(line, 'quantity', $event)" />
+          <input class="form-control" type="number" min="0" step="0.01" [name]="'unitPrice' + line.id" [ngModel]="line.unitPrice" (ngModelChange)="updateLine(line, 'unitPrice', $event)" />
+          <input class="form-control" type="number" min="0" step="0.01" [name]="'discount' + line.id" [ngModel]="line.discount" (ngModelChange)="updateLine(line, 'discount', $event)" />
+          <input class="form-control" type="number" min="0" step="0.01" [name]="'taxRate' + line.id" [ngModel]="line.taxRate" (ngModelChange)="updateLine(line, 'taxRate', $event)" />
+          <strong>{{ line.total | currency:'DOP':'symbol':'1.2-2' }}</strong>
+          <button class="btn btn-outline-danger btn-sm" type="button" (click)="removeLine(line.id)" [disabled]="lines.length === 1" [attr.aria-label]="'Eliminar linea ' + (i + 1)">
+            <i class="bi bi-trash"></i>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel-card totals-card">
+      <div class="panel-card__header">
+        <div>
+          <h3>Totales</h3>
+          <p>Resumen calculado para el envio.</p>
+        </div>
+      </div>
+
+      <div class="total-line">
+        <span>Subtotal gravado</span>
+        <strong>{{ subtotal | currency:'DOP':'symbol':'1.2-2' }}</strong>
+      </div>
+      <div class="total-line">
+        <span>Descuentos</span>
+        <strong>{{ discountTotal | currency:'DOP':'symbol':'1.2-2' }}</strong>
+      </div>
+      <div class="total-line">
+        <span>ITBIS</span>
+        <strong>{{ taxTotal | currency:'DOP':'symbol':'1.2-2' }}</strong>
+      </div>
+      <div class="total-line total-line--grand">
+        <span>Total nota</span>
+        <strong>{{ grandTotal | currency:'DOP':'symbol':'1.2-2' }}</strong>
+      </div>
+
+      <label class="form-field mt-3">
+        <span>Notas internas</span>
+        <textarea class="form-control" name="notes" rows="3" [(ngModel)]="form.notes"></textarea>
+      </label>
+    </section>
+
+    <section class="panel-card response-card">
+      <div class="panel-card__header">
+        <div>
+          <h3>Respuesta DGII</h3>
+          <p>Resultado del ultimo intento de envio.</p>
+        </div>
+      </div>
+
+      <div class="response-grid">
+        <div><span>Estado</span><strong>{{ lastStatus }}</strong></div>
+        <div><span>Track ID</span><strong>{{ lastTrackId || '-' }}</strong></div>
+        <div><span>Codigo seguridad</span><strong>{{ lastSecurityCode || '-' }}</strong></div>
+      </div>
+
+      <a *ngIf="lastQrLink" class="qr-link" [href]="lastQrLink" target="_blank" rel="noopener noreferrer">
+        <i class="bi bi-qr-code me-1"></i>
+        Abrir QR DGII
+      </a>
+
+      <details class="json-preview" *ngIf="lastRequestJson">
+        <summary>Payload enviado</summary>
+        <pre>{{ lastRequestJson }}</pre>
+      </details>
+
+      <details class="json-preview" *ngIf="lastResponseJson">
+        <summary>Respuesta completa</summary>
+        <pre>{{ lastResponseJson }}</pre>
+      </details>
+    </section>
+  </form>
+</div>
