@@ -273,6 +273,14 @@ export class ControlFact implements OnInit {
     return String(match?.desNcf ?? '').trim();
   }
 
+  private codigoTipoNcfPorTipo(tipo: string, fallback: string): string {
+    const tipoNormalizado = String(tipo || '').trim().toUpperCase();
+    const item = (this.ncflist || []).find((ncf: any) =>
+      String(ncf?.tipo || '').trim().toUpperCase() === tipoNormalizado
+    );
+    return String(item?.codigo || item?.codNcf || fallback).trim();
+  }
+
   private tituloImpresionFactura(factura: any): string {
     const tipo = this.tipoNcfFactura(factura).toUpperCase();
     const descripcion = this.descripcionTipoNcfFactura(factura).toUpperCase();
@@ -1424,7 +1432,9 @@ export class ControlFact implements OnInit {
     const rnc = this.formularioFacturacion.get('fa_rncFact')?.value;
     if (!rnc) {
       this.obtenerNcf();
-      this.formularioFacturacion.patchValue({ fa_tipoNcf: 1 });
+      this.formularioFacturacion.patchValue({
+        fa_tipoNcf: this.codigoTipoNcfPorTipo('E32', '32'),
+      });
       this.formularioFacturacion.get('fa_tipoNcf')?.disable();
       // Si no se ha ingresado un RNC, pasamos el foco al siguiente elemento
       console.log('RNC vacío.');
@@ -1445,9 +1455,13 @@ export class ControlFact implements OnInit {
         // Si se encuentra el RNC, asignar el nombre del cliente
         const nombreEmpresa = response.data[0]?.rason;
         this.formularioFacturacion.patchValue({ fa_nomClie: nombreEmpresa });
-        this.formularioFacturacion.patchValue({ fa_tipoNcf: 2 });
+        this.formularioFacturacion.patchValue({
+          fa_tipoNcf: this.codigoTipoNcfPorTipo('E31', '31'),
+        });
         this.formularioFacturacion.get('fa_tipoNcf')?.enable();
-        this.ncflist = this.ncflist.filter((ncf) => ncf.codNcf !== 1);
+        this.ncflist = this.ncflist.filter((ncf) =>
+          String(ncf.tipo || '').trim().toUpperCase() !== 'E32'
+        );
         $('#input3').focus();
         $('#input3').select();
       } else {
@@ -2009,6 +2023,20 @@ export class ControlFact implements OnInit {
     this.formularioFacturacion.get('fa_nomVend')!.enable();
     this.formularioFacturacion.get('fa_ncfFact')!.enable();
 
+    const tipoNcfSeleccionado = String(
+      this.formularioFacturacion.get('fa_tipoNcf')?.value ?? '',
+    ).trim();
+    const tipoNcfNumero = Number(tipoNcfSeleccionado);
+    if (!tipoNcfSeleccionado || !Number.isFinite(tipoNcfNumero) || tipoNcfNumero <= 0) {
+      Swal.fire(
+        'Tipo de comprobante requerido',
+        'Debe seleccionar un tipo de comprobante valido antes de guardar la factura.',
+        'warning',
+      );
+      this.guardandoFactura = false;
+      return;
+    }
+
     const statusFactura = this.normalizarStatusFactura(this.formularioFacturacion.get('fa_status')?.value);
     if (codFact && statusFactura === 'S') {
       Swal.fire('Aviso', 'Una factura con status S no se puede editar.', 'warning');
@@ -2168,7 +2196,7 @@ export class ControlFact implements OnInit {
     if (isNaN(num)) {
       return ' ';
     }
-    return num.toLocaleString('en-US', { minimumFractionDigits: 2 });
+    return num.toLocaleString('es-DO', { minimumFractionDigits: 2 });
   }
 
   generatePDF(factura: FacturacionModelData) {
