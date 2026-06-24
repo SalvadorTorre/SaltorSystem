@@ -2227,6 +2227,7 @@ export class ServicioFacturacion {
   }
 
   buscarConsultaVentas(params: {
+    empresa?: string | null;
     sucursal?: number | string | null;
     fechaDesde?: string | null;
     fechaHasta?: string | null;
@@ -2238,6 +2239,7 @@ export class ServicioFacturacion {
     }
 
     const safeLimit = Math.max(10, Number(params.pageSize) || 500);
+    const empresa = String(params.empresa || '').trim();
     const sucursal = this.toNumberOrNull(params.sucursal);
     const fechaDesde = this.normalizeDate(params.fechaDesde);
     const fechaHasta = this.normalizeDate(params.fechaHasta);
@@ -2259,6 +2261,8 @@ export class ServicioFacturacion {
         } else {
           query = query.eq('fa_codempr', '__NO_TENANT__');
         }
+      } else if (empresa && empresa !== 'todas') {
+        query = query.eq('fa_codempr', empresa);
       }
 
       if (sucursal && sucursal > 0) {

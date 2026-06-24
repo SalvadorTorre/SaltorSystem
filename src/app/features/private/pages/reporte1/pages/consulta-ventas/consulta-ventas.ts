@@ -1,4 +1,7 @@
 import { Component, OnInit } from '@angular/core';
+import { forkJoin } from 'rxjs';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { ServicioFacturacion } from 'src/app/core/services/facturacion/factura/factura.service';
 import { SucursalesData } from 'src/app/core/services/mantenimientos/sucursal';
 import { ServicioSucursal } from 'src/app/core/services/mantenimientos/sucursal/sucursal.service';
@@ -6,12 +9,22 @@ import { ServicioSucursal } from 'src/app/core/services/mantenimientos/sucursal/
 interface VentaConsulta {
   fecha: string;
   documento: string;
+  empresaCodigo: string;
+  empresa: string;
   sucursalId: number;
   sucursal: string;
   vendedor: string;
   cliente: string;
   total: number;
   costo: number;
+}
+
+interface ResumenGrupoVentas {
+  codigo: string;
+  nombre: string;
+  total: number;
+  operaciones: number;
+  participacion: number;
 }
 
 @Component({
@@ -21,9 +34,11 @@ interface VentaConsulta {
 })
 export class ConsultaVentas implements OnInit {
   sucursales: SucursalesData[] = [];
+  empresas = ['todas'];
   vendedores = ['todos'];
 
   filtros = {
+    empresa: 'todas',
     sucursal: 0,
     vendedor: 'todos',
     fechaInicio: this.fechaHoy(),
@@ -33,6 +48,7 @@ export class ConsultaVentas implements OnInit {
   cargando = false;
   error = '';
   private ventas: VentaConsulta[] = [];
+  private ventasAyer: VentaConsulta[] = [];
   resultados: VentaConsulta[] = [];
   pageSize = 10;
   currentPage = 1;
@@ -67,16 +83,32 @@ export class ConsultaVentas implements OnInit {
     this.cargando = true;
     this.error = '';
 
-    this.facturacionSrv.buscarConsultaVentas({
+    const paramsBase = {
+      empresa: this.filtros.empresa,
       sucursal: this.filtros.sucursal,
-      fechaDesde: this.filtros.fechaInicio,
-      fechaHasta: this.filtros.fechaFin,
-      pageSize: 5000,
+      pageSize: 10000,
       incluirTodasLasEmpresas: true
+    };
+    const ayer = this.fechaAyer();
+
+    forkJoin({
+      periodo: this.facturacionSrv.buscarConsultaVentas({
+        ...paramsBase,
+        fechaDesde: this.filtros.fechaInicio,
+        fechaHasta: this.filtros.fechaFin,
+      }),
+      ayer: this.facturacionSrv.buscarConsultaVentas({
+        ...paramsBase,
+        fechaDesde: ayer,
+        fechaHasta: ayer,
+      }),
     }).subscribe({
-      next: (resp: any) => {
-        const rows = Array.isArray(resp?.data) ? resp.data : [];
+      next: ({ periodo, ayer }: any) => {
+        const rows = Array.isArray(periodo?.data) ? periodo.data : [];
+        const rowsAyer = Array.isArray(ayer?.data) ? ayer.data : [];
         this.ventas = rows.map((row: any) => this.mapVenta(row));
+        this.ventasAyer = rowsAyer.map((row: any) => this.mapVenta(row));
+        this.actualizarEmpresasDesdeVentas();
         this.actualizarVendedoresDesdeVentas();
         this.aplicarFiltroLocal();
         this.cargando = false;
@@ -84,6 +116,7 @@ export class ConsultaVentas implements OnInit {
       error: (err: any) => {
         this.error = String(err?.message || 'No se pudieron cargar las ventas.');
         this.ventas = [];
+        this.ventasAyer = [];
         this.resultados = [];
         this.currentPage = 1;
         this.cargando = false;
@@ -95,6 +128,15 @@ export class ConsultaVentas implements OnInit {
     this.vendedores = this.buildOptions(this.ventas.map((venta) => venta.vendedor), 'todos');
     if (!this.vendedores.includes(this.filtros.vendedor)) {
       this.filtros.vendedor = 'todos';
+    }
+  }
+
+  actualizarEmpresasDesdeVentas(): void {
+    const empresasDesdeSucursales = this.sucursales.map((sucursal) => sucursal.cod_empre);
+    const empresasDesdeVentas = this.ventas.map((venta) => venta.empresaCodigo);
+    this.empresas = this.buildOptions([...empresasDesdeSucursales, ...empresasDesdeVentas], 'todas');
+    if (!this.empresas.includes(this.filtros.empresa)) {
+      this.filtros.empresa = 'todas';
     }
   }
 
@@ -113,6 +155,7 @@ export class ConsultaVentas implements OnInit {
 
   limpiar(): void {
     this.filtros = {
+      empresa: 'todas',
       sucursal: 0,
       vendedor: 'todos',
       fechaInicio: this.fechaHoy(),
@@ -125,8 +168,27 @@ export class ConsultaVentas implements OnInit {
     return this.resultados.reduce((total, venta) => total + venta.total, 0);
   }
 
+  get totalVendidoAyer(): number {
+    return this.ventasAyer
+      .filter((venta) => this.filtros.vendedor === 'todos' || venta.vendedor === this.filtros.vendedor)
+      .reduce((total, venta) => total + venta.total, 0);
+  }
+
+  get diferenciaVsAyer(): number {
+    return this.totalVendido - this.totalVendidoAyer;
+  }
+
+  get porcentajeVsAyer(): number {
+    if (!this.totalVendidoAyer) return this.totalVendido ? 100 : 0;
+    return (this.diferenciaVsAyer / this.totalVendidoAyer) * 100;
+  }
+
   get operaciones(): number {
     return this.resultados.length;
+  }
+
+  get ticketPromedio(): number {
+    return this.operaciones ? this.totalVendido / this.operaciones : 0;
   }
 
   get totalCosto(): number {
@@ -146,6 +208,24 @@ export class ConsultaVentas implements OnInit {
 
   get vendedoresActivos(): number {
     return new Set(this.resultados.map((venta) => venta.vendedor)).size;
+  }
+
+  get sucursalesActivas(): number {
+    return new Set(this.resultados.map((venta) => venta.sucursalId).filter(Boolean)).size;
+  }
+
+  get resumenPorEmpresa(): ResumenGrupoVentas[] {
+    return this.resumenPor((venta) => ({
+      codigo: venta.empresaCodigo || 'N/D',
+      nombre: venta.empresa || 'Sin empresa',
+    }));
+  }
+
+  get resumenPorSucursal(): ResumenGrupoVentas[] {
+    return this.resumenPor((venta) => ({
+      codigo: String(venta.sucursalId || 'N/D'),
+      nombre: venta.sucursal || 'Sin sucursal',
+    }));
   }
 
   get totalPaginas(): number {
@@ -207,11 +287,106 @@ export class ConsultaVentas implements OnInit {
     }).format(valor);
   }
 
+  variacionClase(value: number): string {
+    if (value > 0) return 'is-up';
+    if (value < 0) return 'is-down';
+    return 'is-flat';
+  }
+
+  exportarVentas(): void {
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const generado = new Date().toLocaleString('es-DO');
+    const periodo = `${this.formatFecha(this.filtros.fechaInicio)} - ${this.formatFecha(this.filtros.fechaFin)}`;
+    const empresa = this.filtros.empresa === 'todas' ? 'Todas las empresas' : this.filtros.empresa;
+    const sucursal = this.filtros.sucursal ? this.nombreSucursal(this.filtros.sucursal) : 'Todas las sucursales';
+    const vendedor = this.filtros.vendedor === 'todos' ? 'Todos los vendedores' : this.filtros.vendedor;
+
+    doc.setFillColor(15, 23, 42);
+    doc.rect(0, 0, pageWidth, 30, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(16);
+    doc.text('Dashboard de ventas', 14, 13);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.text(`Periodo: ${periodo}`, 14, 20);
+    doc.text(`Generado: ${generado}`, pageWidth - 14, 20, { align: 'right' });
+
+    doc.setTextColor(15, 23, 42);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.text('Filtros aplicados', 14, 38);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.text(`Empresa: ${empresa}`, 14, 44);
+    doc.text(`Sucursal: ${sucursal}`, 88, 44);
+    doc.text(`Vendedor: ${vendedor}`, 176, 44);
+
+    const kpis = [
+      ['Total vendido', this.formatMoney(this.totalVendido)],
+      ['Ventas ayer', this.formatMoney(this.totalVendidoAyer)],
+      ['Diferencia vs ayer', this.formatMoney(this.diferenciaVsAyer)],
+      ['Facturas', String(this.operaciones)],
+      ['Ticket promedio', this.formatMoney(this.ticketPromedio)],
+      ['Margen', `${this.margenVentas.toFixed(2)}%`],
+    ];
+    this.dibujarKpisPdf(doc, kpis, 14, 52, pageWidth - 28);
+
+    autoTable(doc, {
+      startY: 78,
+      head: [['Fecha', 'Empresa', 'Sucursal', 'Factura', 'Vendedor', 'Cliente', 'Total', 'Costo', 'Margen']],
+      body: this.resultados.map((venta) => [
+        this.formatFecha(venta.fecha),
+        venta.empresa,
+        venta.sucursal,
+        venta.documento,
+        venta.vendedor,
+        venta.cliente,
+        this.formatMoney(venta.total),
+        this.formatMoney(venta.costo),
+        `${this.margenFactura(venta).toFixed(2)}%`,
+      ]),
+      theme: 'grid',
+      headStyles: {
+        fillColor: [21, 94, 117],
+        fontStyle: 'bold',
+        fontSize: 7.5,
+        textColor: 255,
+      },
+      bodyStyles: {
+        fontSize: 7.2,
+        textColor: [30, 41, 59],
+      },
+      alternateRowStyles: {
+        fillColor: [248, 250, 252],
+      },
+      columnStyles: {
+        0: { cellWidth: 18 },
+        1: { cellWidth: 22 },
+        2: { cellWidth: 30 },
+        3: { cellWidth: 24 },
+        4: { cellWidth: 34 },
+        5: { cellWidth: 48 },
+        6: { halign: 'right', cellWidth: 25 },
+        7: { halign: 'right', cellWidth: 25 },
+        8: { halign: 'right', cellWidth: 18 },
+      },
+      margin: { left: 14, right: 14 },
+      didDrawPage: () => this.dibujarPiePdf(doc),
+    });
+
+    doc.save(`dashboard-ventas-${this.filtros.fechaInicio}-${this.filtros.fechaFin}.pdf`);
+  }
+
   private mapVenta(row: any): VentaConsulta {
     const sucursalId = Number(row?.fa_codSucu ?? row?.fa_codsucu ?? 0) || 0;
+    const empresaCodigo = String(row?.fa_codEmpr ?? row?.fa_codempr ?? '').trim() || 'N/D';
     return {
       fecha: this.normalizarFecha(row?.fa_fecFact ?? row?.fa_fecfact),
       documento: String(row?.fa_codFact ?? row?.fa_codfact ?? ''),
+      empresaCodigo,
+      empresa: this.nombreEmpresa(empresaCodigo),
       sucursalId,
       sucursal: this.nombreSucursal(sucursalId),
       vendedor: String(row?.fa_nomVend ?? row?.fa_nomvend ?? row?.fa_codVend ?? row?.fa_codvend ?? 'Sin vendedor').trim() || 'Sin vendedor',
@@ -242,11 +417,80 @@ export class ConsultaVentas implements OnInit {
     return sucursal?.nom_sucursal || (codigo ? `Sucursal ${codigo}` : 'Sin sucursal');
   }
 
+  nombreEmpresa(codigo: string): string {
+    const value = String(codigo || '').trim();
+    if (!value || value === 'N/D') return 'Sin empresa';
+    return value;
+  }
+
+  private resumenPor(selector: (venta: VentaConsulta) => { codigo: string; nombre: string }): ResumenGrupoVentas[] {
+    const map = new Map<string, ResumenGrupoVentas>();
+    this.resultados.forEach((venta) => {
+      const group = selector(venta);
+      const key = group.codigo || group.nombre;
+      const actual = map.get(key) || {
+        codigo: group.codigo,
+        nombre: group.nombre,
+        total: 0,
+        operaciones: 0,
+        participacion: 0,
+      };
+      actual.total += venta.total;
+      actual.operaciones += 1;
+      map.set(key, actual);
+    });
+    return Array.from(map.values())
+      .map((item) => ({
+        ...item,
+        participacion: this.totalVendido ? (item.total / this.totalVendido) * 100 : 0,
+      }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 6);
+  }
+
+  private dibujarKpisPdf(doc: jsPDF, kpis: string[][], x: number, y: number, totalWidth: number): void {
+    const gap = 3;
+    const width = (totalWidth - gap * (kpis.length - 1)) / kpis.length;
+    kpis.forEach(([label, value], index) => {
+      const left = x + index * (width + gap);
+      doc.setFillColor(index === 0 ? 236 : 248, index === 0 ? 253 : 250, index === 0 ? 245 : 252);
+      doc.setDrawColor(219, 229, 239);
+      doc.roundedRect(left, y, width, 17, 2.5, 2.5, 'FD');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(6.8);
+      doc.setTextColor(100, 116, 139);
+      doc.text(label.toUpperCase(), left + 3, y + 6);
+      doc.setTextColor(15, 23, 42);
+      doc.setFontSize(8.6);
+      doc.text(value, left + 3, y + 13);
+    });
+  }
+
+  private dibujarPiePdf(doc: jsPDF): void {
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const pageNumber = doc.getNumberOfPages();
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7);
+    doc.setTextColor(100, 116, 139);
+    doc.text('Saltor System · Reportes comerciales', 14, pageHeight - 8);
+    doc.text(`Pagina ${pageNumber}`, pageWidth - 14, pageHeight - 8, { align: 'right' });
+  }
+
   private fechaHoy(): string {
     const hoy = new Date();
     const yyyy = hoy.getFullYear();
     const mm = String(hoy.getMonth() + 1).padStart(2, '0');
     const dd = String(hoy.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  }
+
+  private fechaAyer(): string {
+    const ayer = new Date();
+    ayer.setDate(ayer.getDate() - 1);
+    const yyyy = ayer.getFullYear();
+    const mm = String(ayer.getMonth() + 1).padStart(2, '0');
+    const dd = String(ayer.getDate()).padStart(2, '0');
     return `${yyyy}-${mm}-${dd}`;
   }
 }

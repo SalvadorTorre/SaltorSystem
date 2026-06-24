@@ -1,136 +1,149 @@
-<section class="ventas-vendedor">
-  <div class="ventas-header">
-    <div class="ventas-header__icon">
-      <i class="bi bi-person-lines-fill"></i>
-    </div>
-    <div>
+<section class="seller-board">
+  <div class="seller-hero">
+    <div class="seller-hero__copy">
+      <span class="eyebrow">Rendimiento comercial</span>
       <h2>Ventas por vendedor</h2>
-      <p>Selecciona una sucursal y consulta el rendimiento por vendedor</p>
+      <p>Ranking por facturación, margen, sucursal y participación del periodo.</p>
+    </div>
+
+    <div class="seller-hero__side">
+      <div class="seller-hero__leader" *ngIf="vendedorLider as lider">
+        <span>Vendedor líder</span>
+        <strong>{{ lider.vendedor }}</strong>
+        <small>{{ formatMoney(lider.total) }} · {{ participacionVendedor(lider) | number:'1.1-1' }}%</small>
+      </div>
+
+      <button type="button" class="btn btn-export-pdf" (click)="exportarPdf()" [disabled]="!vendedores.length || cargando">
+        <i class="bi bi-file-earmark-pdf"></i>
+        Exportar PDF
+      </button>
     </div>
   </div>
 
-  <div class="panel filtros-panel">
-    <h5>Filtros de busqueda</h5>
+  <div class="seller-toolbar">
+    <label>
+      <span>Empresa</span>
+      <select class="form-select" [(ngModel)]="filtros.empresa">
+        <option value="todas">Todas</option>
+        <option *ngFor="let empresa of empresas" [value]="empresa" [hidden]="empresa === 'todas'">
+          {{ empresa }}
+        </option>
+      </select>
+    </label>
 
-    <div class="row g-3 align-items-end">
-      <div class="col-12 col-md-4">
-        <label class="form-label">Sucursal</label>
-        <select class="form-select" [(ngModel)]="filtros.sucursal">
-          <option *ngFor="let sucursal of sucursales" [ngValue]="sucursal.cod_sucursal">
-            {{ sucursal.nom_sucursal }}
-          </option>
-        </select>
-      </div>
+    <label>
+      <span>Sucursal</span>
+      <select class="form-select" [(ngModel)]="filtros.sucursal">
+        <option [ngValue]="0">Todas</option>
+        <option *ngFor="let sucursal of sucursales" [ngValue]="sucursal.cod_sucursal">
+          {{ sucursal.nom_sucursal }}
+        </option>
+      </select>
+    </label>
 
-      <div class="col-12 col-md-4">
-        <label class="form-label">Periodo</label>
-        <div class="periodo-wrap">
-          <input class="form-control" type="date" [(ngModel)]="filtros.fechaInicio" aria-label="Fecha inicial">
-          <input class="form-control" type="date" [(ngModel)]="filtros.fechaFin" aria-label="Fecha final">
-        </div>
-      </div>
+    <label>
+      <span>Desde</span>
+      <input class="form-control" type="date" [(ngModel)]="filtros.fechaInicio" />
+    </label>
 
-      <div class="col-12 col-md-4">
-        <div class="acciones-filtro">
-          <button type="button" class="btn btn-consultar" (click)="consultar()" [disabled]="!filtros.sucursal || cargando">
-            <i class="bi bi-search"></i>
-            Consultar
-          </button>
-          <button type="button" class="btn btn-limpiar" (click)="limpiar()" title="Limpiar filtros">
-            <i class="bi bi-arrow-clockwise"></i>
-          </button>
-        </div>
-      </div>
+    <label>
+      <span>Hasta</span>
+      <input class="form-control" type="date" [(ngModel)]="filtros.fechaFin" />
+    </label>
+
+    <div class="toolbar-actions">
+      <button type="button" class="btn btn-run" (click)="consultar()" [disabled]="cargando">
+        <i class="bi bi-search"></i>
+        Consultar
+      </button>
+      <button type="button" class="btn btn-clear" (click)="limpiar()" [disabled]="cargando">
+        Limpiar
+      </button>
     </div>
   </div>
 
-  <div class="row g-3 resumen-row">
-    <div class="col-12 col-md-6 col-xl-3">
-      <article class="kpi-card">
-        <span class="kpi-icon"><i class="bi bi-wallet2"></i></span>
-        <div>
-          <p>Total vendido</p>
-          <strong>{{ formatMoney(totalVendido) }}</strong>
-        </div>
-      </article>
-    </div>
-
-    <div class="col-12 col-md-6 col-xl-3">
-      <article class="kpi-card">
-        <span class="kpi-icon"><i class="bi bi-receipt"></i></span>
-        <div>
-          <p>Facturas</p>
-          <strong>{{ totalFacturas }}</strong>
-        </div>
-      </article>
-    </div>
-
-    <div class="col-12 col-md-6 col-xl-3">
-      <article class="kpi-card">
-        <span class="kpi-icon"><i class="bi bi-percent"></i></span>
-        <div>
-          <p>Margen ventas</p>
-          <strong>{{ margenVentas | number:'1.2-2' }}%</strong>
-        </div>
-      </article>
-    </div>
-
-    <div class="col-12 col-md-6 col-xl-3">
-      <article class="kpi-card">
-        <span class="kpi-icon"><i class="bi bi-people"></i></span>
-        <div>
-          <p>Vendedores</p>
-          <strong>{{ vendedores.length }}</strong>
-        </div>
-      </article>
-    </div>
+  <div *ngIf="error" class="alert alert-danger py-2 mb-3">
+    {{ error }}
   </div>
 
-  <div class="panel vendedores-panel">
-    <div class="vendedores-title">
+  <div class="seller-kpis">
+    <article>
+      <span>Total vendido</span>
+      <strong>{{ formatMoney(totalVendido) }}</strong>
+      <small>{{ nombreEmpresaSeleccionada() }} · {{ nombreSucursalSeleccionada() }}</small>
+    </article>
+    <article>
+      <span>Facturas</span>
+      <strong>{{ totalFacturas | number }}</strong>
+      <small>{{ formatMoney(ticketPromedio) }} ticket promedio</small>
+    </article>
+    <article>
+      <span>Margen bruto</span>
+      <strong>{{ margenVentas | number:'1.2-2' }}%</strong>
+      <small>Costo: {{ formatMoney(totalCosto) }}</small>
+    </article>
+    <article>
+      <span>Cobertura</span>
+      <strong>{{ vendedores.length }}</strong>
+      <small>{{ sucursalesActivas }} sucursales activas</small>
+    </article>
+  </div>
+
+  <section class="seller-ranking">
+    <div class="ranking-header">
       <div>
-        <h5>Resumen por vendedor</h5>
-        <span>{{ nombreSucursalSeleccionada() }}</span>
+        <span class="eyebrow eyebrow--dark">Ranking comparativo</span>
+        <h3>Desempeño por vendedor</h3>
       </div>
-      <span *ngIf="cargando" class="estado-carga">Cargando ventas...</span>
-    </div>
-
-    <div *ngIf="error" class="alert alert-danger py-2 mb-3">
-      {{ error }}
+      <span *ngIf="cargando" class="estado-carga">
+        <i class="bi bi-arrow-clockwise spin"></i>
+        Actualizando ventas
+      </span>
     </div>
 
     <div *ngIf="!cargando && !vendedores.length" class="empty-state">
-      No hay ventas para la sucursal y periodo seleccionado.
+      <i class="bi bi-inbox"></i>
+      No hay ventas para los filtros seleccionados.
     </div>
 
-    <div class="row g-3" *ngIf="vendedores.length">
-      <div class="col-12 col-md-6 col-xl-4" *ngFor="let vendedor of vendedores; let i = index">
-        <article class="vendedor-card">
-          <div class="vendedor-card__top">
-            <span class="vendedor-avatar">{{ i + 1 }}</span>
-            <div>
-              <p>Vendedor</p>
-              <h4>{{ vendedor.vendedor }}</h4>
-            </div>
-          </div>
+    <div class="seller-list" *ngIf="vendedores.length">
+      <article class="seller-row" *ngFor="let vendedor of vendedores; let i = index">
+        <div class="seller-rank" [class.is-top]="i === 0">
+          <span>#{{ i + 1 }}</span>
+        </div>
 
-          <div class="vendedor-metric principal">
-            <span>Total venta</span>
+        <div class="seller-identity">
+          <strong>{{ vendedor.vendedor }}</strong>
+          <small>
+            {{ vendedor.empresas.length }} empresa(s) · {{ vendedor.sucursales.length }} sucursal(es)
+          </small>
+        </div>
+
+        <div class="seller-progress">
+          <div class="progress-meta">
+            <span>{{ participacionVendedor(vendedor) | number:'1.1-1' }}% del total</span>
             <strong>{{ formatMoney(vendedor.total) }}</strong>
           </div>
-
-          <div class="vendedor-grid">
-            <div class="vendedor-metric">
-              <span>Facturas</span>
-              <strong>{{ vendedor.facturas }}</strong>
-            </div>
-            <div class="vendedor-metric">
-              <span>Margen</span>
-              <strong>{{ margenVendedor(vendedor) | number:'1.2-2' }}%</strong>
-            </div>
+          <div class="progress-track">
+            <span [style.width.%]="barraVendedor(vendedor)"></span>
           </div>
-        </article>
-      </div>
+        </div>
+
+        <div class="seller-stats">
+          <div>
+            <span>Facturas</span>
+            <strong>{{ vendedor.facturas | number }}</strong>
+          </div>
+          <div>
+            <span>Ticket prom.</span>
+            <strong>{{ formatMoney(ticketPromedioVendedor(vendedor)) }}</strong>
+          </div>
+          <div>
+            <span>Margen</span>
+            <strong>{{ margenVendedor(vendedor) | number:'1.2-2' }}%</strong>
+          </div>
+        </div>
+      </article>
     </div>
-  </div>
+  </section>
 </section>
