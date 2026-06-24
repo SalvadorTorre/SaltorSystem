@@ -41,7 +41,14 @@
         <label class="field-less">
           Porcentaje menos (%)
           <div class="percent-input">
-            <input type="number" min="0" step="0.0001" name="porcentaje_menos" [ngModel]="actual.porcentaje_menos" readonly />
+            <input
+              type="number"
+              min="0"
+              step="0.0001"
+              name="porcentaje_menos"
+              [(ngModel)]="actual.porcentaje_menos"
+              [readonly]="!permiteEditarPorcentajeMenos"
+            />
             <span>%</span>
           </div>
         </label>

@@ -67,39 +67,20 @@ create unique index if not exists ux_itbis_nivel_activo
   on myappdb.itbis (lower(nivel))
   where lower(estado) = 'activo';
 
-create or replace function myappdb.set_itbis_calculados()
-returns trigger
-language plpgsql
-as $$
-begin
-  new.codigo := upper(trim(coalesce(new.codigo, '')));
-  new.descripcion := trim(coalesce(new.descripcion, ''));
-  new.nivel := coalesce(nullif(trim(new.nivel), ''), 'General');
-  new.estado := coalesce(nullif(trim(new.estado), ''), 'Activo');
-  new.porcentaje := coalesce(new.porcentaje, 0);
-  new.porcentaje_menos := round(new.porcentaje / (1 + (new.porcentaje / 100)), 4);
-  new.updated_at := now();
-  return new;
-end;
-$$;
-
 drop trigger if exists trg_itbis_calculados on myappdb.itbis;
+drop function if exists myappdb.set_itbis_calculados();
 
-create trigger trg_itbis_calculados
-before insert or update on myappdb.itbis
-for each row
-execute function myappdb.set_itbis_calculados();
-
-insert into myappdb.itbis (codigo, descripcion, porcentaje, nivel, estado, fecha_inicio)
+insert into myappdb.itbis (codigo, descripcion, porcentaje, porcentaje_menos, nivel, estado, fecha_inicio)
 values
-  ('ITBIS-01', 'ITBIS General', 18, 'General', 'Activo', '2024-01-01'),
-  ('ITBIS-02', 'ITBIS Reducido', 16, 'Reducido', 'Activo', '2024-01-01'),
-  ('ITBIS-03', 'ITBIS 0% (Exento)', 0, 'Exento', 'Activo', '2024-01-01')
+  ('ITBIS-01', 'ITBIS General', 18, 15.2542, 'General', 'Activo', '2024-01-01'),
+  ('ITBIS-02', 'ITBIS Reducido', 16, 13.7931, 'Reducido', 'Activo', '2024-01-01'),
+  ('ITBIS-03', 'ITBIS 0% (Exento)', 0, 0, 'Exento', 'Activo', '2024-01-01')
 on conflict (codigo)
 do update
 set
   descripcion = excluded.descripcion,
   porcentaje = excluded.porcentaje,
+  porcentaje_menos = excluded.porcentaje_menos,
   nivel = excluded.nivel,
   estado = excluded.estado,
   fecha_inicio = excluded.fecha_inicio;
@@ -107,7 +88,6 @@ set
 grant usage on schema myappdb to anon, authenticated;
 grant select, insert, update, delete on table myappdb.itbis to anon, authenticated;
 grant usage, select on all sequences in schema myappdb to anon, authenticated;
-grant execute on function myappdb.set_itbis_calculados() to anon, authenticated;
 
 alter table myappdb.itbis enable row level security;
 

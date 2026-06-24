@@ -43,6 +43,10 @@ export class ItbisPage implements OnInit {
     return Number(this.actual.porcentaje || 0).toFixed(2);
   }
 
+  get permiteEditarPorcentajeMenos(): boolean {
+    return Number(this.actual.porcentaje || 0) === 0;
+  }
+
   cargarItems(): void {
     this.cargando = true;
     this.itbisSrv.buscarTodos().subscribe({
@@ -173,6 +177,10 @@ export class ItbisPage implements OnInit {
   }
 
   actualizarPorcentajeMenos(): void {
+    if (this.permiteEditarPorcentajeMenos) {
+      return;
+    }
+
     this.actual.porcentaje_menos = this.calcularPorcentajeMenos(this.actual.porcentaje);
   }
 

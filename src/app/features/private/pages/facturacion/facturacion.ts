@@ -2559,18 +2559,18 @@ export class Facturacion implements OnInit {
   }
   actualizarTotales() {
     this.totalGral = this.items.reduce(
-      (sum, item) => sum + (Number(item.total) || 0),
+      (sum, item) => sum + this.totalFacturableItem(item),
       0,
     );
     this.totalItbis = this.items.reduce(
       (sum, item) =>
-        sum + this.calcularItbisRestando(Number(item.total) || 0),
+        sum + this.calcularItbisParaTotalFacturable(this.totalFacturableItem(item)),
       0,
     );
     this.subTotal = this.items.reduce(
       (sum, item) => {
-        const totalItem = Number(item.total) || 0;
-        return sum + (totalItem - this.calcularItbisRestando(totalItem));
+        const totalItem = this.totalFacturableItem(item);
+        return sum + (totalItem - this.calcularItbisParaTotalFacturable(totalItem));
       },
       0,
     );
@@ -2612,6 +2612,43 @@ export class Facturacion implements OnInit {
 
   private calcularItbisRestando(total: number): number {
     return this.redondear(Number(total || 0) * this.tasaItbisRestar());
+  }
+
+  private calcularItbisParaTotalFacturable(total: number): number {
+    return this.esTipoNcf44() ? 0 : this.calcularItbisRestando(total);
+  }
+
+  private precioFacturableItem(item: interfaceDetalleModel): number {
+    const precio = Number((item as any)?.precio ?? (item as any)?.df_preMerc ?? 0) || 0;
+    if (!this.esTipoNcf44()) {
+      return this.redondear(precio);
+    }
+
+    const descuentoItbis = precio * this.tasaItbisRestar();
+    return this.redondear(Math.max(precio - descuentoItbis, 0));
+  }
+
+  private totalFacturableItem(item: interfaceDetalleModel): number {
+    const cantidad = Number((item as any)?.cantidad ?? (item as any)?.df_canMerc ?? 0) || 0;
+    return this.redondear(cantidad * this.precioFacturableItem(item));
+  }
+
+  private crearDetalleParaGuardar(): interfaceDetalleModel[] {
+    if (!this.esTipoNcf44()) {
+      return this.items;
+    }
+
+    return this.items.map((item) => ({
+      ...item,
+      precio: this.precioFacturableItem(item),
+      total: this.totalFacturableItem(item),
+    }));
+  }
+
+  private esTipoNcf44(): boolean {
+    const controlValue = this.formularioFacturacion?.get('fa_tipoNcf')?.value;
+    const rawValue = this.formularioFacturacion?.getRawValue?.()?.fa_tipoNcf;
+    return Number(String(controlValue ?? rawValue ?? '').trim()) === 44;
   }
 
   private tasaItbisSumar(): number {
@@ -2752,12 +2789,13 @@ export class Facturacion implements OnInit {
       );
     }
     facturaPayload.fa_rncFact = facturaPayload.fa_rncFact || '';
+    const detalleParaGuardar = this.crearDetalleParaGuardar();
     const detalleModificado =
       this.modoedicionFacturacion &&
-      this.serializarDetalleEdicion(this.items) !== this.detalleOriginalEdicion;
+      this.serializarDetalleEdicion(detalleParaGuardar) !== this.detalleOriginalEdicion;
     const datosParaGuardar: any = {
       factura: facturaPayload,
-      detalle: this.items,
+      detalle: detalleParaGuardar,
     };
     if (this.modoedicionFacturacion) {
       const facturaCambios = this.construirCambiosFactura(facturaPayload);
