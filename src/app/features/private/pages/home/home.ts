@@ -740,15 +740,25 @@ export class Home implements OnInit {
   }
 
   private cargarDashboardReal(): void {
+    const sucursalId = this.currentSucursalId();
+
     forkJoin({
-      sucursales: this.servicioSucursal.buscarTodasSucursal().pipe(catchError(() => of({ data: [] }))),
+      sucursales: (
+        sucursalId
+          ? this.servicioSucursal.buscarsucursal(String(sucursalId))
+          : this.servicioSucursal.buscarTodasSucursal()
+      ).pipe(catchError(() => of({ data: [] }))),
       facturas: this.servicioFacturacion.buscarFacturasParaCierre(10000).pipe(catchError(() => of({ data: [] }))),
-      usuarios: this.servicioUsuario.buscarTodosUsuario(1, 10000).pipe(catchError(() => of({ data: [] }))),
+      usuarios: (
+        sucursalId
+          ? this.servicioUsuario.buscarUsuariosPorSucursal(sucursalId, 10000)
+          : this.servicioUsuario.buscarTodosUsuario(1, 10000)
+      ).pipe(catchError(() => of({ data: [] }))),
       tipos: this.servicioTipousuario.obtenerTodosTipousuario().pipe(catchError(() => of({ data: [] }))),
     }).subscribe(({ sucursales, facturas, usuarios, tipos }) => {
-      const sucursalesList = this.unwrapList(sucursales);
-      const facturasList = this.unwrapList(facturas);
-      const usuariosList = this.unwrapList(usuarios);
+      const sucursalesList = this.filtrarSucursalesPorUsuario(this.unwrapList(sucursales), sucursalId);
+      const facturasList = this.filtrarFacturasPorSucursal(this.unwrapList(facturas), sucursalId);
+      const usuariosList = this.filtrarUsuariosPorSucursal(this.unwrapList(usuarios), sucursalId);
       const tiposList = this.unwrapList(tipos);
       const facturasMes = facturasList.filter((factura) => this.esFechaDelMesActual(factura?.fa_fecFact ?? factura?.fa_fecfact));
 
@@ -848,6 +858,7 @@ export class Home implements OnInit {
   private unwrapList(response: any): any[] {
     if (Array.isArray(response)) return response;
     if (Array.isArray(response?.data)) return response.data;
+    if (response?.data && typeof response.data === 'object') return [response.data];
     return [];
   }
 
@@ -867,6 +878,21 @@ export class Home implements OnInit {
   private buscarSucursalActual(sucursales: any[], sucursalId: number): any {
     if (!sucursalId) return sucursales[0] || null;
     return sucursales.find((sucursal) => Number(sucursal?.cod_sucursal ?? sucursal?.id ?? 0) === sucursalId) || null;
+  }
+
+  private filtrarSucursalesPorUsuario(sucursales: any[], sucursalId: number): any[] {
+    if (!sucursalId) return sucursales;
+    return sucursales.filter((sucursal) => Number(sucursal?.cod_sucursal ?? sucursal?.id ?? 0) === sucursalId);
+  }
+
+  private filtrarFacturasPorSucursal(facturas: any[], sucursalId: number): any[] {
+    if (!sucursalId) return [];
+    return facturas.filter((factura) => this.numeroSucursalFactura(factura) === sucursalId);
+  }
+
+  private filtrarUsuariosPorSucursal(usuarios: any[], sucursalId: number): any[] {
+    if (!sucursalId) return [];
+    return usuarios.filter((usuario) => Number(usuario?.sucursalid ?? usuario?.sucursal ?? 0) === sucursalId);
   }
 
   private metaVentaSucursal(sucursal: any): number {

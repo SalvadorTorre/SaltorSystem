@@ -342,6 +342,32 @@ export class ServicioUsuario {
     );
   }
 
+  buscarUsuariosPorSucursal(sucursalId: number, pageSize: number = 10000): Observable<any> {
+    const sucursal = Number(sucursalId || 0);
+
+    return from((async () => {
+      if (!Number.isFinite(sucursal) || sucursal <= 0) {
+        return [];
+      }
+
+      const { data, error } = await this.db
+        .from("usuario")
+        .select("*")
+        .eq("sucursalid", sucursal)
+        .order("codusuario", { ascending: true })
+        .limit(Math.max(1, Number(pageSize) || 10000));
+
+      if (error) throw error;
+      return data || [];
+    })()).pipe(
+      map((rows: any[]) => ({
+        status: "success",
+        code: 200,
+        data: rows.map((row: any) => this.normalizarUsuario(row))
+      }))
+    );
+  }
+
   guardarUsuario(usuario: ModeloUsuarioData): Observable<any> {
     return from((async () => {
       try {

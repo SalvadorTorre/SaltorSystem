@@ -7,6 +7,7 @@ import { EmpresaModelData, SucursalesData } from 'src/app/core/services/mantenim
 import { ServicioSucursal } from 'src/app/core/services/mantenimientos/sucursal/sucursal.service';
 import { ServicioContFactura } from 'src/app/core/services/mantenimientos/contfactura/contfactura.service';
 import { ServicioEncf } from 'src/app/core/services/mantenimientos/encf/encf.service';
+import { ServicioTiponcf, TiponcfData } from 'src/app/core/services/mantenimientos/tiponcf/tiponcf.service';
 declare var $: any;
 
 
@@ -54,6 +55,7 @@ export class Empresas implements OnInit {
   encfSeleccionado: any | null = null;
   encfEditId: number | null = null;
   formEncf!: FormGroup;
+  tiposNcf: TiponcfData[] = [];
 
   constructor(
     private fb: FormBuilder,
@@ -61,6 +63,7 @@ export class Empresas implements OnInit {
     private servicioSucursal: ServicioSucursal,
     private contSrv: ServicioContFactura,
     private servicioEncf: ServicioEncf,
+    private servicioTiponcf: ServicioTiponcf,
   ) {
     this.crearFormularioEmpresa();
     this.crearformularioSucursal();
@@ -148,7 +151,10 @@ export class Empresas implements OnInit {
   }
 
   seleccionarEmpresa(empresas: any) { this.selectedEmpresa = Empresas; }
-  ngOnInit(): void { this.buscarTodasEmpresa(1); }
+  ngOnInit(): void {
+    this.buscarTodasEmpresa(1);
+    this.cargarTiposNcf();
+  }
 
   crearFormularioEmpresa() {
     this.formularioEmpresa = this.fb.group({
@@ -527,6 +533,20 @@ export class Empresas implements OnInit {
   }
 
   // ===================== ENCF Empresa =====================
+  private cargarTiposNcf(): void {
+    this.servicioTiponcf.obtenerTodos().subscribe({
+      next: (resp: any) => {
+        const data = Array.isArray(resp) ? resp : resp?.data;
+        this.tiposNcf = ((data || []) as TiponcfData[])
+          .filter((tipo) => !!this.valorTipoEncf(tipo))
+          .sort((a, b) => Number(a?.codigo || a?.idNcf || 0) - Number(b?.codigo || b?.idNcf || 0));
+      },
+      error: () => {
+        this.tiposNcf = [];
+      }
+    });
+  }
+
   private cargarEncfEmpresa(codEmpresa: string | undefined): void {
     const cod = String(codEmpresa || this.empresaid || this.formularioEmpresa.getRawValue()?.cod_empre || '').trim();
     if (!cod) { this.encfList = []; return; }
@@ -549,6 +569,34 @@ export class Empresas implements OnInit {
       'E02': 'Regímenes Especiales',
     };
     return mapa[t] || t || '-';
+  }
+
+  descripcionTipoEncf(tipo?: string | null): string {
+    const value = String(tipo || '').trim().toUpperCase();
+    if (!value) return '-';
+
+    const encontrado = this.tiposNcf.find((item) =>
+      this.valorTipoEncf(item) === value ||
+      String(item?.tipo || '').trim().toUpperCase() === value ||
+      String(item?.codigo ?? '').trim() === value.replace(/^[A-Z]/, '')
+    );
+
+    return encontrado?.desNcf || value;
+  }
+
+  valorTipoEncf(tipo: TiponcfData | null | undefined): string {
+    const tipoTexto = String(tipo?.tipo || '').trim().toUpperCase();
+    if (/^[A-Z]\d{2}$/.test(tipoTexto)) {
+      return tipoTexto;
+    }
+
+    const codigo = Number(tipo?.codigo ?? tipo?.idNcf ?? 0);
+    if (Number.isFinite(codigo) && codigo > 0) {
+      const prefijo = /^[A-Z]$/.test(tipoTexto) ? tipoTexto : 'E';
+      return `${prefijo}${String(codigo).padStart(2, '0')}`;
+    }
+
+    return tipoTexto;
   }
 
   abrirDetalleEncf(item: any): void {

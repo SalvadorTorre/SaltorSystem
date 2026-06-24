@@ -666,14 +666,16 @@ export class ServicioInventario {
       const codigos = productos.map((producto) => producto.codigo);
       const { data: productosCatalogo, error: productosError } = await this.db
         .from("productos2")
-        .select("in_codmerc,in_porgana")
+        .select("in_codmerc,in_porgana,in_costmer")
         .in("in_codmerc", codigos);
       if (productosError) throw productosError;
 
       const gananciaMap = new Map<string, number>();
+      const catalogoMap = new Map<string, any>();
       (productosCatalogo || []).forEach((row: any) => {
         const codigo = String(row?.in_codmerc || "").trim();
         if (!codigo) return;
+        catalogoMap.set(codigo, row);
         gananciaMap.set(codigo, this.toNumber(row?.in_porgana));
       });
 
@@ -700,11 +702,25 @@ export class ServicioInventario {
         status: "A",
       }));
       let actualizados = 0;
+      let catalogoActualizados = 0;
 
       for (const producto of productos) {
         const porcentajeGanancia = gananciaMap.get(producto.codigo) ?? 0;
         const precioNuevo = this.toNumber(producto.precio);
         const precioVenta = Number((precioNuevo + (precioNuevo * porcentajeGanancia / 100)).toFixed(2));
+        const productoCatalogo = catalogoMap.get(producto.codigo);
+
+        if (productoCatalogo) {
+          const { error: productoUpdateError } = await this.db
+            .from("productos2")
+            .update({
+              in_ucosto: this.toNullableNumber(productoCatalogo?.in_costmer),
+              in_costmer: precioNuevo,
+            })
+            .eq("in_codmerc", producto.codigo);
+          if (productoUpdateError) throw productoUpdateError;
+          catalogoActualizados += 1;
+        }
 
         for (const sucursal of sucursales) {
           const current = actualesMap.get(`${sucursal}::${producto.codigo}`);
@@ -751,6 +767,7 @@ export class ServicioInventario {
         actualizados,
         insertados,
         historial: historialPrecios.length,
+        catalogoActualizados,
         total: actualizados + insertados,
       };
     })()).pipe(

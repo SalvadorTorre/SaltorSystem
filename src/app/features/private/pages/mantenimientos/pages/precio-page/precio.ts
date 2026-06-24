@@ -326,7 +326,7 @@ export class PrecioPageComponent implements OnInit {
     const codigo = String((producto as any)?.in_codmerc || '').trim();
     if (!codigo) return;
 
-    const precioActual = Number((producto as any)?.in_premerc || 0);
+    const precioActual = this.costoActualProducto(producto);
     this.productoPendiente = producto;
     this.editandoCodigo = null;
     this.codigoInput = codigo;
@@ -396,7 +396,7 @@ export class PrecioPageComponent implements OnInit {
     const codigo = String((producto as any)?.in_codmerc || '').trim();
     if (!codigo) return;
 
-    const precioActual = Number((producto as any)?.in_premerc || 0);
+    const precioActual = this.costoActualProducto(producto);
     const costoRaw = (producto as any)?.in_cosmerc;
     const costo = costoRaw === null || costoRaw === undefined || costoRaw === ''
       ? null
@@ -422,6 +422,12 @@ export class PrecioPageComponent implements OnInit {
     });
 
     this.limpiarProductoPendiente(true);
+  }
+
+  private costoActualProducto(producto: any): number {
+    const valor = producto?.in_costmerc ?? producto?.in_costmer ?? producto?.in_cosmerc ?? 0;
+    const costo = Number(valor);
+    return Number.isFinite(costo) ? costo : 0;
   }
 
   limpiarProductoPendiente(focusCodigo = false): void {

@@ -369,14 +369,14 @@
                   </div>
                   <div class="encf-chip">
                     <span>Tipo principal</span>
-                    <strong>{{ encfList.length ? tipoDescripcion(encfList[0]?.tipoencf) : 'N/D' }}</strong>
+                    <strong>{{ encfList.length ? descripcionTipoEncf(encfList[0]?.tipoencf) : 'N/D' }}</strong>
                   </div>
                 </div>
 
                 <div class="encf-list" *ngIf="encfList.length; else emptyEncf">
                   <article class="encf-item" *ngFor="let item of encfList">
                     <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
-                      <span class="fw-semibold">{{ tipoDescripcion(item?.tipoencf) }}</span>
+                      <span class="fw-semibold">{{ descripcionTipoEncf(item?.tipoencf) }}</span>
                       <span class="badge text-bg-light">{{ item?.fechaencf | date:'dd/MM/yyyy' }}</span>
                     </div>
 
@@ -520,7 +520,7 @@
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body" *ngIf="encfSeleccionado as e">
-        <div class="mb-2"><strong>Tipo:</strong> {{ tipoDescripcion(e?.tipoencf) }}</div>
+        <div class="mb-2"><strong>Tipo:</strong> {{ descripcionTipoEncf(e?.tipoencf) }}</div>
         <div class="mb-2"><strong>Rango:</strong> {{ e?.desdeencf }} - {{ e?.hastaencf }}</div>
         <div class="mb-2"><strong>Cantidad:</strong> {{ e?.cantencf }}</div>
         <div class="mb-2"><strong>Contador:</strong> {{ e?.countencf }}</div>
@@ -552,11 +552,18 @@
             <label class="form-label">Tipo ENCF</label>
             <select class="form-select" formControlName="tipoencf" required>
               <option value="">Seleccione tipo</option>
+              <ng-container *ngFor="let tipo of tiposNcf">
+                <option [value]="valorTipoEncf(tipo)">
+                  {{ valorTipoEncf(tipo) }} - {{ tipo.desNcf }}
+                </option>
+              </ng-container>
+              <ng-container *ngIf="!tiposNcf.length">
               <option value="B01">B01 - Crédito Fiscal</option>
               <option value="B02">B02 - Consumidor Final</option>
               <option value="B14">B14 - Gubernamental</option>
               <option value="E01">E01 - Comprobante Especial</option>
               <option value="E02">E02 - Regímenes Especiales</option>
+              </ng-container>
             </select>
           </div>
           <div class="row g-2">
