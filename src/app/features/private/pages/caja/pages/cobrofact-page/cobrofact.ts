@@ -1520,6 +1520,7 @@ export class CobroFact implements OnInit {
       codEmpresa,
       tipoeCF,
     );
+    const esRegimenEspecial = tipoeCF === '44';
 
     if (!direccionEmisor) {
       throw new Error(
@@ -1544,13 +1545,22 @@ export class CobroFact implements OnInit {
         );
       }
     }
+    if (tipoeCF === '44') {
+      if (!fechaVencimientoSecuencia) {
+        throw new Error(
+          `No se encontró la fecha de vencimiento de la secuencia ENCF para ${codEmpresa} (${tipoeCF}).`,
+        );
+      }
+      if (!razonSocialComprador) {
+        throw new Error(
+          'La factura E44 requiere la razón social o nombre del comprador para enviar a DGII.',
+        );
+      }
+    }
 
     // 2. Construir el escenario base respetando el orden esperado por DGII.
     const scenario: any = {};
     scenario.Version = '1.0';
-    scenario.RNCEmisor = rncEmisorLimpio;
-    scenario.RazonSocialEmisor = razonSocialEmisor;
-    scenario.NombreComercial = razonSocialEmisor;
     scenario.TipoeCF = tipoeCF;
     scenario.ENCF = encf;
     if (fechaVencimientoSecuencia) {
@@ -1558,11 +1568,20 @@ export class CobroFact implements OnInit {
     }
     // Enviamos las lineas como base gravada neta. Con indicador 1 DGII asume
     // que MontoItem incluye ITBIS y recalcula una base menor.
-    scenario.IndicadorMontoGravado = '0';
+    if (!esRegimenEspecial) {
+      scenario.IndicadorMontoGravado = '0';
+    }
     scenario.TipoIngresos = '01';
     scenario.TipoPago = String(
       (factura as any).fa_codfpago || factura.fa_fpago || '1',
     );
+    if (tipoeCF === '31' && factura.fa_expFact) {
+      scenario.FechaLimitePago = this.formatearFechaDgii(factura.fa_expFact);
+    }
+
+    scenario.RNCEmisor = rncEmisorLimpio;
+    scenario.RazonSocialEmisor = razonSocialEmisor;
+    scenario.NombreComercial = razonSocialEmisor;
     if (nombreSucursal) {
       scenario.Sucursal = nombreSucursal;
     }
@@ -1574,7 +1593,9 @@ export class CobroFact implements OnInit {
     if (razonSocialComprador) {
       scenario.RazonSocialComprador = razonSocialComprador;
     }
-    scenario.RegimenPagos = '0';
+    if (!esRegimenEspecial) {
+      scenario.RegimenPagos = '0';
+    }
     scenario.CasoPrueba = `${rncEmisorLimpio}${encf}`;
 
     const itemTotal = (item: any): number => Number(
@@ -1591,6 +1612,7 @@ export class CobroFact implements OnInit {
     );
     let totalGravado18 = 0;
     let totalItbis18 = 0;
+    let totalExento = 0;
 
     // 3. Agregar items
     items.forEach((item, index) => {
@@ -1600,6 +1622,24 @@ export class CobroFact implements OnInit {
       const cantidad = Number(item.cantidad || item.df_canMerc || 0);
       const precio = Number(item.precio || item.df_preMerc || 0);
       const total = itemTotal(item);
+
+      scenario[`NumeroLinea[${i}]`] = i;
+
+      if (esRegimenEspecial) {
+        const precioExento = cantidad > 0 ? total / cantidad : precio;
+        const precioUnitarioExento = this.roundHalfEven(precioExento, 4);
+        const montoExentoLinea = this.roundHalfEven(precioUnitarioExento * cantidad, 2);
+        totalExento += montoExentoLinea;
+
+        scenario[`IndicadorFacturacion[${i}]`] = '4';
+        scenario[`NombreItem[${i}]`] = nombre;
+        scenario[`IndicadorBienoServicio[${i}]`] = '1';
+        scenario[`CantidadItem[${i}]`] = cantidad.toFixed(2);
+        scenario[`PrecioUnitarioItem[${i}]`] = precioUnitarioExento.toFixed(4);
+        scenario[`MontoItem[${i}]`] = montoExentoLinea.toFixed(2);
+        return;
+      }
+
       // Calcular o usar ITBIS
       const itbisGuardado = Number(item.df_itbiMerc ?? item.df_itbimerc ?? item.itbis ?? 0);
       const itbis = itbisGuardado ||
@@ -1613,7 +1653,7 @@ export class CobroFact implements OnInit {
       totalGravado18 += montoGravadoLinea;
       totalItbis18 += montoItbisLinea;
 
-      scenario[`NumeroLinea[${i}]`] = i;
+      scenario[`IndicadorFacturacion[${i}]`] = '1';
       scenario[`NombreItem[${i}]`] = nombre;
       scenario[`IndicadorBienoServicio[${i}]`] = '1';
       scenario[`CantidadItem[${i}]`] = cantidad.toFixed(2);
@@ -1621,8 +1661,15 @@ export class CobroFact implements OnInit {
       scenario[`MontoItem[${i}]`] = montoGravadoLinea.toFixed(2);
       scenario[`MontoITBIS[${i}]`] = montoItbisLinea.toFixed(2);
       scenario[`TasaITBIS[${i}]`] = tasaItbis.toFixed(2);
-      scenario[`IndicadorFacturacion[${i}]`] = '1';
     });
+
+    if (esRegimenEspecial) {
+      scenario.MontoExento = this.roundHalfEven(totalExento || montoTotal, 2).toFixed(2);
+      scenario.MontoTotal = montoTotal.toFixed(2);
+      scenario['FormaPago[1]'] = String((factura as any).fa_codfpago || factura.fa_fpago || '1');
+      scenario['MontoPago[1]'] = montoTotal.toFixed(2);
+      return scenario;
+    }
 
     const totalGravado = this.roundHalfEven(totalGravado18, 2);
     const totalItbis = this.roundHalfEven(totalItbis18, 2);

@@ -303,6 +303,7 @@ export class FacturaDgiiService {
     const rncComprador = this.rnc(factura?.fa_rncFact);
     const nombreComprador = String(factura?.fa_nomClie || '').trim();
     const fechaVencimiento = await this.vencimiento(codEmpresa, tipo);
+    const esRegimenEspecial = tipo === '44';
 
     if (!direccion) {
       throw new Error('La empresa no tiene Direccion del emisor para DGII.');
@@ -312,29 +313,41 @@ export class FacturaDgiiService {
         'La factura E31 requiere vencimiento de secuencia, RNC y nombre del comprador.',
       );
     }
+    if (tipo === '44' && (!fechaVencimiento || !nombreComprador)) {
+      throw new Error(
+        'La factura E44 requiere vencimiento de secuencia y nombre del comprador.',
+      );
+    }
 
     const escenario: any = {
       Version: '1.0',
-      RNCEmisor: rncEmisor,
-      RazonSocialEmisor: nombreEmisor,
-      NombreComercial: nombreEmisor,
       TipoeCF: tipo,
       ENCF: encf,
-      IndicadorMontoGravado: '0',
-      TipoIngresos: '01',
-      TipoPago:  '1',
-      DireccionEmisor: direccion,
-      FechaEmision: this.fecha(factura?.fa_fecFact),
-      RegimenPagos: '0',
-      CasoPrueba: `${rncEmisor}${encf}`,
     };
     if (fechaVencimiento) {
       escenario.FechaVencimientoSecuencia = fechaVencimiento;
     }
+    if (!esRegimenEspecial) {
+      escenario.IndicadorMontoGravado = '0';
+    }
+    escenario.TipoIngresos = '01';
+    escenario.TipoPago = String(factura?.fa_codfpago || factura?.fa_fpago || '1');
+    if (tipo === '31' && factura?.fa_expFact) {
+      escenario.FechaLimitePago = this.fecha(factura.fa_expFact);
+    }
 
+    escenario.RNCEmisor = rncEmisor;
+    escenario.RazonSocialEmisor = nombreEmisor;
+    escenario.NombreComercial = nombreEmisor;
     if (nombreSucursal) escenario.Sucursal = nombreSucursal;
+    escenario.DireccionEmisor = direccion;
+    escenario.FechaEmision = this.fecha(factura?.fa_fecFact);
     if (rncComprador) escenario.RNCComprador = rncComprador;
     if (nombreComprador) escenario.RazonSocialComprador = nombreComprador;
+    if (!esRegimenEspecial) {
+      escenario.RegimenPagos = '0';
+    }
+    escenario.CasoPrueba = `${rncEmisor}${encf}`;
 
     const totalItem = (item: any): number =>
       Number(
@@ -350,11 +363,31 @@ export class FacturaDgiiService {
     );
     let totalGravado = 0;
     let totalItbis = 0;
+    let totalExento = 0;
 
     items.forEach((item: any, index: number) => {
       const linea = index + 1;
       const cantidad = Number(item?.cantidad ?? item?.df_canMerc ?? 0);
       const total = totalItem(item);
+      const nombreItem = item?.producto?.in_desmerc || item?.df_desMerc || '';
+
+      escenario[`NumeroLinea[${linea}]`] = linea;
+
+      if (esRegimenEspecial) {
+        const precioExento = cantidad > 0 ? total / cantidad : 0;
+        const precioLinea = this.redondear(precioExento, 4);
+        const montoLinea = this.redondear(precioLinea * cantidad, 2);
+        totalExento += montoLinea;
+
+        escenario[`IndicadorFacturacion[${linea}]`] = '4';
+        escenario[`NombreItem[${linea}]`] = nombreItem;
+        escenario[`IndicadorBienoServicio[${linea}]`] = '1';
+        escenario[`CantidadItem[${linea}]`] = cantidad.toFixed(2);
+        escenario[`PrecioUnitarioItem[${linea}]`] = precioLinea.toFixed(4);
+        escenario[`MontoItem[${linea}]`] = montoLinea.toFixed(2);
+        return;
+      }
+
       const itbisGuardado = Number(
         item?.df_itbiMerc ?? item?.df_itbimerc ?? item?.itbis ?? 0,
       );
@@ -372,19 +405,27 @@ export class FacturaDgiiService {
       totalGravado += gravadoLinea;
       totalItbis += itbisLinea;
 
-      escenario[`NumeroLinea[${linea}]`] = linea;
-      escenario[`NombreItem[${linea}]`] =
-        item?.producto?.in_desmerc || item?.df_desMerc || '';
+      escenario[`IndicadorFacturacion[${linea}]`] = '1';
+      escenario[`NombreItem[${linea}]`] = nombreItem;
       escenario[`IndicadorBienoServicio[${linea}]`] = '1';
       escenario[`CantidadItem[${linea}]`] = cantidad.toFixed(2);
       escenario[`PrecioUnitarioItem[${linea}]`] = precioLinea.toFixed(4);
       escenario[`MontoItem[${linea}]`] = gravadoLinea.toFixed(2);
       escenario[`MontoITBIS[${linea}]`] = itbisLinea.toFixed(2);
       escenario[`TasaITBIS[${linea}]`] = tasa.toFixed(2);
-      escenario[`IndicadorFacturacion[${linea}]`] = '1';
     });
 
     const montoTotal = this.redondear(Number(factura?.fa_valFact || 0), 2);
+    if (esRegimenEspecial) {
+      escenario.MontoExento = this.redondear(totalExento || montoTotal, 2).toFixed(2);
+      escenario.MontoTotal = montoTotal.toFixed(2);
+      escenario['FormaPago[1]'] = String(
+        factura?.fa_codfpago || factura?.fa_fpago || '1',
+      );
+      escenario['MontoPago[1]'] = montoTotal.toFixed(2);
+      return escenario;
+    }
+
     totalGravado = this.redondear(totalGravado, 2);
     totalItbis = this.redondear(totalItbis, 2);
     escenario.MontoExento = this.redondear(
