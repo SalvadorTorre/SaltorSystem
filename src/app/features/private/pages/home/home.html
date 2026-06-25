@@ -32,7 +32,9 @@
     </div>
   </header>
 
-  <ng-container *ngIf="role === 'vendedor'; else adminDashboard">
+  <ng-container *ngTemplateOutlet="adminDashboard"></ng-container>
+
+  <ng-container *ngIf="false">
     <section class="kpi-grid">
       <article class="kpi-card">
         <p>Meta venta</p>
@@ -88,6 +90,61 @@
           </div>
         </div>
       </div>
+    </section>
+
+    <section class="panels panels-admin-main">
+      <article class="panel">
+        <div class="panel-title-row">
+          <h4>Rendimiento vendedor logeado</h4>
+          <small>Contra meta de ventas</small>
+        </div>
+
+        <div class="admin-sucursal-item">
+          <div class="admin-sucursal-head">
+            <strong>{{ username }}</strong>
+            <span>{{ vendedor.porcientoFacturado | number:'1.1-1' }}%</span>
+          </div>
+          <div class="channel-track">
+            <div class="channel-fill" [style.width.%]="vendedorBarPct()"></div>
+          </div>
+          <div class="admin-sucursal-meta">
+            <small>Facturas: {{ vendedor.totalFactura }}</small>
+            <small>Meta: {{ currency(vendedor.metaPorVendedor) }}</small>
+            <small>Margen: {{ vendedor.margenVentaPct | number:'1.1-2' }}%</small>
+            <small>Facturado: {{ currency(vendedor.valorFacturadoReal) }}</small>
+          </div>
+        </div>
+      </article>
+
+      <article class="panel">
+        <div class="panel-title-row">
+          <h4>ParticipaciÃ³n de ventas</h4>
+          <small>Vendedor vs meta</small>
+        </div>
+        <div class="sucursal-pie-content">
+          <div
+            class="sucursal-pie"
+            [style.background]="vendedorPieGradient()"
+          >
+            <div class="sucursal-pie-center">
+              <span>Meta</span>
+              <strong>{{ vendedor.porcientoFacturado | number:'1.1-1' }}%</strong>
+            </div>
+          </div>
+          <div class="sucursal-pie-legend">
+            <div class="sucursal-pie-row" *ngFor="let seg of vendedorPieSegments()">
+              <span class="sucursal-pie-dot" [style.background]="seg.color"></span>
+              <div>
+                <strong>{{ seg.nombre }}</strong>
+                <small>{{ seg.pct | number:'1.1-1' }}% | {{ currency(seg.facturado) }}</small>
+              </div>
+            </div>
+            <div class="sucursal-pie-empty" *ngIf="!vendedorPieSegments().length">
+              Sin ventas para graficar.
+            </div>
+          </div>
+        </div>
+      </article>
     </section>
 
     <section class="panels panels-summary-agenda">
@@ -237,7 +294,7 @@
       </article>
       <article class="kpi-card">
         <p>Facturado general</p>
-        <h3>{{ currency(global.facturadoGeneral) }}</h3>
+        <h3>{{ (global.facturadoGeneral / 1000000) | number:'1.2-2' }} MM</h3>
       </article>
       <article class="kpi-card">
         <p>Cumplimiento general</p>
@@ -261,23 +318,54 @@
       <article class="panel">
         <div class="panel-title-row">
           <h4>Rendimiento por sucursal</h4>
-          <small>Participación sobre facturación general</small>
+          <small>Cumplimiento contra meta de ventas</small>
         </div>
 
         <div class="admin-sucursal-list">
           <div class="admin-sucursal-item" *ngFor="let suc of global.sucursales">
             <div class="admin-sucursal-head">
               <strong>{{ suc.nombre }}</strong>
-              <span>{{ sucursalPctFacturado(suc.facturado) | number:'1.1-1' }}%</span>
+              <span>{{ sucursalPctMeta(suc) | number:'1.1-1' }}%</span>
             </div>
             <div class="channel-track">
-              <div class="channel-fill" [style.width.%]="sucursalPctFacturado(suc.facturado)"></div>
+              <div class="channel-fill" [style.width.%]="sucursalBarPct(suc)"></div>
             </div>
             <div class="admin-sucursal-meta">
               <small>Facturas: {{ suc.facturas }}</small>
               <small>Vendedores: {{ suc.vendedores }}</small>
               <small>Margen: {{ suc.margenPct | number:'1.1-2' }}%</small>
+              <small>Meta: {{ currency(suc.metaVenta) }}</small>
               <small>Facturado: {{ currency(suc.facturado) }}</small>
+            </div>
+          </div>
+        </div>
+
+        <div class="sucursal-pie-card">
+          <div class="panel-title-row">
+            <strong>Participación de ventas</strong>
+            <small>Relación contra meta ventas</small>
+          </div>
+          <div class="sucursal-pie-content">
+            <div
+              class="sucursal-pie"
+              [style.background]="sucursalPieGradient()"
+            >
+              <div class="sucursal-pie-center">
+                <span>Meta</span>
+                <strong>{{ global.cumplimientoGeneralPct | number:'1.1-1' }}%</strong>
+              </div>
+            </div>
+            <div class="sucursal-pie-legend">
+              <div class="sucursal-pie-row" *ngFor="let seg of sucursalPieSegments()">
+                <span class="sucursal-pie-dot" [style.background]="seg.color"></span>
+                <div>
+                  <strong>{{ seg.nombre }}</strong>
+                  <small>{{ seg.pct | number:'1.1-1' }}% | {{ currency(seg.facturado) }}</small>
+                </div>
+              </div>
+              <div class="sucursal-pie-empty" *ngIf="!sucursalPieSegments().length">
+                Sin ventas para graficar.
+              </div>
             </div>
           </div>
         </div>
@@ -285,30 +373,53 @@
 
       <article class="panel">
         <div class="panel-title-row">
-          <h4>Alertas comerciales</h4>
-          <small>Seguimiento diario</small>
+          <h4>Rendimiento vendedor logeado</h4>
+          <small>Contra meta de ventas</small>
         </div>
-        <ul class="admin-alert-list">
-          <li *ngFor="let alerta of global.alertas">
-            <span class="dot"></span>
-            <div>{{ alerta }}</div>
-          </li>
-        </ul>
 
-        <div class="panel-title-row admin-subtitle">
-          <h4>Distribución por forma de pago</h4>
-          <small>DGII / control interno</small>
+        <div class="admin-sucursal-item">
+          <div class="admin-sucursal-head">
+            <strong>{{ username }}</strong>
+            <span>{{ vendedor.porcientoFacturado | number:'1.1-1' }}%</span>
+          </div>
+          <div class="channel-track">
+            <div class="channel-fill" [style.width.%]="vendedorBarPct()"></div>
+          </div>
+          <div class="admin-sucursal-meta">
+            <small>Facturas: {{ vendedor.totalFactura }}</small>
+            <small>Meta: {{ currency(vendedor.metaPorVendedor) }}</small>
+            <small>Margen: {{ vendedor.margenVentaPct | number:'1.1-2' }}%</small>
+            <small>Facturado: {{ currency(vendedor.valorFacturadoReal) }}</small>
+          </div>
         </div>
-        <div class="admin-forma-pago-list">
-          <div class="admin-forma-item" *ngFor="let forma of global.formasPago">
-            <div class="admin-forma-head">
-              <span>{{ forma.nombre }}</span>
-              <strong>{{ formaPagoPct(forma.monto) | number:'1.1-1' }}%</strong>
+
+        <div class="sucursal-pie-card">
+          <div class="panel-title-row">
+            <strong>Participación de ventas</strong>
+            <small>Vendedor vs meta</small>
+          </div>
+          <div class="sucursal-pie-content">
+            <div
+              class="sucursal-pie"
+              [style.background]="vendedorPieGradient()"
+            >
+              <div class="sucursal-pie-center">
+                <span>Meta</span>
+                <strong>{{ vendedor.porcientoFacturado | number:'1.1-1' }}%</strong>
+              </div>
             </div>
-            <div class="channel-track">
-              <div class="channel-fill" [style.width.%]="formaPagoPct(forma.monto)"></div>
+            <div class="sucursal-pie-legend">
+              <div class="sucursal-pie-row" *ngFor="let seg of vendedorPieSegments()">
+                <span class="sucursal-pie-dot" [style.background]="seg.color"></span>
+                <div>
+                  <strong>{{ seg.nombre }}</strong>
+                  <small>{{ seg.pct | number:'1.1-1' }}% | {{ currency(seg.facturado) }}</small>
+                </div>
+              </div>
+              <div class="sucursal-pie-empty" *ngIf="!vendedorPieSegments().length">
+                Sin ventas para graficar.
+              </div>
             </div>
-            <small>{{ currency(forma.monto) }}</small>
           </div>
         </div>
       </article>

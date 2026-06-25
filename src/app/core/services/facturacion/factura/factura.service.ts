@@ -170,7 +170,7 @@ export class ServicioFacturacion {
   }
 
   private applyTenantFilter(query: any): any {
-    const { codEmpre, sucursal, rncEmpre } = this.currentTenant();
+    const { role, codEmpre, sucursal, rncEmpre } = this.currentTenant();
     let scoped = query;
     if (codEmpre) {
       scoped = scoped.eq('fa_codempr', codEmpre);
@@ -180,14 +180,28 @@ export class ServicioFacturacion {
       // Failsafe: sin tenant activo no devolvemos ni tocamos facturas.
       scoped = scoped.eq('fa_codempr', '__NO_TENANT__');
     }
-    if (Number.isFinite(sucursal) && sucursal > 0) {
+    const esRoot = role.includes('root');
+    if (!esRoot && Number.isFinite(sucursal) && sucursal > 0) {
       scoped = scoped.eq('fa_codsucu', sucursal);
     }
     return scoped;
   }
 
+  private applyTenantCompanyFilter(query: any): any {
+    const { codEmpre, rncEmpre } = this.currentTenant();
+    let scoped = query;
+    if (codEmpre) {
+      scoped = scoped.eq('fa_codempr', codEmpre);
+    } else if (rncEmpre) {
+      scoped = scoped.eq('tenant_rnc', rncEmpre);
+    } else {
+      scoped = scoped.eq('fa_codempr', '__NO_TENANT__');
+    }
+    return scoped;
+  }
+
   private applyTenantFilterDetalle(query: any): any {
-    const { codEmpre, sucursal, rncEmpre } = this.currentTenant();
+    const { role, codEmpre, sucursal, rncEmpre } = this.currentTenant();
     let scoped = query;
     if (codEmpre) {
       scoped = scoped.eq('df_codepr', codEmpre);
@@ -196,7 +210,8 @@ export class ServicioFacturacion {
     } else {
       scoped = scoped.eq('df_codepr', '__NO_TENANT__');
     }
-    if (Number.isFinite(sucursal) && sucursal > 0) {
+    const esRoot = role.includes('root');
+    if (!esRoot && Number.isFinite(sucursal) && sucursal > 0) {
       scoped = scoped.eq('df_codsucu', String(sucursal));
     }
     return scoped;
@@ -1459,7 +1474,7 @@ export class ServicioFacturacion {
     })());
   }
 
-  buscarFacturasParaCierre(limit: number = 10000): Observable<any> {
+  buscarFacturasParaCierre(limit: number = 10000, filtrarSucursal: boolean = true): Observable<any> {
     if (!this.useSupabase) {
       const url = `/facturacion?limit=${limit}`;
       return this.http.GetRequest<any>(url);
@@ -1473,7 +1488,7 @@ export class ServicioFacturacion {
         .order('fa_fecfact', { ascending: false })
         .order('fa_codfact', { ascending: false })
         .limit(safeLimit);
-      query = this.applyTenantFilter(query);
+      query = filtrarSucursal ? this.applyTenantFilter(query) : this.applyTenantCompanyFilter(query);
 
       const { data, error } = await query;
       if (error) throw error;

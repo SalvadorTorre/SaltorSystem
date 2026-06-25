@@ -374,6 +374,62 @@
   font-size: 0.73rem;
 }
 
+.sucursal-pie-card {
+  margin-top: 0.75rem;
+  border: 1px solid #e8edf4;
+  border-radius: 12px;
+  padding: 0.7rem;
+}
+
+.sucursal-pie-content {
+  margin-top: 0.65rem;
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.sucursal-pie {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+}
+
+.sucursal-pie-center {
+  width: 78px;
+  height: 78px;
+  border-radius: 50%;
+  background: #fff;
+  display: grid;
+  place-items: center;
+}
+
+.sucursal-pie-legend {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.sucursal-pie-row {
+  display: grid;
+  grid-template-columns: 12px 1fr;
+  gap: 0.45rem;
+}
+
+.sucursal-pie-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-top: 0.25rem;
+}
+
+.sucursal-pie-row small,
+.sucursal-pie-empty {
+  color: #5f6f81;
+  font-size: 0.72rem;
+}
+
 .admin-alert-list {
   margin: 0;
   padding: 0;
@@ -590,6 +646,11 @@
 
   .admin-sucursal-meta {
     grid-template-columns: 1fr;
+  }
+
+  .sucursal-pie-content {
+    grid-template-columns: 1fr;
+    justify-items: center;
   }
 
   .agenda-actions .btn {

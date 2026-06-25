@@ -311,6 +311,7 @@
 
                     <div class="sucursal-metrics">
                       <span><i class="bi bi-telephone me-1"></i>{{ sucursal.tel_sucursal || 'N/D' }}</span>
+                      <span><i class="bi bi-bullseye me-1"></i>Meta: {{ (sucursal.meta_ventas || 0) | number:'1.2-2' }}</span>
                       <span><i class="bi bi-hash me-1"></i>Secuencia: {{ contfacturaPorSucursal[sucursal.cod_sucursal]?.contador ?? '-' }}</span>
                     </div>
 
@@ -470,6 +471,7 @@
         <div class="mb-2"><strong>Teléfono:</strong> {{ s.tel_sucursal }}</div>
         <div class="mb-2"><strong>Dirección:</strong> {{ s.dir_sucursal }}</div>
         <div class="mb-2"><strong>Año:</strong> {{ detalleCont?.ano ?? '-' }}</div>
+        <div class="mb-2"><strong>Meta ventas:</strong> {{ (s.meta_ventas || 0) | number:'1.2-2' }}</div>
         <div class="mb-2"><strong>Secuencia:</strong> {{ detalleCont?.contador ?? '-' }}</div>
       </div>
       <div class="modal-footer">
@@ -500,6 +502,10 @@
           <div class="mb-2">
             <label class="form-label">Dirección</label>
             <input type="text" class="form-control" formControlName="dir_sucursal" />
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Meta ventas</label>
+            <input type="number" class="form-control text-end" min="0" step="0.01" formControlName="meta_ventas" />
           </div>
         </div>
         <div class="modal-footer">

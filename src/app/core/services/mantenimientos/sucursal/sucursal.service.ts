@@ -31,12 +31,16 @@ export class ServicioSucursal {
   }
 
   guardarSucursal(sucursal: any): Observable<any> {
+    const metaVentas = this.toNullableNumber(
+      sucursal?.meta_ventas ?? sucursal?.meta_vents ?? sucursal?.metaVenta
+    );
     const payload = {
       nom_sucursal: sucursal?.nom_sucursal ?? sucursal?.nombre ?? '',
       zona: sucursal?.zona ?? null,
       cod_empre: sucursal?.cod_empre ?? null,
       dir_sucursal: sucursal?.dir_sucursal ?? null,
       tel_sucursal: sucursal?.tel_sucursal ?? null,
+      meta_ventas: metaVentas,
     };
 
     return from((async () => {
@@ -78,6 +82,7 @@ export class ServicioSucursal {
   }
 
   editaSucursal(cod_sucursal: string, sucursal: SucursalModel): Observable<any> {
+    const metaRaw = (sucursal as any)?.meta_ventas ?? (sucursal as any)?.meta_vents ?? (sucursal as any)?.metaVenta;
     const payload: any = {
       nom_sucursal: (sucursal as any)?.nom_sucursal ?? undefined,
       zona: (sucursal as any)?.zona ?? undefined,
@@ -85,6 +90,10 @@ export class ServicioSucursal {
       dir_sucursal: (sucursal as any)?.dir_sucursal ?? undefined,
       tel_sucursal: (sucursal as any)?.tel_sucursal ?? undefined,
     };
+
+    if (metaRaw !== undefined) {
+      payload.meta_ventas = this.toNullableNumber(metaRaw);
+    }
 
     Object.keys(payload).forEach((key: string) => {
       if (payload[key] === undefined) {
@@ -168,5 +177,11 @@ export class ServicioSucursal {
     })()).pipe(
       map((row: any) => ({ status: 'success', code: 200, data: row }))
     );
+  }
+
+  private toNullableNumber(value: any): number | null {
+    if (value === null || value === undefined || value === '') return null;
+    const numberValue = Number(value);
+    return Number.isFinite(numberValue) ? numberValue : null;
   }
 }

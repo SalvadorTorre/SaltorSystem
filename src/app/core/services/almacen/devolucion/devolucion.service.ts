@@ -100,10 +100,37 @@ export class DevolucionService {
     return `${anio}${sucStr}${seqStr}`;
   }
 
-  private generarCodigoSalida(numero: number): string {
+  private generarCodigoSalida(sucursal: number, numero: number): string {
     const anio = new Date().getFullYear().toString();
-    const seqStr = String(numero).padStart(6, '0');
-    return `${anio}${seqStr}`;
+    const sucStrFull = String(sucursal);
+    const sucStr =
+      sucStrFull.length > 2
+        ? sucStrFull.slice(-2)
+        : sucStrFull.padStart(2, '0');
+    const seqStr = String(numero).padStart(5, '0');
+    return `${anio}${sucStr}${seqStr}`;
+  }
+
+  private async maxSecuenciaVentaInterna(idsucursal: number): Promise<number> {
+    const anio = new Date().getFullYear().toString();
+    const sucStrFull = String(idsucursal);
+    const sucStr =
+      sucStrFull.length > 2
+        ? sucStrFull.slice(-2)
+        : sucStrFull.padStart(2, '0');
+    const prefix = `${anio}${sucStr}`;
+
+    const { data, error } = await this.db
+      .from('ventainterna')
+      .select('fa_codfact')
+      .like('fa_codfact', `${prefix}%`)
+      .order('fa_codfact', { ascending: false })
+      .limit(1);
+    if (error) this.throwStep('Consultar contador ventainterna', error);
+
+    const codigo = String(Array.isArray(data) && data.length ? data[0]?.fa_codfact : '').trim();
+    const secuencia = Number(codigo.slice(prefix.length));
+    return Number.isFinite(secuencia) ? secuencia : 0;
   }
 
   private async getOrPickContFacturaRow(idsucursal: number): Promise<any | null> {
@@ -177,17 +204,20 @@ export class DevolucionService {
               ? contRow.contentrada
               : contRow?.contEntrada ?? contRow?.cont_entrada) ?? 0,
           );
-          const contadorActual = this.toNumber(
-            (Object.prototype.hasOwnProperty.call(contRow, 'contador')
-              ? contRow.contador
-              : contRow?.counter) ?? 0,
+          const contvinternaActual = this.toNumber(
+            (Object.prototype.hasOwnProperty.call(contRow, 'contvinterna')
+              ? contRow.contvinterna
+              : contRow?.contVinterna ?? contRow?.cont_vinterna) ?? 0,
           );
 
           const entradaNext = contentradaActual + 1;
-          const salidaNext = contadorActual + 1;
+          const salidaNext = Math.max(
+            contvinternaActual,
+            await this.maxSecuenciaVentaInterna(idsucursal),
+          ) + 1;
 
           const me_codEntr = this.generarCodigoEntrada(idsucursal, entradaNext);
-          const fa_codFact = this.generarCodigoSalida(salidaNext);
+          const fa_codFact = this.generarCodigoSalida(idsucursal, salidaNext);
 
           // Reservar/actualizar contadores
           const contUpdate: any = {};
@@ -199,10 +229,11 @@ export class DevolucionService {
             contUpdate.contentrada = entradaNext;
           }
           if (
-            Object.prototype.hasOwnProperty.call(contRow, 'contador') ||
-            Object.prototype.hasOwnProperty.call(contRow, 'counter')
+            Object.prototype.hasOwnProperty.call(contRow, 'contvinterna') ||
+            Object.prototype.hasOwnProperty.call(contRow, 'contVinterna') ||
+            Object.prototype.hasOwnProperty.call(contRow, 'cont_vinterna')
           ) {
-            contUpdate.contador = salidaNext;
+            contUpdate.contvinterna = salidaNext;
           }
           if (
             Object.prototype.hasOwnProperty.call(contRow, 'ano') ||

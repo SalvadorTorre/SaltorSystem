@@ -61,6 +61,8 @@ interface SucursalGlobal {
   vendedores: number;
   facturas: number;
   facturado: number;
+  metaVenta: number;
+  cumplimientoPct: number;
   margenPct: number;
 }
 
@@ -89,6 +91,13 @@ interface DashboardGlobal {
   topVendedores: VendedorGlobal[];
   formasPago: FormaPagoGlobal[];
   alertas: string[];
+}
+
+interface PieSegment {
+  nombre: string;
+  facturado: number;
+  pct: number;
+  color: string;
 }
 
 @Component({
@@ -341,14 +350,102 @@ export class Home implements OnInit {
     }).format(value);
   }
 
-  sucursalPctFacturado(facturado: number): number {
-    if (!this.global.facturadoGeneral) return 0;
-    return (facturado / this.global.facturadoGeneral) * 100;
+  sucursalPctMeta(sucursal: SucursalGlobal): number {
+    return sucursal?.cumplimientoPct || 0;
+  }
+
+  sucursalBarPct(sucursal: SucursalGlobal): number {
+    return Math.min(this.sucursalPctMeta(sucursal), 100);
   }
 
   formaPagoPct(monto: number): number {
     if (!this.global.facturadoGeneral) return 0;
     return (monto / this.global.facturadoGeneral) * 100;
+  }
+
+  sucursalPieSegments(): PieSegment[] {
+    const meta = this.global.metaMensual;
+    const facturado = this.global.facturadoGeneral;
+    if (!meta) return [];
+
+    const pctFacturado = Math.min((facturado / meta) * 100, 100);
+    const pendiente = Math.max(meta - facturado, 0);
+    const segments: PieSegment[] = [
+      {
+        nombre: 'Facturado',
+        facturado,
+        pct: pctFacturado,
+        color: '#0d6efd',
+      },
+    ];
+
+    if (pendiente > 0) {
+      segments.push({
+        nombre: 'Pendiente meta',
+        facturado: pendiente,
+        pct: 100 - pctFacturado,
+        color: '#dc3545',
+      });
+    }
+
+    return segments;
+  }
+
+  sucursalPieGradient(): string {
+    return this.pieGradient(this.sucursalPieSegments());
+  }
+
+  vendedorBarPct(): number {
+    return Math.min(this.vendedor?.porcientoFacturado || 0, 100);
+  }
+
+  vendedorPieSegments(): PieSegment[] {
+    const meta = this.vendedor.metaPorVendedor || this.vendedor.metaFacturar;
+    const facturado = this.vendedor.valorFacturadoReal;
+    if (!meta) return [];
+
+    const pctFacturado = Math.min((facturado / meta) * 100, 100);
+    const pendiente = Math.max(meta - facturado, 0);
+    const segments: PieSegment[] = [
+      {
+        nombre: 'Facturado',
+        facturado,
+        pct: pctFacturado,
+        color: '#0d6efd',
+      },
+    ];
+
+    if (pendiente > 0) {
+      segments.push({
+        nombre: 'Pendiente meta',
+        facturado: pendiente,
+        pct: 100 - pctFacturado,
+        color: '#dc3545',
+      });
+    }
+
+    return segments;
+  }
+
+  vendedorPieGradient(): string {
+    return this.pieGradient(this.vendedorPieSegments());
+  }
+
+  private pieGradient(segments: PieSegment[]): string {
+    if (!segments.length) return '#ebeff5';
+
+    let current = 0;
+    const parts = segments.map((segment) => {
+      const start = current;
+      current += segment.pct;
+      return `${segment.color} ${start}% ${current}%`;
+    });
+
+    if (current < 100) {
+      parts.push(`#ebeff5 ${current}% 100%`);
+    }
+
+    return `conic-gradient(${parts.join(', ')})`;
   }
 
   private renderAgendaModalHtml(): string {
@@ -550,14 +647,20 @@ export class Home implements OnInit {
     this.sucursalNombre = sucRaw?.nom_sucursal || sucRaw?.descripcion || 'Sucursal principal';
 
     const roleRaw = (
+      localStorage.getItem('roleDescription') ||
       localStorage.getItem('role') ||
       localStorage.getItem('dashboardRole') ||
       ''
-    ).toLowerCase();
+    )
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
     if (roleRaw.includes('root')) {
       this.role = 'root';
     } else if (roleRaw.includes('admin')) {
       this.role = 'admin';
+    } else if (roleRaw.includes('vendedor') || roleRaw.includes('venta')) {
+      this.role = 'vendedor';
     } else {
       this.role = 'vendedor';
     }
@@ -679,6 +782,8 @@ export class Home implements OnInit {
           vendedores: 2,
           facturas: 1450,
           facturado: 12040000,
+          metaVenta: 22000000,
+          cumplimientoPct: 54.7,
           margenPct: 18.4,
         },
         {
@@ -686,6 +791,8 @@ export class Home implements OnInit {
           vendedores: 1,
           facturas: 980,
           facturado: 7740000,
+          metaVenta: 14000000,
+          cumplimientoPct: 55.3,
           margenPct: 17.6,
         },
         {
@@ -693,6 +800,8 @@ export class Home implements OnInit {
           vendedores: 1,
           facturas: 624,
           facturado: 6010000,
+          metaVenta: 11000000,
+          cumplimientoPct: 54.6,
           margenPct: 16.9,
         },
       ],
@@ -740,7 +849,7 @@ export class Home implements OnInit {
   }
 
   private cargarDashboardReal(): void {
-    const sucursalId = this.currentSucursalId();
+    const sucursalId = this.role === 'root' ? 0 : this.currentSucursalId();
 
     forkJoin({
       sucursales: (
@@ -748,12 +857,8 @@ export class Home implements OnInit {
           ? this.servicioSucursal.buscarsucursal(String(sucursalId))
           : this.servicioSucursal.buscarTodasSucursal()
       ).pipe(catchError(() => of({ data: [] }))),
-      facturas: this.servicioFacturacion.buscarFacturasParaCierre(10000).pipe(catchError(() => of({ data: [] }))),
-      usuarios: (
-        sucursalId
-          ? this.servicioUsuario.buscarUsuariosPorSucursal(sucursalId, 10000)
-          : this.servicioUsuario.buscarTodosUsuario(1, 10000)
-      ).pipe(catchError(() => of({ data: [] }))),
+      facturas: this.servicioFacturacion.buscarFacturasParaCierre(10000, false).pipe(catchError(() => of({ data: [] }))),
+      usuarios: this.servicioUsuario.buscarTodosUsuario(1, 10000).pipe(catchError(() => of({ data: [] }))),
       tipos: this.servicioTipousuario.obtenerTodosTipousuario().pipe(catchError(() => of({ data: [] }))),
     }).subscribe(({ sucursales, facturas, usuarios, tipos }) => {
       const sucursalesList = this.filtrarSucursalesPorUsuario(this.unwrapList(sucursales), sucursalId);
@@ -779,16 +884,18 @@ export class Home implements OnInit {
       ? facturasMes.filter((factura) => this.numeroSucursalFactura(factura) === sucursalId)
       : facturasMes;
     const vendedoresSucursal = this.filtrarVendedoresSucursal(usuarios, tipos, sucursalId);
+    const facturasVendedor = this.filtrarFacturasVendedorLogeado(facturasSucursal, usuarios);
 
     const metaFacturar = this.metaVentaSucursal(sucursal);
     const miembrosSucursal = vendedoresSucursal.length || 1;
-    const valorFacturadoReal = this.sumarCampo(facturasSucursal, 'fa_valFact', 'fa_valfact');
-    const costoFacturado = this.sumarCampo(facturasSucursal, 'fa_cosFact', 'fa_cosfact');
-    const totalFactura = facturasSucursal.length;
+    const facturasDashboardVendedor = facturasVendedor;
+    const valorFacturadoReal = this.sumarCampo(facturasDashboardVendedor, 'fa_valFact', 'fa_valfact');
+    const costoFacturado = this.sumarCampo(facturasDashboardVendedor, 'fa_cosFact', 'fa_cosfact');
+    const totalFactura = facturasDashboardVendedor.length;
     const ticketPromedio = totalFactura ? valorFacturadoReal / totalFactura : 0;
     const margenVentaPct = valorFacturadoReal ? ((valorFacturadoReal - costoFacturado) / valorFacturadoReal) * 100 : 0;
-    const porcientoFacturado = metaFacturar ? (valorFacturadoReal / metaFacturar) * 100 : 0;
     const metaPorVendedor = miembrosSucursal ? metaFacturar / miembrosSucursal : metaFacturar;
+    const porcientoFacturado = metaPorVendedor ? (valorFacturadoReal / metaPorVendedor) * 100 : 0;
 
     this.vendedor = {
       ...this.vendedor,
@@ -804,7 +911,7 @@ export class Home implements OnInit {
       porcientoFacturado,
       ticketPromedio,
       canales: [{ nombre: 'Ventas del mes', monto: valorFacturadoReal }],
-      facturasRecientes: this.mapFacturasRecientes(facturasSucursal),
+      facturasRecientes: this.mapFacturasRecientes(facturasDashboardVendedor),
     };
 
     if (sucursal?.nom_sucursal || sucursal?.descripcion) {
@@ -819,16 +926,19 @@ export class Home implements OnInit {
     tipos: any[],
   ): void {
     const sucursalRows = sucursales.map((sucursal) => {
-      const sucursalId = Number(sucursal?.cod_sucursal ?? sucursal?.id ?? 0);
+      const sucursalId = this.numeroSucursal(sucursal);
       const facturasSucursal = facturasMes.filter((factura) => this.numeroSucursalFactura(factura) === sucursalId);
       const facturado = this.sumarCampo(facturasSucursal, 'fa_valFact', 'fa_valfact');
       const costo = this.sumarCampo(facturasSucursal, 'fa_cosFact', 'fa_cosfact');
       const vendedores = this.filtrarVendedoresSucursal(usuarios, tipos, sucursalId).length;
+      const metaVenta = this.metaVentaSucursal(sucursal);
       return {
         nombre: String(sucursal?.nom_sucursal ?? sucursal?.descripcion ?? `Sucursal ${sucursalId}`),
         vendedores,
         facturas: facturasSucursal.length,
         facturado,
+        metaVenta,
+        cumplimientoPct: metaVenta ? (facturado / metaVenta) * 100 : 0,
         margenPct: facturado ? ((facturado - costo) / facturado) * 100 : 0,
       };
     });
@@ -867,6 +977,9 @@ export class Home implements OnInit {
     const value =
       localStorage.getItem('idSucursal') ||
       sucRaw?.cod_sucursal ||
+      sucRaw?.codSucursal ||
+      sucRaw?.idSucursal ||
+      sucRaw?.idsucursal ||
       sucRaw?.id ||
       sucRaw?.sucursalid ||
       localStorage.getItem('sucursalid') ||
@@ -877,30 +990,105 @@ export class Home implements OnInit {
 
   private buscarSucursalActual(sucursales: any[], sucursalId: number): any {
     if (!sucursalId) return sucursales[0] || null;
-    return sucursales.find((sucursal) => Number(sucursal?.cod_sucursal ?? sucursal?.id ?? 0) === sucursalId) || null;
+    return sucursales.find((sucursal) => this.numeroSucursal(sucursal) === sucursalId) || null;
   }
 
   private filtrarSucursalesPorUsuario(sucursales: any[], sucursalId: number): any[] {
     if (!sucursalId) return sucursales;
-    return sucursales.filter((sucursal) => Number(sucursal?.cod_sucursal ?? sucursal?.id ?? 0) === sucursalId);
+    return sucursales.filter((sucursal) => this.numeroSucursal(sucursal) === sucursalId);
   }
 
   private filtrarFacturasPorSucursal(facturas: any[], sucursalId: number): any[] {
-    if (!sucursalId) return [];
+    if (!sucursalId) return facturas;
     return facturas.filter((factura) => this.numeroSucursalFactura(factura) === sucursalId);
   }
 
   private filtrarUsuariosPorSucursal(usuarios: any[], sucursalId: number): any[] {
-    if (!sucursalId) return [];
-    return usuarios.filter((usuario) => Number(usuario?.sucursalid ?? usuario?.sucursal ?? 0) === sucursalId);
+    if (!sucursalId) return usuarios;
+    return usuarios.filter((usuario) => this.numeroSucursalUsuario(usuario) === sucursalId);
+  }
+
+  private filtrarFacturasVendedorLogeado(facturas: any[], usuarios: any[]): any[] {
+    const codigos = this.codigosVendedorLogeado(usuarios);
+    if (!codigos.length) return [];
+    const codigoSet = new Set(codigos.map((codigo) => this.normalizarTexto(codigo)));
+
+    return facturas.filter((factura) => {
+      const candidatos = [
+        factura?.fa_codVend,
+        factura?.fa_codvend,
+        factura?.fa_nomVend,
+        factura?.fa_nomvend,
+      ].map((value) => this.normalizarTexto(value)).filter(Boolean);
+
+      return candidatos.some((codigo) => {
+        if (codigoSet.has(codigo)) return true;
+        return codigos.some((vendedor) => {
+          const valor = this.normalizarTexto(vendedor);
+          return valor.length >= 4 && codigo.length >= 4 && (valor.includes(codigo) || codigo.includes(valor));
+        });
+      });
+    });
+  }
+
+  private codigosVendedorLogeado(usuarios: any[]): string[] {
+    const codUsuario = String(localStorage.getItem('codigousuario') || '').trim();
+    const claveUsuario = String(localStorage.getItem('claveusuario') || '').trim();
+    const idUsuario = String(localStorage.getItem('idusuario') || '').trim();
+    const username = this.normalizarTexto(localStorage.getItem('username') || '');
+    const usuario = usuarios.find((item) => String(item?.codUsuario ?? item?.codusuario ?? '').trim() === codUsuario)
+      || usuarios.find((item) => this.normalizarTexto(item?.claveUsuario ?? item?.claveusuario) === this.normalizarTexto(claveUsuario))
+      || usuarios.find((item) => this.normalizarTexto(item?.idUsuario ?? item?.idusuario) === this.normalizarTexto(idUsuario))
+      || usuarios.find((item) => this.normalizarTexto(item?.nombreUsuario ?? item?.nombreusuario) === username)
+      || null;
+
+    const codigos = [
+      codUsuario,
+      claveUsuario,
+      idUsuario,
+      localStorage.getItem('username'),
+      usuario?.claveUsuario,
+      usuario?.claveusuario,
+      usuario?.codUsuario,
+      usuario?.codusuario,
+      usuario?.idUsuario,
+      usuario?.idusuario,
+      usuario?.nombreUsuario,
+      usuario?.nombreusuario,
+    ]
+      .map((value) => String(value ?? '').trim())
+      .filter(Boolean);
+
+    return [...new Set(codigos)];
+  }
+
+  private normalizarTexto(value: any): string {
+    return String(value ?? '')
+      .trim()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/\s+/g, ' ')
+      .toLowerCase();
   }
 
   private metaVentaSucursal(sucursal: any): number {
     return this.toNumber(
+      sucursal?.meta_ventas ??
       sucursal?.meta_vents ??
-      sucursal?.meta_venta ??
       sucursal?.metaVenta ??
       sucursal?.metaventa ??
+      0,
+    );
+  }
+
+  private numeroSucursal(sucursal: any): number {
+    return this.toNumber(
+      sucursal?.cod_sucursal ??
+      sucursal?.codSucursal ??
+      sucursal?.idSucursal ??
+      sucursal?.idsucursal ??
+      sucursal?.sucursalid ??
+      sucursal?.id ??
       0,
     );
   }
@@ -909,8 +1097,21 @@ export class Home implements OnInit {
     return this.toNumber(
       factura?.fa_codSucu ??
       factura?.fa_codsucu ??
+      factura?.fa_codSucursal ??
+      factura?.fa_codsucursal ??
       factura?.cod_sucursal ??
       factura?.sucursalid ??
+      0,
+    );
+  }
+
+  private numeroSucursalUsuario(usuario: any): number {
+    return this.toNumber(
+      usuario?.sucursalid ??
+      usuario?.sucursal ??
+      usuario?.idSucursal ??
+      usuario?.idsucursal ??
+      usuario?.cod_sucursal ??
       0,
     );
   }
@@ -945,7 +1146,7 @@ export class Home implements OnInit {
     );
 
     return usuarios.filter((usuario) => {
-      const usuarioSucursal = Number(usuario?.sucursalid ?? usuario?.sucursal ?? 0);
+      const usuarioSucursal = this.numeroSucursalUsuario(usuario);
       if (sucursalId && usuarioSucursal !== sucursalId) return false;
       const tipoDesc = tipoMap.get(Number(usuario?.idtipoUsuario ?? usuario?.idtipousuario ?? 0)) || '';
       const esTipoVendedor = tipoDesc.includes('vendedor') || tipoDesc.includes('venta');

@@ -329,6 +329,8 @@ export class AuthService {
     }
 
     localStorage.setItem('codigousuario', String(usuario.codUsuario || ''));
+    localStorage.setItem('claveusuario', String(usuario.claveUsuario || ''));
+    localStorage.setItem('idusuario', String(usuario.idUsuario || ''));
     localStorage.setItem('idSucursal', String(usuario.sucursalid || ''));
     localStorage.setItem('codigoempresa', String(usuario.cod_empre || ''));
     localStorage.setItem('idtipousuario', String(usuario.idtipoUsuario || ''));

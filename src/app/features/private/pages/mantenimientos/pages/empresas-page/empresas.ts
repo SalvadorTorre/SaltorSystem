@@ -133,6 +133,7 @@ export class Empresas implements OnInit {
       nom_sucursal: ['', Validators.required],
       dir_sucursal: ['', Validators.required],
       tel_sucursal: ['', Validators.required],
+      meta_ventas: [0, [Validators.min(0)]],
     });
   }
 
@@ -465,6 +466,7 @@ export class Empresas implements OnInit {
       nom_sucursal: '',
       tel_sucursal: '',
       dir_sucursal: '',
+      meta_ventas: 0,
     });
     $('#modalSucursal').modal('show');
   }
@@ -477,6 +479,7 @@ export class Empresas implements OnInit {
       nom_sucursal: sucursal.nom_sucursal,
       tel_sucursal: sucursal.tel_sucursal,
       dir_sucursal: sucursal.dir_sucursal,
+      meta_ventas: Number((sucursal as any)?.meta_ventas ?? (sucursal as any)?.meta_vents ?? 0),
     });
     $('#modalSucursal').modal('show');
   }
@@ -761,6 +764,7 @@ export class Empresas implements OnInit {
               nom_sucursal: payload.nom_empre,
               dir_sucursal: payload.dir_empre || 'NO APLICA',
               tel_sucursal: payload.tel_empre || '0000000000',
+              meta_ventas: 0,
             };
             this.servicioSucursal.guardarSucursal(defaultSucursal).subscribe({
               next: (response: any) => {
