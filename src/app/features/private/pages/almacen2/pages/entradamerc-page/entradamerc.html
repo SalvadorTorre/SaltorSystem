@@ -77,7 +77,27 @@
           </div>
           <div class="col-md-2">
             <label class="form-label">Nombre Usuario</label>
-            <input type="text" class="form-control" formControlName="me_nomVend" [disabled]="true">
+            <div class="input-group">
+              <input type="text" class="form-control" formControlName="me_nomVend" [disabled]="true">
+              <button
+                type="button"
+                class="btn btn-outline-danger"
+                title="Seleccionar PDF"
+                (click)="abrirSelectorPdfEntrada()"
+              >
+                <i class="bi bi-file-earmark-pdf"></i>
+              </button>
+            </div>
+            <input
+              #inputPdfEntrada
+              type="file"
+              class="d-none"
+              accept="application/pdf,.pdf"
+              (change)="seleccionarPdfEntrada($event)"
+            >
+            <div class="form-text text-truncate" *ngIf="nombrePdfEntrada">
+              {{ nombrePdfEntrada }}
+            </div>
           </div>
         </div>
 
@@ -178,7 +198,7 @@
         </div>
 
         <div class="d-flex justify-content-end">
-          <button type="submit" class="btn btn-primary btn-lg me-2">
+          <button type="submit" class="btn btn-primary btn-lg me-2" [disabled]="canPrint">
             <i class="bi bi-save me-2"></i> Guardar Entrada
           </button>
           <button type="button" class="btn btn-secondary btn-lg" [disabled]="!canPrint" (click)="imprimirEntrada()">

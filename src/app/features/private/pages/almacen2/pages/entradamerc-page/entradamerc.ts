@@ -70,6 +70,7 @@ export class EntradaMercComponent implements OnInit, AfterViewInit {
   @ViewChild('inputCodigo') inputCodigo!: ElementRef<HTMLInputElement>;
   @ViewChild('inputDescripcion') inputDescripcion!: ElementRef<HTMLInputElement>;
   @ViewChild('inputPrecio') inputPrecio!: ElementRef<HTMLInputElement>;
+  @ViewChild('inputPdfEntrada') inputPdfEntrada!: ElementRef<HTMLInputElement>;
   productosBusquedaCodigo: any[] = [];
   productosBusquedaDesc: any[] = [];
   Toast = (Swal as any).mixin({
@@ -108,6 +109,8 @@ export class EntradaMercComponent implements OnInit, AfterViewInit {
   entradaSeleccionada: any = null;
   detalleConsulta: any[] = [];
   private ultimoRncBuscado: string = '';
+  archivoPdfEntrada: File | null = null;
+  nombrePdfEntrada: string = '';
 
   constructor(
     private fb: FormBuilder,
@@ -132,6 +135,7 @@ export class EntradaMercComponent implements OnInit, AfterViewInit {
       me_status: [''],
       me_codVend: [''],
       me_nomVend: [{ value: '', disabled: true }],
+      imgfactura: [''],
       nota: [''],
       vendedor: [''],
       despachado: [''],
@@ -183,6 +187,10 @@ export class EntradaMercComponent implements OnInit, AfterViewInit {
 
   ngAfterViewInit(): void {
     this.inputRncSupl?.nativeElement.focus();
+  }
+
+  private sucursalUsuario(): number {
+    return Number(localStorage.getItem('idSucursal') || this.idSucursal || 1);
   }
 
   buscarRncSuplidor(event?: Event): void {
@@ -412,10 +420,10 @@ guardarEntrada() {
   ===================================================== */
   const formValue = this.entradaForm.getRawValue();
 
-  const sucursalId = Number(localStorage.getItem('idSucursal') || this.idSucursal || 1);
+  const sucursalId = this.sucursalUsuario();
   const empresaCod = String(localStorage.getItem('codigoempresa') || '').trim();
 
-  const entradamercancias = {
+    const entradamercancias = {
     me_codEntr: null, // ⛔ se genera en backend
     me_fecEntr: this.toIsoDate(formValue.me_fecEntr),
     me_valEntr: this.calcularTotal(),
@@ -427,6 +435,8 @@ guardarEntrada() {
     me_status: formValue.me_status,
     me_codVend: formValue.me_codVend,
     me_nomVend: formValue.me_nomVend,
+    imgfactura: formValue.imgfactura,
+    archivoPdfEntrada: this.archivoPdfEntrada,
     nota: formValue.nota,
     vendedor: formValue.vendedor,
     despachado: formValue.despachado,
@@ -496,7 +506,8 @@ guardarEntrada() {
                  6️⃣ MOSTRAR CÓDIGO EN FRONTEND
               ===================================================== */
               this.entradaForm.patchValue({
-                me_codEntr: codigoGenerado
+                me_codEntr: codigoGenerado,
+                imgfactura: res?.data?.entrada?.imgfactura || res?.data?.entrada?.IMGFACTURA || formValue.imgfactura
               });
 
               /* =====================================================
@@ -506,6 +517,7 @@ guardarEntrada() {
 
               this.lastSavedEntrada = {
                 ...entradamercancias,
+                ...(res?.data?.entrada || {}),
                 me_codEntr: codigoGenerado
               };
 
@@ -760,6 +772,11 @@ guardarEntrada() {
     this.productosBusquedaDesc = [];
     this.selectedProducto = null;
     this.ultimoRncBuscado = '';
+    this.archivoPdfEntrada = null;
+    this.nombrePdfEntrada = '';
+    if (this.inputPdfEntrada?.nativeElement) {
+      this.inputPdfEntrada.nativeElement.value = '';
+    }
     this.entradaForm.reset({
       me_codEntr: '',
       me_fecEntr: this.fechaHoy(),
@@ -771,6 +788,7 @@ guardarEntrada() {
       me_status: '',
       me_codVend: '',
       me_nomVend: '',
+      imgfactura: '',
       nota: '',
       vendedor: '',
       despachado: '',
@@ -848,6 +866,11 @@ guardarEntrada() {
     this.lastSavedEntrada = null;
     this.lastSavedDetalle = [];
     this.selectedProducto = null;
+    this.archivoPdfEntrada = null;
+    this.nombrePdfEntrada = '';
+    if (this.inputPdfEntrada?.nativeElement) {
+      this.inputPdfEntrada.nativeElement.value = '';
+    }
     this.detalles = [];
     this.entradaForm.patchValue({
       me_codEntr: '',
@@ -859,6 +882,33 @@ guardarEntrada() {
     this.entradaForm.get('det_codMerc')?.enable();
     this.entradaForm.get('det_desMerc')?.enable();
     this.inputCodigo?.nativeElement.focus();
+  }
+
+  seleccionarPdfEntrada(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0] || null;
+    if (!file) return;
+
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      this.archivoPdfEntrada = null;
+      this.nombrePdfEntrada = '';
+      this.entradaForm.patchValue({ imgfactura: '' });
+      input.value = '';
+      this.Toast.fire({
+        title: 'Archivo invalido',
+        text: 'Solo puede seleccionar archivos PDF.',
+        icon: 'warning'
+      });
+      return;
+    }
+
+    this.archivoPdfEntrada = file;
+    this.nombrePdfEntrada = file.name;
+    this.entradaForm.patchValue({ imgfactura: file.name });
+  }
+
+  abrirSelectorPdfEntrada(): void {
+    this.inputPdfEntrada?.nativeElement.click();
   }
  
   toUpper(controlName: string, event?: Event) {
@@ -903,10 +953,11 @@ guardarEntrada() {
     .buscarEntradamerc(
       this.currentPage,
       100, // cuando hay filtro traemos más
-      cod || undefined,
-      nom || undefined,
-      fec || undefined
-    )
+        cod || undefined,
+        nom || undefined,
+        fec || undefined,
+        this.sucursalUsuario()
+      )
     .subscribe({
       next: (response: any) => {
         this.entradamercList = Array.isArray(response?.data) ? response.data : [];
@@ -953,7 +1004,7 @@ guardarEntrada() {
   this.currentPage = page;
 
   this.servicioEntradamerc
-    .buscarTodasEntradamerc(this.currentPage, this.pageSize)
+    .buscarTodasEntradamerc(this.currentPage, this.pageSize, this.sucursalUsuario())
     .subscribe(
       (response: any) => {
         this.entradamercList = response.data || [];

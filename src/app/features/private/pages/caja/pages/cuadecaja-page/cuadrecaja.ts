@@ -294,7 +294,22 @@ export class CuadreCaja implements OnInit {
            .agregarTablaDetalle(this.facturasFiltradas, this.formatoMoneda, (factura) => this.obtenerCodigoPagoVisible(factura))
            .agregarLeyendaFormasPago(this.formasPago)
            .agregarFirma()
-           .build('cierre_caja.pdf');
+           .build(this.nombreArchivoCierre());
+  }
+
+  private nombreArchivoCierre(fecha: Date = new Date()): string {
+    const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+    const dia = String(fecha.getDate()).padStart(2, '0');
+    const ano = String(fecha.getFullYear());
+    const base = `cierre${mes}${dia}${ano}`;
+    const storageKey = `cuadrecaja_pdf_${base}`;
+    const contadorActual = Number(localStorage.getItem(storageKey) || '0');
+    const nombre = contadorActual === 0
+      ? `${base}.pdf`
+      : `${base}-${contadorActual}.pdf`;
+
+    localStorage.setItem(storageKey, String(contadorActual + 1));
+    return nombre;
   }
 
   formatoMoneda(valor: number): string {

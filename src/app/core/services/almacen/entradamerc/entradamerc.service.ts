@@ -100,6 +100,36 @@ export class ServicioEntradamerc {
     return `${anio}${sucStr}${seqStr}`;
   }
 
+  private sanitizeFileName(value: any): string {
+    return String(value || "factura.pdf")
+      .trim()
+      .replace(/\s+/g, "_")
+      .replace(/[^a-zA-Z0-9._-]/g, "")
+      .slice(0, 80) || "factura.pdf";
+  }
+
+  private async subirPdfEntrada(file: File, codigoEntrada: string): Promise<string> {
+    const client = this.supabase.client as any;
+    if (!client?.storage?.from) {
+      throw new Error("Supabase Storage no esta configurado.");
+    }
+
+    const bucket = "entradamerc";
+    const fileName = this.sanitizeFileName(file.name);
+    const year = new Date().getFullYear();
+    const stamp = Date.now();
+    const path = `entradas/${year}/${codigoEntrada}/${stamp}-${fileName}`;
+    const { error } = await client.storage
+      .from(bucket)
+      .upload(path, file, {
+        contentType: file.type || "application/pdf",
+        upsert: false,
+      });
+
+    if (error) this.throwStep("Subir PDF entrada", error);
+    return `${bucket}/${path}`;
+  }
+
   private async getOrPickContFacturaRow(idsucursal: number): Promise<any | null> {
     const year = new Date().getFullYear();
     const { data, error } = await this.db
@@ -214,6 +244,11 @@ export class ServicioEntradamerc {
           if (contErr) this.throwStep("Actualizar contfactura", contErr);
         }
 
+        const archivoPdf = header?.archivoPdfEntrada instanceof File ? header.archivoPdfEntrada : null;
+        const ubicacionPdf = archivoPdf
+          ? await this.subirPdfEntrada(archivoPdf, me_codentr)
+          : this.toStringOrNull(header?.imgfactura);
+
         const me_fecentr =
           this.normalizeDateOnly(header?.me_fecEntr ?? header?.me_fecentr) ??
           new Date().toISOString().slice(0, 10);
@@ -230,7 +265,7 @@ export class ServicioEntradamerc {
           me_status: this.toStringMax(header?.me_status ?? "A", 4) ?? "A",
           me_codvend: this.toStringMax(header?.me_codVend ?? header?.me_codvend, 5),
           me_nomvend: this.toStringMax(header?.me_nomVend ?? header?.me_nomvend, 15),
-          imgfactura: this.toStringOrNull(header?.imgfactura),
+          imgfactura: ubicacionPdf,
           nota: this.toStringOrNull(header?.nota),
           vendedor: this.toStringMax(header?.vendedor, 25),
           despachado: this.toStringMax(header?.despachado, 25),
@@ -403,8 +438,11 @@ export class ServicioEntradamerc {
     })()).pipe(map((res: any) => res));
   }
 
-  buscarTodasEntradamerc(pageIndex: number, pageSize: number ): Observable<any> {
+  buscarTodasEntradamerc(pageIndex: number, pageSize: number, idsucursal?: number ): Observable<any> {
     let url = `/entradamerc?page=${pageIndex}&limit=${pageSize}`;
+    if (idsucursal) {
+      url += `&idsucursal=${encodeURIComponent(String(idsucursal))}`;
+    }
 
     console.log(url);
 
@@ -414,11 +452,15 @@ export class ServicioEntradamerc {
 
     const offset = Math.max(pageIndex - 1, 0) * pageSize;
     return from((async () => {
-      const { data, error, count } = await this.db
+      let query = this.db
         .from("entradamerc")
         .select("*", { count: "exact" })
         .order("me_codentr", { ascending: false })
         .range(offset, offset + pageSize - 1);
+
+      if (idsucursal) query = query.eq("me_codsucu", Number(idsucursal));
+
+      const { data, error, count } = await query;
       if (error) this.throwStep("Listar entradamerc", error);
       return {
         status: "success",
@@ -435,6 +477,53 @@ export class ServicioEntradamerc {
     }
     const codigo = String(me_codEntr || "").trim();
     return from((async () => {
+      const { data: entrada, error: entradaReadErr } = await this.db
+        .from("entradamerc")
+        .select("*")
+        .eq("me_codentr", codigo)
+        .maybeSingle();
+      if (entradaReadErr) this.throwStep("Leer entradamerc para eliminar", entradaReadErr);
+
+      const { data: detalles, error: detalleReadErr } = await this.db
+        .from("detentradamerc")
+        .select("*")
+        .eq("de_codentr", codigo);
+      if (detalleReadErr) this.throwStep("Leer detentradamerc para eliminar", detalleReadErr);
+
+      for (const det of detalles || []) {
+        const cod = String(det?.de_codmerc ?? "").trim();
+        const cant = this.toNumber(det?.de_canentr);
+        const idsucursal =
+          this.toNumber(det?.de_codsucu) ||
+          this.toNumber(entrada?.me_codsucu);
+
+        if (!cod || cant <= 0 || !idsucursal) continue;
+
+        const { data: invCur, error: invErr } = await this.db
+          .from("inventario")
+          .select("*")
+          .eq("inv_codsucu", idsucursal)
+          .eq("inv_codprod", cod)
+          .limit(1)
+          .maybeSingle();
+        if (invErr) this.throwStep(`Leer inventario para revertir entrada (${cod})`, invErr);
+        if (!invCur?.id) {
+          throw new Error(
+            `[Entradamerc/Supabase] Revertir inventario: no existe inventario para producto ${cod} en sucursal ${idsucursal}.`
+          );
+        }
+
+        const existenciaNueva = this.toNumber(invCur?.inv_existencia) - cant;
+        const { error: invUpErr } = await this.db
+          .from("inventario")
+          .update({
+            inv_existencia: existenciaNueva,
+            inv_fechamov: new Date().toISOString(),
+          })
+          .eq("id", Number(invCur.id));
+        if (invUpErr) this.throwStep(`Revertir inventario por eliminar entrada (${cod})`, invUpErr);
+      }
+
       const { error: detErr } = await this.db
         .from("detentradamerc")
         .delete()
@@ -509,7 +598,7 @@ export class ServicioEntradamerc {
     })()).pipe(map((res: any) => res));
   }
 
- buscarEntradamerc(pageIndex: number, pageSize: number, codigo?: string, nomcliente?: string, fecha?:string,): Observable<any> {
+ buscarEntradamerc(pageIndex: number, pageSize: number, codigo?: string, nomcliente?: string, fecha?:string, idsucursal?: number): Observable<any> {
     let url = `/entradamerc?page=${pageIndex}&limit=${pageSize}`;
 
     if (codigo) {
@@ -520,6 +609,9 @@ export class ServicioEntradamerc {
     }
     if (fecha) {
       url += `&fecha=${encodeURIComponent(fecha)}`;
+    }
+    if (idsucursal) {
+      url += `&idsucursal=${encodeURIComponent(String(idsucursal))}`;
     }
 
     if (!this.useSupabase) {
@@ -541,6 +633,7 @@ export class ServicioEntradamerc {
       if (cod) query = query.ilike("me_codentr", `%${cod}%`);
       if (nom) query = query.ilike("me_nomsupl", `%${nom}%`);
       if (fec) query = query.gte("me_fecentr", fec).lte("me_fecentr", fec);
+      if (idsucursal) query = query.eq("me_codsucu", Number(idsucursal));
 
       const { data, error, count } = await query;
       if (error) this.throwStep("Buscar entradamerc", error);

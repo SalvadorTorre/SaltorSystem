@@ -450,12 +450,42 @@ export class DevolucionService {
             if (invUpErr) this.throwStep(`Actualizar inventario salida (${cod})`, invUpErr);
           }
 
+          const devolucionRow = {
+            fecha: new Date().toISOString(),
+            codentrada: me_codEntr,
+            codsalida: fa_codFact,
+          };
+          const { data: devolucionIns, error: devolucionErr } = await this.db
+            .from('devolucion')
+            .insert(devolucionRow)
+            .select('*')
+            .single();
+          if (devolucionErr) this.throwStep('Insertar devolucion', devolucionErr);
+
+          const iddevolucion = this.toNumberOrNull(devolucionIns?.id);
+          if (!iddevolucion) {
+            throw new Error('No se pudo obtener el id de la devolucion.');
+          }
+
+          const { error: entradaDevErr } = await this.db
+            .from('entradamerc')
+            .update({ iddevolucion })
+            .eq('me_codentr', me_codEntr);
+          if (entradaDevErr) this.throwStep('Marcar entrada con devolucion', entradaDevErr);
+
+          const { error: salidaDevErr } = await this.db
+            .from('ventainterna')
+            .update({ iddevolucion })
+            .eq('fa_codfact', fa_codFact);
+          if (salidaDevErr) this.throwStep('Marcar salida con devolucion', salidaDevErr);
+
           return {
             status: 'success',
             code: 200,
             data: {
               entrada: { ...(entradaIns || {}), me_codEntr },
               vinterna: { ...(vinIns || {}), fa_codFact },
+              devolucion: devolucionIns || devolucionRow,
               entradaCodigo: me_codEntr,
               salidaCodigo: fa_codFact,
             },

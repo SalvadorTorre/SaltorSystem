@@ -1137,7 +1137,181 @@ items.forEach((it: any) => {
     } catch {}
   }
 
-  async imprimirDevolucion80mm(entradaData: any, entradaItems: any[], salidaData: any, salidaItems: any[], extras?: { facturaNumero?: string, cliente?: string, fechaFactura?: any, entradaCodigo?: string, salidaCodigo?: string }) {
+  async imprimirDevolucion80mm(entradaData: any, entradaItems: any[], salidaData: any, salidaItems: any[], extras?: { facturaNumero?: string, cliente?: string, fechaFactura?: any, entradaCodigo?: string, salidaCodigo?: string, usuario?: string }) {
+    try {
+      const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: [80, 297] });
+      const pageWidth = 74;
+      const centerX = pageWidth / 2;
+      const leftMargin = 5;
+      const rightMargin = 5;
+      const xRight = pageWidth - rightMargin;
+      const formatoMoneda = new Intl.NumberFormat('es-DO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      const formatDateShort = (date: Date) => {
+        const d = new Date(date);
+        const day = d.getDate().toString().padStart(2, '0');
+        const month = (d.getMonth() + 1).toString().padStart(2, '0');
+        const year = d.getFullYear();
+        return `${day}/${month}/${year}`;
+      };
+      const drawDashedLine = (y: number) => {
+        (doc as any).setLineDash([1, 1], 0);
+        doc.line(leftMargin, y, xRight, y);
+        (doc as any).setLineDash([], 0);
+      };
+      const centerText = (text: any, y: number, options?: any) => {
+        doc.text(String(text), centerX, y, { align: 'center', ...options });
+      };
+      const getEmpresa = () => {
+        let empresa = 'CENTRO HIERRO MARCOS SRL';
+        let direccion = 'CALLE 30 DE MARZO NO. 54';
+        let telefono = '809-547-0022';
+        let rncEmpresa = '101-66762-2';
+        try {
+          const empresaStorage = localStorage.getItem('empresa');
+          if (empresaStorage && empresaStorage !== '[object Object]') {
+            let parsedEmpresa = JSON.parse(empresaStorage);
+            if (Array.isArray(parsedEmpresa)) parsedEmpresa = parsedEmpresa[0];
+            if (parsedEmpresa) {
+              if (typeof parsedEmpresa === 'string') {
+                empresa = parsedEmpresa;
+                direccion = localStorage.getItem('direccion_empresa') || direccion;
+                telefono = localStorage.getItem('telefono_empresa') || telefono;
+                rncEmpresa = localStorage.getItem('rnc_empresa') || rncEmpresa;
+              } else {
+                empresa = parsedEmpresa.nom_empre || empresa;
+                direccion = parsedEmpresa.dir_empre || direccion;
+                telefono = parsedEmpresa.tel_empre || telefono;
+                rncEmpresa = parsedEmpresa.rnc_empre || rncEmpresa;
+              }
+            }
+          }
+        } catch {}
+        return { empresa, direccion, telefono, rncEmpresa };
+      };
+      const renderDetalle = (titulo: string, items: any[], tipo: 'entrada' | 'salida', yStart: number): { y: number; total: number } => {
+        let yPos = yStart;
+        doc.setFont('helvetica', 'bold');
+        centerText(titulo, yPos);
+        yPos += 6;
+        doc.setFont('helvetica', 'normal');
+        drawDashedLine(yPos);
+        yPos += 5;
+        const xDesc = leftMargin;
+        const xCant = 38;
+        const xPrecio = 52;
+        const xValor = xRight;
+        doc.setFont('helvetica', 'bold');
+        doc.text('Descripcion', xDesc, yPos);
+        doc.text('Cant.', xCant, yPos, { align: 'right' });
+        doc.text('Precio', xPrecio, yPos, { align: 'right' });
+        doc.text('Valor', xValor, yPos, { align: 'right' });
+        yPos += 2;
+        drawDashedLine(yPos);
+        yPos += 4;
+        doc.setFont('helvetica', 'normal');
+        let total = 0;
+        (items || []).forEach((it: any) => {
+          const cantidad = tipo === 'entrada'
+            ? Number(it.de_canEntr ?? it.cantidad ?? 0)
+            : Number(it.cantidad ?? it.df_canMerc ?? 0);
+          const des = tipo === 'entrada'
+            ? String(it.de_desMerc ?? it.producto?.in_desmerc ?? it.descripcion ?? '')
+            : String(it.producto?.in_desmerc ?? it.df_desMerc ?? it.descripcion ?? '');
+          const precio = tipo === 'entrada'
+            ? Number(it.de_preMerc ?? it.precio ?? 0)
+            : Number(it.precio ?? it.df_preMerc ?? 0);
+          const valor = tipo === 'entrada'
+            ? Number(it.de_valEntr ?? it.total ?? cantidad * precio)
+            : Number(it.total ?? it.df_valMerc ?? cantidad * precio);
+          total += valor;
+          const descLines = doc.splitTextToSize(des, 30);
+          doc.text(descLines, xDesc, yPos);
+          doc.text(String(cantidad), xCant, yPos, { align: 'right' });
+          doc.text(formatoMoneda.format(precio), xPrecio, yPos, { align: 'right' });
+          doc.text(formatoMoneda.format(valor), xValor, yPos, { align: 'right' });
+          yPos += Math.max(descLines.length * 4, 4) + 2;
+        });
+        drawDashedLine(yPos);
+        yPos += 5;
+        doc.setFont('helvetica', 'bold');
+        doc.text(`TOTAL ${tipo === 'entrada' ? 'ENTRADA' : 'SALIDA'}`, xDesc, yPos);
+        doc.text(formatoMoneda.format(total), xValor, yPos, { align: 'right' });
+        yPos += 8;
+        doc.setFont('helvetica', 'normal');
+        return { y: yPos, total };
+      };
+
+      const renderCopy = (copyIndex: number) => {
+        if (copyIndex > 0) doc.addPage([80, 297], 'p');
+        let yPos = 5;
+        const { empresa, direccion, telefono, rncEmpresa } = getEmpresa();
+        try {
+          const imgData = 'assets/logo2.png';
+          const imgWidth = 20;
+          const imgHeight = 20;
+          doc.addImage(imgData, 'PNG', centerX - imgWidth / 2, yPos, imgWidth, imgHeight);
+          yPos += imgHeight + 5;
+        } catch {}
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        centerText(empresa, yPos);
+        yPos += 4;
+        const dirSplit = doc.splitTextToSize(direccion, pageWidth - (leftMargin + rightMargin));
+        dirSplit.forEach((line: string) => {
+          centerText(line, yPos);
+          yPos += 4;
+        });
+        centerText(`Tel: ${telefono}`, yPos);
+        yPos += 4;
+        centerText(`RNC: ${rncEmpresa}`, yPos);
+        yPos += 5;
+        doc.setFont('helvetica', 'bold');
+        centerText('DEVOLUCION Y CAMBIO', yPos);
+        doc.setFont('helvetica', 'normal');
+        yPos += 6;
+        drawDashedLine(yPos);
+        yPos += 5;
+        const codEntrada = (extras?.entradaCodigo || entradaData?.me_codEntr || '').toString();
+        const codSalida = (extras?.salidaCodigo || salidaData?.fa_codFact || '').toString();
+        const facturaNo = extras?.facturaNumero || entradaData?.me_facSupl || '';
+        const cliente = extras?.cliente || entradaData?.me_nomSupl || salidaData?.fa_nomClie || '';
+        const fechaFacturaTxt = extras?.fechaFactura ? formatDateShort(new Date(extras?.fechaFactura)) : '';
+        doc.text(`Entrada: ${codEntrada}`, leftMargin, yPos);
+        doc.text(`Salida: ${codSalida}`, xRight, yPos, { align: 'right' });
+        yPos += 4;
+        doc.text(`Fecha: ${formatDateShort(new Date())}`, leftMargin, yPos);
+        yPos += 4;
+        doc.text(`Factura: ${facturaNo}`, leftMargin, yPos);
+        doc.text(`Fecha Fact.: ${fechaFacturaTxt}`, xRight, yPos, { align: 'right' });
+        yPos += 4;
+        doc.text(`Cliente: ${String(cliente)}`, leftMargin, yPos);
+        yPos += 6;
+        yPos = renderDetalle('ENTRADA DE MERCANCIAS', entradaItems || [], 'entrada', yPos).y;
+        yPos = renderDetalle('SALIDA (VENTA INTERNA)', salidaItems || [], 'salida', yPos).y;
+        yPos += 2;
+        doc.setLineWidth(0.3);
+        doc.line(leftMargin, yPos, centerX - 4, yPos);
+        doc.line(centerX + 4, yPos, xRight, yPos);
+        doc.setFontSize(7);
+        doc.text('Recibido por', (leftMargin + centerX - 4) / 2, yPos + 4, { align: 'center' });
+        doc.text('Despachador', (centerX + 4 + xRight) / 2, yPos + 4, { align: 'center' });
+        yPos += 14;
+        doc.line(leftMargin, yPos, xRight, yPos);
+        const preparado = extras?.usuario || entradaData?.me_nomVend || salidaData?.fa_nomVend || '';
+        doc.text(preparado ? `Preparado por: ${preparado}` : 'Preparado por', centerX, yPos + 4, { align: 'center' });
+        yPos += 10;
+        doc.text('.', leftMargin, yPos, { align: 'left' });
+      };
+
+      renderCopy(0);
+      renderCopy(1);
+      doc.autoPrint();
+      const pdfBlob = doc.output('blob');
+      await this.printBlob(pdfBlob, 'ticket');
+    } catch {}
+  }
+
+  private async imprimirDevolucion80mmLegacy(entradaData: any, entradaItems: any[], salidaData: any, salidaItems: any[], extras?: { facturaNumero?: string, cliente?: string, fechaFactura?: any, entradaCodigo?: string, salidaCodigo?: string, usuario?: string }) {
     try {
       const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: [80, 297] });
       const pageWidth = 74;
@@ -1933,6 +2107,7 @@ items.forEach((it: any) => {
         itbisGeneral?.porcentaje_menos ??
           itbisGeneral?.itbismeno ??
           itbisGeneral?.itbis_menos ??
+          itbisGeneral?.porcentajemenos ??
           (porcentajeItbis ? porcentajeItbis / (1 + porcentajeItbis / 100) : 0),
       ) || 0;
       const tasaMenos = porcentajeMenos / 100;
@@ -2053,8 +2228,8 @@ items.forEach((it: any) => {
       const xTotal = pageWidth - rightMargin;
       doc.text('CANT', xCant, yPos);
       doc.text('DESC', xDesc, yPos);
-      doc.text('P/S ITBIS', xPrecio, yPos, { align: 'right' });
-      doc.text(`ITBIS ${formatoMoneda.format(porcentajeItbis)}%`, xItbis, yPos, { align: 'right' });
+      doc.text('PRECIO', xPrecio, yPos, { align: 'right' });
+      doc.text('ITBIS', xItbis, yPos, { align: 'right' });
       doc.text('TOTAL', xTotal, yPos, { align: 'right' });
       yPos += 3;
       drawDashedLine(yPos);
@@ -2069,10 +2244,9 @@ items.forEach((it: any) => {
         const cantidad = Number(item?.dc_canmerc ?? item?.cantidad ?? 0) || 0;
         const precio = Number(item?.dc_premerc ?? item?.precio ?? 0) || 0;
         const total = Number(item?.dc_valmerc ?? item?.total ?? cantidad * precio) || 0;
-        const itbisUnitario = precio * tasaMenos;
-        const precioSinItbis = precio - itbisUnitario;
-        const itbisItem = itbisUnitario * cantidad;
-        const subtotalItem = precioSinItbis * cantidad;
+        const itbisItem = total * tasaMenos;
+        const subtotalItem = total - itbisItem;
+        const precioSinItbis = cantidad ? subtotalItem / cantidad : subtotalItem;
         const descripcion = pick(
           item?.dc_descrip,
           item?.descripcion,
@@ -2080,7 +2254,7 @@ items.forEach((it: any) => {
         );
         subtotal += subtotalItem;
         totalItbis += itbisItem;
-        totalIncluido += total || subtotalItem + itbisItem;
+        totalIncluido += total;
 
         const descSplit = doc.splitTextToSize(descripcion, 24);
         doc.text(formatoMoneda.format(cantidad), xCant, yPos);
@@ -2116,6 +2290,10 @@ items.forEach((it: any) => {
       centerText('Estos precios estan sujetos a cambio', yPos);
       yPos += 3.5;
       centerText('sin previo aviso.', yPos);
+      yPos += 5;
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      centerText('WWW.GRUPOHIERRO.COM', yPos);
       yPos += 5;
       doc.setFont('helvetica', 'bold');
       centerText('*** Gracias por preferirnos ***', yPos);

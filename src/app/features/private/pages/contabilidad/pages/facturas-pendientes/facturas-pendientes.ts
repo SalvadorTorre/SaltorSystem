@@ -31,7 +31,10 @@ export class FacturasPendientesComponent implements OnInit {
     this.servicioFacturacion.buscarFacturasPendientesDgii().subscribe({
       next: (response: any) => {
         this.allFacturas = (response.data || [])
-          .filter((factura: any) => this.faltaNcf(factura) || this.esRechazadaDgii(factura))
+          .filter((factura: any) =>
+            !this.esStatusU(factura) &&
+            (this.faltaNcf(factura) || this.esRechazadaDgii(factura))
+          )
           .sort(
           (a: any, b: any) =>
             this.numeroFactura(b?.fa_codFact ?? b?.fa_codfact) -
@@ -82,6 +85,10 @@ export class FacturasPendientesComponent implements OnInit {
       factura?.fa_ncfFact ?? factura?.fa_ncffact ?? '',
     ).trim();
     return !ncf || ['NULL', 'UNDEFINED'].includes(ncf.toUpperCase());
+  }
+
+  private esStatusU(factura: any): boolean {
+    return this.normalizarBandera(factura?.fa_status ?? factura?.faStatus) === 'U';
   }
 
   esRechazadaDgii(factura: any): boolean {

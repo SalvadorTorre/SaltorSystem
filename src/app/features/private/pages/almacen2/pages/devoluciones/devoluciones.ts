@@ -596,12 +596,6 @@ fa_codClie: this.facturaForm.get('fa_codClie')?.value
         icon: 'success'
       });
  
-      this.seleccionFactura = [];
-      this.seleccionDestino = [];
-      this.resultadoFactura = [];
-      this.totalFactura = 0;
-      this.totalDestino = 0;
- 
       // this.facturaForm.get('fa_codFact')?.enable();
       // this.facturaForm.get('fa_codFact')?.reset();
       // this.facturaForm.patchValue({ fa_codFact: '', buscarTexto: '' });
@@ -716,7 +710,7 @@ fa_codClie: this.facturaForm.get('fa_codClie')?.value
     this.totalProductos = this.seleccionProductos.reduce((acc, it) => acc + (Number(it.total) || 0), 0);
   }
 
-  imprimirEntradaSalida() {
+  async imprimirEntradaSalida() {
     if (!this.ultimaEntradaCab || !this.ultimaSalidaCab) {
       Swal.fire({ title: 'No hay datos para imprimir', icon: 'info' });
       return;
@@ -726,10 +720,12 @@ fa_codClie: this.facturaForm.get('fa_codClie')?.value
       cliente: this.clienteNombre,
       fechaFactura: this.fechaFactura,
       entradaCodigo: this.ultimoCodigoEntrada || '',
-      salidaCodigo: this.ultimoCodigoSalida || ''
+      salidaCodigo: this.ultimoCodigoSalida || '',
+      usuario: String(localStorage.getItem('username') || '')
     };
-    this.printing.imprimirDevolucion80mm(this.ultimaEntradaCab, this.ultimaEntradaDet || [], this.ultimaSalidaCab, this.ultimaSalidaDet || [], extras);
- this.imprimirDisponible = false;
+    await this.printing.imprimirDevolucion80mm(this.ultimaEntradaCab, this.ultimaEntradaDet || [], this.ultimaSalidaCab, this.ultimaSalidaDet || [], extras);
+    this.imprimirDisponible = false;
+    this.deshacerFactura();
   }
   guardarDevolucionProductos() {
     if (!this.seleccionProductos.length) {

@@ -578,13 +578,15 @@ export class Cotizacion implements OnInit {
     }
 
     try {
-      const detalleResponse = await firstValueFrom(
-        this.servicioCotizacion.buscarCotizacionDetalle(codigo),
-      );
+      const [detalleResponse, itbisRows] = await Promise.all([
+        firstValueFrom(this.servicioCotizacion.buscarCotizacionDetalle(codigo)),
+        firstValueFrom(this.servicioItbis.buscarTodos()),
+      ]);
       const detalle = Array.isArray(detalleResponse?.data)
         ? detalleResponse.data
         : [];
-      const pdfBlob = this.crearCotizacionA4Pdf(Cotizacion, detalle);
+      const itbisGeneral = this.obtenerItbisGeneral(itbisRows);
+      const pdfBlob = this.crearCotizacionA4Pdf(Cotizacion, detalle, itbisGeneral);
       const isDesktop =
         typeof window !== 'undefined' && !!window.electronAPI?.isDesktop;
 
@@ -664,14 +666,7 @@ export class Cotizacion implements OnInit {
         firstValueFrom(this.servicioItbis.buscarTodos()),
       ]);
       const detalle = Array.isArray(detalleResponse?.data) ? detalleResponse.data : [];
-      const itbisGeneral =
-        (itbisRows || []).find(
-          (row: any) => String(row?.codigo || '').trim().toUpperCase() === 'ITBIS-01',
-        ) ||
-        (itbisRows || []).find(
-          (row: any) => String(row?.nivel || '').trim().toLowerCase() === 'general',
-        ) ||
-        { codigo: 'ITBIS-01', porcentaje: 18, porcentaje_menos: 15.2542 };
+      const itbisGeneral = this.obtenerItbisGeneral(itbisRows);
 
       await this.printingService.imprimirCotizacion80mm(
         cotizacion,
@@ -1675,10 +1670,23 @@ export class Cotizacion implements OnInit {
       });
   }
 
+  private obtenerItbisGeneral(itbisRows: any[] = []): any {
+    return (
+      (itbisRows || []).find(
+        (row: any) => String(row?.codigo || '').trim().toUpperCase() === 'ITBIS-01',
+      ) ||
+      (itbisRows || []).find(
+        (row: any) => String(row?.nivel || '').trim().toLowerCase() === 'general',
+      ) ||
+      { codigo: 'ITBIS-01', porcentaje: 18, porcentaje_menos: 15.2542 }
+    );
+  }
+
   // Método para convertir a mayúsculas en tiempo real
   private crearCotizacionA4Pdf(
     cotizacion: CotizacionModelData,
     detalle: any[],
+    itbisGeneral?: any,
   ): Blob {
     const formatCurrency = (value: any) =>
       Number(value || 0).toLocaleString('es-DO', {
@@ -1692,6 +1700,7 @@ export class Cotizacion implements OnInit {
       format: 'a4',
     });
     const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
     const imgWidth = 20;
     const imgHeight = 20;
     const imgX = (pageWidth - imgWidth) / 2;
@@ -1712,41 +1721,69 @@ export class Cotizacion implements OnInit {
     doc.setFontSize(14);
     doc.text('COTIZACION', 105, 70, { align: 'center' });
 
-    doc.setFontSize(10);
-    doc.text(`No. ${formatText(cotizacion.ct_codcoti)}`, 14, 80);
-    doc.text(`Fecha: ${this.formatFechaFiltro(cotizacion.ct_feccoti)}`, 14, 85);
-    doc.text(`Vendido por: ${formatText(cotizacion.ct_nomvend)}`, 14, 90);
-
     doc.setFontSize(12);
-    doc.text('CLIENTE', 14, 100);
+    doc.text('CLIENTE', 14, 82);
     doc.setFontSize(10);
-    doc.text(formatText(cotizacion.ct_nomclie), 14, 106);
-    doc.text(`RNC: ${formatText(cotizacion.ct_rnc)}`, 14, 111);
-    doc.text(`Telefono: ${formatText(cotizacion.ct_telclie)}`, 14, 116);
-    doc.text(`Direccion: ${formatText(cotizacion.ct_dirclie)}`, 14, 121);
+    doc.text(formatText(cotizacion.ct_nomclie), 14, 88);
+    doc.text(`RNC: ${formatText(cotizacion.ct_rnc)}`, 14, 93);
+    doc.text(`Telefono: ${formatText(cotizacion.ct_telclie)}`, 14, 98);
+    doc.text(`Direccion: ${formatText(cotizacion.ct_dirclie)}`, 14, 103);
 
+    const infoX = 128;
+    doc.setFontSize(10);
+    doc.text(`No. ${formatText(cotizacion.ct_codcoti)}`, infoX, 88);
+    doc.text(`Fecha: ${this.formatFechaFiltro(cotizacion.ct_feccoti)}`, infoX, 93);
+    doc.text(`Vendedor: ${formatText(cotizacion.ct_nomvend)}`, infoX, 98);
+
+    const porcentajeItbis =
+      Number(
+        itbisGeneral?.porcentaje ??
+          itbisGeneral?.itebis ??
+          itbisGeneral?.itbis ??
+          18,
+      ) || 0;
+    const porcentajeMenos =
+      Number(
+        itbisGeneral?.porcentaje_menos ??
+          itbisGeneral?.itbismeno ??
+          itbisGeneral?.itbis_menos ??
+          itbisGeneral?.porcentajemenos ??
+          (porcentajeItbis ? porcentajeItbis / (1 + porcentajeItbis / 100) : 0),
+      ) || 0;
+    const tasaMenos = porcentajeMenos / 100;
     let subtotal = 0;
+    let totalItbis = 0;
+    let totalIncluido = 0;
     const body = (detalle || []).map((item: any) => {
       const cantidad = Number(item?.dc_canmerc || 0);
       const precio = Number(item?.dc_premerc || 0);
-      const total = cantidad * precio;
-      subtotal += total;
+      const total =
+        Number(item?.dc_valmerc || 0) ||
+        cantidad * precio;
+      const itbisLinea = total * tasaMenos;
+      const subtotalLinea = total - itbisLinea;
+      const precioSinItbis = cantidad ? subtotalLinea / cantidad : subtotalLinea;
+      subtotal += subtotalLinea;
+      totalItbis += itbisLinea;
+      totalIncluido += total;
 
       return [
         cantidad.toString(),
         formatText(item?.dc_descrip),
-        formatCurrency(precio),
+        formatCurrency(precioSinItbis),
+        formatCurrency(itbisLinea),
         formatCurrency(total),
       ];
     });
-    const itbis = Number(cotizacion.ct_itbis || 0);
+    const itbis = totalItbis || Number(cotizacion.ct_itbis || 0);
     const totalGeneral =
-      Number(cotizacion.ct_valcoti || 0) || subtotal + itbis;
+      Number(cotizacion.ct_valcoti || 0) || totalIncluido || subtotal + itbis;
 
     autoTable(doc, {
-      head: [['Cantidad', 'Descripcion', 'Precio Unitario', 'Total']],
+      head: [['Cantidad', 'Descripcion', 'Precio', 'ITBIS', 'Total']],
       body,
-      startY: 130,
+      startY: 108,
+      margin: { bottom: 38 },
     });
 
     const finalY = (doc as any).lastAutoTable?.finalY || 130;
@@ -1764,19 +1801,23 @@ export class Cotizacion implements OnInit {
     doc.setFontSize(14);
     doc.text(formatCurrency(totalGeneral), 160, finalY + 22);
 
-    doc.setFontSize(12);
-    doc.text(
-      'Estos Precios Estan Sujetos a Cambio Sin Previo Aviso',
-      105,
-      finalY + 40,
-      { align: 'center' },
-    );
-    doc.setFontSize(14);
-    doc.text('WWW.GRUPOHIERRO.COM', 105, finalY + 47, { align: 'center' });
-    doc.setFontSize(12);
-    doc.text('*** Gracias por Preferirnos ***', 105, finalY + 55, {
-      align: 'center',
-    });
+    const totalPages = doc.getNumberOfPages();
+    for (let page = 1; page <= totalPages; page += 1) {
+      doc.setPage(page);
+      doc.setFontSize(12);
+      doc.text(
+        'Estos Precios Estan Sujetos a Cambio Sin Previo Aviso',
+        105,
+        pageHeight - 22,
+        { align: 'center' },
+      );
+      doc.setFontSize(14);
+      doc.text('WWW.GRUPOHIERRO.COM', 105, pageHeight - 15, { align: 'center' });
+      doc.setFontSize(12);
+      doc.text('*** Gracias por Preferirnos ***', 105, pageHeight - 8, {
+        align: 'center',
+      });
+    }
 
     return doc.output('blob');
   }

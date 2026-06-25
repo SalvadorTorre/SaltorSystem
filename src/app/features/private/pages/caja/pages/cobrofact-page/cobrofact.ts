@@ -2354,6 +2354,10 @@ export class CobroFact implements OnInit {
     const estaImpresa = ['S', '1', 'TRUE', 'SI', 'Y'].includes(impresa);
     const estaPagada = ['S', 'P', '1', 'TRUE', 'SI', 'Y'].includes(fpago);
 
+    if (statusFactura === 'N') {
+      return false;
+    }
+
     if (noImpresa) {
       return true;
     }
