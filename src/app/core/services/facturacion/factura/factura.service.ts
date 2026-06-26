@@ -1474,30 +1474,53 @@ export class ServicioFacturacion {
     })());
   }
 
-  buscarFacturasParaCierre(limit: number = 10000, filtrarSucursal: boolean = true): Observable<any> {
+  buscarFacturasParaCierre(limit: number = 0, filtrarSucursal: boolean = true): Observable<any> {
     if (!this.useSupabase) {
       const url = `/facturacion?limit=${limit}`;
       return this.http.GetRequest<any>(url);
     }
 
-    const safeLimit = Math.max(1, Number(limit) || 10000);
+    const safeLimit = Math.max(0, Number(limit) || 0);
     return from((async () => {
+      const rows = await this.buscarFacturasPaginadas(safeLimit, filtrarSucursal);
+      return {
+        status: 'success',
+        code: 200,
+        data: rows.map((row: any) => this.mapFacturaDbToUi(row)),
+      };
+    })());
+  }
+
+  private async buscarFacturasPaginadas(limit: number, filtrarSucursal: boolean): Promise<any[]> {
+    const pageSize = 1000;
+    const rows: any[] = [];
+    let offset = 0;
+
+    while (true) {
+      const remaining = limit > 0 ? limit - rows.length : pageSize;
+      if (limit > 0 && remaining <= 0) break;
+
+      const currentPageSize = limit > 0 ? Math.min(pageSize, remaining) : pageSize;
       let query = this.db
         .from('factura')
         .select('*')
         .order('fa_fecfact', { ascending: false })
         .order('fa_codfact', { ascending: false })
-        .limit(safeLimit);
+        .range(offset, offset + currentPageSize - 1);
+
       query = filtrarSucursal ? this.applyTenantFilter(query) : this.applyTenantCompanyFilter(query);
 
       const { data, error } = await query;
       if (error) throw error;
-      return {
-        status: 'success',
-        code: 200,
-        data: (data || []).map((row: any) => this.mapFacturaDbToUi(row)),
-      };
-    })());
+
+      const page = data || [];
+      rows.push(...page);
+
+      if (page.length < currentPageSize) break;
+      offset += currentPageSize;
+    }
+
+    return rows;
   }
 
   eliminarFacturacion(fa_codFact: string): Observable<any> {
@@ -2253,19 +2276,53 @@ export class ServicioFacturacion {
       return this.buscarFacturacion(1, Number(params.pageSize || 500));
     }
 
-    const safeLimit = Math.max(10, Number(params.pageSize) || 500);
+    const safeLimit = Math.max(0, Number(params.pageSize) || 0);
     const empresa = String(params.empresa || '').trim();
     const sucursal = this.toNumberOrNull(params.sucursal);
     const fechaDesde = this.normalizeDate(params.fechaDesde);
     const fechaHasta = this.normalizeDate(params.fechaHasta);
 
     return from((async () => {
+      const rows = await this.buscarConsultaVentasPaginadas({
+        limit: safeLimit,
+        empresa,
+        sucursal,
+        fechaDesde,
+        fechaHasta,
+        incluirTodasLasEmpresas: !!params.incluirTodasLasEmpresas,
+      });
+
+      return {
+        status: 'success',
+        code: 200,
+        data: rows.map((row: any) => this.mapFacturaDbToUi(row)),
+      };
+    })());
+  }
+
+  private async buscarConsultaVentasPaginadas(params: {
+    limit: number;
+    empresa: string;
+    sucursal: number | null;
+    fechaDesde: string | null;
+    fechaHasta: string | null;
+    incluirTodasLasEmpresas: boolean;
+  }): Promise<any[]> {
+    const pageSize = 1000;
+    const rows: any[] = [];
+    let offset = 0;
+
+    while (true) {
+      const remaining = params.limit > 0 ? params.limit - rows.length : pageSize;
+      if (params.limit > 0 && remaining <= 0) break;
+
+      const currentPageSize = params.limit > 0 ? Math.min(pageSize, remaining) : pageSize;
       let query = this.db
         .from('factura')
         .select('*')
         .order('fa_fecfact', { ascending: false })
         .order('fa_codfact', { ascending: false })
-        .limit(safeLimit);
+        .range(offset, offset + currentPageSize - 1);
 
       if (!params.incluirTodasLasEmpresas) {
         const { codEmpre, rncEmpre } = this.currentTenant();
@@ -2276,30 +2333,32 @@ export class ServicioFacturacion {
         } else {
           query = query.eq('fa_codempr', '__NO_TENANT__');
         }
-      } else if (empresa && empresa !== 'todas') {
-        query = query.eq('fa_codempr', empresa);
+      } else if (params.empresa && params.empresa !== 'todas') {
+        query = query.eq('fa_codempr', params.empresa);
       }
 
-      if (sucursal && sucursal > 0) {
-        query = query.eq('fa_codsucu', sucursal);
+      if (params.sucursal && params.sucursal > 0) {
+        query = query.eq('fa_codsucu', params.sucursal);
       }
 
-      if (fechaDesde) {
-        query = query.gte('fa_fecfact', fechaDesde);
+      if (params.fechaDesde) {
+        query = query.gte('fa_fecfact', params.fechaDesde);
       }
 
-      if (fechaHasta) {
-        query = query.lte('fa_fecfact', fechaHasta);
+      if (params.fechaHasta) {
+        query = query.lte('fa_fecfact', params.fechaHasta);
       }
 
       const { data, error } = await query;
       if (error) throw error;
 
-      return {
-        status: 'success',
-        code: 200,
-        data: (data || []).map((row: any) => this.mapFacturaDbToUi(row)),
-      };
-    })());
+      const page = data || [];
+      rows.push(...page);
+
+      if (page.length < currentPageSize) break;
+      offset += currentPageSize;
+    }
+
+    return rows;
   }
 }

@@ -16,6 +16,7 @@ export class SignInPage implements OnInit {
 
   myFormCreate!: FormGroup;
   isLoading: boolean = false;
+  private readonly loginMessageKey = 'saltorsystem-login-message';
 
 
   constructor(
@@ -27,6 +28,7 @@ export class SignInPage implements OnInit {
 
   ngOnInit() {
     this.buildFormCreate();
+    this.showStoredLoginMessage();
   }
 
   buildFormCreate() {
@@ -90,8 +92,15 @@ export class SignInPage implements OnInit {
     if (msg.includes('email not confirmed')) {
       return 'La cuenta no está confirmada.';
     }
-    if (msg.includes('fetch failed') || msg.includes('network')) {
-      return 'No se pudo conectar con el servidor.';
+    if (
+      msg.includes('fetch failed') ||
+      msg.includes('failed to fetch') ||
+      msg.includes('network') ||
+      msg.includes('aborterror') ||
+      msg.includes('timeout') ||
+      msg.includes('timed out')
+    ) {
+      return 'No hay conexión con el servidor local. Verifique que Tailscale esté conectado.';
     }
     if (msg.includes('invalid api key')) {
       return 'Configuración inválida de Supabase.';
@@ -101,6 +110,18 @@ export class SignInPage implements OnInit {
     }
 
     return raw;
+  }
+
+  private showStoredLoginMessage(): void {
+    const message = localStorage.getItem(this.loginMessageKey);
+    if (!message) return;
+
+    localStorage.removeItem(this.loginMessageKey);
+    Swal.fire({
+      icon: 'warning',
+      title: 'Servidor local no disponible',
+      text: message,
+    });
   }
 
 

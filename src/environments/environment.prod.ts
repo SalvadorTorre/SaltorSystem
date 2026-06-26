@@ -7,9 +7,9 @@ export const environment = {
   backendUrl: 'https://grupohierro.duckdns.org/api',
   supabase: {
     enabled: true,
-    url: 'https://dslfmrecdeckuwhlhbsw.supabase.co',
+    url: 'https://saltor-supabase.tail67c2f6.ts.net',
     anonKey:
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRzbGZtcmVjZGVja3V3aGxoYnN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3MzE5ODMsImV4cCI6MjA5MDMwNzk4M30.kRqiGa6MHPDR5D7FlrTjBbnUZJFLtpJIgrg7efQ9jEk',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzgyMjM0NDk3LCJleHAiOjE5Mzk5MTQ0OTd9.vQu_EW7kPFdos5-QwjdDDni4KppSLeFgKrvBCZSc4n8',
     schema: 'myappdb',
   },
   // backendUrl:"http://190.166.82.95:3390/api"

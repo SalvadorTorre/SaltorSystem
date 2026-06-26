@@ -86,7 +86,7 @@ export class ConsultaVentas implements OnInit {
     const paramsBase = {
       empresa: this.filtros.empresa,
       sucursal: this.filtros.sucursal,
-      pageSize: 10000,
+      pageSize: 0,
       incluirTodasLasEmpresas: true
     };
     const ayer = this.fechaAyer();

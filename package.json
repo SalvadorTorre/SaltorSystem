@@ -114,5 +114,19 @@
     "png-to-ico": "^3.0.1",
     "sharp": "^0.34.5",
     "typescript": "~5.1.3"
-  }
+  },
+  "directories": {
+    "doc": "docs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SalvadorTorre/SaltorSystem.git"
+  },
+  "keywords": [],
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/SalvadorTorre/SaltorSystem/issues"
+  },
+  "homepage": "https://github.com/SalvadorTorre/SaltorSystem#readme"
 }

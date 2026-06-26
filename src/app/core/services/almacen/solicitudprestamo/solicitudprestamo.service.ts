@@ -128,6 +128,55 @@ export class SolicitudPrestamoService {
     })).pipe(map((data: any) => ({ status: 'success', code: 200, data })));
   }
 
+  listarParaVentaInterna(
+    sucursalOrigenId: number | string,
+    clienteSucursalId: number | string,
+    clienteSucursalNombre: string,
+    filtro = ''
+  ): Observable<any> {
+    const sucursalId = Number(sucursalOrigenId);
+    const clienteId = String(clienteSucursalId || '').trim();
+    const clienteNombre = String(clienteSucursalNombre || '').trim().toUpperCase();
+    const q = String(filtro || '').trim();
+
+    return from(this.retryAfterExpiredJwt(async () => {
+      if (!Number.isFinite(sucursalId) || sucursalId <= 0 || (!clienteId && !clienteNombre)) {
+        return [];
+      }
+
+      let query = this.db
+        .from('solicitud')
+        .select('*')
+        .eq('so_codsucu', sucursalId)
+        .order('so_fecha', { ascending: false })
+        .limit(100);
+
+      if (q) {
+        query = query.or(`so_codsoli.ilike.%${q}%,so_nomclie.ilike.%${q}%,so_codclie.ilike.%${q}%`);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      return (data || [])
+        .map((row: any) => this.mapSolicitud(row))
+        .filter((solicitud: any) => {
+          const codCliente = String(solicitud?.so_codclie || '').trim();
+          const nomCliente = String(solicitud?.so_nomclie || '').trim().toUpperCase();
+          const sucCliente = String(solicitud?.so_sucursal_clie || '').trim().toUpperCase();
+          return (clienteId && codCliente === clienteId)
+            || (clienteNombre && (nomCliente === clienteNombre || sucCliente === clienteNombre));
+        });
+    })).pipe(
+      map((rows: any[]) => ({
+        status: 'success',
+        code: 200,
+        data: rows,
+        pagination: { total: rows.length, page: 1, pageSize: rows.length },
+      }))
+    );
+  }
+
   guardar(solicitud: any, detalle: any[]): Observable<any> {
     return from(this.retryAfterExpiredJwt(async () => {
       const numero = this.toStringMax(solicitud?.so_codsoli ?? solicitud?.so_numero, 12) || this.generarNumero();

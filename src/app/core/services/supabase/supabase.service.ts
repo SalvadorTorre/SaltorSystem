@@ -7,6 +7,10 @@ import { createClient } from '@supabase/supabase-js';
 })
 export class SupabaseService {
   private readonly storageKey = 'saltorsystem-auth-token';
+  private readonly loginMessageKey = 'saltorsystem-login-message';
+  private readonly localConnectionMessage =
+    'No hay conexión con el servidor local. Verifique que Tailscale esté conectado.';
+  private readonly connectionTimeoutMs = 8000;
   private clientInstance: ReturnType<typeof createClient> | null = null;
   private authListenerBound = false;
   private keepAliveTimer: ReturnType<typeof setInterval> | null = null;
@@ -40,6 +44,9 @@ export class SupabaseService {
       const options: any = {
         db: {
           schema: this.schema,
+        },
+        global: {
+          fetch: this.supabaseFetch.bind(this),
         },
         auth: {
           storageKey: this.storageKey,
@@ -96,6 +103,75 @@ export class SupabaseService {
     }
     this.clientInstance = null;
     this.authListenerBound = false;
+    this.stopSessionKeepAlive();
+  }
+
+  async checkLocalConnection(): Promise<boolean> {
+    const client = this.client as any;
+    if (!client) return false;
+
+    try {
+      const { error } = await client
+        .schema(this.schema)
+        .from('sucursales')
+        .select('cod_sucursal')
+        .limit(1);
+      if (error) throw error;
+      return true;
+    } catch (error) {
+      if (this.isConnectionError(error)) {
+        this.forceLogoutForLocalConnection();
+      }
+      return false;
+    }
+  }
+
+  private async supabaseFetch(
+    input: RequestInfo | URL,
+    init?: RequestInit,
+  ): Promise<Response> {
+    const controller = new AbortController();
+    const timeout = setTimeout(
+      () => controller.abort(),
+      this.connectionTimeoutMs,
+    );
+
+    try {
+      return await fetch(input, {
+        ...(init || {}),
+        signal: init?.signal || controller.signal,
+      });
+    } catch (error) {
+      if (this.isConnectionError(error)) {
+        this.forceLogoutForLocalConnection();
+      }
+      throw error;
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  private forceLogoutForLocalConnection(): void {
+    this.clientInstance = null;
+    this.authListenerBound = false;
+    this.stopSessionKeepAlive();
+
+    try {
+      localStorage.clear();
+      localStorage.setItem(this.loginMessageKey, this.localConnectionMessage);
+    } catch {
+      // El error lanzado tambien permite que el login muestre el mensaje.
+    }
+
+    if (
+      typeof window !== 'undefined' &&
+      !window.location.pathname.includes('/public/sign-in')
+    ) {
+      window.location.assign('/public/sign-in');
+    }
+  }
+
+  private stopSessionKeepAlive(): void {
     if (this.keepAliveTimer) {
       clearInterval(this.keepAliveTimer);
       this.keepAliveTimer = null;
@@ -110,6 +186,28 @@ export class SupabaseService {
     this.refreshHandler = null;
     this.visibilityHandler = null;
     this.visibilityListenerBound = false;
+  }
+
+  private isConnectionError(error: any): boolean {
+    const raw = String(
+      error?.name ||
+        error?.message ||
+        error?.details ||
+        error?.hint ||
+        error ||
+        '',
+    ).toLowerCase();
+
+    return (
+      raw.includes('aborterror') ||
+      raw.includes('failed to fetch') ||
+      raw.includes('fetch failed') ||
+      raw.includes('network') ||
+      raw.includes('networkerror') ||
+      raw.includes('load failed') ||
+      raw.includes('timeout') ||
+      raw.includes('timed out')
+    );
   }
 
   private bindAuthListener(client: any): void {

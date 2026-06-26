@@ -31,11 +31,7 @@ import {
 } from 'src/app/core/services/almacen/ventainterna';
 //import { ServiciodetVentainterna } from 'src/app/core/services/almacen/detventainterna/detventainterna.service';
 import { SucursalesData } from 'src/app/core/services/mantenimientos/sucursal';
-import { ServicioEmpresa } from 'src/app/core/services/mantenimientos/empresas/empresas.service';
-import {
-  EmpresaModel,
-  EmpresaModelData,
-} from 'src/app/core/services/mantenimientos/empresas';
+import { ServicioSucursal } from 'src/app/core/services/mantenimientos/sucursal/sucursal.service';
 import {
   VentainternaDetalleModel,
   interfaceDetalleModel,
@@ -47,6 +43,7 @@ import {
 } from 'src/app/core/services/mantenimientos/inventario';
 import { Inventario } from '../../../mantenimientos/pages/inventario-page/inventario';
 import { PrintingService } from 'src/app/core/services/utils/printing.service';
+import { SolicitudPrestamoService } from 'src/app/core/services/almacen/solicitudprestamo/solicitudprestamo.service';
 declare var $: any;
 @Component({
   selector: 'Ventainterna',
@@ -114,10 +111,11 @@ export class Ventainterna implements OnInit {
   constructor(
     private fb: FormBuilder,
     private servicioVentainterna: ServicioVentainterna,
-    private servicioEmpresa: ServicioEmpresa,
+    private servicioSucursal: ServicioSucursal,
     private servicioInventario: ServicioInventario,
     private ServicioUsuario: ServicioUsuario,
-    private printing: PrintingService
+    private printing: PrintingService,
+    private solicitudPrestamoService: SolicitudPrestamoService
   ) {
     this.form = this.fb.group({
       fa_codvend: ['', Validators.required], // El campo es requerido
@@ -261,11 +259,13 @@ export class Ventainterna implements OnInit {
   @ViewChild('buscarcodmercInput') buscarcodmercElement!: ElementRef;
   buscarNombre = new FormControl();
   buscarSucursalCliente = new FormControl();
-  resultadoNombre: EmpresaModelData[] = [];
+  resultadoNombre: SucursalesData[] = [];
   resultadoSucursalCliente: SucursalesData[] = [];
+  resultadoSolicitud: any[] = [];
   sucursalesCliente: SucursalesData[] = [];
+  sucursalesEmpresa: SucursalesData[] = [];
   mostrarSucursalCliente = false;
-  empresaClienteSeleccionada: EmpresaModelData | null = null;
+  empresaClienteSeleccionada: SucursalesData | null = null;
   selectedIndex = 1;
   buscarcodmerc = new FormControl();
   buscardescripcionmerc = new FormControl();
@@ -281,6 +281,7 @@ export class Ventainterna implements OnInit {
 
   ngOnInit(): void {
     this.buscarTodasVentainterna(1);
+    this.cargarSucursalesEmpresa();
     this.buscarcodmerc.valueChanges
       .pipe(
         debounceTime(50),
@@ -368,25 +369,22 @@ export class Ventainterna implements OnInit {
       });
     this.buscarNombre.valueChanges
       .pipe(
-        debounceTime(500),
+        debounceTime(150),
         distinctUntilChanged(),
         tap(() => {
           this.resultadoNombre = [];
         }),
-        filter((query: string) => query !== ''),
-        switchMap((query: string) =>
-          this.servicioEmpresa.buscarPorNombreEmpresa(query)
-        )
+        filter((query: string) => String(query || '').trim() !== '')
       )
-      .subscribe((results: EmpresaModel) => {
-        console.log(results.data);
-        if (results) {
-          if (Array.isArray(results.data)) {
-            this.resultadoNombre = results.data;
-          }
-        } else {
-          this.resultadoNombre = [];
-        }
+      .subscribe((query: string) => {
+        const q = String(query || '').trim().toUpperCase();
+        this.resultadoNombre = this.sucursalesEmpresa
+          .filter((sucursal) =>
+            `${sucursal.nom_sucursal || ''} ${sucursal.cod_sucursal || ''}`
+              .toUpperCase()
+              .includes(q)
+          )
+          .slice(0, 50);
       });
     this.buscarSucursalCliente.valueChanges
       .pipe(
@@ -405,6 +403,12 @@ export class Ventainterna implements OnInit {
             .includes(q)
         );
       });
+    this.formularioVentainterna.get('fa_solicitud')?.valueChanges
+      .pipe(
+        debounceTime(200),
+        distinctUntilChanged()
+      )
+      .subscribe((query: string) => this.buscarSolicitudesVentaInterna(query));
   }
 
   crearFormularioVentainterna() {
@@ -1037,12 +1041,75 @@ export class Ventainterna implements OnInit {
 
   buscarPorCodigo(codigo: string) {}
 
-  buscarClienteporNombre() {
-    this.servicioEmpresa
-      .buscarPorNombreEmpresa(this.formularioVentainterna.get('fa_nomClie')!.value)
-      .subscribe((response) => {
-        console.log(response);
+  buscarClienteporNombre() {}
+
+  cargarSucursalesEmpresa() {
+    this.servicioSucursal.buscarTodasSucursal().subscribe({
+      next: (response: any) => {
+        const data = response?.data;
+        this.sucursalesEmpresa = Array.isArray(data) ? data : [];
+      },
+      error: () => {
+        this.sucursalesEmpresa = [];
+      },
+    });
+  }
+
+  buscarSolicitudesVentaInterna(query: string) {
+    const filtro = String(query || '').trim().toUpperCase();
+    const sucursalOrigen = this.formularioVentainterna.get('fa_codClie')?.value || this.empresaClienteSeleccionada?.cod_sucursal;
+    const sucursalLogueada = this.sucursalLogueada();
+
+    if (!sucursalOrigen || (!sucursalLogueada.id && !sucursalLogueada.nombre)) {
+      this.resultadoSolicitud = [];
+      return;
+    }
+
+    this.solicitudPrestamoService
+      .listarParaVentaInterna(sucursalOrigen, sucursalLogueada.id, sucursalLogueada.nombre, filtro)
+      .subscribe({
+        next: (response: any) => {
+          this.resultadoSolicitud = Array.isArray(response?.data) ? response.data : [];
+        },
+        error: () => {
+          this.resultadoSolicitud = [];
+        },
       });
+  }
+
+  cargarSolicitudVentaInterna(solicitud: any) {
+    const numero = String(solicitud?.so_codsoli ?? solicitud?.so_numero ?? '').trim();
+    this.resultadoSolicitud = [];
+    this.formularioVentainterna.patchValue({ fa_solicitud: numero }, { emitEvent: false });
+  }
+
+  seleccionarSolicitudEnter(event: Event, nextElement: HTMLInputElement | null) {
+    if (this.resultadoSolicitud.length > 0) {
+      event.preventDefault();
+      this.cargarSolicitudVentaInterna(this.resultadoSolicitud[0]);
+      if (nextElement) {
+        nextElement.focus();
+        nextElement.select();
+      }
+      return;
+    }
+    if (nextElement) {
+      nextElement.focus();
+      nextElement.select();
+    }
+  }
+
+  private sucursalLogueada(): { id: string; nombre: string } {
+    let id = String(localStorage.getItem('idSucursal') || localStorage.getItem('sucursalid') || '').trim();
+    let nombre = '';
+    try {
+      const raw = localStorage.getItem('sucursal');
+      const parsed = raw && raw !== '[object Object]' ? JSON.parse(raw) : null;
+      const sucursal = Array.isArray(parsed) ? parsed[0] : parsed;
+      id = String(sucursal?.cod_sucursal ?? sucursal?.idSucursal ?? id ?? '').trim();
+      nombre = String(sucursal?.nom_sucursal ?? sucursal?.descripcion ?? '').trim();
+    } catch {}
+    return { id, nombre };
   }
 
   formatofecha(date: Date): string {
@@ -1052,27 +1119,23 @@ export class Ventainterna implements OnInit {
     return `${day}/${month}/${year}`;
   }
 
-  cargarDatosEmpresaCliente(empresa: EmpresaModelData) {
+  cargarDatosEmpresaCliente(sucursal: SucursalesData) {
     this.resultadoNombre = [];
     this.resultadoSucursalCliente = [];
     this.sucursalesCliente = [];
     this.mostrarSucursalCliente = false;
-    this.empresaClienteSeleccionada = empresa || null;
+    this.empresaClienteSeleccionada = sucursal || null;
 
-    if (empresa?.nom_empre !== '') {
+    if (sucursal?.nom_sucursal !== '') {
       this.formularioVentainterna.patchValue({
-        fa_codClie: empresa.cod_empre,
-        fa_nomClie: empresa.nom_empre,
+        fa_codClie: sucursal.cod_sucursal,
+        fa_nomClie: sucursal.nom_sucursal,
         suculsar_clie: '',
+        fa_solicitud: '',
       });
-      this.buscarNombre.setValue(empresa.nom_empre, { emitEvent: false });
+      this.resultadoSolicitud = [];
+      this.buscarNombre.setValue(sucursal.nom_sucursal, { emitEvent: false });
       this.buscarSucursalCliente.setValue('', { emitEvent: false });
-      this.servicioEmpresa.buscarEmpres(empresa.cod_empre).subscribe((response) => {
-        const data = Array.isArray(response?.data) ? response.data[0] : response?.data;
-        this.sucursalesCliente = Array.isArray(data?.sucursales) ? data.sucursales : [];
-        this.mostrarSucursalCliente = this.sucursalesCliente.length > 0;
-        this.resultadoSucursalCliente = this.sucursalesCliente;
-      });
     }
   }
 

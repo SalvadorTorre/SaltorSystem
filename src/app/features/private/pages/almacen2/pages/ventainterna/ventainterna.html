@@ -304,7 +304,7 @@
                               "
                               class="px-3 cp"
                             >
-                              <i class="far fa-building mr-5"></i>&nbsp;&nbsp;{{ result.nom_empre }} - {{ result.cod_empre }}
+                              <i class="far fa-building mr-5"></i>&nbsp;&nbsp;{{ result.nom_sucursal }} - {{ result.cod_sucursal }}
                             </a>
                           </div>
                         </div>
@@ -365,14 +365,47 @@
                       <label for="">No. Solicitud</label>
                     </div>
                     <div class="col-4">
-                      <input
-                        type="text"
-                        formControlName="fa_solicitud"
-                        (input)="convertToUpperCase($event)"
-                        (keydown)="moveFocus($event, input3)"
-                        #input2
-                        class="form-control form-control-sm"
-                      />
+                      <div class="input-group show position-relative">
+                        <input
+                          type="text"
+                          formControlName="fa_solicitud"
+                          (input)="convertToUpperCase($event)"
+                          (keydown.enter)="seleccionarSolicitudEnter($event, input3)"
+                          #input2
+                          class="form-control form-control-sm"
+                          autocomplete="off"
+                        />
+                        <div
+                          [ngClass]="{ 'show': resultadoSolicitud.length > 0 }"
+                          class="dropdown-menu"
+                          style="
+                            margin-top: 32px;
+                            z-index: 300;
+                            width: 360px;
+                            position: absolute;
+                            will-change: transform;
+                          "
+                        >
+                          <div
+                            class="searchReturnItem name-find"
+                            *ngFor="let solicitud of resultadoSolicitud"
+                          >
+                            <a
+                              (click)="cargarSolicitudVentaInterna(solicitud)"
+                              style="
+                                color: #222222 !important;
+                                font-size: 10pt;
+                                padding: 12px 0px;
+                                text-decoration: none !important;
+                                cursor: pointer;
+                              "
+                              class="px-3 cp d-block"
+                            >
+                              <i class="far fa-file-alt mr-5"></i>&nbsp;&nbsp;{{ solicitud.so_codsoli }} - {{ solicitud.so_fecha | date:'dd/MM/yyyy' }}
+                            </a>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>

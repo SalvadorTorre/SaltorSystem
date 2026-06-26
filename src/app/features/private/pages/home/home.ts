@@ -6,6 +6,8 @@ import { ServicioFacturacion } from 'src/app/core/services/facturacion/factura/f
 import { ServicioSucursal } from 'src/app/core/services/mantenimientos/sucursal/sucursal.service';
 import { ServicioUsuario } from 'src/app/core/services/mantenimientos/usuario/usuario.service';
 import { ServicioTipousuario } from 'src/app/core/services/mantenimientos/tipousuario/tipousuario.service';
+import { ServicioCliente } from 'src/app/core/services/mantenimientos/clientes/cliente.service';
+import { ModeloClienteData } from 'src/app/core/services/mantenimientos/clientes';
 
 type DashboardRole = 'root' | 'admin' | 'vendedor';
 
@@ -72,6 +74,14 @@ interface VendedorGlobal {
   facturas: number;
   facturado: number;
   cumplimientoPct: number;
+}
+
+interface ClienteAntiguedad {
+  nombre: string;
+  telefono: string;
+  fechaUltimaFactura: string;
+  dias: number;
+  valorUltimaFactura: number;
 }
 
 interface FormaPagoGlobal {
@@ -146,12 +156,14 @@ export class Home implements OnInit {
     formasPago: [],
     alertas: [],
   };
+  clientesAntiguedad: ClienteAntiguedad[] = [];
 
   constructor(
     private servicioFacturacion: ServicioFacturacion,
     private servicioSucursal: ServicioSucursal,
     private servicioUsuario: ServicioUsuario,
     private servicioTipousuario: ServicioTipousuario,
+    private servicioCliente: ServicioCliente,
   ) {}
 
   ngOnInit(): void {
@@ -348,6 +360,13 @@ export class Home implements OnInit {
       currency: 'DOP',
       maximumFractionDigits: 2,
     }).format(value);
+  }
+
+  million(value: number): string {
+    return `${((Number(value) || 0) / 1000000).toLocaleString('es-DO', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })} MM`;
   }
 
   sucursalPctMeta(sucursal: SucursalGlobal): number {
@@ -857,16 +876,19 @@ export class Home implements OnInit {
           ? this.servicioSucursal.buscarsucursal(String(sucursalId))
           : this.servicioSucursal.buscarTodasSucursal()
       ).pipe(catchError(() => of({ data: [] }))),
-      facturas: this.servicioFacturacion.buscarFacturasParaCierre(10000, false).pipe(catchError(() => of({ data: [] }))),
+      facturas: this.servicioFacturacion.buscarFacturasParaCierre(0, false).pipe(catchError(() => of({ data: [] }))),
       usuarios: this.servicioUsuario.buscarTodosUsuario(1, 10000).pipe(catchError(() => of({ data: [] }))),
       tipos: this.servicioTipousuario.obtenerTodosTipousuario().pipe(catchError(() => of({ data: [] }))),
-    }).subscribe(({ sucursales, facturas, usuarios, tipos }) => {
+      clientes: this.servicioCliente.buscarTodosCliente(1, 100000).pipe(catchError(() => of({ data: [] }))),
+    }).subscribe(({ sucursales, facturas, usuarios, tipos, clientes }) => {
       const sucursalesList = this.filtrarSucursalesPorUsuario(this.unwrapList(sucursales), sucursalId);
       const facturasList = this.filtrarFacturasPorSucursal(this.unwrapList(facturas), sucursalId);
       const usuariosList = this.filtrarUsuariosPorSucursal(this.unwrapList(usuarios), sucursalId);
       const tiposList = this.unwrapList(tipos);
+      const clientesList = this.unwrapList(clientes) as ModeloClienteData[];
       const facturasMes = facturasList.filter((factura) => this.esFechaDelMesActual(factura?.fa_fecFact ?? factura?.fa_fecfact));
 
+      this.clientesAntiguedad = this.construirClientesAntiguedad(facturasList, usuariosList, clientesList);
       this.aplicarDashboardSucursal(sucursalesList, facturasMes, usuariosList, tiposList);
       this.aplicarDashboardGlobal(sucursalesList, facturasMes, usuariosList, tiposList);
     });
@@ -1177,6 +1199,92 @@ export class Home implements OnInit {
           estado,
         };
       });
+  }
+
+  private construirClientesAntiguedad(
+    facturas: any[],
+    usuarios: any[],
+    clientesRegistrados: ModeloClienteData[],
+  ): ClienteAntiguedad[] {
+    const hoy = new Date();
+    const desde = new Date(hoy);
+    desde.setDate(desde.getDate() - 90);
+    desde.setHours(0, 0, 0, 0);
+    const clientesPorCodigo = new Map<string, ModeloClienteData>();
+    const clientesPorNombre = new Map<string, ModeloClienteData>();
+
+    clientesRegistrados.forEach((cliente) => {
+      const codigo = String(cliente?.cl_codClie ?? '').trim();
+      const nombre = this.normalizarTexto(cliente?.cl_nomClie);
+      if (codigo) clientesPorCodigo.set(codigo, cliente);
+      if (nombre) clientesPorNombre.set(nombre, cliente);
+    });
+
+    const facturasVendedor = this.filtrarFacturasVendedorLogeado(facturas, usuarios)
+      .map((factura) => ({
+        factura,
+        fecha: this.parseFechaFactura(factura?.fa_fecFact ?? factura?.fa_fecfact),
+      }))
+      .filter((item): item is { factura: any; fecha: Date } => !!item.fecha && item.fecha >= desde && item.fecha <= hoy)
+      .sort((a, b) => b.fecha.getTime() - a.fecha.getTime());
+
+    const clientes = new Map<string, ClienteAntiguedad>();
+    facturasVendedor.forEach(({ factura, fecha }) => {
+      const codigoCliente = String(factura?.fa_codClie ?? factura?.fa_codclie ?? '').trim();
+      const nombreFactura = String(factura?.fa_nomClie ?? factura?.fa_nomclie ?? '').trim();
+      const clienteRegistrado = clientesPorCodigo.get(codigoCliente) || clientesPorNombre.get(this.normalizarTexto(nombreFactura));
+      if (!clienteRegistrado) return;
+
+      const nombre = String(clienteRegistrado?.cl_nomClie ?? nombreFactura ?? 'Sin cliente').trim() || 'Sin cliente';
+      const key = codigoCliente || this.normalizarTexto(nombre);
+      if (clientes.has(key)) return;
+
+      clientes.set(key, {
+        nombre,
+        telefono: this.telefonoClienteRegistrado(clienteRegistrado) || this.telefonoClienteFactura(factura),
+        fechaUltimaFactura: this.toLocalISODate(fecha),
+        dias: this.diasDesdeFecha(fecha, hoy),
+        valorUltimaFactura: this.toNumber(factura?.fa_valFact ?? factura?.fa_valfact),
+      });
+    });
+
+    return [...clientes.values()].sort((a, b) => a.fechaUltimaFactura.localeCompare(b.fechaUltimaFactura));
+  }
+
+  private parseFechaFactura(value: any): Date | null {
+    if (!value) return null;
+    const fechaTexto = String(value).trim();
+    const fecha = fechaTexto.includes('T') ? new Date(fechaTexto) : new Date(`${fechaTexto}T00:00:00`);
+    return Number.isNaN(fecha.getTime()) ? null : fecha;
+  }
+
+  private toLocalISODate(fecha: Date): string {
+    const year = fecha.getFullYear();
+    const month = String(fecha.getMonth() + 1).padStart(2, '0');
+    const day = String(fecha.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  private diasDesdeFecha(fecha: Date, hasta: Date): number {
+    const inicio = new Date(fecha.getFullYear(), fecha.getMonth(), fecha.getDate()).getTime();
+    const fin = new Date(hasta.getFullYear(), hasta.getMonth(), hasta.getDate()).getTime();
+    return Math.max(0, Math.floor((fin - inicio) / 86400000));
+  }
+
+  private telefonoClienteFactura(factura: any): string {
+    const telefono = [
+      factura?.fa_telClie,
+      factura?.fa_telclie,
+      factura?.fa_telClie2,
+      factura?.fa_telclie2,
+      factura?.fa_telefono,
+      factura?.telefono,
+    ].map((value) => String(value ?? '').trim()).find(Boolean);
+    return telefono || '-';
+  }
+
+  private telefonoClienteRegistrado(cliente: ModeloClienteData): string {
+    return String(cliente?.cl_telClie ?? '').trim();
   }
 
   private construirTopVendedores(facturas: any[], usuarios: any[], tipos: any[], metaMensual: number): VendedorGlobal[] {

@@ -81,7 +81,7 @@ export class VentasVendedor implements OnInit {
       sucursal: this.filtros.sucursal,
       fechaDesde: this.filtros.fechaInicio,
       fechaHasta: this.filtros.fechaFin,
-      pageSize: 5000,
+      pageSize: 0,
       incluirTodasLasEmpresas: true,
     }).subscribe({
       next: (resp: any) => {

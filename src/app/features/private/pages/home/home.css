@@ -1,6 +1,6 @@
 .seller-dashboard {
   --ink: #17212f;
-  --muted: #6c757d;
+  --muted: #334155;
   --card-bg: #ffffff;
   --line: #e8ecf3;
   min-height: calc(100vh - 70px);
@@ -111,7 +111,8 @@
 .kpi-card p {
   margin: 0;
   color: var(--muted);
-  font-size: 0.76rem;
+  font-size: 0.90rem;
+  font-weight: 1000;
 }
 
 .kpi-card h3 {
@@ -163,7 +164,7 @@
 .distribution-card p {
   margin: 0;
   font-size: 0.74rem;
-  color: #6c757d;
+  color: #334155;
 }
 
 .distribution-card h5 {
@@ -173,7 +174,7 @@
 }
 
 .distribution-card small {
-  color: #6c757d;
+  color: #334155;
   font-size: 0.7rem;
 }
 
@@ -193,7 +194,7 @@
 .mini-kpi span {
   display: block;
   font-size: 0.72rem;
-  color: #6c757d;
+  color: #334155;
 }
 
 .mini-kpi strong {
@@ -205,7 +206,7 @@
 
 .mini-kpi strong small {
   font-size: 0.72rem;
-  color: #5f6f81;
+  color: #334155;
 }
 
 .week-rows {
@@ -234,7 +235,7 @@
 }
 
 .week-day small {
-  color: #6c757d;
+  color: #334155;
   font-size: 0.72rem;
 }
 
@@ -322,6 +323,25 @@
   white-space: nowrap;
 }
 
+.clientes-antiguedad-scroll {
+  max-height: 330px;
+  overflow-y: auto;
+  overflow-x: auto;
+}
+
+.clientes-antiguedad-scroll .table-facturas-reales thead {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+.clientes-antiguedad-scroll .table-facturas-reales thead th {
+  background: #0f2f6e;
+  color: #fff;
+  font-weight: 800;
+  border-bottom: 0;
+}
+
 .kpi-grid-admin {
   margin-top: 1rem;
 }
@@ -370,8 +390,10 @@
 }
 
 .admin-sucursal-meta small {
-  color: #5f6f81;
-  font-size: 0.73rem;
+  color: #0f172a;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.35;
 }
 
 .sucursal-pie-card {
@@ -417,6 +439,12 @@
   gap: 0.45rem;
 }
 
+.sucursal-pie-row strong {
+  display: inline-block;
+  min-width: 5.75rem;
+  margin-right: 0.75rem;
+}
+
 .sucursal-pie-dot {
   width: 10px;
   height: 10px;
@@ -426,8 +454,16 @@
 
 .sucursal-pie-row small,
 .sucursal-pie-empty {
-  color: #5f6f81;
+  color: #334155;
   font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.sucursal-pie-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.12rem;
 }
 
 .admin-alert-list {

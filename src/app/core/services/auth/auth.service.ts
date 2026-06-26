@@ -423,8 +423,15 @@ export class AuthService {
     if (msg.includes('invalid api key')) {
       return 'Configuración inválida de Supabase.';
     }
-    if (msg.includes('fetch failed') || msg.includes('network')) {
-      return 'No se pudo conectar con el servidor.';
+    if (
+      msg.includes('fetch failed') ||
+      msg.includes('failed to fetch') ||
+      msg.includes('network') ||
+      msg.includes('aborterror') ||
+      msg.includes('timeout') ||
+      msg.includes('timed out')
+    ) {
+      return 'No hay conexión con el servidor local. Verifique que Tailscale esté conectado.';
     }
     if (msg.includes('credentials') && msg.includes('incomplete')) {
       return 'Debes completar usuario y clave.';
