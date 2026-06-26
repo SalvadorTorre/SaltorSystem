@@ -3,6 +3,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from 'src/app/core/services/auth/auth.service';
 import { ProfileService } from 'src/app/core/services/profile/profile.service';
+import { SupabaseService } from 'src/app/core/services/supabase/supabase.service';
 import Swal from 'sweetalert2';
 
 declare var $: any;
@@ -16,12 +17,14 @@ export class SignInPage implements OnInit {
 
   myFormCreate!: FormGroup;
   isLoading: boolean = false;
+  descargandoApk = false;
   private readonly loginMessageKey = 'saltorsystem-login-message';
 
 
   constructor(
     private formBuilder: FormBuilder,
     private authService: AuthService,
+    private readonly supabase: SupabaseService,
     private readonly router: Router,
 
   ) { }
@@ -78,6 +81,56 @@ export class SignInPage implements OnInit {
           });
         },
       });
+    }
+  }
+
+  async descargarApk(): Promise<void> {
+    if (this.descargandoApk) return;
+
+    const client = this.supabase.client as any;
+    if (!client) {
+      Swal.fire('APK', 'Supabase no esta configurado.', 'error');
+      return;
+    }
+
+    this.descargandoApk = true;
+    try {
+      const { data, error } = await client
+        .schema(this.supabase.schema)
+        .from('apk_archivos')
+        .select('nombre_archivo, link_publico, actualizado_en')
+        .order('actualizado_en', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) throw error;
+      if (!data?.link_publico) {
+        Swal.fire('APK no disponible', 'No hay ninguna version APK cargada.', 'info');
+        return;
+      }
+
+      const link = String(data.link_publico || '').trim();
+      const nombre = String(data.nombre_archivo || 'saltorsystem.apk').trim();
+      const anchor = document.createElement('a');
+      anchor.href = link;
+      anchor.download = nombre;
+      anchor.rel = 'noopener';
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+    } catch (error: any) {
+      const message = this.translateError(
+        error?.message ||
+        error?.error?.message ||
+        'No fue posible descargar el APK.'
+      );
+      Swal.fire({
+        icon: 'error',
+        title: 'Error al descargar APK',
+        text: message,
+      });
+    } finally {
+      this.descargandoApk = false;
     }
   }
 

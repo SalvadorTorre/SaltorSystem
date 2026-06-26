@@ -482,6 +482,8 @@ export class AccessControlService {
       ['cuentas banco', '/private/mantenimientos/cuentas-bancarias'],
       ['rnc', '/private/mantenimientos/rnc'],
       ['configuracion global dgii', '/private/mantenimientos/configuracion-global'],
+      ['cargar apk', '/private/mantenimientos/cargar-apk'],
+      ['apk', '/private/mantenimientos/cargar-apk'],
       ['mantenimientos', '/private/mantenimientos'],
       ['mantenimiento', '/private/mantenimientos'],
     ];

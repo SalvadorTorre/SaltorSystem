@@ -229,6 +229,15 @@ const routes: Routes = [
             './pages/configuracion-global/configuracion-global-modulo'
           ).then((m) => m.ModuloConfiguracionGlobal),
       },
+      {
+        path: 'cargar-apk',
+        canActivate: [permissionGuard],
+        data: { accessPath: '/private/mantenimientos/cargar-apk' },
+        loadChildren: () =>
+          import('./pages/configuracion/cargar-apk/cargar-apk-modulo').then(
+            (m) => m.CargarApkModulo,
+          ),
+      },
     ],
   },
 ];

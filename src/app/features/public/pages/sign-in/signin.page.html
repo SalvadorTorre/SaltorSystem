@@ -49,4 +49,22 @@
       </button>
     </div>
   </form>
+
+  <div class="apk-download-box">
+    <button
+      class="btn btn-outline-success w-100"
+      type="button"
+      (click)="descargarApk()"
+      [disabled]="descargandoApk"
+    >
+      <span
+        class="spinner-border spinner-border-sm me-2"
+        role="status"
+        *ngIf="descargandoApk"
+      ></span>
+      <i class="bi bi-android2 me-1" *ngIf="!descargandoApk"></i>
+      {{ descargandoApk ? 'Buscando APK...' : 'Descargar APK' }}
+    </button>
+    <small>Descarga siempre la ultima version cargada.</small>
+  </div>
 </div>

@@ -149,6 +149,10 @@
           <i class="bi bi-123"></i>
           <span>Cont. Factura</span>
         </a>
+        <a *ngIf="canView('/private/mantenimientos/cargar-apk')" class="maintenance-sublink" routerLinkActive="active" [routerLink]="['cargar-apk']">
+          <i class="bi bi-android2"></i>
+          <span>Cargar APK</span>
+        </a>
       </div>
 
     </nav>
@@ -308,6 +312,10 @@
           <a *ngIf="canView('/private/mantenimientos/contfactura')" class="maintenance-sublink" routerLinkActive="active" [routerLink]="['contfactura']" data-bs-dismiss="offcanvas">
             <i class="bi bi-123"></i>
             <span>Cont. Factura</span>
+          </a>
+          <a *ngIf="canView('/private/mantenimientos/cargar-apk')" class="maintenance-sublink" routerLinkActive="active" [routerLink]="['cargar-apk']" data-bs-dismiss="offcanvas">
+            <i class="bi bi-android2"></i>
+            <span>Cargar APK</span>
           </a>
         </div>
 

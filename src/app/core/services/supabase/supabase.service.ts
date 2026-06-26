@@ -10,7 +10,9 @@ export class SupabaseService {
   private readonly loginMessageKey = 'saltorsystem-login-message';
   private readonly localConnectionMessage =
     'No hay conexión con el servidor local. Verifique que Tailscale esté conectado.';
-  private readonly connectionTimeoutMs = 8000;
+  private readonly connectionTimeoutMs = 20000;
+  private readonly connectionProbeTimeoutMs = 5000;
+  private readonly storageUploadTimeoutMs = 10 * 60 * 1000;
   private clientInstance: ReturnType<typeof createClient> | null = null;
   private authListenerBound = false;
   private keepAliveTimer: ReturnType<typeof setInterval> | null = null;
@@ -119,7 +121,7 @@ export class SupabaseService {
       if (error) throw error;
       return true;
     } catch (error) {
-      if (this.isConnectionError(error)) {
+      if (this.isConnectionError(error) && !(await this.isLocalServerReachable())) {
         this.forceLogoutForLocalConnection();
       }
       return false;
@@ -131,9 +133,10 @@ export class SupabaseService {
     init?: RequestInit,
   ): Promise<Response> {
     const controller = new AbortController();
+    const isStorageUpload = this.isStorageUploadRequest(input, init);
     const timeout = setTimeout(
       () => controller.abort(),
-      this.connectionTimeoutMs,
+      isStorageUpload ? this.storageUploadTimeoutMs : this.connectionTimeoutMs,
     );
 
     try {
@@ -142,7 +145,11 @@ export class SupabaseService {
         signal: init?.signal || controller.signal,
       });
     } catch (error) {
-      if (this.isConnectionError(error)) {
+      if (
+        this.isConnectionError(error) &&
+        !isStorageUpload &&
+        !(await this.isLocalServerReachable())
+      ) {
         this.forceLogoutForLocalConnection();
       }
       throw error;
@@ -188,6 +195,26 @@ export class SupabaseService {
     this.visibilityListenerBound = false;
   }
 
+  private isStorageUploadRequest(
+    input: RequestInfo | URL,
+    init?: RequestInit,
+  ): boolean {
+    const url =
+      typeof input === 'string'
+        ? input
+        : input instanceof URL
+        ? input.toString()
+        : String((input as Request)?.url || '');
+    const method = String(init?.method || (input as Request)?.method || 'GET')
+      .trim()
+      .toUpperCase();
+
+    return (
+      url.includes('/storage/v1/object/') &&
+      ['POST', 'PUT', 'PATCH'].includes(method)
+    );
+  }
+
   private isConnectionError(error: any): boolean {
     const raw = String(
       error?.name ||
@@ -208,6 +235,33 @@ export class SupabaseService {
       raw.includes('timeout') ||
       raw.includes('timed out')
     );
+  }
+
+  private async isLocalServerReachable(): Promise<boolean> {
+    if (!this.url || !environment?.supabase?.anonKey) return false;
+
+    const controller = new AbortController();
+    const timeout = setTimeout(
+      () => controller.abort(),
+      this.connectionProbeTimeoutMs,
+    );
+
+    try {
+      await fetch(`${this.url.replace(/\/+$/, '')}/rest/v1/`, {
+        method: 'GET',
+        cache: 'no-store',
+        signal: controller.signal,
+        headers: {
+          apikey: environment.supabase.anonKey,
+          Authorization: `Bearer ${environment.supabase.anonKey}`,
+        },
+      });
+      return true;
+    } catch {
+      return false;
+    } finally {
+      clearTimeout(timeout);
+    }
   }
 
   private bindAuthListener(client: any): void {

@@ -1,0 +1,20 @@
+.apk-download-box {
+  display: none;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid #e9ecef;
+  text-align: center;
+
+  small {
+    display: block;
+    margin-top: 8px;
+    color: #5f6b7a;
+    font-size: 0.82rem;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .apk-download-box {
+    display: block;
+  }
+}
