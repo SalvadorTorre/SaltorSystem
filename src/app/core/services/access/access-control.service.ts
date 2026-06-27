@@ -484,6 +484,9 @@ export class AccessControlService {
       ['configuracion global dgii', '/private/mantenimientos/configuracion-global'],
       ['cargar apk', '/private/mantenimientos/cargar-apk'],
       ['apk', '/private/mantenimientos/cargar-apk'],
+      ['estado servidor', '/private/mantenimientos/estado-servidor'],
+      ['monitor servidor', '/private/mantenimientos/estado-servidor'],
+      ['servidor', '/private/mantenimientos/estado-servidor'],
       ['mantenimientos', '/private/mantenimientos'],
       ['mantenimiento', '/private/mantenimientos'],
     ];

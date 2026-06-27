@@ -1,0 +1,119 @@
+<div class="server-page">
+  <header class="server-hero">
+    <div>
+      <span class="server-badge">Monitor local</span>
+      <h1><i class="bi bi-activity"></i> Estado del servidor</h1>
+      <p>Temperatura, memoria, almacenamiento y servicios en tiempo real.</p>
+    </div>
+
+    <div class="server-status" [class.online]="estaEnLinea" [class.offline]="!estaEnLinea">
+      <span class="server-dot"></span>
+      <div>
+        <strong>{{ estaEnLinea ? 'En linea' : 'Sin actualizacion' }}</strong>
+        <small>{{ actualizado || 'Sin datos' }}</small>
+      </div>
+    </div>
+  </header>
+
+  <div class="server-error" *ngIf="error">
+    <i class="bi bi-exclamation-triangle"></i>
+    <span>{{ error }}</span>
+  </div>
+
+  <div class="server-loading" *ngIf="cargando && !metricas">
+    <span class="spinner-border spinner-border-sm"></span>
+    Cargando estado del servidor...
+  </div>
+
+  <section class="server-grid" *ngIf="metricas">
+    <article class="server-card accent-blue">
+      <div class="server-card-head">
+        <span><i class="bi bi-cpu"></i> CPU</span>
+        <strong>{{ formatNumero(metricas.cpu_percent, 1) }}%</strong>
+      </div>
+      <div class="server-bar">
+        <span [class]="barraClase(metricas.cpu_percent)" [style.width.%]="percent(metricas.cpu_percent)"></span>
+      </div>
+      <small>Carga: {{ formatNumero(metricas.load1, 2) }} / {{ formatNumero(metricas.load5, 2) }} / {{ formatNumero(metricas.load15, 2) }}</small>
+    </article>
+
+    <article class="server-card accent-purple">
+      <div class="server-card-head">
+        <span><i class="bi bi-memory"></i> Memoria</span>
+        <strong>{{ formatNumero(metricas.memory_percent, 1) }}%</strong>
+      </div>
+      <div class="server-bar">
+        <span [class]="barraClase(metricas.memory_percent)" [style.width.%]="percent(metricas.memory_percent)"></span>
+      </div>
+      <small>{{ formatMemoria(metricas.memory_used_mb) }} usada de {{ formatMemoria(metricas.memory_total_mb) }}</small>
+    </article>
+
+    <article class="server-card accent-green">
+      <div class="server-card-head">
+        <span><i class="bi bi-device-hdd"></i> Almacenamiento</span>
+        <strong>{{ formatNumero(metricas.disk_percent, 1) }}%</strong>
+      </div>
+      <div class="server-bar">
+        <span [class]="barraClase(metricas.disk_percent)" [style.width.%]="percent(metricas.disk_percent)"></span>
+      </div>
+      <small>{{ formatDisco(metricas.disk_used_gb) }} usado de {{ formatDisco(metricas.disk_total_gb) }}</small>
+    </article>
+
+    <article class="server-card accent-red">
+      <div class="server-card-head">
+        <span><i class="bi bi-thermometer-half"></i> Temperatura</span>
+        <strong>{{ formatNumero(metricas.temperature_c, 1) }}°C</strong>
+      </div>
+      <div class="server-temp">
+        <span [style.height.%]="percent((metricas.temperature_c || 0) * 1.1)"></span>
+      </div>
+      <small>Sensor termico del servidor</small>
+    </article>
+  </section>
+
+  <section class="server-info-grid" *ngIf="metricas">
+    <article class="server-panel">
+      <h2>Resumen</h2>
+      <div class="server-kv">
+        <span>Servidor</span>
+        <strong>{{ metricas.server_name || '-' }}</strong>
+      </div>
+      <div class="server-kv">
+        <span>IP Tailscale</span>
+        <strong>{{ metricas.tailscale_ip || '-' }}</strong>
+      </div>
+      <div class="server-kv">
+        <span>Tiempo encendido</span>
+        <strong>{{ formatUptime(metricas.uptime_seconds) }}</strong>
+      </div>
+      <div class="server-kv">
+        <span>Swap</span>
+        <strong>{{ formatMemoria(metricas.swap_used_mb) }} / {{ formatMemoria(metricas.swap_total_mb) }}</strong>
+      </div>
+      <div class="server-kv">
+        <span>Supabase Docker</span>
+        <strong>{{ metricas.docker_running || 0 }} / {{ metricas.docker_total || 0 }}</strong>
+      </div>
+    </article>
+
+    <article class="server-panel">
+      <div class="server-panel-head">
+        <h2>Servicios Supabase</h2>
+        <button class="btn btn-sm btn-outline-primary" type="button" (click)="cargarMetricas()">
+          <i class="bi bi-arrow-clockwise"></i>
+          Actualizar
+        </button>
+      </div>
+
+      <div class="service-list">
+        <div class="service-row" *ngFor="let svc of servicios">
+          <span class="service-name">{{ svc.name }}</span>
+          <span class="service-state" [class.running]="svc.running" [class.stopped]="!svc.running">
+            {{ svc.running ? 'Activo' : 'Detenido' }}
+          </span>
+          <small>{{ svc.status }}</small>
+        </div>
+      </div>
+    </article>
+  </section>
+</div>

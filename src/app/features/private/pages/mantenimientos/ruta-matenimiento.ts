@@ -238,6 +238,15 @@ const routes: Routes = [
             (m) => m.CargarApkModulo,
           ),
       },
+      {
+        path: 'estado-servidor',
+        canActivate: [permissionGuard],
+        data: { accessPath: '/private/mantenimientos/estado-servidor' },
+        loadChildren: () =>
+          import(
+            './pages/configuracion/estado-servidor/estado-servidor-modulo'
+          ).then((m) => m.EstadoServidorModulo),
+      },
     ],
   },
 ];
