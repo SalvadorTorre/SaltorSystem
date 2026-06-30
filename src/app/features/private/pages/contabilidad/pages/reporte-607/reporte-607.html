@@ -212,12 +212,12 @@
                   <i class="bi bi-braces"></i>
                 </button>
                 <button
-                  *ngIf="esRechazada(factura)"
+                  *ngIf="puedeReenviar(factura)"
                   class="btn btn-sm btn-outline-danger"
                   type="button"
                   (click)="reenviarDgii(factura)"
                   [disabled]="!!facturaReenviando || loading"
-                  title="Reenviar factura rechazada a DGII"
+                  title="Reenviar factura rechazada o con error a DGII"
                 >
                   <i
                     class="bi"

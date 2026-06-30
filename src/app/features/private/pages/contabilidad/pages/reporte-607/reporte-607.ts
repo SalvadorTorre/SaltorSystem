@@ -187,7 +187,7 @@ export class Reporte607Component implements OnInit {
   }
 
   async reenviarDgii(factura: any): Promise<void> {
-    if (!this.esRechazada(factura)) return;
+    if (!this.puedeReenviar(factura)) return;
     const codigo = String(factura?.fa_codFact || factura?.fa_codfact || '').trim();
     if (!codigo || this.facturaReenviando) return;
 
@@ -261,9 +261,9 @@ export class Reporte607Component implements OnInit {
     return String(factura?.estado_dgii || factura?.estado_envio_dgii || 'Sin estado').trim();
   }
 
-  esRechazada(factura: any): boolean {
+  puedeReenviar(factura: any): boolean {
     const estado = this.estadoTexto(factura).toLowerCase();
-    return estado.includes('rechaz');
+    return estado.includes('rechaz') || estado.includes('error');
   }
 
   tipoComprobanteTexto(factura: any): string {

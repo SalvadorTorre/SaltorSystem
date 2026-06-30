@@ -710,17 +710,19 @@ export class ServicioInventario {
         const precioVenta = Number((precioNuevo + (precioNuevo * porcentajeGanancia / 100)).toFixed(2));
         const productoCatalogo = catalogoMap.get(producto.codigo);
 
+        const catalogoPayload: any = {
+          in_costmer: precioNuevo,
+        };
         if (productoCatalogo) {
-          const { error: productoUpdateError } = await this.db
-            .from("productos2")
-            .update({
-              in_ucosto: this.toNullableNumber(productoCatalogo?.in_costmer),
-              in_costmer: precioNuevo,
-            })
-            .eq("in_codmerc", producto.codigo);
-          if (productoUpdateError) throw productoUpdateError;
-          catalogoActualizados += 1;
+          catalogoPayload.in_ucosto = this.toNullableNumber(productoCatalogo?.in_costmer);
         }
+
+        const { error: productoUpdateError, count: productoUpdateCount } = await this.db
+          .from("productos2")
+          .update(catalogoPayload, { count: "exact" })
+          .eq("in_codmerc", producto.codigo);
+        if (productoUpdateError) throw productoUpdateError;
+        catalogoActualizados += Number(productoUpdateCount || 0);
 
         for (const sucursal of sucursales) {
           const current = actualesMap.get(`${sucursal}::${producto.codigo}`);

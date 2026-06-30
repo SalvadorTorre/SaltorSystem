@@ -534,10 +534,10 @@ export class PrecioPageComponent implements OnInit {
         this.guardando = false;
         const data = response?.data || {};
         this.estadoSupabase = 'Conectado a Supabase';
-        this.ultimoResultado = `Ultimo cambio en Supabase: ${Number(data.actualizados || 0)} actualizados, ${Number(data.insertados || 0)} creados, ${Number(data.historial || 0)} guardados en precio.`;
+        this.ultimoResultado = `Ultimo cambio en Supabase: ${Number(data.actualizados || 0)} actualizados, ${Number(data.insertados || 0)} creados, ${Number(data.historial || 0)} guardados en precio, ${Number(data.catalogoActualizados || 0)} productos2 actualizados.`;
         Swal.fire({
           title: 'Precios actualizados',
-          text: `Actualizados: ${Number(data.actualizados || 0)}. Creados: ${Number(data.insertados || 0)}. Historial: ${Number(data.historial || 0)}.`,
+          text: `Actualizados: ${Number(data.actualizados || 0)}. Creados: ${Number(data.insertados || 0)}. Historial: ${Number(data.historial || 0)}. Productos2: ${Number(data.catalogoActualizados || 0)}.`,
           icon: 'success',
           timer: 2500,
           showConfirmButton: false,

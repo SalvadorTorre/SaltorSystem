@@ -112,6 +112,17 @@ export class ServicioFacturacion {
     );
   }
 
+  private marcasAlmacenPorDetalle(detalle: any[]): { fa_impalmaf: string; fa_impalmap: string } {
+    const tipos = (detalle || [])
+      .map((item) => String(this.tipoMercanciaDetalle(item) || '').trim().toUpperCase())
+      .filter((tipo) => !!tipo);
+
+    return {
+      fa_impalmaf: tipos.includes('F') ? 'N' : 'S',
+      fa_impalmap: tipos.includes('H') ? 'N' : 'S',
+    };
+  }
+
   private normalizeDate(input: any): string | null {
     if (!input) return null;
     if (input instanceof Date && !isNaN(input.getTime())) {
@@ -1040,8 +1051,9 @@ export class ServicioFacturacion {
         facturaPayload.fa_impresa = 'N';
         facturaPayload.fa_reimpresa = 'N';
         facturaPayload.fa_entrega = 'N';
-        facturaPayload.fa_impalmaf = 'N';
-        facturaPayload.fa_impalmap = 'N';
+        const marcasAlmacen = this.marcasAlmacenPorDetalle(detalleRaw);
+        facturaPayload.fa_impalmaf = marcasAlmacen.fa_impalmaf;
+        facturaPayload.fa_impalmap = marcasAlmacen.fa_impalmap;
         facturaPayload.fa_pendiente = 'N';
         facturaPayload.fa_despacho = 'N';
         facturaPayload.fa_salida = 'N';
@@ -1293,6 +1305,17 @@ export class ServicioFacturacion {
         ? this.mapFacturaUiPatchToDb(facturaCambios)
         : this.mapFacturaUiToDb(facturaRaw);
       delete facturaDbPayload.fa_codfact;
+
+      const reimpresa = this.toDbFlag(
+        facturaDbPayload.fa_reimpresa ??
+          facturaRaw?.fa_reimpresa ??
+          facturaActual?.fa_reimpresa,
+      ) === 'S';
+      if (actualizarDetalle && reimpresa) {
+        const marcasAlmacen = this.marcasAlmacenPorDetalle(detalleRaw);
+        facturaDbPayload.fa_impalmaf = marcasAlmacen.fa_impalmaf;
+        facturaDbPayload.fa_impalmap = marcasAlmacen.fa_impalmap;
+      }
 
       let data: any = facturaActual;
       if (Object.keys(facturaDbPayload).length > 0) {
