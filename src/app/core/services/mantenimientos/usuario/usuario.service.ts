@@ -203,9 +203,23 @@ export class ServicioUsuario {
     if (byClave) {
       throw new Error('La clave de usuario ya está en uso');
     }
+
+    const correo = this.sanitizeEmail(input?.correo);
+    if (correo) {
+      const { data: byCorreoRows, error: byCorreoError } = await this.db
+        .from('usuario')
+        .select('codusuario,correo')
+        .ilike('correo', correo)
+        .limit(1);
+      if (byCorreoError) throw byCorreoError;
+      const byCorreo = this.firstRow(byCorreoRows);
+      if (byCorreo) {
+        throw new Error('Ese correo ya está en uso');
+      }
+    }
   }
 
-  private async crearAuthUser(input: any): Promise<{ authUserId: string; authEmail: string }> {
+  private async crearAuthUser(input: any): Promise<{ authUserId: string; authEmail: string; usuario?: any }> {
     const client = this.client;
     if (!client?.functions?.invoke) {
       throw new Error('Cliente Supabase Functions no disponible');
@@ -228,6 +242,7 @@ export class ServicioUsuario {
           password,
           idUsuario,
           nombreUsuario,
+          usuario: this.mapearPayloadUsuario(input),
         },
       }
     );
@@ -269,7 +284,7 @@ export class ServicioUsuario {
       throw new Error('Supabase Auth no devolvió id de usuario');
     }
 
-    return { authUserId, authEmail: resolvedEmail };
+    return { authUserId, authEmail: resolvedEmail, usuario: data?.data?.usuario ?? null };
   }
 
   // Fallback legacy (no recomendado): dispara envío de email y puede topar rate limit.
@@ -372,7 +387,10 @@ export class ServicioUsuario {
     return from((async () => {
       try {
         await this.validarDuplicadosUsuario(usuario);
-        const { authUserId, authEmail } = await this.crearAuthUser(usuario);
+        const { authUserId, authEmail, usuario: createdUsuario } = await this.crearAuthUser(usuario);
+        if (createdUsuario) {
+          return createdUsuario;
+        }
 
         const payload = this.mapearPayloadUsuario({
           ...usuario,

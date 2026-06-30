@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
-SUPABASE_URL_DEFAULT="https://dslfmrecdeckuwhlhbsw.supabase.co"
+SUPABASE_URL_DEFAULT="https://saltor-supabase.tail67c2f6.ts.net"
 APP_SCHEMA_DEFAULT="myappdb"
 ROOT_USERNAME_DEFAULT="eliuortega"
 ROOT_PASSWORD_DEFAULT="1807"

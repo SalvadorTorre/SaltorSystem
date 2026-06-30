@@ -28,14 +28,10 @@ CREATE UNIQUE INDEX IF NOT EXISTS ux_usuario_auth_user_id
   WHERE auth_user_id IS NOT NULL;
 
 COMMIT;
-
-
-
-SUPABASE_URL="https://dslfmrecdeckuwhlhbsw.supabase.co" \
-SUPABASE_SERVICE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRzbGZtcmVjZGVja3V3aGxoYnN3Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NDczMTk4MywiZXhwIjoyMDkwMzA3OTgzfQ.q7aWJiAfKuQr6qIaovizNABRHVESdD03yK3mRLSzMHs" \
-APP_SCHEMA="myappdb" \
-ROOT_USERNAME="eliuortega" \
-ROOT_PASSWORD="1807" \
-ROOT_EMAIL="eliuortega@saltorsystem.local" \
-ROOT_NAME="eliuortega" \
-node supabase/create_root_user.mjs
+-- Para crear/sincronizar usuarios Auth usa variables de entorno fuera del frontend.
+-- No guardes SUPABASE_SERVICE_KEY ni DATABASE_URL dentro del codigo del cliente.
+-- Ejemplo:
+-- SUPABASE_URL="https://saltor-supabase.tail67c2f6.ts.net" \
+-- SUPABASE_SERVICE_KEY="<service-role-key>" \
+-- APP_SCHEMA="myappdb" \
+-- node supabase/create_root_user.mjs
