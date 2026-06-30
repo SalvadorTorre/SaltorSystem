@@ -186,8 +186,14 @@ export class ServicioInventario {
         /statement timeout/i.test(message) ||
         /canceling statement due to statement timeout/i.test(message);
 
-      if (isMissingFunction || isTimeout) {
+      if (isMissingFunction) {
         return null;
+      }
+
+      if (isTimeout) {
+        throw new Error(
+          "El resumen de inventario tardó demasiado. Aplica el fix SQL de inventario para usar el resumen optimizado."
+        );
       }
 
       throw error;
@@ -507,30 +513,22 @@ export class ServicioInventario {
         };
       }
 
-      let query = this.db
-        .from("inventario")
-        .select("*", { count: "exact" })
-        .eq("inv_codsucu", inv_codsucu)
-        .order("inv_codprod", { ascending: true })
-        .range(offset, offset + limit - 1);
-
       const codigoFiltro = String(codigo || "").trim();
       const descripcionFiltro = String(descripcion || "").trim();
 
-      if (codigoFiltro) {
-        query = query.ilike("inv_codprod", `%${codigoFiltro}%`);
-      }
-
-      if (descripcionFiltro) {
-        query = query.ilike("inv_desprod", `%${descripcionFiltro}%`);
-      }
-
-      const { data, error, count } = await query;
+      const { data, error } = await (this.db as any).rpc("listar_inventario_sucursal", {
+        p_inv_codsucu: inv_codsucu,
+        p_limit: limit,
+        p_offset: offset,
+        p_codigo: codigoFiltro || null,
+        p_descripcion: descripcionFiltro || null,
+      });
       if (error) throw error;
 
+      const rows = Array.isArray(data) ? data : [];
       return {
-        rows: data || [],
-        total: Number(count || 0),
+        rows,
+        total: Number(rows[0]?.total_count || 0),
       };
     })()).pipe(
       map((result: { rows: any[]; total: number }) => ({
