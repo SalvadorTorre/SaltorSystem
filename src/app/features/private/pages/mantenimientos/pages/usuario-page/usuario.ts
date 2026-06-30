@@ -48,7 +48,9 @@ export class Usuario implements OnInit {
   accionesPermisosCatalogoEdicion: AccionCatalogoPermiso[] = [];
   permisosMatrizEdicionUsuario: PermisoMatrizFila[] = [];
   cargandoPermisosEdicion = false;
+  filtroPermisosNuevo = '';
   filtroPermisosEdicion = '';
+  mostrarSoloActivosNuevo = false;
   mostrarSoloActivosEdicion = false;
   plantillaAutoAplicadaEdicion = false;
   gruposPermisosNuevoUsuario: Array<{ nombre: string; filas: PermisoMatrizFila[] }> = [];
@@ -344,8 +346,22 @@ export class Usuario implements OnInit {
     });
   }
 
+  private get permisosMatrizNuevoFiltrados(): PermisoMatrizFila[] {
+    const filtro = this.normalizarTexto(this.filtroPermisosNuevo);
+    return (this.permisosMatrizNuevoUsuario || []).filter((fila: PermisoMatrizFila) => {
+      if (this.mostrarSoloActivosNuevo && !this.tieneAccionActiva(fila)) {
+        return false;
+      }
+      if (!filtro) return true;
+      const texto = this.normalizarTexto(
+        `${fila?.modulo_nombre || ''} ${fila?.pantalla_nombre || ''} ${fila?.recurso_key || ''}`
+      );
+      return texto.includes(filtro);
+    });
+  }
+
   actualizarGruposPermisosNuevo(): void {
-    this.gruposPermisosNuevoUsuario = this.construirGruposPermisos(this.permisosMatrizNuevoUsuario || []);
+    this.gruposPermisosNuevoUsuario = this.construirGruposPermisos(this.permisosMatrizNuevoFiltrados);
     if (!this.grupoAccesoAbiertoNuevo && this.gruposPermisosNuevoUsuario.length) {
       const activo = this.gruposPermisosNuevoUsuario.find((grupo) => this.contarRecursosActivosGrupo(grupo.filas) > 0);
       this.grupoAccesoAbiertoNuevo = activo?.nombre || this.gruposPermisosNuevoUsuario[0].nombre;
@@ -928,6 +944,8 @@ export class Usuario implements OnInit {
     this.permisosMatrizNuevoUsuario = [];
     this.gruposPermisosNuevoUsuario = [];
     this.grupoAccesoAbiertoNuevo = '';
+    this.filtroPermisosNuevo = '';
+    this.mostrarSoloActivosNuevo = false;
     this.resetValidacionesNuevoUsuario();
     this.construirPlantillaPermisosNuevoUsuario();
     $('#modalNuevoUsuario').modal('show');

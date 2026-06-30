@@ -808,11 +808,11 @@
         </h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <form #nuevoUsuarioForm="ngForm" (ngSubmit)="guardarNuevoUsuario(nuevoUsuarioForm)">
+      <form #nuevoUsuarioForm="ngForm" class="usuario-modal-form" (ngSubmit)="guardarNuevoUsuario(nuevoUsuarioForm)">
         <div class="modal-body usuario-modal-layout">
-          <div class="row g-4 align-items-start">
-            <div class="col-xl-4">
-              <section class="usuario-modal-panel">
+          <div class="row g-4 align-items-start usuario-modal-layout__row">
+            <div class="col-xl-4 usuario-modal-side-col">
+              <section class="usuario-modal-panel usuario-modal-panel--identity">
                 <div class="usuario-modal-panel__header">
                   <p class="usuario-modal-panel__eyebrow mb-1">Datos principales</p>
                   <h6 class="mb-1">Cuenta del usuario</h6>
@@ -893,7 +893,7 @@
               </section>
             </div>
 
-            <div class="col-xl-8">
+            <div class="col-xl-8 usuario-modal-permissions-col">
               <section class="usuario-modal-panel usuario-modal-panel--permissions">
                 <section class="permisos-builder" *ngIf="permisosMatrizNuevoUsuario?.length; else permisosPendientesTpl">
               <div class="permisos-builder__header">
@@ -921,6 +921,32 @@
               </div>
 
               <div class="permisos-builder__toolbar">
+                <div class="permisos-builder__filters">
+                  <div class="input-group input-group-sm permisos-builder__search">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input
+                      type="text"
+                      class="form-control"
+                      placeholder="Buscar pantalla o modulo..."
+                      [(ngModel)]="filtroPermisosNuevo"
+                      (ngModelChange)="actualizarGruposPermisosNuevo()"
+                      name="filtroPermisosNuevo"
+                    >
+                  </div>
+                  <div class="form-check form-switch m-0 permisos-builder__switch">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      id="soloActivosNuevo"
+                      [(ngModel)]="mostrarSoloActivosNuevo"
+                      (ngModelChange)="actualizarGruposPermisosNuevo()"
+                      name="mostrarSoloActivosNuevo"
+                    >
+                    <label class="form-check-label small" for="soloActivosNuevo">
+                      Solo configurados
+                    </label>
+                  </div>
+                </div>
                 <div class="permisos-builder__actions">
                   <button type="button" class="btn btn-outline-primary btn-sm" (click)="alternarTodosPermisosNuevoUsuario(true)">
                     <i class="bi bi-check2-square me-1"></i> Marcar todo
@@ -934,7 +960,7 @@
                 </div>
               </div>
 
-              <div class="permisos-builder__groups" *ngIf="gruposPermisosNuevoUsuario.length; else permisosPendientesTpl">
+              <div class="permisos-builder__groups permisos-builder__groups--scroll" *ngIf="gruposPermisosNuevoUsuario.length; else permisosPendientesTpl">
                 <section class="permisos-builder__group" *ngFor="let grupo of gruposPermisosNuevoUsuario; trackBy: trackGrupoPermiso">
                   <div
                     class="permisos-builder__group-header permisos-builder__group-header--button"
