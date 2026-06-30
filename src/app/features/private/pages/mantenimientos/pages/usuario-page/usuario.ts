@@ -27,6 +27,7 @@ export class Usuario implements OnInit {
   // Usuarios
   usuarios: ModeloUsuarioData[] = [];
   filtroUsuario = '';
+  filtroSucursal = '';
   selectedUsuario: ModeloUsuarioData | null = null;
 
   // Permisos del usuario seleccionado
@@ -158,12 +159,21 @@ export class Usuario implements OnInit {
 
   get usuariosFiltrados(): ModeloUsuarioData[] {
     const q = this.filtroUsuario.trim().toLowerCase();
-    if (!q) return this.usuarios;
+    const sucursalFiltro = this.filtroSucursal.trim().toLowerCase();
     return this.usuarios.filter(u =>
-      String(u.idUsuario || '').toLowerCase().includes(q)
-      || String(u.codUsuario || '').toLowerCase().includes(q)
-      || String(u.nombreUsuario || '').toLowerCase().includes(q)
+      (!q ||
+        String(u.idUsuario || '').toLowerCase().includes(q)
+        || String(u.codUsuario || '').toLowerCase().includes(q)
+        || String(u.nombreUsuario || '').toLowerCase().includes(q)
+      )
+      && (!sucursalFiltro || this.textoSucursalUsuario(u).includes(sucursalFiltro))
     );
+  }
+
+  private textoSucursalUsuario(usuario?: Partial<ModeloUsuarioData> | null): string {
+    const sucursalId = Number((usuario as any)?.sucursalid ?? usuario?.sucursal ?? 0) || 0;
+    const descripcion = this.descSucursalUsuario(usuario).toLowerCase();
+    return `${sucursalId} ${descripcion}`.trim();
   }
 
   private unwrapList(res: any): any[] {
