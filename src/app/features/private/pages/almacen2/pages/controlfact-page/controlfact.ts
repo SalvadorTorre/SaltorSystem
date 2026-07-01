@@ -68,7 +68,7 @@ declare var $: any;
 export class ControlFact implements OnInit {
   @ViewChild('codigoInput') codigoInput!: ElementRef; // Para manejar el foco
   @ViewChild('descripcionInput') descripcionInput!: ElementRef; // Para manejar el foco
-  @ViewChild('Tabladetalle') Tabladetalle!: ElementRef;
+  @ViewChild('Tabledetalle') Tabladetalle?: ElementRef;
   @ViewChild('cantidadInput') cantidadInput!: ElementRef;
   botonEditar = true; // Empieza deshabilitado
   botonGuardar = true; // Empieza deshabilitado
@@ -2188,7 +2188,7 @@ export class ControlFact implements OnInit {
 
   ngAfterViewInit() {
     // Establece el foco en la tabla cuando se cargue la vista
-    this.Tabladetalle.nativeElement.focus();
+    this.Tabladetalle?.nativeElement?.focus();
   }
 
   formatNumber(value: any): string {

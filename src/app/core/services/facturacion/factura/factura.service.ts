@@ -1936,7 +1936,7 @@ export class ServicioFacturacion {
     return from((async () => {
       let query = this.db
         .from('factura')
-        .select('*', { count: 'exact' })
+        .select('*', { count: 'planned' })
         .order('fa_fecfact', { ascending: false })
         .order('fa_codfact', { ascending: false })
         .range(offset, offset + safeLimit - 1);
@@ -1994,7 +1994,7 @@ export class ServicioFacturacion {
     return from((async () => {
       let query = this.db
         .from('factura')
-        .select('*', { count: 'exact' })
+        .select('*', { count: 'planned' })
         .or('fa_pendiente.eq.P,fa_pendiente.eq.S')
         .order('fa_fecfact', { ascending: false })
         .range(offset, offset + safeLimit - 1);
@@ -2081,7 +2081,7 @@ export class ServicioFacturacion {
     return from((async () => {
       let query = this.db
         .from('factura')
-        .select('*', { count: 'exact' })
+        .select('*', { count: 'planned' })
         .not('estado_envio_dgii', 'is', null)
         .neq('estado_envio_dgii', 'PENDIENTE')
         .order('fa_fecfact', { ascending: false })
