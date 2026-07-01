@@ -45,6 +45,13 @@ export class DespachoComponent {
           return;
         }
 
+        if (String(factura.fa_despacho || '').trim().toUpperCase() === 'S') {
+          this.facturaData = null;
+          this.mensaje = 'La factura fue despachada';
+          this.facturaInputRef?.nativeElement.focus();
+          return;
+        }
+
         this.cargarDetalleEImprimir(factura, codigoFactura);
       },
       error: (error) => {
@@ -186,7 +193,7 @@ export class DespachoComponent {
       return;
     }
 
-    this.registrarImpresionDespacho(f.fa_codFact);
+    this.registrarImpresionDespacho(f);
     setTimeout(() => {
       try {
         win.focus();
@@ -254,13 +261,17 @@ export class DespachoComponent {
     ).trim();
   }
 
-  private registrarImpresionDespacho(codigoFactura: string) {
+  private registrarImpresionDespacho(factura: any) {
+    const codigoFactura = String(factura?.fa_codFact || factura?.fa_codfact || '').trim();
     const tipoDespacho = this.tramoPermitidoPorTipoUsuario();
     if (!codigoFactura || (tipoDespacho !== 'H' && tipoDespacho !== 'F')) {
+      this.mensaje = 'El conduce se imprimio, pero no se detecto si el rol es hierro o forjas.';
       return;
     }
 
-    this.serviciofacturacion.registrarImpresionDespacho(codigoFactura, tipoDespacho).subscribe({
+    this.serviciofacturacion.registrarImpresionDespacho(codigoFactura, tipoDespacho, {
+      sucursal: factura?.fa_codSucu ?? factura?.fa_codsucu,
+    }).subscribe({
       next: (response: any) => {
         if (response?.data) {
           this.facturaData = {
@@ -268,6 +279,11 @@ export class DespachoComponent {
             fa_impalmaf: response.data.fa_impalmaf ?? this.facturaData?.fa_impalmaf,
             fa_impalmap: response.data.fa_impalmap ?? this.facturaData?.fa_impalmap,
           };
+          this.mensaje = tipoDespacho === 'F'
+            ? 'Factura impresa y marcada en forjas.'
+            : 'Factura impresa y marcada en hierro.';
+        } else {
+          this.mensaje = 'El conduce se imprimio, pero no se pudo confirmar la marca en factura.';
         }
       },
       error: (error) => {
@@ -293,6 +309,7 @@ export class DespachoComponent {
   }
 
   private tramoPermitidoPorTipoUsuario(): 'F' | 'H' | null {
+    const storedUserText = this.textoUsuarioGuardado();
     const tipoUsuarioText = this.normalizarTexto([
       localStorage.getItem('roleDescription'),
       localStorage.getItem('tipoUsuario'),
@@ -300,6 +317,8 @@ export class DespachoComponent {
       localStorage.getItem('descripcionTipoUsuario'),
       localStorage.getItem('role'),
       localStorage.getItem('dashboardRole'),
+      localStorage.getItem('username'),
+      storedUserText,
     ].filter(Boolean).join(' '));
 
     if (tipoUsuarioText.includes('despacho') && tipoUsuarioText.includes('forja')) return 'F';
@@ -307,6 +326,32 @@ export class DespachoComponent {
     if (tipoUsuarioText.includes('forja')) return 'F';
     if (tipoUsuarioText.includes('hierro')) return 'H';
     return null;
+  }
+
+  private textoUsuarioGuardado(): string {
+    const keys = ['currentUser', 'usuario', 'user', 'authUser'];
+    const values: string[] = [];
+    for (const key of keys) {
+      const raw = localStorage.getItem(key);
+      if (!raw) continue;
+      values.push(raw);
+      try {
+        const parsed = JSON.parse(raw);
+        values.push(
+          [
+            parsed?.roleDescription,
+            parsed?.descripcion,
+            parsed?.tipoUsuario,
+            parsed?.tipousuario,
+            parsed?.role,
+            parsed?.rol,
+            parsed?.nombreUsuario,
+            parsed?.nombreusuario,
+          ].filter(Boolean).join(' '),
+        );
+      } catch {}
+    }
+    return values.join(' ');
   }
 
   private normalizarTexto(value: any): string {

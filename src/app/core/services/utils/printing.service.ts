@@ -52,6 +52,26 @@ export class PrintingService {
     return raw === '1' || raw === 'envio';
   }
 
+  private facturaEsRetiro(factura: any): boolean {
+    const raw = String(
+      factura?.fa_envio ??
+        factura?.faEnvio ??
+        factura?.fentrega ??
+        factura?.formaEntrega ??
+        factura?.descripcionFormaEntrega ??
+        factura?.formaEntregaDescripcion ??
+        factura?.desentrega ??
+        factura?.tipoEnvio ??
+        ''
+    )
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim()
+      .toLowerCase();
+
+    return raw === '2' || raw === 'retiro' || raw === 'retirar' || raw === 'para retirar';
+  }
+
   private etiquetaPagoConduce(factura: any): string {
     const descripcion = String(
       factura?.descripcionFormaPago ??
@@ -137,9 +157,15 @@ export class PrintingService {
         .toUpperCase();
       const facturaPagada = fpago === 'S' || fpago === 'P';
       const facturaEnvio = this.facturaEsEnvio(facturaRoot);
+      const facturaRetiro = this.facturaEsRetiro(facturaRoot);
 
-      if ((facturaPagada || facturaEnvio) && !facturaData?.__singlePrintCopy) {
-        const copias = facturaPagada
+      if ((facturaPagada || facturaEnvio || facturaRetiro) && !facturaData?.__singlePrintCopy) {
+        const copias = facturaRetiro
+          ? [
+              { label: 'CLIENTE', hideDetails: false },
+              { label: 'CAJA', hideDetails: true },
+            ]
+          : facturaPagada
           ? facturaEnvio
             ? [
                 { label: 'CLIENTE', hideDetails: false },
@@ -1636,9 +1662,15 @@ items.forEach((it: any) => {
         .toUpperCase();
       const conducePagado = fpago === 'S' || fpago === 'P';
       const conduceEnvio = this.facturaEsEnvio(facturaRoot);
+      const conduceRetiro = this.facturaEsRetiro(facturaRoot);
 
-      if ((conducePagado || conduceEnvio) && !facturaData?.__singlePrintCopy) {
-        const copias = conducePagado
+      if ((conducePagado || conduceEnvio || conduceRetiro) && !facturaData?.__singlePrintCopy) {
+        const copias = conduceRetiro
+          ? [
+              { label: 'CLIENTE', hideDetails: false },
+              { label: 'CAJA', hideDetails: true },
+            ]
+          : conducePagado
           ? conduceEnvio
             ? [
                 { label: 'CLIENTE', hideDetails: false },
@@ -2329,8 +2361,38 @@ items.forEach((it: any) => {
         const win = window.open(pdfUrl, '_blank');
         if (win) {
           win.focus();
+          let closedAfterPrint = false;
+          let printStartedAt = 0;
+          const closeAfterPrint = () => {
+            if (closedAfterPrint) return;
+            if (printStartedAt && Date.now() - printStartedAt < 1200) {
+              setTimeout(closeAfterPrint, 1200);
+              return;
+            }
+            closedAfterPrint = true;
+            setTimeout(() => {
+              try {
+                if (!win.closed) {
+                  win.close();
+                }
+              } catch {}
+              try {
+                URL.revokeObjectURL(pdfUrl);
+              } catch {}
+              try {
+                window.removeEventListener('focus', closeAfterPrint);
+              } catch {}
+            }, 250);
+          };
+          try {
+            win.onafterprint = closeAfterPrint;
+            win.addEventListener?.('afterprint', closeAfterPrint);
+          } catch {}
           setTimeout(() => {
             try {
+              printStartedAt = Date.now();
+              window.addEventListener('focus', closeAfterPrint);
+              win.addEventListener?.('focus', closeAfterPrint);
               win.print();
             } catch {}
           }, 600);

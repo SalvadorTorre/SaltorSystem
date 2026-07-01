@@ -2210,6 +2210,9 @@ export class ServicioFacturacion {
       updateQuery = this.applyTenantFilter(updateQuery);
       const { data, error } = await updateQuery.maybeSingle();
       if (error) throw error;
+      if (!data) {
+        throw new Error(`No se encontro la factura ${codigo} para marcar entrega.`);
+      }
       return {
         status: 'success',
         code: 200,
@@ -2218,7 +2221,11 @@ export class ServicioFacturacion {
     })());
   }
 
-  registrarImpresionDespacho(cod: string, tipoDespachador: string) {
+  registrarImpresionDespacho(
+    cod: string,
+    tipoDespachador: string,
+    scope?: { sucursal?: number | string | null },
+  ) {
     const codigo = String(cod || '').trim();
     const tipo = String(tipoDespachador || '').trim().toUpperCase();
     const patch = tipo === 'H'
@@ -2245,9 +2252,22 @@ export class ServicioFacturacion {
         .update(patch)
         .eq('fa_codfact', codigo)
         .select('*');
-      updateQuery = this.applyTenantFilter(updateQuery);
+      const sucursal = Number(scope?.sucursal || 0);
+      if (Number.isFinite(sucursal) && sucursal > 0) {
+        updateQuery = updateQuery.eq('fa_codsucu', sucursal);
+      }
+      if (!(Number.isFinite(sucursal) && sucursal > 0)) {
+        updateQuery = this.applyTenantFilter(updateQuery);
+      }
       const { data, error } = await updateQuery.maybeSingle();
       if (error) throw error;
+      if (!data) {
+        throw new Error(
+          `No se encontro la factura ${codigo} para marcar ${
+            tipo === 'H' ? 'fa_impalmap' : 'fa_impalmaf'
+          }. Revise empresa, sucursal o permisos.`,
+        );
+      }
       return {
         status: 'success',
         code: 200,
