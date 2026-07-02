@@ -142,17 +142,19 @@ export class AccessControlService {
   }
 
   canWritePath(path: string): boolean {
+    if (this.isSellerBillingPath(path)) return true;
     const permiso = this.findPermisoForPath(path);
     if (!permiso) return this.shouldBypassByRole();
     const acciones = permiso?.acciones || {};
-    return !!acciones['acceso'] && !acciones['lectura'];
+    return !!acciones['acceso'] && this.hasWriteAction(acciones);
   }
 
   isReadOnlyPath(path: string): boolean {
+    if (this.isSellerBillingPath(path)) return false;
     const permiso = this.findPermisoForPath(path);
     if (!permiso) return false;
     const acciones = permiso?.acciones || {};
-    return !!acciones['acceso'] && !!acciones['lectura'];
+    return !!acciones['acceso'] && !!acciones['lectura'] && !this.hasWriteAction(acciones);
   }
 
   private async loadPermisos(force: boolean): Promise<void> {
@@ -229,6 +231,31 @@ export class AccessControlService {
       return !!acciones['acceso'];
     }
     return !!acciones['ver'];
+  }
+
+  private hasWriteAction(acciones: Record<string, boolean>): boolean {
+    return [
+      'crear',
+      'guardar',
+      'editar',
+      'actualizar',
+      'eliminar',
+      'borrar',
+      'cobrar',
+      'enviar',
+      'generar',
+      'marcar',
+    ].some((accion) => !!acciones[accion]);
+  }
+
+  private isSellerBillingPath(path: string): boolean {
+    const normalizedPath = this.normalizePath(path);
+    if (normalizedPath !== '/private/facturacion') return false;
+
+    const normalizedRole = this.normalizeLabel(this.currentRoleLabel());
+    return ['vendedor', 'ventas', 'digitador'].some((role) =>
+      normalizedRole.includes(this.normalizeLabel(role)),
+    );
   }
 
   private shouldBypassByRole(): boolean {

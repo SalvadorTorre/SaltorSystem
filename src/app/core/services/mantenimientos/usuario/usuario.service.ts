@@ -594,40 +594,16 @@ export class ServicioUsuario {
     const raw = String(codigo || '').trim();
     return from((async () => {
       if (!raw) return null;
+      if (!/^\d+$/.test(raw)) return null;
 
-      let row: any = null;
-      if (/^\d+$/.test(raw)) {
-        const { data: byCodRows, error: byCodError } = await this.db
-          .from('usuario')
-          .select('*')
-          .eq('idtipousuario', 8)
-          .eq('codusuario', Number(raw))
-          .limit(1);
-        if (byCodError) throw byCodError;
-        row = this.firstRow(byCodRows);
-      }
-
-      if (!row) {
-        const { data: byClaveRows, error: byClaveError } = await this.db
-          .from('usuario')
-          .select('*')
-          .eq('idtipousuario', 8)
-          .eq('claveusuario', raw)
-          .limit(1);
-        if (byClaveError) throw byClaveError;
-        row = this.firstRow(byClaveRows);
-      }
-
-      if (!row) {
-        const { data: byIdRows, error: byIdError } = await this.db
-          .from('usuario')
-          .select('*')
-          .eq('idtipousuario', 8)
-          .ilike('idusuario', raw)
-          .limit(1);
-        if (byIdError) throw byIdError;
-        row = this.firstRow(byIdRows);
-      }
+      const { data: byCodRows, error: byCodError } = await this.db
+        .from('usuario')
+        .select('*')
+        .eq('idtipousuario', 8)
+        .eq('codusuario', Number(raw))
+        .limit(1);
+      if (byCodError) throw byCodError;
+      const row = this.firstRow(byCodRows);
 
       return row ? this.normalizarUsuario(row) : null;
     })()).pipe(
