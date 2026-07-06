@@ -620,6 +620,10 @@ export class PrintingService {
       yPos += 6;
       doc.setFontSize(8);
 
+      if (['CLIENTE', 'CONDUCTOR'].includes(copyLabel.toUpperCase())) {
+        yPos += 24;
+      }
+
       drawDashedLine(yPos);
       yPos += 5;
 
@@ -2015,6 +2019,10 @@ items.forEach((it: any) => {
       yPos += 7;
       doc.setFontSize(10);
 
+      if (['CLIENTE', 'CONDUCTOR'].includes(copyLabel.toUpperCase())) {
+        yPos += 24;
+      }
+
       const numeroFactura = String(f.fa_codFact || '').trim();
       if (numeroFactura) {
         try {
@@ -2183,17 +2191,17 @@ items.forEach((it: any) => {
       }
 
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(9);
+      doc.setFontSize(10);
       centerText(empresa, yPos);
-      yPos += 4;
+      yPos += 4.5;
 
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(7);
+      doc.setFontSize(8);
       const dirSplit = doc.splitTextToSize(direccion, pageWidth - leftMargin - rightMargin);
       centerText(dirSplit, yPos);
-      yPos += dirSplit.length * 3.5;
+      yPos += dirSplit.length * 4;
       centerText(`Tel: ${telefono}`, yPos);
-      yPos += 3.5;
+      yPos += 4;
       centerText(`RNC: ${rncEmpresa}`, yPos);
       yPos += 5;
 
@@ -2201,9 +2209,9 @@ items.forEach((it: any) => {
       yPos += 5;
 
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(10);
+      doc.setFontSize(12);
       centerText('COTIZACION', yPos);
-      yPos += 5;
+      yPos += 5.5;
 
       const numero = pick(cotizacionData?.ct_codcoti, cotizacionData?.numero);
       const fecha = pick(cotizacionData?.ct_feccoti, cotizacionData?.fecha);
@@ -2213,15 +2221,15 @@ items.forEach((it: any) => {
       const telefonoCliente = pick(cotizacionData?.ct_telclie);
       const direccionCliente = pick(cotizacionData?.ct_dirclie);
 
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(7.5);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8.5);
       doc.text(`No.: ${numero}`, leftMargin, yPos);
-      yPos += 4;
+      yPos += 4.5;
       doc.text(`Fecha: ${fecha ? formatDate(fecha) : formatDate(new Date())}`, leftMargin, yPos);
-      yPos += 4;
+      yPos += 4.5;
       if (vendedor) {
         doc.text(`Vendedor: ${vendedor}`, leftMargin, yPos);
-        yPos += 4;
+        yPos += 4.5;
       }
 
       drawDashedLine(yPos);
@@ -2229,30 +2237,30 @@ items.forEach((it: any) => {
 
       doc.setFont('helvetica', 'bold');
       doc.text('CLIENTE', leftMargin, yPos);
-      yPos += 4;
-      doc.setFont('helvetica', 'normal');
+      yPos += 4.5;
+      doc.setFont('helvetica', 'bold');
       const clienteSplit = doc.splitTextToSize(cliente, pageWidth - leftMargin - rightMargin);
       doc.text(clienteSplit, leftMargin, yPos);
-      yPos += clienteSplit.length * 3.5;
+      yPos += clienteSplit.length * 4;
       if (rncCliente) {
         doc.text(`RNC/Cedula: ${rncCliente}`, leftMargin, yPos);
-        yPos += 4;
+        yPos += 4.5;
       }
       if (telefonoCliente) {
         doc.text(`Tel.: ${telefonoCliente}`, leftMargin, yPos);
-        yPos += 4;
+        yPos += 4.5;
       }
       if (direccionCliente) {
         const direccionSplit = doc.splitTextToSize(`Dir.: ${direccionCliente}`, pageWidth - leftMargin - rightMargin);
         doc.text(direccionSplit, leftMargin, yPos);
-        yPos += direccionSplit.length * 3.5;
+        yPos += direccionSplit.length * 4;
       }
 
       drawDashedLine(yPos);
       yPos += 5;
 
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(5.5);
+      doc.setFontSize(6.2);
       const xCant = leftMargin;
       const xDesc = 13;
       const xPrecio = 41;
@@ -2267,7 +2275,8 @@ items.forEach((it: any) => {
       drawDashedLine(yPos);
       yPos += 4;
 
-      doc.setFont('helvetica', 'normal');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(6.2);
       let subtotal = 0;
       let totalItbis = 0;
       let totalIncluido = 0;
@@ -2294,7 +2303,7 @@ items.forEach((it: any) => {
         doc.text(formatoMoneda.format(precioSinItbis), xPrecio, yPos, { align: 'right' });
         doc.text(formatoMoneda.format(itbisItem), xItbis, yPos, { align: 'right' });
         doc.text(formatoMoneda.format(total), xTotal, yPos, { align: 'right' });
-        yPos += Math.max(4, descSplit.length * 3.5 + 1);
+        yPos += Math.max(4.5, descSplit.length * 4 + 1);
       });
 
       const itbis = totalItbis || Number(cotizacionData?.ct_itbis ?? 0) || 0;
@@ -2302,7 +2311,8 @@ items.forEach((it: any) => {
 
       drawDashedLine(yPos);
       yPos += 5;
-      doc.setFontSize(8);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
       const labelX = 43;
       doc.text('Subtotal', labelX, yPos, { align: 'right' });
       doc.text(formatoMoneda.format(subtotal), xTotal, yPos, { align: 'right' });
@@ -2317,14 +2327,14 @@ items.forEach((it: any) => {
 
       drawDashedLine(yPos);
       yPos += 5;
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(7);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
       centerText('Estos precios estan sujetos a cambio', yPos);
-      yPos += 3.5;
+      yPos += 4;
       centerText('sin previo aviso.', yPos);
       yPos += 5;
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(8);
+      doc.setFontSize(9);
       centerText('WWW.GRUPOHIERRO.COM', yPos);
       yPos += 5;
       doc.setFont('helvetica', 'bold');

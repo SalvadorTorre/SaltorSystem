@@ -48,6 +48,59 @@ function normalizeRnc(value: unknown): string {
   return String(value || "").replace(/[^0-9]/g, "");
 }
 
+function numberValue(value: unknown): number {
+  const n = Number(String(value ?? "").replace(/,/g, ""));
+  return Number.isFinite(n) ? n : 0;
+}
+
+function normalizeScenarioForDgii(scenario: Record<string, unknown>) {
+  if (!scenario || String(scenario?.TipoeCF || "").trim() !== "44") {
+    return scenario;
+  }
+
+  const normalized: Record<string, unknown> = { ...scenario };
+  const keys = Object.keys(normalized);
+  const explicitLines = keys
+    .map((key) => /^NumeroLinea\[(\d+)\]$/.exec(key)?.[1])
+    .filter((value): value is string => Boolean(value));
+  const lineIndexes = explicitLines.length
+    ? Array.from(new Set(explicitLines))
+    : keys
+      .map((key) => /\[(\d+)\]$/.exec(key)?.[1])
+      .filter((value): value is string => Boolean(value));
+
+  for (const index of lineIndexes) {
+    normalized[`IndicadorFacturacion[${index}]`] = "4";
+    delete normalized[`MontoITBIS[${index}]`];
+    delete normalized[`TasaITBIS[${index}]`];
+  }
+
+  delete normalized.IndicadorMontoGravado;
+  delete normalized.RegimenPagos;
+  delete normalized.MontoGravadoTotal;
+  delete normalized.MontoGravadoI1;
+  delete normalized.MontoGravadoI2;
+  delete normalized.MontoGravadoI3;
+  delete normalized.ITBIS1;
+  delete normalized.ITBIS2;
+  delete normalized.ITBIS3;
+  delete normalized.TotalITBIS;
+  delete normalized.TotalITBIS1;
+  delete normalized.TotalITBIS2;
+  delete normalized.TotalITBIS3;
+
+  const totalLines = lineIndexes.reduce(
+    (sum, index) => sum + numberValue(normalized[`MontoItem[${index}]`]),
+    0,
+  );
+  const total = numberValue(normalized.MontoTotal) || totalLines;
+  const montoExento = totalLines || total;
+  normalized.MontoExento = montoExento.toFixed(2);
+  normalized.MontoTotal = total.toFixed(2);
+
+  return normalized;
+}
+
 function isMissingColumnError(error: unknown, column: string): boolean {
   const col = String(column || "").trim().toLowerCase();
   const msg = String((error as any)?.message || "").toLowerCase();
@@ -80,7 +133,11 @@ Deno.serve(async (req: Request) => {
 
   try {
     const body = await req.json().catch(() => ({}));
-    const scenarios = Array.isArray(body?.scenarios) ? body.scenarios : [];
+    const scenarios = Array.isArray(body?.scenarios)
+      ? body.scenarios.map((scenario: Record<string, unknown>) =>
+        normalizeScenarioForDgii(scenario)
+      )
+      : [];
     if (!scenarios.length) {
       return jsonResponse(400, {
         ok: false,

@@ -311,6 +311,60 @@ export class ServicioConfiguracionGlobal {
     );
   }
 
+  private numeroDgii(value: any): number {
+    const n = Number(String(value ?? '').replace(/,/g, ''));
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  private normalizarEscenarioDgii(scenario: any): any {
+    if (!scenario || String(scenario?.TipoeCF || '').trim() !== '44') {
+      return scenario;
+    }
+
+    const limpio: any = { ...scenario };
+    const keys = Object.keys(limpio);
+    const lineas = keys
+      .map((key) => /^NumeroLinea\[(\d+)\]$/.exec(key)?.[1])
+      .filter((value): value is string => !!value);
+
+    const indices = lineas.length
+      ? Array.from(new Set(lineas))
+      : keys
+          .map((key) => /\[(\d+)\]$/.exec(key)?.[1])
+          .filter((value): value is string => !!value);
+
+    indices.forEach((index) => {
+      limpio[`IndicadorFacturacion[${index}]`] = '4';
+      delete limpio[`MontoITBIS[${index}]`];
+      delete limpio[`TasaITBIS[${index}]`];
+    });
+
+    delete limpio.IndicadorMontoGravado;
+    delete limpio.RegimenPagos;
+    delete limpio.MontoGravadoTotal;
+    delete limpio.MontoGravadoI1;
+    delete limpio.MontoGravadoI2;
+    delete limpio.MontoGravadoI3;
+    delete limpio.ITBIS1;
+    delete limpio.ITBIS2;
+    delete limpio.ITBIS3;
+    delete limpio.TotalITBIS;
+    delete limpio.TotalITBIS1;
+    delete limpio.TotalITBIS2;
+    delete limpio.TotalITBIS3;
+
+    const totalLineas = indices.reduce(
+      (sum, index) => sum + this.numeroDgii(limpio[`MontoItem[${index}]`]),
+      0
+    );
+    const total = this.numeroDgii(limpio.MontoTotal) || totalLineas;
+    const montoExento = totalLineas || total;
+    limpio.MontoExento = montoExento.toFixed(2);
+    limpio.MontoTotal = total.toFixed(2);
+
+    return limpio;
+  }
+
   inspeccionarCertificado(
     p12Base64: string,
     password: string
@@ -370,11 +424,15 @@ export class ServicioConfiguracionGlobal {
           throw new Error('No se pudo invocar la función send-dgii-direct-cert.');
         }
 
+        const escenariosNormalizados = (scenarios || []).map((scenario) =>
+          this.normalizarEscenarioDgii(scenario)
+        );
+
         const { data, error } = await client.functions.invoke(
           'send-dgii-direct-cert',
           {
             body: {
-              scenarios,
+              scenarios: escenariosNormalizados,
               rncEmisor: this.toStringOrNull(rncEmisor),
             },
           }

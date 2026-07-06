@@ -1711,26 +1711,32 @@ export class Cotizacion implements OnInit {
       console.warn('No se pudo agregar el logo al PDF de cotizacion:', error);
     }
 
-    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(18);
     doc.text('CENTRAL HIERRO, SRL', 105, 40, { align: 'center' });
-    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
     doc.text('#172 Esq. Albert Thomas', 105, 47, { align: 'center' });
     doc.text('809-384-2000, 809-384-200', 105, 52, { align: 'center' });
     doc.text('1-30-29922-6', 105, 57, { align: 'center' });
 
-    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(16);
     doc.text('COTIZACION', 105, 70, { align: 'center' });
 
-    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13);
     doc.text('CLIENTE', 14, 82);
-    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
     doc.text(formatText(cotizacion.ct_nomclie), 14, 88);
     doc.text(`RNC: ${formatText(cotizacion.ct_rnc)}`, 14, 93);
     doc.text(`Telefono: ${formatText(cotizacion.ct_telclie)}`, 14, 98);
     doc.text(`Direccion: ${formatText(cotizacion.ct_dirclie)}`, 14, 103);
 
     const infoX = 128;
-    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
     doc.text(`No. ${formatText(cotizacion.ct_codcoti)}`, infoX, 88);
     doc.text(`Fecha: ${this.formatFechaFiltro(cotizacion.ct_feccoti)}`, infoX, 93);
     doc.text(`Vendedor: ${formatText(cotizacion.ct_nomvend)}`, infoX, 98);
@@ -1784,36 +1790,53 @@ export class Cotizacion implements OnInit {
       body,
       startY: 108,
       margin: { bottom: 38 },
+      headStyles: {
+        fontSize: 10.5,
+        fontStyle: 'bold',
+        textColor: [0, 0, 0],
+        fillColor: [225, 225, 225],
+      },
+      bodyStyles: {
+        fontSize: 10,
+        fontStyle: 'bold',
+        textColor: [0, 0, 0],
+      },
+      styles: {
+        lineColor: [80, 80, 80],
+        lineWidth: 0.1,
+      },
     });
 
     const finalY = (doc as any).lastAutoTable?.finalY || 130;
 
-    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13);
     doc.text('Subtotal:', 118, finalY + 10);
-    doc.setFontSize(10);
+    doc.setFontSize(12);
     doc.text(formatCurrency(subtotal), 160, finalY + 10);
-    doc.setFontSize(12);
+    doc.setFontSize(13);
     doc.text('ITBIS:', 118, finalY + 16);
-    doc.setFontSize(10);
-    doc.text(formatCurrency(itbis), 160, finalY + 16);
     doc.setFontSize(12);
+    doc.text(formatCurrency(itbis), 160, finalY + 16);
+    doc.setFontSize(13);
     doc.text('TOTAL A PAGAR:', 118, finalY + 22);
-    doc.setFontSize(14);
+    doc.setFontSize(15);
     doc.text(formatCurrency(totalGeneral), 160, finalY + 22);
 
     const totalPages = doc.getNumberOfPages();
     for (let page = 1; page <= totalPages; page += 1) {
       doc.setPage(page);
-      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(13);
       doc.text(
         'Estos Precios Estan Sujetos a Cambio Sin Previo Aviso',
         105,
         pageHeight - 22,
         { align: 'center' },
       );
-      doc.setFontSize(14);
+      doc.setFontSize(15);
       doc.text('WWW.GRUPOHIERRO.COM', 105, pageHeight - 15, { align: 'center' });
-      doc.setFontSize(12);
+      doc.setFontSize(13);
       doc.text('*** Gracias por Preferirnos ***', 105, pageHeight - 8, {
         align: 'center',
       });

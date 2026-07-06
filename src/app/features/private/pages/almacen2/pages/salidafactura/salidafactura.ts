@@ -1109,9 +1109,9 @@ agregarFactura() {
       unit: 'mm',
       format: [80, 297],
     });
-    const left = 8;
-    const right = 76;
-    const center = 42;
+    const left = 2;
+    const right = 74;
+    const center = (left + right) / 2;
     const contentWidth = right - left;
     let y = 8;
 
@@ -1142,7 +1142,7 @@ agregarFactura() {
       doc.setFontSize(8);
       doc.setFont('helvetica', 'bold');
       doc.text('Factura', left, y);
-      doc.text('Fecha', left + 29, y);
+      doc.text('Fecha', left + 28, y);
       doc.text('Status', right, y, { align: 'right' });
       y += 4;
       doc.line(left, y, right, y);
@@ -1198,7 +1198,7 @@ agregarFactura() {
       const codFact = String(d.codFact || d.codfact || '');
       doc.setFont('helvetica', pendientePago ? 'bold' : 'normal');
       doc.text(pendientePago ? `(${codFact})` : codFact, left, y);
-      doc.text(formatDate(d.fecFact || d.fecfact), left + 29, y);
+      doc.text(formatDate(d.fecFact || d.fecfact), left + 28, y);
       doc.setFont('helvetica', 'bold');
       doc.text(esPagada(d) ? 'Pagada' : '', right, y, { align: 'right' });
       y += 5;
