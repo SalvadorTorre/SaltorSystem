@@ -1414,7 +1414,7 @@ export class ServicioFacturacion {
     })());
   }
 
-  actualizarSalidaFactura(codFact: string, payload: { fa_salida: string; idsalida: number }) {
+  actualizarSalidaFactura(codFact: string, payload: { fa_salida: string; idsalida: number | string }) {
     if (!this.useSupabase) {
       return this.http.PatchRequest(`/facturacion/actualizar-salida/${codFact}`, payload);
     }

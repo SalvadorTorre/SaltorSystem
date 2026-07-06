@@ -766,11 +766,33 @@ agregarFactura() {
 
     peticion.subscribe({
       next: (resp: any) => {
+        const salidaGuardada = resp?.data || resp;
+        const codSalidaGuardado = String(
+          salidaGuardada?.codSalida ||
+          salidaGuardada?.codsalida ||
+          this.codSalida ||
+          ''
+        ).trim();
+        if (codSalidaGuardado) {
+          this.codSalida = codSalidaGuardado;
+        }
+
+        const payloadGuardado = {
+          ...payload,
+          codSalida: this.codSalida,
+          codsalida: this.codSalida,
+          detalles: detallesPayload.map((detalle: any) => ({
+            ...detalle,
+            codSalida: this.codSalida,
+            codsalida: this.codSalida,
+          })),
+        };
+
         // Actualizar facturas con fa_salida='S' y idsalida=codSalida
         const actualizaciones = this.detallesSalida.map(detalle => {
             const updatePayload = {
                 fa_salida: 'S',
-                idsalida: Number(this.codSalida)
+                idsalida: this.codSalida
             };
             return this.servicioFacturacion.actualizarSalidaFactura(detalle.codFact, updatePayload);
         });
@@ -781,7 +803,7 @@ agregarFactura() {
                     Swal.fire('Éxito', 'Salida registrada y facturas actualizadas correctamente', 'success');
                     
                     // Guardar datos para impresión y habilitar botón
-                    this.datosUltimaSalida = { ...payload, detalles: [...this.detallesSalida] };
+                    this.datosUltimaSalida = { ...payloadGuardado, detalles: [...this.detallesSalida] };
                     this.mostrarBotonImprimir = true;
                     
                     this.limpiarTodo(false); // No limpiar completamente para permitir imprimir
@@ -791,7 +813,7 @@ agregarFactura() {
                     Swal.fire('Atención', 'Salida registrada pero hubo error actualizando algunas facturas', 'warning');
                     
                     // Aún si hubo error en actualizar facturas, permitimos imprimir lo que se intentó guardar
-                    this.datosUltimaSalida = { ...payload, detalles: [...this.detallesSalida] };
+                    this.datosUltimaSalida = { ...payloadGuardado, detalles: [...this.detallesSalida] };
                     this.mostrarBotonImprimir = true;
                     
                     this.limpiarTodo(false);
@@ -799,7 +821,7 @@ agregarFactura() {
             });
         } else {
              Swal.fire('Éxito', 'Salida registrada correctamente', 'success');
-             this.datosUltimaSalida = { ...payload, detalles: [...this.detallesSalida] };
+             this.datosUltimaSalida = { ...payloadGuardado, detalles: [...this.detallesSalida] };
              this.mostrarBotonImprimir = true;
              this.limpiarTodo(false);
         }

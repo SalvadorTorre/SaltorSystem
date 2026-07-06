@@ -433,6 +433,8 @@
                       style="
                         margin-top: 2px;
                         z-index: 1050;
+                        min-width: 420px;
+                        max-width: 560px;
                         max-height: 200px;
                         overflow-y: auto;
                       "
@@ -441,11 +443,16 @@
                         *ngFor="let result of resultadoCodmerc; let i = index"
                         (click)="cargarDatosInventario(result)"
                         [class.active]="i === selectedIndexcodmerc"
-                        class="dropdown-item d-flex align-items-center py-2"
+                        class="dropdown-item d-flex align-items-start py-2"
                         style="cursor: pointer"
                       >
-                        <i class="bi bi-box-seam me-2 text-success"></i>
-                        <span>{{ result.in_codmerc }}</span>
+                        <i class="bi bi-box-seam me-2 mt-1 text-success"></i>
+                        <span class="d-flex flex-column lh-sm">
+                          <span class="fw-semibold">{{ result.in_codmerc }}</span>
+                          <span class="small text-muted text-truncate">
+                            {{ result.in_desmerc }}
+                          </span>
+                        </span>
                       </a>
                     </div>
                   </div>

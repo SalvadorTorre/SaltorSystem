@@ -70,6 +70,75 @@ export class ServicioSalidafactura {
     return Number.isFinite(contador) ? contador : 0;
   }
 
+  private anoDesdeCodSalida(codsalida: string): number {
+    const raw = String(codsalida || '').replace(/\D/g, '');
+    const ano = Number(raw.slice(0, 4));
+    return Number.isFinite(ano) && ano > 0 ? ano : new Date().getFullYear();
+  }
+
+  private buildCodSalida(ano: number, contador: number): string {
+    const year = Number.isFinite(ano) && ano > 0 ? ano : new Date().getFullYear();
+    const cont = Number.isFinite(contador) && contador > 0 ? contador : 1;
+    return `${year}${String(cont).padStart(6, '0')}`;
+  }
+
+  private async codSalidaExiste(codsalida: string): Promise<boolean> {
+    const codigo = String(codsalida || '').trim();
+    if (!codigo) return false;
+
+    const { data, error } = await this.db
+      .from('salida')
+      .select('id,codsalida')
+      .eq('codsalida', codigo)
+      .limit(1)
+      .maybeSingle();
+    if (error) throw error;
+    return Boolean(data);
+  }
+
+  private async resolverCodSalidaDisponible(idsucursal: number | null, codsalidaSolicitado: string): Promise<string> {
+    const solicitado = String(codsalidaSolicitado || '').trim();
+    if (!solicitado) return solicitado;
+
+    if (Number.isFinite(Number(idsucursal)) && Number(idsucursal) > 0) {
+      try {
+        const { data, error } = await (this.db as any).rpc('next_codsalida_disponible', {
+          p_idsucursal: Number(idsucursal),
+          p_codsalida: solicitado,
+        });
+        if (error) throw error;
+        const generado = String(data || '').trim();
+        if (generado) return generado;
+      } catch (error) {
+        console.warn('No se pudo generar codsalida por RPC, usando validacion local.', error);
+      }
+    }
+
+    const ano = this.anoDesdeCodSalida(solicitado);
+    let contadorBase = this.contadorDesdeCodSalida(solicitado);
+
+    if (Number.isFinite(Number(idsucursal)) && Number(idsucursal) > 0) {
+      const { data: contRow, error: contError } = await this.db
+        .from('contfactura')
+        .select('*')
+        .eq('idsucursal', Number(idsucursal))
+        .limit(1)
+        .maybeSingle();
+      if (contError) throw contError;
+
+      const contActual = this.toNumber(contRow?.contsalida ?? contRow?.contSalida ?? contRow?.cont_salida);
+      contadorBase = Math.max(contadorBase, contActual + 1);
+    }
+
+    for (let intento = 0; intento < 1000; intento += 1) {
+      const candidato = this.buildCodSalida(ano, contadorBase + intento);
+      const existe = await this.codSalidaExiste(candidato);
+      if (!existe) return candidato;
+    }
+
+    throw new Error('No se pudo generar un codigo de salida disponible.');
+  }
+
   private async incrementarContSalida(idsucursal: number | null, codsalida: string): Promise<void> {
     if (!Number.isFinite(Number(idsucursal)) || Number(idsucursal) <= 0) return;
 
@@ -311,11 +380,13 @@ export class ServicioSalidafactura {
     }
 
     return from((async () => {
-      const codsalida = String(payload?.codsalida ?? payload?.codSalida ?? '').trim();
+      let codsalida = String(payload?.codsalida ?? payload?.codSalida ?? '').trim();
       if (!codsalida) throw new Error('codsalida requerido');
-      await this.validarCodSalidaDisponible(codsalida);
 
       const idsucursal = this.toNumberOrNull(payload?.idsucursal ?? payload?.idSucursal);
+      codsalida = await this.resolverCodSalidaDisponible(idsucursal, codsalida);
+      await this.validarCodSalidaDisponible(codsalida);
+
       const codchofer = this.toNumberOrNull(payload?.codchofer ?? payload?.codChofer);
 
       const salidaRow: any = {
@@ -341,11 +412,29 @@ export class ServicioSalidafactura {
         }
       });
 
-      const { data: salidaInsert, error: salidaError } = await this.db
-        .from('salida')
-        .insert(salidaRow)
-        .select('*')
-        .single();
+      let salidaInsert: any = null;
+      let salidaError: any = null;
+      for (let intento = 0; intento < 5; intento += 1) {
+        const result = await this.db
+          .from('salida')
+          .insert(salidaRow)
+          .select('*')
+          .single();
+
+        salidaInsert = result.data;
+        salidaError = result.error;
+        if (!salidaError) break;
+
+        const duplicateCodSalida = String(salidaError?.code || '') === '23505'
+          || String(salidaError?.message || '').includes('salida_codsalida_unique');
+        if (!duplicateCodSalida) break;
+
+        codsalida = await this.resolverCodSalidaDisponible(
+          idsucursal,
+          this.buildCodSalida(this.anoDesdeCodSalida(codsalida), this.contadorDesdeCodSalida(codsalida) + 1),
+        );
+        salidaRow.codsalida = codsalida;
+      }
       if (salidaError) throw salidaError;
 
       const idsalida = this.toNumber(salidaInsert?.id);
