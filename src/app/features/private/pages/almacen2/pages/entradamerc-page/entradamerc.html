@@ -120,7 +120,7 @@
               <ul class="list-group position-absolute w-100 shadow" style="z-index: 1000; top: 100%;" *ngIf="productosBusquedaCodigo.length > 0">
                 <li class="list-group-item list-group-item-action" style="cursor: pointer;"
                     *ngFor="let p of productosBusquedaCodigo"
-                    (click)="seleccionarProducto(p, 'codigo')">
+                    (click)="$event.stopPropagation(); seleccionarProducto(p, 'codigo')">
                   {{ p.in_codmerc }} - {{ p.in_desmerc }}
                 </li>
               </ul>
@@ -133,7 +133,7 @@
               <ul class="list-group position-absolute w-100 shadow" style="z-index: 1000; top: 100%;" *ngIf="productosBusquedaDesc.length > 0">
                 <li class="list-group-item list-group-item-action" style="cursor: pointer;"
                     *ngFor="let p of productosBusquedaDesc"
-                    (click)="seleccionarProducto(p, 'descripcion')">
+                    (click)="$event.stopPropagation(); seleccionarProducto(p, 'descripcion')">
                   {{ p.in_desmerc }} ({{ p.in_codmerc }})
                 </li>
               </ul>

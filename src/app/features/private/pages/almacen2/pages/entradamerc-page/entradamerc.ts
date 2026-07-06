@@ -710,10 +710,12 @@ guardarEntrada() {
       det_preMerc: Number(producto.in_premerc || 0)
     });
     this.selectedProducto = producto;
+    this.productosBusquedaCodigo = [];
+    this.productosBusquedaDesc = [];
     if (source === 'codigo') {
       this.entradaForm.get('det_desMerc')?.disable();
-      this.inputCantidad?.nativeElement.focus();
     }
+    this.inputCantidad?.nativeElement.focus();
   }
  
   onEnterPrecio(event: Event) {
