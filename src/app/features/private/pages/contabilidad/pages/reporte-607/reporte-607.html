@@ -50,25 +50,6 @@
       />
     </div>
 
-    <div class="date-mode">
-      <button
-        class="mode-btn"
-        type="button"
-        [class.active]="modoFecha === 'fecha'"
-        (click)="cambiarModoFecha('fecha')"
-      >
-        Fecha unica
-      </button>
-      <button
-        class="mode-btn"
-        type="button"
-        [class.active]="modoFecha === 'rango'"
-        (click)="cambiarModoFecha('rango')"
-      >
-        Entre fechas
-      </button>
-    </div>
-
     <label class="select-filter">
       <span>Tipo comprobante</span>
       <select class="form-select" [(ngModel)]="tipoComprobante">
@@ -89,20 +70,13 @@
       </select>
     </label>
 
-    <div class="date-fields" *ngIf="modoFecha === 'fecha'">
+    <div class="date-fields date-range">
       <label>
-        <span>Fecha</span>
-        <input type="date" class="form-control" [(ngModel)]="fecha" />
-      </label>
-    </div>
-
-    <div class="date-fields date-range" *ngIf="modoFecha === 'rango'">
-      <label>
-        <span>Desde</span>
+        <span>Fecha desde</span>
         <input type="date" class="form-control" [(ngModel)]="fechaDesde" />
       </label>
       <label>
-        <span>Hasta</span>
+        <span>Fecha hasta</span>
         <input type="date" class="form-control" [(ngModel)]="fechaHasta" />
       </label>
     </div>
@@ -113,6 +87,10 @@
       </button>
       <button class="btn btn-outline-secondary" type="button" (click)="limpiarFiltros()" [disabled]="loading">
         Limpiar
+      </button>
+      <button class="btn btn-success" type="button" (click)="exportarXls()" [disabled]="loading || exportandoXls">
+        <i class="bi me-2" [class.bi-file-earmark-excel]="!exportandoXls" [class.bi-arrow-clockwise]="exportandoXls" [class.spin]="exportandoXls"></i>
+        Exportar XLS
       </button>
     </div>
   </div>

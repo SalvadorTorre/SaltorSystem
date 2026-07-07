@@ -56,6 +56,9 @@ export class PrivatePage implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.initials = this.getInitialsFromName();
+    void this.authService.refreshCurrentUserProfile().then(() => {
+      this.initials = this.getInitialsFromName();
+    });
     this.isDesktopApp = typeof window !== 'undefined' && !!window.electronAPI?.isDesktop;
     this.router.events
       .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))

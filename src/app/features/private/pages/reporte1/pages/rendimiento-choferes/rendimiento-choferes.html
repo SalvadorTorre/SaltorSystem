@@ -1,0 +1,128 @@
+<section class="driver-board">
+  <div class="driver-hero">
+    <div>
+      <span class="eyebrow">Control de facturas</span>
+      <h2>Rendimientos choferes</h2>
+      <p>Suma de valores y cantidad de facturas asignadas a cada chofer en los controles de salida.</p>
+    </div>
+
+    <div class="driver-hero__leader" *ngIf="choferLider as lider">
+      <span>Chofer lider</span>
+      <strong>{{ lider.nomchofer }}</strong>
+      <small>{{ lider.facturas | number }} factura(s) · {{ formatMoney(lider.total) }}</small>
+    </div>
+  </div>
+
+  <div class="driver-toolbar">
+    <label>
+      <span>Sucursal</span>
+      <select class="form-select" [(ngModel)]="filtros.sucursal">
+        <option [ngValue]="0">Todas</option>
+        <option *ngFor="let sucursal of sucursales" [ngValue]="sucursal.cod_sucursal">
+          {{ sucursal.nom_sucursal }}
+        </option>
+      </select>
+    </label>
+
+    <label>
+      <span>Desde</span>
+      <input class="form-control" type="date" [(ngModel)]="filtros.fechaInicio" />
+    </label>
+
+    <label>
+      <span>Hasta</span>
+      <input class="form-control" type="date" [(ngModel)]="filtros.fechaFin" />
+    </label>
+
+    <div class="toolbar-actions">
+      <button type="button" class="btn btn-run" (click)="consultar()" [disabled]="cargando">
+        <i class="bi bi-search"></i>
+        Consultar
+      </button>
+      <button type="button" class="btn btn-clear" (click)="limpiar()" [disabled]="cargando">
+        Limpiar
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="error" class="alert alert-danger py-2 mb-3">
+    {{ error }}
+  </div>
+
+  <div class="driver-kpis">
+    <article>
+      <span>Total asignado</span>
+      <strong>{{ formatMoney(totalAsignado) }}</strong>
+      <small>{{ nombreSucursalSeleccionada() }}</small>
+    </article>
+    <article>
+      <span>Facturas</span>
+      <strong>{{ totalFacturas | number }}</strong>
+      <small>Asignadas en control</small>
+    </article>
+    <article>
+      <span>Choferes</span>
+      <strong>{{ choferes.length | number }}</strong>
+      <small>Con facturas en el periodo</small>
+    </article>
+    <article>
+      <span>Controles</span>
+      <strong>{{ totalControles | number }}</strong>
+      <small>Salidas procesadas</small>
+    </article>
+  </div>
+
+  <section class="driver-ranking">
+    <div class="ranking-header">
+      <div>
+        <span class="eyebrow eyebrow--dark">Resumen por chofer</span>
+        <h3>Facturas asignadas</h3>
+      </div>
+      <span *ngIf="cargando" class="estado-carga">
+        <i class="bi bi-arrow-clockwise spin"></i>
+        Cargando controles
+      </span>
+    </div>
+
+    <div *ngIf="!cargando && !choferes.length" class="empty-state">
+      <i class="bi bi-inbox"></i>
+      No hay facturas asignadas para los filtros seleccionados.
+    </div>
+
+    <div class="driver-list" *ngIf="choferes.length">
+      <article class="driver-row" *ngFor="let chofer of choferes; let i = index">
+        <div class="driver-rank" [class.is-top]="i === 0">#{{ i + 1 }}</div>
+
+        <div class="driver-identity">
+          <strong>{{ chofer.nomchofer }}</strong>
+          <small>Codigo: {{ chofer.codchofer }} · Ultima salida: {{ formatFecha(chofer.ultimaSalida) }}</small>
+        </div>
+
+        <div class="driver-progress">
+          <div class="progress-meta">
+            <span>{{ participacionChofer(chofer) | number:'1.1-1' }}% del total</span>
+            <strong>{{ formatMoney(chofer.total) }}</strong>
+          </div>
+          <div class="progress-track">
+            <span [style.width.%]="barraChofer(chofer)"></span>
+          </div>
+        </div>
+
+        <div class="driver-stats">
+          <div>
+            <span>Facturas</span>
+            <strong>{{ chofer.facturas | number }}</strong>
+          </div>
+          <div>
+            <span>Controles</span>
+            <strong>{{ chofer.controles | number }}</strong>
+          </div>
+          <div>
+            <span>Promedio</span>
+            <strong>{{ formatMoney(promedioChofer(chofer)) }}</strong>
+          </div>
+        </div>
+      </article>
+    </div>
+  </section>
+</section>

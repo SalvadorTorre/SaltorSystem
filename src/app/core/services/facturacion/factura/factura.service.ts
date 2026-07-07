@@ -1908,7 +1908,8 @@ export class ServicioFacturacion {
     pageSize: number,
     codigo?: string,
     nomcliente?: string,
-    fecha?: string
+    fecha?: string,
+    filtrarSucursal = true,
   ): Observable<any> {
     if (!this.useSupabase) {
       let url = `/facturacion-numero?page=${pageIndex}&limit=${pageSize}`;
@@ -1941,7 +1942,7 @@ export class ServicioFacturacion {
         .order('fa_codfact', { ascending: false })
         .range(offset, offset + safeLimit - 1);
 
-      query = this.applyTenantFilter(query);
+      query = filtrarSucursal ? this.applyTenantFilter(query) : this.applyTenantCompanyFilter(query);
 
       if (codigoTxt) {
         query = query.ilike('fa_codfact', `%${codigoTxt}%`);

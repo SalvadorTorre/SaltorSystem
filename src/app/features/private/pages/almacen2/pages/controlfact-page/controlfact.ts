@@ -77,7 +77,7 @@ export class ControlFact implements OnInit {
   edicionSoloEncabezado = false;
   totalItems = 0;
   pageSize = 6;
-  readonly limiteFacturasInicial = 100;
+  readonly limiteFacturasInicial = 10000;
   currentPage = 1;
   maxPagesToShow = 5;
   txtdescripcion: string = '';
@@ -405,9 +405,9 @@ export class ControlFact implements OnInit {
           return this.servicioFacturacion.buscarFacturacion(
             this.currentPage,
             this.facturacionList.length,
-            this.codigo,
+            this.txtFactura,
             this.txtdescripcion,
-            this.txtFactura
+            ''
           );
         })
       )
@@ -492,6 +492,7 @@ export class ControlFact implements OnInit {
         __singlePrintCopy: true,
         __copyLabel: status === 'C' ? 'CONDUCTOR' : 'CLIENTE',
         __hideInvoiceDetails: false,
+        __thermalShiftX: -3,
       };
 
       Swal.close();

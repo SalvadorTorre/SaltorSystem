@@ -31,6 +31,14 @@ const routes: Routes = [
         loadChildren: () =>
           import('./pages/ventas-vendedor/ventas-vendedor-modulo')
             .then(m => m.VentasVendedorModulo),
+      },
+      {
+        path: 'rendimiento-choferes',
+        canActivate: [permissionGuard],
+        data: { accessPath: '/private/reporte/rendimiento-choferes' },
+        loadChildren: () =>
+          import('./pages/rendimiento-choferes/rendimiento-choferes-modulo')
+            .then(m => m.RendimientoChoferesModulo),
       }
     ]
   },

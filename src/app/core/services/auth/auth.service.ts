@@ -30,6 +30,8 @@ interface LoginResponse {
 export class AuthService {
   private loggedIn!: boolean;
   private readonly supabaseStorageKey = 'saltorsystem-auth-token';
+  private profileRefreshPromise: Promise<void> | null = null;
+  private lastProfileRefreshAt = 0;
 
   constructor(
     private supabaseService: SupabaseService,
@@ -48,11 +50,13 @@ export class AuthService {
     if (!this.isActiveJwt(token)) {
       if (this.hasRecoverableSupabaseSession()) {
         void this.supabaseService.recoverSession();
+        void this.refreshCurrentUserProfile(true);
         return true;
       }
       this.clearSessionStorage();
       return false;
     }
+    void this.refreshCurrentUserProfile();
     return true;
   }
 
@@ -345,6 +349,63 @@ export class AuthService {
 
     this.loggedIn = true;
     void this.supabaseService.recoverSession();
+  }
+
+  refreshCurrentUserProfile(force = false): Promise<void> {
+    const now = Date.now();
+    if (!force && now - this.lastProfileRefreshAt < 30000) {
+      return this.profileRefreshPromise || Promise.resolve();
+    }
+
+    if (this.profileRefreshPromise) {
+      return this.profileRefreshPromise;
+    }
+
+    this.profileRefreshPromise = this.refreshCurrentUserProfileInternal()
+      .then(() => {
+        this.lastProfileRefreshAt = Date.now();
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        this.profileRefreshPromise = null;
+      });
+
+    return this.profileRefreshPromise;
+  }
+
+  private async refreshCurrentUserProfileInternal(): Promise<void> {
+    const client = this.supabaseService.client;
+    if (!client?.auth) return;
+
+    const { data, error } = await client.auth.getUser();
+    if (error || !data?.user) return;
+
+    const email = String(data.user.email || '').trim().toLowerCase();
+    const identifier =
+      email.split('@')[0] ||
+      String(localStorage.getItem('idusuario') || '').trim().toLowerCase();
+    if (!email && !identifier) return;
+
+    const usuarioRaw = await this.fetchSupabaseUsuario(client, email, identifier);
+    if (!usuarioRaw) return;
+
+    const usuario = this.normalizeUsuarioPayload(usuarioRaw);
+    const [sucursal, empresa, roleDesc] = await Promise.all([
+      this.fetchSupabaseSucursal(client, usuario.sucursalid),
+      this.fetchSupabaseEmpresa(client, usuario.cod_empre),
+      this.fetchRoleDescription(client, usuario.idtipoUsuario),
+    ]);
+
+    const token = String(localStorage.getItem('authToken') || '').trim();
+    this.persistSession({
+      usuario,
+      token,
+      sucursal: sucursal || null,
+      empresa: empresa || null,
+      role: this.resolveRoleFromUsuario(usuario, roleDesc),
+      roleDescription: roleDesc || '',
+      source: 'supabase',
+    });
   }
 
   private resolveRoleFromUsuario(usuario: any, roleHint = ''): AppRole {

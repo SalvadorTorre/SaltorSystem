@@ -239,9 +239,10 @@ export class PrintingService {
         });
 
       const pageWidth = 74; // Adjusted to safer printable area width
-      const centerX = pageWidth / 2;
-      const leftMargin = 5; // 5mm margin
-      const rightMargin = 5; // 5mm margin
+      const shiftX = Math.max(-4, Math.min(3, Number(facturaData?.__thermalShiftX ?? 0) || 0));
+      const leftMargin = Math.max(1, 5 + shiftX); // 5mm margin by default
+      const rightMargin = Math.max(1, 5 - shiftX); // keeps the right edge aligned with the shift
+      const centerX = (leftMargin + (pageWidth - rightMargin)) / 2;
       let yPos = 5;
 
       // Helper for dashed lines
@@ -469,10 +470,10 @@ export class PrintingService {
 
       // --- 4. ITEMS TABLE ---
       const xCod = leftMargin;
-      const xDesc = 17;
+      const xDesc = 17 + shiftX;
       const xCant = pageWidth - rightMargin;
-      const xPrecio = 28;
-      const xItbis = 49;
+      const xPrecio = 28 + shiftX;
+      const xItbis = 49 + shiftX;
       const xValor = pageWidth - rightMargin;
 
       if (!hideInvoiceDetails) {
@@ -596,7 +597,7 @@ export class PrintingService {
       const totalItbis = itbisImpresion || f.fa_itbiFact || 0;
       const totalGral = totalImpresion || f.fa_valFact || 0;
 
-      const labelX = 35;
+      const labelX = 35 + shiftX;
       const valueX = pageWidth - rightMargin;
 
       doc.text('Subtotal', labelX, yPos, { align: 'right' });
@@ -1743,9 +1744,10 @@ items.forEach((it: any) => {
         facturaData?.__sharedDoc ||
         new jsPDF({ orientation: 'p', unit: 'mm', format: [80, 297] });
       const pageWidth = 74;
-      const centerX = pageWidth / 2;
-      const leftMargin = 5;
-      const rightMargin = 5;
+      const shiftX = Math.max(-4, Math.min(3, Number(facturaData?.__thermalShiftX ?? 0) || 0));
+      const leftMargin = Math.max(1, 5 + shiftX);
+      const rightMargin = Math.max(1, 5 - shiftX);
+      const centerX = (leftMargin + (pageWidth - rightMargin)) / 2;
       let yPos = 5;
       const drawDashedLine = (y: number) => {
         (doc as any).setLineDash([1, 1], 0);
@@ -1893,10 +1895,10 @@ items.forEach((it: any) => {
       drawDashedLine(yPos);
       yPos += 5;
       const xCod = leftMargin;
-      const xDesc = 17;
+      const xDesc = 17 + shiftX;
       const xCant = pageWidth - rightMargin;
-      const xPrecio = 28;
-      const xItbis = 49;
+      const xPrecio = 28 + shiftX;
+      const xItbis = 49 + shiftX;
       const xValor = pageWidth - rightMargin;
       if (!hideInvoiceDetails) {
         doc.setFont('helvetica', 'bold');
@@ -2001,7 +2003,7 @@ items.forEach((it: any) => {
       const subTotal = subtotalImpresion || Number(f.fa_subFact ?? f.fa_subfact ?? 0);
       const totalItbis = itbisImpresion || Number(f.fa_itbiFact ?? f.fa_itbifact ?? 0);
       const totalGral = totalImpresion || Number(f.fa_valFact ?? f.fa_valfact ?? 0);
-      const labelX = 35;
+      const labelX = 35 + shiftX;
       const valueX = pageWidth - rightMargin;
 
       doc.setFontSize(9);

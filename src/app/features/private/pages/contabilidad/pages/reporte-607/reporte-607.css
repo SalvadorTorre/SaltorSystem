@@ -122,7 +122,7 @@
 }
 
 .filter-panel {
-  align-items: end;
+  align-items: flex-end;
   display: flex;
   flex-wrap: wrap;
   gap: 14px;

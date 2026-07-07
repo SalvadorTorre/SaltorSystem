@@ -32,6 +32,13 @@
           <small>Rendimiento comercial</small>
         </span>
       </a>
+      <a class="reports-link" routerLinkActive="active" [routerLink]="['rendimiento-choferes']">
+        <i class="bi bi-truck"></i>
+        <span>
+          Rendimientos choferes
+          <small>Facturas asignadas y valores</small>
+        </span>
+      </a>
 
       <p class="reports-section-title">Inventario</p>
       <a class="reports-link" routerLinkActive="active" [routerLink]="['movproducto']">
@@ -89,6 +96,10 @@
         <a class="reports-link" routerLinkActive="active" [routerLink]="['ventas-vendedor']" data-bs-dismiss="offcanvas">
           <i class="bi bi-person-lines-fill"></i>
           <span>Ventas por vendedor<small>Rendimiento comercial</small></span>
+        </a>
+        <a class="reports-link" routerLinkActive="active" [routerLink]="['rendimiento-choferes']" data-bs-dismiss="offcanvas">
+          <i class="bi bi-truck"></i>
+          <span>Rendimientos choferes<small>Facturas asignadas</small></span>
         </a>
 
         <p class="reports-section-title">Inventario</p>

@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { FacturaDgiiService } from 'src/app/core/services/facturacion/factura/factura-dgii.service';
 import { ServicioFacturacion } from 'src/app/core/services/facturacion/factura/factura.service';
+import { firstValueFrom } from 'rxjs';
 import Swal from 'sweetalert2';
 
 type ModoFecha607 = 'fecha' | 'rango';
@@ -25,6 +26,7 @@ export class Reporte607Component implements OnInit {
   total = 0;
   totalPages = 1;
   facturaReenviando = '';
+  exportandoXls = false;
   readonly tiposComprobante = [
     { value: '31', label: 'E31 - Crédito Fiscal' },
     { value: '32', label: 'E32 - Consumo' },
@@ -58,9 +60,9 @@ export class Reporte607Component implements OnInit {
       page: this.page,
       pageSize: this.pageSize,
       search: this.search,
-      fecha: this.modoFecha === 'fecha' ? this.fecha : '',
-      fechaDesde: this.modoFecha === 'rango' ? this.fechaDesde : '',
-      fechaHasta: this.modoFecha === 'rango' ? this.fechaHasta : '',
+      fecha: '',
+      fechaDesde: this.fechaDesde,
+      fechaHasta: this.fechaHasta,
       tipoComprobante: this.tipoComprobante,
       estadoDgii: this.estadoDgii,
     };
@@ -95,7 +97,7 @@ export class Reporte607Component implements OnInit {
     this.fechaHasta = '';
     this.tipoComprobante = '';
     this.estadoDgii = '';
-    this.modoFecha = 'fecha';
+    this.modoFecha = 'rango';
     this.page = 1;
     this.cargarReporte();
   }
@@ -120,6 +122,41 @@ export class Reporte607Component implements OnInit {
   cambiarTamanoPagina(): void {
     this.page = 1;
     this.cargarReporte();
+  }
+
+  async exportarXls(): Promise<void> {
+    if (this.exportandoXls || this.loading) return;
+    this.exportandoXls = true;
+
+    try {
+      const rows = await this.cargarFacturasExportacion();
+      if (!rows.length) {
+        Swal.fire('Sin datos', 'No hay registros para exportar con los filtros actuales.', 'info');
+        return;
+      }
+
+      const html = this.construirHtmlXls(rows);
+      const blob = new Blob(['\ufeff', html], {
+        type: 'application/vnd.ms-excel;charset=utf-8;',
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `reporte-607-${this.nombrePeriodoArchivo()}.xls`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error: any) {
+      console.error('[Reporte607Component] Error exportando Rep. 607 XLS', error);
+      Swal.fire(
+        'Error',
+        String(error?.message || 'No se pudo exportar el Rep. 607 a XLS.'),
+        'error',
+      );
+    } finally {
+      this.exportandoXls = false;
+    }
   }
 
   abrirQr(factura: any): void {
@@ -306,8 +343,7 @@ export class Reporte607Component implements OnInit {
   }
 
   get rangoActual(): string {
-    if (this.modoFecha === 'fecha' && this.fecha) return this.formatFecha(this.fecha);
-    if (this.modoFecha === 'rango' && (this.fechaDesde || this.fechaHasta)) {
+    if (this.fechaDesde || this.fechaHasta) {
       return `${this.fechaDesde ? this.formatFecha(this.fechaDesde) : 'Inicio'} - ${this.fechaHasta ? this.formatFecha(this.fechaHasta) : 'Hoy'}`;
     }
     return 'Todas las fechas';
@@ -349,5 +385,107 @@ export class Reporte607Component implements OnInit {
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#039;');
+  }
+
+  private async cargarFacturasExportacion(): Promise<any[]> {
+    const pageSize = 1000;
+    const rows: any[] = [];
+
+    for (let page = 1; ; page += 1) {
+      const response = await firstValueFrom(this.servicioFacturacion.buscarReporte607Dgii({
+        page,
+        pageSize,
+        search: this.search,
+        fecha: '',
+        fechaDesde: this.fechaDesde,
+        fechaHasta: this.fechaHasta,
+        tipoComprobante: this.tipoComprobante,
+        estadoDgii: this.estadoDgii,
+      }));
+
+      const pageRows = Array.isArray(response?.data) ? response.data : [];
+      rows.push(...pageRows);
+
+      const pagination = response?.pagination || {};
+      const totalPages = Math.max(1, Number(pagination.totalPages || 1));
+      if (pageRows.length < pageSize || page >= totalPages) break;
+    }
+
+    return rows;
+  }
+
+  private construirHtmlXls(rows: any[]): string {
+    const periodo = this.escapeHtml(this.rangoActual);
+    const generado = this.escapeHtml(new Date().toLocaleString('es-DO'));
+    const filtros = [
+      `Periodo: ${this.rangoActual}`,
+      this.tipoComprobante ? `Tipo: E${this.tipoComprobante}` : 'Tipo: Todos',
+      this.estadoDgii ? `Estado: ${this.estadoDgii}` : 'Estado: Todos',
+      this.search ? `Busqueda: ${this.search}` : '',
+    ].filter(Boolean).join(' | ');
+
+    const body = rows.map((factura) => {
+      const diagnostico = this.primerMensajeDgii(factura);
+      return `
+        <tr>
+          <td class="text">${this.escapeHtml(factura.fa_codFact || factura.fa_codfact || '')}</td>
+          <td>${this.escapeHtml(this.formatFecha(factura.fa_fecFact || factura.fa_fecfact))}</td>
+          <td>${this.escapeHtml(this.tipoComprobanteTexto(factura))}</td>
+          <td class="text">${this.escapeHtml(factura.fa_ncfFact || factura.fa_ncffact || '')}</td>
+          <td>${this.escapeHtml(factura.fa_nomClie || factura.fa_nomclie || '')}</td>
+          <td class="text">${this.escapeHtml(factura.fa_rncFact || factura.fa_rncfact || '')}</td>
+          <td class="number">${Number(factura.fa_valFact ?? factura.fa_valfact ?? 0).toFixed(2)}</td>
+          <td>${this.escapeHtml(this.estadoTexto(factura))}</td>
+          <td>${this.escapeHtml(diagnostico || 'Sin mensajes')}</td>
+          <td class="text">${this.escapeHtml(factura.codseguridad || '')}</td>
+          <td>${this.escapeHtml(factura.qr_link || '')}</td>
+        </tr>
+      `;
+    }).join('');
+
+    return `
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <style>
+            table { border-collapse: collapse; font-family: Arial, sans-serif; font-size: 11px; }
+            th { background: #155e75; color: #ffffff; font-weight: bold; }
+            th, td { border: 1px solid #cbd5e1; padding: 6px; vertical-align: top; }
+            .title { font-size: 18px; font-weight: bold; color: #0f172a; }
+            .meta { color: #334155; font-size: 12px; }
+            .text { mso-number-format: "\\@"; }
+            .number { mso-number-format: "#,##0.00"; text-align: right; }
+          </style>
+        </head>
+        <body>
+          <table>
+            <tr><td colspan="11" class="title">Reporte 607</td></tr>
+            <tr><td colspan="11" class="meta">Periodo: ${periodo}</td></tr>
+            <tr><td colspan="11" class="meta">Filtros: ${this.escapeHtml(filtros)}</td></tr>
+            <tr><td colspan="11" class="meta">Generado: ${generado}</td></tr>
+            <tr>
+              <th>Factura</th>
+              <th>Fecha</th>
+              <th>Tipo</th>
+              <th>NCF/e-CF</th>
+              <th>Cliente</th>
+              <th>RNC</th>
+              <th>Monto</th>
+              <th>Estado DGII</th>
+              <th>Diagnostico</th>
+              <th>Cod. seguridad</th>
+              <th>QR</th>
+            </tr>
+            ${body}
+          </table>
+        </body>
+      </html>
+    `;
+  }
+
+  private nombrePeriodoArchivo(): string {
+    const desde = this.fechaDesde || 'inicio';
+    const hasta = this.fechaHasta || 'hoy';
+    return `${desde}-${hasta}`.replace(/[^0-9a-zA-Z_-]/g, '');
   }
 }
