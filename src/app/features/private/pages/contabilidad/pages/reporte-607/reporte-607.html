@@ -159,7 +159,7 @@
               <div class="client-name">{{ factura.fa_nomClie || factura.fa_nomclie || 'Sin cliente' }}</div>
               <small>{{ factura.fa_rncFact || factura.fa_rncfact || '' }}</small>
             </td>
-            <td class="text-end amount">{{ factura.fa_valFact | currency:'DOP':'symbol':'1.2-2' }}</td>
+            <td class="text-end amount">{{ (factura.fa_valFact ?? factura.fa_valfact ?? 0) | currency:'DOP':'symbol':'1.2-2' }}</td>
             <td>
               <span [class]="estadoClase(factura)">{{ estadoTexto(factura) }}</span>
             </td>
