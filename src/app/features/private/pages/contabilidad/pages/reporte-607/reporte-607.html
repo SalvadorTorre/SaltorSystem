@@ -51,6 +51,26 @@
     </div>
 
     <label class="select-filter">
+      <span>Empresa</span>
+      <select class="form-select" [(ngModel)]="empresaFiltro" (change)="onEmpresaFiltroChange()">
+        <option value="">Todas</option>
+        <option *ngFor="let empresa of empresas" [value]="empresa.cod_empre">
+          {{ empresa.nom_empre || empresa.cod_empre }}
+        </option>
+      </select>
+    </label>
+
+    <label class="select-filter">
+      <span>Sucursal</span>
+      <select class="form-select" [(ngModel)]="sucursalFiltro">
+        <option value="">Todas</option>
+        <option *ngFor="let sucursal of sucursalesFiltradas" [value]="sucursal.cod_sucursal">
+          {{ sucursal.nom_sucursal || sucursal.cod_sucursal }}
+        </option>
+      </select>
+    </label>
+
+    <label class="select-filter">
       <span>Tipo comprobante</span>
       <select class="form-select" [(ngModel)]="tipoComprobante">
         <option value="">Todos</option>

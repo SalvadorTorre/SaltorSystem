@@ -1,6 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { FacturaDgiiService } from 'src/app/core/services/facturacion/factura/factura-dgii.service';
 import { ServicioFacturacion } from 'src/app/core/services/facturacion/factura/factura.service';
+import { ServicioEmpresa } from 'src/app/core/services/mantenimientos/empresas/empresas.service';
+import { ServicioSucursal } from 'src/app/core/services/mantenimientos/sucursal/sucursal.service';
 import { firstValueFrom } from 'rxjs';
 import Swal from 'sweetalert2';
 
@@ -20,6 +22,8 @@ export class Reporte607Component implements OnInit {
   fechaHasta = '';
   tipoComprobante = '';
   estadoDgii = '';
+  empresaFiltro = '';
+  sucursalFiltro = '';
   modoFecha: ModoFecha607 = 'fecha';
   page = 1;
   pageSize = 20;
@@ -27,6 +31,8 @@ export class Reporte607Component implements OnInit {
   totalPages = 1;
   facturaReenviando = '';
   exportandoXls = false;
+  empresas: any[] = [];
+  sucursales: any[] = [];
   readonly tiposComprobante = [
     { value: '31', label: 'E31 - Crédito Fiscal' },
     { value: '32', label: 'E32 - Consumo' },
@@ -48,10 +54,33 @@ export class Reporte607Component implements OnInit {
   constructor(
     private servicioFacturacion: ServicioFacturacion,
     private facturaDgiiService: FacturaDgiiService,
+    private servicioEmpresa: ServicioEmpresa,
+    private servicioSucursal: ServicioSucursal,
   ) {}
 
   ngOnInit(): void {
+    this.cargarCatalogosFiltro();
     this.cargarReporte();
+  }
+
+  private cargarCatalogosFiltro(): void {
+    this.servicioEmpresa.buscarTodasEmpresa(1, 500).subscribe({
+      next: (response: any) => {
+        this.empresas = Array.isArray(response?.data) ? response.data : [];
+      },
+      error: (error) => {
+        console.error('[Reporte607Component] Error cargando empresas', error);
+      },
+    });
+
+    this.servicioSucursal.buscarTodasSucursal().subscribe({
+      next: (response: any) => {
+        this.sucursales = Array.isArray(response?.data) ? response.data : [];
+      },
+      error: (error) => {
+        console.error('[Reporte607Component] Error cargando sucursales', error);
+      },
+    });
   }
 
   cargarReporte(): void {
@@ -65,6 +94,8 @@ export class Reporte607Component implements OnInit {
       fechaHasta: this.fechaHasta,
       tipoComprobante: this.tipoComprobante,
       estadoDgii: this.estadoDgii,
+      empresa: this.empresaFiltro,
+      sucursal: this.sucursalFiltro,
     };
 
     this.servicioFacturacion.buscarReporte607Dgii(params).subscribe({
@@ -97,9 +128,21 @@ export class Reporte607Component implements OnInit {
     this.fechaHasta = '';
     this.tipoComprobante = '';
     this.estadoDgii = '';
+    this.empresaFiltro = '';
+    this.sucursalFiltro = '';
     this.modoFecha = 'rango';
     this.page = 1;
     this.cargarReporte();
+  }
+
+  onEmpresaFiltroChange(): void {
+    if (!this.empresaFiltro) return;
+    const existeSucursal = this.sucursalesFiltradas.some(
+      (sucursal) => String(sucursal.cod_sucursal ?? '') === String(this.sucursalFiltro),
+    );
+    if (!existeSucursal) {
+      this.sucursalFiltro = '';
+    }
   }
 
   cambiarModoFecha(modo: ModoFecha607): void {
@@ -378,6 +421,14 @@ export class Reporte607Component implements OnInit {
     return pages;
   }
 
+  get sucursalesFiltradas(): any[] {
+    const empresa = String(this.empresaFiltro || '').trim().toUpperCase();
+    if (!empresa) return this.sucursales;
+    return this.sucursales.filter(
+      (sucursal) => String(sucursal.cod_empre || '').trim().toUpperCase() === empresa,
+    );
+  }
+
   private escapeHtml(value: any): string {
     return String(value ?? '')
       .replace(/&/g, '&amp;')
@@ -401,6 +452,8 @@ export class Reporte607Component implements OnInit {
         fechaHasta: this.fechaHasta,
         tipoComprobante: this.tipoComprobante,
         estadoDgii: this.estadoDgii,
+        empresa: this.empresaFiltro,
+        sucursal: this.sucursalFiltro,
       }));
 
       const pageRows = Array.isArray(response?.data) ? response.data : [];

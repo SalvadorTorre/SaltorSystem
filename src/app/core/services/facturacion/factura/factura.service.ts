@@ -150,6 +150,12 @@ export class ServicioFacturacion {
     return null;
   }
 
+  private nextNumericPrefix(prefix: string): string | null {
+    const clean = String(prefix || '').trim();
+    if (!/^\d+$/.test(clean)) return null;
+    return (BigInt(clean) + 1n).toString().padStart(clean.length, '0');
+  }
+
   private currentTenant(): {
     role: string;
     codEmpre: string;
@@ -1979,7 +1985,12 @@ export class ServicioFacturacion {
       query = filtrarSucursal ? this.applyTenantFilter(query) : this.applyTenantCompanyFilter(query);
 
       if (codigoTxt) {
-        query = query.ilike('fa_codfact', `%${codigoTxt}%`);
+        const nextPrefix = this.nextNumericPrefix(codigoTxt);
+        if (nextPrefix) {
+          query = query.gte('fa_codfact', codigoTxt).lt('fa_codfact', nextPrefix);
+        } else {
+          query = query.ilike('fa_codfact', `%${codigoTxt}%`);
+        }
       }
 
       if (nombreTxt) {
@@ -2054,9 +2065,25 @@ export class ServicioFacturacion {
     })());
   }
 
-  buscarFacturasPendientesDgii(): Observable<any> {
+  buscarFacturasPendientesDgii(params: {
+    empresa?: string | null;
+    sucursal?: string | number | null;
+    fechaDesde?: string | null;
+    fechaHasta?: string | null;
+  } = {}): Observable<any> {
+    const empresa = String(params.empresa || '').trim();
+    const sucursal = this.toNumberOrNull(params.sucursal);
+    const fechaDesde = this.normalizeDate(params.fechaDesde);
+    const fechaHasta = this.normalizeDate(params.fechaHasta);
+
     if (!this.useSupabase) {
-      return this.http.GetRequest<any>('/facturacion/pendientes-dgii');
+      const query = new URLSearchParams();
+      if (empresa) query.set('empresa', empresa);
+      if (sucursal) query.set('sucursal', String(sucursal));
+      if (fechaDesde) query.set('fechaDesde', fechaDesde);
+      if (fechaHasta) query.set('fechaHasta', fechaHasta);
+      const qs = query.toString();
+      return this.http.GetRequest<any>(`/facturacion/pendientes-dgii${qs ? `?${qs}` : ''}`);
     }
 
     return from((async () => {
@@ -2067,6 +2094,18 @@ export class ServicioFacturacion {
         .limit(5000);
 
       query = this.applyTenantFilter(query);
+      if (empresa) {
+        query = query.eq('fa_codempr', empresa);
+      }
+      if (sucursal) {
+        query = query.eq('fa_codsucu', sucursal);
+      }
+      if (fechaDesde) {
+        query = query.gte('fa_fecfact', fechaDesde);
+      }
+      if (fechaHasta) {
+        query = query.lte('fa_fecfact', fechaHasta);
+      }
 
       const { data, error } = await query;
       if (error) throw error;
@@ -2087,6 +2126,8 @@ export class ServicioFacturacion {
     fechaHasta?: string;
     tipoComprobante?: string;
     estadoDgii?: string;
+    empresa?: string;
+    sucursal?: string | number;
   } = {}): Observable<any> {
     const safePage = Math.max(1, Number(params.page) || 1);
     const safeLimit = Math.max(10, Number(params.pageSize) || 20);
@@ -2096,6 +2137,8 @@ export class ServicioFacturacion {
     const fechaHasta = this.normalizeDate(params.fechaHasta);
     const tipoComprobante = String(params.tipoComprobante || '').trim();
     const estadoDgii = String(params.estadoDgii || '').trim();
+    const empresa = String(params.empresa || '').trim();
+    const sucursal = this.toNumberOrNull(params.sucursal);
 
     if (!this.useSupabase) {
       const query = new URLSearchParams({
@@ -2108,21 +2151,103 @@ export class ServicioFacturacion {
       if (fechaHasta) query.set('fechaHasta', fechaHasta);
       if (tipoComprobante) query.set('tipoComprobante', tipoComprobante);
       if (estadoDgii) query.set('estadoDgii', estadoDgii);
+      if (empresa) query.set('empresa', empresa);
+      if (sucursal) query.set('sucursal', String(sucursal));
       return this.http.GetRequest<any>(`/facturacion/reporte-607?${query.toString()}`);
     }
 
+    const rpcParamsBase = {
+      p_search: search || null,
+      p_fecha: fecha || null,
+      p_fecha_desde: fechaDesde || null,
+      p_fecha_hasta: fechaHasta || null,
+      p_tipo_comprobante: tipoComprobante ? Number(tipoComprobante) : null,
+      p_estado_dgii: estadoDgii || null,
+    };
+    const rpcParams = (page: number, pageSize: number, incluirSucursal = true) => ({
+      p_page: page,
+      p_page_size: pageSize,
+      ...rpcParamsBase,
+      ...(incluirSucursal ? {
+        p_empresa: empresa || null,
+        p_sucursal: sucursal || null,
+      } : {}),
+    });
+
+    const esErrorFirmaReporte607 = (error: any): boolean => {
+      const message = String(
+        error?.message || error?.details || error?.hint || error?.code || '',
+      ).toLowerCase();
+      return (
+        message.includes('p_empresa') ||
+        message.includes('p_sucursal') ||
+        message.includes('listar_reporte_607') ||
+        error?.code === 'PGRST202'
+      );
+    };
+
+    const filtrarScopeReporte607 = (rows: any[]): any[] => rows.filter((row: any) => {
+      const rowEmpresa = String(row.fa_codEmpr ?? row.fa_codempr ?? '').trim().toUpperCase();
+      const rowSucursal = this.toNumberOrNull(row.fa_codSucu ?? row.fa_codsucu);
+      if (empresa && rowEmpresa !== empresa.toUpperCase()) return false;
+      if (sucursal && rowSucursal !== sucursal) return false;
+      return true;
+    });
+
     return from((async () => {
-      const { data, error } = await this.db.rpc('listar_reporte_607', {
-        p_page: safePage,
-        p_page_size: safeLimit,
-        p_search: search || null,
-        p_fecha: fecha || null,
-        p_fecha_desde: fechaDesde || null,
-        p_fecha_hasta: fechaHasta || null,
-        p_tipo_comprobante: tipoComprobante ? Number(tipoComprobante) : null,
-        p_estado_dgii: estadoDgii || null,
-      });
-      if (error) throw error;
+      let data: any[] | null = null;
+      const { data: rpcData, error } = await this.db.rpc(
+        'listar_reporte_607',
+        rpcParams(safePage, safeLimit, true),
+      );
+      data = rpcData || [];
+
+      if (error) {
+        if (!esErrorFirmaReporte607(error)) throw error;
+
+        const necesitaFiltroCliente = !!empresa || !!sucursal;
+        if (!necesitaFiltroCliente) {
+          const fallback = await this.db.rpc(
+            'listar_reporte_607',
+            rpcParams(safePage, safeLimit, false),
+          );
+          if (fallback.error) throw fallback.error;
+          data = fallback.data || [];
+        } else {
+          const pageSizeFallback = 1000;
+          const rowsFiltro: any[] = [];
+
+          for (let fallbackPage = 1; ; fallbackPage += 1) {
+            const fallback = await this.db.rpc(
+              'listar_reporte_607',
+              rpcParams(fallbackPage, pageSizeFallback, false),
+            );
+            if (fallback.error) throw fallback.error;
+
+            const pageRows = (fallback.data || []).map((row: any) => this.mapFacturaDbToUi(row));
+            rowsFiltro.push(...pageRows);
+
+            const totalFallback = Number(fallback.data?.[0]?.total_count || pageRows.length || 0);
+            const totalPagesFallback = Math.max(1, Math.ceil(totalFallback / pageSizeFallback));
+            if (pageRows.length < pageSizeFallback || fallbackPage >= totalPagesFallback) break;
+          }
+
+          const filtered = filtrarScopeReporte607(rowsFiltro);
+          const start = (safePage - 1) * safeLimit;
+          const pageRows = filtered.slice(start, start + safeLimit);
+          return {
+            status: 'success',
+            code: 200,
+            data: pageRows,
+            pagination: {
+              total: filtered.length,
+              page: safePage,
+              pageSize: safeLimit,
+              totalPages: Math.max(1, Math.ceil(filtered.length / safeLimit)),
+            },
+          };
+        }
+      }
 
       const rows = (data || []).map((row: any) => this.mapFacturaDbToUi(row));
       const total = Number(data?.[0]?.total_count || rows.length || 0);

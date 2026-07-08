@@ -7,6 +7,8 @@ CREATE INDEX IF NOT EXISTS idx_factura_607_estado_fecha
 CREATE INDEX IF NOT EXISTS idx_factura_607_tipo_fecha
   ON myappdb.factura (fa_tiponcf, fa_fecfact DESC);
 
+DROP FUNCTION IF EXISTS myappdb.listar_reporte_607(integer, integer, text, date, date, date, integer, text);
+
 CREATE OR REPLACE FUNCTION myappdb.listar_reporte_607(
   p_page integer DEFAULT 1,
   p_page_size integer DEFAULT 20,
@@ -15,7 +17,9 @@ CREATE OR REPLACE FUNCTION myappdb.listar_reporte_607(
   p_fecha_desde date DEFAULT NULL,
   p_fecha_hasta date DEFAULT NULL,
   p_tipo_comprobante integer DEFAULT NULL,
-  p_estado_dgii text DEFAULT NULL
+  p_estado_dgii text DEFAULT NULL,
+  p_empresa text DEFAULT NULL,
+  p_sucursal integer DEFAULT NULL
 )
 RETURNS TABLE (
   total_count bigint,
@@ -55,6 +59,7 @@ DECLARE
   v_offset integer := (greatest(coalesce(p_page, 1), 1) - 1) * least(greatest(coalesce(p_page_size, 20), 1), 1000);
   v_search text := nullif(btrim(coalesce(p_search, '')), '');
   v_estado text := nullif(btrim(coalesce(p_estado_dgii, '')), '');
+  v_empresa text := nullif(btrim(coalesce(p_empresa, '')), '');
   cu record;
   v_is_root boolean := false;
   v_is_admin boolean := false;
@@ -84,6 +89,8 @@ BEGIN
           AND (v_is_admin OR f.fa_codsucu = cu.sucursalid)
         )
       )
+      AND (v_empresa IS NULL OR upper(coalesce(f.fa_codempr, '')) = upper(v_empresa))
+      AND (p_sucursal IS NULL OR f.fa_codsucu = p_sucursal)
       AND (p_fecha IS NULL OR f.fa_fecfact = p_fecha)
       AND (p_fecha IS NOT NULL OR p_fecha_desde IS NULL OR f.fa_fecfact >= p_fecha_desde)
       AND (p_fecha IS NOT NULL OR p_fecha_hasta IS NULL OR f.fa_fecfact <= p_fecha_hasta)
@@ -147,7 +154,7 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION myappdb.listar_reporte_607(integer, integer, text, date, date, date, integer, text) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION myappdb.listar_reporte_607(integer, integer, text, date, date, date, integer, text) TO authenticated;
+REVOKE ALL ON FUNCTION myappdb.listar_reporte_607(integer, integer, text, date, date, date, integer, text, text, integer) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION myappdb.listar_reporte_607(integer, integer, text, date, date, date, integer, text, text, integer) TO authenticated;
 
 NOTIFY pgrst, 'reload schema';

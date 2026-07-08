@@ -1,6 +1,10 @@
 import { Component, OnInit } from '@angular/core';
 import { FacturaDgiiService } from 'src/app/core/services/facturacion/factura/factura-dgii.service';
 import { ServicioFacturacion } from 'src/app/core/services/facturacion/factura/factura.service';
+import { ServicioEmpresa } from 'src/app/core/services/mantenimientos/empresas/empresas.service';
+import { ServicioSucursal } from 'src/app/core/services/mantenimientos/sucursal/sucursal.service';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -16,24 +20,55 @@ export class FacturasPendientesComponent implements OnInit {
   total = 0;
   loading = false;
   facturaEnviando = '';
+  empresaFiltro = '';
+  sucursalFiltro = '';
+  fechaDesde = '';
+  fechaHasta = '';
+  empresas: any[] = [];
+  sucursales: any[] = [];
 
   constructor(
     private servicioFacturacion: ServicioFacturacion,
     private facturaDgiiService: FacturaDgiiService,
+    private servicioEmpresa: ServicioEmpresa,
+    private servicioSucursal: ServicioSucursal,
   ) {}
 
   ngOnInit(): void {
+    this.cargarCatalogosFiltro();
     this.cargarFacturas();
+  }
+
+  private cargarCatalogosFiltro(): void {
+    this.servicioEmpresa.buscarTodasEmpresa(1, 500).subscribe({
+      next: (response: any) => {
+        this.empresas = Array.isArray(response?.data) ? response.data : [];
+      },
+      error: (error) => console.error('[FacturasPendientes] Error cargando empresas', error),
+    });
+
+    this.servicioSucursal.buscarTodasSucursal().subscribe({
+      next: (response: any) => {
+        this.sucursales = Array.isArray(response?.data) ? response.data : [];
+      },
+      error: (error) => console.error('[FacturasPendientes] Error cargando sucursales', error),
+    });
   }
 
   cargarFacturas(): void {
     this.loading = true;
-    this.servicioFacturacion.buscarFacturasPendientesDgii().subscribe({
+    this.servicioFacturacion.buscarFacturasPendientesDgii({
+      empresa: this.empresaFiltro,
+      sucursal: this.sucursalFiltro,
+      fechaDesde: this.fechaDesde,
+      fechaHasta: this.fechaHasta,
+    }).subscribe({
       next: (response: any) => {
         this.allFacturas = (response.data || [])
           .filter((factura: any) =>
             !this.esStatusU(factura) &&
-            (this.faltaNcf(factura) || this.esRechazadaDgii(factura))
+            (this.faltaNcf(factura) || this.esRechazadaDgii(factura)) &&
+            this.cumpleFiltrosLocales(factura)
           )
           .sort(
           (a: any, b: any) =>
@@ -60,6 +95,30 @@ export class FacturasPendientesComponent implements OnInit {
         );
       },
     });
+  }
+
+  aplicarFiltros(): void {
+    this.page = 1;
+    this.cargarFacturas();
+  }
+
+  limpiarFiltros(): void {
+    this.empresaFiltro = '';
+    this.sucursalFiltro = '';
+    this.fechaDesde = '';
+    this.fechaHasta = '';
+    this.page = 1;
+    this.cargarFacturas();
+  }
+
+  onEmpresaFiltroChange(): void {
+    if (!this.empresaFiltro) return;
+    const existeSucursal = this.sucursalesFiltradas.some(
+      (sucursal) => String(sucursal.cod_sucursal ?? '') === String(this.sucursalFiltro),
+    );
+    if (!existeSucursal) {
+      this.sucursalFiltro = '';
+    }
   }
 
   updatePaginatedFacturas(): void {
@@ -121,12 +180,166 @@ export class FacturasPendientesComponent implements OnInit {
     return Number(digitos);
   }
 
+  private normalizarFecha(value: any): string {
+    const text = String(value || '').trim();
+    if (!text) return '';
+    const dateOnly = text.split('T')[0].split(' ')[0];
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateOnly)) return dateOnly;
+    const parsed = new Date(text);
+    if (Number.isNaN(parsed.getTime())) return '';
+    const year = parsed.getFullYear();
+    const month = String(parsed.getMonth() + 1).padStart(2, '0');
+    const day = String(parsed.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  formatFecha(value: any): string {
+    const fecha = this.normalizarFecha(value);
+    if (!fecha) return 'N/A';
+    const [year, month, day] = fecha.split('-');
+    return `${day}/${month}/${year}`;
+  }
+
+  private cumpleFiltrosLocales(factura: any): boolean {
+    const empresaFactura = String(factura?.fa_codEmpr ?? factura?.fa_codempr ?? '').trim().toUpperCase();
+    const sucursalFactura = Number(factura?.fa_codSucu ?? factura?.fa_codsucu ?? 0) || 0;
+    const fechaFactura = this.normalizarFecha(factura?.fa_fecFact ?? factura?.fa_fecfact);
+    const empresa = String(this.empresaFiltro || '').trim().toUpperCase();
+    const sucursal = Number(this.sucursalFiltro || 0) || 0;
+
+    if (empresa && empresaFactura !== empresa) return false;
+    if (sucursal && sucursalFactura !== sucursal) return false;
+    if (this.fechaDesde && (!fechaFactura || fechaFactura < this.fechaDesde)) return false;
+    if (this.fechaHasta && (!fechaFactura || fechaFactura > this.fechaHasta)) return false;
+    return true;
+  }
+
+  nombreEmpresa(codigo: any): string {
+    const cod = String(codigo || '').trim().toUpperCase();
+    const empresa = this.empresas.find(
+      (item) => String(item.cod_empre || '').trim().toUpperCase() === cod,
+    );
+    return String(empresa?.nom_empre || cod || 'Todas').trim();
+  }
+
+  nombreSucursal(codigo: any): string {
+    const cod = Number(codigo || 0) || 0;
+    const sucursal = this.sucursales.find(
+      (item) => Number(item.cod_sucursal || 0) === cod,
+    );
+    return String(sucursal?.nom_sucursal || (cod ? String(cod) : 'Todas')).trim();
+  }
+
   esPendiente(factura: any): boolean {
     return ['S', 'P'].includes(this.normalizarBandera(factura?.fa_pendiente));
   }
 
   esCobrada(factura: any): boolean {
     return ['S', 'P'].includes(this.normalizarBandera(factura?.fa_fpago));
+  }
+
+  exportarPdf(): void {
+    if (!this.allFacturas.length) {
+      Swal.fire('Sin datos', 'No hay facturas para generar el PDF.', 'info');
+      return;
+    }
+
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const empresa = this.empresaFiltro ? this.nombreEmpresa(this.empresaFiltro) : 'Todas';
+    const sucursal = this.sucursalFiltro ? this.nombreSucursal(this.sucursalFiltro) : 'Todas';
+    const periodo = `${this.fechaDesde ? this.formatFecha(this.fechaDesde) : 'Inicio'} - ${this.fechaHasta ? this.formatFecha(this.fechaHasta) : 'Hoy'}`;
+    const totalGeneral = this.allFacturas.reduce(
+      (acc, factura) => acc + Number(factura?.fa_valFact ?? factura?.fa_valfact ?? 0),
+      0,
+    );
+
+    doc.setFillColor(15, 23, 42);
+    doc.rect(0, 0, pageWidth, 28, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(15);
+    doc.text('Facturas pendientes DGII', 14, 12);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.text(`Generado: ${new Date().toLocaleString('es-DO')}`, pageWidth - 14, 12, { align: 'right' });
+    doc.text(`Empresa: ${empresa}    Sucursal: ${sucursal}    Periodo: ${periodo}`, 14, 20);
+
+    doc.setTextColor(15, 23, 42);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.text(`Registros: ${this.allFacturas.length}`, 14, 36);
+    doc.text(`Total: ${this.formatMoney(totalGeneral)}`, pageWidth - 14, 36, { align: 'right' });
+
+    autoTable(doc, {
+      startY: 42,
+      head: [['Factura', 'Fecha', 'Empresa', 'Sucursal', 'Cliente', 'Tipo', 'Pago', 'Monto', 'Pend.', 'Cobrada', 'DGII']],
+      body: this.allFacturas.map((factura) => [
+        String(factura?.fa_codFact ?? factura?.fa_codfact ?? ''),
+        this.formatFecha(factura?.fa_fecFact ?? factura?.fa_fecfact),
+        this.nombreEmpresa(factura?.fa_codEmpr ?? factura?.fa_codempr),
+        this.nombreSucursal(factura?.fa_codSucu ?? factura?.fa_codsucu),
+        String(factura?.fa_nomClie ?? factura?.fa_nomclie ?? 'Sin cliente'),
+        String(factura?.fa_tipoNcf ?? factura?.fa_tiponcf ?? ''),
+        String(factura?.fa_codfpago ?? ''),
+        this.formatMoney(Number(factura?.fa_valFact ?? factura?.fa_valfact ?? 0)),
+        this.esPendiente(factura) ? 'X' : '',
+        this.esCobrada(factura) ? 'X' : '',
+        this.estadoDgiiTexto(factura),
+      ]),
+      theme: 'grid',
+      headStyles: {
+        fillColor: [21, 94, 117],
+        fontStyle: 'bold',
+        fontSize: 7.3,
+        textColor: 255,
+      },
+      bodyStyles: {
+        fontSize: 7,
+        textColor: [30, 41, 59],
+      },
+      alternateRowStyles: {
+        fillColor: [248, 250, 252],
+      },
+      columnStyles: {
+        0: { cellWidth: 25 },
+        1: { cellWidth: 18 },
+        2: { cellWidth: 30 },
+        3: { cellWidth: 30 },
+        4: { cellWidth: 48 },
+        5: { cellWidth: 16 },
+        6: { cellWidth: 15, halign: 'center' },
+        7: { cellWidth: 24, halign: 'right' },
+        8: { cellWidth: 14, halign: 'center' },
+        9: { cellWidth: 16, halign: 'center' },
+        10: { cellWidth: 28 },
+      },
+      margin: { left: 14, right: 14 },
+      didDrawPage: () => {
+        const pageHeight = doc.internal.pageSize.getHeight();
+        doc.setFontSize(7);
+        doc.setTextColor(100, 116, 139);
+        doc.text(`Pagina ${doc.getNumberOfPages()}`, pageWidth - 14, pageHeight - 8, { align: 'right' });
+      },
+    });
+
+    doc.save(`facturas-pendientes-${this.fechaDesde || 'inicio'}-${this.fechaHasta || 'hoy'}.pdf`);
+  }
+
+  private formatMoney(value: number): string {
+    return new Intl.NumberFormat('es-DO', {
+      style: 'currency',
+      currency: 'DOP',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(Number(value || 0));
+  }
+
+  get totalValorFiltrado(): number {
+    return this.allFacturas.reduce(
+      (acc, factura) => acc + Number(factura?.fa_valFact ?? factura?.fa_valfact ?? 0),
+      0,
+    );
   }
 
   async enviar(factura: any): Promise<void> {
@@ -222,5 +435,13 @@ export class FacturasPendientesComponent implements OnInit {
 
   get pages(): number[] {
     return Array.from({ length: this.totalPages }, (_, index) => index + 1);
+  }
+
+  get sucursalesFiltradas(): any[] {
+    const empresa = String(this.empresaFiltro || '').trim().toUpperCase();
+    if (!empresa) return this.sucursales;
+    return this.sucursales.filter(
+      (sucursal) => String(sucursal.cod_empre || '').trim().toUpperCase() === empresa,
+    );
   }
 }

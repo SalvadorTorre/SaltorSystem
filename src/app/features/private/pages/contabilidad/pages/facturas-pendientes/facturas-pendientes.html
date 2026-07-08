@@ -1,9 +1,64 @@
 <div class="container-fluid p-4">
   <div class="d-flex justify-content-between align-items-center mb-4">
     <h2 class="h4 mb-0 text-primary">Facturas sin e-CF Pendientes de Envio DGII</h2>
-    <button class="btn btn-outline-primary" (click)="cargarFacturas()">
-      <i class="bi bi-arrow-clockwise me-2"></i>Actualizar
-    </button>
+    <div class="d-flex gap-2">
+      <button class="btn btn-outline-danger" (click)="exportarPdf()" [disabled]="loading || allFacturas.length === 0">
+        <i class="bi bi-file-earmark-pdf me-2"></i>Generar PDF
+      </button>
+      <button class="btn btn-outline-primary" (click)="cargarFacturas()" [disabled]="loading">
+        <i class="bi bi-arrow-clockwise me-2"></i>Actualizar
+      </button>
+    </div>
+  </div>
+
+  <div class="card shadow-sm border-0 mb-3">
+    <div class="card-body">
+      <div class="row g-3 align-items-end">
+        <div class="col-12 col-md-3">
+          <label class="form-label fw-semibold">Empresa</label>
+          <select class="form-select" [(ngModel)]="empresaFiltro" (change)="onEmpresaFiltroChange()">
+            <option value="">Todas</option>
+            <option *ngFor="let empresa of empresas" [value]="empresa.cod_empre">
+              {{ empresa.nom_empre || empresa.cod_empre }}
+            </option>
+          </select>
+        </div>
+
+        <div class="col-12 col-md-3">
+          <label class="form-label fw-semibold">Sucursal</label>
+          <select class="form-select" [(ngModel)]="sucursalFiltro">
+            <option value="">Todas</option>
+            <option *ngFor="let sucursal of sucursalesFiltradas" [value]="sucursal.cod_sucursal">
+              {{ sucursal.nom_sucursal || sucursal.cod_sucursal }}
+            </option>
+          </select>
+        </div>
+
+        <div class="col-6 col-md-2">
+          <label class="form-label fw-semibold">Desde</label>
+          <input type="date" class="form-control" [(ngModel)]="fechaDesde" />
+        </div>
+
+        <div class="col-6 col-md-2">
+          <label class="form-label fw-semibold">Hasta</label>
+          <input type="date" class="form-control" [(ngModel)]="fechaHasta" />
+        </div>
+
+        <div class="col-12 col-md-2 d-flex gap-2">
+          <button class="btn btn-primary flex-fill" (click)="aplicarFiltros()" [disabled]="loading">
+            <i class="bi bi-funnel me-1"></i>Filtrar
+          </button>
+          <button class="btn btn-outline-secondary" (click)="limpiarFiltros()" [disabled]="loading">
+            Limpiar
+          </button>
+        </div>
+      </div>
+
+      <div class="small text-muted mt-3 d-flex flex-wrap gap-4">
+        <span>Registros filtrados: <strong>{{ total | number }}</strong></span>
+        <span>Valor total: <strong>{{ totalValorFiltrado | currency:'DOP':'symbol':'1.2-2' }}</strong></span>
+      </div>
+    </div>
   </div>
 
   <div class="card shadow-sm border-0">
