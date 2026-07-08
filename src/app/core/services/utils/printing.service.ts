@@ -2217,7 +2217,13 @@ items.forEach((it: any) => {
 
       const numero = pick(cotizacionData?.ct_codcoti, cotizacionData?.numero);
       const fecha = pick(cotizacionData?.ct_feccoti, cotizacionData?.fecha);
-      const vendedor = pick(cotizacionData?.ct_nomvend, cotizacionData?.ct_codvend);
+      const vendedor = pick(
+        cotizacionData?.ct_nomvend,
+        cotizacionData?.nombreVendedor,
+        cotizacionData?.nombreusuario,
+        cotizacionData?.nombreUsuario,
+        cotizacionData?.ct_codvend
+      );
       const cliente = pick(cotizacionData?.ct_nomclie, 'CLIENTE GENERICO');
       const rncCliente = pick(cotizacionData?.ct_rnc);
       const telefonoCliente = pick(cotizacionData?.ct_telclie);

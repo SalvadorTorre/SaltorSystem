@@ -415,30 +415,40 @@ export class Reporte607Component implements OnInit {
   }
 
   private construirHtmlXls(rows: any[]): string {
-    const periodo = this.escapeHtml(this.rangoActual);
-    const generado = this.escapeHtml(new Date().toLocaleString('es-DO'));
-    const filtros = [
-      `Periodo: ${this.rangoActual}`,
-      this.tipoComprobante ? `Tipo: E${this.tipoComprobante}` : 'Tipo: Todos',
-      this.estadoDgii ? `Estado: ${this.estadoDgii}` : 'Estado: Todos',
-      this.search ? `Busqueda: ${this.search}` : '',
-    ].filter(Boolean).join(' | ');
-
     const body = rows.map((factura) => {
-      const diagnostico = this.primerMensajeDgii(factura);
+      const estado = this.estadoTexto(factura);
+      const exportarMontos = !this.esRechazadoOError(estado);
+      const itbis = this.numeroXls(factura.fa_itbiFact ?? factura.fa_itbifact);
+      const monto = this.numeroXls(factura.fa_valFact ?? factura.fa_valfact);
+      const montoExento = this.numeroXls(
+        factura.monto_exento ??
+          factura.montoExento ??
+          factura.fa_montoexento ??
+          factura.fa_montoExento ??
+          0,
+      );
+      const montoNoFacturable = this.numeroXls(
+        factura.monto_no_facturable ??
+          factura.montoNoFacturable ??
+          factura.fa_montonofacturable ??
+          factura.fa_montoNoFacturable,
+        '',
+      );
+
       return `
         <tr>
-          <td class="text">${this.escapeHtml(factura.fa_codFact || factura.fa_codfact || '')}</td>
-          <td>${this.escapeHtml(this.formatFecha(factura.fa_fecFact || factura.fa_fecfact))}</td>
-          <td>${this.escapeHtml(this.tipoComprobanteTexto(factura))}</td>
-          <td class="text">${this.escapeHtml(factura.fa_ncfFact || factura.fa_ncffact || '')}</td>
-          <td>${this.escapeHtml(factura.fa_nomClie || factura.fa_nomclie || '')}</td>
           <td class="text">${this.escapeHtml(factura.fa_rncFact || factura.fa_rncfact || '')}</td>
-          <td class="number">${Number(factura.fa_valFact ?? factura.fa_valfact ?? 0).toFixed(2)}</td>
-          <td>${this.escapeHtml(this.estadoTexto(factura))}</td>
-          <td>${this.escapeHtml(diagnostico || 'Sin mensajes')}</td>
-          <td class="text">${this.escapeHtml(factura.codseguridad || '')}</td>
-          <td>${this.escapeHtml(factura.qr_link || '')}</td>
+          <td class="text">${this.escapeHtml(factura.fa_ncfFact || factura.fa_ncffact || factura.ecf || '')}</td>
+          <td class="text">${this.escapeHtml(this.encfModificado(factura))}</td>
+          <td class="date">${this.escapeHtml(this.fechaXls(factura.fa_fecFact || factura.fa_fecfact, true))}</td>
+          <td class="date">${this.escapeHtml(this.fechaXls(this.fechaRecepcionDgii(factura), false))}</td>
+          <td class="text">${this.escapeHtml(this.aprobacionComercial(factura))}</td>
+          <td class="date">${this.escapeHtml(this.fechaXls(this.fechaAprobacionComercial(factura), false))}</td>
+          <td>${this.escapeHtml(estado)}</td>
+          <td class="number">${exportarMontos ? itbis : ''}</td>
+          <td class="number">${exportarMontos ? monto : ''}</td>
+          <td class="number">${exportarMontos ? montoExento : ''}</td>
+          <td class="number">${exportarMontos ? montoNoFacturable : ''}</td>
         </tr>
       `;
     }).join('');
@@ -449,38 +459,139 @@ export class Reporte607Component implements OnInit {
           <meta charset="utf-8" />
           <style>
             table { border-collapse: collapse; font-family: Arial, sans-serif; font-size: 11px; }
-            th { background: #155e75; color: #ffffff; font-weight: bold; }
-            th, td { border: 1px solid #cbd5e1; padding: 6px; vertical-align: top; }
-            .title { font-size: 18px; font-weight: bold; color: #0f172a; }
-            .meta { color: #334155; font-size: 12px; }
+            th { background: #ffffff; color: #000000; font-weight: bold; white-space: nowrap; }
+            th, td { border: 1px solid #cbd5e1; padding: 3px 4px; vertical-align: top; }
             .text { mso-number-format: "\\@"; }
             .number { mso-number-format: "#,##0.00"; text-align: right; }
+            .date { mso-number-format: "dd/mm/yyyy h:mm:ss AM/PM"; white-space: nowrap; }
           </style>
         </head>
         <body>
           <table>
-            <tr><td colspan="11" class="title">Reporte 607</td></tr>
-            <tr><td colspan="11" class="meta">Periodo: ${periodo}</td></tr>
-            <tr><td colspan="11" class="meta">Filtros: ${this.escapeHtml(filtros)}</td></tr>
-            <tr><td colspan="11" class="meta">Generado: ${generado}</td></tr>
             <tr>
-              <th>Factura</th>
-              <th>Fecha</th>
-              <th>Tipo</th>
-              <th>NCF/e-CF</th>
-              <th>Cliente</th>
-              <th>RNC</th>
-              <th>Monto</th>
-              <th>Estado DGII</th>
-              <th>Diagnostico</th>
-              <th>Cod. seguridad</th>
-              <th>QR</th>
+              <th>RNC Receptor</th>
+              <th>ENCF</th>
+              <th>ENCF Modificado</th>
+              <th>Fecha Comprobante</th>
+              <th>Fecha Recepción</th>
+              <th>Aprobación Comercial</th>
+              <th>Fecha Aprobación Comercial</th>
+              <th>Estado</th>
+              <th>ITBIS Facturado</th>
+              <th>Monto Total</th>
+              <th>Monto Exento</th>
+              <th>Monto No Facturable</th>
             </tr>
             ${body}
           </table>
         </body>
       </html>
     `;
+  }
+
+  private esRechazadoOError(estado: string): boolean {
+    const normalizado = String(estado || '').toLowerCase();
+    return normalizado.includes('rechaz') || normalizado.includes('error');
+  }
+
+  private numeroXls(value: any, fallback = '0'): string {
+    if (value === null || value === undefined || value === '') return fallback;
+    const numero = Number(value);
+    if (!Number.isFinite(numero)) return fallback;
+    return String(Math.round(numero * 100) / 100);
+  }
+
+  private fechaXls(value: any, fechaComprobante: boolean): string {
+    const text = String(value || '').trim();
+    if (!text) return '';
+
+    const dateOnly = text.split('T')[0].split(' ')[0];
+    const isoDate = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateOnly);
+    if (isoDate && fechaComprobante) {
+      return `${isoDate[3]}/${isoDate[2]}/${isoDate[1]} 12:00:00 A.M.`;
+    }
+
+    const parsed = new Date(text);
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed
+        .toLocaleString('es-DO', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: true,
+        })
+        .replace(/\s?a\.\s?m\./i, ' A.M.')
+        .replace(/\s?p\.\s?m\./i, ' P.M.');
+    }
+
+    const ddmmyyyy = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(text);
+    if (ddmmyyyy && fechaComprobante) return `${text} 12:00:00 A.M.`;
+    return text;
+  }
+
+  private encfModificado(factura: any): string {
+    return String(
+      factura?.encf_modificado ??
+        factura?.encfModificado ??
+        factura?.fa_ncffact_modificado ??
+        factura?.fa_ncfFactModificado ??
+        '',
+    ).trim();
+  }
+
+  private aprobacionComercial(factura: any): string {
+    return String(
+      this.valorDgii(factura, [
+        'aprobacion_comercial',
+        'aprobacionComercial',
+        'aprobacionComercialEstado',
+        'AprobacionComercial',
+      ]) || '',
+    ).trim();
+  }
+
+  private fechaAprobacionComercial(factura: any): any {
+    return this.valorDgii(factura, [
+      'fecha_aprobacion_comercial',
+      'fechaAprobacionComercial',
+      'FechaAprobacionComercial',
+      'fecha_aprobacion',
+    ]);
+  }
+
+  private fechaRecepcionDgii(factura: any): any {
+    return this.valorDgii(factura, [
+      'fecha_recepcion',
+      'fechaRecepcion',
+      'FechaRecepcion',
+      'fechaRecepcionDgii',
+      'received_at',
+      'recepcion',
+    ]) || factura?.dgii_updated_at || factura?.fec_firma || '';
+  }
+
+  private valorDgii(factura: any, keys: string[]): any {
+    const fuentes = [
+      factura,
+      factura?.dgii_response_json,
+      factura?.dgii_response_raw,
+      factura?.dgii_response_json?.data,
+      factura?.dgii_response_raw?.data,
+      factura?.dgii_response_json?.details,
+      factura?.dgii_response_raw?.details,
+    ].filter(Boolean);
+
+    for (const fuente of fuentes) {
+      for (const key of keys) {
+        if (fuente && fuente[key] !== undefined && fuente[key] !== null && fuente[key] !== '') {
+          return fuente[key];
+        }
+      }
+    }
+    return '';
   }
 
   private nombrePeriodoArchivo(): string {

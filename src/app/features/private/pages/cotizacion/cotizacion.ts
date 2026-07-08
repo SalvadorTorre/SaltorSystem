@@ -1305,11 +1305,18 @@ export class Cotizacion implements OnInit {
       this.ServicioUsuario.buscarUsuarioPorClave(claveUsuario).subscribe(
         (usuario) => {
           if (usuario.data.length) {
+            const vendedor = usuario.data[0];
             this.formularioCotizacion.patchValue({
-              ct_nomvend: usuario.data[0].idUsuario,
+              ct_nomvend:
+                vendedor.nombreUsuario ||
+                vendedor.nombreusuario ||
+                vendedor.nombre ||
+                vendedor.idUsuario ||
+                vendedor.idusuario ||
+                '',
             });
             nextElement?.focus();
-            console.log(usuario.data[0].idUsuario);
+            console.log(this.formularioCotizacion.get('ct_nomvend')?.value);
             this.mensagePantalla = true;
             Swal.fire({
               icon: 'error',

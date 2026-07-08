@@ -332,6 +332,15 @@ export class ServicioCotizacion {
     };
   }
 
+  private async contarDetallesCotizacion(codigo: string): Promise<number> {
+    const { count, error } = await this.db
+      .from("detcotizacion")
+      .select("id", { count: "exact", head: true })
+      .eq("dc_codcoti", codigo);
+    if (error) throw error;
+    return count || 0;
+  }
+
   guardarCotizacion(cotizacion: any): Observable<any> {
     if (this.useSupabase) {
       return from((async () => {
@@ -412,13 +421,22 @@ export class ServicioCotizacion {
         const { data: updatedCotizacion, error: updateError } = await updateQuery.maybeSingle();
         if (updateError) throw updateError;
 
-        let deleteDetalle = this.db
+        const detallesAntes = await this.contarDetallesCotizacion(codigo);
+
+        const { error: deleteDetalleError } = await this.db
           .from("detcotizacion")
           .delete()
           .eq("dc_codcoti", codigo);
-        deleteDetalle = this.applyDetalleScope(deleteDetalle);
-        const { error: deleteDetalleError } = await deleteDetalle;
         if (deleteDetalleError) throw deleteDetalleError;
+
+        if (detallesAntes > 0) {
+          const detallesRestantes = await this.contarDetallesCotizacion(codigo);
+          if (detallesRestantes > 0) {
+            throw new Error(
+              "No se pudieron eliminar los detalles anteriores de la cotizacion. Revise el permiso RLS de detcotizacion para editar cotizaciones.",
+            );
+          }
+        }
 
         const detallePayload = this.mapDetallePayload(detalleRaw, codigo, cotizacionRaw, codEmpre, idsucursal);
         if (detallePayload.length > 0) {

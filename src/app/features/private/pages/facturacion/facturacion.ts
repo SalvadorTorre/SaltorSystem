@@ -435,7 +435,7 @@ export class Facturacion implements OnInit {
         }),
         filter((query: string) => String(query || '').trim() !== ''),
         switchMap((query: string) =>
-          this.servicioCliente.buscarporNombre(query).pipe(
+          this.servicioCliente.buscarporNombre(query, true).pipe(
             catchError((error) => {
               console.error(
                 'Error en búsqueda de cliente (Supabase):',
@@ -692,7 +692,7 @@ export class Facturacion implements OnInit {
         }),
         filter((query: string) => String(query || '').trim() !== ''),
         switchMap((query: string) =>
-          this.servicioCliente.buscarporNombre(query).pipe(
+          this.servicioCliente.buscarporNombre(query, true).pipe(
             catchError((error) => {
               console.error('Error en busqueda de cliente (Supabase):', error);
               return of({ data: [] } as any);
@@ -1187,11 +1187,11 @@ export class Facturacion implements OnInit {
       if (input instanceof Date) {
         return this.formatofecha(input);
       }
-      const s = String(input);
+      const s = String(input).trim();
       // ISO o similar: yyyy-mm-dd...
-      if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
-        const d = new Date(s);
-        if (!isNaN(d.getTime())) return this.formatofecha(d);
+      const isoDate = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (isoDate) {
+        return `${isoDate[3]}/${isoDate[2]}/${isoDate[1]}`;
       }
       // dd/mm/yyyy ya formateado
       if (/^\d{2}\/\d{2}\/\d{4}$/.test(s)) {
@@ -1701,7 +1701,7 @@ export class Facturacion implements OnInit {
     nombreEmpresaApi: string,
     nextElement: HTMLInputElement | null,
   ): void {
-    this.servicioCliente.buscarPorRnc(rnc).subscribe({
+    this.servicioCliente.buscarPorRnc(rnc, true).subscribe({
       next: (clienteResp) => {
         const cliente = clienteResp?.data as ModeloClienteData | null;
         if (cliente) {
@@ -1820,6 +1820,7 @@ export class Facturacion implements OnInit {
         cl_tipo: 'RNC',
         cl_status: true,
         cl_rnc: Number(rnc),
+        cl_codSucursal: String(localStorage.getItem('idSucursal') || '').trim(),
       };
 
       this.servicioCliente.guardarCliente(payload).subscribe({

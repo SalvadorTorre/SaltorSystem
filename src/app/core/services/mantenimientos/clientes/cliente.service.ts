@@ -47,6 +47,24 @@ export class ServicioCliente {
     return stringValue ? stringValue : null;
   }
 
+  private sucursalUsuarioValores(): string[] {
+    const sucursal = Number(localStorage.getItem("idSucursal") || 0);
+    if (!Number.isFinite(sucursal) || sucursal <= 0) return [];
+
+    return Array.from(
+      new Set([
+        String(sucursal),
+        String(sucursal).padStart(2, "0"),
+      ]),
+    );
+  }
+
+  private filtrarPorSucursalUsuario(query: any, filtrar: boolean): any {
+    if (!filtrar) return query;
+    const sucursales = this.sucursalUsuarioValores();
+    return sucursales.length ? query.in("cl_codsucursal", sucursales) : query;
+  }
+
   private normalizarCliente(row: any): ModeloClienteData {
     return {
       cl_codClie: Number(row?.cl_codclie ?? row?.cl_codClie ?? 0),
@@ -59,6 +77,8 @@ export class ServicioCliente {
       cl_tipo: row?.cl_tipo ?? "",
       cl_status: this.toBoolean(row?.cl_status),
       cl_rnc: row?.cl_rnc ?? null,
+      cl_codSucursal: row?.cl_codsucursal ?? row?.cl_codSucursal ?? null,
+      cl_codsucursal: row?.cl_codsucursal ?? row?.cl_codSucursal ?? null,
     } as ModeloClienteData;
   }
 
@@ -233,19 +253,23 @@ export class ServicioCliente {
     );
   }
 
-  buscarporNombre(nombre: string): Observable<ModeloCliente> {
+  buscarporNombre(nombre: string, filtrarSucursalUsuario = false): Observable<ModeloCliente> {
     const term = String(nombre || "").trim();
 
     return from(
       (async () => {
         if (!term) return [];
 
-        const { data, error } = await this.db
+        let query = this.db
           .from("clientes")
           .select("*")
-          .ilike("cl_nomclie", `%${term}%`)
+          .ilike("cl_nomclie", `%${term}%`);
+        query = this.filtrarPorSucursalUsuario(query, filtrarSucursalUsuario);
+        query = query
           .order("cl_nomclie", { ascending: true })
           .limit(50);
+
+        const { data, error } = await query;
 
         if (error) throw error;
 
@@ -267,7 +291,7 @@ export class ServicioCliente {
     );
   }
 
-  buscarPorRnc(rnc: string): Observable<any> {
+  buscarPorRnc(rnc: string, filtrarSucursalUsuario = false): Observable<any> {
     const limpio = String(rnc || "").replace(/\D/g, "").trim();
     if (!limpio) {
       return of({
@@ -283,13 +307,16 @@ export class ServicioCliente {
         const rncNumero = Number(limpio);
         if (Number.isNaN(rncNumero)) return null;
 
-        const { data, error } = await this.db
+        let query = this.db
           .from("clientes")
           .select("*")
-          .eq("cl_rnc", rncNumero)
+          .eq("cl_rnc", rncNumero);
+        query = this.filtrarPorSucursalUsuario(query, filtrarSucursalUsuario);
+        query = query
           .order("cl_codclie", { ascending: true })
-          .limit(1)
-          .maybeSingle();
+          .limit(1);
+
+        const { data, error } = await query.maybeSingle();
 
         if (error) throw error;
         return data ? this.normalizarCliente(data) : null;

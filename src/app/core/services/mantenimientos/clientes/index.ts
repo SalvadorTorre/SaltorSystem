@@ -18,4 +18,6 @@ export interface ModeloClienteData{
   cl_tipo: string;
   cl_status: boolean;
   cl_rnc: number;
+  cl_codSucursal?: string | null;
+  cl_codsucursal?: string | null;
 }

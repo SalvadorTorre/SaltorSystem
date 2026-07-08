@@ -356,6 +356,15 @@ export class ControlFact implements OnInit {
     return cambios;
   }
 
+  private marcarPendienteAlmacenDespachoEnEdicion(cambios: any): any {
+    return {
+      ...(cambios || {}),
+      fa_impalmap: 'N',
+      fa_impalmaf: 'N',
+      fa_despacho: 'N',
+    };
+  }
+
   constructor(
     private fb: FormBuilder,
     private servicioFacturacion: ServicioFacturacion,
@@ -2060,6 +2069,9 @@ export class ControlFact implements OnInit {
 
     let facturaActual = this.formularioFacturacion.getRawValue();
     let facturaCambios = codFact ? this.obtenerCambiosFactura(facturaActual) : null;
+    if (codFact) {
+      facturaCambios = this.marcarPendienteAlmacenDespachoEnEdicion(facturaCambios);
+    }
     if (codFact && Object.keys(facturaCambios).length === 0 && !detalleModificado) {
       Swal.fire('Aviso', 'No hay cambios para guardar.', 'info');
       this.guardandoFactura = false;
@@ -2079,6 +2091,7 @@ export class ControlFact implements OnInit {
       });
       facturaActual = this.formularioFacturacion.getRawValue();
       facturaCambios = this.obtenerCambiosFactura(facturaActual);
+      facturaCambios = this.marcarPendienteAlmacenDespachoEnEdicion(facturaCambios);
     }
 
     const payload = {

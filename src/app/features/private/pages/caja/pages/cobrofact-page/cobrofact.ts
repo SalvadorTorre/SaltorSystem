@@ -119,6 +119,7 @@ export class CobroFact implements OnInit {
 
   detFacturaList: detFacturaData[] = [];
   items: interfaceDetalleModel[] = [];
+  private detalleFacturaRequestSeq = 0;
   ncflist: ModeloNcfData[] = [];
   selectedItem: any = null;
   valorPagado: number = 0;
@@ -228,11 +229,18 @@ export class CobroFact implements OnInit {
   }
 
   get puedeImprimirConduceFactura(): boolean {
+    const permiteConduceNcf32Pagada =
+      this.tipoNcfFacturaSeleccionada() === '32' && this.chekPagado;
+
     return (
       !this.facturaSoloConsulta &&
       this.hayFacturaSeleccionada &&
       !this.bloquearAccionesPorNcfDgiiPagada &&
-      (!this.facturaEstaImpresa || this.facturaSeleccionadaReimpresa)
+      (
+        permiteConduceNcf32Pagada ||
+        !this.facturaEstaImpresa ||
+        this.facturaSeleccionadaReimpresa
+      )
     );
   }
 
@@ -286,13 +294,15 @@ export class CobroFact implements OnInit {
     return this.hayFacturaSeleccionada && !this.esEntregaEnvio && !this.facturaEstaPagada;
   }
 
-  private tipoNcfFacturaSeleccionada(): string {
-    return String(
+  tipoNcfFacturaSeleccionada(): string {
+    const raw = String(
       this.formularioFacturacion?.get('fa_tipoNcf')?.value ??
       (this.DatosSeleccionado as any)?.fa_tipoNcf ??
       (this.DatosSeleccionado as any)?.fa_tiponcf ??
       '',
     ).trim();
+    const digits = raw.replace(/\D/g, '');
+    return digits || raw.toUpperCase();
   }
 
   get bloquearAccionesPorNcfDgiiPagada(): boolean {
@@ -627,6 +637,7 @@ export class CobroFact implements OnInit {
     this.preciomerc = 0;
     this.cantidadmerc = 0;
     this.isEditing = false;
+    this.detalleFacturaRequestSeq++;
     this.items = []; // Limpiar el array de items
     this.totalGral = 0; // Reiniciar el total general
     this.totalItbis = 0; // Reiniciar el total del ITBIS
@@ -682,6 +693,111 @@ export class CobroFact implements OnInit {
     this.nomChoferSalida = '';
   }
 
+  private codigoDetalleNormalizado(value: any): string {
+    return String(value ?? '').trim();
+  }
+
+  private cargaDetalleActual(requestId: number, codigoFactura: any): boolean {
+    const codigoEsperado = this.codigoDetalleNormalizado(codigoFactura);
+    const codigoSeleccionado = this.codigoDetalleNormalizado(
+      (this.DatosSeleccionado as any)?.fa_codFact ||
+        this.formularioFacturacion?.get('fa_codFact')?.value,
+    );
+
+    return (
+      requestId === this.detalleFacturaRequestSeq &&
+      (!codigoSeleccionado || codigoSeleccionado === codigoEsperado)
+    );
+  }
+
+  private crearProductoDetalleImpresion(item: any): ModeloInventarioData {
+    return {
+      in_codmerc: item.df_codMerc ?? item.df_codmerc ?? '',
+      in_desmerc: item.df_desMerc ?? item.df_desmerc ?? '',
+      in_grumerc: '',
+      in_tipoproduct: '',
+      in_canmerc: 0,
+      in_caninve: 0,
+      in_fecinve: null,
+      in_eximini: 0,
+      in_cosmerc: 0,
+      in_premerc: 0,
+      in_precmin: 0,
+      in_ucosto: 0,
+      in_porgana: 0,
+      in_peso: 0,
+      in_longitud: 0,
+      in_unidad: 0,
+      in_medida: 0,
+      in_longitu: 0,
+      in_fecmodif: null,
+      in_amacen: 0,
+      in_imagen: '',
+      in_status: '',
+      in_itbis: false,
+      in_minvent: 0,
+    };
+  }
+
+  private crearItemDetalleImpresion(
+    item: any,
+    factura: any,
+  ): interfaceDetalleModel {
+    const cantidad = Number(item.df_canMerc ?? item.df_canmerc ?? 0);
+    const precio = Number(item.df_preMerc ?? item.df_premerc ?? 0);
+    const totalItem = cantidad * precio;
+    const detalle: any = {
+      producto: this.crearProductoDetalleImpresion(item),
+      cantidad,
+      precio,
+      total: totalItem,
+      fecfactActual: new Date(),
+      costo: this.costotxt,
+      fa_codFact: factura.fa_codFact,
+      fa_fecFact: factura.fa_fecFact,
+      fa_nomClie: factura.fa_nomClie,
+      fa_valFact: factura.fa_valFact,
+      fa_impresa: factura.fa_impresa === null ? 'N' : 'S',
+      fa_envio: factura.fa_envio,
+      fa_fpago: factura.fa_fpago,
+      df_tipoMerc: item.df_tipoMerc ?? item.df_tipomerc ?? item.df_tipomerc,
+    };
+
+    const detalleId = item.id ?? item.df_id ?? item.df_item ?? item.df_numitem;
+    if (detalleId !== undefined && detalleId !== null && detalleId !== '') {
+      detalle.detalleId = detalleId;
+    }
+
+    return detalle as interfaceDetalleModel;
+  }
+
+  private deduplicarItemsImpresion(
+    items: interfaceDetalleModel[],
+  ): interfaceDetalleModel[] {
+    const vistos = new Set<string>();
+    return items.filter((item: any) => {
+      const producto = item.producto || {};
+      const detalleId = item.detalleId ?? item.id ?? item.df_id;
+      const key =
+        detalleId !== undefined && detalleId !== null && detalleId !== ''
+          ? `id:${detalleId}`
+          : [
+              item.fa_codFact,
+              producto.in_codmerc,
+              producto.in_desmerc,
+              item.cantidad,
+              item.precio,
+              item.total,
+            ]
+              .map((value) => this.codigoDetalleNormalizado(value))
+              .join('|');
+
+      if (vistos.has(key)) return false;
+      vistos.add(key);
+      return true;
+    });
+  }
+
   editardetFacturacion(detFactura: detFacturaData) {
     this.facturacionid = detFactura.df_codFact;
   }
@@ -726,73 +842,39 @@ export class CobroFact implements OnInit {
       (input as HTMLInputElement).disabled = true;
     });
     // Limpiar los items antes de agregar los nuevos
+    const detalleRequestId = ++this.detalleFacturaRequestSeq;
     this.items = [];
     this.servicioFacturacion
       .buscarFacturaDetalle(Factura.fa_codFact)
       .subscribe((response) => {
+        if (!this.cargaDetalleActual(detalleRequestId, Factura.fa_codFact)) {
+          return;
+        }
         let subtotal = 0;
-        let itbis = 0;
+        let totalItbis = 0;
         let totalGeneral = 0;
         const itbisRate = 0.18; // Ejemplo: 18% de ITBIS
-        response.data.forEach((item: any) => {
-          const producto: ModeloInventarioData = {
-            in_codmerc: item.df_codMerc,
-            in_desmerc: item.df_desMerc,
-            in_grumerc: '',
-            in_tipoproduct: '',
-            in_canmerc: 0,
-            in_caninve: 0,
-            in_fecinve: null,
-            in_eximini: 0,
-            in_cosmerc: 0,
-            in_premerc: 0,
-            in_precmin: 0,
-            //   in_costpro: 0,
-            in_ucosto: 0,
-            in_porgana: 0,
-            in_peso: 0,
-            in_longitud: 0,
-            in_unidad: 0,
-            in_medida: 0,
-            in_longitu: 0,
-            in_fecmodif: null,
-            in_amacen: 0,
-            in_imagen: '',
-            in_status: '',
-            in_itbis: false,
-            in_minvent: 0,
-          };
-          const cantidad = item.df_canMerc;
-          const precio = item.df_preMerc;
+        const itemsCargados: interfaceDetalleModel[] = [];
+        const detalles = Array.isArray(response?.data) ? response.data : [];
+        detalles.forEach((item: any) => {
+          const cantidad = Number(item.df_canMerc ?? item.df_canmerc ?? 0);
+          const precio = Number(item.df_preMerc ?? item.df_premerc ?? 0);
           const totalItem = cantidad * precio;
-          this.items.push({
-            producto: producto,
-            cantidad: cantidad,
-            precio: precio,
-            total: totalItem,
-            fecfactActual: new Date(),
-            costo: this.costotxt,
-            fa_codFact: Factura.fa_codFact,
-            fa_fecFact: Factura.fa_fecFact,
-            fa_nomClie: Factura.fa_nomClie,
-            fa_valFact: Factura.fa_valFact,
-            fa_impresa: Factura.fa_impresa === null ? 'N' : 'S',
-            fa_envio: Factura.fa_envio,
-            fa_fpago: Factura.fa_fpago,
-          });
+          itemsCargados.push(this.crearItemDetalleImpresion(item, Factura));
           //fecfactActual: new Date(),
           // Calcular el subtotal
           subtotal += totalItem;
           // Calcular ITBIS solo si el producto tiene ITBIS
           // if (item.dc_itbis) {
-          this.totalItbis += totalItem * itbisRate;
+          totalItbis += totalItem * itbisRate;
           // }
         });
+        this.items = this.deduplicarItemsImpresion(itemsCargados);
         // Calcular el total general (subtotal + ITBIS)
-        totalGeneral = subtotal + this.totalItbis;
+        totalGeneral = subtotal + totalItbis;
         // Asignar los totales a variables o mostrarlos en la interfaz
         this.subTotal = subtotal;
-        this.totalItbis = this.totalItbis;
+        this.totalItbis = totalItbis;
         this.totalGral = totalGeneral;
       });
   }
@@ -885,74 +967,40 @@ export class CobroFact implements OnInit {
     // Limpiar los items antes de agregar los nuevos
     this.totalItbis = 0;
 
+    const detalleRequestId = ++this.detalleFacturaRequestSeq;
     this.items = [];
     this.servicioFacturacion
       .buscarFacturaDetalle(factura.fa_codFact)
       .subscribe((response) => {
+        if (!this.cargaDetalleActual(detalleRequestId, factura.fa_codFact)) {
+          return;
+        }
         let subtotal = 0;
-        let itbis = 0;
+        let totalItbis = 0;
         let totalGeneral = 0;
         let totalcosto = 0;
         const itbisRate = 0.18; // Ejemplo: 18% de ITBIS
-        response.data.forEach((item: any) => {
-          const producto: ModeloInventarioData = {
-            in_codmerc: item.df_codMerc,
-            in_desmerc: item.df_desMerc,
-            in_grumerc: '',
-            in_tipoproduct: '',
-            in_canmerc: 0,
-            in_caninve: 0,
-            in_fecinve: null,
-            in_eximini: 0,
-            in_cosmerc: 0,
-            in_premerc: 0,
-            in_precmin: 0,
-            //  in_costpro: 0,
-            in_ucosto: 0,
-            in_porgana: 0,
-            in_peso: 0,
-            in_longitud: 0,
-            in_unidad: 0,
-            in_medida: 0,
-            in_longitu: 0,
-            in_fecmodif: null,
-            in_amacen: 0,
-            in_imagen: '',
-            in_status: '',
-            in_itbis: false,
-            in_minvent: 0,
-          };
-          const cantidad = item.df_canMerc;
-          const precio = item.df_preMerc;
+        const itemsCargados: interfaceDetalleModel[] = [];
+        const detalles = Array.isArray(response?.data) ? response.data : [];
+        detalles.forEach((item: any) => {
+          const cantidad = Number(item.df_canMerc ?? item.df_canmerc ?? 0);
+          const precio = Number(item.df_preMerc ?? item.df_premerc ?? 0);
           const totalItem = cantidad * precio;
-          const costoItem = item.df_cosMerc;
-          this.items.push({
-            producto: producto,
-            cantidad: cantidad,
-            precio: precio,
-            total: totalItem,
-            fecfactActual: new Date(),
-            costo: this.costotxt,
-            fa_codFact: factura.fa_codFact,
-            fa_fecFact: factura.fa_fecFact,
-            fa_nomClie: factura.fa_nomClie,
-            fa_valFact: factura.fa_valFact,
-            fa_impresa: factura.fa_impresa === null ? 'N' : 'S',
-            fa_envio: factura.fa_envio,
-            fa_fpago: factura.fa_fpago,
-          });
+          const costoItem = Number(item.df_cosMerc ?? item.df_cosmerc ?? 0);
+          itemsCargados.push(this.crearItemDetalleImpresion(item, factura));
           // Calcular el subtotal
           subtotal += costoItem;
           // Calcular ITBIS solo si el producto tiene ITBIS
           // if (item.dc_itbis) {
-          this.totalItbis += totalItem * itbisRate;
+          totalItbis += totalItem * itbisRate;
         });
+        this.items = this.deduplicarItemsImpresion(itemsCargados);
         // Calcular el total general (subtotal + ITBIS)
-        totalGeneral = subtotal + this.totalItbis;
+        totalGeneral = subtotal + totalItbis;
         // totalcosto += costoItem;
         // Asignar los totales a variables o mostrarlos en la interfaz
         this.subTotal = subtotal;
-        this.totalItbis = this.totalItbis;
+        this.totalItbis = totalItbis;
         this.totalGral = totalGeneral;
         this.factxt =
           ((factura.fa_valFact - factura.fa_cosFact) * 100) /
@@ -1880,9 +1928,10 @@ export class CobroFact implements OnInit {
       ),
     };
 
+    const itemsImpresion = this.deduplicarItemsImpresion([...this.items]);
     await this.printingService.imprimirFactura80mm(
       datosParaImprimir,
-      this.items,
+      itemsImpresion,
     );
     this.limpia();
   }
@@ -2289,9 +2338,10 @@ export class CobroFact implements OnInit {
           { emitEvent: false },
         );
         this.sincronizarSalidaCaja(facturaActualizada, async () => {
+          const itemsImpresion = this.deduplicarItemsImpresion([...this.items]);
           await this.printingService.imprimirConduceFactura80mm(
             facturaActualizada,
-            this.items,
+            itemsImpresion,
           );
           this.limpia();
         });

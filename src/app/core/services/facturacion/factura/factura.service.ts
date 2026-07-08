@@ -1311,8 +1311,12 @@ export class ServicioFacturacion {
       ) === 'S';
       if (actualizarDetalle && reimpresa) {
         const marcasAlmacen = this.marcasAlmacenPorDetalle(detalleRaw);
-        facturaDbPayload.fa_impalmaf = marcasAlmacen.fa_impalmaf;
-        facturaDbPayload.fa_impalmap = marcasAlmacen.fa_impalmap;
+        if (!Object.prototype.hasOwnProperty.call(facturaDbPayload, 'fa_impalmaf')) {
+          facturaDbPayload.fa_impalmaf = marcasAlmacen.fa_impalmaf;
+        }
+        if (!Object.prototype.hasOwnProperty.call(facturaDbPayload, 'fa_impalmap')) {
+          facturaDbPayload.fa_impalmap = marcasAlmacen.fa_impalmap;
+        }
       }
 
       let data: any = facturaActual;

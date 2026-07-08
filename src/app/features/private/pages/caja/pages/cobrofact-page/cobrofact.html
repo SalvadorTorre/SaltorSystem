@@ -246,7 +246,7 @@
                 <button
                   class="btn btn-warning flex-fill"
                   [disabled]="!puedeImprimirConduceFactura"
-                  [title]="facturaEstaImpresa && !facturaSeleccionadaReimpresa ? 'La factura ya esta impresa' : ''"
+                  [title]="facturaEstaImpresa && !facturaSeleccionadaReimpresa && !(tipoNcfFacturaSeleccionada() === '32' && chekPagado) ? 'La factura ya esta impresa' : ''"
                   (click)="imprimirConduceFactura()">
                   <i class="bi bi-printer me-1"></i> Imprimir conduce
                 </button>
