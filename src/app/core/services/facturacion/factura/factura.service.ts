@@ -2081,60 +2081,21 @@ export class ServicioFacturacion {
       return this.http.GetRequest<any>(`/facturacion/reporte-607?${query.toString()}`);
     }
 
-    const offset = (safePage - 1) * safeLimit;
-
     return from((async () => {
-      let query = this.db
-        .from('factura')
-        .select('*', { count: 'planned' })
-        .not('estado_envio_dgii', 'is', null)
-        .neq('estado_envio_dgii', 'PENDIENTE')
-        .order('fa_fecfact', { ascending: false })
-        .order('fa_codfact', { ascending: false })
-        .range(offset, offset + safeLimit - 1);
-
-      query = this.applyTenantFilter(query);
-
-      if (search) {
-        const safeSearch = search.replace(/[%_]/g, '\\$&');
-        query = query.or(
-          [
-            `fa_codfact.ilike.%${safeSearch}%`,
-            `fa_ncffact.ilike.%${safeSearch}%`,
-            `fa_nomclie.ilike.%${safeSearch}%`,
-            `codseguridad.ilike.%${safeSearch}%`,
-            `estado_dgii.ilike.%${safeSearch}%`,
-            `estado_envio_dgii.ilike.%${safeSearch}%`,
-            `dgii_codigo.ilike.%${safeSearch}%`,
-            `dgii_track_id.ilike.%${safeSearch}%`,
-            `dgii_error_message.ilike.%${safeSearch}%`,
-          ].join(',')
-        );
-      }
-
-      if (tipoComprobante) {
-        query = query.eq('fa_tiponcf', Number(tipoComprobante));
-      }
-
-      if (estadoDgii) {
-        const safeEstado = estadoDgii.replace(/[%_]/g, '\\$&');
-        query = query.or(
-          `estado_dgii.ilike.%${safeEstado}%,estado_envio_dgii.ilike.%${safeEstado}%`
-        );
-      }
-
-      if (fecha) {
-        query = query.eq('fa_fecfact', fecha);
-      } else {
-        if (fechaDesde) query = query.gte('fa_fecfact', fechaDesde);
-        if (fechaHasta) query = query.lte('fa_fecfact', fechaHasta);
-      }
-
-      const { data, error, count } = await query;
+      const { data, error } = await this.db.rpc('listar_reporte_607', {
+        p_page: safePage,
+        p_page_size: safeLimit,
+        p_search: search || null,
+        p_fecha: fecha || null,
+        p_fecha_desde: fechaDesde || null,
+        p_fecha_hasta: fechaHasta || null,
+        p_tipo_comprobante: tipoComprobante ? Number(tipoComprobante) : null,
+        p_estado_dgii: estadoDgii || null,
+      });
       if (error) throw error;
 
       const rows = (data || []).map((row: any) => this.mapFacturaDbToUi(row));
-      const total = Number(count || rows.length || 0);
+      const total = Number(data?.[0]?.total_count || rows.length || 0);
 
       return {
         status: 'success',
