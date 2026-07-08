@@ -1516,6 +1516,36 @@ export class ServicioFacturacion {
     })());
   }
 
+  buscarFacturasPendientesCierre(limit: number = 5000, filtrarSucursal: boolean = true): Observable<any> {
+    if (!this.useSupabase) {
+      const url = `/facturacion?limit=${limit}`;
+      return this.http.GetRequest<any>(url).pipe(
+        map((response: any) => ({
+          ...response,
+          data: (response?.data || []).filter((factura: any) => {
+            const cierre = String(factura?.fa_cierre || factura?.fa_cierre || '').trim().toUpperCase();
+            return !cierre || cierre === 'N';
+          }),
+        })),
+      );
+    }
+
+    const safeLimit = Math.max(1, Number(limit) || 5000);
+    return from((async () => {
+      const { data, error } = await this.db.rpc('listar_facturas_pendientes_cierre', {
+        p_limit: safeLimit,
+        p_filtrar_sucursal: !!filtrarSucursal,
+      });
+      if (error) throw error;
+
+      return {
+        status: 'success',
+        code: 200,
+        data: (data || []).map((row: any) => this.mapFacturaDbToUi(row)),
+      };
+    })());
+  }
+
   private async buscarFacturasPaginadas(limit: number, filtrarSucursal: boolean): Promise<any[]> {
     const pageSize = 1000;
     const rows: any[] = [];
