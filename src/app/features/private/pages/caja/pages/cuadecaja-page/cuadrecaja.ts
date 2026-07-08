@@ -180,13 +180,11 @@ export class CuadreCaja implements OnInit {
   }
 
   cargarFacturasPendientes() {
-    // Usamos el nuevo método específico para cierre que trae un histórico amplio (10000)
-    // usando el endpoint /facturacion que sabemos devuelve lista general.
-    this.facturaService.buscarFacturasParaCierre().subscribe({
+    this.facturaService.buscarFacturasPendientesCierre().subscribe({
       next: (res: any) => {
         this.isLoading = false;
         const todas = res.data || [];
-        console.log('Facturas cargadas para cierre (limit 10000):', todas.length);
+        console.log('Facturas pendientes de cierre cargadas:', todas.length);
         this.facturas = todas; 
         this.aplicarFiltros();
       },
