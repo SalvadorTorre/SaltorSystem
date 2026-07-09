@@ -92,7 +92,7 @@ export class AccessControlService {
     return allowed.some((permiso) => {
       const ruta = this.resolveRouteForPermiso(permiso);
       if (!ruta) return false;
-      return normalizedPath === ruta || normalizedPath.startsWith(`${ruta}/`);
+      return this.pathMatchesRoute(normalizedPath, ruta);
     });
   }
 
@@ -112,7 +112,7 @@ export class AccessControlService {
 
     return allowed.some((permiso) => {
       const ruta = this.resolveRouteForPermiso(permiso);
-      return !!ruta && ruta.startsWith(normalizedPrefix);
+      return !!ruta && this.pathBelongsToModule(ruta, normalizedPrefix);
     });
   }
 
@@ -127,7 +127,7 @@ export class AccessControlService {
     const candidate = this.getAllowedPermisos()
       .map((permiso) => this.resolveRouteForPermiso(permiso))
       .filter((ruta): ruta is string => !!ruta)
-      .find((ruta) => ruta.startsWith(normalizedPrefix));
+      .find((ruta) => this.pathBelongsToModule(ruta, normalizedPrefix));
 
     return candidate || null;
   }
@@ -279,7 +279,7 @@ export class AccessControlService {
     return this.getAllowedPermisos().find((permiso) => {
       const ruta = this.resolveRouteForPermiso(permiso);
       if (!ruta) return false;
-      return normalizedPath === ruta || normalizedPath.startsWith(`${ruta}/`);
+      return this.pathMatchesRoute(normalizedPath, ruta);
     }) || null;
   }
 
@@ -368,12 +368,14 @@ export class AccessControlService {
           '/private/home',
           '/private/contabilidad',
           '/private/contabilidad/nota-credito',
+          '/private/contabilidad/encf',
           '/private/mantenimientos/encf',
           '/private/caja',
         ],
         actionMap: {
           '/private/contabilidad': ['ver', 'acceso', 'lectura', 'imprimir', 'exportar', 'enviar_dgii'],
           '/private/contabilidad/nota-credito': ['ver', 'acceso', 'lectura', 'crear', 'editar', 'imprimir', 'enviar_dgii'],
+          '/private/contabilidad/encf': ['ver', 'acceso', 'lectura', 'crear', 'editar'],
           '/private/mantenimientos/encf': ['ver', 'acceso', 'lectura', 'crear', 'editar'],
           '/private/caja': ['ver', 'acceso', 'lectura', 'editar', 'imprimir', 'cobrar', 'enviar_dgii', 'cerrar_caja'],
         },
@@ -401,7 +403,7 @@ export class AccessControlService {
       if (treatAsPrefix) {
         return normalizedAllowed.startsWith(normalizedPath) || normalizedPath.startsWith(normalizedAllowed);
       }
-      return normalizedPath === normalizedAllowed || normalizedPath.startsWith(`${normalizedAllowed}/`);
+      return this.pathMatchesRoute(normalizedPath, normalizedAllowed);
     });
   }
 
@@ -431,7 +433,7 @@ export class AccessControlService {
       const normalizedPath = this.normalizePath(path);
       if (
         normalizedPath &&
-        (normalizedRoute === normalizedPath || normalizedRoute.startsWith(`${normalizedPath}/`))
+        this.pathMatchesRoute(normalizedRoute, normalizedPath)
       ) {
         if (!selected || normalizedPath.length > selected.path.length) {
           selected = { path: normalizedPath, actions };
@@ -548,6 +550,40 @@ export class AccessControlService {
     return value.endsWith('/') && value.length > 1
       ? value.slice(0, -1)
       : value;
+  }
+
+  private pathMatchesRoute(path: string, route: string): boolean {
+    const pathVariants = this.pathVariants(path);
+    const routeVariants = this.pathVariants(route);
+    return pathVariants.some((candidatePath) =>
+      routeVariants.some(
+        (candidateRoute) =>
+          candidatePath === candidateRoute ||
+          candidatePath.startsWith(`${candidateRoute}/`),
+      ),
+    );
+  }
+
+  private pathBelongsToModule(path: string, modulePrefix: string): boolean {
+    const normalizedPrefix = this.normalizePath(modulePrefix);
+    if (!normalizedPrefix) return false;
+    return this.pathVariants(path).some((candidatePath) =>
+      candidatePath.startsWith(normalizedPrefix),
+    );
+  }
+
+  private pathVariants(path: string): string[] {
+    const normalized = this.normalizePath(path);
+    if (!normalized) return [];
+
+    if (
+      normalized === '/private/contabilidad/encf' ||
+      normalized === '/private/mantenimientos/encf'
+    ) {
+      return ['/private/contabilidad/encf', '/private/mantenimientos/encf'];
+    }
+
+    return [normalized];
   }
 
   private normalizeLabel(label: string): string {

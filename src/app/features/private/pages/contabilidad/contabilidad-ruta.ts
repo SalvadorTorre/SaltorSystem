@@ -32,7 +32,7 @@ const routes: Routes = [
       {
         path: 'encf',
         canActivate: [permissionGuard],
-        data: { accessPath: '/private/mantenimientos/encf' },
+        data: { accessPath: '/private/contabilidad/encf' },
         loadChildren: () =>
           import('../mantenimientos/pages/encf/encf-modulo').then(
             (m) => m.ModuloEncf

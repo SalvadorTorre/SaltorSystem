@@ -335,7 +335,7 @@
               [(ngModel)]="txtdescripcion"
               placeholder="Nombre del Cliente"
               class="form-control form-control-sm"
-              (input)="buscaNombre($event)"
+              (ngModelChange)="programarBusquedaFacturas()"
             />
           </div>
           <div class="col-3">
@@ -344,7 +344,7 @@
               [(ngModel)]="txtFecha"
               placeholder="Fecha Factura"
               class="form-control form-control-sm"
-              (change)="buscaFecha($event)"
+              (ngModelChange)="programarBusquedaFacturas()"
               (keydown.enter)="buscaFecha($event)"
             />
           </div>

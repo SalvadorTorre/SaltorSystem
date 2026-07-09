@@ -104,6 +104,7 @@ export class Facturacion implements OnInit {
   modoconsultaFacturacion: boolean = false;
   facturaConsultaSeleccionada: FacturacionModelData | null = null;
   facturacionList: FacturacionModelData[] = [];
+  facturacionListBase: FacturacionModelData[] = [];
   detFacturaList: detFacturaData[] = [];
   selectedFacturacion: any = null;
   items: interfaceDetalleModel[] = [];
@@ -175,8 +176,6 @@ export class Facturacion implements OnInit {
   rncValue: string = '';
   cancelarBusquedaDescripcion: boolean = false;
   cancelarBusquedaCodigo: boolean = false;
-  private numfacturaSubject = new BehaviorSubject<string>('');
-  private nomclienteSubject = new BehaviorSubject<string>('');
   private clienteSearchSubscription?: Subscription;
   private facturaOriginalEdicion: Record<string, any> | null = null;
   private detalleOriginalEdicion = '';
@@ -204,64 +203,6 @@ export class Facturacion implements OnInit {
 
     this.crearFormularioFacturacion();
 
-    this.nomclienteSubject
-      .pipe(
-        debounceTime(500),
-        distinctUntilChanged(),
-        switchMap((nomcliente) => {
-          this.txtdescripcion = nomcliente;
-          return this.servicioFacturacion.buscarFacturacion(
-            this.currentPage,
-            this.facturacionList.length,
-            this.codigo,
-            this.txtdescripcion,
-          );
-        }),
-      )
-      .subscribe((response) => {
-        if (response && Array.isArray(response.data)) {
-          this.facturacionList = response.data;
-          this.totalItems = response.pagination?.total || 0;
-          this.currentPage = response.pagination?.page || 1;
-        } else {
-          console.warn(
-            'Respuesta de búsqueda por cliente no es válida:',
-            response,
-          );
-          this.facturacionList = [];
-          this.totalItems = 0;
-        }
-      });
-
-    this.numfacturaSubject
-      .pipe(
-        debounceTime(500),
-        distinctUntilChanged(),
-        switchMap((codigo) => {
-          this.txtFactura = codigo;
-          return this.servicioFacturacion.buscarFacturacion(
-            this.currentPage,
-            this.facturacionList.length,
-            this.codigo,
-            this.txtdescripcion,
-            this.txtFactura,
-          );
-        }),
-      )
-      .subscribe((response) => {
-        if (response && Array.isArray(response.data)) {
-          this.facturacionList = response.data;
-          this.totalItems = response.pagination?.total || 0;
-          this.currentPage = response.pagination?.page || 1;
-        } else {
-          console.warn(
-            'Respuesta de búsqueda por número de factura no es válida:',
-            response,
-          );
-          this.facturacionList = [];
-          this.totalItems = 0;
-        }
-      });
   }
 
   @ViewChild('buscarcodmercInput') buscarcodmercElement!: ElementRef;
@@ -1267,9 +1208,11 @@ export class Facturacion implements OnInit {
     this.servicioFacturacion.buscarTodasFacturacion().subscribe((response) => {
       console.log('buscarTodasFacturacion response:', response);
       if (response && Array.isArray(response.data)) {
-        this.facturacionList = response.data;
+        this.facturacionListBase = response.data;
+        this.facturacionList = [...this.facturacionListBase];
       } else {
         console.warn('response.data is not an array:', response?.data);
+        this.facturacionListBase = [];
         this.facturacionList = [];
       }
       console.log(this.facturacionList.length);
@@ -1309,12 +1252,69 @@ export class Facturacion implements OnInit {
 
   buscaNombre(event: Event) {
     const inputElement = event.target as HTMLInputElement;
-    this.nomclienteSubject.next(inputElement.value.toUpperCase());
+    this.txtdescripcion = inputElement.value.toUpperCase();
+    this.buscarFacturasModalPorFiltros();
   }
 
   buscaFactura(event: Event) {
     const inputElement = event.target as HTMLInputElement;
-    this.numfacturaSubject.next(inputElement.value.toUpperCase());
+    this.txtFactura = inputElement.value.toUpperCase();
+    this.buscarFacturasModalPorFiltros();
+  }
+
+  buscaFechaFacturaModal(): void {
+    this.buscarFacturasModalPorFiltros();
+  }
+
+  private normalizarTextoBusquedaFactura(value: any): string {
+    return String(value || '')
+      .trim()
+      .toUpperCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+  }
+
+  private normalizarFechaBusquedaFactura(value: any): string {
+    if (!value) return '';
+    if (value instanceof Date && !isNaN(value.getTime())) {
+      const y = value.getFullYear();
+      const m = String(value.getMonth() + 1).padStart(2, '0');
+      const d = String(value.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+
+    const texto = String(value).trim();
+    const iso = texto.match(/^(\d{4}-\d{2}-\d{2})/);
+    if (iso) return iso[1];
+
+    const ddmmyyyy = texto.match(/^([0-3]?\d)\/([0-1]?\d)\/(\d{4})$/);
+    if (ddmmyyyy) {
+      const d = ddmmyyyy[1].padStart(2, '0');
+      const m = ddmmyyyy[2].padStart(2, '0');
+      const y = ddmmyyyy[3];
+      return `${y}-${m}-${d}`;
+    }
+
+    return '';
+  }
+
+  buscarFacturasModalPorFiltros(): void {
+    const codigo = String(this.txtFactura || '').trim();
+    const nombre = this.normalizarTextoBusquedaFactura(this.txtdescripcion);
+    const fecha = this.normalizarFechaBusquedaFactura(this.txtFecha);
+    const base = this.facturacionListBase.length ? this.facturacionListBase : this.facturacionList;
+
+    this.facturacionList = base.filter((factura: any) => {
+      const numeroFactura = String(factura?.fa_codFact ?? factura?.fa_codfact ?? '').trim();
+      const clienteFactura = this.normalizarTextoBusquedaFactura(factura?.fa_nomClie ?? factura?.fa_nomclie);
+      const fechaFactura = this.normalizarFechaBusquedaFactura(factura?.fa_fecFact ?? factura?.fa_fecfact);
+
+      const coincideNumero = !codigo || numeroFactura.includes(codigo);
+      const coincideCliente = !nombre || clienteFactura.includes(nombre);
+      const coincideFecha = !fecha || fechaFactura === fecha;
+
+      return coincideNumero && coincideCliente && coincideFecha;
+    });
   }
 
   convertToUpperCase(event: Event): void {

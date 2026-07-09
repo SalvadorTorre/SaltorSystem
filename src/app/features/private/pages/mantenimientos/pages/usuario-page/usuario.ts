@@ -232,16 +232,17 @@ export class Usuario implements OnInit {
         const recursos = this.unwrapList(recursosRes);
         const actionKeys = this.accionesPermisosCatalogo.map((a: any) => String(a?.accion_key || '').trim()).filter(Boolean);
         this.permisosMatrizNuevoUsuario = recursos.map((r: any) => {
+          const recurso = this.normalizarRecursoPermiso(r);
           const acciones: Record<string, boolean> = {};
           actionKeys.forEach((k: string) => acciones[k] = false);
           return {
             codusuario: null,
-            recurso_key: String(r?.recurso_key || '').trim() || null,
-            idmodulo: Number(r?.idmodulo || 0) || null,
-            pantalla_nombre: r?.pantalla_nombre || r?.descmodulo || r?.descModulo || '-',
-            modulo_nombre: r?.modulo_nombre || r?.modulo_key || 'General',
+            recurso_key: String(recurso?.recurso_key || '').trim() || null,
+            idmodulo: Number(recurso?.idmodulo || 0) || null,
+            pantalla_nombre: recurso?.pantalla_nombre || recurso?.descmodulo || recurso?.descModulo || '-',
+            modulo_nombre: recurso?.modulo_nombre || recurso?.modulo_key || 'General',
             acciones,
-            modo: r?.recurso_key ? 'v2' : 'legacy',
+            modo: recurso?.recurso_key ? 'v2' : 'legacy',
           } as PermisoMatrizFila;
         });
         this.reAplicarTipoActualEnMatrizNuevoUsuario();
@@ -344,6 +345,24 @@ export class Usuario implements OnInit {
       );
       return texto.includes(filtro);
     });
+  }
+
+  private normalizarRecursoPermiso<T extends Record<string, any>>(recurso: T): T {
+    const recursoKey = String(recurso?.['recurso_key'] || '').trim().toLowerCase();
+    const ruta = String(recurso?.['ruta'] || '').trim().toLowerCase();
+    const pantalla = this.normalizarTexto(recurso?.['pantalla_nombre'] || recurso?.['descmodulo'] || recurso?.['descModulo'] || '');
+
+    if (recursoKey.includes('encf') || ruta.includes('/encf') || pantalla === 'encf') {
+      return {
+        ...recurso,
+        modulo_key: 'contabilidad',
+        modulo_nombre: 'Contabilidad',
+        pantalla_nombre: recurso?.['pantalla_nombre'] || 'ENCF',
+        ruta: recurso?.['ruta'] || '/private/contabilidad/encf',
+      };
+    }
+
+    return recurso;
   }
 
   private get permisosMatrizNuevoFiltrados(): PermisoMatrizFila[] {
@@ -669,7 +688,9 @@ export class Usuario implements OnInit {
       next: (res: any) => {
         const data = res?.data || {};
         this.accionesPermisosCatalogoEdicion = this.unwrapList(data?.acciones || res?.acciones);
-        this.permisosMatrizEdicionUsuario = Array.isArray(data?.filas) ? data.filas : [];
+        this.permisosMatrizEdicionUsuario = Array.isArray(data?.filas)
+          ? data.filas.map((fila: PermisoMatrizFila) => this.normalizarRecursoPermiso(fila))
+          : [];
         if (!this.hayPermisosSeleccionados(this.permisosMatrizEdicionUsuario)) {
           this.reAplicarPlantillaTipoEdicionUsuario();
           this.plantillaAutoAplicadaEdicion = this.hayPermisosSeleccionados(this.permisosMatrizEdicionUsuario);

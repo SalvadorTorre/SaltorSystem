@@ -71,6 +71,24 @@ export class ServicioPermiso {
     };
   }
 
+  private normalizarRecursoCatalogo(row: any): any {
+    const recursoKey = String(row?.recurso_key || "").trim().toLowerCase();
+    const ruta = String(row?.ruta || "").trim().toLowerCase();
+    const pantalla = String(row?.pantalla_nombre || "").trim().toLowerCase();
+
+    if (recursoKey.includes("encf") || ruta.includes("/encf") || pantalla === "encf") {
+      return {
+        ...row,
+        modulo_key: "contabilidad",
+        modulo_nombre: "Contabilidad",
+        pantalla_nombre: row?.pantalla_nombre || "ENCF",
+        ruta: row?.ruta || "/private/contabilidad/encf",
+      };
+    }
+
+    return row;
+  }
+
   private async isPermisoV2Disponible(): Promise<boolean> {
     if (this.permisoV2Enabled !== null) {
       return this.permisoV2Enabled;
@@ -267,7 +285,7 @@ export class ServicioPermiso {
         .eq("activo", true)
         .order("orden", { ascending: true });
       if (error) throw error;
-      return data || [];
+      return (data || []).map((row: any) => this.normalizarRecursoCatalogo(row));
     })()).pipe(
       map((rows: any[]) => ({
         status: "success",
@@ -352,7 +370,8 @@ export class ServicioPermiso {
         mapa.get(a.recurso_key)[String(a.accion_key)] = !!a.permitido;
       });
 
-      const filas: PermisoMatrizFila[] = (recursos || []).map((r: any) => {
+      const filas: PermisoMatrizFila[] = (recursos || []).map((row: any) => {
+        const r = this.normalizarRecursoCatalogo(row);
         const base: Record<string, boolean> = {};
         actionKeys.forEach((k: string) => base[k] = false);
         const current = mapa.get(String(r.recurso_key)) || {};
@@ -562,7 +581,10 @@ export class ServicioPermiso {
 
       const actionKeys = (acciones || []).map((a: any) => String(a.accion_key));
       const recMap = new Map<string, any>();
-      (recursos || []).forEach((r: any) => recMap.set(String(r.recurso_key), r));
+      (recursos || []).forEach((r: any) => {
+        const recurso = this.normalizarRecursoCatalogo(r);
+        recMap.set(String(recurso.recurso_key), recurso);
+      });
 
       const grouped = new Map<string, any>();
       (asignaciones || []).forEach((a: any) => {
