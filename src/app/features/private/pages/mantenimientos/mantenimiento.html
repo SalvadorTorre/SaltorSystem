@@ -91,10 +91,6 @@
       </button>
 
       <div class="maintenance-submenu" [class.show]="openMenu === 'configuracion'">
-        <a *ngIf="canView('/private/mantenimientos/encf')" class="maintenance-sublink" routerLinkActive="active" [routerLink]="['encf']">
-          <i class="bi bi-file-text"></i>
-          <span>ENCF</span>
-        </a>
         <a *ngIf="canView('/private/mantenimientos/tasa-itbis')" class="maintenance-sublink" routerLinkActive="active" [routerLink]="['tasa-itbis']">
           <i class="bi bi-percent"></i>
           <span>Tasa de ITBIS</span>
@@ -249,10 +245,6 @@
         </button>
 
         <div class="maintenance-submenu" [class.show]="openMenu === 'configuracion'">
-          <a *ngIf="canView('/private/mantenimientos/encf')" class="maintenance-sublink" routerLinkActive="active" [routerLink]="['encf']" data-bs-dismiss="offcanvas">
-            <i class="bi bi-file-text"></i>
-            <span>ENCF</span>
-          </a>
           <a *ngIf="canView('/private/mantenimientos/tasa-itbis')" class="maintenance-sublink" routerLinkActive="active" [routerLink]="['tasa-itbis']" data-bs-dismiss="offcanvas">
             <i class="bi bi-percent"></i>
             <span>Tasa de ITBIS</span>

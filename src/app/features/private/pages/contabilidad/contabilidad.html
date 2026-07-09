@@ -37,6 +37,14 @@
         </span>
       </a>
 
+      <a *ngIf="canView('/private/mantenimientos/encf')" class="accounting-link" routerLinkActive="active" [routerLink]="['encf']">
+        <i class="bi bi-file-text"></i>
+        <span>
+          ENCF
+          <small>Secuencias de comprobantes fiscales</small>
+        </span>
+      </a>
+
       <a class="accounting-link" routerLinkActive="active" [routerLink]="['nota-credito']">
         <i class="bi bi-file-earmark-minus"></i>
         <span>
@@ -100,6 +108,11 @@
             Rep. 607
             <small>Estados DGII y respuesta completa</small>
           </span>
+        </a>
+
+        <a *ngIf="canView('/private/mantenimientos/encf')" class="accounting-link" routerLinkActive="active" [routerLink]="['encf']" data-bs-dismiss="offcanvas">
+          <i class="bi bi-file-text"></i>
+          <span>ENCF<small>Secuencias fiscales</small></span>
         </a>
 
         <a class="accounting-link" routerLinkActive="active" [routerLink]="['nota-credito']" data-bs-dismiss="offcanvas">

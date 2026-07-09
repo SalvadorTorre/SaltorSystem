@@ -30,6 +30,15 @@ const routes: Routes = [
         data: { accessPath: '/private/contabilidad/nota-credito' },
       },
       {
+        path: 'encf',
+        canActivate: [permissionGuard],
+        data: { accessPath: '/private/mantenimientos/encf' },
+        loadChildren: () =>
+          import('../mantenimientos/pages/encf/encf-modulo').then(
+            (m) => m.ModuloEncf
+          ),
+      },
+      {
         path: '',
         redirectTo: 'facturas-pendientes',
         pathMatch: 'full',
