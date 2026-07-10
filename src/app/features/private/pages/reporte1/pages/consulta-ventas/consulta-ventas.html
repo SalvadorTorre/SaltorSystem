@@ -34,7 +34,7 @@
         <select class="form-select" [(ngModel)]="filtros.empresa">
           <option value="todas">Todas</option>
           <option *ngFor="let empresa of empresas" [value]="empresa" [hidden]="empresa === 'todas'">
-            {{ empresa }}
+            {{ nombreEmpresa(empresa) }}
           </option>
         </select>
       </label>
@@ -147,7 +147,10 @@
       <div class="ranking-list" *ngIf="resumenPorSucursal.length; else sinSucursalesTpl">
         <div class="ranking-item" *ngFor="let item of resumenPorSucursal">
           <div>
-            <strong>{{ item.nombre }}</strong>
+            <strong>
+              {{ item.nombre }}
+              <span class="meta-badge">Meta {{ formatMoney(item.metaVenta) }}</span>
+            </strong>
             <small>{{ item.operaciones }} facturas · {{ item.participacion | number:'1.1-1' }}%</small>
           </div>
           <span>{{ formatMoney(item.total) }}</span>

@@ -1522,7 +1522,7 @@ export class ServicioFacturacion {
     })());
   }
 
-  buscarFacturasPendientesCierre(limit: number = 5000, filtrarSucursal: boolean = true): Observable<any> {
+  buscarFacturasPendientesCierre(limit: number = 5000, filtrarSucursal: boolean = true, sucursalId?: number | string | null): Observable<any> {
     if (!this.useSupabase) {
       const url = `/facturacion?limit=${limit}`;
       return this.http.GetRequest<any>(url).pipe(
@@ -1537,6 +1537,7 @@ export class ServicioFacturacion {
     }
 
     const safeLimit = Math.max(1, Number(limit) || 5000);
+    const sucursal = this.toNumberOrNull(sucursalId);
     return from((async () => {
       const { data, error } = await this.db.rpc('listar_facturas_pendientes_cierre', {
         p_limit: safeLimit,
@@ -1544,10 +1545,15 @@ export class ServicioFacturacion {
       });
       if (error) throw error;
 
+      const rows = (data || []).filter((row: any) => {
+        if (!sucursal || sucursal <= 0) return true;
+        return this.toNumberOrNull(row?.fa_codsucu ?? row?.fa_codSucu) === sucursal;
+      });
+
       return {
         status: 'success',
         code: 200,
-        data: (data || []).map((row: any) => this.mapFacturaDbToUi(row)),
+        data: rows.map((row: any) => this.mapFacturaDbToUi(row)),
       };
     })());
   }
@@ -2090,6 +2096,7 @@ export class ServicioFacturacion {
       let query = this.db
         .from('factura')
         .select('*')
+        .not('fa_status', 'in', '("U","N")')
         .order('fa_fecfact', { ascending: false })
         .limit(5000);
 
@@ -2397,7 +2404,11 @@ export class ServicioFacturacion {
     })());
   }
 
-  confirmarCierreFacturas(idCierre?: string | number, codigosFacturas?: string[]): Observable<any> {
+  confirmarCierreFacturas(
+    idCierre?: string | number,
+    codigosFacturas?: string[],
+    scope?: { sucursal?: number | string | null },
+  ): Observable<any> {
     if (!this.useSupabase) {
       return this.http.PatchRequest('/facturacion/confirmar-cierre', {
         idcierre: idCierre,
@@ -2419,6 +2430,10 @@ export class ServicioFacturacion {
         .update({ fa_cierre: String(idCierre) })
         .in('fa_codfact', codigos);
       base = this.applyTenantFilter(base);
+      const sucursal = this.toNumberOrNull(scope?.sucursal);
+      if (sucursal && sucursal > 0) {
+        base = base.eq('fa_codsucu', sucursal);
+      }
 
       const { error } = await base;
       if (error) throw error;

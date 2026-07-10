@@ -66,7 +66,7 @@ export class FacturasPendientesComponent implements OnInit {
       next: (response: any) => {
         this.allFacturas = (response.data || [])
           .filter((factura: any) =>
-            !this.esStatusU(factura) &&
+            !this.esStatusExcluido(factura) &&
             (this.faltaNcf(factura) || this.esRechazadaDgii(factura)) &&
             this.cumpleFiltrosLocales(factura)
           )
@@ -146,8 +146,8 @@ export class FacturasPendientesComponent implements OnInit {
     return !ncf || ['NULL', 'UNDEFINED'].includes(ncf.toUpperCase());
   }
 
-  private esStatusU(factura: any): boolean {
-    return this.normalizarBandera(factura?.fa_status ?? factura?.faStatus) === 'U';
+  private esStatusExcluido(factura: any): boolean {
+    return ['U', 'N'].includes(this.normalizarBandera(factura?.fa_status ?? factura?.faStatus));
   }
 
   esRechazadaDgii(factura: any): boolean {

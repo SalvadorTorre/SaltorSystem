@@ -5,6 +5,7 @@ import autoTable from 'jspdf-autotable';
 import { ServicioFacturacion } from 'src/app/core/services/facturacion/factura/factura.service';
 import { SucursalesData } from 'src/app/core/services/mantenimientos/sucursal';
 import { ServicioSucursal } from 'src/app/core/services/mantenimientos/sucursal/sucursal.service';
+import { ServicioEmpresa } from 'src/app/core/services/mantenimientos/empresas/empresas.service';
 
 interface VentaConsulta {
   fecha: string;
@@ -23,6 +24,7 @@ interface ResumenGrupoVentas {
   codigo: string;
   nombre: string;
   total: number;
+  metaVenta: number;
   operaciones: number;
   participacion: number;
 }
@@ -34,6 +36,7 @@ interface ResumenGrupoVentas {
 })
 export class ConsultaVentas implements OnInit {
   sucursales: SucursalesData[] = [];
+  empresasCatalogo: any[] = [];
   empresas = ['todas'];
   vendedores = ['todos'];
 
@@ -55,7 +58,8 @@ export class ConsultaVentas implements OnInit {
 
   constructor(
     private readonly facturacionSrv: ServicioFacturacion,
-    private readonly sucursalSrv: ServicioSucursal
+    private readonly sucursalSrv: ServicioSucursal,
+    private readonly empresaSrv: ServicioEmpresa
   ) {}
 
   ngOnInit(): void {
@@ -66,14 +70,19 @@ export class ConsultaVentas implements OnInit {
     this.cargando = true;
     this.error = '';
 
-    this.sucursalSrv.buscarTodasSucursal().subscribe({
-      next: (resp: any) => {
-        this.sucursales = Array.isArray(resp?.data) ? resp.data : [];
+    forkJoin({
+      sucursales: this.sucursalSrv.buscarTodasSucursal(),
+      empresas: this.empresaSrv.buscarTodasEmpresa(1, 10000),
+    }).subscribe({
+      next: ({ sucursales, empresas }: any) => {
+        this.sucursales = Array.isArray(sucursales?.data) ? sucursales.data : [];
+        this.empresasCatalogo = Array.isArray(empresas?.data) ? empresas.data : [];
         this.cargarVentas();
       },
       error: (err: any) => {
-        this.error = String(err?.message || 'No se pudieron cargar las sucursales.');
+        this.error = String(err?.message || 'No se pudieron cargar las sucursales o empresas.');
         this.sucursales = [];
+        this.empresasCatalogo = [];
         this.cargarVentas();
       }
     });
@@ -225,6 +234,7 @@ export class ConsultaVentas implements OnInit {
     return this.resumenPor((venta) => ({
       codigo: String(venta.sucursalId || 'N/D'),
       nombre: venta.sucursal || 'Sin sucursal',
+      metaVenta: this.metaVentasSucursal(venta.sucursalId),
     }));
   }
 
@@ -417,13 +427,28 @@ export class ConsultaVentas implements OnInit {
     return sucursal?.nom_sucursal || (codigo ? `Sucursal ${codigo}` : 'Sin sucursal');
   }
 
+  metaVentasSucursal(codigo: number): number {
+    const sucursal = this.sucursales.find((item) => Number(item?.cod_sucursal) === Number(codigo));
+    const meta = Number(
+      sucursal?.meta_ventas ??
+      sucursal?.meta_vents ??
+      sucursal?.metaVenta ??
+      0
+    );
+    return Number.isFinite(meta) ? meta : 0;
+  }
+
   nombreEmpresa(codigo: string): string {
     const value = String(codigo || '').trim();
     if (!value || value === 'N/D') return 'Sin empresa';
-    return value;
+    const empresa = this.empresasCatalogo.find((item) =>
+      String(item?.cod_empre || '').trim().toUpperCase() === value.toUpperCase()
+    );
+    const nombre = String(empresa?.nom_empre || '').trim();
+    return nombre ? `${value} - ${nombre}` : value;
   }
 
-  private resumenPor(selector: (venta: VentaConsulta) => { codigo: string; nombre: string }): ResumenGrupoVentas[] {
+  private resumenPor(selector: (venta: VentaConsulta) => { codigo: string; nombre: string; metaVenta?: number }): ResumenGrupoVentas[] {
     const map = new Map<string, ResumenGrupoVentas>();
     this.resultados.forEach((venta) => {
       const group = selector(venta);
@@ -432,10 +457,12 @@ export class ConsultaVentas implements OnInit {
         codigo: group.codigo,
         nombre: group.nombre,
         total: 0,
+        metaVenta: Number(group.metaVenta || 0),
         operaciones: 0,
         participacion: 0,
       };
       actual.total += venta.total;
+      actual.metaVenta = Number(group.metaVenta || actual.metaVenta || 0);
       actual.operaciones += 1;
       map.set(key, actual);
     });

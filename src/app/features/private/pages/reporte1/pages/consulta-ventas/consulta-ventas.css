@@ -102,7 +102,7 @@
 
 .filters-grid label,
 .page-size {
-  color: var(--report-muted);
+  color: #1e293b;
   display: flex;
   flex-direction: column;
   font-size: 0.7rem;
@@ -110,11 +110,19 @@
   gap: 2px;
 }
 
+.filters-grid label span,
+.page-size span {
+  color: #0f172a;
+  font-weight: 950;
+}
+
 .form-select,
 .form-control {
   border-color: var(--report-line);
   border-radius: 10px;
+  color: #111827;
   font-size: 0.82rem;
+  font-weight: 750;
   min-height: 34px;
   padding-bottom: 0.35rem;
   padding-top: 0.35rem;
@@ -300,6 +308,19 @@
   color: var(--report-ink);
   display: block;
   font-size: 0.86rem;
+}
+
+.meta-badge {
+  background: #ecfdf5;
+  border: 1px solid #bbf7d0;
+  border-radius: 999px;
+  color: #166534;
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 900;
+  margin-left: 6px;
+  padding: 2px 7px;
+  white-space: nowrap;
 }
 
 .ranking-item small {

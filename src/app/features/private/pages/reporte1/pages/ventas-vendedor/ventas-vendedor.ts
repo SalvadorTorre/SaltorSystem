@@ -1,9 +1,11 @@
 import { Component, OnInit } from '@angular/core';
+import { forkJoin } from 'rxjs';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { ServicioFacturacion } from 'src/app/core/services/facturacion/factura/factura.service';
 import { SucursalesData } from 'src/app/core/services/mantenimientos/sucursal';
 import { ServicioSucursal } from 'src/app/core/services/mantenimientos/sucursal/sucursal.service';
+import { ServicioEmpresa } from 'src/app/core/services/mantenimientos/empresas/empresas.service';
 
 interface VentaConsulta {
   vendedor: string;
@@ -29,6 +31,7 @@ interface ResumenVendedor {
 })
 export class VentasVendedor implements OnInit {
   sucursales: SucursalesData[] = [];
+  empresasCatalogo: any[] = [];
   empresas: string[] = ['todas'];
 
   filtros = {
@@ -46,6 +49,7 @@ export class VentasVendedor implements OnInit {
   constructor(
     private readonly facturacionSrv: ServicioFacturacion,
     private readonly sucursalSrv: ServicioSucursal,
+    private readonly empresaSrv: ServicioEmpresa,
   ) {}
 
   ngOnInit(): void {
@@ -56,16 +60,21 @@ export class VentasVendedor implements OnInit {
     this.cargando = true;
     this.error = '';
 
-    this.sucursalSrv.buscarTodasSucursal().subscribe({
-      next: (resp: any) => {
-        this.sucursales = Array.isArray(resp?.data) ? resp.data : [];
+    forkJoin({
+      sucursales: this.sucursalSrv.buscarTodasSucursal(),
+      empresas: this.empresaSrv.buscarTodasEmpresa(1, 10000),
+    }).subscribe({
+      next: ({ sucursales, empresas }: any) => {
+        this.sucursales = Array.isArray(sucursales?.data) ? sucursales.data : [];
+        this.empresasCatalogo = Array.isArray(empresas?.data) ? empresas.data : [];
         this.empresas = this.buildOptions(this.sucursales.map((sucursal) => sucursal.cod_empre), 'todas');
         this.seleccionarSucursalInicial();
         this.cargarVentas();
       },
       error: (err: any) => {
-        this.error = String(err?.message || 'No se pudieron cargar las sucursales.');
+        this.error = String(err?.message || 'No se pudieron cargar las sucursales o empresas.');
         this.sucursales = [];
+        this.empresasCatalogo = [];
         this.vendedores = [];
         this.cargando = false;
       },
@@ -207,7 +216,7 @@ export class VentasVendedor implements OnInit {
         String(vendedor.facturas),
         this.formatMoney(this.ticketPromedioVendedor(vendedor)),
         `${this.margenVendedor(vendedor).toFixed(2)}%`,
-        String(vendedor.empresas.length),
+        this.empresasVendedorTexto(vendedor),
         String(vendedor.sucursales.length),
       ]),
       theme: 'grid',
@@ -232,7 +241,7 @@ export class VentasVendedor implements OnInit {
         4: { halign: 'right', cellWidth: 20 },
         5: { halign: 'right', cellWidth: 34 },
         6: { halign: 'right', cellWidth: 20 },
-        7: { halign: 'right', cellWidth: 20 },
+        7: { cellWidth: 34 },
         8: { halign: 'right', cellWidth: 22 },
       },
       margin: { left: 14, right: 14 },
@@ -247,7 +256,21 @@ export class VentasVendedor implements OnInit {
   }
 
   nombreEmpresaSeleccionada(): string {
-    return this.filtros.empresa === 'todas' ? 'Todas las empresas' : this.filtros.empresa;
+    return this.filtros.empresa === 'todas' ? 'Todas las empresas' : this.nombreEmpresa(this.filtros.empresa);
+  }
+
+  nombreEmpresa(codigo: string): string {
+    const value = String(codigo || '').trim();
+    if (!value || value === 'N/D') return 'Sin empresa';
+    const empresa = this.empresasCatalogo.find((item) =>
+      String(item?.cod_empre || '').trim().toUpperCase() === value.toUpperCase()
+    );
+    const nombre = String(empresa?.nom_empre || '').trim();
+    return nombre ? `${value} - ${nombre}` : value;
+  }
+
+  empresasVendedorTexto(vendedor: ResumenVendedor): string {
+    return (vendedor?.empresas || []).map((codigo) => this.nombreEmpresa(codigo)).join(', ');
   }
 
   formatMoney(valor: number): string {

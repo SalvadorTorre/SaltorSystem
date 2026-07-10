@@ -159,7 +159,7 @@ export class CuadreCaja implements OnInit {
     this.isLoading = true;
     
     // 1. Obtener último cierre para saber desde qué factura empezar
-    this.cierreService.obtenerUltimoCierre().subscribe({
+    this.cierreService.obtenerUltimoCierre(this.sucursalUsuarioActual()).subscribe({
       next: (res: any) => {
         const cierres = Array.isArray(res?.data) ? res.data : [];
         // Asumiendo que vienen ordenados desc por backend, el [0] es el último
@@ -180,7 +180,7 @@ export class CuadreCaja implements OnInit {
   }
 
   cargarFacturasPendientes() {
-    this.facturaService.buscarFacturasPendientesCierre().subscribe({
+    this.facturaService.buscarFacturasPendientesCierre(5000, true, this.sucursalUsuarioActual()).subscribe({
       next: (res: any) => {
         this.isLoading = false;
         const todas = res.data || [];
@@ -204,6 +204,8 @@ export class CuadreCaja implements OnInit {
     // Simplificación: Traer todas las facturas que no tengan fa_cierre == 'C'
     
     let facturasCandidatas = this.facturas.filter(f => {
+       const status = String(f?.fa_status || '').trim().toUpperCase();
+       if (status === 'N') return false;
        return !this.facturaTieneCierre(f);
     });
 
@@ -314,6 +316,11 @@ export class CuadreCaja implements OnInit {
     return new Intl.NumberFormat('es-DO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(valor);
   }
 
+  private sucursalUsuarioActual(): number | null {
+    const id = Number(localStorage.getItem('idSucursal') || 0);
+    return Number.isFinite(id) && id > 0 ? id : null;
+  }
+
   realizarCierre() {
     if (this.facturasFiltradas.length === 0) {
         Swal.fire('Atención', 'No hay facturas para cerrar en este periodo.', 'warning');
@@ -344,6 +351,7 @@ export class CuadreCaja implements OnInit {
             tarjeta: this.totales.tarjeta,
             cheque: this.totales.cheque,
             deposito: this.totales.deposito,
+            idsucursal: this.sucursalUsuarioActual(),
             nota: 'Cierre generado desde frontend'
         };
 
@@ -351,7 +359,9 @@ export class CuadreCaja implements OnInit {
                     next: (res: any) => {
                         const idCierre = res?.data?.idcierre || res?.idcierre;
 
-                        this.facturaService.confirmarCierreFacturas(idCierre, codigosFacturasCobradas).subscribe({
+                        this.facturaService.confirmarCierreFacturas(idCierre, codigosFacturasCobradas, {
+                          sucursal: this.sucursalUsuarioActual(),
+                        }).subscribe({
                           next: (resp) => {
                             console.log('Facturas cobradas actualizadas con idcierre', resp);
                             Swal.fire('Cerrado!', 'La caja ha sido cerrada correctamente.', 'success');

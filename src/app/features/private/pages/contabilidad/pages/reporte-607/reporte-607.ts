@@ -471,8 +471,11 @@ export class Reporte607Component implements OnInit {
     const body = rows.map((factura) => {
       const estado = this.estadoTexto(factura);
       const exportarMontos = !this.esRechazadoOError(estado);
-      const itbis = this.numeroXls(factura.fa_itbiFact ?? factura.fa_itbifact);
-      const monto = this.numeroXls(factura.fa_valFact ?? factura.fa_valfact);
+      const itbisRaw = factura.fa_itbiFact ?? factura.fa_itbifact;
+      const montoRaw = factura.fa_valFact ?? factura.fa_valfact;
+      const itbis = this.numeroXls(itbisRaw);
+      const monto = this.numeroXls(montoRaw);
+      const subtotal = this.numeroXls(this.numeroValor(montoRaw) - this.numeroValor(itbisRaw));
       const montoExento = this.numeroXls(
         factura.monto_exento ??
           factura.montoExento ??
@@ -500,6 +503,7 @@ export class Reporte607Component implements OnInit {
           <td>${this.escapeHtml(estado)}</td>
           <td class="number">${exportarMontos ? itbis : ''}</td>
           <td class="number">${exportarMontos ? monto : ''}</td>
+          <td class="number">${exportarMontos ? subtotal : ''}</td>
           <td class="number">${exportarMontos ? montoExento : ''}</td>
           <td class="number">${exportarMontos ? montoNoFacturable : ''}</td>
         </tr>
@@ -532,6 +536,7 @@ export class Reporte607Component implements OnInit {
               <th>Estado</th>
               <th>ITBIS Facturado</th>
               <th>Monto Total</th>
+              <th>Subtotal</th>
               <th>Monto Exento</th>
               <th>Monto No Facturable</th>
             </tr>
@@ -552,6 +557,11 @@ export class Reporte607Component implements OnInit {
     const numero = Number(value);
     if (!Number.isFinite(numero)) return fallback;
     return String(Math.round(numero * 100) / 100);
+  }
+
+  private numeroValor(value: any): number {
+    const numero = Number(value);
+    return Number.isFinite(numero) ? numero : 0;
   }
 
   private fechaXls(value: any, fechaComprobante: boolean): string {

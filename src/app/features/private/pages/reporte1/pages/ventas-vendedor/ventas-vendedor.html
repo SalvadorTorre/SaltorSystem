@@ -26,7 +26,7 @@
       <select class="form-select" [(ngModel)]="filtros.empresa">
         <option value="todas">Todas</option>
         <option *ngFor="let empresa of empresas" [value]="empresa" [hidden]="empresa === 'todas'">
-          {{ empresa }}
+          {{ nombreEmpresa(empresa) }}
         </option>
       </select>
     </label>
@@ -115,7 +115,7 @@
         <div class="seller-identity">
           <strong>{{ vendedor.vendedor }}</strong>
           <small>
-            {{ vendedor.empresas.length }} empresa(s) · {{ vendedor.sucursales.length }} sucursal(es)
+            {{ empresasVendedorTexto(vendedor) || 'Sin empresa' }} · {{ vendedor.sucursales.length }} sucursal(es)
           </small>
         </div>
 

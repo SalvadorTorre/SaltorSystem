@@ -552,9 +552,10 @@ export class ServicioUsuario {
     );
   }
 
-  buscarUsuariosChoferes(pageIndex: number, pageSize: number, termino?: string): Observable<any> {
+  buscarUsuariosChoferes(pageIndex: number, pageSize: number, termino?: string, sucursalId?: number | string | null): Observable<any> {
     const offset = Math.max(pageIndex - 1, 0) * pageSize;
     const q = String(termino || '').trim();
+    const sucursal = Number(sucursalId || 0);
 
     return from((async () => {
       let query = this.db
@@ -563,6 +564,10 @@ export class ServicioUsuario {
         .eq('idtipousuario', 8)
         .order('nombreusuario', { ascending: true })
         .range(offset, offset + pageSize - 1);
+
+      if (Number.isFinite(sucursal) && sucursal > 0) {
+        query = query.eq('sucursalid', sucursal);
+      }
 
       if (q) {
         query = query.or(
@@ -590,18 +595,25 @@ export class ServicioUsuario {
     );
   }
 
-  buscarUsuarioChoferPorCodigo(codigo: string | number): Observable<any> {
+  buscarUsuarioChoferPorCodigo(codigo: string | number, sucursalId?: number | string | null): Observable<any> {
     const raw = String(codigo || '').trim();
+    const sucursal = Number(sucursalId || 0);
     return from((async () => {
       if (!raw) return null;
       if (!/^\d+$/.test(raw)) return null;
 
-      const { data: byCodRows, error: byCodError } = await this.db
+      let query = this.db
         .from('usuario')
         .select('*')
         .eq('idtipousuario', 8)
         .eq('codusuario', Number(raw))
         .limit(1);
+
+      if (Number.isFinite(sucursal) && sucursal > 0) {
+        query = query.eq('sucursalid', sucursal);
+      }
+
+      const { data: byCodRows, error: byCodError } = await query;
       if (byCodError) throw byCodError;
       const row = this.firstRow(byCodRows);
 

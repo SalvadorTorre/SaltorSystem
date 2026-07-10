@@ -12,4 +12,7 @@ export interface SucursalesData {
   cod_empre:    string;
   dir_sucursal: string;
   tel_sucursal: string;
+  meta_ventas?: number;
+  meta_vents?: number;
+  metaVenta?: number;
 }

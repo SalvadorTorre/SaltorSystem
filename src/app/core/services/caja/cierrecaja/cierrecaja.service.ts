@@ -52,6 +52,7 @@ export class ServicioCierreCaja {
     return {
       ...row,
       cc_finFact: row.factfin ?? row.cc_finFact ?? '',
+      idsucursal: row.idsucursal ?? row.idSucursal ?? null,
       totalcierre: this.toNumber(row.totalcierre),
       tefectivo: this.toNumber(row.tefectivo),
       ttarjeta: this.toNumber(row.ttarjeta),
@@ -60,17 +61,24 @@ export class ServicioCierreCaja {
     };
   }
 
-  obtenerUltimoCierre(): Observable<any> {
+  obtenerUltimoCierre(sucursalId?: number | string | null): Observable<any> {
     if (!this.useSupabase) {
       return this.http.GetRequest<any>('/cierrecaja');
     }
 
+    const sucursal = this.toNumber(sucursalId);
     return from((async () => {
-      const { data, error } = await this.db
+      let query = this.db
         .from('cierrecaja')
         .select('*')
         .order('idcierre', { ascending: false })
         .limit(10);
+
+      if (sucursal > 0) {
+        query = query.eq('idsucursal', sucursal);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       return {
         status: 'success',
@@ -85,6 +93,7 @@ export class ServicioCierreCaja {
       return this.http.PostRequest<any, any>('/cierrecaja', data);
     }
 
+    const idsucursal = this.toNumber(data?.idsucursal ?? data?.idSucursal);
     const payload = {
       feccierre: this.normalizeDate(data?.feccierre) || this.normalizeDate(new Date()),
       tefectivo: this.toNumber(data?.tefectivo ?? data?.efectivo),
@@ -94,6 +103,7 @@ export class ServicioCierreCaja {
       tcheque: this.toNumber(data?.tcheque ?? data?.cheque),
       factini: data?.factini ?? null,
       factfin: data?.factfin ?? null,
+      idsucursal: idsucursal > 0 ? idsucursal : null,
       cajera: data?.cajera ?? localStorage.getItem('nombreusuario') ?? null,
       nota: data?.nota ?? null,
     };

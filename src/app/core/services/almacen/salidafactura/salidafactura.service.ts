@@ -580,13 +580,14 @@ export class ServicioSalidafactura {
     })());
   }
 
-  obtenerPorChoferYStatus(codChofer: string, status: string = 'P'): Observable<any> {
+  obtenerPorChoferYStatus(codChofer: string, status: string = 'P', sucursalId?: number | string | null): Observable<any> {
     if (!this.useSupabase) {
       return this.http.GetRequest<any>(`/controlsalida/chofer-status/${codChofer}?status=${status}`);
     }
 
     const cod = this.toNumberOrNull(codChofer);
     const st = String(status || 'P').trim();
+    const sucursal = this.toNumberOrNull(sucursalId);
     return from((async () => {
       let q = this.db
         .from('salida')
@@ -596,6 +597,7 @@ export class ServicioSalidafactura {
 
       if (cod !== null) q = q.eq('codchofer', cod);
       if (st) q = q.eq('status', st);
+      if (sucursal !== null) q = q.eq('idsucursal', sucursal);
 
       const { data: salidas, error } = await q;
       if (error) throw error;

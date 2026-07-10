@@ -236,11 +236,16 @@ private pickContFacturaRow(rows: any[], idsucursal: number): any | null {
     });
   }
 
+  private sucursalUsuarioActual(): number | null {
+    const id = Number(localStorage.getItem('idSucursal') || 0);
+    return Number.isFinite(id) && id > 0 ? id : null;
+  }
+
   buscarChofer() {
     if (!this.codChofer.trim()) return;
     const termino = this.codChofer.trim();
 
-    this.servicioUsuario.buscarUsuarioChoferPorCodigo(termino).subscribe({
+    this.servicioUsuario.buscarUsuarioChoferPorCodigo(termino, this.sucursalUsuarioActual()).subscribe({
       next: (resp: any) => this.procesarChoferEncontrado(resp.data),
       error: (err) => this.manejarErrorChofer(err)
     });
@@ -251,7 +256,7 @@ private pickContFacturaRow(rows: any[], idsucursal: number): any | null {
   }
 
   ejecutarBusquedaChofer(termino: string) {
-    this.servicioUsuario.buscarUsuariosChoferes(1, 20, termino).subscribe({
+    this.servicioUsuario.buscarUsuariosChoferes(1, 20, termino, this.sucursalUsuarioActual()).subscribe({
       next: (resp: any) => {
         if (resp.data && resp.data.length > 0) {
           // Ordenar por nombre alfabéticamente
@@ -297,7 +302,7 @@ private pickContFacturaRow(rows: any[], idsucursal: number): any | null {
       this.bloquearChofer = true;
       
       // Consultar si hay salida pendiente (status = ' ')
-      this.servicioSalida.obtenerPorChoferYStatus(this.codChofer).subscribe({
+      this.servicioSalida.obtenerPorChoferYStatus(this.codChofer, 'P', this.sucursalUsuarioActual()).subscribe({
         next: (resp: any) => {
            const salidas = Array.isArray(resp) ? resp : (resp.data || []);
            if (salidas && salidas.length > 0) {
