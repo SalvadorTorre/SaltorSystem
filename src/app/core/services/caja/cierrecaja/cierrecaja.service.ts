@@ -52,7 +52,8 @@ export class ServicioCierreCaja {
     return {
       ...row,
       cc_finFact: row.factfin ?? row.cc_finFact ?? '',
-      idsucursal: row.idsucursal ?? row.idSucursal ?? null,
+      codsucursal: row.codsucursal ?? row.idsucursal ?? row.idSucursal ?? null,
+      idsucursal: row.codsucursal ?? row.idsucursal ?? row.idSucursal ?? null,
       totalcierre: this.toNumber(row.totalcierre),
       tefectivo: this.toNumber(row.tefectivo),
       ttarjeta: this.toNumber(row.ttarjeta),
@@ -75,7 +76,7 @@ export class ServicioCierreCaja {
         .limit(10);
 
       if (sucursal > 0) {
-        query = query.eq('idsucursal', sucursal);
+        query = query.eq('codsucursal', sucursal);
       }
 
       const { data, error } = await query;
@@ -93,7 +94,7 @@ export class ServicioCierreCaja {
       return this.http.PostRequest<any, any>('/cierrecaja', data);
     }
 
-    const idsucursal = this.toNumber(data?.idsucursal ?? data?.idSucursal);
+    const codsucursal = this.toNumber(data?.codsucursal ?? data?.idsucursal ?? data?.idSucursal);
     const payload = {
       feccierre: this.normalizeDate(data?.feccierre) || this.normalizeDate(new Date()),
       tefectivo: this.toNumber(data?.tefectivo ?? data?.efectivo),
@@ -103,7 +104,7 @@ export class ServicioCierreCaja {
       tcheque: this.toNumber(data?.tcheque ?? data?.cheque),
       factini: data?.factini ?? null,
       factfin: data?.factfin ?? null,
-      idsucursal: idsucursal > 0 ? idsucursal : null,
+      codsucursal: codsucursal > 0 ? codsucursal : null,
       cajera: data?.cajera ?? localStorage.getItem('nombreusuario') ?? null,
       nota: data?.nota ?? null,
     };

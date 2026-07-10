@@ -351,7 +351,7 @@ export class CuadreCaja implements OnInit {
             tarjeta: this.totales.tarjeta,
             cheque: this.totales.cheque,
             deposito: this.totales.deposito,
-            idsucursal: this.sucursalUsuarioActual(),
+            codsucursal: this.sucursalUsuarioActual(),
             nota: 'Cierre generado desde frontend'
         };
 
