@@ -1773,7 +1773,15 @@ export class CobroFact implements OnInit {
     } catch (error) {
       console.error('Error construyendo datos DGII', error);
       this.finalizarProcesamientoCobroDgii();
-      Swal.fire('Error', 'Error construyendo datos para DGII', 'error');
+      await this.imprimirFacturaConDatosDisponibles(
+        facturaData,
+        datosLocalesImpresion,
+      );
+      Swal.fire(
+        'DGII no procesado',
+        'No se pudieron construir los datos para DGII. Se imprimio la factura con los datos locales.',
+        'warning',
+      );
       return;
     }
 
@@ -1782,6 +1790,10 @@ export class CobroFact implements OnInit {
       .replace(/-/g, '');
     if (!rncEmisor) {
       this.finalizarProcesamientoCobroDgii();
+      await this.imprimirFacturaConDatosDisponibles(
+        facturaData,
+        datosLocalesImpresion,
+      );
       Swal.fire(
         'Configuración incompleta',
         'No se encontró el RNC emisor activo en la sesión.',
@@ -2237,7 +2249,11 @@ export class CobroFact implements OnInit {
     });
   }
 
-  private sincronizarSalidaCaja(factura: any, onDone?: () => void): void {
+  private sincronizarSalidaCaja(
+    factura: any,
+    onDone?: () => void,
+    mostrarAviso = true,
+  ): void {
     const facturaSync = {
       ...(this.DatosSeleccionado || {}),
       ...this.formularioFacturacion.getRawValue(),
@@ -2253,6 +2269,10 @@ export class CobroFact implements OnInit {
       next: () => onDone?.(),
       error: (err: any) => {
         console.error('Error sincronizando salida/detsalida:', err);
+        if (!mostrarAviso) {
+          onDone?.();
+          return;
+        }
         Swal.fire(
           'Aviso',
           `La factura se guardó, pero no se pudo actualizar salida/detsalida. ${this.extraerMensajeError(err)}`,
@@ -2530,7 +2550,7 @@ export class CobroFact implements OnInit {
             this.sincronizarSalidaCaja(facturaCobro, () => {
               this.buscarFacturasNoImpresas();
               this.imprimirFactura(facturaCobro);
-            });
+            }, false);
           },
           error: (err) => {
             console.error('Error guardando factura antes de imprimir:', err);

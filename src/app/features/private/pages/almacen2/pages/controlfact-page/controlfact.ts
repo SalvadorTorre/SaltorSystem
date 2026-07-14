@@ -1049,7 +1049,13 @@ export class ControlFact implements OnInit {
   }
 
   buscarTodasFacturacion() {
-    this.servicioFacturacion.buscarFacturacion(1, this.limiteFacturasInicial).subscribe((response) => {
+    this.servicioFacturacion.buscarFacturacion(
+      1,
+      this.limiteFacturasInicial,
+      undefined,
+      undefined,
+      this.fechaHoyIso()
+    ).subscribe((response) => {
       this.facturacionListBase = response.data || [];
       this.facturacionList = [...this.facturacionListBase];
       this.totalItems = response.pagination?.total ?? this.facturacionList.length;
@@ -1103,28 +1109,48 @@ export class ControlFact implements OnInit {
     return '';
   }
 
+  private fechaHoyIso(): string {
+    const hoy = new Date();
+    const y = hoy.getFullYear();
+    const m = String(hoy.getMonth() + 1).padStart(2, '0');
+    const d = String(hoy.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+
   buscarFacturasPorFiltros(): void {
     const codigo = String(this.txtFactura || '').trim();
-    const nombre = this.normalizarTextoBusqueda(this.txtdescripcion);
+    const nombre = String(this.txtdescripcion || '').trim();
     const fecha = this.normalizarFechaBusqueda(this.txtFecha);
 
-    const base = this.facturacionListBase.length ? this.facturacionListBase : this.facturacionList;
+    if (!codigo && !nombre && !fecha) {
+      this.buscarTodasFacturacion();
+      return;
+    }
 
-    this.facturacionList = base.filter((factura: any) => {
-      const numeroFactura = String(factura?.fa_codFact ?? factura?.fa_codfact ?? '').trim();
-      const clienteFactura = this.normalizarTextoBusqueda(factura?.fa_nomClie ?? factura?.fa_nomclie);
-      const fechaFactura = this.normalizarFechaBusqueda(factura?.fa_fecFact ?? factura?.fa_fecfact);
-
-      const coincideNumero = !codigo || numeroFactura.includes(codigo);
-      const coincideCliente = !nombre || clienteFactura.includes(nombre);
-      const coincideFecha = !fecha || fechaFactura === fecha;
-
-      return coincideNumero && coincideCliente && coincideFecha;
+    this.servicioFacturacion.buscarFacturacion(
+      1,
+      this.limiteFacturasInicial,
+      codigo || undefined,
+      nombre || undefined,
+      fecha || undefined,
+    ).subscribe({
+      next: (response) => {
+        this.facturacionListBase = response.data || [];
+        this.facturacionList = [...this.facturacionListBase];
+        this.totalItems = response.pagination?.total ?? this.facturacionList.length;
+        this.currentPage = 1;
+        this.selectedRow = 0;
+      },
+      error: (error) => {
+        console.error('Error buscando facturas:', error);
+        this.facturacionListBase = [];
+        this.facturacionList = [];
+        this.totalItems = 0;
+        this.currentPage = 1;
+        this.selectedRow = 0;
+        Swal.fire('Error', 'No se pudo realizar la busqueda de facturas.', 'error');
+      },
     });
-
-    this.totalItems = this.facturacionList.length;
-    this.currentPage = 1;
-    this.selectedRow = 0;
   }
 
   buscaNombre(event: Event) {

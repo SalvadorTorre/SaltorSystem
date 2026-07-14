@@ -578,6 +578,7 @@ export class Cotizacion implements OnInit {
     }
 
     try {
+      const cotizacionReporte = await this.cotizacionConNombreVendedor(Cotizacion);
       const [detalleResponse, itbisRows] = await Promise.all([
         firstValueFrom(this.servicioCotizacion.buscarCotizacionDetalle(codigo)),
         firstValueFrom(this.servicioItbis.buscarTodos()),
@@ -586,7 +587,7 @@ export class Cotizacion implements OnInit {
         ? detalleResponse.data
         : [];
       const itbisGeneral = this.obtenerItbisGeneral(itbisRows);
-      const pdfBlob = this.crearCotizacionA4Pdf(Cotizacion, detalle, itbisGeneral);
+      const pdfBlob = this.crearCotizacionA4Pdf(cotizacionReporte, detalle, itbisGeneral);
       const isDesktop =
         typeof window !== 'undefined' && !!window.electronAPI?.isDesktop;
 
@@ -661,6 +662,7 @@ export class Cotizacion implements OnInit {
     }
 
     try {
+      const cotizacionReporte = await this.cotizacionConNombreVendedor(cotizacion);
       const [detalleResponse, itbisRows] = await Promise.all([
         firstValueFrom(this.servicioCotizacion.buscarCotizacionDetalle(cotizacion.ct_codcoti)),
         firstValueFrom(this.servicioItbis.buscarTodos()),
@@ -669,7 +671,7 @@ export class Cotizacion implements OnInit {
       const itbisGeneral = this.obtenerItbisGeneral(itbisRows);
 
       await this.printingService.imprimirCotizacion80mm(
-        cotizacion,
+        cotizacionReporte,
         detalle,
         itbisGeneral,
       );
@@ -1520,10 +1522,11 @@ export class Cotizacion implements OnInit {
     }
   }
 
-  generatePDF(cotizacion: CotizacionModelData) {
+  async generatePDF(cotizacion: CotizacionModelData) {
     console.log(cotizacion);
+    const cotizacionReporte = await this.cotizacionConNombreVendedor(cotizacion);
     this.servicioCotizacion
-      .buscarCotizacionDetalle(cotizacion.ct_codcoti)
+      .buscarCotizacionDetalle(cotizacionReporte.ct_codcoti)
       .subscribe((response) => {
         let subtotal = 0;
         let itbis = 0;
@@ -1614,15 +1617,15 @@ export class Cotizacion implements OnInit {
 
         // Detalles de la cotización
         doc.setFontSize(10);
-        doc.text(`No. ${cotizacion.ct_codcoti}`, 14, 80);
-        doc.text(`Fecha: ${cotizacion.ct_feccoti}`, 14, 85);
-        doc.text(`Vendedido por: ${cotizacion.ct_nomvend}`, 14, 90);
+        doc.text(`No. ${cotizacionReporte.ct_codcoti}`, 14, 80);
+        doc.text(`Fecha: ${cotizacionReporte.ct_feccoti}`, 14, 85);
+        doc.text(`Vendido por: ${cotizacionReporte.ct_nomvend}`, 14, 90);
 
         // Cliente
         doc.setFontSize(12);
         doc.text('CLIENTE', 14, 100);
         doc.setFontSize(10);
-        doc.text(cotizacion.ct_nomclie, 14, 106);
+        doc.text(cotizacionReporte.ct_nomclie, 14, 106);
 
         // Tabla de descripción de productos
         autoTable(doc, {
@@ -1690,6 +1693,42 @@ export class Cotizacion implements OnInit {
   }
 
   // Método para convertir a mayúsculas en tiempo real
+  private nombreVendedorDesdeUsuario(usuario: any): string {
+    return String(
+      usuario?.nombreUsuario ||
+        usuario?.nombreusuario ||
+        usuario?.nombre ||
+        usuario?.nomUsuario ||
+        usuario?.nomusuario ||
+        '',
+    ).trim();
+  }
+
+  private async cotizacionConNombreVendedor(
+    cotizacion: CotizacionModelData,
+  ): Promise<CotizacionModelData> {
+    const codigoVendedor = String(cotizacion?.ct_codvend || '').trim();
+    const nombreActual = String(cotizacion?.ct_nomvend || '').trim();
+
+    if (!codigoVendedor) {
+      return { ...cotizacion, ct_nomvend: nombreActual };
+    }
+
+    try {
+      const resp = await firstValueFrom(
+        this.ServicioUsuario.buscarUsuarioPorCodigoVendedor(codigoVendedor),
+      );
+      const nombreVendedor = this.nombreVendedorDesdeUsuario(resp?.data);
+      if (nombreVendedor) {
+        return { ...cotizacion, ct_nomvend: nombreVendedor };
+      }
+    } catch (error) {
+      console.warn('No se pudo buscar el nombre del vendedor para imprimir la cotizacion:', error);
+    }
+
+    return { ...cotizacion, ct_nomvend: nombreActual || codigoVendedor };
+  }
+
   private crearCotizacionA4Pdf(
     cotizacion: CotizacionModelData,
     detalle: any[],

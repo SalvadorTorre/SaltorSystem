@@ -782,7 +782,13 @@ export class Facturacion implements OnInit {
   }
 
   buscarTodasFactura(page: number) {
-    this.servicioFacturacion.buscarTodasFacturacion().subscribe((response) => {
+    this.servicioFacturacion.buscarFacturacion(
+      page || 1,
+      10000,
+      undefined,
+      undefined,
+      this.fechaHoyIso()
+    ).subscribe((response) => {
       console.log('buscarTodasFactura response:', response);
       if (response && Array.isArray(response.data)) {
         this.facturacionList = response.data;
@@ -1205,8 +1211,14 @@ export class Facturacion implements OnInit {
   }
 
   buscarTodasFacturacion() {
-    this.servicioFacturacion.buscarTodasFacturacion().subscribe((response) => {
-      console.log('buscarTodasFacturacion response:', response);
+    this.servicioFacturacion.buscarFacturacion(
+      1,
+      10000,
+      undefined,
+      undefined,
+      this.fechaHoyIso()
+    ).subscribe((response) => {
+      console.log('buscarTodasFacturacion hoy response:', response);
       if (response && Array.isArray(response.data)) {
         this.facturacionListBase = response.data;
         this.facturacionList = [...this.facturacionListBase];
@@ -1220,7 +1232,7 @@ export class Facturacion implements OnInit {
   }
 
   onOpenBuscarFacturaModal(): void {
-    // Siempre reinicia filtros y recarga para mostrar todas las facturas al abrir el modal.
+    // Al abrir solo carga las facturas del dia. Las demas se buscan digitando filtros.
     this.txtFactura = '';
     this.txtdescripcion = '';
     this.txtFecha = '';
@@ -1298,22 +1310,41 @@ export class Facturacion implements OnInit {
     return '';
   }
 
+  private fechaHoyIso(): string {
+    const hoy = new Date();
+    const y = hoy.getFullYear();
+    const m = String(hoy.getMonth() + 1).padStart(2, '0');
+    const d = String(hoy.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+
   buscarFacturasModalPorFiltros(): void {
     const codigo = String(this.txtFactura || '').trim();
-    const nombre = this.normalizarTextoBusquedaFactura(this.txtdescripcion);
+    const nombre = String(this.txtdescripcion || '').trim();
     const fecha = this.normalizarFechaBusquedaFactura(this.txtFecha);
-    const base = this.facturacionListBase.length ? this.facturacionListBase : this.facturacionList;
 
-    this.facturacionList = base.filter((factura: any) => {
-      const numeroFactura = String(factura?.fa_codFact ?? factura?.fa_codfact ?? '').trim();
-      const clienteFactura = this.normalizarTextoBusquedaFactura(factura?.fa_nomClie ?? factura?.fa_nomclie);
-      const fechaFactura = this.normalizarFechaBusquedaFactura(factura?.fa_fecFact ?? factura?.fa_fecfact);
+    if (!codigo && !nombre && !fecha) {
+      this.buscarTodasFacturacion();
+      return;
+    }
 
-      const coincideNumero = !codigo || numeroFactura.includes(codigo);
-      const coincideCliente = !nombre || clienteFactura.includes(nombre);
-      const coincideFecha = !fecha || fechaFactura === fecha;
-
-      return coincideNumero && coincideCliente && coincideFecha;
+    this.servicioFacturacion.buscarFacturacion(
+      1,
+      10000,
+      codigo || undefined,
+      nombre || undefined,
+      fecha || undefined,
+    ).subscribe({
+      next: (response) => {
+        this.facturacionListBase = response?.data || [];
+        this.facturacionList = [...this.facturacionListBase];
+      },
+      error: (error) => {
+        console.error('Error buscando facturas:', error);
+        this.facturacionListBase = [];
+        this.facturacionList = [];
+        Swal.fire('Error', 'No se pudo realizar la busqueda de facturas.', 'error');
+      },
     });
   }
 
