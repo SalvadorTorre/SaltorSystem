@@ -26,6 +26,7 @@ export class FacturasPendientesComponent implements OnInit {
   fechaHasta = '';
   empresas: any[] = [];
   sucursales: any[] = [];
+  busquedaRealizada = false;
 
   constructor(
     private servicioFacturacion: ServicioFacturacion,
@@ -36,7 +37,6 @@ export class FacturasPendientesComponent implements OnInit {
 
   ngOnInit(): void {
     this.cargarCatalogosFiltro();
-    this.cargarFacturas();
   }
 
   private cargarCatalogosFiltro(): void {
@@ -56,7 +56,13 @@ export class FacturasPendientesComponent implements OnInit {
   }
 
   cargarFacturas(): void {
+    if (!this.tieneCondicionesBusqueda()) {
+      this.limpiarResultados();
+      return;
+    }
+
     this.loading = true;
+    this.busquedaRealizada = true;
     this.servicioFacturacion.buscarFacturasPendientesDgii({
       empresa: this.empresaFiltro,
       sucursal: this.sucursalFiltro,
@@ -99,6 +105,15 @@ export class FacturasPendientesComponent implements OnInit {
 
   aplicarFiltros(): void {
     this.page = 1;
+    if (!this.tieneCondicionesBusqueda()) {
+      this.limpiarResultados();
+      Swal.fire(
+        'Atencion',
+        'Debe asignar al menos una condicion de busqueda.',
+        'warning',
+      );
+      return;
+    }
     this.cargarFacturas();
   }
 
@@ -108,7 +123,25 @@ export class FacturasPendientesComponent implements OnInit {
     this.fechaDesde = '';
     this.fechaHasta = '';
     this.page = 1;
-    this.cargarFacturas();
+    this.busquedaRealizada = false;
+    this.limpiarResultados();
+  }
+
+  tieneCondicionesBusqueda(): boolean {
+    return Boolean(
+      String(this.empresaFiltro || '').trim() ||
+      String(this.sucursalFiltro || '').trim() ||
+      String(this.fechaDesde || '').trim() ||
+      String(this.fechaHasta || '').trim()
+    );
+  }
+
+  private limpiarResultados(): void {
+    this.facturas = [];
+    this.allFacturas = [];
+    this.total = 0;
+    this.page = 1;
+    this.loading = false;
   }
 
   onEmpresaFiltroChange(): void {
