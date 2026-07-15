@@ -38,6 +38,15 @@ tfoot {
   /* Cambia el color del borde al hacer clic */
 }
 
+.consulta-control-salida {
+  background: #fff;
+}
+
+.consulta-control-tabla {
+  max-height: 220px;
+  overflow-y: auto;
+}
+
 .form-check {
   margin-bottom: 30px;
   /* Espacio entre las opciones */

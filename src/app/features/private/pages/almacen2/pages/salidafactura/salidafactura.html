@@ -8,6 +8,116 @@
           </h4>
         </div>
         <div class="card-body bg-light">
+          <div class="consulta-control-salida mb-4 p-3 bg-white rounded shadow-sm border">
+            <div class="row g-3 align-items-end">
+              <div class="col-12 col-lg-3">
+                <label class="form-label fw-bold text-secondary">Factura</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  [(ngModel)]="facturaConsultaSalida"
+                  (keyup.enter)="buscarControlSalidaPorFactura()"
+                  placeholder="Numero de factura"
+                >
+              </div>
+              <div class="col-12 col-lg-2">
+                <button
+                  type="button"
+                  class="btn btn-outline-primary w-100"
+                  (click)="buscarControlSalidaPorFactura()"
+                  [disabled]="cargandoConsultaSalida || !facturaConsultaSalida.trim()"
+                >
+                  <i class="bi bi-search me-1"></i> Buscar factura
+                </button>
+              </div>
+              <div class="col-12 col-lg-3">
+                <label class="form-label fw-bold text-secondary">Control de salida</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  [(ngModel)]="codigoConsultaSalida"
+                  (keyup.enter)="buscarControlSalidaPorCodigo()"
+                  placeholder="Numero de control"
+                >
+              </div>
+              <div class="col-12 col-lg-2">
+                <button
+                  type="button"
+                  class="btn btn-outline-success w-100"
+                  (click)="buscarControlSalidaPorCodigo()"
+                  [disabled]="cargandoConsultaSalida || !codigoConsultaSalida.trim()"
+                >
+                  <i class="bi bi-search me-1"></i> Buscar control
+                </button>
+              </div>
+              <div class="col-12 col-lg-2">
+                <button
+                  type="button"
+                  class="btn btn-outline-secondary w-100"
+                  (click)="limpiarConsultaSalida()"
+                  [disabled]="cargandoConsultaSalida && !consultaSalidaResultado"
+                >
+                  <i class="bi bi-x-circle me-1"></i> Limpiar
+                </button>
+              </div>
+            </div>
+
+            <div class="mt-3" *ngIf="consultaSalidaResultado">
+              <div class="row g-2 mb-2">
+                <div class="col-12 col-md-3">
+                  <div class="small text-secondary fw-bold">Control</div>
+                  <div class="fw-bold text-primary">
+                    {{ consultaSalidaResultado.codSalida || consultaSalidaResultado.codsalida }}
+                  </div>
+                </div>
+                <div class="col-12 col-md-3">
+                  <div class="small text-secondary fw-bold">Fecha</div>
+                  <div>{{ (consultaSalidaResultado.fecSalida || consultaSalidaResultado.fecsalida) | date:'dd/MM/yyyy' }}</div>
+                </div>
+                <div class="col-12 col-md-3">
+                  <div class="small text-secondary fw-bold">Chofer</div>
+                  <div>{{ consultaSalidaResultado.nomChofer || consultaSalidaResultado.nomchofer }}</div>
+                </div>
+                <div class="col-12 col-md-3">
+                  <div class="small text-secondary fw-bold">Status</div>
+                  <div>{{ consultaSalidaResultado.status }}</div>
+                </div>
+              </div>
+
+              <div class="table-responsive consulta-control-tabla">
+                <table class="table table-bordered table-hover table-sm mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Factura</th>
+                      <th>Cliente</th>
+                      <th class="text-center">Fecha</th>
+                      <th class="text-center">Pagada</th>
+                      <th class="text-end">Valor</th>
+                      <th class="text-center">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let d of consultaSalidaDetalles">
+                      <td class="fw-bold text-primary">{{ d.codFact }}</td>
+                      <td>{{ d.nomClie }}</td>
+                      <td class="text-center">{{ d.fecFact | date:'dd/MM/yyyy' }}</td>
+                      <td class="text-center">
+                        <i
+                          class="bi"
+                          [ngClass]="d.fpago === 'S' || d.fpago === 'P' ? 'bi-check-square-fill text-success' : 'bi-square text-secondary'"
+                        ></i>
+                      </td>
+                      <td class="text-end fw-bold">{{ d.valFact | currency }}</td>
+                      <td class="text-center">{{ d.fa_status }}</td>
+                    </tr>
+                    <tr *ngIf="consultaSalidaDetalles.length === 0">
+                      <td colspan="6" class="text-center text-muted">Este control no tiene facturas en detalle.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
           
           <!-- Sección Chofer -->
           <div class="row g-3 align-items-end mb-4 p-3 bg-white rounded shadow-sm border">

@@ -140,6 +140,55 @@ export class PrintingService {
     return new Promise((resolve) => setTimeout(resolve, 900));
   }
 
+  private altoPaginaTermicaFactura(
+    facturaData: any,
+    items: any[],
+    hideInvoiceDetails: boolean,
+    copyLabel?: string,
+  ): number {
+    const facturaRoot = this.datosFacturaImpresion(facturaData);
+    const totalLineas = hideInvoiceDetails ? 0 : (items || []).length;
+    const datosEnvio =
+      this.facturaEsEnvio(facturaRoot) &&
+      String(copyLabel || '').trim().toUpperCase() === 'CONDUCTOR'
+        ? 45
+        : 0;
+    const altura = 320 + totalLineas * 13 + datosEnvio;
+    return Math.max(297, Math.min(altura, 5000));
+  }
+
+  private altoPaginaTermicaConduce(
+    facturaData: any,
+    items: any[],
+    hideInvoiceDetails: boolean,
+    copyLabel?: string,
+  ): number {
+    const facturaRoot = this.datosFacturaImpresion(facturaData);
+    const totalLineas = hideInvoiceDetails ? 0 : (items || []).length;
+    const datosEnvio =
+      this.facturaEsEnvio(facturaRoot) &&
+      String(copyLabel || '').trim().toUpperCase() === 'CONDUCTOR'
+        ? 45
+        : 0;
+    const altura = 280 + totalLineas * 13 + datosEnvio;
+    return Math.max(297, Math.min(altura, 5000));
+  }
+
+  private altoPaginaTermicaCotizacion(items: any[]): number {
+    const totalLineas = (items || []).length;
+    const lineasDescripcion = (items || []).reduce((sum: number, item: any) => {
+      const descripcion = String(
+        item?.dc_descrip ||
+          item?.descripcion ||
+          item?.producto?.in_desmerc ||
+          '',
+      ).trim();
+      return sum + Math.max(1, Math.ceil(descripcion.length / 22));
+    }, 0);
+    const altura = 270 + totalLineas * 7 + lineasDescripcion * 5;
+    return Math.max(297, Math.min(altura, 5000));
+  }
+
   /**
    * Generates a PDF for a receipt/invoice in 80mm format and prints it.
    * @param facturaData The invoice header data.
@@ -202,12 +251,21 @@ export class PrintingService {
         const doc = new jsPDF({
           orientation: 'p',
           unit: 'mm',
-          format: [80, 297],
+          format: [
+            80,
+            this.altoPaginaTermicaFactura(facturaData, items, copias[0].hideDetails, copias[0].label),
+          ],
         });
 
         for (const [index, copia] of copias.entries()) {
           if (index > 0) {
-            (doc as any).addPage([80, 297], 'p');
+            (doc as any).addPage(
+              [
+                80,
+                this.altoPaginaTermicaFactura(facturaData, items, copia.hideDetails, copia.label),
+              ],
+              'p',
+            );
           }
           await this.imprimirFactura80mm(
             {
@@ -235,7 +293,15 @@ export class PrintingService {
         new jsPDF({
           orientation: 'p',
           unit: 'mm',
-          format: [80, 297], // 80mm width, dynamic height would be better but fixed is okay for thermal
+          format: [
+            80,
+            this.altoPaginaTermicaFactura(
+              facturaData,
+              items,
+              hideInvoiceDetails,
+              copyLabel,
+            ),
+          ],
         });
 
       const pageWidth = 74; // Adjusted to safer printable area width
@@ -805,7 +871,7 @@ export class PrintingService {
       const doc = new jsPDF({
         orientation: 'p',
         unit: 'mm',
-        format: [80, 297],
+        format: [80, this.altoPaginaTermicaCotizacion(items)],
       });
       const pageWidth = 80;
       const centerX = pageWidth / 2;
@@ -1712,12 +1778,21 @@ items.forEach((it: any) => {
         const doc = new jsPDF({
           orientation: 'p',
           unit: 'mm',
-          format: [80, 297],
+          format: [
+            80,
+            this.altoPaginaTermicaConduce(facturaData, items, copias[0].hideDetails, copias[0].label),
+          ],
         });
 
         for (const [index, copia] of copias.entries()) {
           if (index > 0) {
-            (doc as any).addPage([80, 297], 'p');
+            (doc as any).addPage(
+              [
+                80,
+                this.altoPaginaTermicaConduce(facturaData, items, copia.hideDetails, copia.label),
+              ],
+              'p',
+            );
           }
           await this.imprimirConduceFactura80mm(
             {
@@ -1742,7 +1817,19 @@ items.forEach((it: any) => {
       const hideInvoiceDetails = !!facturaData?.__hideInvoiceDetails;
       const doc =
         facturaData?.__sharedDoc ||
-        new jsPDF({ orientation: 'p', unit: 'mm', format: [80, 297] });
+        new jsPDF({
+          orientation: 'p',
+          unit: 'mm',
+          format: [
+            80,
+            this.altoPaginaTermicaConduce(
+              facturaData,
+              items,
+              hideInvoiceDetails,
+              copyLabel,
+            ),
+          ],
+        });
       const pageWidth = 74;
       const shiftX = Math.max(-4, Math.min(3, Number(facturaData?.__thermalShiftX ?? 0) || 0));
       const leftMargin = Math.max(1, 5 + shiftX);

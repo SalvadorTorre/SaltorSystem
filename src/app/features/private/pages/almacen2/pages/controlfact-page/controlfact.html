@@ -336,6 +336,7 @@
               placeholder="Nombre del Cliente"
               class="form-control form-control-sm"
               (ngModelChange)="programarBusquedaFacturas()"
+              (keydown.enter)="buscaNombreEnter($event)"
             />
           </div>
           <div class="col-3">

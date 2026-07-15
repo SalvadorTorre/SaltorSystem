@@ -1074,7 +1074,7 @@ export class ControlFact implements OnInit {
     if (this.filtroFacturasTimer) {
       clearTimeout(this.filtroFacturasTimer);
     }
-    this.filtroFacturasTimer = setTimeout(() => this.buscarFacturasPorFiltros(), 300);
+    this.filtroFacturasTimer = setTimeout(() => this.buscarFacturasPorFiltros(false), 300);
   }
 
   private normalizarTextoBusqueda(value: any): string {
@@ -1117,7 +1117,7 @@ export class ControlFact implements OnInit {
     return `${y}-${m}-${d}`;
   }
 
-  buscarFacturasPorFiltros(): void {
+  buscarFacturasPorFiltros(mostrarAvisoNoEncontrado = false): void {
     const codigo = String(this.txtFactura || '').trim();
     const nombre = String(this.txtdescripcion || '').trim();
     const fecha = this.normalizarFechaBusqueda(this.txtFecha);
@@ -1140,6 +1140,13 @@ export class ControlFact implements OnInit {
         this.totalItems = response.pagination?.total ?? this.facturacionList.length;
         this.currentPage = 1;
         this.selectedRow = 0;
+        if (mostrarAvisoNoEncontrado && this.facturacionList.length === 0) {
+          Swal.fire(
+            'Aviso',
+            'No se encontro ninguna factura con los datos indicados.',
+            'warning',
+          );
+        }
       },
       error: (error) => {
         console.error('Error buscando facturas:', error);
@@ -1148,7 +1155,13 @@ export class ControlFact implements OnInit {
         this.totalItems = 0;
         this.currentPage = 1;
         this.selectedRow = 0;
-        Swal.fire('Error', 'No se pudo realizar la busqueda de facturas.', 'error');
+        if (mostrarAvisoNoEncontrado) {
+          Swal.fire(
+            'Aviso',
+            'No se encontro ninguna factura con los datos indicados.',
+            'warning',
+          );
+        }
       },
     });
   }
@@ -1160,15 +1173,24 @@ export class ControlFact implements OnInit {
   }
 
   buscaFactura(event: Event) {
+    event.preventDefault();
     const c_codFact = event.target as HTMLInputElement;
     this.txtFactura = c_codFact.value;
-    this.buscarFacturasPorFiltros();
+    this.buscarFacturasPorFiltros(true);
+  }
+
+  buscaNombreEnter(event: Event) {
+    event.preventDefault();
+    const c_nomClie = event.target as HTMLInputElement;
+    this.txtdescripcion = c_nomClie.value.toUpperCase();
+    this.buscarFacturasPorFiltros(true);
   }
 
   buscaFecha(event: Event) {
+    event.preventDefault();
     const input = event.target as HTMLInputElement;
     this.txtFecha = input.value;
-    this.buscarFacturasPorFiltros();
+    this.buscarFacturasPorFiltros(true);
   }
   // buscaFecha(event: Event) {
   //   const c_fecFact = event.target as HTMLInputElement;

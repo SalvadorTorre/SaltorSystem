@@ -50,6 +50,14 @@ export class DevolucionesComponent implements OnInit {
   ultimaEntradaDet: any[] = [];
   ultimaSalidaCab: any = null;
   ultimaSalidaDet: any[] = [];
+  consultaNumeroDevolucion: string = '';
+  consultaControlSalida: string = '';
+  consultaDevolucion: any = null;
+  consultaEntrada: any = null;
+  consultaSalida: any = null;
+  consultaDetalleEntrada: any[] = [];
+  consultaDetalleSalida: any[] = [];
+  cargandoConsultaDevolucion: boolean = false;
 
   @ViewChild('cantidadInput') cantidadInput!: ElementRef;
   @ViewChild('precioInput') precioInput!: ElementRef;
@@ -726,6 +734,86 @@ fa_codClie: this.facturaForm.get('fa_codClie')?.value
     await this.printing.imprimirDevolucion80mm(this.ultimaEntradaCab, this.ultimaEntradaDet || [], this.ultimaSalidaCab, this.ultimaSalidaDet || [], extras);
     this.imprimirDisponible = false;
     this.deshacerFactura();
+  }
+
+  consultarPorNumeroDevolucion(): void {
+    const id = String(this.consultaNumeroDevolucion || '').trim();
+    if (!id) {
+      Swal.fire({ title: 'Digite el numero de devolucion', icon: 'warning' });
+      return;
+    }
+    this.consultarDevolucion({ id });
+  }
+
+  consultarPorControlSalida(): void {
+    const codsalida = String(this.consultaControlSalida || '').trim();
+    if (!codsalida) {
+      Swal.fire({ title: 'Digite el control de salida', icon: 'warning' });
+      return;
+    }
+    this.consultarDevolucion({ codsalida });
+  }
+
+  limpiarConsultaDevolucion(): void {
+    this.consultaNumeroDevolucion = '';
+    this.consultaControlSalida = '';
+    this.limpiarResultadoConsultaDevolucion();
+  }
+
+  private consultarDevolucion(params: { id?: string; codsalida?: string }): void {
+    this.cargandoConsultaDevolucion = true;
+    this.devolucionSrv.consultarDevolucion(params).subscribe({
+      next: (resp: any) => {
+        const data = resp?.data || resp;
+        if (!data) {
+          this.limpiarResultadoConsultaDevolucion();
+          Swal.fire({
+            title: 'Sin resultados',
+            text: 'No se encontro devolucion con los datos indicados.',
+            icon: 'info'
+          });
+          return;
+        }
+
+        this.consultaDevolucion = data.devolucion || null;
+        this.consultaEntrada = data.entrada || null;
+        this.consultaSalida = data.salida || null;
+        this.consultaDetalleEntrada = (data.detalleEntrada || []).map((d: any) => ({
+          cod: d.de_codmerc || '',
+          des: d.de_desmerc || '',
+          cantidad: Number(d.de_canentr || 0),
+          precio: Number(d.de_premerc || 0),
+          total: Number(d.de_valentr || 0),
+        }));
+        this.consultaDetalleSalida = (data.detalleSalida || []).map((d: any) => ({
+          cod: d.df_codmerc || '',
+          des: d.df_desmerc || '',
+          cantidad: Number(d.df_canmerc || 0),
+          precio: Number(d.df_premerc || 0),
+          total: Number(d.df_valmerc || 0),
+        }));
+        this.consultaNumeroDevolucion = String(this.consultaDevolucion?.id || this.consultaNumeroDevolucion || '');
+        this.consultaControlSalida = String(this.consultaDevolucion?.codsalida || this.consultaControlSalida || '');
+      },
+      error: (err) => {
+        Swal.fire({
+          title: 'Error consultando devolucion',
+          text: this.extraerMensajeError(err),
+          icon: 'error'
+        });
+      },
+      complete: () => {
+        this.cargandoConsultaDevolucion = false;
+      }
+    });
+  }
+
+  private limpiarResultadoConsultaDevolucion(): void {
+    this.consultaDevolucion = null;
+    this.consultaEntrada = null;
+    this.consultaSalida = null;
+    this.consultaDetalleEntrada = [];
+    this.consultaDetalleSalida = [];
   }
   guardarDevolucionProductos() {
     if (!this.seleccionProductos.length) {

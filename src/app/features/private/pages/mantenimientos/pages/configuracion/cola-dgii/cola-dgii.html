@@ -1,0 +1,152 @@
+<div class="cola-dgii-page">
+  <div class="page-header">
+    <div>
+      <h2>Envio automatico DGII</h2>
+      <p>Procesamiento por lote de facturas listas para enviar.</p>
+    </div>
+    <span class="status-pill" [class.status-pill--active]="activo">
+      <i class="bi" [ngClass]="activo ? 'bi-play-circle-fill' : 'bi-pause-circle'"></i>
+      {{ activo ? 'Activo' : 'Detenido' }}
+    </span>
+  </div>
+
+  <div class="config-panel">
+    <div class="row g-3 align-items-end">
+      <div class="col-12 col-md-3">
+        <label class="form-label">Tiempo entre lotes (minutos)</label>
+        <input
+          type="number"
+          min="1"
+          class="form-control"
+          [(ngModel)]="intervaloMinutos"
+          [disabled]="activo || procesando"
+        >
+      </div>
+      <div class="col-12 col-md-3">
+        <label class="form-label">Cantidad por lote</label>
+        <input
+          type="number"
+          min="1"
+          class="form-control"
+          [(ngModel)]="cantidadFacturas"
+          [disabled]="activo || procesando"
+        >
+      </div>
+      <div class="col-12 col-md-3">
+        <label class="form-label">Fecha de factura</label>
+        <input
+          type="date"
+          class="form-control"
+          [(ngModel)]="fechaProceso"
+          [disabled]="usarDiaAnterior || activo || procesando"
+        >
+      </div>
+      <div class="col-12 col-md-3">
+        <div class="form-check form-switch mb-2">
+          <input
+            class="form-check-input"
+            type="checkbox"
+            id="usarDiaAnterior"
+            [(ngModel)]="usarDiaAnterior"
+            (change)="cambiarModoFecha()"
+            [disabled]="activo || procesando"
+          >
+          <label class="form-check-label" for="usarDiaAnterior">
+            Usar dia anterior automaticamente
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div class="conditions">
+      <span><i class="bi bi-check2-square"></i> fa_status = C</span>
+      <span><i class="bi bi-check2-square"></i> fa_fpago = S</span>
+      <span><i class="bi bi-check2-square"></i> fa_despacho = S</span>
+      <span><i class="bi bi-calendar2-check"></i> fecha = {{ fechaProceso }}</span>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-success" type="button" (click)="iniciar()" [disabled]="activo || procesando">
+        <i class="bi bi-play-fill"></i> Iniciar
+      </button>
+      <button class="btn btn-outline-danger" type="button" (click)="detener()" [disabled]="!activo && !procesando">
+        <i class="bi bi-stop-fill"></i> Parar
+      </button>
+      <button class="btn btn-outline-primary" type="button" (click)="continuar()" [disabled]="activo || procesando">
+        <i class="bi bi-arrow-clockwise"></i> Continuar
+      </button>
+      <button class="btn btn-primary" type="button" (click)="procesarAhora()" [disabled]="procesando">
+        <i class="bi bi-send-check"></i> Procesar ahora
+      </button>
+      <button class="btn btn-outline-secondary" type="button" (click)="consultarPendientes()" [disabled]="procesando">
+        <i class="bi bi-search"></i> Consultar pendientes
+      </button>
+    </div>
+  </div>
+
+  <div class="summary-grid">
+    <div class="summary-item">
+      <span>Pendientes encontradas</span>
+      <strong>{{ pendientesEncontradas }}</strong>
+    </div>
+    <div class="summary-item">
+      <span>Enviadas OK</span>
+      <strong class="text-success">{{ procesadasOk }}</strong>
+    </div>
+    <div class="summary-item">
+      <span>Con error</span>
+      <strong class="text-danger">{{ procesadasError }}</strong>
+    </div>
+    <div class="summary-item">
+      <span>Proxima ejecucion</span>
+      <strong>{{ proximaEjecucion || '-' }}</strong>
+    </div>
+  </div>
+
+  <div class="work-panel">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <h5 class="m-0">Actividad</h5>
+      <span class="text-muted" *ngIf="procesando">
+        <span class="spinner-border spinner-border-sm me-1"></span>
+        {{ ultimoMensaje }}
+      </span>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-sm align-middle mb-0">
+        <thead>
+          <tr>
+            <th style="width: 160px">Hora</th>
+            <th style="width: 140px">Factura</th>
+            <th style="width: 90px">Estado</th>
+            <th>Mensaje</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let log of logs">
+            <td>{{ log.fecha | date:'dd/MM/yyyy hh:mm a' }}</td>
+            <td class="fw-bold">{{ log.factura || '-' }}</td>
+            <td>
+              <span
+                class="badge"
+                [ngClass]="{
+                  'bg-success': log.estado === 'OK',
+                  'bg-danger': log.estado === 'ERROR',
+                  'bg-secondary': log.estado === 'INFO'
+                }"
+              >
+                {{ log.estado }}
+              </span>
+            </td>
+            <td>{{ log.mensaje }}</td>
+          </tr>
+          <tr *ngIf="logs.length === 0">
+            <td colspan="4" class="text-center text-muted py-4">
+              No hay actividad registrada todavia.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

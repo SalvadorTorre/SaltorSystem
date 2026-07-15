@@ -245,6 +245,15 @@ const routes: Routes = [
             './pages/configuracion/estado-servidor/estado-servidor-modulo'
           ).then((m) => m.EstadoServidorModulo),
       },
+      {
+        path: 'cola-dgii',
+        canActivate: [permissionGuard],
+        data: { accessPath: '/private/mantenimientos/cola-dgii' },
+        loadChildren: () =>
+          import('./pages/configuracion/cola-dgii/cola-dgii-modulo').then(
+            (m) => m.ColaDgiiModulo,
+          ),
+      },
     ],
   },
 ];

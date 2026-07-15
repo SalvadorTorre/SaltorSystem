@@ -131,6 +131,10 @@
           <i class="bi bi-file-earmark-lock2"></i>
           <span>Firma digital DGII</span>
         </a>
+        <a *ngIf="canView('/private/mantenimientos/cola-dgii')" class="maintenance-sublink" routerLinkActive="active" [routerLink]="['cola-dgii']">
+          <i class="bi bi-send-check"></i>
+          <span>Envio DGII auto</span>
+        </a>
         <a *ngIf="canView('/private/mantenimientos/contfactura')" class="maintenance-sublink" routerLinkActive="active" [routerLink]="['contfactura']">
           <i class="bi bi-123"></i>
           <span>Cont. Factura</span>
@@ -284,6 +288,10 @@
           <a *ngIf="canView('/private/mantenimientos/configuracion-global')" class="maintenance-sublink" routerLinkActive="active" [routerLink]="['configuracion-global']" data-bs-dismiss="offcanvas">
             <i class="bi bi-file-earmark-lock2"></i>
             <span>Firma digital DGII</span>
+          </a>
+          <a *ngIf="canView('/private/mantenimientos/cola-dgii')" class="maintenance-sublink" routerLinkActive="active" [routerLink]="['cola-dgii']" data-bs-dismiss="offcanvas">
+            <i class="bi bi-send-check"></i>
+            <span>Envio DGII auto</span>
           </a>
           <a *ngIf="canView('/private/mantenimientos/contfactura')" class="maintenance-sublink" routerLinkActive="active" [routerLink]="['contfactura']" data-bs-dismiss="offcanvas">
             <i class="bi bi-123"></i>

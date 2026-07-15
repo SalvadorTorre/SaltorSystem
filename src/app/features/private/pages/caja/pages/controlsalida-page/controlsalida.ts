@@ -302,71 +302,75 @@ export class ControlSalidaCajaComponent implements OnInit, OnDestroy {
           this.cargando = false;
           return;
         }
-        const salida = salidas[0];
-        this.salidaActual = salida;
-
-        const dets = salida.detsalida || [];
-        if (!dets.length) {
-          this.detalles = [];
-          this.calcularTotales();
-          return;
-        }
-
-        const observables = dets.map((d: any) =>
-          this.servicioFacturacion.getByNumero(d.codFact)
-        );
-
-        forkJoin(observables).subscribe(
-          (resps) => {
-            const resArray = resps as any[];
-            this.detalles = resArray.map((resp: any, index: number) => {
-              const f = resp?.data || resp;
-              const det = dets[index];
-              const estadoFactura = String(f?.fa_status || '').trim().toUpperCase();
-              const pagoFactura = String(f?.fa_fpago || '').trim().toUpperCase();
-              const esPagadaPorSalida = det?.pagado === 'S';
-              const esPagadaPorFactura =
-                estadoFactura === 'P' ||
-                estadoFactura === 'PAGADA' ||
-                pagoFactura === 'P' ||
-                pagoFactura === 'S';
-              return {
-                codFact: f?.fa_codFact || det.codFact,
-                nomClie: f?.fa_nomClie || '',
-                fecFact: f?.fa_fecFact || det.fecFact,
-                valFact: Number(
-                  (f && f.fa_valFact !== undefined
-                    ? f.fa_valFact
-                    : det.valFact) || 0
-                ),
-                fpago: f?.fa_fpago || '',
-                codfpago: String(f?.fa_codfpago ?? det?.codfpago ?? '').trim(),
-                descfpago: this.obtenerDescripcionFpago(
-                  f?.fa_codfpago ?? det?.codfpago
-                ),
-                fa_status: estadoFactura,
-                pagado: esPagadaPorSalida || esPagadaPorFactura,
-                pagadoOriginal: esPagadaPorFactura,
-                entregada: (f?.fa_entrega || '').trim().toUpperCase() === 'S',
-                entregadaOriginal: (f?.fa_entrega || '').trim().toUpperCase() === 'S'
-              };
-            });
-            this.calcularTotales();
-            this.cargando = false;
-          },
-          () => {
-            this.mostrarMensaje(
-              'Error al cargar las facturas relacionadas a la salida'
-            );
-            this.cargando = false;
-          }
-        );
+        this.cargarSalidaSeleccionada(salidas[0]);
       },
       error: () => {
         this.mostrarMensaje('Error al cargar control de salida');
         this.cargando = false;
       },
     });
+  }
+
+  private cargarSalidaSeleccionada(salida: any) {
+    this.salidaActual = salida;
+
+    const dets = salida?.detsalida || [];
+    if (!dets.length) {
+      this.detalles = [];
+      this.calcularTotales();
+      this.cargando = false;
+      return;
+    }
+
+    const observables = dets.map((d: any) =>
+      this.servicioFacturacion.getByNumero(d.codFact)
+    );
+
+    forkJoin(observables).subscribe(
+      (resps) => {
+        const resArray = resps as any[];
+        this.detalles = resArray.map((resp: any, index: number) => {
+          const f = resp?.data || resp;
+          const det = dets[index];
+          const estadoFactura = String(f?.fa_status || '').trim().toUpperCase();
+          const pagoFactura = String(f?.fa_fpago || '').trim().toUpperCase();
+          const esPagadaPorSalida = String(det?.pagado || '').trim().toUpperCase() === 'S';
+          const esPagadaPorFactura =
+            estadoFactura === 'P' ||
+            estadoFactura === 'PAGADA' ||
+            pagoFactura === 'P' ||
+            pagoFactura === 'S';
+          return {
+            codFact: f?.fa_codFact || det.codFact,
+            nomClie: f?.fa_nomClie || det.nomClie || '',
+            fecFact: f?.fa_fecFact || det.fecFact,
+            valFact: Number(
+              (f && f.fa_valFact !== undefined
+                ? f.fa_valFact
+                : det.valFact) || 0
+            ),
+            fpago: f?.fa_fpago || '',
+            codfpago: String(f?.fa_codfpago ?? det?.codfpago ?? '').trim(),
+            descfpago: this.obtenerDescripcionFpago(
+              f?.fa_codfpago ?? det?.codfpago
+            ),
+            fa_status: estadoFactura,
+            pagado: esPagadaPorSalida || esPagadaPorFactura,
+            pagadoOriginal: esPagadaPorFactura,
+            entregada: (f?.fa_entrega || '').trim().toUpperCase() === 'S',
+            entregadaOriginal: (f?.fa_entrega || '').trim().toUpperCase() === 'S'
+          };
+        });
+        this.calcularTotales();
+        this.cargando = false;
+      },
+      () => {
+        this.mostrarMensaje(
+          'Error al cargar las facturas relacionadas a la salida'
+        );
+        this.cargando = false;
+      }
+    );
   }
 
   cambiarChofer() {

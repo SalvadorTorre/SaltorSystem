@@ -454,6 +454,7 @@ export class DevolucionService {
             fecha: new Date().toISOString(),
             codentrada: me_codEntr,
             codsalida: fa_codFact,
+            idsucursal,
           };
           const { data: devolucionIns, error: devolucionErr } = await this.db
             .from('devolucion')
@@ -499,5 +500,74 @@ export class DevolucionService {
         }
       })(),
     );
+  }
+
+  consultarDevolucion(params: { id?: string | number | null; codsalida?: string | null }): Observable<any> {
+    if (!this.useSupabase) {
+      const query = new URLSearchParams();
+      if (params?.id) query.set('id', String(params.id));
+      if (params?.codsalida) query.set('codsalida', String(params.codsalida));
+      return this.http.GetRequest<any>(`/devolucion-consulta?${query.toString()}`);
+    }
+
+    return from((async () => {
+      const id = this.toNumberOrNull(params?.id);
+      const codsalida = String(params?.codsalida || '').trim();
+
+      let query = this.db.from('devolucion').select('*').limit(1);
+      if (id !== null) {
+        query = query.eq('id', id);
+      } else if (codsalida) {
+        query = query.eq('codsalida', codsalida);
+      } else {
+        return { status: 'success', code: 200, data: null };
+      }
+
+      const { data: devolucion, error: devolucionErr } = await query.maybeSingle();
+      if (devolucionErr) this.throwStep('Consultar devolucion', devolucionErr);
+      if (!devolucion) {
+        return { status: 'success', code: 200, data: null };
+      }
+
+      const codEntrada = String(devolucion?.codentrada || '').trim();
+      const codSalida = String(devolucion?.codsalida || '').trim();
+
+      const [
+        entradaResp,
+        detEntradaResp,
+        salidaResp,
+        detSalidaResp,
+      ] = await Promise.all([
+        codEntrada
+          ? this.db.from('entradamerc').select('*').eq('me_codentr', codEntrada).limit(1).maybeSingle()
+          : Promise.resolve({ data: null, error: null }),
+        codEntrada
+          ? this.db.from('detentradamerc').select('*').eq('de_codentr', codEntrada).order('de_codmerc', { ascending: true })
+          : Promise.resolve({ data: [], error: null }),
+        codSalida
+          ? this.db.from('ventainterna').select('*').eq('fa_codfact', codSalida).limit(1).maybeSingle()
+          : Promise.resolve({ data: null, error: null }),
+        codSalida
+          ? this.db.from('detventainterna').select('*').eq('df_codfact', codSalida).order('id', { ascending: true })
+          : Promise.resolve({ data: [], error: null }),
+      ]);
+
+      if (entradaResp.error) this.throwStep('Consultar entrada devolucion', entradaResp.error);
+      if (detEntradaResp.error) this.throwStep('Consultar detalle entrada devolucion', detEntradaResp.error);
+      if (salidaResp.error) this.throwStep('Consultar salida devolucion', salidaResp.error);
+      if (detSalidaResp.error) this.throwStep('Consultar detalle salida devolucion', detSalidaResp.error);
+
+      return {
+        status: 'success',
+        code: 200,
+        data: {
+          devolucion,
+          entrada: entradaResp.data,
+          detalleEntrada: detEntradaResp.data || [],
+          salida: salidaResp.data,
+          detalleSalida: detSalidaResp.data || [],
+        },
+      };
+    })());
   }
 }

@@ -2,6 +2,150 @@
   <div class="d-flex align-items-center mb-3">
     <h4 class="mb-0">Devoluciones</h4>
   </div>
+  <div class="card consulta-devolucion-card mb-2">
+    <div class="card-body">
+      <div class="row g-2 align-items-end">
+        <div class="col-md-2">
+          <label class="form-label">No. Devolucion</label>
+          <input
+            type="text"
+            class="form-control"
+            [(ngModel)]="consultaNumeroDevolucion"
+            (keyup.enter)="consultarPorNumeroDevolucion()"
+            placeholder="ID"
+          />
+        </div>
+        <div class="col-md-2">
+          <button
+            type="button"
+            class="btn btn-outline-primary w-100"
+            (click)="consultarPorNumeroDevolucion()"
+            [disabled]="cargandoConsultaDevolucion || !consultaNumeroDevolucion.trim()"
+          >
+            <i class="bi bi-search"></i> Buscar devol.
+          </button>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Control de salida</label>
+          <input
+            type="text"
+            class="form-control"
+            [(ngModel)]="consultaControlSalida"
+            (keyup.enter)="consultarPorControlSalida()"
+            placeholder="Salida"
+          />
+        </div>
+        <div class="col-md-2">
+          <button
+            type="button"
+            class="btn btn-outline-success w-100"
+            (click)="consultarPorControlSalida()"
+            [disabled]="cargandoConsultaDevolucion || !consultaControlSalida.trim()"
+          >
+            <i class="bi bi-search"></i> Buscar salida
+          </button>
+        </div>
+        <div class="col-md-2">
+          <button
+            type="button"
+            class="btn btn-outline-secondary w-100"
+            (click)="limpiarConsultaDevolucion()"
+            [disabled]="cargandoConsultaDevolucion && !consultaDevolucion"
+          >
+            <i class="bi bi-x-circle"></i> Limpiar
+          </button>
+        </div>
+        <div class="col-md-2 text-muted" *ngIf="cargandoConsultaDevolucion">
+          <span class="spinner-border spinner-border-sm me-1"></span>
+          Consultando...
+        </div>
+      </div>
+
+      <div class="consulta-devolucion-resultado mt-2" *ngIf="consultaDevolucion">
+        <div class="row g-2 mb-2">
+          <div class="col-md-2">
+            <div class="small text-muted">Devolucion</div>
+            <div class="fw-bold text-primary">{{ consultaDevolucion.id }}</div>
+          </div>
+          <div class="col-md-2">
+            <div class="small text-muted">Fecha</div>
+            <div>{{ consultaDevolucion.fecha | date:'dd/MM/yyyy' }}</div>
+          </div>
+          <div class="col-md-2">
+            <div class="small text-muted">Sucursal</div>
+            <div>{{ consultaDevolucion.idsucursal || '-' }}</div>
+          </div>
+          <div class="col-md-3">
+            <div class="small text-muted">Entrada</div>
+            <div class="fw-bold">{{ consultaDevolucion.codentrada }}</div>
+          </div>
+          <div class="col-md-3">
+            <div class="small text-muted">Control salida</div>
+            <div class="fw-bold">{{ consultaDevolucion.codsalida }}</div>
+          </div>
+        </div>
+
+        <div class="row g-2">
+          <div class="col-md-6">
+            <h6 class="mb-1">Productos recibidos</h6>
+            <div class="consulta-tabla">
+              <table class="table table-sm table-bordered mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>Codigo</th>
+                    <th>Descripcion</th>
+                    <th class="text-end">Cant.</th>
+                    <th class="text-end">Precio</th>
+                    <th class="text-end">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let d of consultaDetalleEntrada">
+                    <td>{{ d.cod }}</td>
+                    <td>{{ d.des }}</td>
+                    <td class="text-end">{{ d.cantidad }}</td>
+                    <td class="text-end">{{ d.precio | currency }}</td>
+                    <td class="text-end">{{ d.total | currency }}</td>
+                  </tr>
+                  <tr *ngIf="consultaDetalleEntrada.length === 0">
+                    <td colspan="5" class="text-center text-muted">Sin detalle</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <h6 class="mb-1">Productos salientes</h6>
+            <div class="consulta-tabla">
+              <table class="table table-sm table-bordered mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>Codigo</th>
+                    <th>Descripcion</th>
+                    <th class="text-end">Cant.</th>
+                    <th class="text-end">Precio</th>
+                    <th class="text-end">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let d of consultaDetalleSalida">
+                    <td>{{ d.cod }}</td>
+                    <td>{{ d.des }}</td>
+                    <td class="text-end">{{ d.cantidad }}</td>
+                    <td class="text-end">{{ d.precio | currency }}</td>
+                    <td class="text-end">{{ d.total | currency }}</td>
+                  </tr>
+                  <tr *ngIf="consultaDetalleSalida.length === 0">
+                    <td colspan="5" class="text-center text-muted">Sin detalle</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
   <div>
     <form [formGroup]="facturaForm" (ngSubmit)="buscarFactura()">
       <div class="card mb-3">

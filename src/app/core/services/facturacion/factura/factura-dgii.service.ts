@@ -19,6 +19,7 @@ export class FacturaDgiiService {
   async procesar(
     factura: any,
     progreso?: (mensaje: string) => void,
+    opciones: { imprimir?: boolean } = {},
   ): Promise<any> {
     const codigo = String(factura?.fa_codFact || factura?.fa_codfact || '').trim();
     if (!codigo) throw new Error('La factura no tiene numero.');
@@ -113,8 +114,10 @@ export class FacturaDgiiService {
       barcodeValue: codigo,
     };
 
-    progreso?.('Imprimiendo factura...');
-    await this.printing.imprimirFactura80mm(actualizada, detalles);
+    if (opciones.imprimir !== false) {
+      progreso?.('Imprimiendo factura...');
+      await this.printing.imprimirFactura80mm(actualizada, detalles);
+    }
     return actualizada;
   }
 

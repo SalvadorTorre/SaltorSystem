@@ -542,12 +542,26 @@ export class ServicioSalidafactura {
       const { data: salida, error: salidaErr } = await salidaQuery.maybeSingle();
       if (salidaErr) throw salidaErr;
 
+      let detsQuery = this.db
+        .from('detsalida')
+        .select('*')
+        .order('codfact', { ascending: true });
+      detsQuery = codsalida
+        ? detsQuery.eq('codsalida', codsalida)
+        : detsQuery.eq('idsalida', idsalida);
+      const { data: dets, error: detsErr } = await detsQuery;
+      if (detsErr) throw detsErr;
+
+      const detsUi = (dets || []).map((r: any) => this.mapDetSalidaDbToUi(r));
+      const salidaUi = salida ? this.mapSalidaDbToUi(salida) : null;
+
       return {
         status: 'success',
         code: 200,
         data: {
           detalle,
-          salida: salida ? this.mapSalidaDbToUi(salida) : null,
+          salida: salidaUi ? { ...salidaUi, detsalida: detsUi } : null,
+          detsalida: detsUi,
           idsalida: codsalida || detalle?.idsalida || '',
         },
       };
@@ -572,10 +586,23 @@ export class ServicioSalidafactura {
         .eq('codsalida', cod)
         .maybeSingle();
       if (error) throw error;
+
+      let dets: any[] = [];
+      if (data) {
+        const { data: detRows, error: detErr } = await this.db
+          .from('detsalida')
+          .select('*')
+          .eq('codsalida', cod)
+          .order('codfact', { ascending: true });
+        if (detErr) throw detErr;
+        dets = (detRows || []).map((r: any) => this.mapDetSalidaDbToUi(r));
+      }
+
+      const salidaUi = data ? this.mapSalidaDbToUi(data) : null;
       return {
         status: 'success',
         code: 200,
-        data: data ? this.mapSalidaDbToUi(data) : null,
+        data: salidaUi ? { ...salidaUi, detsalida: dets } : null,
       };
     })());
   }

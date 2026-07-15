@@ -1265,17 +1265,36 @@ export class Facturacion implements OnInit {
   buscaNombre(event: Event) {
     const inputElement = event.target as HTMLInputElement;
     this.txtdescripcion = inputElement.value.toUpperCase();
-    this.buscarFacturasModalPorFiltros();
+    this.buscarFacturasModalPorFiltros(false);
   }
 
   buscaFactura(event: Event) {
     const inputElement = event.target as HTMLInputElement;
     this.txtFactura = inputElement.value.toUpperCase();
-    this.buscarFacturasModalPorFiltros();
+    this.buscarFacturasModalPorFiltros(false);
+  }
+
+  buscaNombreEnter(event: Event) {
+    event.preventDefault();
+    const inputElement = event.target as HTMLInputElement;
+    this.txtdescripcion = inputElement.value.toUpperCase();
+    this.buscarFacturasModalPorFiltros(true);
+  }
+
+  buscaFacturaEnter(event: Event) {
+    event.preventDefault();
+    const inputElement = event.target as HTMLInputElement;
+    this.txtFactura = inputElement.value.toUpperCase();
+    this.buscarFacturasModalPorFiltros(true);
   }
 
   buscaFechaFacturaModal(): void {
-    this.buscarFacturasModalPorFiltros();
+    this.buscarFacturasModalPorFiltros(false);
+  }
+
+  buscaFechaFacturaModalEnter(event: Event): void {
+    event.preventDefault();
+    this.buscarFacturasModalPorFiltros(true);
   }
 
   private normalizarTextoBusquedaFactura(value: any): string {
@@ -1318,7 +1337,7 @@ export class Facturacion implements OnInit {
     return `${y}-${m}-${d}`;
   }
 
-  buscarFacturasModalPorFiltros(): void {
+  buscarFacturasModalPorFiltros(mostrarAvisoNoEncontrado = false): void {
     const codigo = String(this.txtFactura || '').trim();
     const nombre = String(this.txtdescripcion || '').trim();
     const fecha = this.normalizarFechaBusquedaFactura(this.txtFecha);
@@ -1338,12 +1357,25 @@ export class Facturacion implements OnInit {
       next: (response) => {
         this.facturacionListBase = response?.data || [];
         this.facturacionList = [...this.facturacionListBase];
+        if (mostrarAvisoNoEncontrado && this.facturacionList.length === 0) {
+          Swal.fire(
+            'Aviso',
+            'No se encontro ninguna factura con los datos indicados.',
+            'warning',
+          );
+        }
       },
       error: (error) => {
         console.error('Error buscando facturas:', error);
         this.facturacionListBase = [];
         this.facturacionList = [];
-        Swal.fire('Error', 'No se pudo realizar la busqueda de facturas.', 'error');
+        if (mostrarAvisoNoEncontrado) {
+          Swal.fire(
+            'Aviso',
+            'No se encontro ninguna factura con los datos indicados.',
+            'warning',
+          );
+        }
       },
     });
   }

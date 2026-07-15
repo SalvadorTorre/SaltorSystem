@@ -1310,6 +1310,12 @@ export class ServicioFacturacion {
         : this.mapFacturaUiToDb(facturaRaw);
       delete facturaDbPayload.fa_codfact;
 
+      if (permitirEditarStatusC) {
+        facturaDbPayload.fa_impalmaf = 'N';
+        facturaDbPayload.fa_impalmap = 'N';
+        facturaDbPayload.fa_despacho = 'N';
+      }
+
       const reimpresa = this.toDbFlag(
         facturaDbPayload.fa_reimpresa ??
           facturaRaw?.fa_reimpresa ??

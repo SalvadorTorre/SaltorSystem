@@ -40,7 +40,12 @@ export class SalidafacturaComponent implements OnInit {
   contFacturaActual: any;
   
   txtcodFact: string = '';
+  facturaConsultaSalida: string = '';
+  codigoConsultaSalida: string = '';
   detallesSalida: DetalleSalida[] = [];
+  consultaSalidaResultado: any = null;
+  consultaSalidaDetalles: DetalleSalida[] = [];
+  cargandoConsultaSalida: boolean = false;
   mapaFpagos: Map<string, string> = new Map();
   
   // Variables para el modal de búsqueda
@@ -396,6 +401,98 @@ private pickContFacturaRow(rows: any[], idsucursal: number): any | null {
            this.mostrarBotonImprimir = true;
            Swal.fire('Información', `Se encontró una salida pendiente (${this.codSalida}) sin facturas.`, 'info');
       }
+  }
+
+  buscarControlSalidaPorFactura(): void {
+    const codigo = String(this.facturaConsultaSalida || '').trim();
+    if (!codigo) {
+      this.mostrarError('Digite el numero de factura para consultar');
+      return;
+    }
+
+    this.cargandoConsultaSalida = true;
+    this.servicioSalida.obtenerSalidaPorFactura(codigo).subscribe({
+      next: (resp: any) => {
+        const data = resp?.data || resp;
+        const salida = data?.salida || null;
+        if (!salida) {
+          this.limpiarResultadoConsultaSalida();
+          Swal.fire('Informacion', 'La factura indicada no esta vinculada a un control de salida.', 'info');
+          return;
+        }
+
+        this.codigoConsultaSalida = String(
+          salida?.codSalida || salida?.codsalida || data?.idsalida || ''
+        );
+        this.mostrarResultadoControlSalida(salida, data?.detsalida || data?.detalle);
+      },
+      error: (err: any) => {
+        console.error('Error consultando control de salida por factura:', err);
+        Swal.fire('Error', this.extraerMensajeError(err), 'error');
+      },
+      complete: () => {
+        this.cargandoConsultaSalida = false;
+      }
+    });
+  }
+
+  buscarControlSalidaPorCodigo(): void {
+    const codigo = String(this.codigoConsultaSalida || '').trim();
+    if (!codigo) {
+      this.mostrarError('Digite el numero de control de salida para consultar');
+      return;
+    }
+
+    this.cargandoConsultaSalida = true;
+    this.servicioSalida.obtenerPorCodigoSalida(codigo).subscribe({
+      next: (resp: any) => {
+        const salida = resp?.data || resp;
+        if (!salida) {
+          this.limpiarResultadoConsultaSalida();
+          Swal.fire('Informacion', 'Control de salida no encontrado.', 'info');
+          return;
+        }
+
+        this.mostrarResultadoControlSalida(salida, salida?.detsalida || []);
+      },
+      error: (err: any) => {
+        console.error('Error consultando control de salida:', err);
+        Swal.fire('Error', this.extraerMensajeError(err), 'error');
+      },
+      complete: () => {
+        this.cargandoConsultaSalida = false;
+      }
+    });
+  }
+
+  limpiarConsultaSalida(): void {
+    this.facturaConsultaSalida = '';
+    this.codigoConsultaSalida = '';
+    this.limpiarResultadoConsultaSalida();
+  }
+
+  private limpiarResultadoConsultaSalida(): void {
+    this.consultaSalidaResultado = null;
+    this.consultaSalidaDetalles = [];
+  }
+
+  private mostrarResultadoControlSalida(salida: any, detalles: any): void {
+    const detalleList = Array.isArray(detalles)
+      ? detalles
+      : detalles
+        ? [detalles]
+        : [];
+
+    this.consultaSalidaResultado = salida;
+    this.consultaSalidaDetalles = detalleList.map((d: any) => ({
+      codFact: d?.codFact || d?.codfact || '',
+      nomClie: d?.nomClie || d?.nomclie || '',
+      fecFact: d?.fecFact || d?.fecfact || '',
+      valFact: Number(d?.valFact ?? d?.valfact ?? 0),
+      codfpago: String(d?.codfpago ?? d?.codFpago ?? '').trim(),
+      fa_status: String(d?.fa_status || d?.status || '').trim(),
+      fpago: String(d?.pagado || d?.fpago || '').trim().toUpperCase()
+    }));
   }
 
   manejarErrorChofer(err: any) {
