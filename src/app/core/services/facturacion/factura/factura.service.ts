@@ -19,6 +19,8 @@ interface EncfReservation {
   providedIn: 'root',
 })
 export class ServicioFacturacion {
+  private readonly minimoLetrasBusquedaNombreFactura = 4;
+
   constructor(
     private http: HttpInvokeService,
     private supabase: SupabaseService
@@ -154,6 +156,17 @@ export class ServicioFacturacion {
     const clean = String(prefix || '').trim();
     if (!/^\d+$/.test(clean)) return null;
     return (BigInt(clean) + 1n).toString().padStart(clean.length, '0');
+  }
+
+  private nextTextPrefix(prefix: string): string | null {
+    const text = String(prefix || '').trim();
+    if (!text) return null;
+    const chars = Array.from(text);
+    const lastIndex = chars.length - 1;
+    const lastCode = chars[lastIndex].charCodeAt(0);
+    if (!Number.isFinite(lastCode) || lastCode >= 0xffff) return null;
+    chars[lastIndex] = String.fromCharCode(lastCode + 1);
+    return chars.join('');
   }
 
   private currentTenant(): {
@@ -1987,41 +2000,107 @@ export class ServicioFacturacion {
     const fechaTxt = String(fecha || '').trim();
 
     return from((async () => {
-      let query = this.db
-        .from('factura')
-        .select('*', { count: 'planned' })
-        .order('fa_fecfact', { ascending: false })
-        .order('fa_codfact', { ascending: false })
-        .range(offset, offset + safeLimit - 1);
+      if (
+        !codigoTxt &&
+        !fechaTxt &&
+        nombreTxt &&
+        nombreTxt.length < this.minimoLetrasBusquedaNombreFactura
+      ) {
+        return {
+          status: 'success',
+          code: 200,
+          data: [],
+          pagination: {
+            total: 0,
+            page: safePage,
+            pageSize: safeLimit,
+            totalPages: 1,
+          },
+        };
+      }
 
-      query = filtrarSucursal ? this.applyTenantFilter(query) : this.applyTenantCompanyFilter(query);
+      const ejecutarConsulta = async (nombrePattern?: string) => {
+        if (nombreTxt && !codigoTxt && !fechaTxt) {
+          const nombreHasta = this.nextTextPrefix(nombreTxt);
+          let nombreQuery = this.db
+            .from('factura')
+            .select(
+              [
+                'fa_codfact',
+                'fa_nomclie',
+                'fa_fecfact',
+                'fa_valfact',
+                'fa_cosfact',
+                'fa_status',
+                'fa_impresa',
+                'fa_fpago',
+                'fa_despacho',
+                'fa_entrega',
+                'fa_impalmaf',
+                'fa_impalmap',
+                'fa_pendiente',
+                'fa_codsucu',
+                'fa_codempr',
+              ].join(','),
+            )
+            .gte('fa_nomclie', nombreTxt)
+            .order('fa_nomclie', { ascending: true })
+            .order('fa_codfact', { ascending: false })
+            .range(offset, offset + safeLimit - 1);
 
-      if (codigoTxt) {
-        const nextPrefix = this.nextNumericPrefix(codigoTxt);
-        if (nextPrefix) {
-          query = query.gte('fa_codfact', codigoTxt).lt('fa_codfact', nextPrefix);
-        } else {
-          query = query.ilike('fa_codfact', `%${codigoTxt}%`);
+          if (nombreHasta) {
+            nombreQuery = nombreQuery.lt('fa_nomclie', nombreHasta);
+          }
+
+          nombreQuery = filtrarSucursal
+            ? this.applyTenantFilter(nombreQuery)
+            : this.applyTenantCompanyFilter(nombreQuery);
+
+          return nombreQuery;
         }
-      }
 
-      if (nombreTxt) {
-        query = query.ilike('fa_nomclie', `%${nombreTxt}%`);
-      }
+        let query = this.db
+          .from('factura')
+          .select('*', { count: 'planned' })
+          .order('fa_fecfact', { ascending: false })
+          .order('fa_codfact', { ascending: false })
+          .range(offset, offset + safeLimit - 1);
 
-      if (fechaTxt) {
-        const parsedDate = this.normalizeDate(fechaTxt);
-        if (parsedDate) {
-          query = query.eq('fa_fecfact', parsedDate);
-        } else {
-          query = query.ilike('fa_codfact', `%${fechaTxt}%`);
+        query = filtrarSucursal ? this.applyTenantFilter(query) : this.applyTenantCompanyFilter(query);
+
+        if (codigoTxt) {
+          const nextPrefix = this.nextNumericPrefix(codigoTxt);
+          if (nextPrefix) {
+            query = query.gte('fa_codfact', codigoTxt).lt('fa_codfact', nextPrefix);
+          } else {
+            query = query.ilike('fa_codfact', `%${codigoTxt}%`);
+          }
         }
-      }
 
-      const { data, error, count } = await query;
+        if (nombreTxt) {
+          const nombreHasta = this.nextTextPrefix(nombreTxt);
+          query = query.gte('fa_nomclie', nombreTxt);
+          if (nombreHasta) {
+            query = query.lt('fa_nomclie', nombreHasta);
+          }
+        }
+
+        if (fechaTxt) {
+          const parsedDate = this.normalizeDate(fechaTxt);
+          if (parsedDate) {
+            query = query.eq('fa_fecfact', parsedDate);
+          } else {
+            query = query.ilike('fa_codfact', `%${fechaTxt}%`);
+          }
+        }
+
+        return query;
+      };
+
+      let { data, error, count } = await ejecutarConsulta();
       if (error) throw error;
 
-      const total = Number(count || 0);
+      const total = Number(count ?? data?.length ?? 0);
       return {
         status: 'success',
         code: 200,
@@ -2251,7 +2330,7 @@ export class ServicioFacturacion {
           return {
             status: 'success',
             code: 200,
-            data: pageRows,
+            data: await this.completarFormaPagoReporte607(pageRows),
             pagination: {
               total: filtered.length,
               page: safePage,
@@ -2268,7 +2347,7 @@ export class ServicioFacturacion {
       return {
         status: 'success',
         code: 200,
-        data: rows,
+        data: await this.completarFormaPagoReporte607(rows),
         pagination: {
           total,
           page: safePage,
@@ -2277,6 +2356,55 @@ export class ServicioFacturacion {
         },
       };
     })());
+  }
+
+  private async completarFormaPagoReporte607(rows: any[]): Promise<any[]> {
+    const pendientes = (rows || []).filter((row: any) => {
+      const value = row?.fa_codfpago ?? row?.fa_codFpago;
+      return value === null || value === undefined || value === '';
+    });
+    if (!pendientes.length) return rows;
+
+    const codigos = Array.from(new Set(
+      pendientes
+        .map((row: any) => String(row?.fa_codFact || row?.fa_codfact || '').trim())
+        .filter(Boolean),
+    ));
+    if (!codigos.length) return rows;
+
+    const data: any[] = [];
+    const chunkSize = 100;
+
+    try {
+      for (let index = 0; index < codigos.length; index += chunkSize) {
+        const chunk = codigos.slice(index, index + chunkSize);
+        const { data: chunkData, error } = await this.db
+          .from('factura')
+          .select('fa_codfact, fa_codfpago')
+          .in('fa_codfact', chunk);
+        if (error) throw error;
+        data.push(...(chunkData || []));
+      }
+    } catch (error) {
+      console.warn('[ServicioFacturacion] No se pudo completar fa_codfpago para Rep. 607', error);
+      return rows;
+    }
+
+    const pagos = new Map(
+      data.map((row: any) => [
+        String(row?.fa_codfact || '').trim(),
+        row?.fa_codfpago ?? null,
+      ]),
+    );
+
+    return rows.map((row: any) => {
+      const codigo = String(row?.fa_codFact || row?.fa_codfact || '').trim();
+      if (!codigo || !pagos.has(codigo)) return row;
+      return {
+        ...row,
+        fa_codfpago: pagos.get(codigo),
+      };
+    });
   }
 
   actualizarDatosDgii(fa_codFact: string, payload: any): Observable<any> {

@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
+import { NotaCreditoService } from 'src/app/core/services/contabilidad/nota-credito/nota-credito.service';
 import { ServicioFacturacion } from 'src/app/core/services/facturacion/factura/factura.service';
 import { ServicioConfiguracionGlobal } from 'src/app/core/services/mantenimientos/configuracion-global/configuracion-global.service';
 import Swal from 'sweetalert2';
@@ -84,9 +85,12 @@ export class NotaCreditoComponent implements OnInit {
   constructor(
     private configuracionGlobal: ServicioConfiguracionGlobal,
     private servicioFacturacion: ServicioFacturacion,
+    private notaCreditoService: NotaCreditoService,
   ) {}
 
-  ngOnInit(): void {}
+  ngOnInit(): void {
+    void this.ensureCreditNoteNumber();
+  }
 
   get subtotal(): number {
     return this.round(this.lines.reduce((sum, line) => sum + line.amount, 0), 2);
@@ -140,6 +144,7 @@ export class NotaCreditoComponent implements OnInit {
     this.lastQrLink = '';
     this.lastRequestJson = '';
     this.lastResponseJson = '';
+    void this.ensureCreditNoteNumber();
   }
 
   async loadInvoice(): Promise<void> {
@@ -185,6 +190,13 @@ export class NotaCreditoComponent implements OnInit {
   }
 
   async sendToDgii(): Promise<void> {
+    try {
+      await this.ensureCreditNoteNumber();
+    } catch (error: any) {
+      await Swal.fire('Error', String(error?.message || 'No se pudo generar el numero de nota de credito.'), 'error');
+      return;
+    }
+
     const errors = this.validate();
     if (errors.length) {
       await Swal.fire('Faltan datos', errors.join('<br>'), 'warning');
@@ -201,6 +213,7 @@ export class NotaCreditoComponent implements OnInit {
       const scenario = this.buildDgiiScenario();
       this.lastRequestJson = JSON.stringify(scenario, null, 2);
       this.lastResponseJson = '';
+      await this.saveCreditNote('Pendiente DGII');
       this.lastStatus = 'Enviando...';
       Swal.fire({
         title: 'Enviando nota de credito',
@@ -220,6 +233,7 @@ export class NotaCreditoComponent implements OnInit {
       this.lastTrackId = normalized.trackId || '';
       this.lastSecurityCode = normalized.securityCode || '';
       this.lastQrLink = normalized.qrLink || '';
+      await this.saveCreditNote(this.lastStatus || 'Enviado');
 
       Swal.close();
       await Swal.fire('Completado', 'La nota de credito fue enviada a DGII.', 'success');
@@ -229,6 +243,7 @@ export class NotaCreditoComponent implements OnInit {
       };
       this.lastResponseJson = JSON.stringify(rawError, null, 2);
       this.lastStatus = 'Error';
+      await this.saveCreditNote('Error');
       console.error('[NotaCreditoComponent] Error enviando nota de credito a DGII', error);
       Swal.fire(
         'Error DGII',
@@ -237,6 +252,33 @@ export class NotaCreditoComponent implements OnInit {
       );
     } finally {
       this.isSending = false;
+    }
+  }
+
+  async saveDraft(): Promise<void> {
+    try {
+      await this.ensureCreditNoteNumber();
+    } catch (error: any) {
+      await Swal.fire('Error', String(error?.message || 'No se pudo generar el numero de nota de credito.'), 'error');
+      return;
+    }
+
+    const baseErrors: string[] = [];
+    if (!this.form.creditNoteNumber.trim()) baseErrors.push('Numero de nota de credito requerido.');
+    if (!this.form.invoiceNumber.trim()) baseErrors.push('Numero de factura afectada requerido.');
+    if (!this.lines.some((line) => line.description.trim())) baseErrors.push('Agrega al menos una linea de detalle.');
+    if (baseErrors.length) {
+      await Swal.fire('Faltan datos', baseErrors.join('<br>'), 'warning');
+      return;
+    }
+
+    try {
+      await this.saveCreditNote(this.lastStatus === 'Sin enviar' ? 'Borrador' : this.lastStatus);
+      this.lastStatus = this.lastStatus === 'Sin enviar' ? 'Borrador' : this.lastStatus;
+      await Swal.fire('Guardado', 'La nota de credito fue guardada en Supabase.', 'success');
+    } catch (error: any) {
+      console.error('[NotaCreditoComponent] Error guardando nota de credito', error);
+      await Swal.fire('Error', String(error?.message || 'No se pudo guardar la nota de credito.'), 'error');
     }
   }
 
@@ -321,14 +363,17 @@ export class NotaCreditoComponent implements OnInit {
   }
 
   private generateCreditNoteNumber(): string {
-    const now = new Date();
-    const y = now.getFullYear();
-    const m = String(now.getMonth() + 1).padStart(2, '0');
-    const d = String(now.getDate()).padStart(2, '0');
-    const hh = String(now.getHours()).padStart(2, '0');
-    const mm = String(now.getMinutes()).padStart(2, '0');
-    const ss = String(now.getSeconds()).padStart(2, '0');
-    return `NC-${y}${m}${d}-${hh}${mm}${ss}`;
+    return '';
+  }
+
+  private async ensureCreditNoteNumber(): Promise<void> {
+    if (String(this.form.creditNoteNumber || '').trim()) return;
+    const response = await firstValueFrom(this.notaCreditoService.reservarNumero());
+    const numero = String(response?.data?.numero || response?.numero || '').trim();
+    if (!numero) {
+      throw new Error('No se pudo generar el numero de nota de credito desde contfactura.');
+    }
+    this.form.creditNoteNumber = numero;
   }
 
   private toDateInput(value: any): string {
@@ -419,6 +464,56 @@ export class NotaCreditoComponent implements OnInit {
     return scenario;
   }
 
+  private async saveCreditNote(status: string): Promise<void> {
+    const payload = {
+      header: {
+        nc_numero: this.form.creditNoteNumber.trim(),
+        nc_factura: this.form.invoiceNumber.trim(),
+        nc_encf: this.form.encf.trim() || null,
+        nc_fecha: this.form.issueDate || null,
+        nc_vencimiento: this.form.sequenceExpiration || null,
+        nc_ncf_modificado: this.form.modifiedNcf.trim() || null,
+        nc_fecha_modificada: this.form.modifiedDate || null,
+        nc_codigo_modificacion: this.form.modificationCode || null,
+        nc_motivo: this.form.reason.trim() || null,
+        nc_tipo_pago: this.form.paymentType || null,
+        nc_tipo_ingreso: this.form.incomeType || null,
+        emisor_rnc: this.cleanRnc(this.form.issuerRnc) || null,
+        emisor_nombre: this.form.issuerName.trim() || null,
+        emisor_nombre_comercial: this.form.issuerCommercialName.trim() || null,
+        emisor_direccion: this.form.issuerAddress.trim() || null,
+        comprador_rnc: this.cleanRnc(this.form.buyerRnc) || null,
+        comprador_nombre: this.form.buyerName.trim() || null,
+        comprador_correo: this.form.buyerEmail.trim() || null,
+        comprador_direccion: this.form.buyerAddress.trim() || null,
+        notas: this.form.notes.trim() || null,
+        subtotal: this.subtotal,
+        descuento_total: this.discountTotal,
+        itbis_total: this.taxTotal,
+        total: this.grandTotal,
+        estado_dgii: status || this.lastStatus || null,
+        track_id: this.lastTrackId || null,
+        codigo_seguridad: this.lastSecurityCode || null,
+        qr_link: this.lastQrLink || null,
+        request_json: this.safeJson(this.lastRequestJson),
+        response_json: this.safeJson(this.lastResponseJson),
+      },
+      lines: this.lines.map((line, index) => ({
+        linea: index + 1,
+        descripcion: line.description,
+        cantidad: line.quantity,
+        precio: line.unitPrice,
+        descuento: line.discount,
+        itbis_porcentaje: line.taxRate,
+        monto: line.amount,
+        itbis_monto: line.taxAmount,
+        total: line.total,
+      })),
+    };
+
+    await firstValueFrom(this.notaCreditoService.guardar(payload));
+  }
+
   private normalizeDgiiResponse(raw: any): { status: string; trackId: string; securityCode: string; qrLink: string } {
     const root = raw?.data && typeof raw.data === 'object' ? raw.data : raw;
     const payload = root?.data && typeof root.data === 'object' ? root.data : root;
@@ -454,6 +549,16 @@ export class NotaCreditoComponent implements OnInit {
     if (!text) return '';
     const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(text);
     return match ? `${match[3]}-${match[2]}-${match[1]}` : text;
+  }
+
+  private safeJson(value: string): any | null {
+    const text = String(value || '').trim();
+    if (!text) return null;
+    try {
+      return JSON.parse(text);
+    } catch {
+      return { value: text };
+    }
   }
 
   private round(value: number, decimals: number): number {

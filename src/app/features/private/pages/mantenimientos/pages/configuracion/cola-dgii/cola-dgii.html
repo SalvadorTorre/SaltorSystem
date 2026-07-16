@@ -40,6 +40,7 @@
           [(ngModel)]="fechaProceso"
           [disabled]="usarDiaAnterior || activo || procesando"
         >
+        <small class="fecha-vista">Vista: {{ formatoFechaVista(fechaProceso) }}</small>
       </div>
       <div class="col-12 col-md-3">
         <div class="form-check form-switch mb-2">
@@ -62,7 +63,18 @@
       <span><i class="bi bi-check2-square"></i> fa_status = C</span>
       <span><i class="bi bi-check2-square"></i> fa_fpago = S</span>
       <span><i class="bi bi-check2-square"></i> fa_despacho = S</span>
-      <span><i class="bi bi-calendar2-check"></i> fecha = {{ fechaProceso }}</span>
+      <span><i class="bi bi-calendar2-check"></i> fecha = {{ formatoFechaVista(fechaProceso) }}</span>
+    </div>
+
+    <div class="consulta-info" *ngIf="fechaUltimaConsulta || filtrosUltimaConsulta">
+      <div>
+        <span>Fecha usada en la ultima busqueda</span>
+        <strong>{{ formatoFechaVista(fechaUltimaConsulta || fechaProceso) }}</strong>
+      </div>
+      <div>
+        <span>Filtro aplicado</span>
+        <strong>{{ filtrosUltimaConsulta || ('fa_fecfact = ' + fechaProceso + ', fa_status = C, fa_fpago = S, fa_despacho = S') }}</strong>
+      </div>
     </div>
 
     <div class="actions">
@@ -88,6 +100,14 @@
     <div class="summary-item">
       <span>Pendientes encontradas</span>
       <strong>{{ pendientesEncontradas }}</strong>
+    </div>
+    <div class="summary-item">
+      <span>Facturas consultadas</span>
+      <strong>{{ facturasConsultadas }}</strong>
+    </div>
+    <div class="summary-item">
+      <span>Fecha consultada</span>
+      <strong>{{ formatoFechaVista(fechaUltimaConsulta || fechaProceso) }}</strong>
     </div>
     <div class="summary-item">
       <span>Enviadas OK</span>

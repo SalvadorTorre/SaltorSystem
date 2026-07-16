@@ -8,6 +8,7 @@ CREATE INDEX IF NOT EXISTS idx_factura_607_tipo_fecha
   ON myappdb.factura (fa_tiponcf, fa_fecfact DESC);
 
 DROP FUNCTION IF EXISTS myappdb.listar_reporte_607(integer, integer, text, date, date, date, integer, text);
+DROP FUNCTION IF EXISTS myappdb.listar_reporte_607(integer, integer, text, date, date, date, integer, text, text, integer);
 
 CREATE OR REPLACE FUNCTION myappdb.listar_reporte_607(
   p_page integer DEFAULT 1,
@@ -36,6 +37,7 @@ RETURNS TABLE (
   fa_nomclie varchar,
   fa_codempr varchar,
   fa_codsucu integer,
+  fa_codfpago integer,
   estado_dgii varchar,
   estado_envio_dgii varchar,
   codseguridad varchar,
@@ -132,6 +134,7 @@ BEGIN
     filtered.fa_nomclie,
     filtered.fa_codempr,
     filtered.fa_codsucu,
+    filtered.fa_codfpago,
     filtered.estado_dgii,
     filtered.estado_envio_dgii,
     filtered.codseguridad,

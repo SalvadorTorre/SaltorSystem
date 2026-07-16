@@ -25,7 +25,10 @@ export class ColaDgiiPage implements OnInit, OnDestroy {
   procesando = false;
   proximaEjecucion = '';
   ultimoMensaje = '';
+  fechaUltimaConsulta = '';
+  filtrosUltimaConsulta = '';
   pendientesEncontradas = 0;
+  facturasConsultadas = 0;
   procesadasOk = 0;
   procesadasError = 0;
   logs: LogColaDgii[] = [];
@@ -88,7 +91,11 @@ export class ColaDgiiPage implements OnInit, OnDestroy {
     try {
       const facturas = await this.obtenerFacturasElegibles();
       this.pendientesEncontradas = facturas.length;
-      this.agregarLog('INFO', '', `Consulta lista: ${facturas.length} factura(s) cumplen las condiciones.`);
+      this.agregarLog(
+        'INFO',
+        '',
+        `Consulta lista para fecha ${this.formatoFechaVista(this.fechaUltimaConsulta)}: ${facturas.length} de ${this.facturasConsultadas} factura(s) cumplen las condiciones.`,
+      );
     } catch (error: any) {
       this.agregarLog('ERROR', '', this.mensajeError(error));
       Swal.fire('Error', this.mensajeError(error), 'error');
@@ -118,7 +125,7 @@ export class ColaDgiiPage implements OnInit, OnDestroy {
       this.pendientesEncontradas = elegibles.length;
 
       if (!lote.length) {
-        this.ultimoMensaje = 'No hay facturas elegibles para procesar.';
+        this.ultimoMensaje = `No hay facturas elegibles para procesar en fecha ${this.formatoFechaVista(this.fechaUltimaConsulta)}.`;
         this.agregarLog('INFO', '', this.ultimoMensaje);
         return;
       }
@@ -148,6 +155,8 @@ export class ColaDgiiPage implements OnInit, OnDestroy {
   private async obtenerFacturasElegibles(): Promise<any[]> {
     const fecha = this.usarDiaAnterior ? this.fechaAyer() : this.fechaProceso;
     if (this.usarDiaAnterior) this.fechaProceso = fecha;
+    this.fechaUltimaConsulta = fecha;
+    this.filtrosUltimaConsulta = `fa_fecfact = ${fecha}, fa_status = C, fa_fpago = S, fa_despacho = S`;
 
     const resp: any = await firstValueFrom(
       this.facturacion.buscarFacturasPendientesDgii({
@@ -157,6 +166,7 @@ export class ColaDgiiPage implements OnInit, OnDestroy {
     );
 
     const rows = Array.isArray(resp?.data) ? resp.data : [];
+    this.facturasConsultadas = rows.length;
     return rows
       .filter((factura: any) => this.esElegible(factura, fecha))
       .sort((a: any, b: any) =>
@@ -251,6 +261,13 @@ export class ColaDgiiPage implements OnInit, OnDestroy {
       hour: '2-digit',
       minute: '2-digit',
     });
+  }
+
+  formatoFechaVista(value: any): string {
+    const fecha = this.soloFecha(value);
+    const [year, month, day] = fecha.split('-');
+    if (!year || !month || !day) return String(value || '');
+    return `${day}/${month}/${year}`;
   }
 
   private mensajeError(error: any): string {

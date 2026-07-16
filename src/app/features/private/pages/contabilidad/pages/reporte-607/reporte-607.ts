@@ -501,6 +501,7 @@ export class Reporte607Component implements OnInit {
           <td class="text">${this.escapeHtml(this.aprobacionComercial(factura))}</td>
           <td class="date">${this.escapeHtml(this.fechaXls(this.fechaAprobacionComercial(factura), false))}</td>
           <td>${this.escapeHtml(estado)}</td>
+          <td class="text">${this.escapeHtml(factura.fa_codfpago ?? factura.fa_codFpago ?? '')}</td>
           <td class="number">${exportarMontos ? itbis : ''}</td>
           <td class="number">${exportarMontos ? monto : ''}</td>
           <td class="number">${exportarMontos ? subtotal : ''}</td>
@@ -534,6 +535,7 @@ export class Reporte607Component implements OnInit {
               <th>Aprobación Comercial</th>
               <th>Fecha Aprobación Comercial</th>
               <th>Estado</th>
+              <th>Forma de Pago</th>
               <th>ITBIS Facturado</th>
               <th>Monto Total</th>
               <th>Subtotal</th>

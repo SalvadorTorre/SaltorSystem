@@ -1,6 +1,7 @@
 import {
   Component,
   NgModule,
+  OnDestroy,
   OnInit,
   ViewChild,
   ElementRef,
@@ -15,13 +16,17 @@ import {
 } from '@angular/forms';
 import {
   BehaviorSubject,
+  catchError,
   debounceTime,
   distinctUntilChanged,
   filter,
   firstValueFrom,
   from,
+  map,
+  of,
   skip,
   Subject,
+  Subscription,
   switchMap,
   tap,
 } from 'rxjs';
@@ -65,7 +70,7 @@ declare var $: any;
   templateUrl: './controlfact.html',
   styleUrls: ['./controlfact.css'],
 })
-export class ControlFact implements OnInit {
+export class ControlFact implements OnInit, OnDestroy {
   @ViewChild('codigoInput') codigoInput!: ElementRef; // Para manejar el foco
   @ViewChild('descripcionInput') descripcionInput!: ElementRef; // Para manejar el foco
   @ViewChild('Tabledetalle') Tabladetalle?: ElementRef;
@@ -78,6 +83,8 @@ export class ControlFact implements OnInit {
   totalItems = 0;
   pageSize = 6;
   readonly limiteFacturasInicial = 10000;
+  readonly limiteFacturasBusqueda = 100;
+  readonly minimoLetrasBusquedaNombreFactura = 4;
   currentPage = 1;
   maxPagesToShow = 5;
   txtdescripcion: string = '';
@@ -91,7 +98,13 @@ export class ControlFact implements OnInit {
   private descripcionBuscar = new BehaviorSubject<string>('');
   private codigoBuscar = new BehaviorSubject<string>('');
   private fechaBuscar = new BehaviorSubject<string>('');
-  private filtroFacturasTimer: ReturnType<typeof setTimeout> | null = null;
+  private busquedaFacturaSubscription?: Subscription;
+  private busquedaFactura$ = new Subject<{
+    codigo: string;
+    nombre: string;
+    fecha: string;
+    mostrarAvisoNoEncontrado: boolean;
+  }>();
   habilitarFormulario: boolean = false;
   tituloModalFacturacion!: string;
   formularioFacturacion!: FormGroup;
@@ -491,6 +504,7 @@ export class ControlFact implements OnInit {
 
   ngOnInit(): void {
     this.buscarTodasFacturacion();
+    this.conectarBusquedaFacturas();
     // this.servicioFacturacion.buscarTodasFacturacion().subscribe(response => {
     //   console.log('DATOS EN RESPONSE.DATA', response.data);
     //   this.facturacionList = response.data;
@@ -1071,10 +1085,7 @@ export class ControlFact implements OnInit {
   // }
 
   programarBusquedaFacturas(): void {
-    if (this.filtroFacturasTimer) {
-      clearTimeout(this.filtroFacturasTimer);
-    }
-    this.filtroFacturasTimer = setTimeout(() => this.buscarFacturasPorFiltros(false), 300);
+    this.buscarFacturasPorFiltros(false);
   }
 
   private normalizarTextoBusqueda(value: any): string {
@@ -1122,53 +1133,98 @@ export class ControlFact implements OnInit {
     const nombre = String(this.txtdescripcion || '').trim();
     const fecha = this.normalizarFechaBusqueda(this.txtFecha);
 
-    if (!codigo && !nombre && !fecha) {
-      this.buscarTodasFacturacion();
+    if (!codigo && !fecha && nombre && nombre.length < this.minimoLetrasBusquedaNombreFactura) {
+      this.facturacionListBase = [];
+      this.facturacionList = [];
+      this.totalItems = 0;
+      this.currentPage = 1;
+      this.selectedRow = 0;
       return;
     }
 
-    this.servicioFacturacion.buscarFacturacion(
-      1,
-      this.limiteFacturasInicial,
-      codigo || undefined,
-      nombre || undefined,
-      fecha || undefined,
-    ).subscribe({
-      next: (response) => {
-        this.facturacionListBase = response.data || [];
+    this.busquedaFactura$.next({
+      codigo,
+      nombre,
+      fecha,
+      mostrarAvisoNoEncontrado,
+    });
+  }
+
+  private conectarBusquedaFacturas(): void {
+    this.busquedaFacturaSubscription?.unsubscribe();
+    this.busquedaFacturaSubscription = this.busquedaFactura$
+      .pipe(
+        debounceTime(250),
+        distinctUntilChanged((prev, curr) =>
+          prev.codigo === curr.codigo &&
+          prev.nombre === curr.nombre &&
+          prev.fecha === curr.fecha &&
+          prev.mostrarAvisoNoEncontrado === curr.mostrarAvisoNoEncontrado,
+        ),
+        switchMap((filtros) => {
+          const sinFiltros = !filtros.codigo && !filtros.nombre && !filtros.fecha;
+          const nombreMuyCorto =
+            !filtros.codigo &&
+            !filtros.fecha &&
+            !!filtros.nombre &&
+            filtros.nombre.length < this.minimoLetrasBusquedaNombreFactura;
+          if (nombreMuyCorto) {
+            return of({
+              response: { data: [], pagination: { total: 0 } },
+              filtros,
+              error: null,
+            });
+          }
+          return this.servicioFacturacion.buscarFacturacion(
+            1,
+            sinFiltros ? this.limiteFacturasInicial : this.limiteFacturasBusqueda,
+            filtros.codigo || undefined,
+            filtros.nombre || undefined,
+            filtros.fecha || (sinFiltros ? this.fechaHoyIso() : undefined),
+          ).pipe(
+            map((response: any) => ({ response, filtros, error: null })),
+            catchError((error) => {
+              console.error('Error buscando facturas:', error);
+              return of({ response: { data: [], pagination: { total: 0 } }, filtros, error });
+            }),
+          );
+        }),
+      )
+      .subscribe(({ response, filtros, error }) => {
+        const rows = response.data || [];
+        this.facturacionListBase = rows;
         this.facturacionList = [...this.facturacionListBase];
         this.totalItems = response.pagination?.total ?? this.facturacionList.length;
         this.currentPage = 1;
         this.selectedRow = 0;
-        if (mostrarAvisoNoEncontrado && this.facturacionList.length === 0) {
+
+        if (filtros.mostrarAvisoNoEncontrado && (error || this.facturacionList.length === 0)) {
           Swal.fire(
             'Aviso',
             'No se encontro ninguna factura con los datos indicados.',
             'warning',
           );
         }
-      },
-      error: (error) => {
-        console.error('Error buscando facturas:', error);
-        this.facturacionListBase = [];
-        this.facturacionList = [];
-        this.totalItems = 0;
-        this.currentPage = 1;
-        this.selectedRow = 0;
-        if (mostrarAvisoNoEncontrado) {
-          Swal.fire(
-            'Aviso',
-            'No se encontro ninguna factura con los datos indicados.',
-            'warning',
-          );
-        }
-      },
-    });
+      });
+  }
+
+  ngOnDestroy(): void {
+    this.busquedaFacturaSubscription?.unsubscribe();
   }
 
   buscaNombre(event: Event) {
     const c_nomClie = event.target as HTMLInputElement;
     this.txtdescripcion = c_nomClie.value.toUpperCase();
+    this.txtFactura = '';
+    this.txtFecha = '';
+    this.programarBusquedaFacturas();
+  }
+
+  buscaFacturaIterativa(event: Event) {
+    const c_codFact = event.target as HTMLInputElement;
+    this.txtFactura = c_codFact.value.toUpperCase();
+    this.txtdescripcion = '';
+    this.txtFecha = '';
     this.programarBusquedaFacturas();
   }
 
@@ -1176,6 +1232,8 @@ export class ControlFact implements OnInit {
     event.preventDefault();
     const c_codFact = event.target as HTMLInputElement;
     this.txtFactura = c_codFact.value;
+    this.txtdescripcion = '';
+    this.txtFecha = '';
     this.buscarFacturasPorFiltros(true);
   }
 
@@ -1183,13 +1241,25 @@ export class ControlFact implements OnInit {
     event.preventDefault();
     const c_nomClie = event.target as HTMLInputElement;
     this.txtdescripcion = c_nomClie.value.toUpperCase();
+    this.txtFactura = '';
+    this.txtFecha = '';
     this.buscarFacturasPorFiltros(true);
+  }
+
+  buscaFechaIterativa(event: Event) {
+    const input = event.target as HTMLInputElement;
+    this.txtFecha = input.value;
+    this.txtFactura = '';
+    this.txtdescripcion = '';
+    this.programarBusquedaFacturas();
   }
 
   buscaFecha(event: Event) {
     event.preventDefault();
     const input = event.target as HTMLInputElement;
     this.txtFecha = input.value;
+    this.txtFactura = '';
+    this.txtdescripcion = '';
     this.buscarFacturasPorFiltros(true);
   }
   // buscaFecha(event: Event) {

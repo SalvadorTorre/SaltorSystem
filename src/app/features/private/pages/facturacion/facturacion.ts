@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnDestroy, OnInit, ViewChild, ElementRef } from '@angular/core';
 // import { FormsModule } from '@angular/forms';
 import {
   FormBuilder,
@@ -18,6 +18,7 @@ import {
   map,
   firstValueFrom,
   Subscription,
+  Subject,
 } from 'rxjs';
 import Swal from 'sweetalert2';
 // import { ModeloUsuarioData } from 'src/app/core/services/mantenimientos/usuario';
@@ -76,7 +77,7 @@ interface ResumenConsultaFactura {
   templateUrl: './facturacion.html',
   styleUrls: ['./facturacion.css'],
 })
-export class Facturacion implements OnInit {
+export class Facturacion implements OnInit, OnDestroy {
   @ViewChild('inputCodmerc') inputCodmerc!: ElementRef; // Para manejar el foco
   @ViewChild('codigoInput') codigoInput!: ElementRef<HTMLInputElement>;
   @ViewChild('descripcionInput') descripcionInput!: ElementRef; // Para manejar el foco
@@ -84,6 +85,8 @@ export class Facturacion implements OnInit {
   isDisabled: boolean = true;
   totalItems = 0;
   pageSize = 5;
+  readonly limiteFacturasBusqueda = 100;
+  readonly minimoLetrasBusquedaNombreFactura = 4;
   currentPage = 1;
   maxPagesToShow = 5;
   txtdescripcion: string = '';
@@ -177,6 +180,13 @@ export class Facturacion implements OnInit {
   cancelarBusquedaDescripcion: boolean = false;
   cancelarBusquedaCodigo: boolean = false;
   private clienteSearchSubscription?: Subscription;
+  private busquedaFacturaModalSubscription?: Subscription;
+  private busquedaFacturaModal$ = new Subject<{
+    codigo: string;
+    nombre: string;
+    fecha: string;
+    mostrarAvisoNoEncontrado: boolean;
+  }>();
   private facturaOriginalEdicion: Record<string, any> | null = null;
   private detalleOriginalEdicion = '';
   selectedRow: number = -1; // Para rastrear la fila seleccionada
@@ -245,6 +255,7 @@ export class Facturacion implements OnInit {
 
   ngOnInit(): void {
     this.buscarTodasFacturacion();
+    this.conectarBusquedaFacturaModal();
     this.buscarcodmerc.valueChanges
       .pipe(
         tap((v) => {
@@ -1265,35 +1276,47 @@ export class Facturacion implements OnInit {
   buscaNombre(event: Event) {
     const inputElement = event.target as HTMLInputElement;
     this.txtdescripcion = inputElement.value.toUpperCase();
-    this.buscarFacturasModalPorFiltros(false);
+    this.txtFactura = '';
+    this.txtFecha = '';
+    this.buscarFacturasModalPorFiltros(false, { nombre: this.txtdescripcion });
   }
 
   buscaFactura(event: Event) {
     const inputElement = event.target as HTMLInputElement;
     this.txtFactura = inputElement.value.toUpperCase();
-    this.buscarFacturasModalPorFiltros(false);
+    this.txtdescripcion = '';
+    this.txtFecha = '';
+    this.buscarFacturasModalPorFiltros(false, { codigo: this.txtFactura });
   }
 
   buscaNombreEnter(event: Event) {
     event.preventDefault();
     const inputElement = event.target as HTMLInputElement;
     this.txtdescripcion = inputElement.value.toUpperCase();
-    this.buscarFacturasModalPorFiltros(true);
+    this.txtFactura = '';
+    this.txtFecha = '';
+    this.buscarFacturasModalPorFiltros(true, { nombre: this.txtdescripcion });
   }
 
   buscaFacturaEnter(event: Event) {
     event.preventDefault();
     const inputElement = event.target as HTMLInputElement;
     this.txtFactura = inputElement.value.toUpperCase();
-    this.buscarFacturasModalPorFiltros(true);
+    this.txtdescripcion = '';
+    this.txtFecha = '';
+    this.buscarFacturasModalPorFiltros(true, { codigo: this.txtFactura });
   }
 
   buscaFechaFacturaModal(): void {
+    this.txtFactura = '';
+    this.txtdescripcion = '';
     this.buscarFacturasModalPorFiltros(false);
   }
 
   buscaFechaFacturaModalEnter(event: Event): void {
     event.preventDefault();
+    this.txtFactura = '';
+    this.txtdescripcion = '';
     this.buscarFacturasModalPorFiltros(true);
   }
 
@@ -1337,47 +1360,87 @@ export class Facturacion implements OnInit {
     return `${y}-${m}-${d}`;
   }
 
-  buscarFacturasModalPorFiltros(mostrarAvisoNoEncontrado = false): void {
-    const codigo = String(this.txtFactura || '').trim();
-    const nombre = String(this.txtdescripcion || '').trim();
+  buscarFacturasModalPorFiltros(
+    mostrarAvisoNoEncontrado = false,
+    overrides: { codigo?: string; nombre?: string; fecha?: string } = {},
+  ): void {
+    const codigo = String(overrides.codigo ?? this.txtFactura ?? '').trim();
+    const nombre = String(overrides.nombre ?? this.txtdescripcion ?? '').trim();
+    if (overrides.fecha !== undefined) this.txtFecha = overrides.fecha;
     const fecha = this.normalizarFechaBusquedaFactura(this.txtFecha);
 
-    if (!codigo && !nombre && !fecha) {
-      this.buscarTodasFacturacion();
+    if (!codigo && !fecha && nombre && nombre.length < this.minimoLetrasBusquedaNombreFactura) {
+      this.facturacionListBase = [];
+      this.facturacionList = [];
       return;
     }
 
-    this.servicioFacturacion.buscarFacturacion(
-      1,
-      10000,
-      codigo || undefined,
-      nombre || undefined,
-      fecha || undefined,
-    ).subscribe({
-      next: (response) => {
-        this.facturacionListBase = response?.data || [];
-        this.facturacionList = [...this.facturacionListBase];
-        if (mostrarAvisoNoEncontrado && this.facturacionList.length === 0) {
-          Swal.fire(
-            'Aviso',
-            'No se encontro ninguna factura con los datos indicados.',
-            'warning',
-          );
-        }
-      },
-      error: (error) => {
-        console.error('Error buscando facturas:', error);
-        this.facturacionListBase = [];
-        this.facturacionList = [];
-        if (mostrarAvisoNoEncontrado) {
-          Swal.fire(
-            'Aviso',
-            'No se encontro ninguna factura con los datos indicados.',
-            'warning',
-          );
-        }
-      },
+    this.busquedaFacturaModal$.next({
+      codigo,
+      nombre,
+      fecha,
+      mostrarAvisoNoEncontrado,
     });
+  }
+
+  private conectarBusquedaFacturaModal(): void {
+    this.busquedaFacturaModalSubscription?.unsubscribe();
+    this.busquedaFacturaModalSubscription = this.busquedaFacturaModal$
+      .pipe(
+        debounceTime(250),
+        distinctUntilChanged((prev, curr) =>
+          prev.codigo === curr.codigo &&
+          prev.nombre === curr.nombre &&
+          prev.fecha === curr.fecha &&
+          prev.mostrarAvisoNoEncontrado === curr.mostrarAvisoNoEncontrado,
+        ),
+        switchMap((filtros) => {
+          const sinFiltros = !filtros.codigo && !filtros.nombre && !filtros.fecha;
+          const nombreMuyCorto =
+            !filtros.codigo &&
+            !filtros.fecha &&
+            !!filtros.nombre &&
+            filtros.nombre.length < this.minimoLetrasBusquedaNombreFactura;
+          if (nombreMuyCorto) {
+            return of({
+              response: { data: [] },
+              filtros,
+              error: null,
+            });
+          }
+          return this.servicioFacturacion.buscarFacturacion(
+            1,
+            sinFiltros ? 10000 : this.limiteFacturasBusqueda,
+            filtros.codigo || undefined,
+            filtros.nombre || undefined,
+            filtros.fecha || (sinFiltros ? this.fechaHoyIso() : undefined),
+          ).pipe(
+            map((response: any) => ({ response, filtros, error: null })),
+            catchError((error) => {
+              console.error('Error buscando facturas:', error);
+              return of({ response: { data: [] }, filtros, error });
+            }),
+          );
+        }),
+      )
+      .subscribe(({ response, filtros, error }) => {
+        const rows = response?.data || [];
+        this.facturacionListBase = rows;
+        this.facturacionList = [...this.facturacionListBase];
+
+        if (filtros.mostrarAvisoNoEncontrado && (error || this.facturacionList.length === 0)) {
+          Swal.fire(
+            'Aviso',
+            'No se encontro ninguna factura con los datos indicados.',
+            'warning',
+          );
+        }
+      });
+  }
+
+  ngOnDestroy(): void {
+    this.clienteSearchSubscription?.unsubscribe();
+    this.busquedaFacturaModalSubscription?.unsubscribe();
   }
 
   convertToUpperCase(event: Event): void {

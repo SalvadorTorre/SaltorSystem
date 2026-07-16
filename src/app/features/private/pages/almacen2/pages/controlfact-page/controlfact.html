@@ -325,7 +325,7 @@
               [(ngModel)]="txtFactura"
               placeholder="No. de Factura"
               class="form-control form-control-sm"
-              (ngModelChange)="programarBusquedaFacturas()"
+              (input)="buscaFacturaIterativa($event)"
               (keydown.enter)="buscaFactura($event)"
             />
           </div>
@@ -335,7 +335,7 @@
               [(ngModel)]="txtdescripcion"
               placeholder="Nombre del Cliente"
               class="form-control form-control-sm"
-              (ngModelChange)="programarBusquedaFacturas()"
+              (input)="buscaNombre($event)"
               (keydown.enter)="buscaNombreEnter($event)"
             />
           </div>
@@ -345,7 +345,7 @@
               [(ngModel)]="txtFecha"
               placeholder="Fecha Factura"
               class="form-control form-control-sm"
-              (ngModelChange)="programarBusquedaFacturas()"
+              (input)="buscaFechaIterativa($event)"
               (keydown.enter)="buscaFecha($event)"
             />
           </div>
