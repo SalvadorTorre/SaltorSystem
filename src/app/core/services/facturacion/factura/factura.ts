@@ -26,4 +26,8 @@ export interface interfaceDetalleModel {
   df_canpend?: number;
   df_pendiente?:string
   df_tipoMerc?: string;
+  df_tipomerc?: string;
+  df_codFact?: string;
+  df_imp?: string;
+  __detalleExistente?: boolean;
 }

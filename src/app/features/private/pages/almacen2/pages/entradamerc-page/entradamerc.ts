@@ -111,6 +111,7 @@ export class EntradaMercComponent implements OnInit, AfterViewInit {
   private ultimoRncBuscado: string = '';
   archivoPdfEntrada: File | null = null;
   nombrePdfEntrada: string = '';
+  entradaEditandoCodigo: string | null = null;
 
   constructor(
     private fb: FormBuilder,
@@ -160,7 +161,7 @@ export class EntradaMercComponent implements OnInit, AfterViewInit {
     const codVendCtrl = this.entradaForm.get('me_codVend');
     const codVendRaw = (codVendCtrl?.value ?? '').toString().trim();
     if (!codVendRaw) {
-      this.Toast.fire({ title: 'Código de vendedor inválido', icon: 'warning' });
+      this.Toast.fire({ title: 'Codigo de vendedor invalido', icon: 'warning' });
       return;
     }
     this.servicioUsuario.buscarUsuarioPorCodigoVendedor(codVendRaw).subscribe({
@@ -182,7 +183,7 @@ export class EntradaMercComponent implements OnInit, AfterViewInit {
   }
 
   ngOnInit(): void {
-    // no generar el código de entrada automáticamente al iniciar
+    // no generar el cÃ³digo de entrada automÃ¡ticamente al iniciar
   }
 
   ngAfterViewInit(): void {
@@ -312,9 +313,9 @@ export class EntradaMercComponent implements OnInit, AfterViewInit {
               this.seleccionarSuplidor(exact);
               this.focusNextFrom(this.inputNombreSupl?.nativeElement || null);
             }
-            // si no hay coincidencia exacta, se deja la lista abierta para selección manual
+            // si no hay coincidencia exacta, se deja la lista abierta para selecciÃ³n manual
           }
-          // si no hubo selección automática, igualmente avanzamos y limpiamos sugerencias
+          // si no hubo selecciÃ³n automÃ¡tica, igualmente avanzamos y limpiamos sugerencias
           this.suplidoresBusqueda = [];
           this.focusNextFrom(this.inputNombreSupl?.nativeElement || null);
         },
@@ -356,7 +357,7 @@ export class EntradaMercComponent implements OnInit, AfterViewInit {
 
   agregarDetalle() {
     if (this.entradaForm.get('det_desMerc')?.invalid || this.entradaForm.get('det_canEntr')?.invalid || this.entradaForm.get('det_preMerc')?.invalid) {
-      this.Toast.fire({ title: 'Descripción no puede ser vacía o espacios. Cantidad y Precio deben ser > 0', icon: 'warning' });
+      this.Toast.fire({ title: 'Descripcion no puede ser vacia o espacios. Cantidad y Precio deben ser > 0', icon: 'warning' });
       if (this.entradaForm.get('det_desMerc')?.invalid) {
         this.inputDescripcion?.nativeElement.focus();
       } else if (this.entradaForm.get('det_canEntr')?.invalid) {
@@ -394,7 +395,7 @@ export class EntradaMercComponent implements OnInit, AfterViewInit {
 guardarEntrada() {
 
   /* =====================================================
-     1️⃣ VALIDACIONES BÁSICAS
+     1ï¸âƒ£ VALIDACIONES BÃSICAS
   ===================================================== */
   if (!this.detalles.length) {
     this.Toast.fire({
@@ -416,7 +417,7 @@ guardarEntrada() {
   }
 
   /* =====================================================
-     2️⃣ ARMAR CABECERA
+     2ï¸âƒ£ ARMAR CABECERA
   ===================================================== */
   const formValue = this.entradaForm.getRawValue();
 
@@ -424,7 +425,7 @@ guardarEntrada() {
   const empresaCod = String(localStorage.getItem('codigoempresa') || '').trim();
 
     const entradamercancias = {
-    me_codEntr: null, // ⛔ se genera en backend
+    me_codEntr: this.entradaEditandoCodigo || null,
     me_fecEntr: this.toIsoDate(formValue.me_fecEntr),
     me_valEntr: this.calcularTotal(),
     me_codSupl: this.toIntOrNull(formValue.me_codSupl),
@@ -447,7 +448,7 @@ guardarEntrada() {
   };
 
   /* =====================================================
-     3️⃣ ARMAR DETALLE
+     3ï¸âƒ£ ARMAR DETALLE
   ===================================================== */
   const detalle = this.detalles.map(d => ({
     producto: {
@@ -461,7 +462,7 @@ guardarEntrada() {
   }));
 
   /* =====================================================
-     4️⃣ VALIDAR PRODUCTOS EN CATÁLOGO
+     4ï¸âƒ£ VALIDAR PRODUCTOS EN CATÃLOGO
   ===================================================== */
   const codigos = [...new Set(detalle.map(d => d.producto.in_codmerc))];
 
@@ -485,25 +486,28 @@ guardarEntrada() {
         }
 
         /* =====================================================
-           5️⃣ GUARDAR EN BACKEND
+           5ï¸âƒ£ GUARDAR EN BACKEND
         ===================================================== */
-        this.servicioEntradamerc
-          .guardarEntradamerc({ entradamercancias, detalle })
+        const guardar$ = this.entradaEditandoCodigo
+          ? this.servicioEntradamerc.editarEntradamerc(this.entradaEditandoCodigo, { entradamercancias, detalle } as any)
+          : this.servicioEntradamerc.guardarEntradamerc({ entradamercancias, detalle });
+
+        guardar$
           .subscribe({
             next: (res: any) => {
 
-              const codigoGenerado = res?.data?.nuevoCodigo;
+              const codigoGenerado = this.entradaEditandoCodigo || res?.data?.nuevoCodigo;
 
               if (!codigoGenerado) {
                 this.Toast.fire({
-                  title: 'No se recibió el código de entrada',
+                  title: 'No se recibio el codigo de entrada',
                   icon: 'warning'
                 });
                 return;
               }
 
               /* =====================================================
-                 6️⃣ MOSTRAR CÓDIGO EN FRONTEND
+                 6ï¸âƒ£ MOSTRAR CÃ“DIGO EN FRONTEND
               ===================================================== */
               this.entradaForm.patchValue({
                 me_codEntr: codigoGenerado,
@@ -511,7 +515,7 @@ guardarEntrada() {
               });
 
               /* =====================================================
-                 7️⃣ PREPARAR IMPRESIÓN
+                 7ï¸âƒ£ PREPARAR IMPRESIÃ“N
               ===================================================== */
               this.canPrint = true;
 
@@ -524,9 +528,10 @@ guardarEntrada() {
               this.lastSavedDetalle = detalle;
 
               this.Toast.fire({
-                title: 'Entrada guardada correctamente',
+                title: this.entradaEditandoCodigo ? 'Entrada actualizada correctamente' : 'Entrada guardada correctamente',
                 icon: 'success'
               });
+              this.entradaEditandoCodigo = null;
             },
             error: (err: any) => {
               console.error('Error guardando entrada en Supabase:', err);
@@ -610,7 +615,7 @@ guardarEntrada() {
           const lista = (response && response.data) ? response.data : [];
           this.productosBusquedaCodigo = lista;
           if (lista.length === 0) {
-            this.Toast.fire({ title: 'Código no encontrado', icon: 'warning' });
+            this.Toast.fire({ title: 'Codigo no encontrado', icon: 'warning' });
             this.entradaForm.get('det_desMerc')?.enable();
             this.inputCodigo?.nativeElement.focus();
             return;
@@ -630,7 +635,7 @@ guardarEntrada() {
         },
         error: () => {
           this.productosBusquedaCodigo = [];
-          this.Toast.fire({ title: 'No se pudo buscar el producto por código', icon: 'error' });
+          this.Toast.fire({ title: 'No se pudo buscar el producto por codigo', icon: 'error' });
           this.inputCodigo?.nativeElement.focus();
         }
       });
@@ -766,6 +771,7 @@ guardarEntrada() {
 
   refrescarFormulario() {
     this.canPrint = false;
+    this.entradaEditandoCodigo = null;
     this.lastSavedEntrada = null;
     this.lastSavedDetalle = [];
     this.detalles = [];
@@ -939,7 +945,7 @@ guardarEntrada() {
   const nom = String(nomcliente || '').trim();
   const fec = String(fecha || '').trim();
 
-  // ⛔ Protección total: no llamar backend si no hay filtros válidos
+  // â›” ProtecciÃ³n total: no llamar backend si no hay filtros vÃ¡lidos
   if (
     (!cod || cod.length < 3) &&
     (!nom || nom.length < 3) &&
@@ -954,7 +960,7 @@ guardarEntrada() {
   this.servicioEntradamerc
     .buscarEntradamerc(
       this.currentPage,
-      100, // cuando hay filtro traemos más
+      100, // cuando hay filtro traemos mÃ¡s
         cod || undefined,
         nom || undefined,
         fec || undefined,
@@ -967,7 +973,7 @@ guardarEntrada() {
           response?.pagination?.total ?? this.entradamercList.length;
       },
       error: () => {
-        // ⛔ nunca romper la UI
+        // â›” nunca romper la UI
         this.entradamercList = [];
         this.totalItems = 0;
       }
@@ -993,7 +999,7 @@ guardarEntrada() {
 //     .subscribe(
 //       (response: any) => {
 //         this.entradamercList = response.data || [];
-//         this.totalItems = response.pagination?.total ?? this.entradamercList.length; // ✅ FIX
+//         this.totalItems = response.pagination?.total ?? this.entradamercList.length; // âœ… FIX
 //       },
 //       () => {
 //         this.cargarEntradasListado(1);
@@ -1010,7 +1016,7 @@ guardarEntrada() {
     .subscribe(
       (response: any) => {
         this.entradamercList = response.data || [];
-        this.totalItems = response.pagination?.total ?? 0; // ✅ FIX
+        this.totalItems = response.pagination?.total ?? 0; // âœ… FIX
       },
       () => {
         this.entradamercList = [];
@@ -1186,6 +1192,110 @@ get totalPages(): number {
     });
   }
 
+  editarEntradaConsulta(entrada: any): void {
+    const codigo = String(entrada?.me_codEntr || entrada?.me_codentr || '').trim();
+    if (!codigo) {
+      this.Toast.fire({ title: 'Entrada invalida', icon: 'warning' });
+      return;
+    }
+
+    this.entradaEditandoCodigo = codigo;
+    this.canPrint = false;
+    this.lastSavedEntrada = null;
+    this.lastSavedDetalle = [];
+    this.entradaForm.patchValue({
+      me_codEntr: codigo,
+      me_fecEntr: this.fechaInput(entrada?.me_fecEntr ?? entrada?.me_fecentr),
+      me_codSupl: entrada?.me_codSupl ?? entrada?.me_codsupl ?? '',
+      me_nomSupl: entrada?.me_nomSupl ?? entrada?.me_nomsupl ?? '',
+      me_facSupl: entrada?.me_facSupl ?? entrada?.me_facsupl ?? '',
+      me_ordencomp: entrada?.me_ordencomp ?? '',
+      me_fecSupl: this.fechaInput(entrada?.me_fecSupl ?? entrada?.me_fecsupl),
+      me_status: entrada?.me_status ?? '',
+      me_codVend: entrada?.me_codVend ?? entrada?.me_codvend ?? '',
+      me_nomVend: entrada?.me_nomVend ?? entrada?.me_nomvend ?? '',
+      imgfactura: entrada?.imgfactura ?? '',
+      nota: entrada?.nota ?? '',
+      vendedor: entrada?.vendedor ?? '',
+      despachado: entrada?.despachado ?? '',
+      chofer: entrada?.chofer ?? '',
+      me_rncSupl: entrada?.me_rncSupl ?? entrada?.me_rncsupl ?? null,
+      det_codMerc: '',
+      det_desMerc: '',
+      det_canEntr: 0,
+      det_preMerc: 0
+    });
+
+    this.servicioEntradamerc.buscarEntradamercDetalle(`${codigo}?limit=9999`).subscribe({
+      next: (res: any) => {
+        const raw = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
+        this.detalles = raw.map((d: any) => ({
+          de_codEntr: codigo,
+          de_codMerc: d.de_codMerc ?? d.de_codmerc ?? '',
+          de_desMerc: d.de_desMerc ?? d.de_desmerc ?? '',
+          de_canEntr: Number(d.de_canEntr ?? d.de_canentr ?? 0),
+          de_preMerc: Number(d.de_preMerc ?? d.de_premerc ?? 0),
+          de_valEntr: Number(d.de_valEntr ?? d.de_valentr ?? 0),
+          de_unidad: d.de_unidad ?? ''
+        }));
+        $('#modalEntradamerc').modal('hide');
+        setTimeout(() => this.inputCodigo?.nativeElement.focus(), 250);
+      },
+      error: (err: any) => {
+        this.Toast.fire({
+          title: 'No se pudo cargar el detalle',
+          text: this.getErrorMessage(err),
+          icon: 'error'
+        });
+      }
+    });
+  }
+
+  eliminarEntradaConsulta(entrada: any): void {
+    const codigo = String(entrada?.me_codEntr || entrada?.me_codentr || '').trim();
+    if (!codigo) {
+      this.Toast.fire({ title: 'Entrada invalida', icon: 'warning' });
+      return;
+    }
+
+    Swal.fire({
+      title: 'Eliminar entrada',
+      text: `Desea eliminar la entrada ${codigo}?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Eliminar',
+      cancelButtonText: 'Cancelar'
+    }).then((result) => {
+      if (!result.isConfirmed) return;
+      this.servicioEntradamerc.eliminarEntradamerc(codigo).subscribe({
+        next: () => {
+          this.Toast.fire({ title: 'Entrada eliminada correctamente', icon: 'success' });
+          if (this.entradaEditandoCodigo === codigo) this.refrescarFormulario();
+          this.entradaSeleccionada = null;
+          this.detalleConsulta = [];
+          this.buscarEntradas();
+        },
+        error: (err: any) => {
+          this.Toast.fire({
+            title: 'Error eliminando la entrada',
+            text: this.getErrorMessage(err),
+            icon: 'error'
+          });
+        }
+      });
+    });
+  }
+
+  private fechaInput(value: any): string {
+    if (!value) return this.fechaHoy();
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return this.fechaHoy();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+
   private normalizarEntradaParaImpresion(e: any) {
     return {
       me_codEntr: e?.me_codEntr ?? e?.me_codentr ?? '',
@@ -1214,3 +1324,4 @@ get totalPages(): number {
     this.printing.imprimirEntrada80mm(header, items);
   }
 }
+

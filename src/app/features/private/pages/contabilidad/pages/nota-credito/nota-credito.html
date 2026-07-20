@@ -26,7 +26,65 @@
   </header>
 
   <form class="credit-note-grid" #creditNoteForm="ngForm" (ngSubmit)="sendToDgii()">
-    <section class="panel-card panel-card--wide">
+    <section class="panel-card invoice-card">
+      <div class="panel-card__header">
+        <div>
+          <h3>Factura afectada</h3>
+          <!-- <p>{{ invoiceMessage }}</p> -->
+        </div>
+      </div>
+
+      <div class="form-grid invoice-form-grid">
+        <label class="form-field form-field--full">
+          <span>No. factura</span>
+          <div class="input-action">
+            <input
+              class="form-control"
+              name="invoiceNumber"
+              [(ngModel)]="form.invoiceNumber"
+              (keydown.enter)="$event.preventDefault(); loadInvoice()"
+              placeholder="Ej.: 000001"
+              required
+            />
+            <button class="btn btn-outline-primary" type="button" (click)="loadInvoice()" [disabled]="isLoadingInvoice || !form.invoiceNumber">
+              <i class="bi bi-search"></i>
+            </button>
+          </div>
+        </label>
+
+        <label class="form-field">
+          <span>NCF/e-NCF afectado</span>
+          <input class="form-control" name="modifiedNcf" [(ngModel)]="form.modifiedNcf" placeholder="Se carga con la factura" required readonly />
+        </label>
+
+        <label class="form-field">
+          <span>Fecha comprobante afectado</span>
+          <input class="form-control" type="date" name="modifiedDate" [(ngModel)]="form.modifiedDate" required />
+        </label>
+
+        <label class="form-field">
+          <span>RNC/Cedula comprador</span>
+          <input class="form-control" name="buyerRnc" [(ngModel)]="form.buyerRnc" placeholder="Opcional para consumo" />
+        </label>
+
+        <label class="form-field">
+          <span>Nombre / razon social</span>
+          <input class="form-control" name="buyerName" [(ngModel)]="form.buyerName" required />
+        </label>
+
+        <label class="form-field form-field--full">
+          <span>Correo</span>
+          <input class="form-control" type="email" name="buyerEmail" [(ngModel)]="form.buyerEmail" />
+        </label>
+
+        <label class="form-field form-field--full">
+          <span>Direccion</span>
+          <textarea class="form-control" name="buyerAddress" rows="3" [(ngModel)]="form.buyerAddress"></textarea>
+        </label>
+      </div>
+    </section>
+
+    <section class="panel-card note-data-card">
       <div class="panel-card__header">
         <div>
           <h3>Datos de la nota</h3>
@@ -90,66 +148,11 @@
       </div>
     </section>
 
-    <section class="panel-card invoice-card">
-      <div class="panel-card__header">
-        <div>
-          <h3>Factura afectada</h3>
-          <p>{{ invoiceMessage }}</p>
-        </div>
-      </div>
-
-      <div class="form-stack">
-        <label class="form-field">
-          <span>No. factura</span>
-          <div class="input-action">
-            <input
-              class="form-control"
-              name="invoiceNumber"
-              [(ngModel)]="form.invoiceNumber"
-              (keydown.enter)="$event.preventDefault(); loadInvoice()"
-              placeholder="Ej.: 000001"
-              required
-            />
-            <button class="btn btn-outline-primary" type="button" (click)="loadInvoice()" [disabled]="isLoadingInvoice || !form.invoiceNumber">
-              <i class="bi bi-search"></i>
-            </button>
-          </div>
-        </label>
-
-        <label class="form-field">
-          <span>NCF/e-NCF afectado</span>
-          <input class="form-control" name="modifiedNcf" [(ngModel)]="form.modifiedNcf" placeholder="Se carga con la factura" required readonly />
-        </label>
-
-        <label class="form-field">
-          <span>Fecha comprobante afectado</span>
-          <input class="form-control" type="date" name="modifiedDate" [(ngModel)]="form.modifiedDate" required />
-        </label>
-
-        <label class="form-field">
-          <span>RNC/Cedula comprador</span>
-          <input class="form-control" name="buyerRnc" [(ngModel)]="form.buyerRnc" placeholder="Opcional para consumo" />
-        </label>
-        <label class="form-field">
-          <span>Nombre / razon social</span>
-          <input class="form-control" name="buyerName" [(ngModel)]="form.buyerName" required />
-        </label>
-        <label class="form-field">
-          <span>Correo</span>
-          <input class="form-control" type="email" name="buyerEmail" [(ngModel)]="form.buyerEmail" />
-        </label>
-        <label class="form-field">
-          <span>Direccion</span>
-          <textarea class="form-control" name="buyerAddress" rows="3" [(ngModel)]="form.buyerAddress"></textarea>
-        </label>
-      </div>
-    </section>
-
     <section class="panel-card panel-card--wide">
       <div class="panel-card__header">
         <div>
           <h3>Detalle de la nota</h3>
-          <p>Incluye los productos, descuentos e ITBIS que se acreditaran.</p>
+          <!-- <p>Incluye los productos, descuentos e ITBIS que se acreditaran.</p> -->
         </div>
         <button class="btn btn-outline-primary btn-sm" type="button" (click)="addLine()">
           <i class="bi bi-plus-lg me-1"></i>

@@ -258,8 +258,14 @@
                 <td>{{ e.me_nomsupl || e.me_nomSupl }}</td>
                 <td class="text-end">{{ e.me_valentr || e.me_valEntr | currency }}</td>
                 <td class="text-center">
-                  <button type="button" class="btn btn-sm btn-primary" (click)="verDetalleEntrada(e)">
+                  <button type="button" class="btn btn-sm btn-primary me-1" (click)="verDetalleEntrada(e)">
                     <i class="bi bi-eye"></i> Ver detalle
+                  </button>
+                  <button type="button" class="btn btn-sm btn-warning me-1" (click)="editarEntradaConsulta(e)">
+                    <i class="bi bi-pencil-square"></i> Editar
+                  </button>
+                  <button type="button" class="btn btn-sm btn-danger" (click)="eliminarEntradaConsulta(e)">
+                    <i class="bi bi-trash"></i> Eliminar
                   </button>
                 </td>
               </tr>

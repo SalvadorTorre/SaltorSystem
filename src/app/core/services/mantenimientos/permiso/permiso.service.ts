@@ -300,7 +300,9 @@ export class ServicioPermiso {
       const userId = Number(codusuario || 0);
       if (!userId) return { acciones: [], recursos: [], filas: [], modo: "legacy" as const };
 
-      const v2 = await this.isPermisoV2Disponible();
+      // Evita que el control de acceso quede bloqueado cuando la instancia
+      // local responde 500 al consultar usuario_permiso_accion.
+      const v2 = false;
       if (!v2) {
         const [{ data: modulos, error: errM }, { data: permisos, error: errP }] = await Promise.all([
           this.db.from("modulo").select("idmodulo,descmodulo").order("idmodulo", { ascending: true }),

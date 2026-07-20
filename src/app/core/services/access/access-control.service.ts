@@ -86,7 +86,7 @@ export class AccessControlService {
 
     const allowed = this.getAllowedPermisos();
     if (!allowed.length) {
-      return false;
+      return this.canViewByDefaultRole(normalizedPath);
     }
 
     return allowed.some((permiso) => {
@@ -107,7 +107,7 @@ export class AccessControlService {
 
     const allowed = this.getAllowedPermisos();
     if (!allowed.length) {
-      return false;
+      return this.canViewByDefaultRole(normalizedPrefix, true);
     }
 
     return allowed.some((permiso) => {

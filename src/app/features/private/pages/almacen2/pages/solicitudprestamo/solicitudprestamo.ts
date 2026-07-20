@@ -36,6 +36,7 @@ export class SolicitudPrestamo implements OnInit {
   pageSize = 20;
   buscarEmpresaCliente = new FormControl('');
   buscarSucursalCliente = new FormControl('');
+  empresasCliente: EmpresaModelData[] = [];
   resultadoEmpresas: EmpresaModelData[] = [];
   sucursalesCliente: SucursalesData[] = [];
   resultadoSucursales: SucursalesData[] = [];
@@ -197,6 +198,7 @@ export class SolicitudPrestamo implements OnInit {
       so_fecha: [this.hoy(), Validators.required],
       so_codclie: ['', Validators.required],
       so_nomclie: ['', Validators.required],
+      so_codsucuclie: [''],
       so_sucursal_clie: [''],
       so_nomvend: [localStorage.getItem('username') || ''],
       so_observacion: [''],
@@ -218,7 +220,13 @@ export class SolicitudPrestamo implements OnInit {
 
   listar(page: number): void {
     this.currentPage = page;
-    this.solicitudService.listar(page, this.pageSize, this.filtro).subscribe({
+    this.solicitudService.listar(
+      page,
+      this.pageSize,
+      this.filtro,
+      this.getEmpresa(),
+      this.getSucursal(),
+    ).subscribe({
       next: (response) => {
         this.solicitudes = response?.data || [];
       },
@@ -235,9 +243,32 @@ export class SolicitudPrestamo implements OnInit {
     this.detalleActual = this.nuevoDetalle();
     this.solicitudSeleccionada = null;
     this.limpiarBusquedaCliente();
+    this.cargarListaEmpresas();
     this.limpiarBusquedaProducto();
     $('#modalSolicitudPrestamo').modal('show');
     this.focusById('inputNombreClienteSolicitud');
+  }
+
+  private cargarListaEmpresas(): void {
+    this.servicioEmpresa.buscarTodasEmpresa(1, 1000).subscribe({
+      next: (response) => {
+        this.empresasCliente = Array.isArray(response?.data) ? response.data : [];
+        this.resultadoEmpresas = this.empresasCliente;
+      },
+      error: (err) => this.mostrarError('Error consultando empresas', err),
+    });
+  }
+
+  mostrarListaEmpresas(): void {
+    if (!this.modoConsulta) {
+      this.resultadoEmpresas = this.empresasCliente;
+    }
+  }
+
+  mostrarListaSucursales(): void {
+    if (!this.modoConsulta && this.mostrarSucursalCliente) {
+      this.resultadoSucursales = this.sucursalesCliente;
+    }
   }
 
   private limpiarBusquedaCliente(): void {
@@ -263,6 +294,7 @@ export class SolicitudPrestamo implements OnInit {
     this.formulario.patchValue({
       so_codclie: empresa.cod_empre,
       so_nomclie: empresa.nom_empre,
+      so_codsucuclie: '',
       so_sucursal_clie: '',
     });
     this.buscarEmpresaCliente.setValue(empresa.nom_empre, { emitEvent: false });
@@ -292,6 +324,7 @@ export class SolicitudPrestamo implements OnInit {
   cargarSucursalCliente(sucursal: SucursalesData): void {
     this.resultadoSucursales = [];
     this.formulario.patchValue({
+      so_codsucuclie: sucursal.cod_sucursal,
       so_sucursal_clie: sucursal.nom_sucursal,
     });
     this.buscarSucursalCliente.setValue(sucursal.nom_sucursal, { emitEvent: false });
@@ -423,14 +456,17 @@ export class SolicitudPrestamo implements OnInit {
       this.formulario.markAllAsTouched();
       Swal.fire({
         title: 'Datos incompletos',
-        text: 'Complete código y nombre del cliente.',
+        text: 'Seleccione la empresa.',
         icon: 'warning',
         confirmButtonText: 'Aceptar',
       });
       return;
     }
 
-    if (this.mostrarSucursalCliente && !this.formulario.getRawValue()?.so_sucursal_clie) {
+    if (
+      this.mostrarSucursalCliente &&
+      (!this.formulario.getRawValue()?.so_codsucuclie || !this.formulario.getRawValue()?.so_sucursal_clie)
+    ) {
       Swal.fire({
         title: 'Sucursal requerida',
         text: 'Seleccione la sucursal de la empresa.',

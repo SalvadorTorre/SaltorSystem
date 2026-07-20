@@ -1416,6 +1416,7 @@ export class ServicioFacturacion {
           const producto = item?.producto || {};
           const cantidad = this.toNumber(item?.cantidad ?? item?.df_canMerc);
           const precio = this.toNumber(item?.precio ?? item?.df_preMerc);
+          const esDetalleExistente = item?.__detalleExistente === true || !!item?.df_codFact;
           return {
             df_codfact: cod,
             df_fecfact: this.normalizeDate(facturaRaw?.fa_fecFact),
@@ -1428,6 +1429,7 @@ export class ServicioFacturacion {
             df_cosmerc: this.toNumberOrNull(item?.costo ?? item?.df_cosMerc ?? producto?.in_cosmerc),
             df_codclie: this.toNumberOrNull(facturaRaw?.fa_codClie),
             df_status: this.toStringMax(item?.df_status, 3) || 'A',
+            df_imp: esDetalleExistente ? 'I' : ' ',
             df_codepr: this.toStringMax(tenant.codEmpre, 6),
             tenant_rnc: this.toStringOrNull(tenant.rncEmpre),
             df_codsucu: this.toStringMax(idsucursal, 10),

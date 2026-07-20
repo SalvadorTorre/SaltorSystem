@@ -33,6 +33,14 @@ export class ServicioContFactura {
     return anyClient;
   }
 
+  private async ensureSession(): Promise<void> {
+    try {
+      await this.supabase.recoverSession();
+    } catch {
+      // El guardado seguira y Supabase devolvera el error real si no hay sesion valida.
+    }
+  }
+
   private toNumberOrNull(value: any): number | null {
     if (value === null || value === undefined || value === '') return null;
     const n = Number(value);
@@ -42,6 +50,27 @@ export class ServicioContFactura {
   private toNumber(value: any): number {
     const n = Number(value);
     return Number.isFinite(n) ? n : 0;
+  }
+
+  private isMissingColumnError(error: any): string | null {
+    const message = String(error?.message || error?.error_description || error || '');
+    const match = message.match(/'([^']+)'\s+column/) || message.match(/column\s+"?([a-zA-Z0-9_]+)"?\s+does not exist/i);
+    return match?.[1] || null;
+  }
+
+  private async saveRetryingMissingColumns(operation: (payload: any) => Promise<any>, payload: any): Promise<any> {
+    const nextPayload = { ...payload };
+    for (let attempt = 0; attempt < 8; attempt += 1) {
+      const { data, error } = await operation(nextPayload);
+      if (!error) return data;
+
+      const missingColumn = this.isMissingColumnError(error);
+      if (!missingColumn || !Object.prototype.hasOwnProperty.call(nextPayload, missingColumn)) {
+        throw error;
+      }
+      delete nextPayload[missingColumn];
+    }
+    throw new Error('No se pudo guardar contfactura por columnas no disponibles.');
   }
 
   private mapRow(row: any): any {
@@ -54,6 +83,10 @@ export class ServicioContFactura {
       contador: row.contador ?? row.counter ?? null,
       contentrada: row.contentrada ?? row.contEntrada ?? row.cont_entrada ?? null,
       contsalida: row.contsalida ?? row.contSalida ?? row.cont_salida ?? null,
+      contvinterna: row.contvinterna ?? row.contVInterna ?? row.cont_vinterna ?? null,
+      contfact: row.contfact ?? row.contFact ?? row.cont_fact ?? null,
+      contcotizacion: row.contcotizacion ?? row.contCotizacion ?? row.cont_cotizacion ?? null,
+      contnotacredito: row.contnotacredito ?? row.contNotaCredito ?? row.cont_nota_credito ?? null,
     };
   }
 
@@ -70,6 +103,14 @@ export class ServicioContFactura {
           : undefined,
       contsalida:
         input?.contsalida !== undefined ? this.toNumber(input.contsalida) : undefined,
+      contvinterna:
+        input?.contvinterna !== undefined ? this.toNumber(input.contvinterna) : undefined,
+      contfact:
+        input?.contfact !== undefined ? this.toNumber(input.contfact) : undefined,
+      contcotizacion:
+        input?.contcotizacion !== undefined ? this.toNumber(input.contcotizacion) : undefined,
+      contnotacredito:
+        input?.contnotacredito !== undefined ? this.toNumber(input.contnotacredito) : undefined,
     };
 
     Object.keys(payload).forEach((k) => {
@@ -184,12 +225,15 @@ export class ServicioContFactura {
     const dbPayload = this.mapPayload(payload);
     return from(
       (async () => {
-        const { data, error } = await this.db
-          .from('contfactura')
-          .insert(dbPayload)
-          .select('*')
-          .single();
-        if (error) throw error;
+        await this.ensureSession();
+        const data = await this.saveRetryingMissingColumns(
+          (nextPayload: any) => this.db
+            .from('contfactura')
+            .insert(nextPayload)
+            .select('*')
+            .single(),
+          dbPayload,
+        );
         return this.mapRow(data);
       })(),
     ).pipe(map((row: any) => ({ status: 'success', code: 200, data: row })));
@@ -207,13 +251,16 @@ export class ServicioContFactura {
     const dbPayload = this.mapPayload(payload);
     return from(
       (async () => {
-        const { data, error } = await this.db
-          .from('contfactura')
-          .update(dbPayload)
-          .eq('id', safeId)
-          .select('*')
-          .maybeSingle();
-        if (error) throw error;
+        await this.ensureSession();
+        const data = await this.saveRetryingMissingColumns(
+          (nextPayload: any) => this.db
+            .from('contfactura')
+            .update(nextPayload)
+            .eq('id', safeId)
+            .select('*')
+            .maybeSingle(),
+          dbPayload,
+        );
         return data ? this.mapRow(data) : null;
       })(),
     ).pipe(map((row: any) => ({ status: 'success', code: 200, data: row })));
@@ -230,6 +277,7 @@ export class ServicioContFactura {
 
     return from(
       (async () => {
+        await this.ensureSession();
         const { error } = await this.db
           .from('contfactura')
           .delete()

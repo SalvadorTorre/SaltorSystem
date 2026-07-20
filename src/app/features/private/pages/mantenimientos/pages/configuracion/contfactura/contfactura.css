@@ -1,6 +1,31 @@
-.table td, .table th {
+.contfactura-page .table td,
+.contfactura-page .table th {
   vertical-align: middle;
 }
+
+.contfactura-table {
+  min-width: 1120px;
+}
+
+.contfactura-table th {
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.contfactura-table td {
+  font-size: 0.82rem;
+}
+
+.contfactura-table td:not(:nth-child(2)) {
+  text-align: right;
+}
+
+.contfactura-table td:nth-child(2),
+.contfactura-table th:nth-child(2) {
+  text-align: left;
+  min-width: 170px;
+}
+
 .uppercase-input {
   text-transform: uppercase;
 }

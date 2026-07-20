@@ -132,6 +132,16 @@ export class ServicioCotizacion {
     return scoped;
   }
 
+  // La visibilidad de lectura se controla en RLS. No se agregan filtros en el
+  // cliente para incluir cotizaciones antiguas que no tienen tenant completo.
+  private applyCotizacionReadScope(query: any): any {
+    return query;
+  }
+
+  private applyDetalleReadScope(query: any): any {
+    return query;
+  }
+
   private async ensureTenantCodEmpre(): Promise<string> {
     const tenant = this.currentTenant();
     if (tenant.codEmpre) return tenant.codEmpre;
@@ -476,7 +486,7 @@ export class ServicioCotizacion {
           .order("ct_feccoti", { ascending: false })
           .order("ct_codcoti", { ascending: false })
           .range(offset, offset + pageSize - 1);
-        query = this.applyCotizacionScope(query);
+        query = this.applyCotizacionReadScope(query);
 
         const { data, error, count } = await query;
         if (error) throw error;
@@ -544,7 +554,7 @@ export class ServicioCotizacion {
           .select("*")
           .eq("dc_codcoti", codigo)
           .order("dc_item", { ascending: true });
-        query = this.applyDetalleScope(query);
+        query = this.applyDetalleReadScope(query);
 
         const { data, error } = await query;
         if (error) throw error;
@@ -569,7 +579,7 @@ export class ServicioCotizacion {
           .select("*")
           .eq("ct_codcoti", codigo)
           .limit(1);
-        cotizacionQuery = this.applyCotizacionScope(cotizacionQuery);
+        cotizacionQuery = this.applyCotizacionReadScope(cotizacionQuery);
         const { data: cotizacionData, error: cotizacionError } = await cotizacionQuery.maybeSingle();
         if (cotizacionError) throw cotizacionError;
 
@@ -578,7 +588,7 @@ export class ServicioCotizacion {
           .select("*")
           .eq("dc_codcoti", codigo)
           .order("dc_item", { ascending: true });
-        detalleQuery = this.applyDetalleScope(detalleQuery);
+        detalleQuery = this.applyDetalleReadScope(detalleQuery);
         const { data: detalleData, error: detalleError } = await detalleQuery;
         if (detalleError) throw detalleError;
 
@@ -620,7 +630,7 @@ console.log("paso por servicio buscar")
           .order("ct_feccoti", { ascending: false })
           .order("ct_codcoti", { ascending: false })
           .range(offset, offset + pageSize - 1);
-        query = this.applyCotizacionScope(query);
+        query = this.applyCotizacionReadScope(query);
 
         const codigoFiltro = String(codigo || "").trim();
         const clienteFiltro = String(nomcliente || "").trim();

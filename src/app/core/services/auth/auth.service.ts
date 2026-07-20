@@ -316,13 +316,25 @@ export class AuthService {
     localStorage.setItem('sucursal', JSON.stringify(sucursal || {}));
     localStorage.setItem('empresa', JSON.stringify(empresa || {}));
 
+    const direccionSucursal = String(
+      sucursal?.dir_sucursal || sucursal?.direccion || '',
+    ).trim();
+    const telefonoSucursal = String(
+      sucursal?.tel_sucursal || sucursal?.telefono || '',
+    ).trim();
+    localStorage.setItem('direccion_sucursal', direccionSucursal);
+    localStorage.setItem('telefono_sucursal', telefonoSucursal);
+
     if (empresa && typeof empresa === 'object') {
       localStorage.setItem('nombre_empresa', String(empresa.nom_empre || ''));
       localStorage.setItem(
         'direccion_empresa',
-        String(empresa.dir_empre || ''),
+        direccionSucursal || String(empresa.dir_empre || ''),
       );
-      localStorage.setItem('telefono_empresa', String(empresa.tel_empre || ''));
+      localStorage.setItem(
+        'telefono_empresa',
+        telefonoSucursal || String(empresa.tel_empre || ''),
+      );
       localStorage.setItem('rnc_empresa', String(empresa.rnc_empre || ''));
       localStorage.setItem('cod_empre', String(empresa.cod_empre || ''));
       localStorage.setItem('letra_empre', String(empresa.letra_empre || ''));
@@ -516,6 +528,8 @@ export class AuthService {
       'nombre_empresa',
       'direccion_empresa',
       'telefono_empresa',
+      'direccion_sucursal',
+      'telefono_sucursal',
       'rnc_empresa',
       'cod_empre',
       'letra_empre',

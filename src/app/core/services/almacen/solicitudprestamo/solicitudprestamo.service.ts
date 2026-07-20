@@ -79,6 +79,7 @@ export class SolicitudPrestamoService {
       so_fecha: row.so_fecha ?? row.fecha ?? row.fec_solicitud ?? null,
       so_codclie: row.so_codclie ?? row.codclie ?? row.cod_cliente ?? '',
       so_nomclie: row.so_nomclie ?? row.nomclie ?? row.nombre_cliente ?? '',
+      so_codsucuclie: row.so_codsucuclie ?? row.codsucuclie ?? null,
       so_sucursal_clie: row.so_sucursal_clie ?? row.sucursal_clie ?? '',
       so_nomvend: row.so_nomvend ?? row.so_solicitante ?? row.solicitante ?? '',
       so_solicitante: row.so_nomvend ?? row.so_solicitante ?? row.solicitante ?? '',
@@ -89,13 +90,28 @@ export class SolicitudPrestamoService {
     };
   }
 
-  listar(pageIndex = 1, pageSize = 20, filtro = ''): Observable<any> {
+  listar(
+    pageIndex = 1,
+    pageSize = 20,
+    filtro = '',
+    codEmpresa?: string,
+    codSucursal?: number | string | null,
+  ): Observable<any> {
     const offset = Math.max(pageIndex - 1, 0) * pageSize;
     return from(this.retryAfterExpiredJwt(async () => {
       let query = this.db
         .from('solicitud')
         .select('*', { count: 'exact' })
         .range(offset, offset + pageSize - 1);
+
+      const empresa = String(codEmpresa || '').trim();
+      const sucursal = Number(codSucursal);
+      if (empresa) {
+        query = query.eq('so_codempr', empresa);
+      }
+      if (Number.isFinite(sucursal) && sucursal > 0) {
+        query = query.eq('so_codsucu', sucursal);
+      }
 
       const q = String(filtro || '').trim();
       if (q) {
@@ -185,6 +201,8 @@ export class SolicitudPrestamoService {
         so_fecha: this.normalizeDate(solicitud?.so_fecha),
         so_codclie: this.toStringMax(solicitud?.so_codclie, 10),
         so_nomclie: this.toStringMax(solicitud?.so_nomclie, 80),
+        so_codsucuclie: this.toNumber(solicitud?.so_codsucuclie) || null,
+        so_sucursal_clie: this.toStringMax(solicitud?.so_sucursal_clie, 80),
         so_nomvend: this.toStringMax(solicitud?.so_nomvend ?? solicitud?.so_solicitante, 60),
         so_codempr: this.toStringMax(solicitud?.so_codempr, 10),
         so_codsucu: this.toNumber(solicitud?.so_codsucu) || null,

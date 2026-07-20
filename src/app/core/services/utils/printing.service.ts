@@ -13,6 +13,39 @@ import {
 export class PrintingService {
   constructor(private desktopPrintSettings: DesktopPrintSettingsService) {}
 
+  private sucursalImpresion(): any {
+    try {
+      const raw = localStorage.getItem('sucursal');
+      if (!raw || raw === '[object Object]') return null;
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed[0] || null : parsed;
+    } catch {
+      return null;
+    }
+  }
+
+  private direccionSucursalImpresion(fallback = ''): string {
+    const sucursal = this.sucursalImpresion();
+    return String(
+      sucursal?.dir_sucursal ||
+        sucursal?.direccion ||
+        localStorage.getItem('direccion_sucursal') ||
+        localStorage.getItem('direccion_empresa') ||
+        fallback,
+    ).trim();
+  }
+
+  private telefonoSucursalImpresion(fallback = ''): string {
+    const sucursal = this.sucursalImpresion();
+    return String(
+      sucursal?.tel_sucursal ||
+        sucursal?.telefono ||
+        localStorage.getItem('telefono_sucursal') ||
+        localStorage.getItem('telefono_empresa') ||
+        fallback,
+    ).trim();
+  }
+
   private parseInvoiceDateTime(...values: any[]): Date {
     for (const value of values) {
       if (value === null || value === undefined) continue;
@@ -170,7 +203,7 @@ export class PrintingService {
       String(copyLabel || '').trim().toUpperCase() === 'CONDUCTOR'
         ? 45
         : 0;
-    const altura = 280 + totalLineas * 13 + datosEnvio;
+    const altura = 280 + totalLineas * 16 + datosEnvio;
     return Math.max(297, Math.min(altura, 5000));
   }
 
@@ -388,8 +421,8 @@ export class PrintingService {
             } else {
               // Case where empresa is an object
               empresa = parsedEmpresa.nom_empre || empresa;
-              direccion = parsedEmpresa.dir_empre || direccion;
-              telefono = parsedEmpresa.tel_empre || telefono;
+              direccion = this.direccionSucursalImpresion(direccion);
+              telefono = this.telefonoSucursalImpresion(telefono);
               rncEmpresa = parsedEmpresa.rnc_empre || rncEmpresa;
             }
           }
@@ -871,12 +904,12 @@ export class PrintingService {
       const doc = new jsPDF({
         orientation: 'p',
         unit: 'mm',
-        format: [80, this.altoPaginaTermicaCotizacion(items)],
+        format: [80, Math.max(297, 250 + (items || []).length * 13)],
       });
       const pageWidth = 80;
       const centerX = pageWidth / 2;
-      const leftMargin = 8;
-      const rightMargin = 4;
+      const leftMargin = 3;
+      const rightMargin = 7;
       let yPos = 5;
 
       const drawDashedLine = (y: number) => {
@@ -919,8 +952,8 @@ export class PrintingService {
               rncEmpresa = localStorage.getItem('rnc_empresa') || rncEmpresa;
             } else {
               empresa = parsedEmpresa.nom_empre || empresa;
-              direccion = parsedEmpresa.dir_empre || direccion;
-              telefono = parsedEmpresa.tel_empre || telefono;
+              direccion = this.direccionSucursalImpresion(direccion);
+              telefono = this.telefonoSucursalImpresion(telefono);
               rncEmpresa = parsedEmpresa.rnc_empre || rncEmpresa;
             }
           }
@@ -974,13 +1007,14 @@ export class PrintingService {
         doc.text(`Orden Compra: ${ordenCompra}`, xLeft, yPos);
         yPos += 4;
       }
-      doc.text(`Vendedor: ${(e.vendedor || '').toString()}`, xLeft, yPos);
-      doc.text(`Chofer: ${(e.chofer || '').toString()}`, xRight, yPos, { align: 'right' });
-      yPos += 4;
       const usuario = (e.me_nomVend || '').toString();
-      doc.text(`Despachador: ${(e.despachado || '').toString()}`, xLeft, yPos);
-      doc.text(`Usuario: ${usuario}`, xRight, yPos, { align: 'right' });
-      yPos += 6;
+      const recibido = (e.despachado || '').toString();
+      const chofer = (e.chofer || '').toString();
+      if (chofer) {
+        doc.text(`Chofer: ${chofer}`, xLeft, yPos);
+        yPos += 4;
+      }
+      yPos += 2;
       doc.setFont('helvetica', 'bold');
       centerText('ENTRADA DE MERCANCÍAS', yPos);
       yPos += 6;
@@ -991,12 +1025,10 @@ export class PrintingService {
 
       doc.setFontSize(9);
       doc.setFont('helvetica', 'bold');
-      const xDesc = leftMargin;
-      const xCant = 42;
-      const xPrecio = 57;
+      const xCant = leftMargin;
+      const xPrecio = 39;
       const xValor = pageWidth - rightMargin;
-      doc.text('Cantidad / Descrip', xDesc, yPos);
-      doc.text('Cant', xCant, yPos, { align: 'right' });
+      doc.text('Cant.', xCant, yPos);
       doc.text('Precio', xPrecio, yPos, { align: 'right' });
       doc.text('Valor', xValor, yPos, { align: 'right' });
       yPos += 2;
@@ -1015,11 +1047,12 @@ export class PrintingService {
         const cant = item.cantidad ?? item.de_canEntr ?? 0;
         const precio = item.precio ?? item.de_preMerc ?? 0;
         const totalItem = item.total ?? item.de_valEntr ?? (cant * precio) ?? 0;
-        const descLines = doc.splitTextToSize(desc, 31);
-        doc.text(descLines, xDesc, yPos);
-        doc.text(String(cant), xCant, yPos, { align: 'right' });
+        const descLines = doc.splitTextToSize(desc, pageWidth - leftMargin - rightMargin);
+        doc.text(String(cant), xCant, yPos);
         doc.text(formatoMoneda.format(precio), xPrecio, yPos, { align: 'right' });
         doc.text(formatoMoneda.format(totalItem), xValor, yPos, { align: 'right' });
+        yPos += 4.5;
+        doc.text(descLines, leftMargin, yPos);
         yPos += Math.max(descLines.length * 4.5, 4.5) + 2;
       });
 
@@ -1048,10 +1081,8 @@ export class PrintingService {
       doc.line(leftMargin, lineY, centerX - 4, lineY);
       doc.line(centerX + 4, lineY, pageWidth - rightMargin, lineY);
       doc.setFontSize(7);
-      const prep = (e.vendedor || e.me_nomVend || '').toString();
-      const recv = (e.despachado || e.chofer || '').toString();
-      doc.text(prep ? `Preparado por: ${prep}` : 'Preparado por', (leftMargin + centerX - 4) / 2, lineY + 4, { align: 'center' });
-      doc.text(recv ? `Recibido por: ${recv}` : 'Recibido por', (centerX + 4 + pageWidth - rightMargin) / 2, lineY + 4, { align: 'center' });
+      doc.text(usuario ? `Preparado: ${usuario}` : 'Preparado', (leftMargin + centerX - 4) / 2, lineY + 4, { align: 'center' });
+      doc.text(recibido ? `Recibido: ${recibido}` : 'Recibido', (centerX + 4 + pageWidth - rightMargin) / 2, lineY + 4, { align: 'center' });
       yPos += 10;
 
       centerText('*** ENTRADA REGISTRADA ***', yPos);
@@ -1112,8 +1143,8 @@ export class PrintingService {
               rncEmpresa = localStorage.getItem('rnc_empresa') || rncEmpresa;
             } else {
               empresa = parsedEmpresa.nom_empre || empresa;
-              direccion = parsedEmpresa.dir_empre || direccion;
-              telefono = parsedEmpresa.tel_empre || telefono;
+              direccion = this.direccionSucursalImpresion(direccion);
+              telefono = this.telefonoSucursalImpresion(telefono);
               rncEmpresa = parsedEmpresa.rnc_empre || rncEmpresa;
             }
           }
@@ -1276,8 +1307,8 @@ items.forEach((it: any) => {
                 rncEmpresa = localStorage.getItem('rnc_empresa') || rncEmpresa;
               } else {
                 empresa = parsedEmpresa.nom_empre || empresa;
-                direccion = parsedEmpresa.dir_empre || direccion;
-                telefono = parsedEmpresa.tel_empre || telefono;
+                direccion = this.direccionSucursalImpresion(direccion);
+                telefono = this.telefonoSucursalImpresion(telefono);
                 rncEmpresa = parsedEmpresa.rnc_empre || rncEmpresa;
               }
             }
@@ -1450,8 +1481,8 @@ items.forEach((it: any) => {
               rncEmpresa = localStorage.getItem('rnc_empresa') || rncEmpresa;
             } else {
               empresa = parsedEmpresa.nom_empre || empresa;
-              direccion = parsedEmpresa.dir_empre || direccion;
-              telefono = parsedEmpresa.tel_empre || telefono;
+              direccion = this.direccionSucursalImpresion(direccion);
+              telefono = this.telefonoSucursalImpresion(telefono);
               rncEmpresa = parsedEmpresa.rnc_empre || rncEmpresa;
             }
           }
@@ -1637,8 +1668,8 @@ items.forEach((it: any) => {
               rncEmpresa = localStorage.getItem('rnc_empresa') || rncEmpresa;
             } else {
               empresa = parsedEmpresa.nom_empre || empresa;
-              direccion = parsedEmpresa.dir_empre || direccion;
-              telefono = parsedEmpresa.tel_empre || telefono;
+              direccion = this.direccionSucursalImpresion(direccion);
+              telefono = this.telefonoSucursalImpresion(telefono);
               rncEmpresa = parsedEmpresa.rnc_empre || rncEmpresa;
             }
           }
@@ -1830,10 +1861,10 @@ items.forEach((it: any) => {
             ),
           ],
         });
-      const pageWidth = 74;
+      const pageWidth = 78;
       const shiftX = Math.max(-4, Math.min(3, Number(facturaData?.__thermalShiftX ?? 0) || 0));
       const leftMargin = Math.max(1, 5 + shiftX);
-      const rightMargin = Math.max(1, 5 - shiftX);
+      const rightMargin = Math.max(1, 3 - shiftX);
       const centerX = (leftMargin + (pageWidth - rightMargin)) / 2;
       let yPos = 5;
       const drawDashedLine = (y: number) => {
@@ -1879,8 +1910,8 @@ items.forEach((it: any) => {
               rncEmpresa = localStorage.getItem('rnc_empresa') || rncEmpresa;
             } else {
               empresa = parsedEmpresa.nom_empre || empresa;
-              direccion = parsedEmpresa.dir_empre || direccion;
-              telefono = parsedEmpresa.tel_empre || telefono;
+              direccion = this.direccionSucursalImpresion(direccion);
+              telefono = this.telefonoSucursalImpresion(telefono);
               rncEmpresa = parsedEmpresa.rnc_empre || rncEmpresa;
             }
           }
@@ -1981,27 +2012,27 @@ items.forEach((it: any) => {
 
       drawDashedLine(yPos);
       yPos += 5;
-      const xCod = leftMargin;
-      const xDesc = 17 + shiftX;
-      const xCant = pageWidth - rightMargin;
-      const xPrecio = 28 + shiftX;
-      const xItbis = 49 + shiftX;
+      const xCant = leftMargin;
+      const xPrecio = 36 + shiftX;
+      const xItbis = 55 + shiftX;
       const xValor = pageWidth - rightMargin;
+      const xCod = leftMargin;
+      const xDesc = 23 + shiftX;
       if (!hideInvoiceDetails) {
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(7.5);
-        doc.text('COD', xCod, yPos);
-        doc.text('DESC', xDesc, yPos);
-        doc.text('CANT', xCant, yPos, { align: 'right' });
-        yPos += 4;
+        doc.setFontSize(10);
+        doc.text('CANT', xCant, yPos);
         doc.text('PRECIO', xPrecio, yPos, { align: 'right' });
         doc.text('ITBIS', xItbis, yPos, { align: 'right' });
         doc.text('VALOR', xValor, yPos, { align: 'right' });
+        yPos += 5;
+        doc.text('CODIGO', xCod, yPos);
+        doc.text('DESCRIPCION', xDesc, yPos);
         yPos += 2;
         drawDashedLine(yPos);
         yPos += 4;
         doc.setFont('helvetica', 'normal');
-        doc.setFontSize(8);
+        doc.setFontSize(10);
       } else {
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(9);
@@ -2072,16 +2103,18 @@ items.forEach((it: any) => {
         totalImpresion += totalItem;
 
         if (!hideInvoiceDetails) {
-          const codigoCorto = truncateText(codigo, 11);
-          const descCorta = truncateText(desc, 37);
-          doc.text(codigoCorto, xCod, yPos);
-          doc.text(descCorta, xDesc, yPos);
-          doc.text(formatoMoneda.format(Number(cant || 0)), xCant, yPos, { align: 'right' });
-          yPos += 4;
+          doc.text(formatoMoneda.format(Number(cant || 0)), xCant, yPos);
           doc.text(formatoMoneda.format(precioSinItbis), xPrecio, yPos, { align: 'right' });
           doc.text(formatoMoneda.format(itbisItem), xItbis, yPos, { align: 'right' });
           doc.text(formatoMoneda.format(totalItem), xValor, yPos, { align: 'right' });
-          yPos += 5;
+          yPos += 5.5;
+          const codigoCorto = truncateText(codigo, 15);
+          const descCorta = truncateText(desc, pageWidth - rightMargin - xDesc);
+          doc.setFont('helvetica', 'bold');
+          doc.text(codigoCorto, xCod, yPos);
+          doc.setFont('helvetica', 'normal');
+          doc.text(descCorta, xDesc, yPos);
+          yPos += 5.5;
         }
       });
 
@@ -2259,8 +2292,8 @@ items.forEach((it: any) => {
               rncEmpresa = localStorage.getItem('rnc_empresa') || rncEmpresa;
             } else {
               empresa = parsedEmpresa.nom_empre || empresa;
-              direccion = parsedEmpresa.dir_empre || direccion;
-              telefono = parsedEmpresa.tel_empre || telefono;
+              direccion = this.direccionSucursalImpresion(direccion);
+              telefono = this.telefonoSucursalImpresion(telefono);
               rncEmpresa = parsedEmpresa.rnc_empre || rncEmpresa;
             }
           }

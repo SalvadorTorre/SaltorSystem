@@ -69,13 +69,15 @@
           <div class="modal-body">
             <div class="row g-2">
               <div class="col-md-4 position-relative">
-                <label class="form-label">Nombre Cliente</label>
+                <label class="form-label">Empresa</label>
                 <input
                   id="inputNombreClienteSolicitud"
                   class="form-control form-control-sm"
                   [formControl]="buscarEmpresaCliente"
                   [readonly]="modoConsulta"
                   autocomplete="off"
+                  placeholder="Seleccione una empresa"
+                  (focus)="mostrarListaEmpresas()"
                   (input)="onControlUppercase($event, buscarEmpresaCliente)"
                   (keydown.enter)="seleccionarEmpresaEnter($event)"
                 />
@@ -95,7 +97,7 @@
                 </div>
               </div>
               <div class="col-md-2">
-                <label class="form-label">Código Cliente</label>
+                <label class="form-label">Código Empresa</label>
                 <input class="form-control form-control-sm" formControlName="so_codclie" [readonly]="modoConsulta" tabindex="-1" />
               </div>
               <div class="col-md-2">
@@ -111,13 +113,15 @@
                 <input id="inputSolicitanteSolicitud" class="form-control form-control-sm" formControlName="so_nomvend" [readonly]="modoConsulta" (input)="onFormUppercase($event, 'so_nomvend')" />
               </div>
               <div class="col-md-6 position-relative" *ngIf="mostrarSucursalCliente">
-                <label class="form-label">Sucursal Cliente</label>
+                <label class="form-label">Sucursal</label>
                 <input
                   id="inputSucursalCliente"
                   class="form-control form-control-sm"
                   [formControl]="buscarSucursalCliente"
                   [readonly]="modoConsulta"
                   autocomplete="off"
+                  placeholder="Seleccione una sucursal"
+                  (focus)="mostrarListaSucursales()"
                   (input)="onControlUppercase($event, buscarSucursalCliente)"
                   (keydown.enter)="seleccionarSucursalEnter($event)"
                 />

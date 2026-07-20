@@ -914,6 +914,11 @@ export class ControlFact implements OnInit, OnDestroy {
             total: totalItem,
             costo: costoItem,
             fecfactActual: new Date(),
+            df_codFact: item.df_codFact,
+            df_tipoMerc: item.df_tipoMerc ?? item.df_tipomerc ?? '',
+            df_tipomerc: item.df_tipomerc ?? item.df_tipoMerc ?? '',
+            df_imp: 'I',
+            __detalleExistente: true,
 
             //costo:0
           });
@@ -1980,6 +1985,8 @@ export class ControlFact implements OnInit, OnDestroy {
         total,
         costo: tcosto,
         fecfactActual: fechaActual, // Agrega la fecha actual al nuevo ítem
+        df_imp: ' ',
+        __detalleExistente: false,
       });
       this.actualizarTotales();
       this.cancelarBusquedaDescripcion = false;

@@ -401,6 +401,7 @@ export class ServicioEntradamerc {
 
     const codigo = String(me_codEntr || "").trim();
     const header = (entradamerc as any)?.entradamercancias ?? (entradamerc as any) ?? {};
+    const detalle = Array.isArray((entradamerc as any)?.detalle) ? (entradamerc as any).detalle : [];
     const payload: any = {
       me_fecentr: this.normalizeDateOnly(header?.me_fecEntr ?? header?.me_fecentr) ?? undefined,
       me_valentr: header?.me_valEntr !== undefined ? this.toNumber(header?.me_valEntr) : undefined,
@@ -427,6 +428,12 @@ export class ServicioEntradamerc {
     });
 
     return from((async () => {
+      const { data: detalleAnterior, error: detalleAnteriorErr } = await this.db
+        .from("detentradamerc")
+        .select("*")
+        .eq("de_codentr", codigo);
+      if (detalleAnteriorErr) this.throwStep("Leer detalle anterior entrada", detalleAnteriorErr);
+
       const { data, error } = await this.db
         .from("entradamerc")
         .update(payload)
@@ -434,6 +441,92 @@ export class ServicioEntradamerc {
         .select("*")
         .maybeSingle();
       if (error) this.throwStep("Editar entradamerc", error);
+
+      if (detalle.length > 0) {
+        const idsucursal = this.toNumber(
+          header?.me_codSucu ??
+            header?.me_codsucu ??
+            data?.me_codsucu ??
+            (detalleAnterior || [])[0]?.de_codsucu,
+        );
+        const empresa = this.toStringMax(header?.me_codEmpr ?? header?.me_codempr ?? data?.me_codempr, 6);
+        const fecha = this.normalizeDateOnly(header?.me_fecEntr ?? header?.me_fecentr ?? data?.me_fecentr) ?? new Date().toISOString().slice(0, 10);
+
+        const anteriorPorProducto = new Map<string, number>();
+        for (const det of detalleAnterior || []) {
+          const cod = String(det?.de_codmerc || "").trim();
+          if (!cod) continue;
+          anteriorPorProducto.set(cod, (anteriorPorProducto.get(cod) || 0) + this.toNumber(det?.de_canentr));
+        }
+
+        const nuevoPorProducto = new Map<string, number>();
+        const detRows = detalle.map((it: any) => {
+          const prod = it?.producto || {};
+          const cod = this.toStringMax(prod?.in_codmerc ?? it?.de_codMerc ?? it?.de_codmerc, 15) ?? "";
+          const cantidad = this.toNumber(it?.cantidad ?? it?.de_canEntr ?? it?.de_canentr);
+          const precio = this.toNumber(it?.precio ?? it?.de_preMerc ?? it?.de_premerc);
+          const total = this.toNumber(it?.total ?? it?.de_valEntr ?? it?.de_valentr) || cantidad * precio;
+          if (cod) nuevoPorProducto.set(cod, (nuevoPorProducto.get(cod) || 0) + cantidad);
+          const row: any = {
+            de_codentr: codigo,
+            de_codmerc: cod,
+            de_desmerc: this.toStringMax(prod?.in_desmerc ?? it?.de_desMerc ?? it?.de_desmerc, 30),
+            de_canentr: cantidad,
+            de_premerc: precio,
+            de_valentr: total,
+            de_unidad: this.toStringMax(prod?.in_unidad ?? it?.unidad ?? it?.de_unidad, 10),
+            de_cosmerc: this.toNumberOrNull(it?.costo ?? it?.de_cosMerc ?? it?.de_cosmerc),
+            de_codsupl: this.toNumberOrNull(header?.me_codSupl ?? header?.me_codsupl),
+            de_fecentr: fecha,
+            de_codempr: empresa,
+            de_codsucu: idsucursal || null,
+            de_tipo: this.toStringMax(header?.me_tipo, 10) ?? "ENTRADA",
+          };
+          Object.keys(row).forEach((k) => {
+            if (row[k] === null || row[k] === undefined || row[k] === "") delete row[k];
+          });
+          return row;
+        });
+
+        const codigos = new Set<string>([
+          ...Array.from(anteriorPorProducto.keys()),
+          ...Array.from(nuevoPorProducto.keys()),
+        ]);
+
+        for (const cod of codigos) {
+          const diferencia = (nuevoPorProducto.get(cod) || 0) - (anteriorPorProducto.get(cod) || 0);
+          if (!diferencia || !idsucursal) continue;
+          const { data: invCur, error: invErr } = await this.db
+            .from("inventario")
+            .select("*")
+            .eq("inv_codsucu", idsucursal)
+            .eq("inv_codprod", cod)
+            .limit(1)
+            .maybeSingle();
+          if (invErr) this.throwStep(`Leer inventario para editar entrada (${cod})`, invErr);
+          if (!invCur?.id) continue;
+          const { error: invUpErr } = await this.db
+            .from("inventario")
+            .update({
+              inv_existencia: this.toNumber(invCur?.inv_existencia) + diferencia,
+              inv_fechamov: new Date().toISOString(),
+            })
+            .eq("id", Number(invCur.id));
+          if (invUpErr) this.throwStep(`Actualizar inventario por editar entrada (${cod})`, invUpErr);
+        }
+
+        const { error: deleteDetErr } = await this.db
+          .from("detentradamerc")
+          .delete()
+          .eq("de_codentr", codigo);
+        if (deleteDetErr) this.throwStep("Eliminar detalle anterior entrada", deleteDetErr);
+
+        const { error: insertDetErr } = await this.db
+          .from("detentradamerc")
+          .insert(detRows);
+        if (insertDetErr) this.throwStep("Insertar detalle editado entrada", insertDetErr);
+      }
+
       return { status: "success", code: 200, data: data ? this.mapEntradaDbToUi(data) : null };
     })()).pipe(map((res: any) => res));
   }
