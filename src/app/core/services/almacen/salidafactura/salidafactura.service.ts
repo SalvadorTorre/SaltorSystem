@@ -63,10 +63,16 @@ export class ServicioSalidafactura {
     return `${y}-${m}-${day}`;
   }
 
-  private contadorDesdeCodSalida(codsalida: string): number {
+  private contadorDesdeCodSalida(codsalida: string, idsucursal?: number | null): number {
     const raw = String(codsalida || '').replace(/\D/g, '');
     if (raw.length <= 4) return 0;
-    const contador = Number(raw.slice(4));
+    const sucursal = Number(idsucursal);
+    const usaFormatoConSucursal =
+      raw.length >= 11 &&
+      Number.isFinite(sucursal) &&
+      sucursal > 0 &&
+      raw.slice(4, 6) === String(sucursal).padStart(2, '0').slice(-2);
+    const contador = Number(raw.slice(usaFormatoConSucursal ? 6 : 4));
     return Number.isFinite(contador) ? contador : 0;
   }
 
@@ -76,10 +82,11 @@ export class ServicioSalidafactura {
     return Number.isFinite(ano) && ano > 0 ? ano : new Date().getFullYear();
   }
 
-  private buildCodSalida(ano: number, contador: number): string {
+  private buildCodSalida(ano: number, idsucursal: number, contador: number): string {
     const year = Number.isFinite(ano) && ano > 0 ? ano : new Date().getFullYear();
+    const sucursal = Number.isFinite(idsucursal) && idsucursal > 0 ? idsucursal : 0;
     const cont = Number.isFinite(contador) && contador > 0 ? contador : 1;
-    return `${year}${String(cont).padStart(6, '0')}`;
+    return `${String(year).padStart(4, '0').slice(-4)}${String(sucursal).padStart(2, '0').slice(-2)}${String(cont).padStart(5, '0').slice(-5)}`;
   }
 
   private async codSalidaExiste(codsalida: string): Promise<boolean> {
@@ -108,14 +115,15 @@ export class ServicioSalidafactura {
         });
         if (error) throw error;
         const generado = String(data || '').trim();
-        if (generado) return generado;
+        const prefijoEsperado = `${String(this.anoDesdeCodSalida(solicitado)).padStart(4, '0').slice(-4)}${String(idsucursal).padStart(2, '0').slice(-2)}`;
+        if (generado && /^\d{11}$/.test(generado) && generado.startsWith(prefijoEsperado)) return generado;
       } catch (error) {
         console.warn('No se pudo generar codsalida por RPC, usando validacion local.', error);
       }
     }
 
     const ano = this.anoDesdeCodSalida(solicitado);
-    let contadorBase = this.contadorDesdeCodSalida(solicitado);
+    let contadorBase = this.contadorDesdeCodSalida(solicitado, idsucursal);
 
     if (Number.isFinite(Number(idsucursal)) && Number(idsucursal) > 0) {
       const { data: contRow, error: contError } = await this.db
@@ -131,7 +139,7 @@ export class ServicioSalidafactura {
     }
 
     for (let intento = 0; intento < 1000; intento += 1) {
-      const candidato = this.buildCodSalida(ano, contadorBase + intento);
+      const candidato = this.buildCodSalida(ano, Number(idsucursal), contadorBase + intento);
       const existe = await this.codSalidaExiste(candidato);
       if (!existe) return candidato;
     }
@@ -155,7 +163,7 @@ export class ServicioSalidafactura {
     if (id === null) return;
 
     const contadorActual = this.toNumber(contRow?.contsalida ?? contRow?.contSalida ?? contRow?.cont_salida);
-    const contadorUsado = this.contadorDesdeCodSalida(codsalida);
+    const contadorUsado = this.contadorDesdeCodSalida(codsalida, idsucursal);
     const nuevoContador = contadorUsado > 0
       ? Math.max(contadorActual, contadorUsado)
       : contadorActual + 1;
@@ -431,7 +439,11 @@ export class ServicioSalidafactura {
 
         codsalida = await this.resolverCodSalidaDisponible(
           idsucursal,
-          this.buildCodSalida(this.anoDesdeCodSalida(codsalida), this.contadorDesdeCodSalida(codsalida) + 1),
+          this.buildCodSalida(
+            this.anoDesdeCodSalida(codsalida),
+            Number(idsucursal),
+            this.contadorDesdeCodSalida(codsalida, idsucursal) + 1,
+          ),
         );
         salidaRow.codsalida = codsalida;
       }

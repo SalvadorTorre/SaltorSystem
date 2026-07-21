@@ -6,7 +6,7 @@
       <!-- <p>Completa la factura afectada, valida los datos del cliente y envia la nota de credito E34 a DGII.</p> -->
     </div>
 
-    <div class="hero-actions">
+    <div class="hero-actions" *ngIf="activeSection === 'crear'">
       <span class="status-chip" [class.status-chip--error]="lastStatus === 'Error'" [class.status-chip--ok]="lastStatus !== 'Sin enviar' && lastStatus !== 'Error'">
         {{ lastStatus }}
       </span>
@@ -25,7 +25,28 @@
     </div>
   </header>
 
-  <form class="credit-note-grid" #creditNoteForm="ngForm" (ngSubmit)="sendToDgii()">
+  <nav class="section-tabs" aria-label="Secciones de nota de credito">
+    <button
+      class="section-tab"
+      [class.section-tab--active]="activeSection === 'crear'"
+      type="button"
+      (click)="cambiarSeccion('crear')"
+    >
+      <i class="bi bi-file-earmark-plus"></i>
+      Crear nota
+    </button>
+    <button
+      class="section-tab"
+      [class.section-tab--active]="activeSection === 'consultar'"
+      type="button"
+      (click)="cambiarSeccion('consultar')"
+    >
+      <i class="bi bi-search"></i>
+      Consultar notas
+    </button>
+  </nav>
+
+  <form *ngIf="activeSection === 'crear'" class="credit-note-grid" #creditNoteForm="ngForm" (ngSubmit)="sendToDgii()">
     <section class="panel-card invoice-card">
       <div class="panel-card__header">
         <div>
@@ -246,4 +267,105 @@
       </details>
     </section>
   </form>
+
+  <section *ngIf="activeSection === 'consultar'" class="panel-card consultation-card">
+    <div class="panel-card__header consultation-header">
+      <div>
+        <h3>Consulta de notas de credito</h3>
+        <p>Notas registradas para la empresa y sucursal activas.</p>
+      </div>
+      <div class="consultation-search">
+        <input
+          class="form-control"
+          [(ngModel)]="consultaFiltro"
+          (keydown.enter)="$event.preventDefault(); consultarNotas()"
+          placeholder="Numero, factura, e-NCF o comprador"
+        />
+        <button class="btn btn-primary" type="button" (click)="consultarNotas()" [disabled]="consultaCargando">
+          <i class="bi bi-search me-1"></i>
+          {{ consultaCargando ? 'Buscando...' : 'Buscar' }}
+        </button>
+      </div>
+    </div>
+
+    <div class="consultation-table-wrap">
+      <table class="table consultation-table align-middle mb-0">
+        <thead>
+          <tr>
+            <th>Numero</th>
+            <th>Fecha</th>
+            <th>Factura</th>
+            <th>e-NCF</th>
+            <th>Comprador</th>
+            <th>Motivo</th>
+            <th class="text-end">Total</th>
+            <th>Estado DGII</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let nota of notasCredito">
+            <td><strong>{{ nota.nc_numero }}</strong></td>
+            <td>{{ nota.nc_fecha | date:'dd/MM/yyyy' }}</td>
+            <td>{{ nota.nc_factura || '-' }}</td>
+            <td>{{ nota.nc_encf || '-' }}</td>
+            <td>{{ nota.comprador_nombre || '-' }}</td>
+            <td class="reason-cell" [title]="nota.nc_motivo || ''">{{ nota.nc_motivo || '-' }}</td>
+            <td class="text-end"><strong>{{ nota.total | currency:'DOP':'symbol':'1.2-2' }}</strong></td>
+            <td><span class="status-chip">{{ nota.estado_dgii || 'Sin enviar' }}</span></td>
+            <td class="text-end">
+              <button
+                *ngIf="esEstadoRechazado(nota)"
+                class="btn btn-outline-danger btn-sm me-1"
+                type="button"
+                (click)="verMensajeDgii(nota)"
+              >
+                Mensaje DGII
+              </button>
+              <button class="btn btn-outline-primary btn-sm" type="button" (click)="consultarNota(nota)">
+                Ver
+              </button>
+            </td>
+          </tr>
+          <tr *ngIf="!consultaCargando && notasCredito.length === 0">
+            <td colspan="9" class="empty-state">No hay notas de credito para mostrar.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div *ngIf="notaConsultada" class="consulted-detail">
+      <div class="consulted-detail__header">
+        <div>
+          <span>Nota de credito</span>
+          <h4>{{ notaConsultada.nc_numero }}</h4>
+        </div>
+        <button class="btn-close" type="button" aria-label="Cerrar detalle" (click)="notaConsultada = null; detalleConsultado = []"></button>
+      </div>
+      <div class="consulted-summary">
+        <div><span>Factura afectada</span><strong>{{ notaConsultada.nc_factura || '-' }}</strong></div>
+        <div><span>NCF modificado</span><strong>{{ notaConsultada.nc_ncf_modificado || '-' }}</strong></div>
+        <div><span>Comprador</span><strong>{{ notaConsultada.comprador_nombre || '-' }}</strong></div>
+        <div><span>Motivo</span><strong>{{ notaConsultada.nc_motivo || '-' }}</strong></div>
+        <div><span>Track ID</span><strong>{{ notaConsultada.track_id || '-' }}</strong></div>
+        <div><span>Total</span><strong>{{ notaConsultada.total | currency:'DOP':'symbol':'1.2-2' }}</strong></div>
+      </div>
+      <div class="consultation-table-wrap mt-3">
+        <table class="table consultation-table align-middle mb-0">
+          <thead><tr><th>Linea</th><th>Descripcion</th><th class="text-end">Cantidad</th><th class="text-end">Precio</th><th class="text-end">ITBIS</th><th class="text-end">Total</th></tr></thead>
+          <tbody>
+            <tr *ngFor="let linea of detalleConsultado">
+              <td>{{ linea.linea }}</td>
+              <td>{{ linea.descripcion }}</td>
+              <td class="text-end">{{ linea.cantidad | number:'1.2-2' }}</td>
+              <td class="text-end">{{ linea.precio | currency:'DOP':'symbol':'1.2-2' }}</td>
+              <td class="text-end">{{ linea.itbis_monto | currency:'DOP':'symbol':'1.2-2' }}</td>
+              <td class="text-end"><strong>{{ linea.total | currency:'DOP':'symbol':'1.2-2' }}</strong></td>
+            </tr>
+            <tr *ngIf="detalleConsultado.length === 0"><td colspan="6" class="empty-state">Esta nota no tiene lineas registradas.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
 </div>

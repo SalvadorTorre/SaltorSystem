@@ -83,6 +83,129 @@
   color: #b91c1c;
 }
 
+.section-tabs {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  display: inline-flex;
+  gap: 0.35rem;
+  justify-self: start;
+  padding: 0.35rem;
+}
+
+.section-tab {
+  background: transparent;
+  border: 0;
+  border-radius: 12px;
+  color: #64748b;
+  font-weight: 850;
+  padding: 0.65rem 1rem;
+}
+
+.section-tab--active {
+  background: #0e7490;
+  color: #fff;
+}
+
+.consultation-card {
+  padding: 1.2rem;
+}
+
+.consultation-header {
+  align-items: center;
+}
+
+.consultation-search {
+  display: flex;
+  gap: 0.5rem;
+  min-width: min(100%, 440px);
+}
+
+.consultation-table-wrap {
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  overflow: auto;
+}
+
+.consultation-table {
+  min-width: 1050px;
+}
+
+.consultation-table thead th {
+  background: #f8fafc;
+  color: #475569;
+  font-size: 0.82rem;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  padding: 0.8rem;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.consultation-table td {
+  padding: 0.75rem 0.8rem;
+}
+
+.reason-cell {
+  max-width: 230px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.empty-state {
+  color: #64748b;
+  padding: 2rem !important;
+  text-align: center;
+}
+
+.consulted-detail {
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 18px;
+  margin-top: 1rem;
+  padding: 1rem;
+}
+
+.consulted-detail__header {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.9rem;
+}
+
+.consulted-detail__header span,
+.consulted-summary span {
+  color: #64748b;
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.consulted-detail__header h4 {
+  font-weight: 900;
+  margin: 0.2rem 0 0;
+}
+
+.consulted-summary {
+  display: grid;
+  gap: 0.7rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.consulted-summary div {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 0.75rem;
+}
+
+.consulted-summary strong {
+  display: block;
+  margin-top: 0.25rem;
+}
+
 .response-grid div {
   background: #f8fafc;
   border: 1px solid #e2e8f0;
@@ -328,7 +451,13 @@
 
   .credit-note-grid,
   .form-grid,
-  .response-grid {
+  .response-grid,
+  .consulted-summary {
     grid-template-columns: 1fr;
+  }
+
+  .consultation-search {
+    flex-direction: column;
+    min-width: 100%;
   }
 }

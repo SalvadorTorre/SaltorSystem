@@ -196,8 +196,9 @@ private pickContFacturaRow(rows: any[], idsucursal: number): any | null {
       const year = Number.isFinite(ano) && ano > 0 ? ano : new Date().getFullYear();
       const cont = item?.contsalida !== undefined && item?.contsalida !== null ? Number(item.contsalida) : 0;
       const proximo = (Number.isFinite(cont) ? cont : 0) + 1;
-      const contadorStr = String(proximo).padStart(6, '0');
-      this.codSalida = `${year}${contadorStr}`;
+      const sucursalStr = String(idSucursal).padStart(2, '0').slice(-2);
+      const contadorStr = String(proximo).padStart(5, '0').slice(-5);
+      this.codSalida = `${String(year).padStart(4, '0').slice(-4)}${sucursalStr}${contadorStr}`;
     } catch (err) {
       console.error('Error al obtener contfactura para salida', err);
       this.codSalida = '';

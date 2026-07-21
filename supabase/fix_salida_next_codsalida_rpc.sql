@@ -46,7 +46,11 @@ BEGIN
   END IF;
 
   v_ano := substring(v_raw from 1 for 4)::integer;
-  v_counter := nullif(substring(v_raw from 5), '')::integer;
+  IF length(v_raw) >= 11 THEN
+    v_counter := nullif(substring(v_raw from 7), '')::integer;
+  ELSE
+    v_counter := nullif(substring(v_raw from 5), '')::integer;
+  END IF;
 
   SELECT coalesce(contsalida, 0)
     INTO v_contsalida
@@ -58,7 +62,9 @@ BEGIN
   v_counter := greatest(coalesce(v_counter, 0), coalesce(v_contsalida, 0) + 1, 1);
 
   LOOP
-    v_candidate := v_ano::text || lpad(v_counter::text, 6, '0');
+    v_candidate := lpad(v_ano::text, 4, '0')
+      || right(lpad(p_idsucursal::text, 2, '0'), 2)
+      || right(lpad(v_counter::text, 5, '0'), 5);
 
     IF NOT EXISTS (
       SELECT 1

@@ -47,6 +47,12 @@ interface CreditNoteForm {
 })
 export class NotaCreditoComponent implements OnInit {
   private nextLineId = 1;
+  activeSection: 'crear' | 'consultar' = 'crear';
+  consultaFiltro = '';
+  consultaCargando = false;
+  notasCredito: any[] = [];
+  notaConsultada: any | null = null;
+  detalleConsultado: any[] = [];
   form: CreditNoteForm = this.createInitialForm();
   lines: CreditNoteLine[] = [this.createLine()];
   isSending = false;
@@ -90,6 +96,106 @@ export class NotaCreditoComponent implements OnInit {
 
   ngOnInit(): void {
     void this.ensureCreditNoteNumber();
+  }
+
+  cambiarSeccion(section: 'crear' | 'consultar'): void {
+    this.activeSection = section;
+    if (section === 'consultar') {
+      this.consultarNotas();
+    }
+  }
+
+  consultarNotas(): void {
+    if (this.consultaCargando) return;
+    this.consultaCargando = true;
+    this.notaCreditoService.listar(this.consultaFiltro).subscribe({
+      next: (response) => {
+        this.notasCredito = Array.isArray(response?.data) ? response.data : [];
+        this.consultaCargando = false;
+      },
+      error: async (error) => {
+        this.consultaCargando = false;
+        await Swal.fire('Error', String(error?.message || 'No se pudieron consultar las notas de credito.'), 'error');
+      },
+    });
+  }
+
+  consultarNota(nota: any): void {
+    const numero = String(nota?.nc_numero || '').trim();
+    if (!numero) return;
+    this.notaCreditoService.consultar(numero).subscribe({
+      next: (response) => {
+        this.notaConsultada = response?.data?.header || nota;
+        this.detalleConsultado = Array.isArray(response?.data?.lines) ? response.data.lines : [];
+      },
+      error: async (error) => {
+        await Swal.fire('Error', String(error?.message || 'No se pudo consultar la nota de credito.'), 'error');
+      },
+    });
+  }
+
+  esEstadoRechazado(nota: any): boolean {
+    const estado = String(nota?.estado_dgii || '').trim().toLowerCase();
+    return estado.includes('rechaz') || estado.includes('error');
+  }
+
+  verMensajeDgii(nota: any): void {
+    const respuesta = nota?.response_json || {};
+    const mensajes = this.extraerMensajesDgii(respuesta);
+    const responseCompleto = this.escapeHtml(JSON.stringify(respuesta, null, 2));
+    const listaMensajes = mensajes.length
+      ? `<ul style="text-align:left;margin:0;padding-left:1.25rem">${mensajes.map((mensaje) => `<li>${this.escapeHtml(mensaje)}</li>`).join('')}</ul>`
+      : '<p style="text-align:left;margin:0">DGII no devolvio un mensaje descriptivo.</p>';
+
+    void Swal.fire({
+      width: 820,
+      icon: 'error',
+      title: `Nota rechazada ${this.escapeHtml(nota?.nc_numero || '')}`,
+      html: `
+        <div style="display:grid;gap:1rem;text-align:left">
+          <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.65rem">
+            <div><small>Estado DGII</small><br><strong>${this.escapeHtml(nota?.estado_dgii || 'Rechazado')}</strong></div>
+            <div><small>Track ID</small><br><strong>${this.escapeHtml(nota?.track_id || '-')}</strong></div>
+          </div>
+          <div><h4 style="font-size:1rem">Mensaje de DGII</h4>${listaMensajes}</div>
+          <details style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:.75rem">
+            <summary style="cursor:pointer;font-weight:700">Ver respuesta completa</summary>
+            <pre style="margin:.75rem 0 0;max-height:300px;overflow:auto;white-space:pre-wrap;font-size:.78rem">${responseCompleto || '{}'}</pre>
+          </details>
+        </div>`,
+      confirmButtonText: 'Cerrar',
+    });
+  }
+
+  private extraerMensajesDgii(value: any): string[] {
+    const mensajes: string[] = [];
+    const clavesMensaje = /^(mensaje|mensajes|message|messages|error|errors|detalle|detail|descripcion|description|motivo)$/i;
+    const visitar = (actual: any, clave = ''): void => {
+      if (actual === null || actual === undefined) return;
+      if (typeof actual === 'string' || typeof actual === 'number') {
+        const texto = String(actual).trim();
+        if (texto && clavesMensaje.test(clave) && !mensajes.includes(texto)) mensajes.push(texto);
+        return;
+      }
+      if (Array.isArray(actual)) {
+        actual.forEach((item) => visitar(item, clave));
+        return;
+      }
+      if (typeof actual === 'object') {
+        Object.entries(actual).forEach(([key, nested]) => visitar(nested, key));
+      }
+    };
+    visitar(value);
+    return mensajes;
+  }
+
+  private escapeHtml(value: any): string {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
   }
 
   get subtotal(): number {

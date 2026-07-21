@@ -167,6 +167,59 @@ export class NotaCreditoService {
     );
   }
 
+  listar(filtro = '', limit = 100): Observable<any> {
+    return from((async () => {
+      const tenant = this.tenant();
+      let query = this.db
+        .from('nota_credito')
+        .select('*')
+        .eq('fa_codempr', tenant.codempr)
+        .eq('fa_codsucu', tenant.codsucu)
+        .order('nc_fecha', { ascending: false })
+        .order('nc_numero', { ascending: false })
+        .limit(Math.max(1, Math.min(Number(limit) || 100, 500)));
+
+      const termino = String(filtro || '').trim();
+      if (termino) {
+        query = query.or(
+          `nc_numero.ilike.%${termino}%,nc_factura.ilike.%${termino}%,nc_encf.ilike.%${termino}%,comprador_nombre.ilike.%${termino}%`,
+        );
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+      return data || [];
+    })()).pipe(
+      map((data) => ({ status: 'success', code: 200, data })),
+    );
+  }
+
+  consultar(ncNumero: string): Observable<any> {
+    return from((async () => {
+      const tenant = this.tenant();
+      const numero = String(ncNumero || '').trim();
+      const [{ data: header, error: headerError }, { data: lines, error: linesError }] = await Promise.all([
+        this.db
+          .from('nota_credito')
+          .select('*')
+          .eq('nc_numero', numero)
+          .eq('fa_codempr', tenant.codempr)
+          .eq('fa_codsucu', tenant.codsucu)
+          .maybeSingle(),
+        this.db
+          .from('det_nota_credito')
+          .select('*')
+          .eq('nc_numero', numero)
+          .order('linea', { ascending: true }),
+      ]);
+      if (headerError) throw headerError;
+      if (linesError) throw linesError;
+      return header ? { header, lines: lines || [] } : null;
+    })()).pipe(
+      map((data) => ({ status: 'success', code: 200, data })),
+    );
+  }
+
   guardar(payload: NotaCreditoPayload): Observable<any> {
     return from((async () => {
       const tenant = this.tenant();

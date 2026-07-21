@@ -7,6 +7,14 @@ import { firstValueFrom } from 'rxjs';
 import Swal from 'sweetalert2';
 
 type ModoFecha607 = 'fecha' | 'rango';
+type FormaPago607Key =
+  | 'efectivo'
+  | 'chequeTransferenciaDeposito'
+  | 'tarjetaCreditoDebito'
+  | 'ventaCredito'
+  | 'bonosCertificados'
+  | 'permuta'
+  | 'otras';
 
 @Component({
   selector: 'app-reporte-607',
@@ -49,6 +57,15 @@ export class Reporte607Component implements OnInit {
     'Rechazado',
     'En Proceso',
     'Error',
+  ];
+  readonly columnasFormaPago607: { key: FormaPago607Key; title: string }[] = [
+    { key: 'efectivo', title: 'Efectivo' },
+    { key: 'chequeTransferenciaDeposito', title: 'Cheque / Transferencia / Deposito' },
+    { key: 'tarjetaCreditoDebito', title: 'Tarjeta de Credito / Debito' },
+    { key: 'ventaCredito', title: 'Venta a Credito' },
+    { key: 'bonosCertificados', title: 'Bonos o Certificados' },
+    { key: 'permuta', title: 'Permuta' },
+    { key: 'otras', title: 'Otras Formas de Venta' },
   ];
 
   constructor(
@@ -475,6 +492,7 @@ export class Reporte607Component implements OnInit {
       const montoRaw = factura.fa_valFact ?? factura.fa_valfact;
       const itbis = this.numeroXls(itbisRaw);
       const monto = this.numeroXls(montoRaw);
+      const montosFormaPago = this.montosPorFormaPago(factura, montoRaw);
       const subtotal = this.numeroXls(this.numeroValor(montoRaw) - this.numeroValor(itbisRaw));
       const montoExento = this.numeroXls(
         factura.monto_exento ??
@@ -501,9 +519,12 @@ export class Reporte607Component implements OnInit {
           <td class="text">${this.escapeHtml(this.aprobacionComercial(factura))}</td>
           <td class="date">${this.escapeHtml(this.fechaXls(this.fechaAprobacionComercial(factura), false))}</td>
           <td>${this.escapeHtml(estado)}</td>
-          <td class="text">${this.escapeHtml(factura.fa_codfpago ?? factura.fa_codFpago ?? '')}</td>
+          <td class="text">${this.escapeHtml(this.formaPagoTexto(factura))}</td>
           <td class="number">${exportarMontos ? itbis : ''}</td>
           <td class="number">${exportarMontos ? monto : ''}</td>
+          ${this.columnasFormaPago607
+            .map((columna) => `<td class="number">${exportarMontos ? montosFormaPago[columna.key] : ''}</td>`)
+            .join('')}
           <td class="number">${exportarMontos ? subtotal : ''}</td>
           <td class="number">${exportarMontos ? montoExento : ''}</td>
           <td class="number">${exportarMontos ? montoNoFacturable : ''}</td>
@@ -538,6 +559,9 @@ export class Reporte607Component implements OnInit {
               <th>Forma de Pago</th>
               <th>ITBIS Facturado</th>
               <th>Monto Total</th>
+              ${this.columnasFormaPago607
+                .map((columna) => `<th>${this.escapeHtml(columna.title)}</th>`)
+                .join('')}
               <th>Subtotal</th>
               <th>Monto Exento</th>
               <th>Monto No Facturable</th>
@@ -564,6 +588,84 @@ export class Reporte607Component implements OnInit {
   private numeroValor(value: any): number {
     const numero = Number(value);
     return Number.isFinite(numero) ? numero : 0;
+  }
+
+  private montosPorFormaPago(factura: any, montoRaw: any): Record<FormaPago607Key, string> {
+    const result: Record<FormaPago607Key, string> = {
+      efectivo: '',
+      chequeTransferenciaDeposito: '',
+      tarjetaCreditoDebito: '',
+      ventaCredito: '',
+      bonosCertificados: '',
+      permuta: '',
+      otras: '',
+    };
+    const key = this.formaPago607Key(factura);
+    result[key] = this.numeroXls(montoRaw);
+    return result;
+  }
+
+  private formaPago607Key(factura: any): FormaPago607Key {
+    const codigo = String(factura?.fa_codfpago ?? factura?.fa_codFpago ?? '').trim();
+    const descripcion = this.normalizarTexto(
+      factura?.fp_descfpago ??
+        factura?.formaPagoDescripcion ??
+        factura?.forma_pago ??
+        factura?.formaPago ??
+        '',
+    );
+
+    if (codigo === '1' || descripcion.includes('efectivo')) return 'efectivo';
+    if (codigo === '2' || descripcion.includes('credito')) return 'ventaCredito';
+    if (
+      codigo === '3' ||
+      codigo === '4' ||
+      descripcion.includes('cheque') ||
+      descripcion.includes('transfer') ||
+      descripcion.includes('deposit')
+    ) {
+      return 'chequeTransferenciaDeposito';
+    }
+    if (codigo === '5' || descripcion.includes('tarjeta')) return 'tarjetaCreditoDebito';
+    if (descripcion.includes('bono') || descripcion.includes('certificado')) return 'bonosCertificados';
+    if (descripcion.includes('permuta')) return 'permuta';
+    return 'otras';
+  }
+
+  private formaPagoTexto(factura: any): string {
+    const descripcion = String(
+      factura?.fp_descfpago ??
+        factura?.formaPagoDescripcion ??
+        factura?.forma_pago ??
+        factura?.formaPago ??
+        '',
+    ).trim();
+    const codigo = String(factura?.fa_codfpago ?? factura?.fa_codFpago ?? '').trim();
+    if (descripcion && codigo) return `${codigo} - ${descripcion}`;
+    if (descripcion) return descripcion;
+
+    switch (codigo) {
+      case '1':
+        return '1 - Efectivo';
+      case '2':
+        return '2 - Credito';
+      case '3':
+        return '3 - Cheque';
+      case '4':
+        return '4 - Transferencia o Deposito';
+      case '5':
+        return '5 - Tarjeta Credito';
+      default:
+        return codigo;
+    }
+  }
+
+  private normalizarTexto(value: any): string {
+    return String(value ?? '')
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
   }
 
   private fechaXls(value: any, fechaComprobante: boolean): string {
