@@ -85,7 +85,7 @@ export class VentasVendedor implements OnInit {
     this.cargando = true;
     this.error = '';
 
-    this.facturacionSrv.buscarConsultaVentas({
+    this.facturacionSrv.buscarVentasPorVendedor({
       empresa: this.filtros.empresa,
       sucursal: this.filtros.sucursal,
       fechaDesde: this.filtros.fechaInicio,

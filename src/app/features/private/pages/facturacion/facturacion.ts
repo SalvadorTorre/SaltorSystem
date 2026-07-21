@@ -571,7 +571,7 @@ export class Facturacion implements OnInit, OnDestroy {
       fa_codZona: [null],
       fa_desZona: [''],
       fa_fpago: [''],
-      fa_codfpago: ['1'],
+      fa_codfpago: [''],
       fa_expFact: [''],
       fa_envio: [''],
       fa_ncfFact: [{ value: '', disabled: true }],
@@ -2838,6 +2838,34 @@ export class Facturacion implements OnInit, OnDestroy {
       return;
     }
 
+    const formaPago = String(
+      this.formularioFacturacion.get('fa_codfpago')?.value ?? '',
+    ).trim();
+    if (!formaPago) {
+      await Swal.fire({
+        icon: 'warning',
+        title: 'Forma de pago requerida',
+        text: 'Debe seleccionar la forma de pago antes de guardar la factura.',
+        confirmButtonText: 'Aceptar',
+      });
+      this.enfocarCampoFactura('input9');
+      return;
+    }
+
+    const formaEnvio = String(
+      this.formularioFacturacion.get('fa_envio')?.value ?? '',
+    ).trim();
+    if (!formaEnvio) {
+      await Swal.fire({
+        icon: 'warning',
+        title: 'Forma de envio requerida',
+        text: 'Debe seleccionar la forma de envio antes de guardar la factura.',
+        confirmButtonText: 'Aceptar',
+      });
+      this.enfocarCampoFactura('input11');
+      return;
+    }
+
     this.isLoading = true;
     const date = new Date();
     this.formularioFacturacion.get('fa_valFact')?.patchValue(this.totalGral);
@@ -2992,6 +3020,14 @@ export class Facturacion implements OnInit, OnDestroy {
       this.isLoading = false;
       alert('Esta Factura no fue Guardada');
     }
+  }
+
+  private enfocarCampoFactura(id: string): void {
+    setTimeout(() => {
+      const input = document.getElementById(id) as HTMLInputElement | null;
+      input?.focus();
+      input?.select();
+    }, 0);
   }
 
   private construirCambiosFactura(actual: Record<string, any>): Record<string, any> {

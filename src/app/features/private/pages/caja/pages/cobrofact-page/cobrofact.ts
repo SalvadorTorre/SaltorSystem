@@ -556,7 +556,9 @@ export class CobroFact implements OnInit {
   }
   obtenerFentrega() {
     this.servicioFentrega.obtenerTodosFentrega().subscribe((response) => {
-      this.resultadoFentrega = response.data || [];
+      this.resultadoFentrega = (response.data || []).filter((forma) =>
+        [1, 2].includes(Number(forma.idfentrega)),
+      );
     });
   }
   obtenerOrigenPago() {

@@ -2301,6 +2301,14 @@ items.forEach((it: any) => {
       } catch (error) {
         console.warn('Error recuperando datos de empresa para cotizacion', error);
       }
+      empresa = String(
+        localStorage.getItem('nombre_empresa') || empresa,
+      ).trim();
+      rncEmpresa = String(
+        localStorage.getItem('rnc_empresa') || rncEmpresa,
+      ).trim();
+      direccion = this.direccionSucursalImpresion(direccion);
+      telefono = this.telefonoSucursalImpresion(telefono);
 
       try {
         const imgData = 'assets/logo2.png';

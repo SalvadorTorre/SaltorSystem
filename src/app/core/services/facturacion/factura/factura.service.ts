@@ -1560,13 +1560,30 @@ export class ServicioFacturacion {
     const safeLimit = Math.max(1, Number(limit) || 5000);
     const sucursal = this.toNumberOrNull(sucursalId);
     return from((async () => {
-      const { data, error } = await this.db.rpc('listar_facturas_pendientes_cierre', {
-        p_limit: safeLimit,
-        p_filtrar_sucursal: !!filtrarSucursal,
-      });
-      if (error) throw error;
+      // Consultar por lotes evita que PostgreSQL tenga que ordenar y convertir
+      // miles de registros dentro de una sola RPC antes de aplicar el límite.
+      const facturas: any[] = [];
+      const pageSize = 500;
+      for (let offset = 0; offset < safeLimit; offset += pageSize) {
+        const pageLimit = Math.min(pageSize, safeLimit - offset);
+        let query = this.db
+          .from('factura')
+          .select('fa_codfact,fa_ncffact,fa_rncfact,fa_tiponcf,fa_fecfact,fa_valfact,fa_itbifact,fa_subfact,fa_desfact,fa_codclie,fa_nomclie,fa_codvend,fa_nomvend,fa_fpago,fa_codfpago,fa_status,fa_codsucu,fa_codempr,fa_cierre,fa_entrega,fa_impresa,fa_facturada')
+          .is('fa_cierre', null)
+          .order('fa_codfact', { ascending: true })
+          .range(offset, offset + pageLimit - 1);
 
-      const rows = (data || []).filter((row: any) => {
+        query = filtrarSucursal
+          ? this.applyTenantFilter(query)
+          : this.applyTenantCompanyFilter(query);
+
+        const { data: page, error: pageError } = await query;
+        if (pageError) throw pageError;
+        facturas.push(...(page || []));
+        if ((page || []).length < pageLimit) break;
+      }
+
+      const rows = facturas.filter((row: any) => {
         if (!sucursal || sucursal <= 0) return true;
         return this.toNumberOrNull(row?.fa_codsucu ?? row?.fa_codSucu) === sucursal;
       });
@@ -2518,13 +2535,24 @@ export class ServicioFacturacion {
         .select('*');
       const sucursal = Number(scope?.sucursal || 0);
       if (Number.isFinite(sucursal) && sucursal > 0) {
+        updateQuery = this.applyTenantCompanyFilter(updateQuery);
         updateQuery = updateQuery.eq('fa_codsucu', sucursal);
-      }
-      if (!(Number.isFinite(sucursal) && sucursal > 0)) {
+      } else {
         updateQuery = this.applyTenantFilter(updateQuery);
       }
-      const { data, error } = await updateQuery.maybeSingle();
+      let { data, error } = await updateQuery.maybeSingle();
       if (error) throw error;
+      if (!data) {
+        const { data: rpcData, error: rpcError } = await this.db.rpc(
+          'mobile_marcar_factura_impalma_impresa_v2',
+          {
+            p_codigo: codigo,
+            p_area: tipo === 'H' ? 'hierro' : 'forjas',
+          },
+        );
+        if (rpcError) throw rpcError;
+        data = rpcData;
+      }
       if (!data) {
         throw new Error(
           `No se encontro la factura ${codigo} para marcar ${
@@ -2532,10 +2560,30 @@ export class ServicioFacturacion {
           }. Revise empresa, sucursal o permisos.`,
         );
       }
+      let facturaActualizada = data;
+      const hierroImpreso = this.toDbFlag(data?.fa_impalmap) === 'S';
+      const forjasImpreso = this.toDbFlag(data?.fa_impalmaf) === 'S';
+      if (hierroImpreso && forjasImpreso && this.toDbFlag(data?.fa_despacho) !== 'S') {
+        let despachoQuery = this.db
+          .from('factura')
+          .update({ fa_despacho: 'S' })
+          .eq('fa_codfact', codigo)
+          .select('*');
+        if (Number.isFinite(sucursal) && sucursal > 0) {
+          despachoQuery = this.applyTenantCompanyFilter(despachoQuery);
+          despachoQuery = despachoQuery.eq('fa_codsucu', sucursal);
+        } else {
+          despachoQuery = this.applyTenantFilter(despachoQuery);
+        }
+        const { data: despachoData, error: despachoError } = await despachoQuery.maybeSingle();
+        if (despachoError) throw despachoError;
+        facturaActualizada = despachoData || facturaActualizada;
+      }
+
       return {
         status: 'success',
         code: 200,
-        data: this.mapFacturaDbToUi(data),
+        data: this.mapFacturaDbToUi(facturaActualizada),
       };
     })());
   }
@@ -2561,19 +2609,30 @@ export class ServicioFacturacion {
         return { status: 'success', code: 200, data: { updated: 0 } };
       }
 
-      let base = this.db
-        .from('factura')
-        .update({ fa_cierre: String(idCierre) })
-        .in('fa_codfact', codigos);
-      base = this.applyTenantFilter(base);
       const sucursal = this.toNumberOrNull(scope?.sucursal);
-      if (sucursal && sucursal > 0) {
-        base = base.eq('fa_codsucu', sucursal);
+      const batchSize = 25;
+      let updated = 0;
+
+      for (let offset = 0; offset < codigos.length; offset += batchSize) {
+        const lote = codigos.slice(offset, offset + batchSize);
+        let query = this.db
+          .from('factura')
+          .update({ fa_cierre: Number(idCierre) })
+          .in('fa_codfact', lote);
+
+        // La sucursal recibida y applyTenantFilter agregaban dos veces el mismo
+        // filtro. Aplicamos empresa una sola vez y luego la sucursal explícita.
+        query = this.applyTenantCompanyFilter(query);
+        if (sucursal && sucursal > 0) {
+          query = query.eq('fa_codsucu', sucursal);
+        }
+
+        const { error } = await query;
+        if (error) throw error;
+        updated += lote.length;
       }
 
-      const { error } = await base;
-      if (error) throw error;
-      return { status: 'success', code: 200, data: { updated: codigos.length } };
+      return { status: 'success', code: 200, data: { updated } };
     })());
   }
 
@@ -2584,6 +2643,7 @@ export class ServicioFacturacion {
     fechaHasta?: string | null;
     pageSize?: number;
     incluirTodasLasEmpresas?: boolean;
+    soloResumenVendedor?: boolean;
   } = {}): Observable<any> {
     if (!this.useSupabase) {
       return this.buscarFacturacion(1, Number(params.pageSize || 500));
@@ -2603,6 +2663,7 @@ export class ServicioFacturacion {
         fechaDesde,
         fechaHasta,
         incluirTodasLasEmpresas: !!params.incluirTodasLasEmpresas,
+        soloResumenVendedor: !!params.soloResumenVendedor,
       });
 
       return {
@@ -2613,6 +2674,20 @@ export class ServicioFacturacion {
     })());
   }
 
+  buscarVentasPorVendedor(params: {
+    empresa?: string | null;
+    sucursal?: number | string | null;
+    fechaDesde?: string | null;
+    fechaHasta?: string | null;
+    pageSize?: number;
+    incluirTodasLasEmpresas?: boolean;
+  } = {}): Observable<any> {
+    return this.buscarConsultaVentas({
+      ...params,
+      soloResumenVendedor: true,
+    });
+  }
+
   private async buscarConsultaVentasPaginadas(params: {
     limit: number;
     empresa: string;
@@ -2620,8 +2695,13 @@ export class ServicioFacturacion {
     fechaDesde: string | null;
     fechaHasta: string | null;
     incluirTodasLasEmpresas: boolean;
+    soloResumenVendedor: boolean;
   }): Promise<any[]> {
-    const pageSize = 1000;
+    if (params.soloResumenVendedor && params.fechaDesde && params.fechaHasta) {
+      return this.buscarVentasVendedorPorDias(params);
+    }
+
+    const pageSize = params.soloResumenVendedor ? 250 : 1000;
     const rows: any[] = [];
     let offset = 0;
 
@@ -2632,7 +2712,11 @@ export class ServicioFacturacion {
       const currentPageSize = params.limit > 0 ? Math.min(pageSize, remaining) : pageSize;
       let query = this.db
         .from('factura')
-        .select('*')
+        .select(
+          params.soloResumenVendedor
+            ? 'fa_codfact,fa_nomvend,fa_codvend,fa_codempr,fa_codsucu,fa_valfact,fa_cosfact,fa_fecfact'
+            : '*',
+        )
         .order('fa_fecfact', { ascending: false })
         .order('fa_codfact', { ascending: false })
         .range(offset, offset + currentPageSize - 1);
@@ -2670,6 +2754,67 @@ export class ServicioFacturacion {
 
       if (page.length < currentPageSize) break;
       offset += currentPageSize;
+    }
+
+    return rows;
+  }
+
+  private async buscarVentasVendedorPorDias(params: {
+    limit: number;
+    empresa: string;
+    sucursal: number | null;
+    fechaDesde: string | null;
+    fechaHasta: string | null;
+    incluirTodasLasEmpresas: boolean;
+    soloResumenVendedor: boolean;
+  }): Promise<any[]> {
+    const rows: any[] = [];
+    const pageSize = 100;
+
+    if (!params.fechaDesde || !params.fechaHasta) return rows;
+
+    const inicio = new Date(`${params.fechaDesde}T00:00:00Z`);
+    const fin = new Date(`${params.fechaHasta}T00:00:00Z`);
+
+    if (Number.isNaN(inicio.getTime()) || Number.isNaN(fin.getTime())) return rows;
+
+    for (
+      let fecha = new Date(inicio);
+      fecha.getTime() <= fin.getTime();
+      fecha.setUTCDate(fecha.getUTCDate() + 1)
+    ) {
+      const fechaIso = fecha.toISOString().slice(0, 10);
+      let offset = 0;
+
+      while (true) {
+        if (params.limit > 0 && rows.length >= params.limit) return rows;
+        const currentPageSize = params.limit > 0
+          ? Math.min(pageSize, params.limit - rows.length)
+          : pageSize;
+
+        let query = this.db
+          .from('factura')
+          .select('fa_codfact,fa_nomvend,fa_codvend,fa_codempr,fa_codsucu,fa_valfact,fa_cosfact,fa_fecfact')
+          .eq('fa_fecfact', fechaIso)
+          .order('fa_codfact', { ascending: false })
+          .range(offset, offset + currentPageSize - 1);
+
+        if (!params.incluirTodasLasEmpresas) {
+          query = this.applyTenantCompanyFilter(query);
+        } else if (params.empresa && params.empresa !== 'todas') {
+          query = query.eq('fa_codempr', params.empresa);
+        }
+        if (params.sucursal && params.sucursal > 0) {
+          query = query.eq('fa_codsucu', params.sucursal);
+        }
+
+        const { data, error } = await query;
+        if (error) throw error;
+        const page = data || [];
+        rows.push(...page);
+        if (page.length < currentPageSize) break;
+        offset += currentPageSize;
+      }
     }
 
     return rows;

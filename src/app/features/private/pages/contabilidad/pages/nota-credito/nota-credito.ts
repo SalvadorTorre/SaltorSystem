@@ -134,6 +134,110 @@ export class NotaCreditoComponent implements OnInit {
     });
   }
 
+  async reenviarNotaDgii(nota: any): Promise<void> {
+    const confirmacion = await Swal.fire({
+      title: 'Reenviar nota de credito',
+      text: `Se reenviara la nota ${nota?.nc_numero || ''} a DGII.`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Reenviar',
+      cancelButtonText: 'Cancelar',
+    });
+    if (!confirmacion.isConfirmed) return;
+
+    try {
+      const response = await firstValueFrom(this.notaCreditoService.consultar(nota?.nc_numero));
+      const data = response?.data;
+      if (!data?.header) throw new Error('No se encontro la nota de credito guardada.');
+      this.cargarNotaGuardada(data.header, data.lines || []);
+      this.activeSection = 'crear';
+      await this.sendToDgii();
+      this.consultarNotas();
+    } catch (error: any) {
+      await Swal.fire('Error', String(error?.message || 'No se pudo reenviar la nota de credito.'), 'error');
+    }
+  }
+
+  async imprimirNota(nota: any): Promise<void> {
+    const ventana = window.open('', '_blank', 'width=960,height=760');
+    if (!ventana) {
+      await Swal.fire('Impresion bloqueada', 'Permita ventanas emergentes para imprimir la nota.', 'warning');
+      return;
+    }
+    ventana.document.write('<p style="font-family:Arial;padding:20px">Preparando nota de credito...</p>');
+
+    try {
+      const response = await firstValueFrom(this.notaCreditoService.consultar(nota?.nc_numero));
+      const header = response?.data?.header;
+      const lines = Array.isArray(response?.data?.lines) ? response.data.lines : [];
+      if (!header) throw new Error('No se encontro la nota de credito.');
+      const filas = lines.map((linea: any) => `
+        <tr>
+          <td>${this.escapeHtml(linea.linea)}</td><td>${this.escapeHtml(linea.descripcion)}</td>
+          <td class="num">${this.formatoNumero(linea.cantidad)}</td><td class="num">${this.formatoMoneda(linea.precio)}</td>
+          <td class="num">${this.formatoMoneda(linea.itbis_monto)}</td><td class="num">${this.formatoMoneda(linea.total)}</td>
+        </tr>`).join('');
+      ventana.document.open();
+      ventana.document.write(`<!doctype html><html><head><title>Nota ${this.escapeHtml(header.nc_numero)}</title><style>
+        body{font-family:Arial,sans-serif;color:#111;margin:28px}h1{text-align:center;font-size:22px;margin:0 0 6px}.center{text-align:center}.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 24px;margin:22px 0}.label{font-size:11px;color:#555;text-transform:uppercase}.value{font-weight:700;margin-top:2px}table{border-collapse:collapse;width:100%;margin-top:18px}th,td{border:1px solid #bbb;padding:7px;font-size:12px}th{background:#eee}.num{text-align:right}.totals{margin-left:auto;margin-top:16px;width:300px}.totals div{display:flex;justify-content:space-between;padding:5px}.total{border-top:2px solid #111;font-size:16px;font-weight:700}@media print{button{display:none}}
+      </style></head><body>
+        <h1>NOTA DE CREDITO</h1><div class="center">${this.escapeHtml(header.emisor_nombre || '')}</div>
+        <div class="grid">
+          <div><div class="label">Numero</div><div class="value">${this.escapeHtml(header.nc_numero)}</div></div>
+          <div><div class="label">e-NCF</div><div class="value">${this.escapeHtml(header.nc_encf || '-')}</div></div>
+          <div><div class="label">Fecha</div><div class="value">${this.escapeHtml(header.nc_fecha || '-')}</div></div>
+          <div><div class="label">Factura afectada</div><div class="value">${this.escapeHtml(header.nc_factura || '-')}</div></div>
+          <div><div class="label">Comprador</div><div class="value">${this.escapeHtml(header.comprador_nombre || '-')}</div></div>
+          <div><div class="label">Estado DGII</div><div class="value">${this.escapeHtml(header.estado_dgii || 'Sin enviar')}</div></div>
+          <div style="grid-column:1/-1"><div class="label">Motivo</div><div class="value">${this.escapeHtml(header.nc_motivo || '-')}</div></div>
+        </div>
+        <table><thead><tr><th>Linea</th><th>Descripcion</th><th>Cantidad</th><th>Precio</th><th>ITBIS</th><th>Total</th></tr></thead><tbody>${filas}</tbody></table>
+        <div class="totals"><div><span>Subtotal</span><strong>${this.formatoMoneda(header.subtotal)}</strong></div><div><span>ITBIS</span><strong>${this.formatoMoneda(header.itbis_total)}</strong></div><div class="total"><span>Total</span><strong>${this.formatoMoneda(header.total)}</strong></div></div>
+        <script>window.onload=()=>{window.print();}</script></body></html>`);
+      ventana.document.close();
+    } catch (error: any) {
+      ventana.close();
+      await Swal.fire('Error', String(error?.message || 'No se pudo imprimir la nota de credito.'), 'error');
+    }
+  }
+
+  private cargarNotaGuardada(header: any, lines: any[]): void {
+    this.form = {
+      creditNoteNumber: String(header.nc_numero || ''), invoiceNumber: String(header.nc_factura || ''),
+      encf: String(header.nc_encf || ''), issueDate: this.toDateInput(header.nc_fecha),
+      sequenceExpiration: header.nc_vencimiento ? this.toDateInput(header.nc_vencimiento) : '',
+      modifiedNcf: String(header.nc_ncf_modificado || ''), modifiedDate: this.toDateInput(header.nc_fecha_modificada),
+      modificationCode: String(header.nc_codigo_modificacion || '3'), reason: String(header.nc_motivo || ''),
+      paymentType: String(header.nc_tipo_pago || '1'), incomeType: String(header.nc_tipo_ingreso || '01'),
+      issuerRnc: String(header.emisor_rnc || ''), issuerName: String(header.emisor_nombre || ''),
+      issuerCommercialName: String(header.emisor_nombre_comercial || ''), issuerAddress: String(header.emisor_direccion || ''),
+      buyerRnc: String(header.comprador_rnc || ''), buyerName: String(header.comprador_nombre || ''),
+      buyerEmail: String(header.comprador_correo || ''), buyerAddress: String(header.comprador_direccion || ''),
+      notes: String(header.notas || ''),
+    };
+    this.nextLineId = 1;
+    this.lines = lines.map((line: any) => this.recalculate({
+      id: this.nextLineId++, description: String(line.descripcion || ''), quantity: Number(line.cantidad || 0),
+      unitPrice: Number(line.precio || 0), taxRate: Number(line.itbis_porcentaje || 0),
+      discount: Number(line.descuento || 0), amount: 0, taxAmount: 0, total: 0,
+    }));
+    if (!this.lines.length) this.lines = [this.createLine()];
+    this.lastStatus = String(header.estado_dgii || 'Rechazado');
+    this.lastTrackId = String(header.track_id || '');
+    this.lastSecurityCode = String(header.codigo_seguridad || '');
+    this.lastQrLink = String(header.qr_link || '');
+    this.lastRequestJson = header.request_json ? JSON.stringify(header.request_json, null, 2) : '';
+    this.lastResponseJson = header.response_json ? JSON.stringify(header.response_json, null, 2) : '';
+  }
+
+  private formatoMoneda(value: any): string {
+    return new Intl.NumberFormat('es-DO', { style: 'currency', currency: 'DOP' }).format(Number(value || 0));
+  }
+
+  private formatoNumero(value: any): string {
+    return new Intl.NumberFormat('es-DO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(value || 0));
+  }
+
   esEstadoRechazado(nota: any): boolean {
     const estado = String(nota?.estado_dgii || '').trim().toLowerCase();
     return estado.includes('rechaz') || estado.includes('error');
@@ -518,6 +622,7 @@ export class NotaCreditoComponent implements OnInit {
       TipoeCF: '34',
       ENCF: this.form.encf.trim(),
       FechaVencimientoSecuencia: this.formatDgiiDate(this.form.sequenceExpiration),
+      IndicadorNotaCredito: this.indicadorNotaCredito(),
       IndicadorMontoGravado: '0',
       TipoIngresos: this.form.incomeType,
       TipoPago: this.form.paymentType,
@@ -655,6 +760,16 @@ export class NotaCreditoComponent implements OnInit {
     if (!text) return '';
     const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(text);
     return match ? `${match[3]}-${match[2]}-${match[1]}` : text;
+  }
+
+  private indicadorNotaCredito(): string {
+    const fechaAfectada = new Date(`${this.form.modifiedDate}T00:00:00`);
+    const fechaNota = new Date(`${this.form.issueDate}T00:00:00`);
+    if (Number.isNaN(fechaAfectada.getTime()) || Number.isNaN(fechaNota.getTime())) {
+      return '0';
+    }
+    const dias = Math.floor((fechaNota.getTime() - fechaAfectada.getTime()) / 86_400_000);
+    return dias > 30 ? '1' : '0';
   }
 
   private safeJson(value: string): any | null {

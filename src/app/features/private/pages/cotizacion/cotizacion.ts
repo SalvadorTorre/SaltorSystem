@@ -1750,6 +1750,7 @@ export class Cotizacion implements OnInit {
     const imgWidth = 20;
     const imgHeight = 20;
     const imgX = (pageWidth - imgWidth) / 2;
+    const datosEmisor = this.datosEmpresaSucursalImpresion();
 
     try {
       doc.addImage('assets/logo2.png', 'PNG', imgX, 10, imgWidth, imgHeight);
@@ -1759,12 +1760,12 @@ export class Cotizacion implements OnInit {
 
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(18);
-    doc.text('CENTRAL HIERRO, SRL', 105, 40, { align: 'center' });
+    doc.text(datosEmisor.nombre, 105, 40, { align: 'center' });
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(11);
-    doc.text('#172 Esq. Albert Thomas', 105, 47, { align: 'center' });
-    doc.text('809-384-2000, 809-384-200', 105, 52, { align: 'center' });
-    doc.text('1-30-29922-6', 105, 57, { align: 'center' });
+    doc.text(datosEmisor.direccion, 105, 47, { align: 'center' });
+    doc.text(`Tel: ${datosEmisor.telefono}`, 105, 52, { align: 'center' });
+    doc.text(`RNC: ${datosEmisor.rnc}`, 105, 57, { align: 'center' });
 
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(16);
@@ -1889,6 +1890,50 @@ export class Cotizacion implements OnInit {
     }
 
     return doc.output('blob');
+  }
+
+  private datosEmpresaSucursalImpresion(): {
+    nombre: string;
+    rnc: string;
+    direccion: string;
+    telefono: string;
+  } {
+    const parseStorage = (key: string): any => {
+      try {
+        const raw = localStorage.getItem(key);
+        if (!raw || raw === '[object Object]') return null;
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed[0] || null : parsed;
+      } catch {
+        return null;
+      }
+    };
+
+    const empresa = parseStorage('empresa');
+    const sucursal = parseStorage('sucursal');
+    return {
+      nombre: String(
+        empresa?.nom_empre ||
+          (typeof empresa === 'string' ? empresa : '') ||
+          localStorage.getItem('nombre_empresa') ||
+          '',
+      ).trim(),
+      rnc: String(
+        empresa?.rnc_empre || localStorage.getItem('rnc_empresa') || '',
+      ).trim(),
+      direccion: String(
+        sucursal?.dir_sucursal ||
+          sucursal?.direccion ||
+          localStorage.getItem('direccion_sucursal') ||
+          '',
+      ).trim(),
+      telefono: String(
+        sucursal?.tel_sucursal ||
+          sucursal?.telefono ||
+          localStorage.getItem('telefono_sucursal') ||
+          '',
+      ).trim(),
+    };
   }
 
   onUpperCase(fieldName: string, value: string): void {

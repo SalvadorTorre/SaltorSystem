@@ -132,14 +132,39 @@ export class ServicioCotizacion {
     return scoped;
   }
 
-  // La visibilidad de lectura se controla en RLS. No se agregan filtros en el
-  // cliente para incluir cotizaciones antiguas que no tienen tenant completo.
   private applyCotizacionReadScope(query: any): any {
-    return query;
+    const tenant = this.currentTenant();
+    let scoped = query;
+
+    // La tabla solo debe mostrar documentos de la empresa y sucursal activas.
+    // Si la sesión no tiene alguno de esos datos, el filtro cerrado evita
+    // exponer cotizaciones de otro tenant por accidente.
+    scoped = scoped.eq(
+      "ct_codempr",
+      tenant.codEmpre || "__NO_TENANT__",
+    );
+    scoped = scoped.eq(
+      "ct_cod_sucu",
+      Number.isFinite(tenant.sucursal) && tenant.sucursal > 0
+        ? tenant.sucursal
+        : -1,
+    );
+    return scoped;
   }
 
   private applyDetalleReadScope(query: any): any {
-    return query;
+    const tenant = this.currentTenant();
+    let scoped = query.eq(
+      "dc_codempr",
+      tenant.codEmpre || "__NO_TENANT__",
+    );
+    scoped = scoped.eq(
+      "dc_codsucu",
+      Number.isFinite(tenant.sucursal) && tenant.sucursal > 0
+        ? tenant.sucursal
+        : -1,
+    );
+    return scoped;
   }
 
   private async ensureTenantCodEmpre(): Promise<string> {

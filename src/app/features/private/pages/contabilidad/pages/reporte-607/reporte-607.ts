@@ -3,18 +3,11 @@ import { FacturaDgiiService } from 'src/app/core/services/facturacion/factura/fa
 import { ServicioFacturacion } from 'src/app/core/services/facturacion/factura/factura.service';
 import { ServicioEmpresa } from 'src/app/core/services/mantenimientos/empresas/empresas.service';
 import { ServicioSucursal } from 'src/app/core/services/mantenimientos/sucursal/sucursal.service';
+import { ServicioFpago } from 'src/app/core/services/mantenimientos/fpago/fpago.service';
 import { firstValueFrom } from 'rxjs';
 import Swal from 'sweetalert2';
 
 type ModoFecha607 = 'fecha' | 'rango';
-type FormaPago607Key =
-  | 'efectivo'
-  | 'chequeTransferenciaDeposito'
-  | 'tarjetaCreditoDebito'
-  | 'ventaCredito'
-  | 'bonosCertificados'
-  | 'permuta'
-  | 'otras';
 
 @Component({
   selector: 'app-reporte-607',
@@ -41,6 +34,7 @@ export class Reporte607Component implements OnInit {
   exportandoXls = false;
   empresas: any[] = [];
   sucursales: any[] = [];
+  formasPago: any[] = [];
   readonly tiposComprobante = [
     { value: '31', label: 'E31 - Crédito Fiscal' },
     { value: '32', label: 'E32 - Consumo' },
@@ -58,26 +52,40 @@ export class Reporte607Component implements OnInit {
     'En Proceso',
     'Error',
   ];
-  readonly columnasFormaPago607: { key: FormaPago607Key; title: string }[] = [
-    { key: 'efectivo', title: 'Efectivo' },
-    { key: 'chequeTransferenciaDeposito', title: 'Cheque / Transferencia / Deposito' },
-    { key: 'tarjetaCreditoDebito', title: 'Tarjeta de Credito / Debito' },
-    { key: 'ventaCredito', title: 'Venta a Credito' },
-    { key: 'bonosCertificados', title: 'Bonos o Certificados' },
-    { key: 'permuta', title: 'Permuta' },
-    { key: 'otras', title: 'Otras Formas de Venta' },
-  ];
+  get columnasFormaPago607(): { codigo: string; title: string }[] {
+    return [...this.formasPago]
+      .sort((a, b) => Number(a?.fp_codfpago || 0) - Number(b?.fp_codfpago || 0))
+      .map((forma) => ({
+        codigo: String(forma?.fp_codfpago ?? '').trim(),
+        title: String(forma?.fp_descfpago ?? '').trim() ||
+          `Forma de pago ${forma?.fp_codfpago ?? ''}`,
+      }))
+      .filter((forma) => !!forma.codigo);
+  }
 
   constructor(
     private servicioFacturacion: ServicioFacturacion,
     private facturaDgiiService: FacturaDgiiService,
     private servicioEmpresa: ServicioEmpresa,
     private servicioSucursal: ServicioSucursal,
+    private servicioFpago: ServicioFpago,
   ) {}
 
   ngOnInit(): void {
     this.cargarCatalogosFiltro();
+    this.cargarFormasPago();
     this.cargarReporte();
+  }
+
+  private cargarFormasPago(): void {
+    this.servicioFpago.obtenerTodosFpago().subscribe({
+      next: (response: any) => {
+        this.formasPago = Array.isArray(response?.data) ? response.data : [];
+      },
+      error: (error) => {
+        console.error('[Reporte607Component] Error cargando formas de pago', error);
+      },
+    });
   }
 
   private cargarCatalogosFiltro(): void {
@@ -189,6 +197,10 @@ export class Reporte607Component implements OnInit {
     this.exportandoXls = true;
 
     try {
+      if (!this.formasPago.length) {
+        const response = await firstValueFrom(this.servicioFpago.obtenerTodosFpago());
+        this.formasPago = Array.isArray(response?.data) ? response.data : [];
+      }
       const rows = await this.cargarFacturasExportacion();
       if (!rows.length) {
         Swal.fire('Sin datos', 'No hay registros para exportar con los filtros actuales.', 'info');
@@ -492,7 +504,6 @@ export class Reporte607Component implements OnInit {
       const montoRaw = factura.fa_valFact ?? factura.fa_valfact;
       const itbis = this.numeroXls(itbisRaw);
       const monto = this.numeroXls(montoRaw);
-      const montosFormaPago = this.montosPorFormaPago(factura, montoRaw);
       const subtotal = this.numeroXls(this.numeroValor(montoRaw) - this.numeroValor(itbisRaw));
       const montoExento = this.numeroXls(
         factura.monto_exento ??
@@ -523,7 +534,11 @@ export class Reporte607Component implements OnInit {
           <td class="number">${exportarMontos ? itbis : ''}</td>
           <td class="number">${exportarMontos ? monto : ''}</td>
           ${this.columnasFormaPago607
-            .map((columna) => `<td class="number">${exportarMontos ? montosFormaPago[columna.key] : ''}</td>`)
+            .map((columna) => `<td class="number">${
+              exportarMontos
+                ? this.montoFormaPago(factura, columna.codigo, montoRaw)
+                : ''
+            }</td>`)
             .join('')}
           <td class="number">${exportarMontos ? subtotal : ''}</td>
           <td class="number">${exportarMontos ? montoExento : ''}</td>
@@ -590,82 +605,31 @@ export class Reporte607Component implements OnInit {
     return Number.isFinite(numero) ? numero : 0;
   }
 
-  private montosPorFormaPago(factura: any, montoRaw: any): Record<FormaPago607Key, string> {
-    const result: Record<FormaPago607Key, string> = {
-      efectivo: '',
-      chequeTransferenciaDeposito: '',
-      tarjetaCreditoDebito: '',
-      ventaCredito: '',
-      bonosCertificados: '',
-      permuta: '',
-      otras: '',
-    };
-    const key = this.formaPago607Key(factura);
-    result[key] = this.numeroXls(montoRaw);
-    return result;
-  }
-
-  private formaPago607Key(factura: any): FormaPago607Key {
-    const codigo = String(factura?.fa_codfpago ?? factura?.fa_codFpago ?? '').trim();
-    const descripcion = this.normalizarTexto(
-      factura?.fp_descfpago ??
-        factura?.formaPagoDescripcion ??
-        factura?.forma_pago ??
-        factura?.formaPago ??
-        '',
-    );
-
-    if (codigo === '1' || descripcion.includes('efectivo')) return 'efectivo';
-    if (codigo === '2' || descripcion.includes('credito')) return 'ventaCredito';
-    if (
-      codigo === '3' ||
-      codigo === '4' ||
-      descripcion.includes('cheque') ||
-      descripcion.includes('transfer') ||
-      descripcion.includes('deposit')
-    ) {
-      return 'chequeTransferenciaDeposito';
-    }
-    if (codigo === '5' || descripcion.includes('tarjeta')) return 'tarjetaCreditoDebito';
-    if (descripcion.includes('bono') || descripcion.includes('certificado')) return 'bonosCertificados';
-    if (descripcion.includes('permuta')) return 'permuta';
-    return 'otras';
+  private montoFormaPago(factura: any, codigoColumna: string, montoRaw: any): string {
+    const codigoFactura = String(
+      factura?.fa_codfpago ?? factura?.fa_codFpago ?? '',
+    ).trim();
+    return codigoFactura === String(codigoColumna).trim()
+      ? this.numeroXls(montoRaw)
+      : '';
   }
 
   private formaPagoTexto(factura: any): string {
+    const codigo = String(factura?.fa_codfpago ?? factura?.fa_codFpago ?? '').trim();
+    const formaCatalogo = this.formasPago.find(
+      (forma) => String(forma?.fp_codfpago ?? '').trim() === codigo,
+    );
     const descripcion = String(
-      factura?.fp_descfpago ??
+      formaCatalogo?.fp_descfpago ??
+        factura?.fp_descfpago ??
         factura?.formaPagoDescripcion ??
         factura?.forma_pago ??
         factura?.formaPago ??
         '',
     ).trim();
-    const codigo = String(factura?.fa_codfpago ?? factura?.fa_codFpago ?? '').trim();
     if (descripcion && codigo) return `${codigo} - ${descripcion}`;
     if (descripcion) return descripcion;
-
-    switch (codigo) {
-      case '1':
-        return '1 - Efectivo';
-      case '2':
-        return '2 - Credito';
-      case '3':
-        return '3 - Cheque';
-      case '4':
-        return '4 - Transferencia o Deposito';
-      case '5':
-        return '5 - Tarjeta Credito';
-      default:
-        return codigo;
-    }
-  }
-
-  private normalizarTexto(value: any): string {
-    return String(value ?? '')
-      .trim()
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '');
+    return codigo;
   }
 
   private fechaXls(value: any, fechaComprobante: boolean): string {

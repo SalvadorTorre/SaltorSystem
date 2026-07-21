@@ -1,6 +1,6 @@
 CREATE INDEX IF NOT EXISTS idx_factura_cierre_pendiente_tenant
   ON myappdb.factura (fa_codempr, fa_codsucu, fa_codfact)
-  WHERE fa_cierre IS NULL OR btrim(fa_cierre::text) IN ('', 'N');
+  WHERE fa_cierre IS NULL;
 
 DROP FUNCTION IF EXISTS myappdb.listar_facturas_pendientes_cierre(integer, boolean);
 
@@ -80,11 +80,11 @@ BEGIN
     f.fa_impresa::text,
     f.fa_facturada::text
   FROM myappdb.factura f
-  WHERE (f.fa_cierre IS NULL OR btrim(f.fa_cierre::text) IN ('', 'N'))
+  WHERE f.fa_cierre IS NULL
     AND (
       v_is_root
       OR (
-        upper(coalesce(f.fa_codempr, '')) = upper(coalesce(cu.cod_empre, ''))
+        f.fa_codempr = cu.cod_empre
         AND (
           NOT coalesce(p_filtrar_sucursal, true)
           OR v_is_admin
@@ -92,12 +92,10 @@ BEGIN
         )
       )
     )
-  ORDER BY
-    CASE
-      WHEN f.fa_codfact ~ '^[0-9]+$' THEN f.fa_codfact::numeric
-      ELSE NULL
-    END ASC NULLS LAST,
-    f.fa_codfact ASC
+  -- El componente ordena numéricamente los resultados. Mantener aquí el
+  -- orden textual permite que PostgreSQL use el índice parcial sin ordenar y
+  -- convertir todas las facturas pendientes antes de aplicar el LIMIT.
+  ORDER BY f.fa_codfact ASC
   LIMIT v_limit;
 END;
 $$;

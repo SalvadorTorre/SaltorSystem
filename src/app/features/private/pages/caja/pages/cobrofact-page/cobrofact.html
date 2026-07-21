@@ -157,7 +157,7 @@
                         name="formapago"
                         [(ngModel)]="ftipoPago"
                         class="form-select"
-                        [disabled]="!chekPagado || facturaSoloConsulta"
+                        [disabled]="!hayFacturaSeleccionada || facturaSoloConsulta"
                         (change)="onTipoPagoChange()"
                       >
                         <option
@@ -175,10 +175,9 @@
                         #formaEntregaSelect
                         class="form-select"
                         [(ngModel)]="fentrega"
-                        [disabled]="!chekPagado || bloquearReimpresion || facturaSoloConsulta"
+                        [disabled]="!hayFacturaSeleccionada || facturaSoloConsulta"
                         (change)="onEntregaChange()"
                       >
-                        <option value="">Seleccione forma de entrega</option>
                         <option [value]="fe.idfentrega" *ngFor="let fe of resultadoFentrega">{{ fe.desentrega }}</option>
                       </select>
                     </div>

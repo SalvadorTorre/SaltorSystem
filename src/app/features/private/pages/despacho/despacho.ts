@@ -28,35 +28,47 @@ export class DespachoComponent {
       return;
     }
 
+    const tipoDespacho = this.tramoPermitidoPorTipoUsuario();
+    if (!tipoDespacho) {
+      this.limpiarYEnfocar('El usuario debe tener el rol Hierro o Forjas para imprimir.');
+      return;
+    }
+
     this.serviciofacturacion.getByNumero(numeroFactura).subscribe({
       next: (response) => {
         const factura = response?.data || (response?.fa_codFact ? response : null);
         const codigoFactura = String(factura?.fa_codFact || '').trim();
         if (!factura || !codigoFactura) {
-          this.facturaData = null;
-          this.mensaje = 'No se encontro una factura con ese numero';
+          this.limpiarYEnfocar('No se encontro la factura en la sucursal del usuario.');
+          return;
+        }
+
+        if (this.esMarcaSi(factura.fa_despacho)) {
+          this.limpiarYEnfocar('La factura ya fue despachada.');
           return;
         }
 
         if (String(factura.fa_impresa || '').trim().toUpperCase() === 'N') {
-          this.facturaData = null;
-          this.mensaje = 'La factura no ha sido impresa';
-          this.facturaInputRef?.nativeElement.focus();
+          this.limpiarYEnfocar('La factura no ha sido impresa y no puede despacharse.');
           return;
         }
 
-        if (String(factura.fa_despacho || '').trim().toUpperCase() === 'S') {
-          this.facturaData = null;
-          this.mensaje = 'La factura fue despachada';
-          this.facturaInputRef?.nativeElement.focus();
+        const marcaArea = tipoDespacho === 'H'
+          ? factura.fa_impalmap
+          : factura.fa_impalmaf;
+        if (this.esMarcaSi(marcaArea)) {
+          this.limpiarYEnfocar(
+            tipoDespacho === 'H'
+              ? 'La factura ya fue impresa para Hierro.'
+              : 'La factura ya fue impresa para Forjas.',
+          );
           return;
         }
 
         this.cargarDetalleEImprimir(factura, codigoFactura);
       },
       error: (error) => {
-        this.facturaData = null;
-        this.mensaje = error?.message || 'No se pudo consultar la factura';
+        this.limpiarYEnfocar(error?.message || 'No se pudo consultar la factura');
       },
     });
   }
@@ -76,6 +88,11 @@ export class DespachoComponent {
     }
 
     const f = this.facturaData;
+    const bloqueo = this.validarFacturaParaImpresion(f);
+    if (bloqueo) {
+      this.limpiarYEnfocar(bloqueo);
+      return;
+    }
     const doc = new jsPDF({
       orientation: 'p',
       unit: 'mm',
@@ -193,12 +210,14 @@ export class DespachoComponent {
       return;
     }
 
-    this.registrarImpresionDespacho(f);
     setTimeout(() => {
       try {
         win.focus();
         win.print();
-      } catch {}
+        this.registrarImpresionDespacho(f);
+      } catch {
+        this.mensaje = 'No se pudo completar la impresion; la factura no fue marcada.';
+      }
     }, 600);
   }
 
@@ -215,9 +234,12 @@ export class DespachoComponent {
 
         const detallesFiltrados = this.filtrarDetallesPorTipoUsuario(detalles);
         if (!detallesFiltrados.length) {
-          this.facturaData = { ...factura, detalles: [] };
-          this.clienteNombre = factura.fa_nomClie || '';
-          this.mensaje = 'La factura no tiene detalles para imprimir con el tipo de usuario.';
+          const tipo = this.tramoPermitidoPorTipoUsuario();
+          this.limpiarYEnfocar(
+            tipo === 'H'
+              ? 'La factura no tiene productos de Hierro (df_tipomerc = H).'
+              : 'La factura no tiene productos de Forjas (df_tipomerc = F).',
+          );
           return;
         }
 
@@ -227,8 +249,9 @@ export class DespachoComponent {
         this.imprimirConduce();
       },
       error: (error) => {
-        this.facturaData = { ...factura, detalles: factura?.detalles || [] };
-        this.mensaje = error?.message || 'No se pudo consultar el detalle de la factura';
+        this.limpiarYEnfocar(
+          error?.message || 'No se pudo consultar el detalle de la factura',
+        );
       },
     });
   }
@@ -278,6 +301,7 @@ export class DespachoComponent {
             ...this.facturaData,
             fa_impalmaf: response.data.fa_impalmaf ?? this.facturaData?.fa_impalmaf,
             fa_impalmap: response.data.fa_impalmap ?? this.facturaData?.fa_impalmap,
+            fa_despacho: response.data.fa_despacho ?? this.facturaData?.fa_despacho,
           };
           this.mensaje = tipoDespacho === 'F'
             ? 'Factura impresa y marcada en forjas.'
@@ -306,6 +330,39 @@ export class DespachoComponent {
       ).toUpperCase();
       return tramo === tramoPermitido;
     });
+  }
+
+  private validarFacturaParaImpresion(factura: any): string {
+    const tipo = this.tramoPermitidoPorTipoUsuario();
+    if (!tipo) return 'El usuario debe tener el rol Hierro o Forjas para imprimir.';
+    if (this.esMarcaSi(factura?.fa_despacho)) return 'La factura ya fue despachada.';
+    if (String(factura?.fa_impresa || '').trim().toUpperCase() === 'N') {
+      return 'La factura no ha sido impresa y no puede despacharse.';
+    }
+    if (tipo === 'H' && this.esMarcaSi(factura?.fa_impalmap)) {
+      return 'La factura ya fue impresa para Hierro.';
+    }
+    if (tipo === 'F' && this.esMarcaSi(factura?.fa_impalmaf)) {
+      return 'La factura ya fue impresa para Forjas.';
+    }
+    if (!Array.isArray(factura?.detalles) || !factura.detalles.length) {
+      return tipo === 'H'
+        ? 'La factura no tiene productos de Hierro (df_tipomerc = H).'
+        : 'La factura no tiene productos de Forjas (df_tipomerc = F).';
+    }
+    return '';
+  }
+
+  private esMarcaSi(value: any): boolean {
+    return String(value ?? '').trim().toUpperCase() === 'S';
+  }
+
+  private limpiarYEnfocar(mensaje: string): void {
+    this.facturaNumero = '';
+    this.facturaData = null;
+    this.clienteNombre = '';
+    this.mensaje = mensaje;
+    setTimeout(() => this.facturaInputRef?.nativeElement.focus(), 0);
   }
 
   private tramoPermitidoPorTipoUsuario(): 'F' | 'H' | null {

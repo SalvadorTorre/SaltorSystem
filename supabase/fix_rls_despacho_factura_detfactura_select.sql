@@ -124,6 +124,50 @@ USING (
   )
 );
 
+-- El despacho necesita actualizar solamente las marcas de impresión. La
+-- aplicación mantiene el UPDATE limitado por empresa, sucursal y fa_codfact.
+DROP POLICY IF EXISTS factura_update_permiso ON myappdb.factura;
+
+CREATE POLICY factura_update_permiso
+ON myappdb.factura
+FOR UPDATE TO authenticated
+USING (
+  app_private.current_usuario_tenant_ok(fa_codempr::text, fa_codsucu::text)
+  AND (
+    app_private.has_any_permission(
+      '[
+        {"recurso":"facturacion.factura","accion":"editar"},
+        {"recurso":"facturacion.factura","accion":"enviar_dgii"},
+        {"recurso":"caja.cobrofact","accion":"cobrar"},
+        {"recurso":"caja.cobrofact","accion":"enviar_dgii"},
+        {"recurso":"despacho.main","accion":"imprimir"}
+      ]'::jsonb,
+      fa_codempr::text,
+      fa_codsucu::text
+    )
+    OR app_private.current_role_label() LIKE '%desp%'
+    OR app_private.current_role_label() LIKE '%forja%'
+  )
+)
+WITH CHECK (
+  app_private.current_usuario_tenant_ok(fa_codempr::text, fa_codsucu::text)
+  AND (
+    app_private.has_any_permission(
+      '[
+        {"recurso":"facturacion.factura","accion":"editar"},
+        {"recurso":"facturacion.factura","accion":"enviar_dgii"},
+        {"recurso":"caja.cobrofact","accion":"cobrar"},
+        {"recurso":"caja.cobrofact","accion":"enviar_dgii"},
+        {"recurso":"despacho.main","accion":"imprimir"}
+      ]'::jsonb,
+      fa_codempr::text,
+      fa_codsucu::text
+    )
+    OR app_private.current_role_label() LIKE '%desp%'
+    OR app_private.current_role_label() LIKE '%forja%'
+  )
+);
+
 NOTIFY pgrst, 'reload schema';
 
 COMMIT;
