@@ -61,6 +61,7 @@ function normalizeScenarioForDgii(scenario: Record<string, unknown>) {
   const tipoEcf = String(scenario?.TipoeCF || "").trim();
   if (tipoEcf === "34") {
     const creditNote: Record<string, unknown> = { ...scenario };
+    delete creditNote.IndicadorNotaCredito;
     delete creditNote.IndicadorMontoGravado;
     return creditNote;
   }

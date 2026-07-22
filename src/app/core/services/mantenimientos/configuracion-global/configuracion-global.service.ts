@@ -375,14 +375,10 @@ export class ServicioConfiguracionGlobal {
   private normalizarNotaCreditoDgii(scenario: any): any {
     const limpio: any = { ...scenario };
 
-    const indicadorNotaCredito = this.resolverIndicadorNotaCredito(limpio);
-    const indicadorMontoGravado = this.resolverIndicadorMontoGravado(limpio);
     const encabezado: any = {
       Version: limpio.Version || '1.0',
       TipoeCF: '34',
       ENCF: limpio.ENCF,
-      IndicadorNotaCredito: indicadorNotaCredito,
-      IndicadorMontoGravado: indicadorMontoGravado,
       TipoIngresos: limpio.TipoIngresos || '01',
       TipoPago: limpio.TipoPago || '1',
     };
@@ -395,56 +391,7 @@ export class ServicioConfiguracionGlobal {
     delete limpio.TipoIngresos;
     delete limpio.TipoPago;
 
-    if (!encabezado.IndicadorMontoGravado) {
-      delete encabezado.IndicadorMontoGravado;
-    }
-
     return { ...encabezado, ...limpio };
-  }
-
-  private resolverIndicadorNotaCredito(scenario: any): string {
-    const explicit = String(scenario?.IndicadorNotaCredito ?? '').trim();
-    if (explicit === '0' || explicit === '1') return explicit;
-
-    const fechaEmision = this.parseDgiiDate(scenario?.FechaEmision);
-    const fechaModificada = this.parseDgiiDate(scenario?.FechaNCFModificado);
-    if (!fechaEmision || !fechaModificada) return '0';
-
-    const diffMs = fechaEmision.getTime() - fechaModificada.getTime();
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-    return diffDays > 30 ? '1' : '0';
-  }
-
-  private resolverIndicadorMontoGravado(scenario: any): string {
-    const explicit = String(scenario?.IndicadorMontoGravado ?? '').trim();
-    if (explicit === '0' || explicit === '1') return explicit;
-
-    const totalItbis = this.numeroDgii(scenario?.TotalITBIS);
-    const montoGravado = this.numeroDgii(scenario?.MontoGravadoTotal);
-    if (totalItbis > 0 || montoGravado > 0) return '1';
-
-    const keys = Object.keys(scenario || {});
-    const tieneItbisLinea = keys.some((key) => {
-      return /^MontoITBIS\[\d+\]$/.test(key) && this.numeroDgii(scenario[key]) > 0;
-    });
-    return tieneItbisLinea ? '1' : '';
-  }
-
-  private parseDgiiDate(value: any): Date | null {
-    const text = String(value || '').trim();
-    const dmy = /^(\d{2})-(\d{2})-(\d{4})$/.exec(text);
-    if (dmy) {
-      const date = new Date(Number(dmy[3]), Number(dmy[2]) - 1, Number(dmy[1]));
-      return Number.isNaN(date.getTime()) ? null : date;
-    }
-
-    const iso = /^(\d{4})-(\d{2})-(\d{2})$/.exec(text);
-    if (iso) {
-      const date = new Date(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]));
-      return Number.isNaN(date.getTime()) ? null : date;
-    }
-
-    return null;
   }
 
   inspeccionarCertificado(
