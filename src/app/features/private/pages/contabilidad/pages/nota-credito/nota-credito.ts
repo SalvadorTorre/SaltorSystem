@@ -635,7 +635,6 @@ export class NotaCreditoComponent implements OnInit {
       TipoeCF: '34',
       ENCF: this.form.encf.trim(),
       FechaVencimientoSecuencia: this.formatDgiiDate(this.form.sequenceExpiration),
-      IndicadorNotaCredito: this.indicadorNotaCredito(),
       IndicadorMontoGravado: this.taxTotal > 0 ? '1' : '0',
       TipoIngresos: this.form.incomeType,
       TipoPago: this.form.paymentType,
@@ -776,16 +775,6 @@ export class NotaCreditoComponent implements OnInit {
     if (!text) return '';
     const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(text);
     return match ? `${match[3]}-${match[2]}-${match[1]}` : text;
-  }
-
-  private indicadorNotaCredito(): string {
-    const fechaAfectada = new Date(`${this.form.modifiedDate}T00:00:00`);
-    const fechaNota = new Date(`${this.form.issueDate}T00:00:00`);
-    if (Number.isNaN(fechaAfectada.getTime()) || Number.isNaN(fechaNota.getTime())) {
-      return '0';
-    }
-    const dias = Math.floor((fechaNota.getTime() - fechaAfectada.getTime()) / 86_400_000);
-    return dias > 30 ? '1' : '0';
   }
 
   private safeJson(value: string): any | null {
