@@ -635,7 +635,8 @@ export class NotaCreditoComponent implements OnInit {
       TipoeCF: '34',
       ENCF: this.form.encf.trim(),
       FechaVencimientoSecuencia: this.formatDgiiDate(this.form.sequenceExpiration),
-      IndicadorMontoGravado: this.taxTotal > 0 ? '1' : '0',
+      IndicadorNotaCredito: this.indicadorNotaCredito(),
+      IndicadorMontoGravado: this.taxTotal > 0 ? '1' : '',
       TipoIngresos: this.form.incomeType,
       TipoPago: this.form.paymentType,
       RNCEmisor: this.cleanRnc(this.form.issuerRnc),
@@ -688,6 +689,24 @@ export class NotaCreditoComponent implements OnInit {
       }
     });
     return scenario;
+  }
+
+  private indicadorNotaCredito(): string {
+    const issueDate = this.parseDgiiDate(this.formatDgiiDate(this.form.issueDate));
+    const modifiedDate = this.parseDgiiDate(this.formatDgiiDate(this.form.modifiedDate));
+    if (!issueDate || !modifiedDate) return '0';
+
+    const diffMs = issueDate.getTime() - modifiedDate.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    return diffDays > 30 ? '1' : '0';
+  }
+
+  private parseDgiiDate(value: string): Date | null {
+    const match = /^(\d{2})-(\d{2})-(\d{4})$/.exec(String(value || '').trim());
+    if (!match) return null;
+
+    const date = new Date(Number(match[3]), Number(match[2]) - 1, Number(match[1]));
+    return Number.isNaN(date.getTime()) ? null : date;
   }
 
   private async saveCreditNote(status: string): Promise<void> {
