@@ -617,12 +617,26 @@ export class NotaCreditoComponent implements OnInit {
   }
 
   private buildDgiiScenario(): any {
+    const taxableBase18 = this.round(
+      this.lines
+        .filter((line) => this.round(Number(line.taxRate || 0), 2) === 18)
+        .reduce((sum, line) => sum + line.amount, 0),
+      2,
+    );
+    const tax18 = this.round(
+      this.lines
+        .filter((line) => this.round(Number(line.taxRate || 0), 2) === 18)
+        .reduce((sum, line) => sum + line.taxAmount, 0),
+      2,
+    );
+
     const scenario: any = {
       Version: '1.0',
       TipoeCF: '34',
       ENCF: this.form.encf.trim(),
       FechaVencimientoSecuencia: this.formatDgiiDate(this.form.sequenceExpiration),
       IndicadorNotaCredito: this.indicadorNotaCredito(),
+      IndicadorMontoGravado: this.taxTotal > 0 ? '1' : '0',
       TipoIngresos: this.form.incomeType,
       TipoPago: this.form.paymentType,
       RNCEmisor: this.cleanRnc(this.form.issuerRnc),
@@ -639,7 +653,10 @@ export class NotaCreditoComponent implements OnInit {
       CodigoModificacion: this.form.modificationCode,
       RazonModificacion: this.form.reason.trim(),
       MontoGravadoTotal: this.subtotal.toFixed(2),
+      MontoGravadoI1: taxableBase18 > 0 ? taxableBase18.toFixed(2) : '',
+      ITBIS1: taxableBase18 > 0 ? '18' : '',
       TotalITBIS: this.taxTotal.toFixed(2),
+      TotalITBIS1: tax18 > 0 ? tax18.toFixed(2) : '',
       MontoTotal: this.grandTotal.toFixed(2),
       MontoPeriodo: this.grandTotal.toFixed(2),
       ValorPagar: this.grandTotal.toFixed(2),
