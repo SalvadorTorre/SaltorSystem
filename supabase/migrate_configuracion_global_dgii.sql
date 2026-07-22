@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS myappdb.configuracion_global (
   certificado_vence date,
   certificado_subject_cn varchar(255),
   certificado_issuer_cn varchar(255),
-  dgii_base_url varchar(255) NOT NULL DEFAULT 'https://recepcion.grupohierro.net/ecf/api',
+  dgii_base_url varchar(255) NOT NULL DEFAULT 'https://ecf-propio.tail2c2b0a.ts.net/ecf',
   dgii_ambiente varchar(10) NOT NULL DEFAULT 'test',
   updated_at timestamptz NOT NULL DEFAULT now(),
   updated_by varchar(60)

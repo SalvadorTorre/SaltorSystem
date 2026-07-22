@@ -243,6 +243,19 @@ export class NotaCreditoComponent implements OnInit {
     return estado.includes('rechaz') || estado.includes('error');
   }
 
+  puedeEnviarNotaDgii(nota: any): boolean {
+    const estado = String(nota?.estado_dgii || '').trim().toLowerCase();
+    if (!estado) return true;
+    if (estado.includes('aceptado')) return false;
+    return (
+      estado.includes('borrador') ||
+      estado.includes('pendiente') ||
+      estado.includes('sin enviar') ||
+      estado.includes('rechaz') ||
+      estado.includes('error')
+    );
+  }
+
   verMensajeDgii(nota: any): void {
     const respuesta = nota?.response_json || {};
     const mensajes = this.extraerMensajesDgii(respuesta);
@@ -634,7 +647,8 @@ export class NotaCreditoComponent implements OnInit {
       Version: '1.0',
       TipoeCF: '34',
       ENCF: this.form.encf.trim(),
-      FechaVencimientoSecuencia: this.formatDgiiDate(this.form.sequenceExpiration),
+      IndicadorNotaCredito: this.indicadorNotaCredito(),
+      IndicadorMontoGravado: '0',
       TipoIngresos: this.form.incomeType,
       TipoPago: this.form.paymentType,
       RNCEmisor: this.cleanRnc(this.form.issuerRnc),
@@ -644,8 +658,6 @@ export class NotaCreditoComponent implements OnInit {
       FechaEmision: this.formatDgiiDate(this.form.issueDate),
       RNCComprador: this.cleanRnc(this.form.buyerRnc),
       RazonSocialComprador: this.form.buyerName.trim(),
-      CorreoComprador: this.form.buyerEmail.trim(),
-      DireccionComprador: this.form.buyerAddress.trim(),
       NCFModificado: this.form.modifiedNcf.trim(),
       FechaNCFModificado: this.formatDgiiDate(this.form.modifiedDate),
       CodigoModificacion: this.form.modificationCode,
@@ -659,9 +671,7 @@ export class NotaCreditoComponent implements OnInit {
       MontoPeriodo: this.grandTotal.toFixed(2),
       ValorPagar: this.grandTotal.toFixed(2),
       CasoPrueba: `${this.cleanRnc(this.form.issuerRnc)}${this.form.encf.trim()}`,
-      NumeroNotaCredito: this.form.creditNoteNumber.trim(),
       NumeroFacturaInterna: this.form.invoiceNumber.trim(),
-      Observaciones: this.form.notes.trim(),
     };
 
     this.lines.forEach((line, index) => {
@@ -670,7 +680,7 @@ export class NotaCreditoComponent implements OnInit {
       scenario[`NombreItem[${lineNumber}]`] = line.description.trim();
       scenario[`IndicadorBienoServicio[${lineNumber}]`] = '1';
       scenario[`CantidadItem[${lineNumber}]`] = Number(line.quantity || 0).toFixed(2);
-      scenario[`PrecioUnitarioItem[${lineNumber}]`] = Number(line.unitPrice || 0).toFixed(4);
+      scenario[`PrecioUnitarioItem[${lineNumber}]`] = Number(line.unitPrice || 0).toFixed(2);
       scenario[`DescuentoMonto[${lineNumber}]`] = Number(line.discount || 0).toFixed(2);
       scenario[`MontoItem[${lineNumber}]`] = line.amount.toFixed(2);
       scenario[`MontoITBIS[${lineNumber}]`] = line.taxAmount.toFixed(2);
@@ -678,15 +688,30 @@ export class NotaCreditoComponent implements OnInit {
       scenario[`IndicadorFacturacion[${lineNumber}]`] = '1';
     });
 
-    scenario['FormaPago[1]'] = this.form.paymentType;
-    scenario['MontoPago[1]'] = this.grandTotal.toFixed(2);
-
     Object.keys(scenario).forEach((key) => {
       if (scenario[key] === '' || scenario[key] === null || scenario[key] === undefined) {
         delete scenario[key];
       }
     });
     return scenario;
+  }
+
+  private indicadorNotaCredito(): string {
+    const issueDate = this.parseDgiiDate(this.formatDgiiDate(this.form.issueDate));
+    const modifiedDate = this.parseDgiiDate(this.formatDgiiDate(this.form.modifiedDate));
+    if (!issueDate || !modifiedDate) return '0';
+
+    const diffMs = issueDate.getTime() - modifiedDate.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    return diffDays > 30 ? '1' : '0';
+  }
+
+  private parseDgiiDate(value: string): Date | null {
+    const match = /^(\d{2})-(\d{2})-(\d{4})$/.exec(String(value || '').trim());
+    if (!match) return null;
+
+    const date = new Date(Number(match[3]), Number(match[2]) - 1, Number(match[1]));
+    return Number.isNaN(date.getTime()) ? null : date;
   }
 
   private async saveCreditNote(status: string): Promise<void> {

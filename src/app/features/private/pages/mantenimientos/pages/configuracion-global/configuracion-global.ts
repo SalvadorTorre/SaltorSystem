@@ -15,6 +15,8 @@ import {
   DesktopPrintSettingsService,
 } from 'src/app/core/services/utils/desktop-print-settings.service';
 
+const DEFAULT_DGII_BASE_URL = 'https://ecf-propio.tail2c2b0a.ts.net/ecf';
+
 @Component({
   selector: 'app-configuracion-global',
   templateUrl: './configuracion-global.html',
@@ -112,7 +114,7 @@ export class ConfiguracionGlobal implements OnInit {
   private crearFormulario(): void {
     this.formulario = this.fb.group({
       dgiiBaseUrl: [
-        'https://recepcion.grupohierro.net/ecf/api',
+        DEFAULT_DGII_BASE_URL,
         [Validators.required, Validators.pattern(/^https?:\/\/.+/i)],
       ],
       dgiiAmbiente: ['test', Validators.required],
@@ -142,7 +144,7 @@ export class ConfiguracionGlobal implements OnInit {
     this.formulario.patchValue(
       {
         dgiiBaseUrl:
-          config?.dgiiBaseUrl || 'https://recepcion.grupohierro.net/ecf/api',
+          config?.dgiiBaseUrl || DEFAULT_DGII_BASE_URL,
         dgiiAmbiente: String(config?.dgiiAmbiente || 'test').toLowerCase() === 'prod' ? 'prod' : 'test',
         logoNombre: config?.logoNombre || (logoDataUrl ? 'Logo personalizado' : 'Logo por defecto'),
         certificadoNombre: config?.certificadoNombre || '',
@@ -176,7 +178,7 @@ export class ConfiguracionGlobal implements OnInit {
         String(config.certificadoIssuerCn || '').trim() ||
         (String(config.dgiiAmbiente || '').trim().toLowerCase() === 'prod') ||
         String(config.updatedAt || '').trim() ||
-        (baseUrl && baseUrl !== 'https://recepcion.grupohierro.net/ecf/api')
+        (baseUrl && baseUrl !== DEFAULT_DGII_BASE_URL)
     );
   }
 

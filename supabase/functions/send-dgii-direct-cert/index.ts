@@ -60,9 +60,45 @@ function normalizeScenarioForDgii(scenario: Record<string, unknown>) {
 
   const tipoEcf = String(scenario?.TipoeCF || "").trim();
   if (tipoEcf === "34") {
-    const creditNote: Record<string, unknown> = { ...scenario };
-    delete creditNote.IndicadorNotaCredito;
-    delete creditNote.IndicadorMontoGravado;
+    const indicadorNotaCredito =
+      String(scenario.IndicadorNotaCredito ?? "0").trim() || "0";
+    const indicadorMontoGravado =
+      String(scenario.IndicadorMontoGravado ?? "0").trim() || "0";
+    const creditNote: Record<string, unknown> = {
+      Version: scenario.Version || "1.0",
+      TipoeCF: "34",
+      ENCF: scenario.ENCF,
+      IndicadorNotaCredito: indicadorNotaCredito,
+      IndicadorMontoGravado: indicadorMontoGravado,
+      TipoIngresos: scenario.TipoIngresos || "01",
+      TipoPago: scenario.TipoPago || "1",
+    };
+
+    for (const [key, value] of Object.entries(scenario)) {
+      if (
+        key === "Version" ||
+        key === "TipoeCF" ||
+        key === "ENCF" ||
+        key === "IndicadorNotaCredito" ||
+        key === "IndicadorMontoGravado" ||
+        key === "TipoIngresos" ||
+        key === "TipoPago" ||
+        key === "FechaVencimientoSecuencia"
+      ) {
+        continue;
+      }
+      creditNote[key] = value;
+    }
+
+    delete creditNote.FechaVencimientoSecuencia;
+    delete creditNote.TerminoPago;
+    delete creditNote.TipoCuentaPago;
+    delete creditNote.NumeroCuentaPago;
+    delete creditNote.BancoPago;
+    for (let index = 1; index <= 3; index += 1) {
+      delete creditNote[`FormaPago[${index}]`];
+      delete creditNote[`MontoPago[${index}]`];
+    }
     return creditNote;
   }
 
