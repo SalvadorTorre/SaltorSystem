@@ -54,9 +54,18 @@ function numberValue(value: unknown): number {
 }
 
 function normalizeScenarioForDgii(scenario: Record<string, unknown>) {
-  if (!scenario || String(scenario?.TipoeCF || "").trim() !== "44") {
+  if (!scenario) {
     return scenario;
   }
+
+  const tipoEcf = String(scenario?.TipoeCF || "").trim();
+  if (tipoEcf === "34") {
+    const creditNote: Record<string, unknown> = { ...scenario };
+    delete creditNote.IndicadorMontoGravado;
+    return creditNote;
+  }
+
+  if (tipoEcf !== "44") return scenario;
 
   const normalized: Record<string, unknown> = { ...scenario };
   const keys = Object.keys(normalized);

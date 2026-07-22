@@ -623,7 +623,6 @@ export class NotaCreditoComponent implements OnInit {
       ENCF: this.form.encf.trim(),
       FechaVencimientoSecuencia: this.formatDgiiDate(this.form.sequenceExpiration),
       IndicadorNotaCredito: this.indicadorNotaCredito(),
-      IndicadorMontoGravado: '0',
       TipoIngresos: this.form.incomeType,
       TipoPago: this.form.paymentType,
       RNCEmisor: this.cleanRnc(this.form.issuerRnc),
