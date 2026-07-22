@@ -322,12 +322,6 @@ export class ServicioConfiguracionGlobal {
     }
 
     const tipoEcf = String(scenario?.TipoeCF || '').trim();
-    if (tipoEcf === '34') {
-      const notaCredito = { ...scenario };
-      delete notaCredito.IndicadorMontoGravado;
-      return notaCredito;
-    }
-
     if (tipoEcf !== '44') return scenario;
 
     const limpio: any = { ...scenario };
