@@ -88,11 +88,7 @@ export class ConfiguracionGlobal implements OnInit {
   }
 
   get endpointDirectCertPreview(): string {
-    const base = String(this.formulario?.get('dgiiBaseUrl')?.value || '')
-      .trim()
-      .replace(/\/+$/, '');
-    if (!base) return '';
-    return `${base}/{test|prod}/api/test-body-direct-cert`;
+    return 'Supabase Edge Function: send-dgii-direct-cert';
   }
 
   get ambientesEmpresaFiltrados(): ConfiguracionDgiiEmpresaData[] {

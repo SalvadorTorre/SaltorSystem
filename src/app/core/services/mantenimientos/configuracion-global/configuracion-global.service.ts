@@ -432,15 +432,6 @@ export class ServicioConfiguracionGlobal {
           this.normalizarEscenarioDgii(scenario)
         );
 
-        if (escenariosNormalizados.some(
-          (scenario) => String(scenario?.TipoeCF || '').trim() === '34'
-        )) {
-          return this.enviarDgiiDirecto(
-            escenariosNormalizados,
-            this.toStringOrNull(rncEmisor)
-          );
-        }
-
         const client: any = this.supabase.client;
         if (!client?.functions?.invoke) {
           throw new Error('No se pudo invocar la función send-dgii-direct-cert.');
@@ -505,77 +496,4 @@ export class ServicioConfiguracionGlobal {
     );
   }
 
-  private async enviarDgiiDirecto(
-    scenarios: any[],
-    rncEmisor: string | null
-  ): Promise<any> {
-    const { data: cfg, error: cfgError } = await this.db
-      .from('configuracion_global')
-      .select('dgii_base_url,dgii_ambiente,certificado_p12_base64,certificado_password')
-      .eq('id', 1)
-      .maybeSingle();
-    if (cfgError) throw cfgError;
-
-    const baseUrl = String(cfg?.dgii_base_url || '').trim().replace(/\/+$/, '');
-    const certificado = String(cfg?.certificado_p12_base64 || '').trim();
-    const password = String(cfg?.certificado_password || '').trim();
-    const rnc = String(rncEmisor || '').replace(/[^0-9]/g, '');
-    if (!baseUrl || !certificado || !password || !rnc) {
-      throw new Error('Falta endpoint, certificado, contraseña o RNC para enviar a DGII.');
-    }
-
-    let ambiente = this.normalizeAmbiente(cfg?.dgii_ambiente);
-    const codEmpresa = String(
-      localStorage.getItem('cod_empre') ||
-      localStorage.getItem('codigoempresa') ||
-      ''
-    ).trim();
-    if (codEmpresa) {
-      const { data: cfgEmpresa, error: empresaError } = await this.db
-        .from('configuracion_dgii_empresa')
-        .select('dgii_ambiente,activo')
-        .eq('cod_empre', codEmpresa)
-        .maybeSingle();
-      if (empresaError) throw empresaError;
-      if (cfgEmpresa?.activo !== false && cfgEmpresa?.dgii_ambiente) {
-        ambiente = this.normalizeAmbiente(cfgEmpresa.dgii_ambiente);
-      }
-    }
-
-    const endpoint = `${baseUrl}/${ambiente}/api/test-body-direct-cert`;
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-cert-p12-b64': certificado,
-        'x-cert-password': password,
-        'x-cert-rnc': rnc,
-      },
-      body: JSON.stringify({ scenarios }),
-    });
-    const raw = await response.text();
-    let body: any = {};
-    try {
-      body = raw ? JSON.parse(raw) : {};
-    } catch {
-      body = { raw };
-    }
-
-    if (!response.ok) {
-      const error: any = new Error(String(
-        body?.message || body?.error?.message || `DGII respondio HTTP ${response.status}`
-      ));
-      error.dgiiResponse = body;
-      error.details = body?.details ?? body;
-      throw error;
-    }
-
-    return {
-      ok: true,
-      message: 'Envio DGII procesado.',
-      data: body,
-      endpoint,
-      ambiente,
-    };
-  }
 }
