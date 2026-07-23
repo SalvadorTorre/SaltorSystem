@@ -674,6 +674,7 @@ export class NotaCreditoComponent implements OnInit {
       NombreComercial: this.form.issuerCommercialName.trim() || this.form.issuerName.trim(),
       DireccionEmisor: this.form.issuerAddress.trim(),
       FechaEmision: this.formatDgiiDate(this.form.issueDate),
+      FechaVencimientoSecuencia: this.form.sequenceExpiration ? this.formatDgiiDate(this.form.sequenceExpiration) : '',
       RNCComprador: this.cleanRnc(this.form.buyerRnc),
       RazonSocialComprador: this.form.buyerName.trim(),
       NCFModificado: this.form.modifiedNcf.trim(),
@@ -699,7 +700,9 @@ export class NotaCreditoComponent implements OnInit {
       scenario[`IndicadorBienoServicio[${lineNumber}]`] = '1';
       scenario[`CantidadItem[${lineNumber}]`] = Number(line.quantity || 0).toFixed(2);
       scenario[`PrecioUnitarioItem[${lineNumber}]`] = Number(line.unitPrice || 0).toFixed(2);
-      scenario[`DescuentoMonto[${lineNumber}]`] = Number(line.discount || 0).toFixed(2);
+      if (Number(line.discount || 0) > 0) {
+        scenario[`DescuentoMonto[${lineNumber}]`] = Number(line.discount || 0).toFixed(2);
+      }
       scenario[`MontoItem[${lineNumber}]`] = line.amount.toFixed(2);
       scenario[`MontoITBIS[${lineNumber}]`] = line.taxAmount.toFixed(2);
       scenario[`TasaITBIS[${lineNumber}]`] = Number(line.taxRate || 0).toFixed(2);
