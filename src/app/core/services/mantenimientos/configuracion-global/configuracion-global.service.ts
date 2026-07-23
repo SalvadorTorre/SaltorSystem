@@ -8,6 +8,8 @@ import {
   ConfiguracionGlobalData,
 } from './index';
 
+const DEFAULT_DGII_BASE_URL = 'https://ecf-propio.tail2c2b0a.ts.net/ecf';
+
 @Injectable({
   providedIn: 'root',
 })
@@ -147,7 +149,7 @@ export class ServicioConfiguracionGlobal {
         }
         return this.mapRow({
           id: 1,
-          dgii_base_url: 'https://recepcion.grupohierro.net/ecf/api',
+          dgii_base_url: DEFAULT_DGII_BASE_URL,
           dgii_ambiente: 'test',
         });
       })()
@@ -323,9 +325,7 @@ export class ServicioConfiguracionGlobal {
 
     const tipoEcf = String(scenario?.TipoeCF || '').trim();
     if (tipoEcf === '34') {
-      const notaCredito = { ...scenario };
-      delete notaCredito.IndicadorMontoGravado;
-      return notaCredito;
+      return this.normalizarNotaCreditoDgii(scenario);
     }
 
     if (tipoEcf !== '44') return scenario;
@@ -372,6 +372,74 @@ export class ServicioConfiguracionGlobal {
     limpio.MontoTotal = total.toFixed(2);
 
     return limpio;
+  }
+
+  private normalizarNotaCreditoDgii(scenario: any): any {
+    const limpio: any = { ...scenario };
+    const indicadorNotaCredito = this.resolverIndicadorNotaCredito(limpio);
+
+    const encabezado: any = {
+      Version: limpio.Version || '1.0',
+      TipoeCF: '34',
+      ENCF: limpio.ENCF,
+      IndicadorNotaCredito: indicadorNotaCredito,
+      IndicadorMontoGravado: String(limpio.IndicadorMontoGravado ?? '0').trim() || '0',
+      TipoIngresos: limpio.TipoIngresos || '01',
+      TipoPago: limpio.TipoPago || '1',
+    };
+
+    delete limpio.Version;
+    delete limpio.TipoeCF;
+    delete limpio.ENCF;
+    delete limpio.IndicadorNotaCredito;
+    delete limpio.IndicadorMontoGravado;
+    delete limpio.TipoIngresos;
+    delete limpio.TipoPago;
+    delete limpio.FechaVencimientoSecuencia;
+    delete limpio.CorreoComprador;
+    delete limpio.DireccionComprador;
+    delete limpio.NumeroNotaCredito;
+    delete limpio.Observaciones;
+    delete limpio.TerminoPago;
+    delete limpio.TipoCuentaPago;
+    delete limpio.NumeroCuentaPago;
+    delete limpio.BancoPago;
+    for (let index = 1; index <= 3; index += 1) {
+      delete limpio[`FormaPago[${index}]`];
+      delete limpio[`MontoPago[${index}]`];
+    }
+
+    return { ...encabezado, ...limpio };
+  }
+
+  private resolverIndicadorNotaCredito(scenario: any): string {
+    const explicit = String(scenario?.IndicadorNotaCredito ?? '').trim();
+    if (explicit === '0' || explicit === '1') return explicit;
+
+    const fechaEmision = this.parseDgiiDate(scenario?.FechaEmision);
+    const fechaModificada = this.parseDgiiDate(scenario?.FechaNCFModificado);
+    if (!fechaEmision || !fechaModificada) return '0';
+
+    const diffMs = fechaEmision.getTime() - fechaModificada.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    return diffDays > 30 ? '1' : '0';
+  }
+
+  private parseDgiiDate(value: any): Date | null {
+    const text = String(value || '').trim();
+    const dmy = /^(\d{2})-(\d{2})-(\d{4})$/.exec(text);
+    if (dmy) {
+      const date = new Date(Number(dmy[3]), Number(dmy[2]) - 1, Number(dmy[1]));
+      return Number.isNaN(date.getTime()) ? null : date;
+    }
+
+    const iso = /^(\d{4})-(\d{2})-(\d{2})$/.exec(text);
+    if (iso) {
+      const date = new Date(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]));
+      return Number.isNaN(date.getTime()) ? null : date;
+    }
+
+    return null;
   }
 
   inspeccionarCertificado(

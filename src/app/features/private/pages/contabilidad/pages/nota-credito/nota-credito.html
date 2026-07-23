@@ -322,7 +322,7 @@
               >
                 <i class="bi bi-chat-left-text-fill"></i>
               </button>
-              <button *ngIf="esEstadoRechazado(nota)" class="btn btn-outline-success btn-sm me-1" type="button" title="Reenviar a DGII" aria-label="Reenviar a DGII" (click)="reenviarNotaDgii(nota)">
+              <button *ngIf="puedeEnviarNotaDgii(nota)" class="btn btn-outline-success btn-sm me-1" type="button" [title]="esEstadoRechazado(nota) ? 'Reenviar a DGII' : 'Enviar a DGII'" [attr.aria-label]="esEstadoRechazado(nota) ? 'Reenviar a DGII' : 'Enviar a DGII'" (click)="reenviarNotaDgii(nota)">
                 <i class="bi bi-send-arrow-up-fill"></i>
               </button>
               <button class="btn btn-outline-secondary btn-sm me-1" type="button" title="Imprimir nota" aria-label="Imprimir nota" (click)="imprimirNota(nota)">
