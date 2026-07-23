@@ -2699,7 +2699,15 @@ export class ServicioFacturacion {
     incluirTodasLasEmpresas: boolean;
     soloResumenVendedor: boolean;
   }): Promise<any[]> {
-    if (params.soloResumenVendedor && params.fechaDesde && params.fechaHasta) {
+    // Para una sucursal concreta, el rango mensual con columnas compactas es
+    // mucho mÃ¡s rÃ¡pido que ejecutar una solicitud por cada dÃ­a del mes.
+    // Conservamos la estrategia diaria solo para consultas globales, donde el
+    // volumen puede provocar timeout en una Ãºnica consulta.
+    if (
+      params.soloResumenVendedor &&
+      params.fechaDesde &&
+      params.fechaHasta
+    ) {
       return this.buscarVentasVendedorPorDias(params);
     }
 
@@ -2716,12 +2724,16 @@ export class ServicioFacturacion {
         .from('factura')
         .select(
           params.soloResumenVendedor
-            ? 'fa_codfact,fa_nomvend,fa_codvend,fa_codempr,fa_codsucu,fa_valfact,fa_cosfact,fa_fecfact'
+            ? 'fa_codfact,fa_nomvend,fa_codvend,fa_codempr,fa_codsucu,fa_valfact,fa_cosfact,fa_fecfact,fa_codclie,fa_nomclie,fa_telclie'
             : '*',
-        )
-        .order('fa_fecfact', { ascending: false })
-        .order('fa_codfact', { ascending: false })
-        .range(offset, offset + currentPageSize - 1);
+        );
+
+      if (!params.soloResumenVendedor) {
+        query = query
+          .order('fa_fecfact', { ascending: false })
+          .order('fa_codfact', { ascending: false });
+      }
+      query = query.range(offset, offset + currentPageSize - 1);
 
       if (!params.incluirTodasLasEmpresas) {
         const { codEmpre, rncEmpre } = this.currentTenant();
@@ -2770,36 +2782,32 @@ export class ServicioFacturacion {
     incluirTodasLasEmpresas: boolean;
     soloResumenVendedor: boolean;
   }): Promise<any[]> {
-    const rows: any[] = [];
-    const pageSize = 100;
+    // Una sucursal puede superar ampliamente 100 facturas por dÃ­a. Usar lotes
+    // pequeÃ±os multiplicaba las llamadas y llevaba la carga a mÃ¡s de un minuto.
+    const pageSize = 1000;
 
-    if (!params.fechaDesde || !params.fechaHasta) return rows;
+    if (!params.fechaDesde || !params.fechaHasta) return [];
 
     const inicio = new Date(`${params.fechaDesde}T00:00:00Z`);
     const fin = new Date(`${params.fechaHasta}T00:00:00Z`);
 
-    if (Number.isNaN(inicio.getTime()) || Number.isNaN(fin.getTime())) return rows;
+    if (Number.isNaN(inicio.getTime()) || Number.isNaN(fin.getTime())) return [];
 
-    for (
-      let fecha = new Date(inicio);
-      fecha.getTime() <= fin.getTime();
-      fecha.setUTCDate(fecha.getUTCDate() + 1)
-    ) {
-      const fechaIso = fecha.toISOString().slice(0, 10);
+    const fechas: string[] = [];
+    for (let fecha = new Date(inicio); fecha <= fin; fecha.setUTCDate(fecha.getUTCDate() + 1)) {
+      fechas.push(fecha.toISOString().slice(0, 10));
+    }
+
+    const buscarDia = async (fechaIso: string): Promise<any[]> => {
+      const rowsDia: any[] = [];
       let offset = 0;
 
       while (true) {
-        if (params.limit > 0 && rows.length >= params.limit) return rows;
-        const currentPageSize = params.limit > 0
-          ? Math.min(pageSize, params.limit - rows.length)
-          : pageSize;
-
         let query = this.db
           .from('factura')
-          .select('fa_codfact,fa_nomvend,fa_codvend,fa_codempr,fa_codsucu,fa_valfact,fa_cosfact,fa_fecfact')
+          .select('fa_codfact,fa_nomvend,fa_codvend,fa_codempr,fa_codsucu,fa_valfact,fa_cosfact,fa_fecfact,fa_codclie,fa_nomclie,fa_telclie')
           .eq('fa_fecfact', fechaIso)
-          .order('fa_codfact', { ascending: false })
-          .range(offset, offset + currentPageSize - 1);
+          .range(offset, offset + pageSize - 1);
 
         if (!params.incluirTodasLasEmpresas) {
           query = this.applyTenantCompanyFilter(query);
@@ -2813,12 +2821,24 @@ export class ServicioFacturacion {
         const { data, error } = await query;
         if (error) throw error;
         const page = data || [];
-        rows.push(...page);
-        if (page.length < currentPageSize) break;
-        offset += currentPageSize;
+        rowsDia.push(...page);
+        if (page.length < pageSize) break;
+        offset += pageSize;
       }
-    }
 
-    return rows;
+      return rowsDia;
+    };
+
+    const resultados: any[] = [];
+    let siguiente = 0;
+    const workers = Array.from({ length: Math.min(6, fechas.length) }, async () => {
+      while (siguiente < fechas.length) {
+        const indice = siguiente++;
+        resultados.push(...await buscarDia(fechas[indice]));
+      }
+    });
+    await Promise.all(workers);
+
+    return params.limit > 0 ? resultados.slice(0, params.limit) : resultados;
   }
 }

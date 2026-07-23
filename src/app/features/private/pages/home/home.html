@@ -32,7 +32,12 @@
     </div>
   </header>
 
-  <ng-container *ngTemplateOutlet="adminDashboard"></ng-container>
+  <div *ngIf="dashboardCargando" class="dashboard-loading" role="status" aria-live="polite">
+    <span class="dashboard-loading__spinner"></span>
+    <strong>Cargando rendimiento de {{ sucursalNombre }}...</strong>
+  </div>
+
+  <ng-container *ngIf="!dashboardCargando" [ngTemplateOutlet]="adminDashboard"></ng-container>
 
   <ng-container *ngIf="false">
     <section class="kpi-grid">

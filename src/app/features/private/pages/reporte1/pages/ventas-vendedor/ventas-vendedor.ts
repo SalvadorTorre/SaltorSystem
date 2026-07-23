@@ -116,7 +116,7 @@ export class VentasVendedor implements OnInit {
   limpiar(): void {
     this.filtros = {
       empresa: 'todas',
-      sucursal: 0,
+      sucursal: this.sucursalPorDefecto(),
       fechaInicio: this.fechaHoy(),
       fechaFin: this.fechaHoy(),
     };
@@ -149,6 +149,20 @@ export class VentasVendedor implements OnInit {
 
   get margenVentas(): number {
     return this.calcularMargen(this.totalVendido, this.totalCosto);
+  }
+
+  get metaSucursal(): number {
+    const sucursales = this.filtros.sucursal
+      ? this.sucursales.filter(
+          (sucursal) => Number(sucursal?.cod_sucursal) === Number(this.filtros.sucursal),
+        )
+      : this.sucursales;
+
+    return sucursales.reduce((total, sucursal) => total + this.metaDeSucursal(sucursal), 0);
+  }
+
+  get cumplimientoMetaSucursal(): number {
+    return this.metaSucursal ? (this.totalVendido / this.metaSucursal) * 100 : 0;
   }
 
   margenVendedor(vendedor: ResumenVendedor): number {
@@ -201,7 +215,7 @@ export class VentasVendedor implements OnInit {
       ['Ticket promedio', this.formatMoney(this.ticketPromedio)],
       ['Margen', `${this.margenVentas.toFixed(2)}%`],
       ['Vendedores', String(this.vendedores.length)],
-      ['Sucursales', String(this.sucursalesActivas)],
+      ['Meta sucursal', this.formatMoney(this.metaSucursal)],
     ];
     this.dibujarKpisPdf(doc, kpis, 14, 52, pageWidth - 28);
 
@@ -289,7 +303,7 @@ export class VentasVendedor implements OnInit {
   }
 
   private seleccionarSucursalInicial(): void {
-    this.filtros.sucursal = 0;
+    this.filtros.sucursal = this.sucursalPorDefecto();
   }
 
   private sucursalPorDefecto(): number {
@@ -333,6 +347,16 @@ export class VentasVendedor implements OnInit {
   private calcularMargen(total: number, costo: number): number {
     if (!costo) return 0;
     return ((total - costo) / costo) * 100;
+  }
+
+  private metaDeSucursal(sucursal: SucursalesData): number {
+    const meta = Number(
+      sucursal?.meta_ventas ??
+      sucursal?.meta_vents ??
+      sucursal?.metaVenta ??
+      0,
+    );
+    return Number.isFinite(meta) ? meta : 0;
   }
 
   private mapVenta(row: any): VentaConsulta {

@@ -116,6 +116,7 @@ interface PieSegment {
   styleUrls: ['./home.css']
 })
 export class Home implements OnInit {
+  dashboardCargando = true;
   role: DashboardRole = 'vendedor';
   username: string = '';
   empresaNombre: string = '';
@@ -128,7 +129,7 @@ export class Home implements OnInit {
   vendedor: DashboardVendedor = {
     metaFacturar: 0,
     metaFacturarMM: 0,
-    miembrosSucursal: 3,
+    miembrosSucursal: 0,
     metaPorVendedor: 0,
     metaPorVendedorMM: 0,
     totalFactura: 0,
@@ -144,7 +145,7 @@ export class Home implements OnInit {
     agenda: [],
   };
   global: DashboardGlobal = {
-    metaMensual: 22000000,
+    metaMensual: 0,
     facturadoGeneral: 0,
     cumplimientoGeneralPct: 0,
     totalFacturas: 0,
@@ -170,8 +171,7 @@ export class Home implements OnInit {
     this.isDesktopApp = typeof window !== 'undefined' && !!window.electronAPI?.isDesktop;
     this.periodoActual = new Intl.DateTimeFormat('es-DO', { month: 'long', year: 'numeric' }).format(new Date());
     this.loadSession();
-    this.buildVendedorDashboard();
-    this.buildGlobalDashboard();
+    this.restaurarDashboardCache();
     this.cargarDashboardReal();
   }
 
@@ -869,6 +869,9 @@ export class Home implements OnInit {
 
   private cargarDashboardReal(): void {
     const sucursalId = this.role === 'root' ? 0 : this.currentSucursalId();
+    const hoy = new Date();
+    const fechaDesde = this.fechaIsoLocal(new Date(hoy.getFullYear(), hoy.getMonth(), 1));
+    const fechaHasta = this.fechaIsoLocal(new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0));
 
     forkJoin({
       sucursales: (
@@ -876,21 +879,48 @@ export class Home implements OnInit {
           ? this.servicioSucursal.buscarsucursal(String(sucursalId))
           : this.servicioSucursal.buscarTodasSucursal()
       ).pipe(catchError(() => of({ data: [] }))),
-      facturas: this.servicioFacturacion.buscarFacturasParaCierre(0, false).pipe(catchError(() => of({ data: [] }))),
-      usuarios: this.servicioUsuario.buscarTodosUsuario(1, 10000).pipe(catchError(() => of({ data: [] }))),
+      facturasMes: this.servicioFacturacion.buscarVentasPorVendedor({
+        sucursal: sucursalId || null,
+        fechaDesde,
+        fechaHasta,
+        pageSize: 0,
+      }).pipe(catchError(() => of({ data: [] }))),
+      usuarios: (
+        sucursalId
+          ? this.servicioUsuario.buscarUsuariosPorSucursal(sucursalId)
+          : this.servicioUsuario.buscarTodosUsuario(1, 10000)
+      ).pipe(catchError(() => of({ data: [] }))),
       tipos: this.servicioTipousuario.obtenerTodosTipousuario().pipe(catchError(() => of({ data: [] }))),
-      clientes: this.servicioCliente.buscarTodosCliente(1, 100000).pipe(catchError(() => of({ data: [] }))),
-    }).subscribe(({ sucursales, facturas, usuarios, tipos, clientes }) => {
+    }).subscribe(({ sucursales, facturasMes, usuarios, tipos }) => {
       const sucursalesList = this.filtrarSucursalesPorUsuario(this.unwrapList(sucursales), sucursalId);
-      const facturasList = this.filtrarFacturasPorSucursal(this.unwrapList(facturas), sucursalId);
+      const facturasList = this.filtrarFacturasPorSucursal(this.unwrapList(facturasMes), sucursalId);
       const usuariosList = this.filtrarUsuariosPorSucursal(this.unwrapList(usuarios), sucursalId);
       const tiposList = this.unwrapList(tipos);
-      const clientesList = this.unwrapList(clientes) as ModeloClienteData[];
-      const facturasMes = facturasList.filter((factura) => this.esFechaDelMesActual(factura?.fa_fecFact ?? factura?.fa_fecfact));
+      this.aplicarDashboardSucursal(sucursalesList, facturasList, usuariosList, tiposList);
+      this.aplicarDashboardGlobal(sucursalesList, facturasList, usuariosList, tiposList);
+      this.clientesAntiguedad = this.construirClientesAntiguedad(facturasList, usuariosList, []);
+      this.dashboardCargando = false;
+      this.guardarDashboardCache();
 
-      this.clientesAntiguedad = this.construirClientesAntiguedad(facturasList, usuariosList, clientesList);
-      this.aplicarDashboardSucursal(sucursalesList, facturasMes, usuariosList, tiposList);
-      this.aplicarDashboardGlobal(sucursalesList, facturasMes, usuariosList, tiposList);
+      // La consulta histÃ³rica es secundaria: no debe bloquear ni dejar en cero
+      // los indicadores mensuales si una empresa tiene muchas facturas.
+      forkJoin({
+        clientes: this.servicioCliente.buscarTodosCliente(1, 100000).pipe(
+          catchError(() => of({ data: [] })),
+        ),
+        historico: this.servicioFacturacion.buscarFacturasParaCierre(0, !!sucursalId).pipe(
+          catchError(() => of({ data: [] })),
+        ),
+      }).subscribe(({ clientes, historico }: any) => {
+        const clientesList = this.unwrapList(clientes) as ModeloClienteData[];
+        const rows = this.filtrarFacturasPorSucursal(this.unwrapList(historico), sucursalId);
+        this.clientesAntiguedad = this.construirClientesAntiguedad(
+          rows.length ? rows : facturasList,
+          usuariosList,
+          clientesList,
+        );
+        this.guardarDashboardCache();
+      });
     });
   }
 
@@ -1033,7 +1063,12 @@ export class Home implements OnInit {
   private filtrarFacturasVendedorLogeado(facturas: any[], usuarios: any[]): any[] {
     const codigos = this.codigosVendedorLogeado(usuarios);
     if (!codigos.length) return [];
-    const codigoSet = new Set(codigos.map((codigo) => this.normalizarTexto(codigo)));
+    const codigoSet = new Set(
+      codigos.flatMap((codigo) => [
+        this.normalizarTexto(codigo),
+        this.normalizarCodigoVendedor(codigo),
+      ]).filter(Boolean),
+    );
 
     return facturas.filter((factura) => {
       const candidatos = [
@@ -1044,7 +1079,8 @@ export class Home implements OnInit {
       ].map((value) => this.normalizarTexto(value)).filter(Boolean);
 
       return candidatos.some((codigo) => {
-        if (codigoSet.has(codigo)) return true;
+        const codigoNormalizado = this.normalizarCodigoVendedor(codigo);
+        if (codigoSet.has(codigo) || codigoSet.has(codigoNormalizado)) return true;
         return codigos.some((vendedor) => {
           const valor = this.normalizarTexto(vendedor);
           return valor.length >= 4 && codigo.length >= 4 && (valor.includes(codigo) || codigo.includes(valor));
@@ -1091,6 +1127,67 @@ export class Home implements OnInit {
       .replace(/[\u0300-\u036f]/g, '')
       .replace(/\s+/g, ' ')
       .toLowerCase();
+  }
+
+  private normalizarCodigoVendedor(value: any): string {
+    const texto = this.normalizarTexto(value);
+    if (/^\d+$/.test(texto)) return String(Number(texto));
+    return texto.replace(/[^a-z0-9]/g, '');
+  }
+
+  private fechaIsoLocal(fecha: Date): string {
+    const yyyy = fecha.getFullYear();
+    const mm = String(fecha.getMonth() + 1).padStart(2, '0');
+    const dd = String(fecha.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  }
+
+  private dashboardCacheKey(): string {
+    const empresa = String(
+      localStorage.getItem('codigoempresa') ||
+      localStorage.getItem('cod_empre') ||
+      '',
+    ).trim();
+    const sucursal = this.currentSucursalId();
+    const usuario = String(
+      localStorage.getItem('idusuario') ||
+      localStorage.getItem('username') ||
+      '',
+    ).trim().toLowerCase();
+    const hoy = new Date();
+    const periodo = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}`;
+    return `home-dashboard:${empresa}:${sucursal}:${usuario}:${periodo}`;
+  }
+
+  private restaurarDashboardCache(): void {
+    try {
+      const raw = localStorage.getItem(this.dashboardCacheKey());
+      if (!raw) return;
+      const cache = JSON.parse(raw);
+      if (!cache?.vendedor || !cache?.global) return;
+
+      this.vendedor = { ...this.vendedor, ...cache.vendedor };
+      this.global = { ...this.global, ...cache.global };
+      this.clientesAntiguedad = Array.isArray(cache.clientesAntiguedad)
+        ? cache.clientesAntiguedad
+        : [];
+      this.dashboardCargando = false;
+    } catch {
+      // Una cachÃ© daÃ±ada no debe impedir consultar nuevamente Supabase.
+    }
+  }
+
+  private guardarDashboardCache(): void {
+    try {
+      localStorage.setItem(this.dashboardCacheKey(), JSON.stringify({
+        vendedor: this.vendedor,
+        global: this.global,
+        clientesAntiguedad: this.clientesAntiguedad,
+        actualizadoEn: new Date().toISOString(),
+      }));
+    } catch {
+      // El panel sigue funcionando aunque el navegador no permita almacenar cachÃ©.
+    }
   }
 
   private metaVentaSucursal(sucursal: any): number {
@@ -1233,7 +1330,6 @@ export class Home implements OnInit {
       const codigoCliente = String(factura?.fa_codClie ?? factura?.fa_codclie ?? '').trim();
       const nombreFactura = String(factura?.fa_nomClie ?? factura?.fa_nomclie ?? '').trim();
       const clienteRegistrado = clientesPorCodigo.get(codigoCliente) || clientesPorNombre.get(this.normalizarTexto(nombreFactura));
-      if (!clienteRegistrado) return;
 
       const nombre = String(clienteRegistrado?.cl_nomClie ?? nombreFactura ?? 'Sin cliente').trim() || 'Sin cliente';
       const key = codigoCliente || this.normalizarTexto(nombre);
@@ -1241,7 +1337,7 @@ export class Home implements OnInit {
 
       clientes.set(key, {
         nombre,
-        telefono: this.telefonoClienteRegistrado(clienteRegistrado) || this.telefonoClienteFactura(factura),
+        telefono: (clienteRegistrado ? this.telefonoClienteRegistrado(clienteRegistrado) : '') || this.telefonoClienteFactura(factura),
         fechaUltimaFactura: this.toLocalISODate(fecha),
         dias: this.diasDesdeFecha(fecha, hoy),
         valorUltimaFactura: this.toNumber(factura?.fa_valFact ?? factura?.fa_valfact),

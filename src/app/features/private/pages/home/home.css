@@ -699,3 +699,28 @@
     grid-template-columns: 1fr;
   }
 }
+.dashboard-loading {
+  align-items: center;
+  background: #fff;
+  border: 1px solid #dbe5ef;
+  border-radius: 16px;
+  color: #475569;
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  min-height: 140px;
+  padding: 24px;
+}
+
+.dashboard-loading__spinner {
+  animation: dashboard-spin 0.8s linear infinite;
+  border: 3px solid #dbeafe;
+  border-radius: 50%;
+  border-top-color: #2563eb;
+  height: 28px;
+  width: 28px;
+}
+
+@keyframes dashboard-spin {
+  to { transform: rotate(360deg); }
+}
