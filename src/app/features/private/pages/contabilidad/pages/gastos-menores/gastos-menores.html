@@ -1,0 +1,79 @@
+<section class="gm-shell">
+  <header class="gm-hero">
+    <div>
+      <span>Contabilidad fiscal</span>
+      <h2>Gastos menores electrónicos</h2>
+      <p>Emisión y envío del comprobante e-CF E43 a la DGII.</p>
+    </div>
+    <div class="gm-status">
+      <small>Estado</small><strong>{{ estado }}</strong>
+      <small *ngIf="trackId">Track ID: {{ trackId }}</small>
+    </div>
+  </header>
+
+  <form (ngSubmit)="enviarDgii()">
+    <section class="gm-card">
+      <h3>Identificación del comprobante</h3>
+      <div class="form-grid">
+        <label>
+          <span>Tipo e-CF</span>
+          <input class="form-control" value="43 - Gastos Menores Electrónico" readonly />
+        </label>
+        <label>
+          <span>e-NCF</span>
+          <input class="form-control" [(ngModel)]="form.encf" name="encf" placeholder="Se genera al enviar" readonly />
+        </label>
+        <label>
+          <span>Fecha de emisión</span>
+          <input class="form-control" type="date" [(ngModel)]="form.fecha" name="fecha" required />
+        </label>
+        <label>
+          <span>Vencimiento de la secuencia</span>
+          <input class="form-control" type="date" [(ngModel)]="form.fechaVencimiento" name="fechaVencimiento" required />
+        </label>
+      </div>
+    </section>
+
+    <section class="gm-card">
+      <h3>Emisor</h3>
+      <p class="mb-0 text-muted">El RNC, razón social y dirección se toman automáticamente de la empresa y sucursal del usuario.</p>
+    </section>
+
+    <section class="gm-card details">
+      <div class="card-title">
+        <h3>Detalle del gasto</h3>
+        <button class="btn btn-outline-primary btn-sm" type="button" (click)="agregarLinea()">
+          <i class="bi bi-plus-lg"></i> Agregar línea
+        </button>
+      </div>
+      <div class="table-responsive">
+        <table class="table align-middle">
+          <thead><tr><th>Descripción</th><th>Cantidad</th><th>Precio del gasto</th><th>Monto exento</th><th></th></tr></thead>
+          <tbody>
+            <tr *ngFor="let linea of lineas">
+              <td><input class="form-control" [(ngModel)]="linea.descripcion" [name]="'descripcion'+linea.id" /></td>
+              <td><input class="form-control number" type="number" min="0.01" step="0.01" [(ngModel)]="linea.cantidad" [name]="'cantidad'+linea.id" (ngModelChange)="recalcular(linea)" /></td>
+              <td><input class="form-control number" type="number" min="0" step="0.01" [(ngModel)]="linea.precio" [name]="'precio'+linea.id" (ngModelChange)="recalcular(linea)" /></td>
+              <td class="num total">{{ linea.monto | number:'1.2-2' }}</td>
+              <td><button class="btn btn-outline-danger btn-sm" type="button" (click)="quitarLinea(linea.id)" [disabled]="lineas.length === 1"><i class="bi bi-trash"></i></button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="totals">
+        <div><span>Monto exento</span><strong>{{ total | currency:'DOP':'symbol':'1.2-2' }}</strong></div>
+        <div class="grand"><span>Total</span><strong>{{ total | currency:'DOP':'symbol':'1.2-2' }}</strong></div>
+      </div>
+    </section>
+
+    <div class="actions">
+      <button class="btn btn-outline-secondary" type="button" (click)="limpiar()" [disabled]="enviando">Limpiar</button>
+      <button class="btn btn-primary" type="submit" [disabled]="enviando">
+        <i class="bi" [class.bi-send]="!enviando" [class.bi-arrow-clockwise]="enviando"></i>
+        {{ enviando ? 'Enviando...' : 'Enviar E43 a DGII' }}
+      </button>
+    </div>
+
+    <section class="gm-card response" *ngIf="respuesta"><h3>Respuesta DGII</h3><pre>{{ respuesta }}</pre></section>
+  </form>
+</section>

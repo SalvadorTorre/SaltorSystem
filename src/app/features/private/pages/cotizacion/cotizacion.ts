@@ -248,9 +248,7 @@ export class Cotizacion implements OnInit {
             !this.isEditing,
         ),
         switchMap((query: string) =>
-          this.http.GetRequest<ModeloInventario>(
-            `/productos-buscador/${query}`,
-          ),
+          this.servicioInventario.buscarporCodigoMerc(query),
         ),
       )
       .subscribe((results: ModeloInventario) => {
@@ -295,9 +293,7 @@ export class Cotizacion implements OnInit {
             !this.isEditing,
         ),
         switchMap((query: string) =>
-          this.http.GetRequest<ModeloInventario>(
-            `/productos-buscador-desc/${query}`,
-          ),
+          this.servicioInventario.buscarPorDescripcionMerc(query),
         ),
       )
       .subscribe((results: ModeloInventario) => {

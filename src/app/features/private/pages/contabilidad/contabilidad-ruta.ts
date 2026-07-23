@@ -4,6 +4,7 @@ import { Contabilidad } from './contabilidad';
 import { FacturasPendientesComponent } from './pages/facturas-pendientes/facturas-pendientes';
 import { NotaCreditoComponent } from './pages/nota-credito/nota-credito';
 import { Reporte607Component } from './pages/reporte-607/reporte-607';
+import { GastosMenoresComponent } from './pages/gastos-menores/gastos-menores';
 import { permissionGuard } from 'src/app/core/guards/permission/permission.guard';
 
 const routes: Routes = [
@@ -22,6 +23,12 @@ const routes: Routes = [
         component: Reporte607Component,
         canActivate: [permissionGuard],
         data: { accessPath: '/private/contabilidad/reporte-607' },
+      },
+      {
+        path: 'gastos-menores',
+        component: GastosMenoresComponent,
+        canActivate: [permissionGuard],
+        data: { accessPath: '/private/contabilidad/gastos-menores' },
       },
       {
         path: 'nota-credito',

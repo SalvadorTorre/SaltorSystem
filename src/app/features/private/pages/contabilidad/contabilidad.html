@@ -53,6 +53,11 @@
         </span>
       </a>
 
+      <a class="accounting-link" routerLinkActive="active" [routerLink]="['gastos-menores']">
+        <i class="bi bi-receipt"></i>
+        <span>Gastos menores<small>Formulario E43 y envio DGII</small></span>
+      </a>
+
       <div class="accounting-section-title">En preparación</div>
 
       <button class="accounting-link disabled" type="button" disabled>
@@ -118,6 +123,11 @@
         <a class="accounting-link" routerLinkActive="active" [routerLink]="['nota-credito']" data-bs-dismiss="offcanvas">
           <i class="bi bi-file-earmark-minus"></i>
           <span>Nota de crédito<small>Formulario E34 y envio DGII</small></span>
+        </a>
+
+        <a class="accounting-link" routerLinkActive="active" [routerLink]="['gastos-menores']" data-bs-dismiss="offcanvas">
+          <i class="bi bi-receipt"></i>
+          <span>Gastos menores<small>Formulario E43 y envio DGII</small></span>
         </a>
 
         <div class="accounting-section-title">En preparación</div>

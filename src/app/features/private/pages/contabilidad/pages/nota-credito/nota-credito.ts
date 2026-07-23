@@ -3,6 +3,7 @@ import { firstValueFrom } from 'rxjs';
 import { NotaCreditoService } from 'src/app/core/services/contabilidad/nota-credito/nota-credito.service';
 import { ServicioFacturacion } from 'src/app/core/services/facturacion/factura/factura.service';
 import { ServicioConfiguracionGlobal } from 'src/app/core/services/mantenimientos/configuracion-global/configuracion-global.service';
+import { ServicioItbis, ItbisData } from 'src/app/core/services/mantenimientos/itbis/itbis.service';
 import Swal from 'sweetalert2';
 
 interface CreditNoteLine {
@@ -92,6 +93,7 @@ export class NotaCreditoComponent implements OnInit {
     private configuracionGlobal: ServicioConfiguracionGlobal,
     private servicioFacturacion: ServicioFacturacion,
     private notaCreditoService: NotaCreditoService,
+    private servicioItbis: ServicioItbis,
   ) {}
 
   ngOnInit(): void {
@@ -383,8 +385,17 @@ export class NotaCreditoComponent implements OnInit {
 
       const details = Array.isArray(detailResponse?.data) ? detailResponse.data : [];
       if (details.length) {
+        const nivelItbis = String(invoice?.fa_tipoitbis || 'General').trim() || 'General';
+        let tasaItbis = await firstValueFrom(this.servicioItbis.buscarActivoPorNivel(nivelItbis));
+        if (!tasaItbis && nivelItbis.toLowerCase() !== 'general') {
+          tasaItbis = await firstValueFrom(this.servicioItbis.buscarActivoPorNivel('General'));
+        }
+        if (!tasaItbis) {
+          throw new Error(`No existe una tasa de ITBIS activa para el nivel ${nivelItbis}.`);
+        }
+        const tasaActiva: ItbisData = tasaItbis;
         this.nextLineId = 1;
-        this.lines = details.map((detail: any) => this.mapInvoiceDetailToLine(detail));
+        this.lines = details.map((detail: any) => this.mapInvoiceDetailToLine(detail, tasaActiva));
       }
 
       this.invoiceMessage = this.form.modifiedNcf
@@ -543,12 +554,19 @@ export class NotaCreditoComponent implements OnInit {
     };
   }
 
-  private mapInvoiceDetailToLine(detail: any): CreditNoteLine {
+  private mapInvoiceDetailToLine(detail: any, tasaItbis: ItbisData): CreditNoteLine {
     const quantity = Number(detail?.cantidad ?? detail?.df_canMerc ?? detail?.df_canmerc ?? 1) || 1;
-    const grossTotal = Number(detail?.total ?? detail?.df_valMerc ?? detail?.df_valmerc ?? 0) || 0;
-    const taxAmount = Number(detail?.df_itbiMerc ?? detail?.df_itbimerc ?? detail?.itbis ?? 0) || 0;
+    const grossTotal = Number(
+      detail?.total ??
+      detail?.df_valMerc ??
+      detail?.df_valmerc ??
+      (Number(detail?.df_preMerc ?? detail?.df_premerc ?? detail?.precio ?? 0) * quantity)
+    ) || 0;
+    const esExento = detail?.producto?.in_itbis === false || detail?.producto?.in_itbis === 0;
+    const porcentajeMenos = esExento ? 0 : Number(tasaItbis?.porcentaje_menos || 0);
+    const taxAmount = this.round(grossTotal * (porcentajeMenos / 100), 2);
     const amount = Math.max(0, grossTotal - taxAmount);
-    const taxRate = amount > 0 && taxAmount > 0 ? this.round((taxAmount / amount) * 100, 2) : 18;
+    const taxRate = esExento ? 0 : Number(tasaItbis?.porcentaje || 0);
     const unitPrice = quantity > 0 ? this.round(amount / quantity, 4) : 0;
     return this.recalculate({
       id: this.nextLineId++,

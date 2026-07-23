@@ -13,6 +13,7 @@ interface EncfReservation {
   ncf: string;
   oldCount: number;
   newCount: number;
+  fechaVencimiento: string | null;
 }
 
 @Injectable({
@@ -766,7 +767,7 @@ export class ServicioFacturacion {
     for (let intento = 0; intento < 5; intento++) {
       let queryByTipo = this.db
         .from('encf')
-        .select('id,codempr,tipo,tipoencf,desdeencf,hastaencf,cantencf,countencf')
+        .select('id,codempr,tipo,tipoencf,desdeencf,hastaencf,cantencf,countencf,fechaencf')
         .eq('codempr', codEmpresa)
         .order('id', { ascending: false })
         .limit(1);
@@ -784,7 +785,7 @@ export class ServicioFacturacion {
       if (!encfRow && tipoencf) {
         const { data: byText, error: byTextError } = await this.db
           .from('encf')
-          .select('id,codempr,tipo,tipoencf,desdeencf,hastaencf,cantencf,countencf')
+          .select('id,codempr,tipo,tipoencf,desdeencf,hastaencf,cantencf,countencf,fechaencf')
           .eq('codempr', codEmpresa)
           .eq('tipoencf', tipoencf)
           .order('id', { ascending: false })
@@ -840,6 +841,7 @@ export class ServicioFacturacion {
         ncf,
         oldCount,
         newCount,
+        fechaVencimiento: encfRow?.fechaencf ? String(encfRow.fechaencf) : null,
       };
     }
 
