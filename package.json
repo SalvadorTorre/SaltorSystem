@@ -1,6 +1,6 @@
 {
   "name": "saltor-system",
-  "version": "1.0.91",
+  "version": "1.0.92",
   "description": "Sistema de facturacion, caja e inventario para multi-sucursal.",
   "author": "Saltor System",
   "main": "electron/main.js",

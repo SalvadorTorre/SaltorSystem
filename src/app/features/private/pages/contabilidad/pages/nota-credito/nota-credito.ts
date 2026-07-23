@@ -681,7 +681,9 @@ export class NotaCreditoComponent implements OnInit {
       scenario[`IndicadorBienoServicio[${lineNumber}]`] = '1';
       scenario[`CantidadItem[${lineNumber}]`] = Number(line.quantity || 0).toFixed(2);
       scenario[`PrecioUnitarioItem[${lineNumber}]`] = Number(line.unitPrice || 0).toFixed(2);
-      scenario[`DescuentoMonto[${lineNumber}]`] = Number(line.discount || 0).toFixed(2);
+      if (Number(line.discount || 0) > 0) {
+        scenario[`DescuentoMonto[${lineNumber}]`] = Number(line.discount || 0).toFixed(2);
+      }
       scenario[`MontoItem[${lineNumber}]`] = line.amount.toFixed(2);
       scenario[`MontoITBIS[${lineNumber}]`] = line.taxAmount.toFixed(2);
       scenario[`TasaITBIS[${lineNumber}]`] = Number(line.taxRate || 0).toFixed(2);
