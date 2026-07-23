@@ -656,6 +656,7 @@ export class NotaCreditoComponent implements OnInit {
       NombreComercial: this.form.issuerCommercialName.trim() || this.form.issuerName.trim(),
       DireccionEmisor: this.form.issuerAddress.trim(),
       FechaEmision: this.formatDgiiDate(this.form.issueDate),
+      FechaVencimientoSecuencia: this.form.sequenceExpiration ? this.formatDgiiDate(this.form.sequenceExpiration) : '',
       RNCComprador: this.cleanRnc(this.form.buyerRnc),
       RazonSocialComprador: this.form.buyerName.trim(),
       NCFModificado: this.form.modifiedNcf.trim(),
