@@ -330,3 +330,22 @@ src_app_features_private_pages_caja_pages_reciboingreso-page_reciboingreso-modul
 Build at: 2026-07-27T18:52:17.172Z - Hash: 0f8feacaddfa4273 - Time: 1574ms
 
 √ Compiled successfully.
+
+Initial Chunk Files | Names   | Raw Size
+runtime.js          | runtime | 14.14 kB |
+
+78 unchanged chunks
+
+Build at: 2026-07-27T19:05:37.091Z - Hash: be9bb353acd5d00a - Time: 20890ms
+
+√ Compiled successfully.
+
+Initial Chunk Files | Names   | Raw Size
+main.js             | main    | 93.52 kB |
+runtime.js          | runtime | 14.14 kB |
+
+77 unchanged chunks
+
+Build at: 2026-07-27T19:05:45.691Z - Hash: 10490d2050df0bd1 - Time: 8462ms
+
+√ Compiled successfully.
