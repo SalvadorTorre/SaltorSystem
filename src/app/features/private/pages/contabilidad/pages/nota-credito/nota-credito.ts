@@ -5,6 +5,9 @@ import { ServicioFacturacion } from 'src/app/core/services/facturacion/factura/f
 import { ServicioConfiguracionGlobal } from 'src/app/core/services/mantenimientos/configuracion-global/configuracion-global.service';
 import { ServicioItbis, ItbisData } from 'src/app/core/services/mantenimientos/itbis/itbis.service';
 import Swal from 'sweetalert2';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import * as QRCode from 'qrcode';
 
 interface CreditNoteLine {
   id: number;
@@ -51,6 +54,7 @@ export class NotaCreditoComponent implements OnInit {
   activeSection: 'crear' | 'consultar' = 'crear';
   consultaFiltro = '';
   consultaCargando = false;
+  notaEliminandoEncf = '';
   notasCredito: any[] = [];
   notaConsultada: any | null = null;
   detalleConsultado: any[] = [];
@@ -161,7 +165,7 @@ export class NotaCreditoComponent implements OnInit {
   }
 
   async imprimirNota(nota: any): Promise<void> {
-    const ventana = window.open('', '_blank', 'width=960,height=760');
+    const ventana = window.open('', '_blank', 'width=430,height=760');
     if (!ventana) {
       await Swal.fire('Impresion bloqueada', 'Permita ventanas emergentes para imprimir la nota.', 'warning');
       return;
@@ -173,34 +177,147 @@ export class NotaCreditoComponent implements OnInit {
       const header = response?.data?.header;
       const lines = Array.isArray(response?.data?.lines) ? response.data.lines : [];
       if (!header) throw new Error('No se encontro la nota de credito.');
+      const qrLink = String(header.qr_link || '').trim();
+      const qrDataUrl = qrLink ? await QRCode.toDataURL(qrLink, { width: 220, margin: 1 }) : '';
+      const fechaFirma = this.fechaFirmaNota(header);
       const filas = lines.map((linea: any) => `
-        <tr>
-          <td>${this.escapeHtml(linea.linea)}</td><td>${this.escapeHtml(linea.descripcion)}</td>
-          <td class="num">${this.formatoNumero(linea.cantidad)}</td><td class="num">${this.formatoMoneda(linea.precio)}</td>
-          <td class="num">${this.formatoMoneda(linea.itbis_monto)}</td><td class="num">${this.formatoMoneda(linea.total)}</td>
-        </tr>`).join('');
+        <div class="item">
+          <strong>${this.escapeHtml(linea.descripcion || '')}</strong>
+          <div class="item-line"><span>${this.formatoNumero(linea.cantidad)} x ${this.formatoMoneda(linea.precio)}</span><span>${this.formatoMoneda(linea.total)}</span></div>
+          <div class="tax">ITBIS: ${this.formatoMoneda(linea.itbis_monto)}</div>
+        </div>`).join('');
       ventana.document.open();
       ventana.document.write(`<!doctype html><html><head><title>Nota ${this.escapeHtml(header.nc_numero)}</title><style>
-        body{font-family:Arial,sans-serif;color:#111;margin:28px}h1{text-align:center;font-size:22px;margin:0 0 6px}.center{text-align:center}.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 24px;margin:22px 0}.label{font-size:11px;color:#555;text-transform:uppercase}.value{font-weight:700;margin-top:2px}table{border-collapse:collapse;width:100%;margin-top:18px}th,td{border:1px solid #bbb;padding:7px;font-size:12px}th{background:#eee}.num{text-align:right}.totals{margin-left:auto;margin-top:16px;width:300px}.totals div{display:flex;justify-content:space-between;padding:5px}.total{border-top:2px solid #111;font-size:16px;font-weight:700}@media print{button{display:none}}
+        @page{size:80mm auto;margin:0}*{box-sizing:border-box}body{font-family:Arial,sans-serif;color:#000;margin:0 auto;padding:4mm;width:80mm;font-size:11px}h1{text-align:center;font-size:18px;line-height:1.15;margin:0 0 3px}h2{text-align:center;font-size:12px;font-weight:700;margin:0 0 6px}.center{text-align:center}.meta{border-top:1px dashed #000;border-bottom:1px dashed #000;margin:8px 0;padding:6px 0}.meta div{display:flex;gap:4px;justify-content:space-between;margin:3px 0}.meta span:first-child{font-weight:700}.item{border-bottom:1px dashed #777;padding:6px 0}.item strong{display:block;margin-bottom:3px}.item-line,.totals div{display:flex;justify-content:space-between;gap:6px}.tax{font-size:10px;margin-top:2px}.totals{margin-top:8px}.totals div{padding:3px 0}.total{border-top:1px solid #000;font-size:14px;font-weight:700;margin-top:3px;padding-top:5px!important}.motivo{margin-top:8px}.footer{text-align:center;border-top:1px dashed #000;margin-top:10px;padding-top:7px;font-size:9px}@media print{body{width:80mm}}
       </style></head><body>
-        <h1>NOTA DE CREDITO</h1><div class="center">${this.escapeHtml(header.emisor_nombre || '')}</div>
-        <div class="grid">
-          <div><div class="label">Numero</div><div class="value">${this.escapeHtml(header.nc_numero)}</div></div>
-          <div><div class="label">e-NCF</div><div class="value">${this.escapeHtml(header.nc_encf || '-')}</div></div>
-          <div><div class="label">Fecha</div><div class="value">${this.escapeHtml(header.nc_fecha || '-')}</div></div>
-          <div><div class="label">Factura afectada</div><div class="value">${this.escapeHtml(header.nc_factura || '-')}</div></div>
-          <div><div class="label">Comprador</div><div class="value">${this.escapeHtml(header.comprador_nombre || '-')}</div></div>
-          <div><div class="label">Estado DGII</div><div class="value">${this.escapeHtml(header.estado_dgii || 'Sin enviar')}</div></div>
-          <div style="grid-column:1/-1"><div class="label">Motivo</div><div class="value">${this.escapeHtml(header.nc_motivo || '-')}</div></div>
+        <h1>${this.escapeHtml(header.emisor_nombre || '')}</h1><h2>NOTA DE CREDITO</h2>
+        <div class="meta">
+          <div><span>Numero:</span><span>${this.escapeHtml(header.nc_numero)}</span></div>
+          <div><span>e-NCF:</span><span>${this.escapeHtml(header.nc_encf || '-')}</span></div>
+          <div><span>Fecha:</span><span>${this.escapeHtml(header.nc_fecha || '-')}</span></div>
+          <div><span>Factura:</span><span>${this.escapeHtml(header.nc_factura || '-')}</span></div>
+          <div><span>Cliente:</span><span>${this.escapeHtml(header.comprador_nombre || '-')}</span></div>
+          <div><span>RNC cliente:</span><span>${this.escapeHtml(header.comprador_rnc || '-')}</span></div>
+          <div><span>NCF afectado:</span><span>${this.escapeHtml(header.nc_ncf_modificado || '-')}</span></div>
+          <div><span>Fecha afectada:</span><span>${this.escapeHtml(header.nc_fecha_modificada || '-')}</span></div>
+          <div><span>Track ID:</span><span>${this.escapeHtml(header.track_id || '-')}</span></div>
+          <div><span>Cod. seguridad:</span><span>${this.escapeHtml(header.codigo_seguridad || '-')}</span></div>
+          <div><span>Fecha firma:</span><span>${this.escapeHtml(fechaFirma || '-')}</span></div>
         </div>
-        <table><thead><tr><th>Linea</th><th>Descripcion</th><th>Cantidad</th><th>Precio</th><th>ITBIS</th><th>Total</th></tr></thead><tbody>${filas}</tbody></table>
+        <div>${filas}</div>
         <div class="totals"><div><span>Subtotal</span><strong>${this.formatoMoneda(header.subtotal)}</strong></div><div><span>ITBIS</span><strong>${this.formatoMoneda(header.itbis_total)}</strong></div><div class="total"><span>Total</span><strong>${this.formatoMoneda(header.total)}</strong></div></div>
+        <div class="motivo"><strong>Motivo:</strong> ${this.escapeHtml(header.nc_motivo || '-')}</div>
+        ${qrDataUrl ? `<div class="center"><img src="${qrDataUrl}" alt="QR DGII" style="width:35mm;height:35mm;margin-top:7px"><div style="font-size:8px;overflow-wrap:anywhere">${this.escapeHtml(qrLink)}</div></div>` : ''}
+        <div class="footer">Estado DGII: ${this.escapeHtml(header.estado_dgii || 'Sin enviar')}<br>RNC: ${this.escapeHtml(header.emisor_rnc || '-')}<br>${this.escapeHtml(header.emisor_direccion || '')}</div>
         <script>window.onload=()=>{window.print();}</script></body></html>`);
       ventana.document.close();
     } catch (error: any) {
       ventana.close();
       await Swal.fire('Error', String(error?.message || 'No se pudo imprimir la nota de credito.'), 'error');
     }
+  }
+
+  async generarPdfNota(nota: any): Promise<void> {
+    try {
+      const response = await firstValueFrom(this.notaCreditoService.consultar(nota?.nc_numero));
+      const header = response?.data?.header;
+      const lines = Array.isArray(response?.data?.lines) ? response.data.lines : [];
+      if (!header) throw new Error('No se encontro la nota de credito.');
+
+      const qrLink = String(header.qr_link || '').trim();
+      const qrDataUrl = qrLink ? await QRCode.toDataURL(qrLink, { width: 300, margin: 1 }) : '';
+      const fechaFirma = this.fechaFirmaNota(header);
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(18);
+      doc.text(String(header.emisor_nombre || ''), 105, 16, { align: 'center' });
+      doc.setFontSize(11);
+      doc.text('NOTA DE CREDITO', 105, 23, { align: 'center' });
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.text(`Numero: ${header.nc_numero || '-'}`, 14, 34);
+      doc.text(`e-NCF: ${header.nc_encf || '-'}`, 110, 34);
+      doc.text(`Fecha: ${header.nc_fecha || '-'}`, 14, 40);
+      doc.text(`Factura afectada: ${header.nc_factura || '-'}`, 110, 40);
+      doc.text(`Comprador: ${header.comprador_nombre || '-'}`, 14, 46);
+      doc.text(`Estado DGII: ${header.estado_dgii || 'Sin enviar'}`, 110, 46);
+      doc.text(`RNC comprador: ${header.comprador_rnc || '-'}`, 14, 52);
+      doc.text(`NCF afectado: ${header.nc_ncf_modificado || '-'}`, 110, 52);
+      doc.text(`Fecha comprobante afectado: ${header.nc_fecha_modificada || '-'}`, 14, 58);
+      doc.text(`Codigo modificacion: ${header.nc_codigo_modificacion || '-'}`, 110, 58);
+      doc.text(`Track ID: ${header.track_id || '-'}`, 14, 64);
+      doc.text(`Codigo seguridad: ${header.codigo_seguridad || '-'}`, 110, 64);
+      doc.text(`Fecha firma: ${fechaFirma || '-'}`, 14, 70);
+      doc.text(`Motivo: ${header.nc_motivo || '-'}`, 14, 76, { maxWidth: 180 });
+
+      autoTable(doc, {
+        startY: 84,
+        head: [['Linea', 'Descripcion', 'Cantidad', 'Precio', 'ITBIS', 'Total']],
+        body: lines.map((linea: any) => [
+          String(linea.linea ?? ''),
+          String(linea.descripcion ?? ''),
+          this.formatoNumero(linea.cantidad),
+          this.formatoMoneda(linea.precio),
+          this.formatoMoneda(linea.itbis_monto),
+          this.formatoMoneda(linea.total),
+        ]),
+        theme: 'grid',
+        headStyles: { fillColor: [31, 78, 121], textColor: 255 },
+        styles: { fontSize: 8 },
+        columnStyles: { 2: { halign: 'right' }, 3: { halign: 'right' }, 4: { halign: 'right' }, 5: { halign: 'right' } },
+      });
+
+      const finalY = (doc as any).lastAutoTable?.finalY || 70;
+      doc.setFont('helvetica', 'bold');
+      doc.text(`Subtotal: ${this.formatoMoneda(header.subtotal)}`, 196, finalY + 8, { align: 'right' });
+      doc.text(`ITBIS: ${this.formatoMoneda(header.itbis_total)}`, 196, finalY + 14, { align: 'right' });
+      doc.setFontSize(12);
+      doc.text(`TOTAL: ${this.formatoMoneda(header.total)}`, 196, finalY + 22, { align: 'right' });
+      if (qrDataUrl) {
+        const qrY = finalY + 8;
+        doc.addImage(qrDataUrl, 'PNG', 14, qrY, 32, 32);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(6.5);
+        doc.text(qrLink, 49, qrY + 14, { maxWidth: 90 });
+      }
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.text(`RNC emisor: ${header.emisor_rnc || '-'}`, 14, finalY + 46);
+      doc.text(`Direccion emisor: ${header.emisor_direccion || '-'}`, 14, finalY + 51, { maxWidth: 180 });
+      doc.save(`nota-credito-${String(header.nc_numero || 'documento')}.pdf`);
+    } catch (error: any) {
+      await Swal.fire('Error', String(error?.message || 'No se pudo generar el PDF.'), 'error');
+    }
+  }
+
+  private fechaFirmaNota(header: any): string {
+    const directa = this.pick(
+      header?.fec_firma,
+      header?.fecha_firma,
+      header?.fechaFirma,
+      header?.signatureDateTime,
+    );
+    if (directa) return directa;
+
+    const pendientes: any[] = [header?.response_json, header?.request_json].filter(Boolean);
+    const visitados = new Set<any>();
+    while (pendientes.length) {
+      const actual = pendientes.shift();
+      if (!actual || typeof actual !== 'object' || visitados.has(actual)) continue;
+      visitados.add(actual);
+      const encontrada = this.pick(
+        actual?.fec_firma,
+        actual?.fecha_firma,
+        actual?.fechaFirma,
+        actual?.signatureDateTime,
+        actual?.fechaHoraFirma,
+      );
+      if (encontrada) return encontrada;
+      Object.values(actual).forEach((valor) => {
+        if (valor && typeof valor === 'object') pendientes.push(valor);
+      });
+    }
+    return '';
   }
 
   private cargarNotaGuardada(header: any, lines: any[]): void {
@@ -243,6 +360,44 @@ export class NotaCreditoComponent implements OnInit {
   esEstadoRechazado(nota: any): boolean {
     const estado = String(nota?.estado_dgii || '').trim().toLowerCase();
     return estado.includes('rechaz') || estado.includes('error');
+  }
+
+  async abrirEliminarEncf(nota: any): Promise<void> {
+    if (!this.esEstadoRechazado(nota) || this.notaEliminandoEncf) return;
+    const numero = String(nota?.nc_numero || '').trim();
+    const encf = String(nota?.nc_encf || '').trim();
+    if (!numero) return;
+
+    const confirmacion = await Swal.fire({
+      title: 'Editar nota rechazada',
+      html: `
+        <div class="text-start">
+          <p>Se eliminara el e-NCF de la nota de credito:</p>
+          <div class="border rounded bg-light p-3">
+            <div><strong>Numero:</strong> ${this.escapeHtml(numero)}</div>
+            <div><strong>e-NCF:</strong> ${this.escapeHtml(encf || 'Sin e-NCF')}</div>
+            <div><strong>Estado:</strong> ${this.escapeHtml(nota?.estado_dgii || 'Rechazado')}</div>
+          </div>
+        </div>`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Eliminar e-NCF',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#dc3545',
+      reverseButtons: true,
+    });
+    if (!confirmacion.isConfirmed) return;
+
+    this.notaEliminandoEncf = numero;
+    try {
+      const response = await firstValueFrom(this.notaCreditoService.eliminarEncfRechazado(numero));
+      Object.assign(nota, response?.data || {}, { nc_encf: null });
+      await Swal.fire('Actualizado', `Se elimino el e-NCF de la nota ${numero}.`, 'success');
+    } catch (error: any) {
+      await Swal.fire('Error', String(error?.message || 'No se pudo eliminar el e-NCF.'), 'error');
+    } finally {
+      this.notaEliminandoEncf = '';
+    }
   }
 
   puedeEnviarNotaDgii(nota: any): boolean {

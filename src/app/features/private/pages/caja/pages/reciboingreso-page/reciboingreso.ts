@@ -58,7 +58,8 @@ export class ReciboIngresoComponent implements OnInit {
       },
       error: (err) => {
         console.error('Error cargando recibos', err);
-        Swal.fire('Error', 'No se pudieron cargar los recibos', 'error');
+        const detalle = String(err?.message || err?.details || '').trim();
+        Swal.fire('Error', detalle || 'No se pudieron cargar los recibos', 'error');
       }
     });
   }

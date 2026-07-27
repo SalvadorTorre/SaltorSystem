@@ -92,11 +92,12 @@ export class FacturasPendientesComponent implements OnInit {
         this.loading = false;
       },
       error: (error) => {
-        console.error(error);
+        console.error('[FacturasPendientes] Error cargando facturas', error);
         this.loading = false;
+        const detalle = String(error?.message || error?.details || '').trim();
         Swal.fire(
           'Error',
-          'No se pudieron cargar las facturas pendientes',
+          detalle || 'No se pudieron cargar las facturas pendientes',
           'error',
         );
       },
@@ -393,11 +394,11 @@ export class FacturasPendientesComponent implements OnInit {
           allowEscapeKey: false,
           didOpen: () => Swal.showLoading(),
         });
-      });
+      }, { imprimir: false });
       Swal.close();
       await Swal.fire(
         'Completado',
-        `La factura ${codigo} fue enviada a DGII e impresa.`,
+        `La factura ${codigo} fue enviada a DGII.`,
         'success',
       );
       this.cargarFacturas();
@@ -418,14 +419,30 @@ export class FacturasPendientesComponent implements OnInit {
     }
   }
 
-  verXml(factura: any): void {
+  async verXml(factura: any): Promise<void> {
+    let facturaCompleta = factura;
+    const xmlActual = factura?.xmls?.ecf || factura?.xmls?.rfce || factura?.ecf || factura?.rfce;
+    if (!xmlActual) {
+      const codigo = String(factura?.fa_codFact || factura?.fa_codfact || '').trim();
+      const scope = {
+        empresa: factura?.fa_codEmpr || factura?.fa_codempr || null,
+        sucursal: factura?.fa_codSucu ?? factura?.fa_codsucu ?? null,
+      };
+      try {
+        const response: any = await this.servicioFacturacion.getByNumero(codigo, scope).toPromise();
+        facturaCompleta = response?.data || response || factura;
+      } catch (error: any) {
+        await Swal.fire('Error', String(error?.message || 'No se pudo cargar el XML.'), 'error');
+        return;
+      }
+    }
     const xmlContent = String(
-      factura?.xmls?.ecf ||
-        factura?.xmls?.rfce ||
-        factura?.xmls?.ECF ||
-        factura?.xmls?.RFCE ||
-        factura?.ecf ||
-        factura?.rfce ||
+      facturaCompleta?.xmls?.ecf ||
+        facturaCompleta?.xmls?.rfce ||
+        facturaCompleta?.xmls?.ECF ||
+        facturaCompleta?.xmls?.RFCE ||
+        facturaCompleta?.ecf ||
+        facturaCompleta?.rfce ||
         'No hay XML disponible',
     );
     const escapedXml = xmlContent

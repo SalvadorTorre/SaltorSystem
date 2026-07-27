@@ -296,11 +296,12 @@
             <th>Fecha</th>
             <th>Factura</th>
             <th>e-NCF</th>
+            <th>e-NCF afectado</th>
             <th>Comprador</th>
             <th>Motivo</th>
             <th class="text-end">Total</th>
             <th>Estado DGII</th>
-            <th></th>
+            <th class="text-end">Acciones</th>
           </tr>
         </thead>
         <tbody>
@@ -309,6 +310,7 @@
             <td>{{ nota.nc_fecha | date:'dd/MM/yyyy' }}</td>
             <td>{{ nota.nc_factura || '-' }}</td>
             <td>{{ nota.nc_encf || '-' }}</td>
+            <td>{{ nota.nc_ncf_modificado || '-' }}</td>
             <td>{{ nota.comprador_nombre || '-' }}</td>
             <td class="reason-cell" [title]="nota.nc_motivo || ''">{{ nota.nc_motivo || '-' }}</td>
             <td class="text-end"><strong>{{ nota.total | currency:'DOP':'symbol':'1.2-2' }}</strong></td>
@@ -325,8 +327,26 @@
               <button *ngIf="puedeEnviarNotaDgii(nota)" class="btn btn-outline-success btn-sm me-1" type="button" [title]="esEstadoRechazado(nota) ? 'Reenviar a DGII' : 'Enviar a DGII'" [attr.aria-label]="esEstadoRechazado(nota) ? 'Reenviar a DGII' : 'Enviar a DGII'" (click)="reenviarNotaDgii(nota)">
                 <i class="bi bi-send-arrow-up-fill"></i>
               </button>
+              <button
+                *ngIf="esEstadoRechazado(nota)"
+                class="btn btn-warning btn-sm me-1"
+                type="button"
+                title="Editar y eliminar e-NCF"
+                aria-label="Editar y eliminar e-NCF"
+                [disabled]="!!notaEliminandoEncf"
+                (click)="abrirEliminarEncf(nota)"
+              >
+                <i
+                  class="bi"
+                  [class.bi-pencil-square]="notaEliminandoEncf !== nota.nc_numero"
+                  [class.bi-arrow-clockwise]="notaEliminandoEncf === nota.nc_numero"
+                ></i>
+              </button>
               <button class="btn btn-outline-secondary btn-sm me-1" type="button" title="Imprimir nota" aria-label="Imprimir nota" (click)="imprimirNota(nota)">
                 <i class="bi bi-printer-fill"></i>
+              </button>
+              <button class="btn btn-outline-danger btn-sm me-1" type="button" title="Crear PDF" aria-label="Crear PDF" (click)="generarPdfNota(nota)">
+                <i class="bi bi-file-earmark-pdf-fill"></i>
               </button>
               <button class="btn btn-outline-primary btn-sm" type="button" title="Ver detalle" aria-label="Ver detalle" (click)="consultarNota(nota)">
                 <i class="bi bi-eye-fill"></i>
@@ -334,7 +354,7 @@
             </td>
           </tr>
           <tr *ngIf="!consultaCargando && notasCredito.length === 0">
-            <td colspan="9" class="empty-state">No hay notas de credito para mostrar.</td>
+            <td colspan="10" class="empty-state">No hay notas de credito para mostrar.</td>
           </tr>
         </tbody>
       </table>

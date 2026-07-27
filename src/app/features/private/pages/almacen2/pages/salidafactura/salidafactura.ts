@@ -1234,8 +1234,10 @@ agregarFactura() {
       unit: 'mm',
       format: [80, 297],
     });
-    const left = 2;
-    const right = 74;
+    // Aprovechar casi todo el ancho del rollo de 80 mm. El formato anterior
+    // terminaba en 74 mm y dejaba demasiado espacio libre a la derecha.
+    const left = 1.5;
+    const right = 78.5;
     const center = (left + right) / 2;
     const contentWidth = right - left;
     let y = 8;
@@ -1244,11 +1246,11 @@ agregarFactura() {
       doc.line(left, y, right, y);
       y += 4;
     };
-    const centerText = (text: string, size = 8, bold = false) => {
+    const centerText = (text: string, size = 9, bold = false) => {
       doc.setFontSize(size);
       doc.setFont('helvetica', bold ? 'bold' : 'normal');
       doc.text(text, center, y, { align: 'center', maxWidth: contentWidth });
-      y += 4;
+      y += 4.5;
     };
     const fitText = (value: any, maxWidth: number) => {
       const original = String(value || '').trim();
@@ -1264,26 +1266,26 @@ agregarFactura() {
       return `${shortened.trim()}...`;
     };
     const imprimirEncabezadoDetalle = () => {
-      doc.setFontSize(8);
+      doc.setFontSize(9);
       doc.setFont('helvetica', 'bold');
       doc.text('Factura', left, y);
-      doc.text('Fecha', left + 28, y);
+      doc.text('Fecha', left + 30, y);
       doc.text('Status', right, y, { align: 'right' });
       y += 4;
       doc.line(left, y, right, y);
       y += 4;
     };
 
-    centerText(this.nombreSucursalActual || 'SUCURSAL PRINCIPAL', 10, true);
+    centerText(this.nombreSucursalActual || 'SUCURSAL PRINCIPAL', 12, true);
     if (this.zonaSucursalActual) {
-      centerText(this.zonaSucursalActual, 8);
+      centerText(this.zonaSucursalActual, 9);
     }
-    centerText('REPORTE DE CONTROL DE SALIDA', 10, true);
-    centerText(`Salida: ${data?.codSalida || data?.codsalida || ''}`, 8);
-    centerText(`Fecha: ${formatDate(data?.fecSalida || data?.fecsalida || new Date())}`, 8);
+    centerText('REPORTE DE CONTROL DE SALIDA', 11, true);
+    centerText(`Salida: ${data?.codSalida || data?.codsalida || ''}`, 9.5);
+    centerText(`Fecha: ${formatDate(data?.fecSalida || data?.fecsalida || new Date())}`, 9.5);
     line();
 
-    doc.setFontSize(8);
+    doc.setFontSize(9.5);
     doc.setFont('helvetica', 'normal');
     doc.text(`Chofer: ${data?.nomChofer || data?.nomchofer || ''}`, left, y, { maxWidth: contentWidth });
     y += 5;
@@ -1306,24 +1308,24 @@ agregarFactura() {
     y += 6;
     line();
 
-    doc.setFontSize(8);
+    doc.setFontSize(9);
     imprimirEncabezadoDetalle();
 
-    doc.setFontSize(9);
+    doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
     detalles.forEach((d: any) => {
       if (y > 273) {
         doc.addPage([80, 297], 'portrait');
         y = 8;
         imprimirEncabezadoDetalle();
-        doc.setFontSize(9);
+        doc.setFontSize(10);
         doc.setFont('helvetica', 'normal');
       }
       const pendientePago = !esPagada(d);
       const codFact = String(d.codFact || d.codfact || '');
       doc.setFont('helvetica', pendientePago ? 'bold' : 'normal');
       doc.text(pendientePago ? `(${codFact})` : codFact, left, y);
-      doc.text(formatDate(d.fecFact || d.fecfact), left + 28, y);
+      doc.text(formatDate(d.fecFact || d.fecfact), left + 30, y);
       doc.setFont('helvetica', 'bold');
       doc.text(esPagada(d) ? 'Pagada' : '', right, y, { align: 'right' });
       y += 5;
@@ -1349,11 +1351,11 @@ agregarFactura() {
       doc.addPage([80, 297], 'portrait');
       y = 12;
     }
-    doc.setFontSize(9);
+    doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
     doc.text('DECLARACION DE RESPONSABILIDAD', center, y, { align: 'center' });
     y += 5;
-    doc.setFontSize(7.5);
+    doc.setFontSize(8.5);
     doc.setFont('helvetica', 'normal');
     const textoLegal = `Yo, ${data?.nomChofer || data?.nomchofer || ''}, portador(a) de la cedula ${data?.cedChofer || data?.cedchofer || ''}, declaro que recibo las facturas detalladas en este control de salida y me responsabilizo por las mercancias y valores correspondientes.`;
     const splitText = doc.splitTextToSize(textoLegal, contentWidth);

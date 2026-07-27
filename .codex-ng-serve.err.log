@@ -1,0 +1,234 @@
+
+Warning: This is a simple server for use in testing or debugging Angular applications
+locally. It hasn't been reviewed for security issues.
+
+Binding this server to an open connection can result in compromising your application or
+computer. Using a different host than the one passed to the "--host" flag might result in
+websocket connection issues. You might need to use "--disable-host-check" if that's the
+case.
+    
+- Generating browser application bundles (phase: setup)...
+√ Browser application bundle generation complete.
+
+./src/app/features/private/pages/mantenimientos/pages/configuracion/itbis/itbis.css?ngResource - Warning: Module Warning (from ./node_modules/postcss-loader/dist/cjs.js):
+(298:3) from "autoprefixer" plugin: end value has mixed support, consider using flex-end instead
+
+Code:
+  align-items: end
+
+
+./src/app/features/private/pages/mantenimientos/pages/empresas-page/empresas.css?ngResource - Warning: Module Warning (from ./node_modules/postcss-loader/dist/cjs.js):
+(236:3) from "autoprefixer" plugin: start value has mixed support, consider using flex-start instead
+
+Code:
+  align-items: start
+
+
+Warning: C:/Users/SALTO/OneDrive/Documents/my proyecto/SaltorSystem/src/app/core/services/despacho/despacho.model.ts is part of the TypeScript compilation but it's unused.
+Add only entry points to the 'files' or 'include' properties in your tsconfig.
+
+Warning: C:/Users/SALTO/OneDrive/Documents/my proyecto/SaltorSystem/src/app/core/services/despacho/despacho.service.ts is part of the TypeScript compilation but it's unused.
+Add only entry points to the 'files' or 'include' properties in your tsconfig.
+
+Warning: C:/Users/SALTO/OneDrive/Documents/my proyecto/SaltorSystem/src/app/core/services/facturacion/pedido/index.ts is part of the TypeScript compilation but it's unused.
+Add only entry points to the 'files' or 'include' properties in your tsconfig.
+
+Warning: C:/Users/SALTO/OneDrive/Documents/my proyecto/SaltorSystem/src/app/core/services/facturacion/pedido/pedido.service.ts is part of the TypeScript compilation but it's unused.
+Add only entry points to the 'files' or 'include' properties in your tsconfig.
+
+Warning: C:/Users/SALTO/OneDrive/Documents/my proyecto/SaltorSystem/src/app/core/services/mantenimientos/despachadores/Despacho.model.ts is part of the TypeScript compilation but it's unused.
+Add only entry points to the 'files' or 'include' properties in your tsconfig.
+
+Warning: C:/Users/SALTO/OneDrive/Documents/my proyecto/SaltorSystem/src/app/core/services/mantenimientos/despachadores/Despacho.service.ts is part of the TypeScript compilation but it's unused.
+Add only entry points to the 'files' or 'include' properties in your tsconfig.
+
+Warning: C:/Users/SALTO/OneDrive/Documents/my proyecto/SaltorSystem/src/app/core/services/mantenimientos/despachadores/despachadores.ts is part of the TypeScript compilation but it's unused.
+Add only entry points to the 'files' or 'include' properties in your tsconfig.
+
+Warning: C:/Users/SALTO/OneDrive/Documents/my proyecto/SaltorSystem/src/app/core/services/mantenimientos/dtipousuario/dtipousuario.service.ts is part of the TypeScript compilation but it's unused.
+Add only entry points to the 'files' or 'include' properties in your tsconfig.
+
+Warning: C:/Users/SALTO/OneDrive/Documents/my proyecto/SaltorSystem/src/app/core/services/mantenimientos/origenpago/origenpago.service.ts is part of the TypeScript compilation but it's unused.
+Add only entry points to the 'files' or 'include' properties in your tsconfig.
+
+Warning: C:/Users/SALTO/OneDrive/Documents/my proyecto/SaltorSystem/src/app/core/services/profile/index.ts is part of the TypeScript compilation but it's unused.
+Add only entry points to the 'files' or 'include' properties in your tsconfig.
+
+Warning: C:/Users/SALTO/OneDrive/Documents/my proyecto/SaltorSystem/src/app/features/private/pages/almacen2/index.ts is part of the TypeScript compilation but it's unused.
+Add only entry points to the 'files' or 'include' properties in your tsconfig.
+
+Warning: C:/Users/SALTO/OneDrive/Documents/my proyecto/SaltorSystem/src/app/features/private/pages/mantenimientos/pages/configuracion/tipousuario/modelo.ts is part of the TypeScript compilation but it's unused.
+Add only entry points to the 'files' or 'include' properties in your tsconfig.
+
+Warning: C:/Users/SALTO/OneDrive/Documents/my proyecto/SaltorSystem/src/app/features/private/pages/mantenimientos/pages/ncf/ncf-modulo.ts is part of the TypeScript compilation but it's unused.
+Add only entry points to the 'files' or 'include' properties in your tsconfig.
+
+Warning: C:/Users/SALTO/OneDrive/Documents/my proyecto/SaltorSystem/src/app/features/private/pages/mantenimientos/pages/ncf/ncf-ruta.ts is part of the TypeScript compilation but it's unused.
+Add only entry points to the 'files' or 'include' properties in your tsconfig.
+
+Warning: C:/Users/SALTO/OneDrive/Documents/my proyecto/SaltorSystem/src/app/features/private/pages/mantenimientos/pages/ncf/ncf.ts is part of the TypeScript compilation but it's unused.
+Add only entry points to the 'files' or 'include' properties in your tsconfig.
+
+Warning: C:/Users/SALTO/OneDrive/Documents/my proyecto/SaltorSystem/src/environments/environment.prod.ts is part of the TypeScript compilation but it's unused.
+Add only entry points to the 'files' or 'include' properties in your tsconfig.
+
+Warning: C:\Users\SALTO\OneDrive\Documents\my proyecto\SaltorSystem\node_modules\canvg\lib\index.es.js depends on 'core-js/modules/es.array.index-of.js'. CommonJS or AMD dependencies can cause optimization bailouts.
+For more info see: https://angular.io/guide/build#configuring-commonjs-dependencies
+
+Warning: C:\Users\SALTO\OneDrive\Documents\my proyecto\SaltorSystem\node_modules\canvg\lib\index.es.js depends on 'core-js/modules/es.array.iterator.js'. CommonJS or AMD dependencies can cause optimization bailouts.
+For more info see: https://angular.io/guide/build#configuring-commonjs-dependencies
+
+Warning: C:\Users\SALTO\OneDrive\Documents\my proyecto\SaltorSystem\node_modules\canvg\lib\index.es.js depends on 'core-js/modules/es.array.reduce.js'. CommonJS or AMD dependencies can cause optimization bailouts.
+For more info see: https://angular.io/guide/build#configuring-commonjs-dependencies
+
+Warning: C:\Users\SALTO\OneDrive\Documents\my proyecto\SaltorSystem\node_modules\canvg\lib\index.es.js depends on 'core-js/modules/es.array.reverse.js'. CommonJS or AMD dependencies can cause optimization bailouts.
+For more info see: https://angular.io/guide/build#configuring-commonjs-dependencies
+
+Warning: C:\Users\SALTO\OneDrive\Documents\my proyecto\SaltorSystem\node_modules\canvg\lib\index.es.js depends on 'core-js/modules/es.promise.js'. CommonJS or AMD dependencies can cause optimization bailouts.
+For more info see: https://angular.io/guide/build#configuring-commonjs-dependencies
+
+Warning: C:\Users\SALTO\OneDrive\Documents\my proyecto\SaltorSystem\node_modules\canvg\lib\index.es.js depends on 'core-js/modules/es.regexp.to-string.js'. CommonJS or AMD dependencies can cause optimization bailouts.
+For more info see: https://angular.io/guide/build#configuring-commonjs-dependencies
+
+Warning: C:\Users\SALTO\OneDrive\Documents\my proyecto\SaltorSystem\node_modules\canvg\lib\index.es.js depends on 'core-js/modules/es.string.ends-with.js'. CommonJS or AMD dependencies can cause optimization bailouts.
+For more info see: https://angular.io/guide/build#configuring-commonjs-dependencies
+
+Warning: C:\Users\SALTO\OneDrive\Documents\my proyecto\SaltorSystem\node_modules\canvg\lib\index.es.js depends on 'core-js/modules/es.string.includes.js'. CommonJS or AMD dependencies can cause optimization bailouts.
+For more info see: https://angular.io/guide/build#configuring-commonjs-dependencies
+
+Warning: C:\Users\SALTO\OneDrive\Documents\my proyecto\SaltorSystem\node_modules\canvg\lib\index.es.js depends on 'core-js/modules/es.string.match.js'. CommonJS or AMD dependencies can cause optimization bailouts.
+For more info see: https://angular.io/guide/build#configuring-commonjs-dependencies
+
+Warning: C:\Users\SALTO\OneDrive\Documents\my proyecto\SaltorSystem\node_modules\canvg\lib\index.es.js depends on 'core-js/modules/es.string.replace.js'. CommonJS or AMD dependencies can cause optimization bailouts.
+For more info see: https://angular.io/guide/build#configuring-commonjs-dependencies
+
+Warning: C:\Users\SALTO\OneDrive\Documents\my proyecto\SaltorSystem\node_modules\canvg\lib\index.es.js depends on 'core-js/modules/es.string.split.js'. CommonJS or AMD dependencies can cause optimization bailouts.
+For more info see: https://angular.io/guide/build#configuring-commonjs-dependencies
+
+Warning: C:\Users\SALTO\OneDrive\Documents\my proyecto\SaltorSystem\node_modules\canvg\lib\index.es.js depends on 'core-js/modules/es.string.starts-with.js'. CommonJS or AMD dependencies can cause optimization bailouts.
+For more info see: https://angular.io/guide/build#configuring-commonjs-dependencies
+
+Warning: C:\Users\SALTO\OneDrive\Documents\my proyecto\SaltorSystem\node_modules\canvg\lib\index.es.js depends on 'core-js/modules/es.string.trim.js'. CommonJS or AMD dependencies can cause optimization bailouts.
+For more info see: https://angular.io/guide/build#configuring-commonjs-dependencies
+
+Warning: C:\Users\SALTO\OneDrive\Documents\my proyecto\SaltorSystem\node_modules\canvg\lib\index.es.js depends on 'core-js/modules/web.dom-collections.iterator.js'. CommonJS or AMD dependencies can cause optimization bailouts.
+For more info see: https://angular.io/guide/build#configuring-commonjs-dependencies
+
+Warning: C:\Users\SALTO\OneDrive\Documents\my proyecto\SaltorSystem\node_modules\canvg\lib\index.es.js depends on 'raf'. CommonJS or AMD dependencies can cause optimization bailouts.
+For more info see: https://angular.io/guide/build#configuring-commonjs-dependencies
+
+Warning: C:\Users\SALTO\OneDrive\Documents\my proyecto\SaltorSystem\node_modules\canvg\lib\index.es.js depends on 'rgbcolor'. CommonJS or AMD dependencies can cause optimization bailouts.
+For more info see: https://angular.io/guide/build#configuring-commonjs-dependencies
+
+Warning: C:\Users\SALTO\OneDrive\Documents\my proyecto\SaltorSystem\src\app\features\private\pages\contabilidad\pages\nota-credito\nota-credito.ts depends on 'qrcode'. CommonJS or AMD dependencies can cause optimization bailouts.
+For more info see: https://angular.io/guide/build#configuring-commonjs-dependencies
+
+Warning: C:\Users\SALTO\OneDrive\Documents\my proyecto\SaltorSystem\src\app\features\private\pages\despacho\despacho.ts depends on 'jspdf-autotable'. CommonJS or AMD dependencies can cause optimization bailouts.
+For more info see: https://angular.io/guide/build#configuring-commonjs-dependencies
+
+Warning: C:\Users\SALTO\OneDrive\Documents\my proyecto\SaltorSystem\src\app\features\private\private.page.ts depends on 'sweetalert2'. CommonJS or AMD dependencies can cause optimization bailouts.
+For more info see: https://angular.io/guide/build#configuring-commonjs-dependencies
+
+
+√ Browser application bundle generation complete.
+
+Warning: C:\Users\SALTO\OneDrive\Documents\my proyecto\SaltorSystem\src\app\features\private\pages\cotizacion\cotizacion.ts depends on 'jspdf-autotable'. CommonJS or AMD dependencies can cause optimization bailouts.
+For more info see: https://angular.io/guide/build#configuring-commonjs-dependencies
+
+
+√ Browser application bundle generation complete.
+√ Browser application bundle generation complete.
+√ Browser application bundle generation complete.
+√ Browser application bundle generation complete.
+√ Browser application bundle generation complete.
+√ Browser application bundle generation complete.
+
+Error: src/app/core/services/facturacion/factura/factura.service.ts:2784:13 - error TS2304: Cannot find name 'empresa'.
+
+2784         if (empresa) updateQuery = updateQuery.eq('fa_codempr', empresa);
+                 ~~~~~~~
+
+
+Error: src/app/core/services/facturacion/factura/factura.service.ts:2784:65 - error TS2304: Cannot find name 'empresa'.
+
+2784         if (empresa) updateQuery = updateQuery.eq('fa_codempr', empresa);
+                                                                     ~~~~~~~
+
+
+Error: src/app/core/services/facturacion/factura/factura.service.ts:2786:14 - error TS2304: Cannot find name 'empresa'.
+
+2786         if (!empresa && !sucursal) updateQuery = this.applyTenantFilter(updateQuery);
+                  ~~~~~~~
+
+
+
+√ Browser application bundle generation complete.
+
+Error: src/app/core/services/facturacion/factura/factura-dgii.service.ts:137:59 - error TS2304: Cannot find name 'scope'.
+
+137       firstValueFrom(this.facturacion.getByNumero(codigo, scope)),
+                                                              ~~~~~
+
+
+Error: src/app/core/services/facturacion/factura/factura-dgii.service.ts:138:68 - error TS2304: Cannot find name 'scope'.
+
+138       firstValueFrom(this.facturacion.buscarFacturaDetalle(codigo, scope)),
+                                                                       ~~~~~
+
+
+Error: src/app/core/services/facturacion/factura/factura-dgii.service.ts:157:89 - error TS2304: Cannot find name 'scope'.
+
+157       const encfResp = await firstValueFrom(this.facturacion.asignarEncfFactura(codigo, scope));
+                                                                                            ~~~~~
+
+
+Error: src/app/core/services/facturacion/factura/factura-dgii.service.ts:188:87 - error TS2304: Cannot find name 'scope'.
+
+188         await firstValueFrom(this.facturacion.actualizarDatosDgii(codigo, datosError, scope));
+                                                                                          ~~~~~
+
+
+Error: src/app/core/services/facturacion/factura/factura-dgii.service.ts:204:63 - error TS2304: Cannot find name 'scope'.
+
+204       this.facturacion.actualizarDatosDgii(codigo, datosDgii, scope),
+                                                                  ~~~~~
+
+
+Error: src/app/core/services/facturacion/factura/factura.service.ts:2784:13 - error TS2304: Cannot find name 'empresa'.
+
+2784         if (empresa) updateQuery = updateQuery.eq('fa_codempr', empresa);
+                 ~~~~~~~
+
+
+Error: src/app/core/services/facturacion/factura/factura.service.ts:2784:65 - error TS2304: Cannot find name 'empresa'.
+
+2784         if (empresa) updateQuery = updateQuery.eq('fa_codempr', empresa);
+                                                                     ~~~~~~~
+
+
+Error: src/app/core/services/facturacion/factura/factura.service.ts:2786:14 - error TS2304: Cannot find name 'empresa'.
+
+2786         if (!empresa && !sucursal) updateQuery = this.applyTenantFilter(updateQuery);
+                  ~~~~~~~
+
+
+
+√ Browser application bundle generation complete.
+√ Browser application bundle generation complete.
+√ Browser application bundle generation complete.
+√ Browser application bundle generation complete.
+√ Browser application bundle generation complete.
+√ Browser application bundle generation complete.
+√ Browser application bundle generation complete.
+
+Warning: C:\Users\SALTO\OneDrive\Documents\my proyecto\SaltorSystem\src\app\core\services\utils\printing.service.ts depends on 'jsbarcode'. CommonJS or AMD dependencies can cause optimization bailouts.
+For more info see: https://angular.io/guide/build#configuring-commonjs-dependencies
+
+Warning: C:\Users\SALTO\OneDrive\Documents\my proyecto\SaltorSystem\src\app\features\private\pages\contabilidad\pages\facturas-pendientes\facturas-pendientes.ts depends on 'jspdf-autotable'. CommonJS or AMD dependencies can cause optimization bailouts.
+For more info see: https://angular.io/guide/build#configuring-commonjs-dependencies
+
+
+√ Browser application bundle generation complete.
+√ Browser application bundle generation complete.
+√ Browser application bundle generation complete.
+√ Browser application bundle generation complete.

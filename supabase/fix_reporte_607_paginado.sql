@@ -82,8 +82,18 @@ BEGIN
   WITH filtered AS (
     SELECT f.*
     FROM myappdb.factura f
-    WHERE coalesce(f.estado_envio_dgii, '') <> ''
-      AND upper(coalesce(f.estado_envio_dgii, '')) <> 'PENDIENTE'
+    WHERE (
+        nullif(btrim(coalesce(f.estado_dgii, '')), '') IS NOT NULL
+        OR (
+          nullif(btrim(coalesce(f.estado_envio_dgii, '')), '') IS NOT NULL
+          AND upper(btrim(f.estado_envio_dgii)) <> 'PENDIENTE'
+        )
+        OR nullif(btrim(coalesce(f.dgii_track_id, '')), '') IS NOT NULL
+        OR nullif(btrim(coalesce(f.codseguridad, '')), '') IS NOT NULL
+        OR nullif(btrim(coalesce(f.qr_link, '')), '') IS NOT NULL
+        OR f.dgii_response_json IS NOT NULL
+        OR f.dgii_response_raw IS NOT NULL
+      )
       AND (
         v_is_root
         OR (

@@ -31,10 +31,12 @@ export class Reporte607Component implements OnInit {
   total = 0;
   totalPages = 1;
   facturaReenviando = '';
+  facturaEditando = '';
   exportandoXls = false;
   empresas: any[] = [];
   sucursales: any[] = [];
   formasPago: any[] = [];
+  consultaRealizada = false;
   readonly tiposComprobante = [
     { value: '31', label: 'E31 - Crédito Fiscal' },
     { value: '32', label: 'E32 - Consumo' },
@@ -74,7 +76,6 @@ export class Reporte607Component implements OnInit {
   ngOnInit(): void {
     this.cargarCatalogosFiltro();
     this.cargarFormasPago();
-    this.cargarReporte();
   }
 
   private cargarFormasPago(): void {
@@ -109,6 +110,7 @@ export class Reporte607Component implements OnInit {
   }
 
   cargarReporte(): void {
+    if (!this.consultaRealizada) return;
     this.loading = true;
     const params = {
       page: this.page,
@@ -136,13 +138,15 @@ export class Reporte607Component implements OnInit {
       error: (error) => {
         console.error('[Reporte607Component] Error cargando Rep. 607', error);
         this.loading = false;
-        Swal.fire('Error', 'No se pudo cargar el Rep. 607', 'error');
+        const detalle = String(error?.message || error?.details || '').trim();
+        Swal.fire('Error', detalle || 'No se pudo cargar el Rep. 607', 'error');
       },
     });
   }
 
   aplicarFiltros(): void {
     this.page = 1;
+    this.consultaRealizada = true;
     this.cargarReporte();
   }
 
@@ -157,7 +161,10 @@ export class Reporte607Component implements OnInit {
     this.sucursalFiltro = '';
     this.modoFecha = 'rango';
     this.page = 1;
-    this.cargarReporte();
+    this.facturas = [];
+    this.total = 0;
+    this.totalPages = 1;
+    this.consultaRealizada = false;
   }
 
   onEmpresaFiltroChange(): void {
@@ -293,6 +300,57 @@ export class Reporte607Component implements OnInit {
         popup: 'dgii-response-popup',
       },
     });
+  }
+
+  puedeEditarEncf(factura: any): boolean {
+    return this.estadoTexto(factura).toLowerCase().includes('rechaz');
+  }
+
+  async abrirModalEliminarEncf(factura: any): Promise<void> {
+    if (!this.puedeEditarEncf(factura) || this.facturaEditando) return;
+    const codigo = String(factura?.fa_codFact || factura?.fa_codfact || '').trim();
+    const encf = String(factura?.fa_ncfFact || factura?.fa_ncffact || '').trim();
+    const empresa = String(factura?.fa_codEmpr || factura?.fa_codempr || '').trim();
+    const sucursal = factura?.fa_codSucu ?? factura?.fa_codsucu ?? null;
+    if (!codigo) return;
+
+    const confirmacion = await Swal.fire({
+      title: 'Editar factura rechazada',
+      html: `
+        <div class="text-start">
+          <p class="mb-2">Se eliminara el e-NCF de esta factura:</p>
+          <div class="border rounded p-3 bg-light">
+            <div><strong>Factura:</strong> ${this.escapeHtml(codigo)}</div>
+            <div><strong>e-NCF actual:</strong> ${this.escapeHtml(encf || 'Sin e-NCF')}</div>
+            <div><strong>Estado:</strong> ${this.escapeHtml(this.estadoTexto(factura))}</div>
+          </div>
+          <p class="text-danger mt-3 mb-0">Esta accion deja vacio el campo fa_ncffact.</p>
+        </div>
+      `,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Eliminar e-NCF',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#dc3545',
+      reverseButtons: true,
+    });
+    if (!confirmacion.isConfirmed) return;
+
+    this.facturaEditando = codigo;
+    try {
+      const response = await firstValueFrom(
+        this.servicioFacturacion.eliminarEncfFacturaRechazada(codigo, { empresa, sucursal }),
+      );
+      factura.fa_ncfFact = '';
+      factura.fa_ncffact = null;
+      if (response?.data) Object.assign(factura, response.data);
+      await Swal.fire('Actualizado', `Se elimino el e-NCF de la factura ${codigo}.`, 'success');
+    } catch (error: any) {
+      console.error('[Reporte607Component] Error eliminando e-NCF', error);
+      await Swal.fire('Error', String(error?.message || 'No se pudo eliminar el e-NCF.'), 'error');
+    } finally {
+      this.facturaEditando = '';
+    }
   }
 
   async reenviarDgii(factura: any): Promise<void> {

@@ -159,7 +159,8 @@
           <tr *ngIf="!loading && facturas.length === 0">
             <td colspan="10" class="empty-cell">
               <i class="bi bi-inbox"></i>
-              <span>No hay facturas DGII para los filtros seleccionados.</span>
+              <span *ngIf="consultaRealizada">No hay facturas DGII para los filtros seleccionados.</span>
+              <span *ngIf="!consultaRealizada">Seleccione los filtros y pulse Filtrar para consultar.</span>
             </td>
           </tr>
 
@@ -223,6 +224,22 @@
                     [class.bi-arrow-clockwise]="facturaReenviando === (factura.fa_codFact || factura.fa_codfact)"
                     [class.spin]="facturaReenviando === (factura.fa_codFact || factura.fa_codfact)"
                   ></i>
+                </button>
+                <button
+                  *ngIf="puedeEditarEncf(factura)"
+                  class="btn btn-sm btn-warning d-inline-flex align-items-center gap-1"
+                  type="button"
+                  (click)="abrirModalEliminarEncf(factura)"
+                  [disabled]="!!facturaEditando || loading"
+                  title="Editar factura y eliminar e-NCF"
+                >
+                  <i
+                    class="bi"
+                    [class.bi-pencil-square]="facturaEditando !== (factura.fa_codFact || factura.fa_codfact)"
+                    [class.bi-arrow-clockwise]="facturaEditando === (factura.fa_codFact || factura.fa_codfact)"
+                    [class.spin]="facturaEditando === (factura.fa_codFact || factura.fa_codfact)"
+                  ></i>
+                  <span>Editar</span>
                 </button>
                 <button
                   class="btn btn-sm btn-outline-primary"

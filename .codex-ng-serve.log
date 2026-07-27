@@ -1,0 +1,332 @@
+
+> saltor-system@1.0.96 start
+> ng serve --host 0.0.0.0 --port 4200
+
+
+Initial Chunk Files                                                                                     | Names                                                          |  Raw Size
+vendor.js                                                                                               | vendor                                                         |   3.20 MB |
+scripts.js                                                                                              | scripts                                                        |   2.31 MB |
+styles.css, styles.js                                                                                   | styles                                                         | 568.54 kB |
+polyfills.js                                                                                            | polyfills                                                      | 252.60 kB |
+main.js                                                                                                 | main                                                           |  93.52 kB |
+runtime.js                                                                                              | runtime                                                        |  14.14 kB |
+
+| Initial Total                                                  |   6.42 MB
+
+Lazy Chunk Files                                                                                        | Names                                                          |  Raw Size
+default-node_modules_jspdf_dist_jspdf_es_min_js.js                                                      | pages-facturacion-facturacion-modulo                           | 570.67 kB |
+node_modules_canvg_lib_index_es_js.js                                                                   | canvg                                                          | 434.23 kB |
+src_app_features_private_pages_contabilidad_contabilidad-modulo_ts.js                                   | pages-contabilidad-contabilidad-modulo                         | 416.81 kB |
+node_modules_html2canvas_dist_html2canvas_js.js                                                         | html2canvas                                                    | 377.67 kB |
+default-src_app_core_services_utils_printing_service_ts.js                                              | pages-cotizacion-cotizacion-modulo                             | 347.08 kB |
+default-node_modules_angular_forms_fesm2022_forms_mjs.js                                                | features-public-public-module                                  | 295.70 kB |
+src_app_features_private_pages_mantenimientos_pages_usuario-page_usuario-modulo_ts.js                   | pages-usuario-page-usuario-modulo                              | 275.50 kB |
+src_app_features_private_pages_facturacion_facturacion-modulo_ts.js                                     | pages-facturacion-facturacion-modulo                           | 253.73 kB |
+src_app_features_private_pages_cotizacion_cotizacion-modulo_ts.js                                       | pages-cotizacion-cotizacion-modulo                             | 204.97 kB |
+src_app_features_private_pages_home_modulo-home_ts.js                                                   | pages-home-modulo-home                                         | 182.75 kB |
+default-node_modules_sweetalert2_dist_sweetalert2_all_js.js                                             | features-private-private-module                                | 176.30 kB |
+src_app_features_private_pages_caja_pages_cobrofact-page_cobrofact-modulo_ts.js                         | pages-cobrofact-page-cobrofact-modulo                          | 175.15 kB |
+src_app_features_private_pages_almacen2_pages_controlfact-page_controlfact-modulo_ts.js                 | pages-controlfact-page-controlfact-modulo                      | 169.73 kB |
+src_app_features_private_pages_mantenimientos_pages_empresas-page_empresas-modulo_ts.js                 | pages-empresas-page-empresas-modulo                            | 167.03 kB |
+src_app_features_private_pages_almacen2_pages_devoluciones_devoluciones-modulo_ts.js                    | pages-devoluciones-devoluciones-modulo                         | 136.80 kB |
+src_app_features_private_pages_almacen2_pages_salidafactura_salidafactura-modulo_ts.js                  | pages-salidafactura-salidafactura-modulo                       | 131.52 kB |
+src_app_core_services_http-invoke_service_ts-src_app_features_private_pages_almacen2_pages_ve-bb9421.js | pages-ventainterna-ventainterna-modulo                         | 128.16 kB |
+src_app_features_private_pages_mantenimientos_pages_inventario-page_inventario-modulo_ts.js             | pages-inventario-page-inventario-modulo                        | 123.70 kB |
+src_app_features_private_pages_almacen2_pages_entradamerc-page_entradamerc-modulo_ts.js                 | pages-entradamerc-page-entradamerc-modulo                      | 121.79 kB |
+default-src_app_core_services_facturacion_factura_factura_service_ts.js                                 | pages-home-modulo-home                                         | 120.87 kB |
+default-node_modules_jspdf-autotable_dist_jspdf_plugin_autotable_js.js                                  | pages-facturacion-facturacion-modulo                           | 112.15 kB |
+src_app_features_private_pages_mantenimientos_modulo-mantenimiento_ts.js                                | pages-mantenimientos-modulo-mantenimiento                      | 103.79 kB |
+src_app_features_private_pages_mantenimientos_pages_configuracion-global_configuracion-global-5e2157.js | pages-configuracion-global-configuracion-global-modulo         | 100.24 kB |
+common.js                                                                                               | common                                                         |  99.46 kB |
+src_app_features_private_pages_reporte1_pages_consulta-ventas_consulta-ventas-modulo_ts.js              | pages-consulta-ventas-consulta-ventas-modulo                   |  95.21 kB |
+src_app_features_private_pages_almacen2_pages_solicitudprestamo_solicitudprestamo-modulo_ts.js          | pages-solicitudprestamo-solicitudprestamo-modulo               |  94.53 kB |
+src_app_features_private_private_module_ts.js                                                           | features-private-private-module                                |  83.86 kB |
+src_app_features_private_pages_caja_pages_controlsalida-page_controlsalida-modulo_ts.js                 | pages-controlsalida-page-controlsalida-modulo                  |  79.34 kB |
+src_app_core_services_http-invoke_service_ts-src_app_features_private_pages_mantenimientos_pa-07b256.js | pages-configuracion-itbis-itbis-modulo                         |  77.18 kB |
+src_app_features_private_pages_mantenimientos_pages_encf_encf-modulo_ts.js                              | mantenimientos-pages-encf-encf-modulo                          |  76.65 kB |
+src_app_features_private_pages_reporte1_pages_ventas-vendedor_ventas-vendedor-modulo_ts.js              | pages-ventas-vendedor-ventas-vendedor-modulo                   |  76.06 kB |
+src_app_features_private_pages_mantenimientos_pages_cliente-page_cliente-modulo_ts.js                   | pages-cliente-page-cliente-modulo                              |  74.41 kB |
+src_app_features_private_pages_almacen2_pages_pendienteentrega_pendienteentrega-modulo_ts.js            | pages-pendienteentrega-pendienteentrega-modulo                 |  70.38 kB |
+src_app_features_private_pages_mantenimientos_pages_configuracion_cuentas-bancarias_cuentas-b-b8c14a.js | pages-configuracion-cuentas-bancarias-cuentas-bancarias-modulo |  67.04 kB |
+src_app_features_private_pages_mantenimientos_pages_precio-page_precio-modulo_ts.js                     | pages-precio-page-precio-modulo                                |  66.93 kB |
+node_modules_dompurify_dist_purify_js.js                                                                | dompurify                                                      |  65.90 kB |
+default-src_app_core_services_almacen_detentradamerc_detentradamerc_service_ts-src_app_core_s-2fdef7.js | pages-entradamerc-page-entradamerc-modulo                      |  65.19 kB |
+src_app_features_private_pages_reporte1_pages_rendimiento-choferes_rendimiento-choferes-modulo_ts.js    | pages-rendimiento-choferes-rendimiento-choferes-modulo         |  64.30 kB |
+src_app_features_private_pages_reporte1_pages_movproducto_movproducto-modulo_ts.js                      | pages-movproducto-movproducto-modulo                           |  60.58 kB |
+src_app_features_private_pages_mantenimientos_pages_configuracion_contfactura_contfactura-modulo_ts.js  | pages-configuracion-contfactura-contfactura-modulo             |  54.13 kB |
+src_app_features_private_pages_caja_pages_reciboingreso-page_reciboingreso-modulo_ts.js                 | pages-reciboingreso-page-reciboingreso-modulo                  |  52.93 kB |
+src_app_features_private_pages_caja_pages_cuadecaja-page_cuadrecaja-modulo_ts.js                        | pages-cuadecaja-page-cuadrecaja-modulo                         |  52.42 kB |
+src_app_features_private_pages_mantenimientos_pages_configuracion_cargar-apk_cargar-apk-modulo_ts.js    | pages-configuracion-cargar-apk-cargar-apk-modulo               |  47.83 kB |
+src_app_features_private_pages_mantenimientos_pages_configuracion_cola-dgii_cola-dgii-modulo_ts.js      | pages-configuracion-cola-dgii-cola-dgii-modulo                 |  47.47 kB |
+src_app_features_private_pages_mantenimientos_pages_configuracion_permiso_permiso-modulo_ts.js          | pages-configuracion-permiso-permiso-modulo                     |  45.62 kB |
+src_app_features_private_pages_mantenimientos_pages_configuracion_tipousuario_tipousuario-modulo_ts.js  | pages-configuracion-tipousuario-tipousuario-modulo             |  44.38 kB |
+src_app_features_private_pages_mantenimientos_pages_configuracion_estado-servidor_estado-serv-0d5893.js | pages-configuracion-estado-servidor-estado-servidor-modulo     |  42.36 kB |
+src_app_features_private_pages_mantenimientos_pages_rnc-page_rnc-modulo_ts.js                           | pages-rnc-page-rnc-modulo                                      |  41.45 kB |
+src_app_features_private_pages_mantenimientos_pages_inventario-sucursal_inventario-sucursal-m-7021fc.js | pages-inventario-sucursal-inventario-sucursal-modulo           |  41.31 kB |
+src_app_features_private_pages_mantenimientos_pages_suplidor-page_suplidor-modulo_ts.js                 | pages-suplidor-page-suplidor-modulo                            |  40.60 kB |
+default-src_app_core_services_mantenimientos_inventario_inventario_service_ts.js                        | pages-home-modulo-home                                         |  38.00 kB |
+src_app_features_private_pages_almacen2_almacen-modulo_ts.js                                            | pages-almacen2-almacen-modulo                                  |  37.97 kB |
+src_app_features_private_pages_reporte1_reporte-modulo_ts.js                                            | pages-reporte1-reporte-modulo                                  |  37.14 kB |
+src_app_features_private_pages_mantenimientos_pages_despachadores-page_despachadores-modulo_ts.js       | pages-despachadores-page-despachadores-modulo                  |  35.98 kB |
+src_app_features_private_pages_mantenimientos_pages_choferes-page_choferes-modulo_ts.js                 | pages-choferes-page-choferes-modulo                            |  35.38 kB |
+src_app_features_private_pages_mantenimientos_pages_fpago-page_fpago-modulo_ts.js                       | pages-fpago-page-fpago-modulo                                  |  35.25 kB |
+src_app_features_private_pages_mantenimientos_pages_sector-page_sector-modulo_ts.js                     | pages-sector-page-sector-modulo                                |  34.95 kB |
+src_app_features_private_pages_mantenimientos_pages_sucursales_sucursales-modulo_ts.js                  | pages-sucursales-sucursales-modulo                             |  34.92 kB |
+default-src_app_core_services_mantenimientos_clientes_cliente_service_ts-src_app_core_service-48fb4f.js | pages-facturacion-facturacion-modulo                           |  32.96 kB |
+default-src_app_core_services_almacen_salidafactura_salidafactura_service_ts.js                         | pages-facturacion-facturacion-modulo                           |  32.75 kB |
+src_app_features_private_pages_caja_caja-modulo_ts.js                                                   | pages-caja-caja-modulo                                         |  31.83 kB |
+src_app_features_private_pages_despacho_despacho_modulo_ts.js                                           | pages-despacho-despacho-modulo                                 |  30.76 kB |
+src_app_features_private_pages_mantenimientos_pages_configuracion_modulo_modulo-modulo_ts.js            | pages-configuracion-modulo-modulo-modulo                       |  27.84 kB |
+default-src_app_core_services_mantenimientos_usuario_usuario_service_ts.js                              | pages-home-modulo-home                                         |  24.83 kB |
+src_app_features_private_pages_mantenimientos_pages_grupormerc_grupomerc-modulo_ts.js                   | pages-grupormerc-grupomerc-modulo                              |  24.41 kB |
+default-src_app_core_services_almacen_ventainterna_ventainterna_service_ts.js                           | pages-ventainterna-ventainterna-modulo                         |  23.57 kB |
+default-src_app_core_services_facturacion_factura_factura-dgii_service_ts.js                            | pages-contabilidad-contabilidad-modulo                         |  23.02 kB |
+src_app_features_public_pages_sign-in_signin_module_ts.js                                               | pages-sign-in-signin-module                                    |  21.11 kB |
+src_app_features_private_pages_mantenimientos_pages_zona-page_zona-modulo_ts.js                         | pages-zona-page-zona-modulo                                    |  20.85 kB |
+default-src_app_core_services_mantenimientos_configuracion-global_configuracion-global_service_ts.js    | pages-contabilidad-contabilidad-modulo                         |  18.35 kB |
+default-src_app_core_services_almacen_solicitudprestamo_solicitudprestamo_service_ts-node_mod-99fe31.js | pages-ventainterna-ventainterna-modulo                         |  13.65 kB |
+src_app_features_private_pages_mantenimientos_pages_fentrega-page_fentrega-modulo_ts.js                 | pages-fentrega-page-fentrega-modulo                            |   7.42 kB |
+src_app_features_public_public_module_ts.js                                                             | features-public-public-module                                  |   6.71 kB |
+
+Build at: 2026-07-24T13:53:46.483Z - Hash: 10cf84a0d3776945 - Time: 47196ms
+
+** Angular Live Development Server is listening on 0.0.0.0:4200, open your browser on http://localhost:4200/ **
+
+
+√ Compiled successfully.
+
+Initial Chunk Files                                                     | Names                  |  Raw Size
+runtime.js                                                              | runtime                |  14.14 kB |
+
+Lazy Chunk Files                                                        | Names                  |  Raw Size
+default-src_app_core_services_facturacion_factura_factura_service_ts.js | pages-home-modulo-home | 122.01 kB |
+
+77 unchanged chunks
+
+Build at: 2026-07-24T13:54:05.593Z - Hash: d7089bc88d19d273 - Time: 17576ms
+
+√ Compiled successfully.
+
+Initial Chunk Files                                                     | Names                  |  Raw Size
+runtime.js                                                              | runtime                |  14.14 kB |
+
+Lazy Chunk Files                                                        | Names                  |  Raw Size
+default-src_app_core_services_facturacion_factura_factura_service_ts.js | pages-home-modulo-home | 122.26 kB |
+
+77 unchanged chunks
+
+Build at: 2026-07-24T13:57:28.876Z - Hash: 5e355db2dffe1f47 - Time: 7745ms
+
+√ Compiled successfully.
+
+Initial Chunk Files                                                     | Names                  |  Raw Size
+runtime.js                                                              | runtime                |  14.14 kB |
+
+Lazy Chunk Files                                                        | Names                  |  Raw Size
+default-src_app_core_services_facturacion_factura_factura_service_ts.js | pages-home-modulo-home | 125.09 kB |
+
+77 unchanged chunks
+
+Build at: 2026-07-24T14:04:15.078Z - Hash: 5bf50adb69aed628 - Time: 8340ms
+
+√ Compiled successfully.
+
+Initial Chunk Files                                                     | Names                                  |  Raw Size
+runtime.js                                                              | runtime                                |  14.14 kB |
+
+Lazy Chunk Files                                                        | Names                                  |  Raw Size
+src_app_features_private_pages_contabilidad_contabilidad-modulo_ts.js   | pages-contabilidad-contabilidad-modulo | 417.02 kB |
+default-src_app_core_services_facturacion_factura_factura_service_ts.js | pages-home-modulo-home                 | 125.57 kB |
+
+76 unchanged chunks
+
+Build at: 2026-07-24T14:19:19.352Z - Hash: a1482b8d01cb9839 - Time: 11128ms
+
+√ Compiled successfully.
+
+Initial Chunk Files                                                     | Names                                  |  Raw Size
+runtime.js                                                              | runtime                                |  14.14 kB |
+
+Lazy Chunk Files                                                        | Names                                  |  Raw Size
+src_app_features_private_pages_contabilidad_contabilidad-modulo_ts.js   | pages-contabilidad-contabilidad-modulo | 417.02 kB |
+default-src_app_core_services_facturacion_factura_factura_service_ts.js | pages-home-modulo-home                 | 125.83 kB |
+
+76 unchanged chunks
+
+Build at: 2026-07-24T14:24:44.264Z - Hash: c43dab1260583ed3 - Time: 8871ms
+
+√ Compiled successfully.
+
+Initial Chunk Files                                                     | Names                  |  Raw Size
+runtime.js                                                              | runtime                |  14.14 kB |
+
+Lazy Chunk Files                                                        | Names                  |  Raw Size
+default-src_app_core_services_facturacion_factura_factura_service_ts.js | pages-home-modulo-home | 126.16 kB |
+
+77 unchanged chunks
+
+Build at: 2026-07-24T14:24:53.829Z - Hash: 8054102753d3b38f - Time: 9331ms
+
+√ Compiled successfully.
+
+Initial Chunk Files                                                     | Names                  |  Raw Size
+runtime.js                                                              | runtime                |  14.14 kB |
+
+Lazy Chunk Files                                                        | Names                  |  Raw Size
+default-src_app_core_services_facturacion_factura_factura_service_ts.js | pages-home-modulo-home | 126.91 kB |
+
+77 unchanged chunks
+
+Build at: 2026-07-24T14:25:03.058Z - Hash: 2daaaad1fcb80694 - Time: 9016ms
+
+× Failed to compile.
+
+Initial Chunk Files                                                          | Names                                  | Raw Size
+runtime.js                                                                   | runtime                                | 14.14 kB |
+
+Lazy Chunk Files                                                             | Names                                  | Raw Size
+default-src_app_core_services_facturacion_factura_factura-dgii_service_ts.js | pages-contabilidad-contabilidad-modulo | 23.23 kB |
+
+77 unchanged chunks
+
+Build at: 2026-07-24T14:25:09.853Z - Hash: a7cec6b8c2747478 - Time: 2340ms
+
+× Failed to compile.
+
+Initial Chunk Files                                                          | Names                                  |  Raw Size
+runtime.js                                                                   | runtime                                |  14.14 kB |
+
+Lazy Chunk Files                                                             | Names                                  |  Raw Size
+default-src_app_core_services_facturacion_factura_factura_service_ts.js      | pages-home-modulo-home                 | 126.91 kB |
+default-src_app_core_services_facturacion_factura_factura-dgii_service_ts.js | pages-contabilidad-contabilidad-modulo |  23.41 kB |
+
+76 unchanged chunks
+
+Build at: 2026-07-24T14:26:28.275Z - Hash: 01864cf15b9d5bfc - Time: 12540ms
+
+√ Compiled successfully.
+
+Initial Chunk Files                                                          | Names                                  |  Raw Size
+runtime.js                                                                   | runtime                                |  14.14 kB |
+
+Lazy Chunk Files                                                             | Names                                  |  Raw Size
+src_app_features_private_pages_contabilidad_contabilidad-modulo_ts.js        | pages-contabilidad-contabilidad-modulo | 417.11 kB |
+default-src_app_core_services_facturacion_factura_factura_service_ts.js      | pages-home-modulo-home                 | 126.92 kB |
+default-src_app_core_services_facturacion_factura_factura-dgii_service_ts.js | pages-contabilidad-contabilidad-modulo |  23.41 kB |
+
+75 unchanged chunks
+
+Build at: 2026-07-27T15:19:03.540Z - Hash: 49df6d8136400226 - Time: 13964ms
+
+√ Compiled successfully.
+
+Initial Chunk Files                                                     | Names                                  |  Raw Size
+runtime.js                                                              | runtime                                |  14.14 kB |
+
+Lazy Chunk Files                                                        | Names                                  |  Raw Size
+src_app_features_private_pages_contabilidad_contabilidad-modulo_ts.js   | pages-contabilidad-contabilidad-modulo | 417.11 kB |
+default-src_app_core_services_facturacion_factura_factura_service_ts.js | pages-home-modulo-home                 | 129.47 kB |
+
+76 unchanged chunks
+
+Build at: 2026-07-27T15:26:07.957Z - Hash: 0252420f3b776e8a - Time: 12711ms
+
+√ Compiled successfully.
+
+Initial Chunk Files                                                   | Names                                  |  Raw Size
+runtime.js                                                            | runtime                                |  14.14 kB |
+
+Lazy Chunk Files                                                      | Names                                  |  Raw Size
+src_app_features_private_pages_contabilidad_contabilidad-modulo_ts.js | pages-contabilidad-contabilidad-modulo | 417.13 kB |
+
+77 unchanged chunks
+
+Build at: 2026-07-27T16:36:44.298Z - Hash: 1dea249268adb606 - Time: 2210ms
+
+√ Compiled successfully.
+
+Initial Chunk Files                                                     | Names                                  |  Raw Size
+runtime.js                                                              | runtime                                |  14.14 kB |
+
+Lazy Chunk Files                                                        | Names                                  |  Raw Size
+src_app_features_private_pages_contabilidad_contabilidad-modulo_ts.js   | pages-contabilidad-contabilidad-modulo | 418.36 kB |
+default-src_app_core_services_facturacion_factura_factura_service_ts.js | pages-home-modulo-home                 | 129.53 kB |
+
+76 unchanged chunks
+
+Build at: 2026-07-27T16:51:58.166Z - Hash: d28d0da190478f2d - Time: 11082ms
+
+√ Compiled successfully.
+
+Initial Chunk Files                                                     | Names                                  |  Raw Size
+runtime.js                                                              | runtime                                |  14.14 kB |
+
+Lazy Chunk Files                                                        | Names                                  |  Raw Size
+src_app_features_private_pages_contabilidad_contabilidad-modulo_ts.js   | pages-contabilidad-contabilidad-modulo | 418.36 kB |
+default-src_app_core_services_facturacion_factura_factura_service_ts.js | pages-home-modulo-home                 | 130.70 kB |
+
+76 unchanged chunks
+
+Build at: 2026-07-27T17:46:21.958Z - Hash: 884d25ab2d8a2c9a - Time: 13437ms
+
+√ Compiled successfully.
+
+Initial Chunk Files                                                                     | Names                                         | Raw Size
+runtime.js                                                                              | runtime                                       | 14.14 kB |
+
+Lazy Chunk Files                                                                        | Names                                         | Raw Size
+src_app_features_private_pages_caja_pages_reciboingreso-page_reciboingreso-modulo_ts.js | pages-reciboingreso-page-reciboingreso-modulo | 53.37 kB |
+
+77 unchanged chunks
+
+Build at: 2026-07-27T18:36:20.219Z - Hash: 9c88961004e99074 - Time: 5032ms
+
+√ Compiled successfully.
+
+Initial Chunk Files                                                                     | Names                                         | Raw Size
+runtime.js                                                                              | runtime                                       | 14.14 kB |
+
+Lazy Chunk Files                                                                        | Names                                         | Raw Size
+src_app_features_private_pages_caja_pages_reciboingreso-page_reciboingreso-modulo_ts.js | pages-reciboingreso-page-reciboingreso-modulo | 53.44 kB |
+
+77 unchanged chunks
+
+Build at: 2026-07-27T18:36:23.776Z - Hash: 3602d262afb47a38 - Time: 2542ms
+
+√ Compiled successfully.
+
+Initial Chunk Files                                                                     | Names                                         | Raw Size
+runtime.js                                                                              | runtime                                       | 14.14 kB |
+
+Lazy Chunk Files                                                                        | Names                                         | Raw Size
+src_app_features_private_pages_caja_pages_reciboingreso-page_reciboingreso-modulo_ts.js | pages-reciboingreso-page-reciboingreso-modulo | 54.52 kB |
+
+77 unchanged chunks
+
+Build at: 2026-07-27T18:38:05.022Z - Hash: 4e84ed98b3c6f023 - Time: 2980ms
+
+√ Compiled successfully.
+
+Initial Chunk Files                                                                     | Names                                         | Raw Size
+runtime.js                                                                              | runtime                                       | 14.14 kB |
+
+Lazy Chunk Files                                                                        | Names                                         | Raw Size
+src_app_features_private_pages_caja_pages_reciboingreso-page_reciboingreso-modulo_ts.js | pages-reciboingreso-page-reciboingreso-modulo | 54.81 kB |
+
+77 unchanged chunks
+
+Build at: 2026-07-27T18:48:28.800Z - Hash: cd3ec3547cbab28e - Time: 2225ms
+
+√ Compiled successfully.
+
+Initial Chunk Files                                                                     | Names                                         | Raw Size
+runtime.js                                                                              | runtime                                       | 14.14 kB |
+
+Lazy Chunk Files                                                                        | Names                                         | Raw Size
+src_app_features_private_pages_caja_pages_reciboingreso-page_reciboingreso-modulo_ts.js | pages-reciboingreso-page-reciboingreso-modulo | 55.33 kB |
+
+77 unchanged chunks
+
+Build at: 2026-07-27T18:52:17.172Z - Hash: 0f8feacaddfa4273 - Time: 1574ms
+
+√ Compiled successfully.

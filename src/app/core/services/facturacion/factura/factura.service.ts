@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Observable, from } from 'rxjs';
+import { Observable, from, throwError } from 'rxjs';
 import { HttpParams } from '@angular/common/http';
 import { map } from 'rxjs/operators';
 import { HttpInvokeService } from '../../http-invoke.service';
@@ -861,7 +861,7 @@ export class ServicioFacturacion {
     }
   }
 
-  asignarEncfFactura(fa_codFact: string): Observable<any> {
+  asignarEncfFactura(fa_codFact: string, scope?: { empresa?: string | null; sucursal?: number | string | null }): Observable<any> {
     if (!this.useSupabase) {
       return this.http.PatchRequest(
         `/facturacion/asignar-encf/${fa_codFact}`,
@@ -870,6 +870,8 @@ export class ServicioFacturacion {
     }
 
     const codigo = String(fa_codFact || '').trim();
+    const empresa = String(scope?.empresa || '').trim();
+    const sucursal = this.toNumberOrNull(scope?.sucursal);
     return from((async () => {
       if (!codigo) {
         throw new Error('Debe indicar la factura para generar el ENCF.');
@@ -880,7 +882,9 @@ export class ServicioFacturacion {
         .select('*')
         .eq('fa_codfact', codigo)
         .limit(1);
-      facturaQuery = this.applyTenantFilter(facturaQuery);
+      if (empresa) facturaQuery = facturaQuery.eq('fa_codempr', empresa);
+      if (sucursal) facturaQuery = facturaQuery.eq('fa_codsucu', sucursal);
+      if (!empresa && !sucursal) facturaQuery = this.applyTenantFilter(facturaQuery);
       const { data: factura, error: facturaError } = await facturaQuery.maybeSingle();
       if (facturaError) throw facturaError;
       if (!factura) {
@@ -917,7 +921,9 @@ export class ServicioFacturacion {
           .update(patch)
           .eq('fa_codfact', codigo)
           .select('*');
-        updateQuery = this.applyTenantFilter(updateQuery);
+        if (empresa) updateQuery = updateQuery.eq('fa_codempr', empresa);
+        if (sucursal) updateQuery = updateQuery.eq('fa_codsucu', sucursal);
+        if (!empresa && !sucursal) updateQuery = this.applyTenantFilter(updateQuery);
         const { data: actualizada, error: updateError } = await updateQuery.maybeSingle();
         if (updateError) throw updateError;
         if (!actualizada) {
@@ -952,12 +958,14 @@ export class ServicioFacturacion {
     })());
   }
 
-  getByNumero(numero: string): Observable<any> {
+  getByNumero(numero: string, scope?: { empresa?: string | null; sucursal?: number | string | null }): Observable<any> {
     if (!this.useSupabase) {
       return this.http.GetRequest<any>(`/factura-numero/${numero}`, false);
     }
 
     const codigo = String(numero || '').trim();
+    const empresa = String(scope?.empresa || '').trim();
+    const sucursal = this.toNumberOrNull(scope?.sucursal);
     return from((async () => {
       let query = this.db.from('factura').select('*').eq('fa_codfact', codigo).limit(1);
       query = this.applyTenantFilter(query);
@@ -1284,6 +1292,56 @@ export class ServicioFacturacion {
       const { data, error } = await updateQuery.maybeSingle();
       if (error) throw error;
       return { status: 'success', code: 200, data: this.mapFacturaDbToUi(data) };
+    })());
+  }
+
+  eliminarEncfFacturaRechazada(
+    codFactura: string,
+    scope?: { empresa?: string | null; sucursal?: number | string | null },
+  ): Observable<any> {
+    const codigo = String(codFactura || '').trim();
+    const empresa = String(scope?.empresa || '').trim();
+    const sucursal = this.toNumberOrNull(scope?.sucursal);
+    if (!codigo) {
+      return throwError(() => new Error('Numero de factura requerido.'));
+    }
+
+    return from((async () => {
+      let consulta = this.db
+        .from('factura')
+        .select('fa_codfact,fa_ncffact,fa_codempr,fa_codsucu,estado_dgii,estado_envio_dgii')
+        .eq('fa_codfact', codigo);
+      if (empresa) consulta = consulta.eq('fa_codempr', empresa);
+      if (sucursal) consulta = consulta.eq('fa_codsucu', sucursal);
+      if (!empresa && !sucursal) consulta = this.applyTenantFilter(consulta);
+      const { data: factura, error: consultaError } = await consulta.maybeSingle();
+      if (consultaError) throw consultaError;
+      if (!factura) throw new Error(`No se encontro la factura ${codigo} en la empresa y sucursal activas.`);
+
+      const estado = String(
+        factura?.estado_dgii || factura?.estado_envio_dgii || '',
+      ).trim().toLowerCase();
+      if (!estado.includes('rechaz')) {
+        throw new Error('Solo se puede eliminar el e-NCF de una factura rechazada por DGII.');
+      }
+
+      let actualizacion = this.db
+        .from('factura')
+        .update({ fa_ncffact: null })
+        .eq('fa_codfact', codigo)
+        .select('*');
+      if (empresa) actualizacion = actualizacion.eq('fa_codempr', empresa);
+      if (sucursal) actualizacion = actualizacion.eq('fa_codsucu', sucursal);
+      if (!empresa && !sucursal) actualizacion = this.applyTenantFilter(actualizacion);
+      const { data, error } = await actualizacion.maybeSingle();
+      if (error) throw error;
+      if (!data) throw new Error(`No se pudo actualizar la factura ${codigo}.`);
+
+      return {
+        status: 'success',
+        code: 200,
+        data: this.mapFacturaDbToUi(data),
+      };
     })());
   }
 
@@ -1770,14 +1828,16 @@ export class ServicioFacturacion {
     return this.buscarFacturacion(currentPage, pageSize, undefined, fa_nomClie);
   }
 
-  buscarFacturaDetalle(df_codFact: string): Observable<any> {
+  buscarFacturaDetalle(df_codFact: string, scope?: { empresa?: string | null; sucursal?: number | string | null }): Observable<any> {
     if (!this.useSupabase) {
       return this.http.GetRequest<any>(`/detalle-factura/${df_codFact}`);
     }
 
     const codigo = String(df_codFact || '').trim();
+    const empresa = String(scope?.empresa || '').trim();
+    const sucursal = this.toNumberOrNull(scope?.sucursal);
     return from((async () => {
-      if (!(await this.facturaExisteEnTenant(codigo))) {
+      if (!empresa && !sucursal && !(await this.facturaExisteEnTenant(codigo))) {
         return { status: 'success', code: 200, data: [] };
       }
 
@@ -1786,7 +1846,9 @@ export class ServicioFacturacion {
         .select('*')
         .eq('df_codfact', codigo)
         .order('id', { ascending: true });
-      detalleQuery = this.applyTenantFilterDetalle(detalleQuery);
+      if (empresa) detalleQuery = detalleQuery.eq('df_codepr', empresa);
+      if (sucursal) detalleQuery = detalleQuery.eq('df_codsucu', String(sucursal));
+      if (!empresa && !sucursal) detalleQuery = this.applyTenantFilterDetalle(detalleQuery);
       const { data, error } = await detalleQuery;
       if (error) throw error;
       return {
@@ -2199,33 +2261,56 @@ export class ServicioFacturacion {
     }
 
     return from((async () => {
-      let query = this.db
-        .from('factura')
-        .select('*')
-        .not('fa_status', 'in', '("U","N")')
-        .order('fa_fecfact', { ascending: false })
-        .limit(5000);
+      const columnas = 'fa_codfact,fa_ncffact,fa_rncfact,fa_tiponcf,fa_fecfact,fa_valfact,fa_itbifact,fa_subfact,fa_nomclie,fa_codempr,fa_codsucu,fa_codfpago,fa_fpago,fa_status,fa_pendiente,fa_entrega,fa_envio,estado_dgii,estado_envio_dgii';
+      const crearConsulta = (fechaDia?: string): any => {
+        let consulta = this.db
+          .from('factura')
+          .select(columnas)
+          .not('fa_status', 'in', '("U","N")')
+          .order('fa_fecfact', { ascending: false })
+          .order('fa_codfact', { ascending: false })
+          .limit(5000);
+        if (empresa) consulta = consulta.eq('fa_codempr', empresa);
+        if (sucursal) consulta = consulta.eq('fa_codsucu', sucursal);
+        if (!empresa && !sucursal) consulta = this.applyTenantFilter(consulta);
+        if (fechaDia) consulta = consulta.eq('fa_fecfact', fechaDia);
+        else {
+          if (fechaDesde) consulta = consulta.gte('fa_fecfact', fechaDesde);
+          if (fechaHasta) consulta = consulta.lte('fa_fecfact', fechaHasta);
+        }
+        return consulta;
+      };
 
-      query = this.applyTenantFilter(query);
-      if (empresa) {
-        query = query.eq('fa_codempr', empresa);
-      }
-      if (sucursal) {
-        query = query.eq('fa_codsucu', sucursal);
-      }
-      if (fechaDesde) {
-        query = query.gte('fa_fecfact', fechaDesde);
-      }
-      if (fechaHasta) {
-        query = query.lte('fa_fecfact', fechaHasta);
+      let rows: any[] = [];
+      const inicio = fechaDesde ? new Date(`${fechaDesde}T00:00:00Z`) : null;
+      const fin = fechaHasta ? new Date(`${fechaHasta}T00:00:00Z`) : null;
+      const dias = inicio && fin
+        ? Math.floor((fin.getTime() - inicio.getTime()) / 86400000) + 1
+        : 0;
+
+      if (inicio && fin && dias > 1 && dias <= 62) {
+        for (let indice = 0; indice < dias; indice += 1) {
+          const dia = new Date(inicio.getTime() + indice * 86400000)
+            .toISOString()
+            .slice(0, 10);
+          const { data: dataDia, error: errorDia } = await crearConsulta(dia);
+          if (errorDia) throw errorDia;
+          rows.push(...(dataDia || []));
+        }
+        rows.sort((a: any, b: any) =>
+          String(b?.fa_fecfact || '').localeCompare(String(a?.fa_fecfact || '')) ||
+          String(b?.fa_codfact || '').localeCompare(String(a?.fa_codfact || '')),
+        );
+      } else {
+        const { data, error } = await crearConsulta();
+        if (error) throw error;
+        rows = data || [];
       }
 
-      const { data, error } = await query;
-      if (error) throw error;
       return {
         status: 'success',
         code: 200,
-        data: (data || []).map((row: any) => this.mapFacturaDbToUi(row)),
+        data: rows.map((row: any) => this.mapFacturaDbToUi(row)),
       };
     })());
   }
@@ -2269,6 +2354,132 @@ export class ServicioFacturacion {
       return this.http.GetRequest<any>(`/facturacion/reporte-607?${query.toString()}`);
     }
 
+    // La consulta directa era la implementacion estable del 607. Se conserva
+    // aqui porque distintas instalaciones tienen firmas diferentes de la RPC
+    // listar_reporte_607 y eso provocaba que facturas aceptadas desaparecieran.
+    const offsetDirecto = (safePage - 1) * safeLimit;
+    return from((async () => {
+      const columnas607 = 'fa_codfact,fa_ncffact,fa_rncfact,fa_tiponcf,fa_fecfact,fa_fechora,fa_fehora,fa_valfact,fa_itbifact,fa_subfact,fa_nomclie,fa_codempr,fa_codsucu,fa_codfpago,estado_dgii,estado_envio_dgii,codseguridad,qr_link,fec_firma,dgii_track_id,dgii_codigo,dgii_error_message,dgii_mensajes,dgii_response_json,dgii_response_raw';
+
+      // Evita el OR ILIKE sobre las dos columnas de estado, que en periodos
+      // amplios provoca statement timeout. Se leen bloques acotados y se
+      // aplica el estado en memoria para conservar todas las coincidencias.
+      if (estadoDgii) {
+        const lote = 500;
+        const maxLotes = 40;
+        const acumuladas: any[] = [];
+        const estadoBuscado = estadoDgii.toLowerCase();
+        const textoBuscado = search.toLowerCase();
+
+        for (let bloque = 0; bloque < maxLotes; bloque += 1) {
+          let consultaEstado = this.db
+            .from('factura')
+            .select(columnas607)
+            .not('estado_envio_dgii', 'is', null)
+            .neq('estado_envio_dgii', 'PENDIENTE')
+            .order('fa_fecfact', { ascending: false })
+            .order('fa_codfact', { ascending: false })
+            .range(bloque * lote, (bloque + 1) * lote - 1);
+
+          if (empresa) consultaEstado = consultaEstado.eq('fa_codempr', empresa);
+          else consultaEstado = this.applyTenantCompanyFilter(consultaEstado);
+          if (sucursal) consultaEstado = consultaEstado.eq('fa_codsucu', sucursal);
+          if (tipoComprobante) consultaEstado = consultaEstado.eq('fa_tiponcf', Number(tipoComprobante));
+          if (fecha) consultaEstado = consultaEstado.eq('fa_fecfact', fecha);
+          else {
+            if (fechaDesde) consultaEstado = consultaEstado.gte('fa_fecfact', fechaDesde);
+            if (fechaHasta) consultaEstado = consultaEstado.lte('fa_fecfact', fechaHasta);
+          }
+
+          const { data: loteData, error: loteError } = await consultaEstado;
+          if (loteError) throw loteError;
+          const filasLote = loteData || [];
+          acumuladas.push(...filasLote.filter((row: any) => {
+            const coincideEstado = [row?.estado_dgii, row?.estado_envio_dgii]
+              .some((value) => String(value || '').toLowerCase().includes(estadoBuscado));
+            if (!coincideEstado) return false;
+            if (!textoBuscado) return true;
+            return [
+              row?.fa_codfact, row?.fa_ncffact, row?.fa_nomclie, row?.fa_rncfact,
+              row?.codseguridad, row?.dgii_codigo, row?.dgii_track_id,
+            ].some((value) => String(value || '').toLowerCase().includes(textoBuscado));
+          }));
+          if (filasLote.length < lote) break;
+        }
+
+        const totalEstado = acumuladas.length;
+        const filasPagina = acumuladas
+          .slice(offsetDirecto, offsetDirecto + safeLimit)
+          .map((row: any) => this.mapFacturaDbToUi(row));
+        return {
+          status: 'success',
+          code: 200,
+          data: await this.completarFormaPagoReporte607(filasPagina),
+          pagination: {
+            total: totalEstado,
+            page: safePage,
+            pageSize: safeLimit,
+            totalPages: Math.max(1, Math.ceil(totalEstado / safeLimit)),
+          },
+        };
+      }
+
+      let query = this.db
+        .from('factura')
+        .select(columnas607, { count: 'planned' })
+        .not('estado_envio_dgii', 'is', null)
+        .neq('estado_envio_dgii', 'PENDIENTE')
+        .order('fa_fecfact', { ascending: false })
+        .order('fa_codfact', { ascending: false })
+        .range(offsetDirecto, offsetDirecto + safeLimit - 1);
+
+      if (empresa) {
+        query = query.eq('fa_codempr', empresa);
+      } else {
+        query = this.applyTenantCompanyFilter(query);
+      }
+      if (sucursal) query = query.eq('fa_codsucu', sucursal);
+
+      if (search) {
+        const safeSearch = search.replace(/[%_]/g, '\\$&');
+        query = query.or([
+          `fa_codfact.ilike.%${safeSearch}%`,
+          `fa_ncffact.ilike.%${safeSearch}%`,
+          `fa_nomclie.ilike.%${safeSearch}%`,
+          `fa_rncfact.ilike.%${safeSearch}%`,
+          `codseguridad.ilike.%${safeSearch}%`,
+          `estado_dgii.ilike.%${safeSearch}%`,
+          `estado_envio_dgii.ilike.%${safeSearch}%`,
+          `dgii_codigo.ilike.%${safeSearch}%`,
+          `dgii_track_id.ilike.%${safeSearch}%`,
+        ].join(','));
+      }
+      if (tipoComprobante) query = query.eq('fa_tiponcf', Number(tipoComprobante));
+      if (fecha) {
+        query = query.eq('fa_fecfact', fecha);
+      } else {
+        if (fechaDesde) query = query.gte('fa_fecfact', fechaDesde);
+        if (fechaHasta) query = query.lte('fa_fecfact', fechaHasta);
+      }
+
+      const { data, error, count } = await query;
+      if (error) throw error;
+      const rows = (data || []).map((row: any) => this.mapFacturaDbToUi(row));
+      const total = Number(count || rows.length || 0);
+      return {
+        status: 'success',
+        code: 200,
+        data: await this.completarFormaPagoReporte607(rows),
+        pagination: {
+          total,
+          page: safePage,
+          pageSize: safeLimit,
+          totalPages: Math.max(1, Math.ceil(total / safeLimit)),
+        },
+      };
+    })());
+
+    /* RPC conservada temporalmente como referencia de compatibilidad.
     const rpcParamsBase = {
       p_search: search || null,
       p_fecha: fecha || null,
@@ -2302,10 +2513,78 @@ export class ServicioFacturacion {
     const filtrarScopeReporte607 = (rows: any[]): any[] => rows.filter((row: any) => {
       const rowEmpresa = String(row.fa_codEmpr ?? row.fa_codempr ?? '').trim().toUpperCase();
       const rowSucursal = this.toNumberOrNull(row.fa_codSucu ?? row.fa_codsucu);
-      if (empresa && rowEmpresa !== empresa.toUpperCase()) return false;
-      if (sucursal && rowSucursal !== sucursal) return false;
+      // La firma anterior de listar_reporte_607 no devolvia fa_codempr ni
+      // fa_codsucu. En ese caso la propia funcion ya aplico el scope del
+      // usuario y no debemos descartar la fila por campos inexistentes.
+      if (empresa && rowEmpresa && rowEmpresa !== empresa.toUpperCase()) return false;
+      if (sucursal && rowSucursal !== null && rowSucursal !== sucursal) return false;
       return true;
     });
+
+    const buscarAceptadasOProcesadasOmitidas = async (): Promise<any[]> => {
+      // Compatibilidad con versiones anteriores de listar_reporte_607, que
+      // excluian facturas cuando estado_dgii tenia valor pero
+      // estado_envio_dgii estaba vacio.
+      let query = this.db
+        .from('factura')
+        .select('fa_codfact,fa_ncffact,fa_rncfact,fa_tiponcf,fa_fecfact,fa_fechora,fa_fehora,fa_valfact,fa_itbifact,fa_subfact,fa_nomclie,fa_codempr,fa_codsucu,fa_codfpago,estado_dgii,estado_envio_dgii,codseguridad,qr_link,fec_firma,dgii_track_id,dgii_codigo,dgii_error_message,dgii_mensajes,dgii_response_json,dgii_response_raw')
+        .not('fa_ncffact', 'is', null)
+        .order('fa_fecfact', { ascending: false })
+        .order('fa_codfact', { ascending: false })
+        .limit(1000);
+
+      if (empresa) query = query.eq('fa_codempr', empresa);
+      if (sucursal) query = query.eq('fa_codsucu', sucursal);
+      if (fecha) query = query.eq('fa_fecfact', fecha);
+      if (!fecha && fechaDesde) query = query.gte('fa_fecfact', fechaDesde);
+      if (!fecha && fechaHasta) query = query.lte('fa_fecfact', fechaHasta);
+      if (tipoComprobante) query = query.eq('fa_tiponcf', Number(tipoComprobante));
+
+      const { data: extraData, error: extraError } = await query;
+      if (extraError) {
+        console.warn('[ServicioFacturacion] No se pudieron completar facturas DGII omitidas', extraError);
+        return [];
+      }
+
+      const termino = search.toLowerCase();
+      const estadoFiltro = estadoDgii.toLowerCase();
+      const estadoDesdeRespuesta = (value: any): string => {
+        if (!value || typeof value !== 'object') return '';
+        const direct = value?.estado_dgii ?? value?.estado ?? value?.rfceEstado ?? value?.status;
+        if (typeof direct === 'string' && direct.trim()) return direct.trim();
+        for (const nested of Object.values(value)) {
+          if (nested && typeof nested === 'object') {
+            const found = estadoDesdeRespuesta(nested);
+            if (found) return found;
+          }
+        }
+        return '';
+      };
+      return (extraData || []).filter((row: any) => {
+        const estadoRespuesta = estadoDesdeRespuesta(row?.dgii_response_json) ||
+          estadoDesdeRespuesta(row?.dgii_response_raw);
+        const estado = String(row?.estado_dgii || estadoRespuesta || '').trim();
+        const estadoEnvio = String(row?.estado_envio_dgii || '').trim();
+        const tieneEvidenciaDgii = !!(
+          estado || estadoEnvio || row?.dgii_track_id || row?.codseguridad ||
+          row?.qr_link || row?.dgii_response_json || row?.dgii_response_raw
+        );
+        if (!tieneEvidenciaDgii) return false;
+        // Si ya tiene un estado de envio distinto de pendiente, la funcion RPC
+        // vigente debio incluirla y no hace falta agregarla por segunda vez.
+        if (estadoEnvio && estadoEnvio.toUpperCase() !== 'PENDIENTE') return false;
+        if (!row?.estado_dgii && estadoRespuesta) row.estado_dgii = estadoRespuesta;
+        if (estadoFiltro && !estado.toLowerCase().includes(estadoFiltro) && !estadoEnvio.toLowerCase().includes(estadoFiltro)) {
+          return false;
+        }
+        if (!termino) return true;
+        return [
+          row?.fa_codfact, row?.fa_ncffact, row?.fa_nomclie, row?.fa_rncfact,
+          row?.codseguridad, row?.estado_dgii, row?.estado_envio_dgii,
+          row?.dgii_codigo, row?.dgii_track_id, row?.dgii_error_message,
+        ].some((value) => String(value || '').toLowerCase().includes(termino));
+      });
+    };
 
     return from((async () => {
       let data: any[] | null = null;
@@ -2345,7 +2624,26 @@ export class ServicioFacturacion {
             if (pageRows.length < pageSizeFallback || fallbackPage >= totalPagesFallback) break;
           }
 
-          const filtered = filtrarScopeReporte607(rowsFiltro);
+          let filtered = filtrarScopeReporte607(rowsFiltro);
+          const omitidas = (await buscarAceptadasOProcesadasOmitidas())
+            .map((row: any) => this.mapFacturaDbToUi(row));
+          const codigosExistentes = new Set(
+            filtered.map((row: any) => String(row?.fa_codFact || row?.fa_codfact || '').trim()),
+          );
+          const nuevas = omitidas.filter((row: any) => {
+            const codigo = String(row?.fa_codFact || row?.fa_codfact || '').trim();
+            return codigo && !codigosExistentes.has(codigo);
+          });
+          if (nuevas.length) {
+            filtered = [...filtered, ...nuevas].sort((a: any, b: any) => {
+              const fechaA = String(a?.fa_fecFact || a?.fa_fecfact || '');
+              const fechaB = String(b?.fa_fecFact || b?.fa_fecfact || '');
+              if (fechaA !== fechaB) return fechaB.localeCompare(fechaA);
+              return String(b?.fa_codFact || b?.fa_codfact || '').localeCompare(
+                String(a?.fa_codFact || a?.fa_codfact || ''),
+              );
+            });
+          }
           const start = (safePage - 1) * safeLimit;
           const pageRows = filtered.slice(start, start + safeLimit);
           return {
@@ -2362,8 +2660,27 @@ export class ServicioFacturacion {
         }
       }
 
-      const rows = (data || []).map((row: any) => this.mapFacturaDbToUi(row));
-      const total = Number(data?.[0]?.total_count || rows.length || 0);
+      let rows = (data || []).map((row: any) => this.mapFacturaDbToUi(row));
+      let total = Number(data?.[0]?.total_count || rows.length || 0);
+
+      if (safePage === 1) {
+        const omitidas = (await buscarAceptadasOProcesadasOmitidas())
+          .map((row: any) => this.mapFacturaDbToUi(row));
+        const existentes = new Set(rows.map((row: any) => String(row?.fa_codFact || row?.fa_codfact || '').trim()));
+        const nuevas = omitidas.filter((row: any) => {
+          const codigo = String(row?.fa_codFact || row?.fa_codfact || '').trim();
+          return codigo && !existentes.has(codigo);
+        });
+        if (nuevas.length) {
+          rows = [...rows, ...nuevas].sort((a: any, b: any) => {
+            const fechaA = String(a?.fa_fecFact || a?.fa_fecfact || '');
+            const fechaB = String(b?.fa_fecFact || b?.fa_fecfact || '');
+            if (fechaA !== fechaB) return fechaB.localeCompare(fechaA);
+            return String(b?.fa_codFact || b?.fa_codfact || '').localeCompare(String(a?.fa_codFact || a?.fa_codfact || ''));
+          });
+          total += nuevas.length;
+        }
+      }
 
       return {
         status: 'success',
@@ -2376,7 +2693,7 @@ export class ServicioFacturacion {
           totalPages: Math.max(1, Math.ceil(total / safeLimit)),
         },
       };
-    })());
+    })()); */
   }
 
   private async completarFormaPagoReporte607(rows: any[]): Promise<any[]> {
@@ -2428,7 +2745,11 @@ export class ServicioFacturacion {
     });
   }
 
-  actualizarDatosDgii(fa_codFact: string, payload: any): Observable<any> {
+  actualizarDatosDgii(
+    fa_codFact: string,
+    payload: any,
+    scope?: { empresa?: string | null; sucursal?: number | string | null },
+  ): Observable<any> {
     if (!this.useSupabase) {
       return this.http.PatchRequest(
         `/facturacion/actualizar-datos-dgii/${fa_codFact}`,
@@ -2437,6 +2758,8 @@ export class ServicioFacturacion {
     }
 
     const codigo = String(fa_codFact || '').trim();
+    const empresa = String(scope?.empresa || '').trim();
+    const sucursal = this.toNumberOrNull(scope?.sucursal);
     return from((async () => {
       const patch: any = {
         estado_dgii: this.toStringOrNull(payload?.estado_dgii) ?? undefined,
@@ -2466,7 +2789,9 @@ export class ServicioFacturacion {
         .update(patch)
         .eq('fa_codfact', codigo)
         .select('*');
-      updateQuery = this.applyTenantFilter(updateQuery);
+      if (empresa) updateQuery = updateQuery.eq('fa_codempr', empresa);
+      if (sucursal) updateQuery = updateQuery.eq('fa_codsucu', sucursal);
+      if (!empresa && !sucursal) updateQuery = this.applyTenantFilter(updateQuery);
       const { data, error } = await updateQuery.maybeSingle();
       if (error) throw error;
 

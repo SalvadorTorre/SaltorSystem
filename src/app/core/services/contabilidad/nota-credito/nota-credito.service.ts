@@ -220,6 +220,43 @@ export class NotaCreditoService {
     );
   }
 
+  eliminarEncfRechazado(ncNumero: string): Observable<any> {
+    return from((async () => {
+      const tenant = this.tenant();
+      const numero = String(ncNumero || '').trim();
+      if (!numero) throw new Error('Numero de nota de credito requerido.');
+
+      let consulta = this.db
+        .from('nota_credito')
+        .select('nc_numero,nc_encf,estado_dgii')
+        .eq('nc_numero', numero)
+        .eq('fa_codempr', tenant.codempr)
+        .eq('fa_codsucu', tenant.codsucu);
+      const { data: nota, error: consultaError } = await consulta.maybeSingle();
+      if (consultaError) throw consultaError;
+      if (!nota) throw new Error(`No se encontro la nota de credito ${numero}.`);
+
+      const estado = String(nota?.estado_dgii || '').trim().toLowerCase();
+      if (!estado.includes('rechaz') && !estado.includes('error')) {
+        throw new Error('Solo se puede eliminar el e-NCF de una nota rechazada por DGII.');
+      }
+
+      const { data, error } = await this.db
+        .from('nota_credito')
+        .update({ nc_encf: null, updated_at: new Date().toISOString() })
+        .eq('nc_numero', numero)
+        .eq('fa_codempr', tenant.codempr)
+        .eq('fa_codsucu', tenant.codsucu)
+        .select('*')
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) throw new Error(`No se pudo actualizar la nota de credito ${numero}.`);
+      return data;
+    })()).pipe(
+      map((data) => ({ status: 'success', code: 200, data })),
+    );
+  }
+
   guardar(payload: NotaCreditoPayload): Observable<any> {
     return from((async () => {
       const tenant = this.tenant();

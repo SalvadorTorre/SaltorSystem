@@ -23,6 +23,10 @@ export class FacturaDgiiService {
   ): Promise<any> {
     const codigo = String(factura?.fa_codFact || factura?.fa_codfact || '').trim();
     if (!codigo) throw new Error('La factura no tiene numero.');
+    const scope = {
+      empresa: String(factura?.fa_codEmpr || factura?.fa_codempr || '').trim(),
+      sucursal: factura?.fa_codSucu ?? factura?.fa_codsucu ?? null,
+    };
 
     progreso?.('Validando y cargando la factura...');
     const facturaResp = await firstValueFrom(
@@ -127,11 +131,15 @@ export class FacturaDgiiService {
   ): Promise<any> {
     const codigo = String(factura?.fa_codFact || factura?.fa_codfact || '').trim();
     if (!codigo) throw new Error('La factura no tiene numero.');
+    const scope = {
+      empresa: String(factura?.fa_codEmpr || factura?.fa_codempr || '').trim(),
+      sucursal: factura?.fa_codSucu ?? factura?.fa_codsucu ?? null,
+    };
 
     progreso?.('Cargando factura rechazada...');
     const [facturaResp, detalleResp] = await Promise.all([
-      firstValueFrom(this.facturacion.getByNumero(codigo)),
-      firstValueFrom(this.facturacion.buscarFacturaDetalle(codigo)),
+      firstValueFrom(this.facturacion.getByNumero(codigo, scope)),
+      firstValueFrom(this.facturacion.buscarFacturaDetalle(codigo, scope)),
     ]);
     const encabezado = {
       ...factura,
@@ -150,7 +158,7 @@ export class FacturaDgiiService {
     ).trim();
     if (!encfActual) {
       progreso?.('Asignando ENCF antes del reenvio...');
-      const encfResp = await firstValueFrom(this.facturacion.asignarEncfFactura(codigo));
+      const encfResp = await firstValueFrom(this.facturacion.asignarEncfFactura(codigo, scope));
       completa = {
         ...completa,
         ...(encfResp?.data || {}),
@@ -181,7 +189,7 @@ export class FacturaDgiiService {
         estado_dgii: normalizada?.estado_dgii || 'Error',
       };
       try {
-        await firstValueFrom(this.facturacion.actualizarDatosDgii(codigo, datosError));
+        await firstValueFrom(this.facturacion.actualizarDatosDgii(codigo, datosError, scope));
       } catch (saveError) {
         console.warn('No se pudo guardar el error DGII del reenvio:', saveError);
       }
@@ -197,7 +205,7 @@ export class FacturaDgiiService {
 
     progreso?.('Guardando nueva respuesta de DGII...');
     const actualizadaResp = await firstValueFrom(
-      this.facturacion.actualizarDatosDgii(codigo, datosDgii),
+      this.facturacion.actualizarDatosDgii(codigo, datosDgii, scope),
     );
     return {
       ...completa,
