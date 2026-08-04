@@ -39,17 +39,6 @@
   </div>
 
   <div class="filter-panel">
-    <div class="search-box">
-      <i class="bi bi-search"></i>
-      <input
-        type="search"
-        class="form-control"
-        placeholder="Buscar factura, NCF, cliente, estado o codigo de seguridad..."
-        [(ngModel)]="search"
-        (keyup.enter)="aplicarFiltros()"
-      />
-    </div>
-
     <label class="select-filter">
       <span>Empresa</span>
       <select class="form-select" [(ngModel)]="empresaFiltro" (change)="onEmpresaFiltroChange()">

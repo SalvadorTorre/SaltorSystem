@@ -1622,10 +1622,12 @@ export class CobroFact implements OnInit {
       scenario.IndicadorMontoGravado = '0';
     }
     scenario.TipoIngresos = '01';
-    scenario.TipoPago = String(
-      (factura as any).fa_codfpago || factura.fa_fpago || '1',
-    );
-    if (tipoeCF === '31' && factura.fa_expFact) {
+    const tipoPagoDgii = Number((factura as any).fa_tipopago ?? 1);
+    scenario.TipoPago = String([1, 2, 3].includes(tipoPagoDgii) ? tipoPagoDgii : 1);
+    if (tipoPagoDgii === 2 && tipoeCF !== '43') {
+      if (!factura.fa_expFact) {
+        throw new Error('La factura a credito requiere Fecha Limite de Pago para enviar a DGII.');
+      }
       scenario.FechaLimitePago = this.formatearFechaDgii(factura.fa_expFact);
     }
 
@@ -1716,7 +1718,7 @@ export class CobroFact implements OnInit {
     if (esRegimenEspecial) {
       scenario.MontoExento = this.roundHalfEven(totalExento || montoTotal, 2).toFixed(2);
       scenario.MontoTotal = montoTotal.toFixed(2);
-      scenario['FormaPago[1]'] = String((factura as any).fa_codfpago || factura.fa_fpago || '1');
+      scenario['FormaPago[1]'] = String((factura as any).fa_codfpago || '1');
       scenario['MontoPago[1]'] = montoTotal.toFixed(2);
       return scenario;
     }
@@ -1735,7 +1737,7 @@ export class CobroFact implements OnInit {
     scenario.TotalITBIS = totalItbis.toFixed(2);
     scenario.MontoTotal = montoTotal.toFixed(2);
 
-    scenario['FormaPago[1]'] = String((factura as any).fa_codfpago || factura.fa_fpago || '1');
+    scenario['FormaPago[1]'] = String((factura as any).fa_codfpago || '1');
     scenario['MontoPago[1]'] = montoTotal.toFixed(2);
 
     // Retornar el objeto escenario directamente, sin envolverlo en un array

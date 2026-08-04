@@ -11,10 +11,23 @@
     </div>
   </header>
 
-  <form (ngSubmit)="enviarDgii()">
+  <nav class="gm-tabs" aria-label="Secciones de gastos menores">
+    <button type="button" [class.active]="pestanaActiva === 'nuevo'" (click)="cambiarPestana('nuevo')">
+      <i class="bi bi-file-earmark-plus"></i> Nuevo gasto
+    </button>
+    <button type="button" [class.active]="pestanaActiva === 'consulta'" (click)="cambiarPestana('consulta')">
+      <i class="bi bi-search"></i> Consulta
+    </button>
+  </nav>
+
+  <form *ngIf="pestanaActiva === 'nuevo'" (ngSubmit)="enviarDgii()">
     <section class="gm-card">
       <h3>Identificación del comprobante</h3>
       <div class="form-grid">
+        <label>
+          <span>No. gasto</span>
+          <input class="form-control fw-bold" [(ngModel)]="form.numero" name="numeroGasto" readonly />
+        </label>
         <label>
           <span>Tipo e-CF</span>
           <input class="form-control" value="43 - Gastos Menores Electrónico" readonly />
@@ -76,4 +89,61 @@
 
     <section class="gm-card response" *ngIf="respuesta"><h3>Respuesta DGII</h3><pre>{{ respuesta }}</pre></section>
   </form>
+
+  <section *ngIf="pestanaActiva === 'consulta'" class="gm-card gm-consulta">
+    <div class="card-title gm-consulta-tools">
+      <h3 class="mb-0">Consulta de gastos menores</h3>
+      <div class="d-flex gap-2">
+        <input
+          class="form-control form-control-sm"
+          [(ngModel)]="filtroConsulta"
+          placeholder="Numero, e-NCF, estado..."
+        />
+        <button class="btn btn-outline-primary btn-sm" type="button" (click)="cargarConsulta()" [disabled]="cargandoConsulta">
+          <i class="bi bi-arrow-clockwise"></i> Actualizar
+        </button>
+      </div>
+    </div>
+
+    <div *ngIf="cargandoConsulta" class="text-center text-muted py-5">
+      <span class="spinner-border spinner-border-sm me-2"></span>Cargando gastos menores...
+    </div>
+
+    <div *ngIf="!cargandoConsulta" class="table-responsive mt-3">
+      <table class="table table-hover align-middle">
+        <thead>
+          <tr>
+            <th>No. gasto</th><th>Fecha</th><th>e-NCF</th><th class="text-end">Total</th>
+            <th>Estado DGII</th><th>Track ID</th><th>Usuario</th><th class="text-center">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let gasto of gastosFiltrados">
+            <td class="fw-bold">{{ gasto.gm_numero }}</td>
+            <td>{{ gasto.gm_fecha | date:'dd/MM/yyyy' }}</td>
+            <td>{{ gasto.gm_encf || '-' }}</td>
+            <td class="text-end fw-semibold">{{ gasto.gm_total | currency:'DOP':'symbol':'1.2-2' }}</td>
+            <td><span class="badge" [ngClass]="claseEstadoConsulta(gasto.gm_estado_dgii)">{{ gasto.gm_estado_dgii }}</span></td>
+            <td>{{ gasto.gm_track_id || '-' }}</td>
+            <td>{{ gasto.gm_usuario || '-' }}</td>
+            <td class="text-center">
+              <button
+                type="button"
+                class="btn btn-outline-success btn-sm"
+                title="Reenviar a DGII"
+                (click)="reenviarDgii(gasto)"
+                [disabled]="!puedeReenviar(gasto) || !!reenviandoNumero"
+              >
+                <span *ngIf="reenviandoNumero === gasto.gm_numero" class="spinner-border spinner-border-sm"></span>
+                <i *ngIf="reenviandoNumero !== gasto.gm_numero" class="bi bi-send"></i>
+              </button>
+            </td>
+          </tr>
+          <tr *ngIf="gastosFiltrados.length === 0">
+            <td colspan="8" class="text-center text-muted py-4">No hay gastos menores para mostrar.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
 </section>

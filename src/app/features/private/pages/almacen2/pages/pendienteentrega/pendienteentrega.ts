@@ -105,6 +105,8 @@ export class PendienteEntregaComponent implements OnInit {
     this.nuevoPendienteFactura = null;
     this.nuevoPendienteDetalle = [];
     this.seleccionPendiente = {};
+    this.cantidadPendiente = {};
+    this.initialPendiente = {};
     setTimeout(() => { (window as any).$?.('#modalNuevoPendiente')?.modal('show'); }, 50);
   }
 
@@ -131,7 +133,12 @@ export class PendienteEntregaComponent implements OnInit {
         const rows = Array.isArray(resp?.data?.rows) ? resp.data.rows :
                      Array.isArray(resp?.data) ? resp.data :
                      (Array.isArray(resp) ? resp : []);
-        this.nuevoPendienteDetalle = rows.map((d: any) => {
+        this.seleccionPendiente = {};
+        this.cantidadPendiente = {};
+        this.initialPendiente = {};
+        this.nuevoPendienteDetalle = rows.map((d: any, index: number) => {
+          const detalleId = Number(d.id);
+          const key = Number.isFinite(detalleId) ? `id:${detalleId}` : `fila:${index}`;
           const codm = d.df_codMerc ?? d.df_codmerc ?? d.dc_codmerc ?? d.in_codmerc ?? '';
           const des = d.df_desMerc ?? d.df_desmerc ?? d.dc_descrip ?? d.in_desmerc ?? '';
           const cantidad = Number(d.df_canMerc ?? d.df_canmerc ?? d.dc_cantida ?? d.cantidad ?? 0);
@@ -141,10 +148,10 @@ export class PendienteEntregaComponent implements OnInit {
           const canpend = Number(d.df_canpend ?? d.canpend ?? 0);
           const pendienteFlag = String(d.df_pendiente ?? d.pendiente ?? '').toUpperCase();
           const pendiente = pendienteFlag === 'P' || canpend > 0;
-          this.initialPendiente[codm] = pendiente;
-          this.seleccionPendiente[codm] = pendiente;
-          this.cantidadPendiente[codm] = pendiente ? (canpend > 0 ? canpend : cantidad) : (canpend > 0 ? canpend : 0);
-          return { cod: codm, des, cantidad, precio, total, unidad, canpend, pendiente };
+          this.initialPendiente[key] = pendiente;
+          this.seleccionPendiente[key] = pendiente;
+          this.cantidadPendiente[key] = pendiente ? (canpend > 0 ? canpend : cantidad) : 0;
+          return { id: Number.isFinite(detalleId) ? detalleId : null, key, cod: codm, des, cantidad, precio, total, unidad, canpend, pendiente };
         });
       },
       error: () => {
@@ -153,18 +160,18 @@ export class PendienteEntregaComponent implements OnInit {
     });
   }
 
-  toggleSeleccion(cod: string, checked: boolean): void {
+  toggleSeleccion(key: string, checked: boolean): void {
     // No permitir editar líneas que ya están pendientes inicialmente
-    if (this.initialPendiente[cod]) {
-      this.seleccionPendiente[cod] = true;
+    if (this.initialPendiente[key]) {
+      this.seleccionPendiente[key] = true;
       return;
     }
-    const item = this.nuevoPendienteDetalle.find((x) => x.cod === cod);
+    const item = this.nuevoPendienteDetalle.find((x) => x.key === key);
     const max = Number(item?.cantidad || 0);
     if (checked) {
-      this.cantidadDlgCod = cod;
+      this.cantidadDlgCod = key;
       this.cantidadDlgMax = max;
-      const def = this.cantidadPendiente[cod] ?? max;
+      const def = this.cantidadPendiente[key] || max;
       this.cantidadDlgValue = def > max ? max : def;
       setTimeout(() => {
         (window as any).$?.('#modalCantidadPendiente')?.modal('show');
@@ -181,29 +188,29 @@ export class PendienteEntregaComponent implements OnInit {
       return;
     }
     // Al desmarcar una línea no inicial, simplemente dejar en 0
-    this.seleccionPendiente[cod] = false;
-    this.cantidadPendiente[cod] = 0;
+    this.seleccionPendiente[key] = false;
+    this.cantidadPendiente[key] = 0;
   }
 
   seleccionarTodo(valor: boolean): void {
     this.nuevoPendienteDetalle.forEach((d) => {
-      if (this.initialPendiente[d.cod]) {
-        this.seleccionPendiente[d.cod] = true;
-        this.cantidadPendiente[d.cod] = Number(d.canpend || d.cantidad || 0);
+      if (this.initialPendiente[d.key]) {
+        this.seleccionPendiente[d.key] = true;
+        this.cantidadPendiente[d.key] = Number(d.canpend || d.cantidad || 0);
       } else {
-        this.seleccionPendiente[d.cod] = valor;
-        this.cantidadPendiente[d.cod] = valor ? Number(d.cantidad || 0) : 0;
+        this.seleccionPendiente[d.key] = valor;
+        this.cantidadPendiente[d.key] = valor ? Number(d.cantidad || 0) : 0;
       }
     });
   }
   
-  clampCantidad(cod: string): void {
-    const item = this.nuevoPendienteDetalle.find((x) => x.cod === cod);
+  clampCantidad(key: string): void {
+    const item = this.nuevoPendienteDetalle.find((x) => x.key === key);
     const max = Number(item?.cantidad || 0);
-    let val = Number(this.cantidadPendiente[cod] || 0);
+    let val = Number(this.cantidadPendiente[key] || 0);
     if (isNaN(val) || val < 0) val = 0;
     if (val > max) val = max;
-    this.cantidadPendiente[cod] = val;
+    this.cantidadPendiente[key] = val;
   }
 
   confirmarCantidadDialog(): void {
@@ -241,10 +248,11 @@ export class PendienteEntregaComponent implements OnInit {
 crearNuevoPendiente(): void {
 
   const detalle = this.nuevoPendienteDetalle
-    .filter(d => this.seleccionPendiente[d.cod])
+    .filter(d => this.seleccionPendiente[d.key])
     .map(d => ({
+      id: d.id,
       cod: d.cod,
-      cantidad: this.cantidadPendiente[d.cod] || 0
+      cantidad: this.cantidadPendiente[d.key] || 0
     }));
 
   const payload = {

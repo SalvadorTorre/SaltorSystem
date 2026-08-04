@@ -61,6 +61,8 @@ declare var $: any;
 interface ResumenConsultaFactura {
   pagada: boolean;
   documento: string;
+  estadoDgii: string;
+  claseEstadoDgii: string;
   pendiente: boolean;
   entregada: boolean;
   salida: boolean;
@@ -735,6 +737,9 @@ export class Facturacion implements OnInit, OnDestroy {
         let totalGeneral = 0;
         const itbisRate = this.tasaItbisRestar();
         response.data.forEach((item: any) => {
+          const tipoMercancia = String(
+            item.df_tipoMerc ?? item.df_tipomerc ?? '',
+          ).trim();
           const producto: ModeloInventarioData = {
             in_codmerc: item.df_codMerc,
             in_desmerc: item.df_desMerc,
@@ -761,6 +766,7 @@ export class Facturacion implements OnInit, OnDestroy {
             in_status: '',
             in_itbis: false,
             in_minvent: 0,
+            in_tramo: tipoMercancia,
           };
           const cantidad = item.df_canMerc;
           const precio = item.df_preMerc;
@@ -772,6 +778,10 @@ export class Facturacion implements OnInit, OnDestroy {
             total: totalItem,
             fecfactActual: new Date(),
             costo: item.df_cosMerc,
+            df_tipoMerc: tipoMercancia,
+            df_tipomerc: tipoMercancia,
+            df_codFact: item.df_codFact,
+            __detalleExistente: true,
           });
           //fecfactActual: new Date(),
           // Calcular el subtotal
@@ -975,6 +985,12 @@ export class Facturacion implements OnInit, OnDestroy {
     return {
       pagada: this.banderaConsulta(factura.fa_fpago),
       documento: this.etiquetaDocumentoConsulta(factura.fa_status),
+      estadoDgii: this.etiquetaEstadoDgii(
+        (factura as any).estado_dgii || (factura as any).estado_envio_dgii,
+      ),
+      claseEstadoDgii: this.claseEstadoDgii(
+        (factura as any).estado_dgii || (factura as any).estado_envio_dgii,
+      ),
       pendiente: this.banderaConsulta(factura.fa_pendiente, ['P', 'S']),
       entregada: this.banderaConsulta(factura.fa_entrega),
       salida: salidaRegistrada,
@@ -1086,6 +1102,18 @@ export class Facturacion implements OnInit, OnDestroy {
     if (status === 'C') return 'Conduce';
     if (status === 'F') return 'Factura';
     return status || 'Sin status';
+  }
+
+  private etiquetaEstadoDgii(valor: any): string {
+    return String(valor || '').trim() || 'Sin enviar';
+  }
+
+  private claseEstadoDgii(valor: any): string {
+    const estado = String(valor || '').trim().toLowerCase();
+    if (estado.includes('acept')) return 'text-bg-success';
+    if (estado.includes('rechaz') || estado.includes('error')) return 'text-bg-danger';
+    if (estado.includes('pend')) return 'text-bg-warning';
+    return 'text-bg-secondary';
   }
 
   private banderaConsulta(valor: any, adicionales: string[] = []): boolean {
@@ -2675,6 +2703,13 @@ export class Facturacion implements OnInit, OnDestroy {
     this.existenciatxt = item.producto.in_canmerc;
     this.costotxt = item.producto.in_cosmerc;
     this.margenVentatxt = item.producto.in_porgana;
+    this.tipomerc = String(
+      item.df_tipoMerc ??
+        item.df_tipomerc ??
+        item.producto?.in_tramo ??
+        item.producto?.IN_TRAMO ??
+        '',
+    ).trim();
 
     // Sincronizar controles
     this.buscarcodmerc.setValue(this.codmerc, { emitEvent: false });
@@ -2833,8 +2868,64 @@ export class Facturacion implements OnInit, OnDestroy {
     }
   }
 
+  private async validarRncAntesDeGuardar(): Promise<boolean> {
+    const rnc = String(
+      this.formularioFacturacion.get('fa_rncFact')?.value || '',
+    ).replace(/\D/g, '').trim();
+
+    if (!rnc) return true;
+
+    this.formularioFacturacion.patchValue(
+      { fa_rncFact: rnc },
+      { emitEvent: false },
+    );
+
+    if (rnc.length !== 9 && rnc.length !== 11) {
+      await Swal.fire({
+        icon: 'warning',
+        title: 'RNC invalido',
+        text: 'El RNC debe contener 9 u 11 digitos.',
+        confirmButtonText: 'Aceptar',
+      });
+      this.enfocarCampoFactura('input1');
+      return false;
+    }
+
+    try {
+      const response = await firstValueFrom(
+        this.ServicioRnc.buscarRncPorrncId(rnc),
+      );
+      const nombreRnc = String(response?.data?.rason || '').trim();
+      if (!response?.data || !nombreRnc) {
+        await Swal.fire({
+          icon: 'warning',
+          title: 'RNC invalido',
+          text: 'El RNC digitado no se encuentra registrado como valido.',
+          confirmButtonText: 'Aceptar',
+        });
+        this.enfocarCampoFactura('input1');
+        return false;
+      }
+      return true;
+    } catch (error) {
+      console.error('Error validando RNC antes de guardar:', error);
+      await Swal.fire({
+        icon: 'error',
+        title: 'No se pudo validar el RNC',
+        text: 'Verifique el RNC o la conexion e intente nuevamente.',
+        confirmButtonText: 'Aceptar',
+      });
+      this.enfocarCampoFactura('input1');
+      return false;
+    }
+  }
+
   async guardarFacturacion() {
     if (this.isLoading) {
+      return;
+    }
+
+    if (!(await this.validarRncAntesDeGuardar())) {
       return;
     }
 
@@ -2882,6 +2973,7 @@ export class Facturacion implements OnInit, OnDestroy {
       ...this.formularioFacturacion.getRawValue(),
     } as any;
     facturaPayload.fa_status = 'C';
+    facturaPayload.fa_tipopago = 1;
     if (!this.modoedicionFacturacion) {
       facturaPayload.fa_salida = 'N';
       facturaPayload.fa_impresa = 'N';

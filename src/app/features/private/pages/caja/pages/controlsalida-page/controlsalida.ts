@@ -64,6 +64,11 @@ export class ControlSalidaCajaComponent implements OnInit, OnDestroy {
   ultimaFacturaCuadrada: string | null = null;
   ultimoControlImpresion: any = null;
 
+  private sucursalLogiada(): number {
+    const codsucu = Number(localStorage.getItem('idSucursal') || 0);
+    return Number.isFinite(codsucu) ? codsucu : 0;
+  }
+
   constructor(
     private servicioUsuario: ServicioUsuario,
     private servicioSalida: ServicioSalidafactura,
@@ -160,7 +165,9 @@ export class ControlSalidaCajaComponent implements OnInit, OnDestroy {
     
     this.mostrarListaChoferes = false;
     this.choferesEncontrados = [];
-    this.servicioUsuario.buscarUsuariosChoferes(1, 20, termino).subscribe({
+    this.servicioUsuario
+      .buscarUsuariosChoferes(1, 20, termino, this.sucursalLogiada())
+      .subscribe({
       next: (resp: any) => {
         const lista = resp?.data || resp || [];
         if (!Array.isArray(lista) || lista.length === 0) {
@@ -240,7 +247,9 @@ export class ControlSalidaCajaComponent implements OnInit, OnDestroy {
     }
 
     this.cargando = true;
-    this.servicioUsuario.buscarUsuarioChoferPorCodigo(codigo).subscribe({
+    this.servicioUsuario
+      .buscarUsuarioChoferPorCodigo(codigo, this.sucursalLogiada())
+      .subscribe({
       next: (resp: any) => {
         const data = resp?.data || resp;
         if (!data) {
@@ -291,7 +300,9 @@ export class ControlSalidaCajaComponent implements OnInit, OnDestroy {
       return;
     }
     this.cargando = true;
-    this.servicioSalida.obtenerPorChoferYStatus(this.codChofer).subscribe({
+    this.servicioSalida
+      .obtenerPorChoferYStatus(this.codChofer, 'P', this.sucursalLogiada())
+      .subscribe({
       next: (resp: any) => {
         const salidas = Array.isArray(resp) ? resp : resp?.data || [];
         if (!salidas || salidas.length === 0) {

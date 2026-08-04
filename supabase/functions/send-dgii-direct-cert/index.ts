@@ -83,6 +83,7 @@ function normalizeScenarioForDgii(scenario: Record<string, unknown>) {
         key === "IndicadorMontoGravado" ||
         key === "TipoIngresos" ||
         key === "TipoPago" ||
+        key === "FechaLimitePago" ||
         key === "FechaVencimientoSecuencia"
       ) {
         continue;
@@ -90,6 +91,7 @@ function normalizeScenarioForDgii(scenario: Record<string, unknown>) {
       creditNote[key] = value;
     }
 
+    delete creditNote.FechaLimitePago;
     delete creditNote.FechaVencimientoSecuencia;
     delete creditNote.TerminoPago;
     delete creditNote.TipoCuentaPago;

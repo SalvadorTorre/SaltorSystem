@@ -395,6 +395,7 @@ export class ServicioConfiguracionGlobal {
     delete limpio.IndicadorMontoGravado;
     delete limpio.TipoIngresos;
     delete limpio.TipoPago;
+    delete limpio.FechaLimitePago;
     delete limpio.FechaVencimientoSecuencia;
     delete limpio.CorreoComprador;
     delete limpio.DireccionComprador;

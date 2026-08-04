@@ -342,8 +342,12 @@ export class FacturaDgiiService {
       escenario.IndicadorMontoGravado = '0';
     }
     escenario.TipoIngresos = '01';
-    escenario.TipoPago = String(factura?.fa_codfpago || factura?.fa_fpago || '1');
-    if (tipo === '31' && factura?.fa_expFact) {
+    const tipoPagoDgii = Number(factura?.fa_tipopago ?? 1);
+    escenario.TipoPago = String([1, 2, 3].includes(tipoPagoDgii) ? tipoPagoDgii : 1);
+    if (tipoPagoDgii === 2 && tipo !== '43') {
+      if (!factura?.fa_expFact) {
+        throw new Error('La factura a credito requiere Fecha Limite de Pago para enviar a DGII.');
+      }
       escenario.FechaLimitePago = this.fecha(factura.fa_expFact);
     }
 
@@ -431,7 +435,7 @@ export class FacturaDgiiService {
       escenario.MontoExento = this.redondear(totalExento || montoTotal, 2).toFixed(2);
       escenario.MontoTotal = montoTotal.toFixed(2);
       escenario['FormaPago[1]'] = String(
-        factura?.fa_codfpago || factura?.fa_fpago || '1',
+        factura?.fa_codfpago || '1',
       );
       escenario['MontoPago[1]'] = montoTotal.toFixed(2);
       return escenario;
@@ -452,7 +456,7 @@ export class FacturaDgiiService {
     escenario.TotalITBIS = totalItbis.toFixed(2);
     escenario.MontoTotal = montoTotal.toFixed(2);
     escenario['FormaPago[1]'] = String(
-      factura?.fa_codfpago || factura?.fa_fpago || '1',
+      factura?.fa_codfpago || '1',
     );
     escenario['MontoPago[1]'] = montoTotal.toFixed(2);
     return escenario;

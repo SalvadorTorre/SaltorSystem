@@ -6,7 +6,6 @@ import { ServicioFpago } from 'src/app/core/services/mantenimientos/fpago/fpago.
 import Swal from 'sweetalert2';
 import { ReporteCierreBuilder } from './reporte-builder';
 
-
 @Component({
   selector: 'app-cuadrecaja',
   templateUrl: './cuadrecaja.html',
@@ -129,7 +128,6 @@ export class CuadreCaja implements OnInit {
     if (this.esFacturaCredito(factura)) {
         return 'CREDITO';
     }
-
     if (this.facturaEstaPagada(factura)) {
         return 'COBRADA';
     }

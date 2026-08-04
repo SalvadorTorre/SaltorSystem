@@ -355,6 +355,14 @@
                 <div class="text-muted fw-semibold">Estado Factura</div>
                 <div class="fw-bold">{{resumenConsultaFactura.documento}}</div>
               </div>
+              <div class="col-6 col-md-3">
+                <div class="text-muted fw-semibold">Estado DGII</div>
+                <div class="fw-bold mt-1">
+                  <span class="badge" [ngClass]="resumenConsultaFactura.claseEstadoDgii">
+                    {{resumenConsultaFactura.estadoDgii}}
+                  </span>
+                </div>
+              </div>
               <div class="col-md-6">
                 <div class="text-muted fw-semibold">Chofer</div>
                 <div class="fw-bold">{{resumenConsultaFactura.chofer}}</div>

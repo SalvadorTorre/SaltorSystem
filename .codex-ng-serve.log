@@ -349,3 +349,107 @@ runtime.js          | runtime | 14.14 kB |
 Build at: 2026-07-27T19:05:45.691Z - Hash: 10490d2050df0bd1 - Time: 8462ms
 
 √ Compiled successfully.
+
+Initial Chunk Files | Names   | Raw Size
+runtime.js          | runtime | 14.14 kB |
+
+78 unchanged chunks
+
+Build at: 2026-07-27T19:07:40.237Z - Hash: 3aaaf2b683a1d55d - Time: 17800ms
+
+√ Compiled successfully.
+
+Initial Chunk Files | Names   | Raw Size
+main.js             | main    | 93.52 kB |
+runtime.js          | runtime | 14.14 kB |
+
+77 unchanged chunks
+
+Build at: 2026-07-27T19:07:41.553Z - Hash: c1feb98c6f679f05 - Time: 1198ms
+
+√ Compiled successfully.
+
+Initial Chunk Files                                                                     | Names                                         | Raw Size
+runtime.js                                                                              | runtime                                       | 14.14 kB |
+
+Lazy Chunk Files                                                                        | Names                                         | Raw Size
+src_app_features_private_pages_caja_pages_reciboingreso-page_reciboingreso-modulo_ts.js | pages-reciboingreso-page-reciboingreso-modulo | 55.50 kB |
+
+77 unchanged chunks
+
+Build at: 2026-07-27T19:10:25.523Z - Hash: 0ceb83a0b4a08f2a - Time: 2206ms
+
+√ Compiled successfully.
+
+Initial Chunk Files                                                                     | Names                                         | Raw Size
+runtime.js                                                                              | runtime                                       | 14.14 kB |
+
+Lazy Chunk Files                                                                        | Names                                         | Raw Size
+src_app_features_private_pages_caja_pages_reciboingreso-page_reciboingreso-modulo_ts.js | pages-reciboingreso-page-reciboingreso-modulo | 55.55 kB |
+
+77 unchanged chunks
+
+Build at: 2026-07-27T19:10:41.394Z - Hash: 8bf3f338f297d44d - Time: 2078ms
+
+√ Compiled successfully.
+
+Initial Chunk Files                                                                     | Names                                         | Raw Size
+runtime.js                                                                              | runtime                                       | 14.14 kB |
+
+Lazy Chunk Files                                                                        | Names                                         | Raw Size
+src_app_features_private_pages_caja_pages_reciboingreso-page_reciboingreso-modulo_ts.js | pages-reciboingreso-page-reciboingreso-modulo | 54.01 kB |
+
+77 unchanged chunks
+
+Build at: 2026-07-27T19:14:01.540Z - Hash: 7e4e5ff85b51291d - Time: 1896ms
+
+√ Compiled successfully.
+
+Initial Chunk Files                                                                     | Names                                         | Raw Size
+runtime.js                                                                              | runtime                                       | 14.14 kB |
+
+Lazy Chunk Files                                                                        | Names                                         | Raw Size
+src_app_features_private_pages_caja_pages_reciboingreso-page_reciboingreso-modulo_ts.js | pages-reciboingreso-page-reciboingreso-modulo | 54.31 kB |
+
+77 unchanged chunks
+
+Build at: 2026-07-27T19:16:00.082Z - Hash: 8d8c52e1732448a6 - Time: 2136ms
+
+√ Compiled successfully.
+
+Initial Chunk Files                                                                     | Names                                         | Raw Size
+runtime.js                                                                              | runtime                                       | 14.14 kB |
+
+Lazy Chunk Files                                                                        | Names                                         | Raw Size
+src_app_features_private_pages_caja_pages_reciboingreso-page_reciboingreso-modulo_ts.js | pages-reciboingreso-page-reciboingreso-modulo | 53.97 kB |
+
+77 unchanged chunks
+
+Build at: 2026-07-27T19:17:56.076Z - Hash: 8d5eab8d4df9e598 - Time: 2261ms
+
+√ Compiled successfully.
+
+Initial Chunk Files                                                                     | Names                                         | Raw Size
+runtime.js                                                                              | runtime                                       | 14.14 kB |
+
+Lazy Chunk Files                                                                        | Names                                         | Raw Size
+src_app_features_private_pages_caja_pages_controlsalida-page_controlsalida-modulo_ts.js | pages-controlsalida-page-controlsalida-modulo | 79.55 kB |
+
+77 unchanged chunks
+
+Build at: 2026-07-27T19:36:52.547Z - Hash: 92dac5e7e01b3e55 - Time: 2834ms
+
+√ Compiled successfully.
+
+Initial Chunk Files                                                                     | Names                                         | Raw Size
+runtime.js                                                                              | runtime                                       | 14.14 kB |
+
+Lazy Chunk Files                                                                        | Names                                         | Raw Size
+src_app_features_private_pages_caja_pages_controlsalida-page_controlsalida-modulo_ts.js | pages-controlsalida-page-controlsalida-modulo | 79.55 kB |
+default-src_app_core_services_almacen_salidafactura_salidafactura_service_ts.js         | pages-facturacion-facturacion-modulo          | 32.66 kB |
+
+76 unchanged chunks
+
+Build at: 2026-07-27T20:40:07.994Z - Hash: ada71920a327e336 - Time: 8622ms
+
+√ Compiled successfully.

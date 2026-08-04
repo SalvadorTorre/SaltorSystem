@@ -354,17 +354,14 @@ export class ServicioSalidafactura {
         if (detPagado !== 'S' && detPagado !== 'P') return sum;
         return sum + Number(det?.valfact || det?.valFact || 0);
       }, 0);
-      const todasPagadas = detalles.length > 0 && detalles.every((det: any) => {
-        const detPagado = String(det?.pagado ?? '').trim().toUpperCase();
-        return detPagado === 'S' || detPagado === 'P';
-      });
-
       const salidaUpdate = this.db
         .from('salida')
         .update({
           canfact: detalles.length,
           valpagado,
-          status: todasPagadas ? 'C' : 'P',
+          // CobroFact solo registra el pago. El cierre de la salida corresponde
+          // exclusivamente al modulo /caja/ControlSalida.
+          status: 'P',
         })
         .eq('codsalida', codsalida)
         .select('*');

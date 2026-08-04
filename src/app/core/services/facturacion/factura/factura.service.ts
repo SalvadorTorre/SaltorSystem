@@ -384,6 +384,7 @@ export class ServicioFacturacion {
       fa_envio: row.fa_envio ?? null,
       fa_fpago: row.fa_fpago ?? '',
       fa_codfpago: row.fa_codfpago ?? null,
+      fa_tipopago: this.toNumber(row.fa_tipopago ?? 1),
       fa_origenpago: row.fa_origenpago ?? '',
       fa_confirpago: row.fa_confirpago ?? '',
       fa_notapago: row.fa_notapago ?? '',
@@ -496,6 +497,7 @@ export class ServicioFacturacion {
       fa_envio: this.toNumberOrNull(input?.fa_envio),
       fa_fpago: this.toStringMax(input?.fa_fpago, 20),
       fa_codfpago: this.toNumberOrNull(input?.fa_codfpago),
+      fa_tipopago: this.toNumberOrNull(input?.fa_tipopago) ?? 1,
       fa_origenpago: this.toStringMax(input?.fa_origenpago, 30),
       fa_confirpago: this.toStringMax(input?.fa_confirpago, 50),
       fa_notapago: this.toStringOrNull(input?.fa_notapago),
@@ -719,6 +721,63 @@ export class ServicioFacturacion {
     }
 
     throw new Error('No se pudo generar un numero de factura disponible desde contfactura.');
+  }
+
+  reservarNumeroGastoMenor(): Observable<any> {
+    if (!this.useSupabase) {
+      return throwError(() => new Error('Supabase no esta configurado para generar el numero de gasto menor.'));
+    }
+
+    return from((async () => {
+      const idsucursal = Number(localStorage.getItem('idSucursal') || 0);
+      if (!Number.isFinite(idsucursal) || idsucursal <= 0) {
+        throw new Error('Sucursal invalida para generar el numero de gasto menor.');
+      }
+
+      for (let intento = 0; intento < 10; intento += 1) {
+        const contRow = await this.getOrPickContFacturaRow(idsucursal);
+        if (!contRow) {
+          throw new Error(`No existe contfactura para la sucursal ${idsucursal}.`);
+        }
+        if (!Object.prototype.hasOwnProperty.call(contRow, 'contgastomenor')) {
+          throw new Error('Falta el campo contgastomenor en contfactura. Ejecute migrate_gastos_menores_control.sql.');
+        }
+
+        const idField = this.contfacturaIdField(contRow);
+        const contId = this.toNumberOrNull(
+          contRow?.id ?? contRow?.cod ?? contRow?.idcontfact ?? contRow?.idContFact,
+        );
+        if (!idField || !contId) throw new Error('contfactura sin id.');
+
+        const ano = this.toNumber(contRow?.ano) || new Date().getFullYear();
+        const actual = this.toNumber(contRow?.contgastomenor);
+        const siguiente = actual + 1;
+
+        let update = this.db
+          .from('contfactura')
+          .update({ contgastomenor: siguiente })
+          .eq(idField, contId)
+          .select('contgastomenor');
+        update = contRow?.contgastomenor === null || contRow?.contgastomenor === undefined
+          ? update.is('contgastomenor', null)
+          : update.eq('contgastomenor', actual);
+
+        const { data: updated, error } = await update.maybeSingle();
+        if (error) throw error;
+        if (!updated) continue;
+
+        return this.buildFacturaCodeFromContFactura(ano, idsucursal, siguiente);
+      }
+
+      throw new Error('No se pudo reservar un numero de gasto menor. Intente nuevamente.');
+    })()).pipe(
+      map((numero) => ({
+        status: 'success',
+        code: 200,
+        message: 'Numero de gasto menor reservado',
+        data: { numero },
+      })),
+    );
   }
 
   private normalizeTipoEncfFromTipoNcf(tipoNcf: any): { tipoNumero: number | null; tipoencf: string } {
@@ -1903,12 +1962,16 @@ export class ServicioFacturacion {
       }
 
       const seleccion = Array.isArray(payload?.detalle) ? payload.detalle : [];
-      const mapCantidad = new Map<string, number>();
+      const mapCantidadPorId = new Map<number, number>();
       seleccion.forEach((d: any) => {
-        const cod = String(d?.cod || d?.df_codMerc || '').trim();
-        if (!cod) return;
-        mapCantidad.set(cod, this.toNumber(d?.cantidad ?? d?.df_canpend));
+        const id = Number(d?.id);
+        if (!Number.isFinite(id)) return;
+        mapCantidadPorId.set(id, this.toNumber(d?.cantidad ?? d?.df_canpend));
       });
+
+      if (seleccion.some((d: any) => !Number.isFinite(Number(d?.id)))) {
+        throw new Error('No se pudo identificar la línea seleccionada de la factura. Vuelva a buscarla e intente nuevamente.');
+      }
 
       let detalleQuery = this.db
         .from('detfactura')
@@ -1919,9 +1982,8 @@ export class ServicioFacturacion {
       if (detalleError) throw detalleError;
 
       for (const det of detalles || []) {
-        const codMerc = String(det?.df_codmerc || '').trim();
         const maxCantidad = this.toNumber(det?.df_canmerc);
-        const requested = mapCantidad.get(codMerc);
+        const requested = mapCantidadPorId.get(Number(det.id));
         const canpend = requested === undefined
           ? 0
           : Math.max(0, Math.min(this.toNumber(requested), maxCantidad || this.toNumber(requested)));
@@ -2262,23 +2324,54 @@ export class ServicioFacturacion {
 
     return from((async () => {
       const columnas = 'fa_codfact,fa_ncffact,fa_rncfact,fa_tiponcf,fa_fecfact,fa_valfact,fa_itbifact,fa_subfact,fa_nomclie,fa_codempr,fa_codsucu,fa_codfpago,fa_fpago,fa_status,fa_pendiente,fa_entrega,fa_envio,estado_dgii,estado_envio_dgii';
-      const crearConsulta = (fechaDia?: string): any => {
-        let consulta = this.db
+      const aplicarScope = (consulta: any, fechaDia?: string): any => {
+        let scoped = consulta;
+        if (empresa) scoped = scoped.eq('fa_codempr', empresa);
+        if (sucursal) scoped = scoped.eq('fa_codsucu', sucursal);
+        if (!empresa && !sucursal) scoped = this.applyTenantFilter(scoped);
+        if (fechaDia) scoped = scoped.eq('fa_fecfact', fechaDia);
+        else {
+          if (fechaDesde) scoped = scoped.gte('fa_fecfact', fechaDesde);
+          if (fechaHasta) scoped = scoped.lte('fa_fecfact', fechaHasta);
+        }
+        return scoped;
+      };
+      const crearConsulta = (fechaDia?: string, filtro?: 'sinNcf' | 'rechazada'): any => {
+        let consulta = aplicarScope(
+          this.db
           .from('factura')
           .select(columnas)
           .not('fa_status', 'in', '("U","N")')
           .order('fa_fecfact', { ascending: false })
           .order('fa_codfact', { ascending: false })
-          .limit(5000);
-        if (empresa) consulta = consulta.eq('fa_codempr', empresa);
-        if (sucursal) consulta = consulta.eq('fa_codsucu', sucursal);
-        if (!empresa && !sucursal) consulta = this.applyTenantFilter(consulta);
-        if (fechaDia) consulta = consulta.eq('fa_fecfact', fechaDia);
-        else {
-          if (fechaDesde) consulta = consulta.gte('fa_fecfact', fechaDesde);
-          if (fechaHasta) consulta = consulta.lte('fa_fecfact', fechaHasta);
+          .limit(1000),
+          fechaDia,
+        );
+        if (filtro === 'sinNcf') {
+          consulta = consulta.or('fa_ncffact.is.null,fa_ncffact.eq.');
+        }
+        if (filtro === 'rechazada') {
+          consulta = consulta.or('estado_dgii.ilike.%rechaz%,estado_envio_dgii.ilike.%rechaz%');
         }
         return consulta;
+      };
+      const mergeRows = (target: Map<string, any>, source: any[]) => {
+        for (const row of source || []) {
+          const key = String(row?.fa_codfact || '').trim();
+          if (key) target.set(key, row);
+        }
+      };
+      const cargarPorFiltros = async (fechaDia?: string): Promise<any[]> => {
+        const merged = new Map<string, any>();
+        const { data: sinNcf, error: errorSinNcf } = await crearConsulta(fechaDia, 'sinNcf');
+        if (errorSinNcf) throw errorSinNcf;
+        mergeRows(merged, sinNcf || []);
+
+        const { data: rechazadas, error: errorRechazadas } = await crearConsulta(fechaDia, 'rechazada');
+        if (errorRechazadas) throw errorRechazadas;
+        mergeRows(merged, rechazadas || []);
+
+        return Array.from(merged.values());
       };
 
       let rows: any[] = [];
@@ -2293,18 +2386,14 @@ export class ServicioFacturacion {
           const dia = new Date(inicio.getTime() + indice * 86400000)
             .toISOString()
             .slice(0, 10);
-          const { data: dataDia, error: errorDia } = await crearConsulta(dia);
-          if (errorDia) throw errorDia;
-          rows.push(...(dataDia || []));
+          rows.push(...await cargarPorFiltros(dia));
         }
         rows.sort((a: any, b: any) =>
           String(b?.fa_fecfact || '').localeCompare(String(a?.fa_fecfact || '')) ||
           String(b?.fa_codfact || '').localeCompare(String(a?.fa_codfact || '')),
         );
       } else {
-        const { data, error } = await crearConsulta();
-        if (error) throw error;
-        rows = data || [];
+        rows = await cargarPorFiltros();
       }
 
       return {
@@ -2329,7 +2418,6 @@ export class ServicioFacturacion {
   } = {}): Observable<any> {
     const safePage = Math.max(1, Number(params.page) || 1);
     const safeLimit = Math.max(10, Number(params.pageSize) || 20);
-    const search = String(params.search || '').trim();
     const fecha = this.normalizeDate(params.fecha);
     const fechaDesde = this.normalizeDate(params.fechaDesde);
     const fechaHasta = this.normalizeDate(params.fechaHasta);
@@ -2343,7 +2431,6 @@ export class ServicioFacturacion {
         page: String(safePage),
         limit: String(safeLimit),
       });
-      if (search) query.set('search', search);
       if (fecha) query.set('fecha', fecha);
       if (fechaDesde) query.set('fechaDesde', fechaDesde);
       if (fechaHasta) query.set('fechaHasta', fechaHasta);
@@ -2361,77 +2448,18 @@ export class ServicioFacturacion {
     return from((async () => {
       const columnas607 = 'fa_codfact,fa_ncffact,fa_rncfact,fa_tiponcf,fa_fecfact,fa_fechora,fa_fehora,fa_valfact,fa_itbifact,fa_subfact,fa_nomclie,fa_codempr,fa_codsucu,fa_codfpago,estado_dgii,estado_envio_dgii,codseguridad,qr_link,fec_firma,dgii_track_id,dgii_codigo,dgii_error_message,dgii_mensajes,dgii_response_json,dgii_response_raw';
 
-      // Evita el OR ILIKE sobre las dos columnas de estado, que en periodos
-      // amplios provoca statement timeout. Se leen bloques acotados y se
-      // aplica el estado en memoria para conservar todas las coincidencias.
-      if (estadoDgii) {
-        const lote = 500;
-        const maxLotes = 40;
-        const acumuladas: any[] = [];
-        const estadoBuscado = estadoDgii.toLowerCase();
-        const textoBuscado = search.toLowerCase();
-
-        for (let bloque = 0; bloque < maxLotes; bloque += 1) {
-          let consultaEstado = this.db
-            .from('factura')
-            .select(columnas607)
-            .not('estado_envio_dgii', 'is', null)
-            .neq('estado_envio_dgii', 'PENDIENTE')
-            .order('fa_fecfact', { ascending: false })
-            .order('fa_codfact', { ascending: false })
-            .range(bloque * lote, (bloque + 1) * lote - 1);
-
-          if (empresa) consultaEstado = consultaEstado.eq('fa_codempr', empresa);
-          else consultaEstado = this.applyTenantCompanyFilter(consultaEstado);
-          if (sucursal) consultaEstado = consultaEstado.eq('fa_codsucu', sucursal);
-          if (tipoComprobante) consultaEstado = consultaEstado.eq('fa_tiponcf', Number(tipoComprobante));
-          if (fecha) consultaEstado = consultaEstado.eq('fa_fecfact', fecha);
-          else {
-            if (fechaDesde) consultaEstado = consultaEstado.gte('fa_fecfact', fechaDesde);
-            if (fechaHasta) consultaEstado = consultaEstado.lte('fa_fecfact', fechaHasta);
-          }
-
-          const { data: loteData, error: loteError } = await consultaEstado;
-          if (loteError) throw loteError;
-          const filasLote = loteData || [];
-          acumuladas.push(...filasLote.filter((row: any) => {
-            const coincideEstado = [row?.estado_dgii, row?.estado_envio_dgii]
-              .some((value) => String(value || '').toLowerCase().includes(estadoBuscado));
-            if (!coincideEstado) return false;
-            if (!textoBuscado) return true;
-            return [
-              row?.fa_codfact, row?.fa_ncffact, row?.fa_nomclie, row?.fa_rncfact,
-              row?.codseguridad, row?.dgii_codigo, row?.dgii_track_id,
-            ].some((value) => String(value || '').toLowerCase().includes(textoBuscado));
-          }));
-          if (filasLote.length < lote) break;
-        }
-
-        const totalEstado = acumuladas.length;
-        const filasPagina = acumuladas
-          .slice(offsetDirecto, offsetDirecto + safeLimit)
-          .map((row: any) => this.mapFacturaDbToUi(row));
-        return {
-          status: 'success',
-          code: 200,
-          data: await this.completarFormaPagoReporte607(filasPagina),
-          pagination: {
-            total: totalEstado,
-            page: safePage,
-            pageSize: safeLimit,
-            totalPages: Math.max(1, Math.ceil(totalEstado / safeLimit)),
-          },
-        };
-      }
-
       let query = this.db
         .from('factura')
-        .select(columnas607, { count: 'planned' })
+        // No se solicita count: el exacto provoca timeout y el planificado
+        // puede anunciar paginas inexistentes (PGRST103/HTTP 416).
+        .select(columnas607)
         .not('estado_envio_dgii', 'is', null)
         .neq('estado_envio_dgii', 'PENDIENTE')
         .order('fa_fecfact', { ascending: false })
         .order('fa_codfact', { ascending: false })
-        .range(offsetDirecto, offsetDirecto + safeLimit - 1);
+        // Se solicita una fila adicional para detectar paginas que el conteo
+        // planificado de PostgreSQL no haya estimado.
+        .range(offsetDirecto, offsetDirecto + safeLimit);
 
       if (empresa) {
         query = query.eq('fa_codempr', empresa);
@@ -2440,21 +2468,8 @@ export class ServicioFacturacion {
       }
       if (sucursal) query = query.eq('fa_codsucu', sucursal);
 
-      if (search) {
-        const safeSearch = search.replace(/[%_]/g, '\\$&');
-        query = query.or([
-          `fa_codfact.ilike.%${safeSearch}%`,
-          `fa_ncffact.ilike.%${safeSearch}%`,
-          `fa_nomclie.ilike.%${safeSearch}%`,
-          `fa_rncfact.ilike.%${safeSearch}%`,
-          `codseguridad.ilike.%${safeSearch}%`,
-          `estado_dgii.ilike.%${safeSearch}%`,
-          `estado_envio_dgii.ilike.%${safeSearch}%`,
-          `dgii_codigo.ilike.%${safeSearch}%`,
-          `dgii_track_id.ilike.%${safeSearch}%`,
-        ].join(','));
-      }
       if (tipoComprobante) query = query.eq('fa_tiponcf', Number(tipoComprobante));
+      if (estadoDgii) query = query.ilike('estado_dgii', estadoDgii);
       if (fecha) {
         query = query.eq('fa_fecfact', fecha);
       } else {
@@ -2462,10 +2477,16 @@ export class ServicioFacturacion {
         if (fechaHasta) query = query.lte('fa_fecfact', fechaHasta);
       }
 
-      const { data, error, count } = await query;
+      const { data, error } = await query;
       if (error) throw error;
-      const rows = (data || []).map((row: any) => this.mapFacturaDbToUi(row));
-      const total = Number(count || rows.length || 0);
+      const filasRecibidas = data || [];
+      const hayPaginaSiguiente = filasRecibidas.length > safeLimit;
+      const filasPagina = filasRecibidas.slice(0, safeLimit);
+      const rows = filasPagina.map((row: any) => this.mapFacturaDbToUi(row));
+      const totalComprobado = offsetDirecto + filasPagina.length;
+      const total = hayPaginaSiguiente
+        ? totalComprobado + 1
+        : totalComprobado;
       return {
         status: 'success',
         code: 200,
@@ -3028,15 +3049,13 @@ export class ServicioFacturacion {
     // mucho mÃ¡s rÃ¡pido que ejecutar una solicitud por cada dÃ­a del mes.
     // Conservamos la estrategia diaria solo para consultas globales, donde el
     // volumen puede provocar timeout en una Ãºnica consulta.
-    if (
-      params.soloResumenVendedor &&
-      params.fechaDesde &&
-      params.fechaHasta
-    ) {
+    if (params.fechaDesde && params.fechaHasta) {
       return this.buscarVentasVendedorPorDias(params);
     }
 
     const pageSize = params.soloResumenVendedor ? 250 : 1000;
+    const columnasConsultaVentas =
+      'fa_codfact,fa_nomvend,fa_codvend,fa_codempr,fa_codsucu,fa_valfact,fa_cosfact,fa_fecfact,fa_codclie,fa_nomclie,fa_telclie';
     const rows: any[] = [];
     let offset = 0;
 
@@ -3047,11 +3066,7 @@ export class ServicioFacturacion {
       const currentPageSize = params.limit > 0 ? Math.min(pageSize, remaining) : pageSize;
       let query = this.db
         .from('factura')
-        .select(
-          params.soloResumenVendedor
-            ? 'fa_codfact,fa_nomvend,fa_codvend,fa_codempr,fa_codsucu,fa_valfact,fa_cosfact,fa_fecfact,fa_codclie,fa_nomclie,fa_telclie'
-            : '*',
-        );
+        .select(columnasConsultaVentas);
 
       if (!params.soloResumenVendedor) {
         query = query

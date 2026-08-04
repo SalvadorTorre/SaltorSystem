@@ -17,7 +17,6 @@ type ModoFecha607 = 'fecha' | 'rango';
 export class Reporte607Component implements OnInit {
   facturas: any[] = [];
   loading = false;
-  search = '';
   fecha = '';
   fechaDesde = '';
   fechaHasta = '';
@@ -115,7 +114,6 @@ export class Reporte607Component implements OnInit {
     const params = {
       page: this.page,
       pageSize: this.pageSize,
-      search: this.search,
       fecha: '',
       fechaDesde: this.fechaDesde,
       fechaHasta: this.fechaHasta,
@@ -151,7 +149,6 @@ export class Reporte607Component implements OnInit {
   }
 
   limpiarFiltros(): void {
-    this.search = '';
     this.fecha = '';
     this.fechaDesde = '';
     this.fechaHasta = '';
@@ -533,7 +530,6 @@ export class Reporte607Component implements OnInit {
       const response = await firstValueFrom(this.servicioFacturacion.buscarReporte607Dgii({
         page,
         pageSize,
-        search: this.search,
         fecha: '',
         fechaDesde: this.fechaDesde,
         fechaHasta: this.fechaHasta,

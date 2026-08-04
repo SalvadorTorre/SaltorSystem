@@ -253,3 +253,28 @@ For more info see: https://angular.io/guide/build#configuring-commonjs-dependenc
 
 
 √ Browser application bundle generation complete.
+√ Browser application bundle generation complete.
+
+./src/app/features/private/pages/mantenimientos/pages/configuracion/itbis/itbis.css?ngResource - Warning: Module Warning (from ./node_modules/postcss-loader/dist/cjs.js):
+(298:3) from "autoprefixer" plugin: end value has mixed support, consider using flex-end instead
+
+Code:
+  align-items: end
+
+
+./src/app/features/private/pages/mantenimientos/pages/empresas-page/empresas.css?ngResource - Warning: Module Warning (from ./node_modules/postcss-loader/dist/cjs.js):
+(236:3) from "autoprefixer" plugin: start value has mixed support, consider using flex-start instead
+
+Code:
+  align-items: start
+
+
+
+√ Browser application bundle generation complete.
+√ Browser application bundle generation complete.
+√ Browser application bundle generation complete.
+√ Browser application bundle generation complete.
+√ Browser application bundle generation complete.
+√ Browser application bundle generation complete.
+√ Browser application bundle generation complete.
+√ Browser application bundle generation complete.

@@ -902,7 +902,7 @@ export class NotaCreditoComponent implements OnInit {
         nc_fecha_modificada: this.form.modifiedDate || null,
         nc_codigo_modificacion: this.form.modificationCode || null,
         nc_motivo: this.form.reason.trim() || null,
-        nc_tipo_pago: this.form.paymentType || null,
+        nc_tipo_pago: 1,
         nc_tipo_ingreso: this.form.incomeType || null,
         emisor_rnc: this.cleanRnc(this.form.issuerRnc) || null,
         emisor_nombre: this.form.issuerName.trim() || null,
