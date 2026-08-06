@@ -51,6 +51,7 @@ import {
 } from 'src/app/core/services/mantenimientos/inventario';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import * as QRCode from 'qrcode';
 // import { disableDebugTools } from '@angular/platform-browser';
 import { ServicioNcf } from 'src/app/core/services/mantenimientos/ncf/ncf.service';
 import { ModeloNcfData } from 'src/app/core/services/mantenimientos/ncf';
@@ -1102,6 +1103,27 @@ export class Facturacion implements OnInit, OnDestroy {
     if (status === 'C') return 'Conduce';
     if (status === 'F') return 'Factura';
     return status || 'Sin status';
+  }
+
+  get puedeGenerarPdfFacturaDgii(): boolean {
+    const factura: any = this.facturaConsultaSeleccionada;
+    if (!this.modoconsultaFacturacion || !factura) return false;
+
+    const estado = String(
+      factura.estado_dgii || factura.estado_envio_dgii || '',
+    ).trim().toLowerCase();
+    const tieneEvidenciaEnvio = Boolean(
+      String(factura.dgii_track_id || '').trim() ||
+      String(factura.codseguridad || '').trim() ||
+      String(factura.qr_link || '').trim() ||
+      String(factura.rfce || '').trim() ||
+      String(factura.fec_firma || '').trim(),
+    );
+
+    return Boolean(
+      tieneEvidenciaEnvio ||
+      (estado && !estado.includes('sin enviar') && !estado.includes('no enviad')),
+    );
   }
 
   private etiquetaEstadoDgii(valor: any): string {
@@ -2317,6 +2339,15 @@ export class Facturacion implements OnInit, OnDestroy {
       nextInput?.select?.();
     }
   }
+
+  seleccionarCantidadCompleta(event: Event): void {
+    const input = event.target as HTMLInputElement | null;
+    if (!input) return;
+    // El siguiente ciclo evita que el clic del navegador coloque el cursor
+    // despues de que el evento focus ya habia seleccionado el contenido.
+    setTimeout(() => input.select(), 0);
+  }
+
   moveFocusPrecio(event: Event, nextInput: HTMLInputElement) {
     const key = (event as KeyboardEvent).key;
     // Solo manejar Enter/Tab
@@ -3360,6 +3391,192 @@ export class Facturacion implements OnInit, OnDestroy {
       return ' ';
     }
     return num.toLocaleString('es-DO', { minimumFractionDigits: 2 });
+  }
+
+  async generarPdfFacturaDgiiA4(): Promise<void> {
+    const factura: any = this.facturaConsultaSeleccionada;
+    if (!factura || !this.puedeGenerarPdfFacturaDgii) return;
+
+    try {
+      // La tasa debe corresponder al codigo guardado en factura.fa_tipoitbis.
+      await this.cargarItbisDeFactura(factura);
+      const tasaItbisMenos = this.tasaItbisRestar();
+      const response = await firstValueFrom(
+        this.servicioFacturacion.buscarFacturaDetalle(factura.fa_codFact),
+      );
+      const detalles = Array.isArray(response?.data) ? response.data : [];
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const moneda = new Intl.NumberFormat('es-DO', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+      const numero = (valor: any): number => Number(valor) || 0;
+      const texto = (valor: any, respaldo = '-'): string =>
+        String(valor ?? '').trim() || respaldo;
+
+      let empresa: any = {};
+      try {
+        const almacenada = localStorage.getItem('empresa');
+        empresa = almacenada && almacenada !== '[object Object]'
+          ? JSON.parse(almacenada)
+          : {};
+        if (Array.isArray(empresa)) empresa = empresa[0] || {};
+      } catch {
+        empresa = {};
+      }
+
+      const nombreEmpresa = texto(
+        empresa?.nom_empre || empresa?.em_nomempre || empresa?.nombre,
+        'CENTRO HIERRO MARCOS SRL',
+      );
+      const rncEmpresa = texto(
+        empresa?.rnc_empre || empresa?.em_rnc || empresa?.rnc || localStorage.getItem('rnc_empresa'),
+        '',
+      );
+      const direccionEmpresa = texto(
+        empresa?.dir_empre || empresa?.em_direccion || empresa?.direccion || localStorage.getItem('direccion_empresa'),
+        '',
+      );
+      const telefonoEmpresa = texto(
+        empresa?.tel_empre || empresa?.em_telefono || empresa?.telefono || localStorage.getItem('telefono_empresa'),
+        '',
+      );
+      const estadoDgii = texto(factura.estado_dgii || factura.estado_envio_dgii, 'Enviada');
+      const encf = texto(factura.fa_ncfFact || factura.fa_ncffact);
+      const qrLink = String(factura.qr_link || '').trim();
+
+      try {
+        doc.addImage('assets/logo2.png', 'PNG', 15, 12, 24, 24);
+      } catch {
+        // El documento sigue siendo valido si la empresa no tiene logo configurado.
+      }
+
+      doc.setTextColor(30, 41, 59);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(15);
+      doc.text(nombreEmpresa, 44, 18);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      if (rncEmpresa) doc.text(`RNC: ${rncEmpresa}`, 44, 24);
+      if (direccionEmpresa) doc.text(doc.splitTextToSize(direccionEmpresa, 100), 44, 29);
+      if (telefonoEmpresa) doc.text(`Tel.: ${telefonoEmpresa}`, 44, 38);
+
+      doc.setFillColor(15, 118, 110);
+      doc.roundedRect(145, 12, 50, 25, 2, 2, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
+      doc.text('FACTURA', 170, 21, { align: 'center' });
+      doc.setFontSize(9);
+      doc.text(`No. ${texto(factura.fa_codFact)}`, 170, 28, { align: 'center' });
+      doc.text(`DGII: ${estadoDgii}`, 170, 33, { align: 'center', maxWidth: 46 });
+
+      doc.setDrawColor(203, 213, 225);
+      doc.line(15, 45, 195, 45);
+      doc.setTextColor(30, 41, 59);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.text('DATOS FISCALES', 15, 52);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`e-NCF: ${encf}`, 15, 58);
+      doc.text(`Fecha: ${this.formatFecha(factura.fa_fecFact)}`, 110, 58);
+      doc.text(`Codigo de seguridad: ${texto(factura.codseguridad)}`, 15, 64);
+      doc.text(`Vendedor: ${texto(factura.fa_nomVend)}`, 110, 64);
+
+      doc.setFillColor(241, 245, 249);
+      doc.roundedRect(15, 70, 180, 24, 2, 2, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.text('CLIENTE', 19, 77);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Nombre: ${texto(factura.fa_nomClie)}`, 19, 83, { maxWidth: 105 });
+      doc.text(`RNC/Cedula: ${texto(factura.fa_rncFact)}`, 130, 83);
+      doc.text(`Direccion: ${texto(factura.fa_dirClie)}`, 19, 89, { maxWidth: 105 });
+      doc.text(`Telefono: ${texto(factura.fa_telClie)}`, 130, 89);
+
+      autoTable(doc, {
+        startY: 100,
+        margin: { left: 15, right: 15 },
+        head: [['Codigo', 'Descripcion', 'Cant.', 'Precio', 'ITBIS', 'Total']],
+        body: detalles.map((item: any) => {
+          const cantidad = numero(item.df_canMerc);
+          const precioConItbis = numero(item.df_preMerc);
+          const precioSinItbis = this.redondear(
+            precioConItbis - precioConItbis * tasaItbisMenos,
+          );
+          const totalConItbis = numero(item.df_valMerc) || cantidad * precioConItbis;
+          const totalSinItbis = this.redondear(totalConItbis * (1 - tasaItbisMenos));
+          const itbis = this.redondear(totalConItbis - totalSinItbis);
+          return [
+            texto(item.df_codMerc),
+            texto(item.df_desMerc),
+            moneda.format(cantidad),
+            moneda.format(precioSinItbis),
+            moneda.format(itbis),
+            moneda.format(totalConItbis),
+          ];
+        }),
+        theme: 'grid',
+        headStyles: { fillColor: [15, 118, 110], textColor: 255 },
+        styles: { fontSize: 8, cellPadding: 2 },
+        columnStyles: {
+          2: { halign: 'right' },
+          3: { halign: 'right' },
+          4: { halign: 'right' },
+          5: { halign: 'right' },
+        },
+      });
+
+      let finalY = Number((doc as any).lastAutoTable?.finalY || 105) + 8;
+      if (finalY > 245) {
+        doc.addPage('a4', 'portrait');
+        finalY = 20;
+      }
+      const subtotal = numero(factura.fa_subFact);
+      const itbis = numero(factura.fa_itbiFact);
+      const total = numero(factura.fa_valFact) || subtotal + itbis;
+      doc.setFontSize(10);
+      doc.text('Subtotal:', 145, finalY, { align: 'right' });
+      doc.text(`RD$ ${moneda.format(subtotal)}`, 195, finalY, { align: 'right' });
+      doc.text('ITBIS:', 145, finalY + 6, { align: 'right' });
+      doc.text(`RD$ ${moneda.format(itbis)}`, 195, finalY + 6, { align: 'right' });
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
+      doc.text('TOTAL:', 145, finalY + 14, { align: 'right' });
+      doc.text(`RD$ ${moneda.format(total)}`, 195, finalY + 14, { align: 'right' });
+
+      if (qrLink) {
+        const qrData = await QRCode.toDataURL(qrLink, { width: 300, margin: 1 });
+        const qrY = Math.min(finalY + 4, 247);
+        doc.addImage(qrData, 'PNG', 15, qrY, 32, 32);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(7);
+        doc.text('Consulta y valida este comprobante en DGII', 15, qrY + 37);
+      }
+
+      const paginas = doc.getNumberOfPages();
+      for (let pagina = 1; pagina <= paginas; pagina += 1) {
+        doc.setPage(pagina);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        doc.setTextColor(100, 116, 139);
+        doc.text(`Pagina ${pagina} de ${paginas}`, 195, 290, { align: 'right' });
+      }
+
+      const pdfBlob = doc.output('blob');
+      const pdfUrl = URL.createObjectURL(pdfBlob);
+      const ventana = window.open(pdfUrl, '_blank');
+      if (!ventana) {
+        doc.save(`Factura-${texto(factura.fa_codFact, 'DGII')}.pdf`);
+      }
+      window.setTimeout(() => URL.revokeObjectURL(pdfUrl), 60_000);
+    } catch (error: any) {
+      console.error('Error generando factura DGII en PDF A4:', error);
+      await Swal.fire(
+        'No se pudo crear el PDF',
+        String(error?.message || 'Verifica los datos de la factura e intenta nuevamente.'),
+        'error',
+      );
+    }
   }
 
   async generatePDF(factura: FacturacionModelData) {

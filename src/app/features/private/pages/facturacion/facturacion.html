@@ -479,6 +479,15 @@
               <i class="bi bi-search me-2"></i>Buscar Factura
             </button>
 
+            <button
+              *ngIf="puedeGenerarPdfFacturaDgii"
+              type="button"
+              class="btn btn-outline-danger mb-2"
+              (click)="generarPdfFacturaDgiiA4()"
+            >
+              <i class="bi bi-file-earmark-pdf me-2"></i>Crear PDF A4
+            </button>
+
             <div class="d-flex gap-2">
                 <button class="btn btn-outline-secondary flex-fill" (click)="limpia()" [disabled]="isLoading">
                   <i class="bi bi-arrow-counterclockwise me-1"></i>Deshacer
@@ -676,6 +685,8 @@
                   [formControl]="cantidadform"
                   #input15
                   id="input15"
+                  (focus)="seleccionarCantidadCompleta($event)"
+                  (click)="seleccionarCantidadCompleta($event)"
                   (keydown)="moveFocusCantidad($event, input16)"
                   class="form-control fw-bold text-center"
                   min="1"

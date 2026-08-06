@@ -128,6 +128,41 @@ export class SupabaseService {
     }
   }
 
+  async invokeBinaryFunction(
+    functionName: string,
+    body: unknown,
+  ): Promise<{ blob: Blob; filename: string }> {
+    const client = this.client;
+    if (!client) throw new Error('Supabase no esta configurado');
+    const { data, error } = await client.auth.getSession();
+    const token = data?.session?.access_token;
+    if (error || !token) throw new Error('La sesion ha vencido. Inicia sesion nuevamente.');
+
+    const response = await fetch(`${this.url}/functions/v1/${functionName}`, {
+      method: 'POST',
+      headers: {
+        apikey: environment.supabase.anonKey,
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body || {}),
+    });
+    if (!response.ok) {
+      const rawError = await response.text();
+      let serverMessage = rawError;
+      try {
+        const payload = JSON.parse(rawError);
+        serverMessage = payload?.message || payload?.msg || payload?.error || rawError;
+      } catch {
+        // Algunas instalaciones autohospedadas devuelven el error como texto.
+      }
+      throw new Error(serverMessage || `Error ${response.status} generando el archivo.`);
+    }
+    const disposition = response.headers.get('Content-Disposition') || '';
+    const filename = /filename="?([^";]+)"?/i.exec(disposition)?.[1] || 'reporte-607.xlsx';
+    return { blob: await response.blob(), filename };
+  }
+
   private async supabaseFetch(
     input: RequestInfo | URL,
     init?: RequestInit,

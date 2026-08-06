@@ -151,7 +151,24 @@ export class Empresas implements OnInit {
     });
   }
 
-  seleccionarEmpresa(empresas: any) { this.selectedEmpresa = Empresas; }
+  seleccionarEmpresa(empresa: EmpresaModelData | null | undefined): void {
+    this.selectedEmpresa = empresa || null;
+    const codigo = String(empresa?.cod_empre || '').trim().toUpperCase();
+    if (codigo) this.empresaid = codigo;
+  }
+
+  private codigoEmpresaSeleccionada(): string {
+    return String(
+      this.selectedEmpresa?.cod_empre ||
+      this.selectedEmpresa?.codempr ||
+      this.selectedEmpresa?.cod_empresa ||
+      this.empresaid ||
+      this.formularioEmpresa?.getRawValue()?.cod_empre ||
+      localStorage.getItem('codigoempresa') ||
+      localStorage.getItem('cod_empre') ||
+      '',
+    ).trim().toUpperCase();
+  }
   ngOnInit(): void {
     this.buscarTodasEmpresa(1);
     this.cargarTiposNcf();
@@ -219,17 +236,33 @@ export class Empresas implements OnInit {
         const data = resp?.data;
         const empresaFull = Array.isArray(data) ? data[0] : data;
         if (empresaFull) {
+          const codigoCargado = String(
+            empresaFull?.cod_empre || empresaFull?.codempr || cod,
+          ).trim().toUpperCase();
+          this.empresaid = codigoCargado;
+          this.selectedEmpresa = {
+            ...(fallbackEmpresa || {}),
+            ...empresaFull,
+            cod_empre: codigoCargado,
+          };
           this.formularioEmpresa.patchValue(empresaFull);
+          this.formularioEmpresa.patchValue({ cod_empre: codigoCargado });
           this.sucursalList = Array.isArray(empresaFull.sucursales) ? empresaFull.sucursales : [];
         } else {
+          this.empresaid = cod;
+          this.selectedEmpresa = fallbackEmpresa || { cod_empre: cod };
           this.formularioEmpresa.patchValue(fallbackEmpresa || {});
+          this.formularioEmpresa.patchValue({ cod_empre: cod });
           this.sucursalList = fallbackEmpresa?.sucursales || [];
         }
         this.cargarContadoresSucursales();
         this.cargarEncfEmpresa(cod);
       },
       error: () => {
+        this.empresaid = cod;
+        this.selectedEmpresa = fallbackEmpresa || { cod_empre: cod };
         this.formularioEmpresa.patchValue(fallbackEmpresa || {});
+        this.formularioEmpresa.patchValue({ cod_empre: cod });
         this.sucursalList = fallbackEmpresa?.sucursales || [];
         this.cargarContadoresSucursales();
         this.cargarEncfEmpresa(cod);
@@ -238,7 +271,7 @@ export class Empresas implements OnInit {
   }
 
   editarEmpresa(Empresa: EmpresaModelData) {
-    this.empresaid = Empresa.cod_empre;
+    this.seleccionarEmpresa(Empresa);
     this.modoedicionEmpresa = true;
     this.modoconsultaEmpresa = false;
     this.formularioEmpresa.enable();
@@ -260,7 +293,7 @@ export class Empresas implements OnInit {
     });
   }
   consultarEmpresa(Empresa: EmpresaModelData) {
-    this.empresaid = Empresa.cod_empre;
+    this.seleccionarEmpresa(Empresa);
     this.tituloModalEmpresa = 'Consulta Empresa';
     this.formularioEmpresa.reset();
     $('#modalempresa').modal('show');
@@ -458,7 +491,12 @@ export class Empresas implements OnInit {
   private sucursalEditId: number | null = null;
 
   abrirModalNuevaSucursal(): void {
-    const cod = this.empresaid || this.formularioEmpresa.getRawValue()?.cod_empre;
+    const cod = this.codigoEmpresaSeleccionada();
+    if (!cod) {
+      Swal.fire({ title: 'Datos incompletos', text: 'No se pudo determinar la empresa seleccionada.', icon: 'warning' });
+      return;
+    }
+    this.empresaid = cod;
     this.modoedicionSucursal = false;
     this.sucursalEditId = null;
     this.formularioSucursal.reset({
@@ -472,10 +510,11 @@ export class Empresas implements OnInit {
   }
 
   abrirModalEditarSucursal(sucursal: SucursalesData): void {
+    const codEmpresa = String(sucursal?.cod_empre || this.codigoEmpresaSeleccionada()).trim().toUpperCase();
     this.modoedicionSucursal = true;
     this.sucursalEditId = Number(sucursal?.cod_sucursal) || null;
     this.formularioSucursal.reset({
-      cod_empre: sucursal.cod_empre,
+      cod_empre: codEmpresa,
       nom_sucursal: sucursal.nom_sucursal,
       tel_sucursal: sucursal.tel_sucursal,
       dir_sucursal: sucursal.dir_sucursal,
@@ -687,16 +726,41 @@ export class Empresas implements OnInit {
     this.codigoBuscar.next(inputElement.value.toUpperCase());
   }
   guardarSucursal() {
-    const datosEmpresa = this.formularioEmpresa.getRawValue();
-    const codEmpre = datosEmpresa?.cod_empre || this.empresaid;
-    this.formularioSucursal.patchValue({ cod_empre: codEmpre });
-    if (this.formularioSucursal.valid && codEmpre) {
-      const payload = this.formularioSucursal.value;
-      const editId = this.sucursalEditId;
-      const req$ = (editId && !isNaN(editId))
-        ? this.servicioSucursal.editaSucursal(String(editId), payload)
-        : this.servicioSucursal.guardarSucursal(payload);
-      req$.subscribe({
+    const codEmpre = this.codigoEmpresaSeleccionada();
+    if (!codEmpre) {
+      Swal.fire({ title: 'Datos incompletos', text: 'No se pudo determinar el Código de Empresa seleccionado.', icon: 'warning' });
+      return;
+    }
+
+    this.empresaid = codEmpre;
+    this.selectedEmpresa = {
+      ...(this.selectedEmpresa || {}),
+      cod_empre: codEmpre,
+    };
+    this.formularioSucursal.patchValue({ cod_empre: codEmpre }, { emitEvent: false });
+    if (this.formularioSucursal.invalid) {
+      this.formularioSucursal.markAllAsTouched();
+      const faltantes: string[] = [];
+      if (!String(this.formularioSucursal.get('nom_sucursal')?.value || '').trim()) faltantes.push('Nombre de sucursal');
+      if (!String(this.formularioSucursal.get('tel_sucursal')?.value || '').trim()) faltantes.push('Telefono');
+      if (!String(this.formularioSucursal.get('dir_sucursal')?.value || '').trim()) faltantes.push('Direccion');
+      Swal.fire({
+        title: 'Datos incompletos',
+        text: faltantes.length ? `Complete: ${faltantes.join(', ')}.` : 'Revise los datos de la sucursal.',
+        icon: 'warning',
+      });
+      return;
+    }
+
+    const payload = {
+      ...this.formularioSucursal.getRawValue(),
+      cod_empre: codEmpre,
+    };
+    const editId = this.sucursalEditId;
+    const req$ = (editId && !isNaN(editId))
+      ? this.servicioSucursal.editaSucursal(String(editId), payload)
+      : this.servicioSucursal.guardarSucursal(payload);
+    req$.subscribe({
         next: (response: any) => {
           const seedError = response?.data?.inventorySeed?.error;
           Swal.fire({
@@ -722,10 +786,7 @@ export class Empresas implements OnInit {
           const msg = (err?.error?.message || err?.message || 'Error al guardar la sucursal').toString();
           Swal.fire({ title: 'Error', text: msg, icon: 'error' });
         }
-      });
-    } else {
-      Swal.fire({ title: 'Datos incompletos', text: 'Falta el Código de Empresa.', icon: 'warning' });
-    }
+    });
 
   }
 

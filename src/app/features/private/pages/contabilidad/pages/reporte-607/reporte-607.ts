@@ -201,24 +201,19 @@ export class Reporte607Component implements OnInit {
     this.exportandoXls = true;
 
     try {
-      if (!this.formasPago.length) {
-        const response = await firstValueFrom(this.servicioFpago.obtenerTodosFpago());
-        this.formasPago = Array.isArray(response?.data) ? response.data : [];
-      }
-      const rows = await this.cargarFacturasExportacion();
-      if (!rows.length) {
-        Swal.fire('Sin datos', 'No hay registros para exportar con los filtros actuales.', 'info');
-        return;
-      }
-
-      const html = this.construirHtmlXls(rows);
-      const blob = new Blob(['\ufeff', html], {
-        type: 'application/vnd.ms-excel;charset=utf-8;',
+      const result = await this.servicioFacturacion.exportarReporte607Xlsx({
+        fecha: this.fecha,
+        fechaDesde: this.fechaDesde,
+        fechaHasta: this.fechaHasta,
+        tipoComprobante: this.tipoComprobante,
+        estadoDgii: this.estadoDgii,
+        empresa: this.empresaFiltro,
+        sucursal: this.sucursalFiltro,
       });
-      const url = URL.createObjectURL(blob);
+      const url = URL.createObjectURL(result.blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `reporte-607-${this.nombrePeriodoArchivo()}.xls`;
+      link.download = result.filename;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -523,31 +518,59 @@ export class Reporte607Component implements OnInit {
   }
 
   private async cargarFacturasExportacion(): Promise<any[]> {
-    const pageSize = 1000;
+    // Cada fecha se consulta por separado para evitar que PostgreSQL tenga que
+    // filtrar y ordenar todo el mes dentro de una sola sentencia.
+    const pageSize = 10;
     const rows: any[] = [];
+    const fechas = this.fechasExportacion();
+    const fechasAConsultar = fechas.length ? fechas : [''];
 
-    for (let page = 1; ; page += 1) {
-      const response = await firstValueFrom(this.servicioFacturacion.buscarReporte607Dgii({
-        page,
-        pageSize,
-        fecha: '',
-        fechaDesde: this.fechaDesde,
-        fechaHasta: this.fechaHasta,
-        tipoComprobante: this.tipoComprobante,
-        estadoDgii: this.estadoDgii,
-        empresa: this.empresaFiltro,
-        sucursal: this.sucursalFiltro,
-      }));
+    for (const fechaConsulta of fechasAConsultar) {
+      for (let page = 1; ; page += 1) {
+        const response = await firstValueFrom(this.servicioFacturacion.buscarReporte607Dgii({
+          page,
+          pageSize,
+          fecha: fechaConsulta,
+          fechaDesde: fechaConsulta ? '' : this.fechaDesde,
+          fechaHasta: fechaConsulta ? '' : this.fechaHasta,
+          tipoComprobante: this.tipoComprobante,
+          estadoDgii: this.estadoDgii,
+          empresa: this.empresaFiltro,
+          sucursal: this.sucursalFiltro,
+          exportacion: true,
+        }));
 
-      const pageRows = Array.isArray(response?.data) ? response.data : [];
-      rows.push(...pageRows);
+        const pageRows = Array.isArray(response?.data) ? response.data : [];
+        rows.push(...pageRows);
 
-      const pagination = response?.pagination || {};
-      const totalPages = Math.max(1, Number(pagination.totalPages || 1));
-      if (pageRows.length < pageSize || page >= totalPages) break;
+        const pagination = response?.pagination || {};
+        const totalPages = Math.max(1, Number(pagination.totalPages || 1));
+        if (pageRows.length < pageSize || page >= totalPages) break;
+      }
     }
 
     return rows;
+  }
+
+  private fechasExportacion(): string[] {
+    const fechaUnica = String(this.fecha || '').trim();
+    if (fechaUnica) return [fechaUnica];
+
+    const desde = /^\d{4}-\d{2}-\d{2}$/.test(this.fechaDesde || '')
+      ? new Date(`${this.fechaDesde}T00:00:00Z`)
+      : null;
+    const hasta = /^\d{4}-\d{2}-\d{2}$/.test(this.fechaHasta || '')
+      ? new Date(`${this.fechaHasta}T00:00:00Z`)
+      : null;
+    if (!desde || !hasta || desde > hasta) return [];
+
+    const fechas: string[] = [];
+    const cursor = new Date(hasta);
+    while (cursor >= desde) {
+      fechas.push(cursor.toISOString().slice(0, 10));
+      cursor.setUTCDate(cursor.getUTCDate() - 1);
+    }
+    return fechas;
   }
 
   private construirHtmlXls(rows: any[]): string {

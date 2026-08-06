@@ -153,6 +153,18 @@ export class ServicioFacturacion {
     return null;
   }
 
+  exportarReporte607Xlsx(params: {
+    fecha?: string;
+    fechaDesde?: string;
+    fechaHasta?: string;
+    tipoComprobante?: string;
+    estadoDgii?: string;
+    empresa?: string;
+    sucursal?: string | number;
+  }): Promise<{ blob: Blob; filename: string }> {
+    return this.supabase.invokeBinaryFunction('exportar-reporte-607-xlsx', params);
+  }
+
   private nextNumericPrefix(prefix: string): string | null {
     const clean = String(prefix || '').trim();
     if (!/^\d+$/.test(clean)) return null;
@@ -2415,6 +2427,7 @@ export class ServicioFacturacion {
     estadoDgii?: string;
     empresa?: string;
     sucursal?: string | number;
+    exportacion?: boolean;
   } = {}): Observable<any> {
     const safePage = Math.max(1, Number(params.page) || 1);
     const safeLimit = Math.max(10, Number(params.pageSize) || 20);
@@ -2425,6 +2438,7 @@ export class ServicioFacturacion {
     const estadoDgii = String(params.estadoDgii || '').trim();
     const empresa = String(params.empresa || '').trim();
     const sucursal = this.toNumberOrNull(params.sucursal);
+    const exportacion = params.exportacion === true;
 
     if (!this.useSupabase) {
       const query = new URLSearchParams({
@@ -2446,7 +2460,9 @@ export class ServicioFacturacion {
     // listar_reporte_607 y eso provocaba que facturas aceptadas desaparecieran.
     const offsetDirecto = (safePage - 1) * safeLimit;
     return from((async () => {
-      const columnas607 = 'fa_codfact,fa_ncffact,fa_rncfact,fa_tiponcf,fa_fecfact,fa_fechora,fa_fehora,fa_valfact,fa_itbifact,fa_subfact,fa_nomclie,fa_codempr,fa_codsucu,fa_codfpago,estado_dgii,estado_envio_dgii,codseguridad,qr_link,fec_firma,dgii_track_id,dgii_codigo,dgii_error_message,dgii_mensajes,dgii_response_json,dgii_response_raw';
+      const columnas607 = exportacion
+        ? 'fa_codfact,fa_ncffact,fa_rncfact,fa_fecfact,fa_valfact,fa_itbifact,fa_subfact,fa_codfpago,estado_dgii,estado_envio_dgii,fec_firma'
+        : 'fa_codfact,fa_ncffact,fa_rncfact,fa_tiponcf,fa_fecfact,fa_fechora,fa_fehora,fa_valfact,fa_itbifact,fa_subfact,fa_nomclie,fa_codempr,fa_codsucu,fa_codfpago,estado_dgii,estado_envio_dgii,codseguridad,qr_link,fec_firma,dgii_track_id,dgii_codigo,dgii_error_message,dgii_mensajes,dgii_response_json,dgii_response_raw';
 
       let query = this.db
         .from('factura')
@@ -2490,7 +2506,9 @@ export class ServicioFacturacion {
       return {
         status: 'success',
         code: 200,
-        data: await this.completarFormaPagoReporte607(rows),
+        // fa_codfpago ya forma parte de la proyeccion. Consultar de nuevo las
+        // filas donde es NULL solo repite trabajo y castigaba cada lote XLS.
+        data: rows,
         pagination: {
           total,
           page: safePage,

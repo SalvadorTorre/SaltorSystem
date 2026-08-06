@@ -492,6 +492,10 @@
       <form [formGroup]="formularioSucursal" (ngSubmit)="guardarSucursal()">
         <div class="modal-body">
           <div class="mb-2">
+            <label class="form-label">Empresa</label>
+            <input type="text" class="form-control fw-bold" formControlName="cod_empre" readonly />
+          </div>
+          <div class="mb-2">
             <label class="form-label">Nombre Sucursal</label>
             <input type="text" class="form-control" formControlName="nom_sucursal" />
           </div>
@@ -510,7 +514,7 @@
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
-          <button type="submit" class="btn btn-primary" data-bs-dismiss="modal">{{ modoedicionSucursal ? 'Guardar cambios' : 'Guardar' }}</button>
+          <button type="submit" class="btn btn-primary">{{ modoedicionSucursal ? 'Guardar cambios' : 'Guardar' }}</button>
         </div>
       </form>
     </div>
