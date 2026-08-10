@@ -38,6 +38,7 @@ export class DevolucionesComponent implements OnInit {
   selectedProducto: any = null;
   highlightedIndex: number = -1;
   productosBusqueda: any[] = [];
+  private busquedaProductosId = 0;
   detalle: any[] = [];
   productoSeleccionado: any = null;
   // productoSelecciosnado: boolean = false;
@@ -844,26 +845,30 @@ fa_codClie: this.facturaForm.get('fa_codClie')?.value
 onInputCodigo() {
   const codigo = this.entraForm.get('codigo')?.value?.trim();
   if (!codigo || codigo.length < 1) {
-    this.productosBusqueda = [];
-    this.highlightedIndex = -1;
+    this.cerrarListaProductos();
     return;
   }
+  const busquedaId = ++this.busquedaProductosId;
   this.productoSrv.buscarProductosPorCodigo(codigo).subscribe({
     next: (resp: any) => {
-      console.log('RESPUESTA BACKEND:', resp);
-      this.productosBusqueda = resp.data ?? []; // 🔥 ESTA ES LA LÍNEA CLAVE
-      console.log('ARRAY REAL:', this.productosBusqueda);
+      if (busquedaId !== this.busquedaProductosId || this.productoSeleccionado) return;
+      this.productosBusqueda = resp.data ?? [];
       this.highlightedIndex =
       this.productosBusqueda.length > 0 ? 0 : -1;
     },
     error: () => {
-      this.productosBusqueda = [];
-      this.highlightedIndex = -1;
+      if (busquedaId === this.busquedaProductosId) this.cerrarListaProductos();
     }
   });
 }
   // ⌨ NAVEGACIÓN TECLADO
 onKeyDownCodigo(event: KeyboardEvent) {
+
+  if (event.key === 'Escape') {
+    event.preventDefault();
+    this.cerrarListaProductos();
+    return;
+  }
 
   const codigo = this.entraForm.get('codigo')?.value?.trim();
 
@@ -919,8 +924,7 @@ console.log('Producto en agregarItem:', this.productoSeleccionado);
 
   this.productoSeleccionado = producto; // ✅ GUARDAMOS EL OBJETO REAL
 
-  this.productosBusqueda = [];
-  this.highlightedIndex = -1;
+  this.cerrarListaProductos();
 
   setTimeout(() => {
     this.cantidadInput.nativeElement.focus();
@@ -1066,25 +1070,37 @@ onEnterPrecio(event: Event) {
   onInputDescripcion() {
     const descripcion = this.entraForm.get('descripcion')?.value?.trim();
     if (!descripcion || descripcion.length < 2) {
-      this.productosBusqueda = [];
-      this.highlightedIndex = -1;
+      this.cerrarListaProductos();
       return;
     }
+    const busquedaId = ++this.busquedaProductosId;
     this.productoSrv.buscarProductosPorDescripcion(descripcion).subscribe({
       next: (resp: any) => {
+        if (busquedaId !== this.busquedaProductosId || this.productoSeleccionado) return;
         this.productosBusqueda = resp.data ?? [];
         this.highlightedIndex =
         this.productosBusqueda.length > 0 ? 0 : -1;
       },
       error: () => {
-        this.productosBusqueda = [];
-        this.highlightedIndex = -1;
+        if (busquedaId === this.busquedaProductosId) this.cerrarListaProductos();
       }
     });
   }
+
+  cerrarListaProductos(): void {
+    this.busquedaProductosId += 1;
+    this.productosBusqueda = [];
+    this.highlightedIndex = -1;
+  }
+
+  cerrarListaProductosConDemora(): void {
+    window.setTimeout(() => this.cerrarListaProductos(), 150);
+  }
+
   resetFormulario() {
 
     this.productoSeleccionado = false;
+    this.cerrarListaProductos();
 
     this.entraForm.patchValue({
       codigo: '',
@@ -1148,6 +1164,11 @@ calcularTotales() {
 
 
   onKeyDownDescripcion(event: KeyboardEvent) {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      this.cerrarListaProductos();
+      return;
+    }
     if (this.productosBusqueda.length === 0) return;
 
     if (event.key === 'ArrowDown') {

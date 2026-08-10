@@ -30,7 +30,7 @@ export class FacturaDgiiService {
 
     progreso?.('Validando y cargando la factura...');
     const facturaResp = await firstValueFrom(
-      this.facturacion.getByNumero(codigo),
+      this.facturacion.getByNumero(codigo, scope),
     );
     const encabezado = {
       ...factura,
@@ -40,8 +40,8 @@ export class FacturaDgiiService {
 
     progreso?.('Reservando ENCF y cargando detalles...');
     const [encfResp, detalleResp] = await Promise.all([
-      firstValueFrom(this.facturacion.asignarEncfFactura(codigo)),
-      firstValueFrom(this.facturacion.buscarFacturaDetalle(codigo)),
+      firstValueFrom(this.facturacion.asignarEncfFactura(codigo, scope)),
+      firstValueFrom(this.facturacion.buscarFacturaDetalle(codigo, scope)),
     ]);
     const detalles = Array.isArray(detalleResp?.data) ? detalleResp.data : [];
     const completa = {
@@ -62,7 +62,7 @@ export class FacturaDgiiService {
         fa_origenpago: completa.fa_origenpago,
         fa_confirpago: completa.fa_confirpago,
         fa_notapago: completa.fa_notapago,
-      }),
+      }, scope),
     );
     const lista = { ...completa, ...(impresaResp?.data || {}) };
 
@@ -94,7 +94,7 @@ export class FacturaDgiiService {
         estado_dgii: this.normalizarRespuesta(rawError)?.estado_dgii || 'Error',
       };
       try {
-        await firstValueFrom(this.facturacion.actualizarDatosDgii(codigo, datosError));
+        await firstValueFrom(this.facturacion.actualizarDatosDgii(codigo, datosError, scope));
       } catch (saveError) {
         console.warn('No se pudo guardar el error DGII en la factura:', saveError);
       }
@@ -109,7 +109,7 @@ export class FacturaDgiiService {
 
     progreso?.('Guardando respuesta de DGII...');
     const actualizadaResp = await firstValueFrom(
-      this.facturacion.actualizarDatosDgii(codigo, datosDgii),
+      this.facturacion.actualizarDatosDgii(codigo, datosDgii, scope),
     );
     const actualizada = {
       ...lista,
@@ -216,16 +216,24 @@ export class FacturaDgiiService {
   }
 
   private validar(factura: any): void {
-    const envio = Number(factura?.fa_envio ?? 0) === 1;
-    const tipo = String(factura?.fa_tipoNcf ?? factura?.fa_tiponcf ?? '').trim();
+    const motivo = this.motivoNoAptaParaEnvio(factura);
+    if (motivo) throw new Error(motivo);
+  }
+
+  motivoNoAptaParaEnvio(factura: any): string {
+    const codigo = String(factura?.fa_codFact || factura?.fa_codfact || '').trim();
+    if (!codigo) return 'La factura no tiene número.';
+    const status = String(factura?.fa_status ?? factura?.faStatus ?? '').trim().toUpperCase();
+    if (['U', 'N'].includes(status)) return 'La factura está anulada o no es válida para enviar.';
     const pago = String(factura?.fa_fpago ?? '').trim().toUpperCase();
     const pagada = pago === 'S' || pago === 'P';
 
-    if (envio && tipo !== '32' && !pagada) {
-      throw new Error(
-        'Para enviar a DGII una factura de envio con tipo NCF diferente a 32 debe estar cobrada.',
-      );
-    }
+    if (!pagada) return 'La factura debe estar pagada para enviarse a DGII.';
+    return '';
+  }
+
+  esAptaParaEnvio(factura: any): boolean {
+    return !this.motivoNoAptaParaEnvio(factura);
   }
 
   private get db(): any {

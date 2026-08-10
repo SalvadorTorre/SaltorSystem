@@ -254,8 +254,8 @@
           </button>
           <button class="btn btn-success btn-lg px-5" 
                   (click)="guardarSalida()" 
-                  [disabled]="detallesSalida.length === 0 || !bloquearChofer">
-            <i class="bi bi-save me-2"></i>Procesar Salida
+                  [disabled]="!bloquearChofer || (detallesSalida.length === 0 && !esEdicion)">
+            <i class="bi bi-save me-2"></i>{{ esEdicion && detallesSalida.length === 0 ? 'Cerrar Control' : 'Procesar Salida' }}
           </button>
         </div>
       </div>

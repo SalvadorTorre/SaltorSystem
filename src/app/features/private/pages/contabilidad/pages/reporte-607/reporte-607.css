@@ -125,11 +125,30 @@
   align-items: flex-end;
   display: flex;
   flex-wrap: wrap;
-  gap: 14px;
+  gap: 10px;
   margin-bottom: 16px;
   max-width: 100%;
   min-width: 0;
   padding: 16px;
+}
+
+.text-filter {
+  flex: 0 1 150px;
+  max-width: 165px;
+  min-width: 135px;
+}
+
+.text-filter span {
+  color: var(--rep-muted);
+  display: block;
+  font-size: 0.76rem;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+
+.text-filter .form-control {
+  border-radius: 12px;
+  min-height: 42px;
 }
 
 .search-box {
@@ -182,7 +201,7 @@
 
 .date-fields {
   display: grid;
-  flex: 1 1 190px;
+  flex: 0 1 290px;
   gap: 10px;
   min-width: 0;
 }
@@ -217,7 +236,7 @@
 .filter-actions {
   display: flex;
   flex: 0 1 auto;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 8px;
 }
 
@@ -551,6 +570,10 @@
   .filter-actions .btn {
     flex: 1 1 100%;
     width: 100%;
+  }
+
+  .text-filter {
+    max-width: none;
   }
 
   .date-mode {

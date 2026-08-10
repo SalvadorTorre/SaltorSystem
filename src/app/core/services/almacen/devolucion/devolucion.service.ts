@@ -111,28 +111,6 @@ export class DevolucionService {
     return `${anio}${sucStr}${seqStr}`;
   }
 
-  private async maxSecuenciaVentaInterna(idsucursal: number): Promise<number> {
-    const anio = new Date().getFullYear().toString();
-    const sucStrFull = String(idsucursal);
-    const sucStr =
-      sucStrFull.length > 2
-        ? sucStrFull.slice(-2)
-        : sucStrFull.padStart(2, '0');
-    const prefix = `${anio}${sucStr}`;
-
-    const { data, error } = await this.db
-      .from('ventainterna')
-      .select('fa_codfact')
-      .like('fa_codfact', `${prefix}%`)
-      .order('fa_codfact', { ascending: false })
-      .limit(1);
-    if (error) this.throwStep('Consultar contador ventainterna', error);
-
-    const codigo = String(Array.isArray(data) && data.length ? data[0]?.fa_codfact : '').trim();
-    const secuencia = Number(codigo.slice(prefix.length));
-    return Number.isFinite(secuencia) ? secuencia : 0;
-  }
-
   private async getOrPickContFacturaRow(idsucursal: number): Promise<any | null> {
     const year = new Date().getFullYear();
     const { data, error } = await this.db
@@ -211,10 +189,10 @@ export class DevolucionService {
           );
 
           const entradaNext = contentradaActual + 1;
-          const salidaNext = Math.max(
-            contvinternaActual,
-            await this.maxSecuenciaVentaInterna(idsucursal),
-          ) + 1;
+          // contfactura es la fuente oficial de la secuencia. Consultar el
+          // MAX en ventainterna ejecutaba la politica RLS por muchas filas y
+          // provocaba statement_timeout al guardar una devolucion.
+          const salidaNext = contvinternaActual + 1;
 
           const me_codEntr = this.generarCodigoEntrada(idsucursal, entradaNext);
           const fa_codFact = this.generarCodigoSalida(idsucursal, salidaNext);

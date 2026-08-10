@@ -22,6 +22,8 @@ export class Reporte607Component implements OnInit {
   fechaHasta = '';
   tipoComprobante = '';
   estadoDgii = '';
+  numeroFactura = '';
+  encf = '';
   empresaFiltro = '';
   sucursalFiltro = '';
   modoFecha: ModoFecha607 = 'fecha';
@@ -108,24 +110,49 @@ export class Reporte607Component implements OnInit {
     });
   }
 
+  private fechaIsoFiltro(value: string): string {
+    const text = String(value || '').trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return text;
+    const match = text.match(/^([0-3]?\d)\/([0-1]?\d)\/(\d{4})$/);
+    if (!match) return '';
+    return `${match[3]}-${match[2].padStart(2, '0')}-${match[1].padStart(2, '0')}`;
+  }
+
+  private filtrosFechaConsulta(): { fecha: string; fechaDesde: string; fechaHasta: string } {
+    const desde = this.fechaIsoFiltro(this.fechaDesde);
+    const hasta = this.fechaIsoFiltro(this.fechaHasta);
+    if (desde && hasta && desde === hasta) {
+      return { fecha: desde, fechaDesde: '', fechaHasta: '' };
+    }
+    return { fecha: '', fechaDesde: desde, fechaHasta: hasta };
+  }
+
   cargarReporte(): void {
     if (!this.consultaRealizada) return;
     this.loading = true;
+    const filtroFecha = this.filtrosFechaConsulta();
     const params = {
       page: this.page,
       pageSize: this.pageSize,
-      fecha: '',
-      fechaDesde: this.fechaDesde,
-      fechaHasta: this.fechaHasta,
+      ...filtroFecha,
       tipoComprobante: this.tipoComprobante,
       estadoDgii: this.estadoDgii,
+      numeroFactura: this.numeroFactura,
+      encf: this.encf,
       empresa: this.empresaFiltro,
       sucursal: this.sucursalFiltro,
     };
 
     this.servicioFacturacion.buscarReporte607Dgii(params).subscribe({
       next: (response: any) => {
-        this.facturas = response?.data || [];
+        this.facturas = [...(response?.data || [])].sort((a: any, b: any) => {
+          const fechaA = String(a?.fa_fecNcf ?? a?.fa_fecncf ?? '');
+          const fechaB = String(b?.fa_fecNcf ?? b?.fa_fecncf ?? '');
+          return fechaB.localeCompare(fechaA) ||
+            String(b?.fa_ncfFact ?? b?.fa_ncffact ?? '').localeCompare(
+              String(a?.fa_ncfFact ?? a?.fa_ncffact ?? ''),
+            );
+        });
         const pagination = response?.pagination || {};
         this.total = Number(pagination.total ?? this.facturas.length ?? 0);
         this.page = Number(pagination.page ?? this.page);
@@ -154,6 +181,8 @@ export class Reporte607Component implements OnInit {
     this.fechaHasta = '';
     this.tipoComprobante = '';
     this.estadoDgii = '';
+    this.numeroFactura = '';
+    this.encf = '';
     this.empresaFiltro = '';
     this.sucursalFiltro = '';
     this.modoFecha = 'rango';
@@ -201,12 +230,13 @@ export class Reporte607Component implements OnInit {
     this.exportandoXls = true;
 
     try {
+      const filtroFecha = this.filtrosFechaConsulta();
       const result = await this.servicioFacturacion.exportarReporte607Xlsx({
-        fecha: this.fecha,
-        fechaDesde: this.fechaDesde,
-        fechaHasta: this.fechaHasta,
+        ...filtroFecha,
         tipoComprobante: this.tipoComprobante,
         estadoDgii: this.estadoDgii,
+        numeroFactura: this.numeroFactura,
+        encf: this.encf,
         empresa: this.empresaFiltro,
         sucursal: this.sucursalFiltro,
       });
@@ -602,7 +632,7 @@ export class Reporte607Component implements OnInit {
           <td class="text">${this.escapeHtml(factura.fa_rncFact || factura.fa_rncfact || '')}</td>
           <td class="text">${this.escapeHtml(factura.fa_ncfFact || factura.fa_ncffact || factura.ecf || '')}</td>
           <td class="text">${this.escapeHtml(this.encfModificado(factura))}</td>
-          <td class="date">${this.escapeHtml(this.fechaXls(factura.fa_fecFact || factura.fa_fecfact, true))}</td>
+          <td class="date">${this.escapeHtml(this.fechaXls(factura.fa_fecNcf || factura.fa_fecncf, true))}</td>
           <td class="date">${this.escapeHtml(this.fechaXls(this.fechaRecepcionDgii(factura), false))}</td>
           <td class="text">${this.escapeHtml(this.aprobacionComercial(factura))}</td>
           <td class="date">${this.escapeHtml(this.fechaXls(this.fechaAprobacionComercial(factura), false))}</td>

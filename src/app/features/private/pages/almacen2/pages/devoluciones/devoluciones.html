@@ -335,6 +335,7 @@
                   [readonly]="productoSeleccionado"
                   (input)="onInputCodigo()"
                   (keydown)="onKeyDownCodigo($event)"
+                  (blur)="cerrarListaProductosConDemora()"
                 />
                 <!-- LISTA AUTOCOMPLETE -->
                 <ul 
@@ -362,6 +363,7 @@
                   [readonly]="productoSeleccionado"
                   (input)="onInputDescripcion()"
                   (keydown)="onKeyDownDescripcion($event)"
+                  (blur)="cerrarListaProductosConDemora()"
                 />
               </div>
               <!-- CANTIDAD -->
