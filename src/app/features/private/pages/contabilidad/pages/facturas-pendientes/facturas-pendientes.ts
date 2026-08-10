@@ -24,9 +24,12 @@ export class FacturasPendientesComponent implements OnInit {
   sucursalFiltro = '';
   fechaDesde = '';
   fechaHasta = '';
+  numeroFacturaFiltro = '';
   empresas: any[] = [];
   sucursales: any[] = [];
   busquedaRealizada = false;
+  facturasSeleccionadas = new Set<string>();
+  enviandoLote = false;
 
   constructor(
     private servicioFacturacion: ServicioFacturacion,
@@ -42,6 +45,7 @@ export class FacturasPendientesComponent implements OnInit {
   private cargarCatalogosFiltro(): void {
     this.servicioEmpresa.buscarTodasEmpresa(1, 500).subscribe({
       next: (response: any) => {
+        this.facturasSeleccionadas.clear();
         this.empresas = Array.isArray(response?.data) ? response.data : [];
       },
       error: (error) => console.error('[FacturasPendientes] Error cargando empresas', error),
@@ -68,6 +72,7 @@ export class FacturasPendientesComponent implements OnInit {
       sucursal: this.sucursalFiltro,
       fechaDesde: this.fechaDesde,
       fechaHasta: this.fechaHasta,
+      numeroFactura: this.numeroFacturaFiltro,
     }).subscribe({
       next: (response: any) => {
         this.allFacturas = (response.data || [])
@@ -123,6 +128,7 @@ export class FacturasPendientesComponent implements OnInit {
     this.sucursalFiltro = '';
     this.fechaDesde = '';
     this.fechaHasta = '';
+    this.numeroFacturaFiltro = '';
     this.page = 1;
     this.busquedaRealizada = false;
     this.limpiarResultados();
@@ -133,11 +139,13 @@ export class FacturasPendientesComponent implements OnInit {
       String(this.empresaFiltro || '').trim() ||
       String(this.sucursalFiltro || '').trim() ||
       String(this.fechaDesde || '').trim() ||
-      String(this.fechaHasta || '').trim()
+      String(this.fechaHasta || '').trim() ||
+      String(this.numeroFacturaFiltro || '').trim()
     );
   }
 
   private limpiarResultados(): void {
+    this.facturasSeleccionadas.clear();
     this.facturas = [];
     this.allFacturas = [];
     this.total = 0;
@@ -240,9 +248,12 @@ export class FacturasPendientesComponent implements OnInit {
     const fechaFactura = this.normalizarFecha(factura?.fa_fecFact ?? factura?.fa_fecfact);
     const empresa = String(this.empresaFiltro || '').trim().toUpperCase();
     const sucursal = Number(this.sucursalFiltro || 0) || 0;
+    const numeroFactura = String(this.numeroFacturaFiltro || '').trim();
+    const numeroFacturaActual = String(factura?.fa_codFact ?? factura?.fa_codfact ?? '').trim();
 
     if (empresa && empresaFactura !== empresa) return false;
     if (sucursal && sucursalFactura !== sucursal) return false;
+    if (numeroFactura && numeroFacturaActual !== numeroFactura) return false;
     if (this.fechaDesde && (!fechaFactura || fechaFactura < this.fechaDesde)) return false;
     if (this.fechaHasta && (!fechaFactura || fechaFactura > this.fechaHasta)) return false;
     return true;
@@ -270,6 +281,103 @@ export class FacturasPendientesComponent implements OnInit {
 
   esCobrada(factura: any): boolean {
     return ['S', 'P'].includes(this.normalizarBandera(factura?.fa_fpago));
+  }
+
+  codigoFactura(factura: any): string {
+    return String(factura?.fa_codFact ?? factura?.fa_codfact ?? '').trim();
+  }
+
+  esAptaParaEnvio(factura: any): boolean {
+    return this.facturaDgiiService.esAptaParaEnvio(factura);
+  }
+
+  motivoNoApta(factura: any): string {
+    return this.facturaDgiiService.motivoNoAptaParaEnvio(factura);
+  }
+
+  estaSeleccionada(factura: any): boolean {
+    return this.facturasSeleccionadas.has(this.codigoFactura(factura));
+  }
+
+  cambiarSeleccion(factura: any, checked: boolean): void {
+    const codigo = this.codigoFactura(factura);
+    if (!codigo || !this.esAptaParaEnvio(factura)) return;
+    if (checked) this.facturasSeleccionadas.add(codigo);
+    else this.facturasSeleccionadas.delete(codigo);
+  }
+
+  get facturasAptasPagina(): any[] {
+    return this.facturas.filter((factura) => this.esAptaParaEnvio(factura));
+  }
+
+  get todasAptasPaginaSeleccionadas(): boolean {
+    return this.facturasAptasPagina.length > 0 &&
+      this.facturasAptasPagina.every((factura) => this.estaSeleccionada(factura));
+  }
+
+  seleccionarAptasPagina(checked: boolean): void {
+    for (const factura of this.facturasAptasPagina) {
+      this.cambiarSeleccion(factura, checked);
+    }
+  }
+
+  async enviarSeleccionadas(): Promise<void> {
+    if (this.enviandoLote || !this.facturasSeleccionadas.size) return;
+    const seleccionadas = this.allFacturas.filter((factura) => this.estaSeleccionada(factura));
+    const confirmacion = await Swal.fire({
+      title: 'Enviar facturas a DGII',
+      text: `Se enviarán ${seleccionadas.length} facturas seleccionadas.`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Enviar',
+      cancelButtonText: 'Cancelar',
+    });
+    if (!confirmacion.isConfirmed) return;
+
+    this.enviandoLote = true;
+    const errores: string[] = [];
+    let enviadas = 0;
+    for (let index = 0; index < seleccionadas.length; index += 1) {
+      const factura = seleccionadas[index];
+      const codigo = this.codigoFactura(factura);
+      this.facturaEnviando = codigo;
+      Swal.fire({
+        title: `Enviando ${index + 1} de ${seleccionadas.length}`,
+        text: `Factura ${codigo}`,
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        didOpen: () => Swal.showLoading(),
+      });
+      try {
+        await this.facturaDgiiService.procesar(factura, (mensaje) => {
+          if (Swal.isVisible()) Swal.update({ text: `Factura ${codigo}: ${mensaje}` });
+        }, { imprimir: false });
+        enviadas += 1;
+      } catch (error: any) {
+        errores.push(`${codigo}: ${String(error?.error?.message || error?.message || 'Error desconocido')}`);
+      }
+    }
+
+    this.facturaEnviando = '';
+    this.enviandoLote = false;
+    this.facturasSeleccionadas.clear();
+    await Swal.fire({
+      title: errores.length ? 'Proceso completado con observaciones' : 'Facturas enviadas',
+      html: `<p>Enviadas: <strong>${enviadas}</strong></p><p>No enviadas: <strong>${errores.length}</strong></p>${
+        errores.length ? `<div class="text-start small">${errores.map((error) => this.escapeHtml(error)).join('<br>')}</div>` : ''
+      }`,
+      icon: errores.length ? 'warning' : 'success',
+    });
+    this.cargarFacturas();
+  }
+
+  private escapeHtml(value: any): string {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
   }
 
   exportarPdf(): void {

@@ -11,7 +11,31 @@ import {
   providedIn: 'root',
 })
 export class PrintingService {
+  private ventanaImpresionReservada: Window | null = null;
+
   constructor(private desktopPrintSettings: DesktopPrintSettingsService) {}
+
+  reservarVentanaImpresion(): void {
+    const isDesktop = typeof window !== 'undefined' && !!window.electronAPI?.isDesktop;
+    if (isDesktop || typeof window === 'undefined') return;
+
+    if (this.ventanaImpresionReservada && !this.ventanaImpresionReservada.closed) return;
+    this.ventanaImpresionReservada = window.open('', '_blank');
+    if (this.ventanaImpresionReservada) {
+      this.ventanaImpresionReservada.document.title = 'Preparando factura';
+      this.ventanaImpresionReservada.document.body.innerHTML =
+        '<p style="font-family:Arial,sans-serif;padding:24px">Preparando impresión de factura...</p>';
+    }
+  }
+
+  cancelarVentanaImpresionReservada(): void {
+    try {
+      if (this.ventanaImpresionReservada && !this.ventanaImpresionReservada.closed) {
+        this.ventanaImpresionReservada.close();
+      }
+    } catch {}
+    this.ventanaImpresionReservada = null;
+  }
 
   private sucursalImpresion(): any {
     try {
@@ -523,6 +547,25 @@ export class PrintingService {
       doc.setFont('helvetica', 'bold');
       centerText(tituloFactura, yPos);
       yPos += 5;
+
+      const estadoDgii = textoCampo(
+        f.estado_dgii,
+        f.estado_envio_dgii,
+        facturaData?.estado_dgii,
+        facturaData?.estado_envio_dgii,
+      );
+      const respuestaDgiiRechazada = estadoDgii
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toUpperCase()
+        .includes('RECHAZ');
+      if (respuestaDgiiRechazada) {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(11);
+        centerText('ACCION DGII: RECHAZADA', yPos);
+        yPos += 5;
+        doc.setFontSize(9);
+      }
 
       doc.setFont('helvetica', 'normal');
       doc.text(`NCF: ${ncf}`, leftMargin, yPos);
@@ -2504,8 +2547,14 @@ items.forEach((it: any) => {
     if (!isDesktop) {
       // Intento 1 web: abrir en nueva pestaña y disparar impresión
       try {
-        const win = window.open(pdfUrl, '_blank');
+        const win = this.ventanaImpresionReservada && !this.ventanaImpresionReservada.closed
+          ? this.ventanaImpresionReservada
+          : window.open(pdfUrl, '_blank');
         if (win) {
+          this.ventanaImpresionReservada = null;
+          if (win.location.href !== pdfUrl) {
+            win.location.replace(pdfUrl);
+          }
           win.focus();
           let closedAfterPrint = false;
           let printStartedAt = 0;

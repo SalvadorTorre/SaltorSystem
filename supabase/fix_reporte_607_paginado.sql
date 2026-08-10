@@ -1,11 +1,11 @@
 CREATE INDEX IF NOT EXISTS idx_factura_607_recent
-  ON myappdb.factura (fa_codempr, fa_codsucu, fa_fecfact DESC, fa_fehora DESC, fa_codfact DESC);
+  ON myappdb.factura (fa_codempr, fa_codsucu, fa_fecncf DESC, fa_fehora DESC, fa_codfact DESC);
 
 CREATE INDEX IF NOT EXISTS idx_factura_607_estado_fecha
-  ON myappdb.factura (estado_envio_dgii, estado_dgii, fa_fecfact DESC);
+  ON myappdb.factura (estado_envio_dgii, estado_dgii, fa_fecncf DESC);
 
 CREATE INDEX IF NOT EXISTS idx_factura_607_tipo_fecha
-  ON myappdb.factura (fa_tiponcf, fa_fecfact DESC);
+  ON myappdb.factura (fa_tiponcf, fa_fecncf DESC);
 
 DROP FUNCTION IF EXISTS myappdb.listar_reporte_607(integer, integer, text, date, date, date, integer, text);
 DROP FUNCTION IF EXISTS myappdb.listar_reporte_607(integer, integer, text, date, date, date, integer, text, text, integer);
@@ -103,9 +103,9 @@ BEGIN
       )
       AND (v_empresa IS NULL OR upper(coalesce(f.fa_codempr, '')) = upper(v_empresa))
       AND (p_sucursal IS NULL OR f.fa_codsucu = p_sucursal)
-      AND (p_fecha IS NULL OR f.fa_fecfact = p_fecha)
-      AND (p_fecha IS NOT NULL OR p_fecha_desde IS NULL OR f.fa_fecfact >= p_fecha_desde)
-      AND (p_fecha IS NOT NULL OR p_fecha_hasta IS NULL OR f.fa_fecfact <= p_fecha_hasta)
+      AND (p_fecha IS NULL OR f.fa_fecncf = p_fecha)
+      AND (p_fecha IS NOT NULL OR p_fecha_desde IS NULL OR f.fa_fecncf >= p_fecha_desde)
+      AND (p_fecha IS NOT NULL OR p_fecha_hasta IS NULL OR f.fa_fecncf <= p_fecha_hasta)
       AND (p_tipo_comprobante IS NULL OR f.fa_tiponcf = p_tipo_comprobante)
       AND (
         v_estado IS NULL
@@ -158,7 +158,8 @@ BEGIN
     filtered.dgii_response_raw
   FROM filtered
   CROSS JOIN counted
-  ORDER BY filtered.fa_fecfact DESC NULLS LAST,
+  ORDER BY filtered.fa_fecncf DESC NULLS LAST,
+           filtered.fa_ncffact DESC NULLS LAST,
            filtered.fa_fehora DESC NULLS LAST,
            filtered.fa_fechora DESC NULLS LAST,
            filtered.fa_codfact DESC

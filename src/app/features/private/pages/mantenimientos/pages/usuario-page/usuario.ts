@@ -48,6 +48,7 @@ export class Usuario implements OnInit {
   accionesPermisosCatalogoEdicion: AccionCatalogoPermiso[] = [];
   permisosMatrizEdicionUsuario: PermisoMatrizFila[] = [];
   cargandoPermisosEdicion = false;
+  permisosEdicionCargados = false;
   filtroPermisosNuevo = '';
   filtroPermisosEdicion = '';
   mostrarSoloActivosNuevo = false;
@@ -422,6 +423,20 @@ export class Usuario implements OnInit {
     return String(accion?.accion_key || index);
   }
 
+  descripcionAccionPermiso(accion: AccionCatalogoPermiso): string {
+    const key = String(accion?.accion_key || '').trim().toLowerCase();
+    const etiquetas: Record<string, string> = {
+      ver: 'Consultar',
+      acceso: 'Acceso',
+      lectura: 'Solo consulta',
+      crear: 'Insertar / Crear',
+      editar: 'Editar',
+      eliminar: 'Eliminar',
+      guardar: 'Guardar',
+    };
+    return etiquetas[key] || String(accion?.descripcion || key || 'Acción');
+  }
+
   trackGrupoPermiso(index: number, grupo: { nombre: string }): string {
     return String(grupo?.nombre || index);
   }
@@ -666,10 +681,11 @@ export class Usuario implements OnInit {
       sucursal: sucursalid,
     };
     this.resetValidacionesEditarUsuario();
+    this.abrirEditorAccesosUsuario(u, false);
     $('#modalEditarUsuario').modal('show');
   }
 
-  abrirEditorAccesosUsuario(u: ModeloUsuarioData): void {
+  abrirEditorAccesosUsuario(u: ModeloUsuarioData, mostrarModal = true): void {
     this.selectedUsuario = u;
     this.cargandoPermisosEdicion = true;
     this.permisosMatrizEdicionUsuario = [];
@@ -679,6 +695,7 @@ export class Usuario implements OnInit {
     this.filtroPermisosEdicion = '';
     this.mostrarSoloActivosEdicion = false;
     this.plantillaAutoAplicadaEdicion = false;
+    this.permisosEdicionCargados = false;
 
     const codusuario = Number(u?.codUsuario || 0);
     const codEmpre = String((u as any)?.cod_empre || '').trim() || null;
@@ -697,7 +714,10 @@ export class Usuario implements OnInit {
         }
         this.actualizarGruposPermisosEdicion();
         this.cargandoPermisosEdicion = false;
-        $('#modalEditarAccesosUsuario').modal('show');
+        this.permisosEdicionCargados = true;
+        if (mostrarModal) {
+          $('#modalEditarAccesosUsuario').modal('show');
+        }
       },
       error: () => {
         this.cargandoPermisosEdicion = false;
@@ -708,6 +728,13 @@ export class Usuario implements OnInit {
         this.fireToast({ title: 'No se pudo cargar la matriz de permisos', icon: 'error' });
       }
     });
+  }
+
+  abrirAccesosDesdeEdicion(): void {
+    if (!this.selectedUsuario) return;
+    const usuario = this.selectedUsuario;
+    $('#modalEditarUsuario').modal('hide');
+    window.setTimeout(() => this.abrirEditorAccesosUsuario(usuario), 250);
   }
 
   guardarAccesosUsuario(): void {
@@ -931,9 +958,28 @@ export class Usuario implements OnInit {
 
         this.usuarioSrv.editarUsuario(id, payload as any).subscribe({
           next: () => {
-            this.cargarUsuarios();
-            $('#modalEditarUsuario').modal('hide');
-            this.fireToast({ title: 'Usuario actualizado', icon: 'success' });
+            const finalizarEdicion = () => {
+              this.cargarUsuarios();
+              this.accessControl.reset();
+              $('#modalEditarUsuario').modal('hide');
+              this.fireToast({ title: 'Usuario y accesos actualizados', icon: 'success' });
+            };
+            if (!this.permisosEdicionCargados) {
+              finalizarEdicion();
+              return;
+            }
+            this.permisoSrv.guardarMatrizPermisosUsuario(
+              id,
+              this.permisosMatrizEdicionUsuario,
+              payload.cod_empre,
+              payload.sucursalid,
+            ).subscribe({
+              next: finalizarEdicion,
+              error: (error) => {
+                console.error('Error actualizando accesos del usuario', error);
+                this.fireToast({ title: 'El usuario se actualizó, pero no se pudieron guardar los accesos', icon: 'error' });
+              },
+            });
           },
           error: () => {
             this.fireToast({ title: 'Error al actualizar usuario', icon: 'error' });

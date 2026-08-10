@@ -739,14 +739,17 @@ agregarFactura() {
   }
 
   guardarSalida() {
-    if (!this.bloquearChofer || this.detallesSalida.length === 0) return;
+    const cerrarControlVacio = this.esEdicion && this.detallesSalida.length === 0;
+    if (!this.bloquearChofer || (!cerrarControlVacio && this.detallesSalida.length === 0)) return;
 
     Swal.fire({
-      title: '¿Procesar Salida?',
-      text: `Se registrarán ${this.detallesSalida.length} facturas para el chofer ${this.nomChofer}`,
+      title: cerrarControlVacio ? '¿Cerrar control sin facturas?' : '¿Procesar Salida?',
+      text: cerrarControlVacio
+        ? `El control ${this.codSalida} quedará cerrado sin facturas.`
+        : `Se registrarán ${this.detallesSalida.length} facturas para el chofer ${this.nomChofer}`,
       icon: 'question',
       showCancelButton: true,
-      confirmButtonText: 'Sí, procesar',
+      confirmButtonText: cerrarControlVacio ? 'Sí, cerrar control' : 'Sí, procesar',
       cancelButtonText: 'Cancelar'
     }).then((result) => {
       if (result.isConfirmed) {
@@ -856,7 +859,7 @@ agregarFactura() {
       nomchofer: this.nomChofer,
       cedChofer: this.cedChofer,
       cedchofer: this.cedChofer,
-      status: 'P',
+      status: this.esEdicion && detallesPayload.length === 0 ? 'C' : 'P',
       detalles: detallesPayload,
     };
 
@@ -923,10 +926,16 @@ agregarFactura() {
                 }
             });
         } else {
-             Swal.fire('Éxito', 'Salida registrada correctamente', 'success');
-             this.datosUltimaSalida = { ...payloadGuardado, detalles: [...this.detallesSalida] };
-             this.mostrarBotonImprimir = true;
-             this.limpiarTodo(false);
+             const controlCerradoVacio = this.esEdicion && this.detallesSalida.length === 0;
+             if (controlCerradoVacio) {
+               Swal.fire('Éxito', 'El control fue cerrado sin facturas.', 'success');
+               this.limpiarTodo();
+             } else {
+               Swal.fire('Éxito', 'Salida registrada correctamente', 'success');
+               this.datosUltimaSalida = { ...payloadGuardado, detalles: [...this.detallesSalida] };
+               this.mostrarBotonImprimir = true;
+               this.limpiarTodo(false);
+             }
         }
       },
       error: (err) => {

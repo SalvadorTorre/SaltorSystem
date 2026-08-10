@@ -4,7 +4,7 @@ CREATE INDEX IF NOT EXISTS idx_factura_607_export_scope
   ON myappdb.factura (
     fa_codempr,
     fa_codsucu,
-    fa_fecfact DESC,
+    fa_fecncf DESC,
     fa_codfact DESC
   )
   WHERE estado_envio_dgii IS NOT NULL
@@ -16,7 +16,7 @@ CREATE INDEX IF NOT EXISTS idx_factura_607_export_tipo
     fa_codempr,
     fa_codsucu,
     fa_tiponcf,
-    fa_fecfact DESC,
+    fa_fecncf DESC,
     fa_codfact DESC
   )
   WHERE estado_envio_dgii IS NOT NULL

@@ -2,6 +2,13 @@
   <div class="d-flex justify-content-between align-items-center mb-4">
     <h2 class="h4 mb-0 text-primary">Facturas sin e-CF Pendientes de Envio DGII</h2>
     <div class="d-flex gap-2">
+      <button
+        class="btn btn-success"
+        (click)="enviarSeleccionadas()"
+        [disabled]="loading || enviandoLote || facturasSeleccionadas.size === 0"
+      >
+        <i class="bi bi-send-check me-2"></i>Enviar seleccionadas ({{ facturasSeleccionadas.size }})
+      </button>
       <button class="btn btn-outline-danger" (click)="exportarPdf()" [disabled]="loading || allFacturas.length === 0">
         <i class="bi bi-file-earmark-pdf me-2"></i>Generar PDF
       </button>
@@ -14,7 +21,7 @@
   <div class="card shadow-sm border-0 mb-3">
     <div class="card-body">
       <div class="row g-3 align-items-end">
-        <div class="col-12 col-md-3">
+        <div class="col-12 col-md-2">
           <label class="form-label fw-semibold">Empresa</label>
           <select class="form-select" [(ngModel)]="empresaFiltro" (change)="onEmpresaFiltroChange()">
             <option value="">Todas</option>
@@ -24,7 +31,7 @@
           </select>
         </div>
 
-        <div class="col-12 col-md-3">
+        <div class="col-12 col-md-2">
           <label class="form-label fw-semibold">Sucursal</label>
           <select class="form-select" [(ngModel)]="sucursalFiltro">
             <option value="">Todas</option>
@@ -32,6 +39,17 @@
               {{ sucursal.nom_sucursal || sucursal.cod_sucursal }}
             </option>
           </select>
+        </div>
+
+        <div class="col-12 col-md-2">
+          <label class="form-label fw-semibold">Número de factura</label>
+          <input
+            type="text"
+            class="form-control"
+            [(ngModel)]="numeroFacturaFiltro"
+            (keyup.enter)="aplicarFiltros()"
+            placeholder="Ej. 20260100001"
+          />
         </div>
 
         <div class="col-6 col-md-2">
@@ -67,6 +85,16 @@
         <table class="table table-hover align-middle mb-0">
           <thead class="bg-light">
             <tr>
+              <th class="ps-3 text-center">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  [checked]="todasAptasPaginaSeleccionadas"
+                  [disabled]="facturasAptasPagina.length === 0 || enviandoLote"
+                  (change)="seleccionarAptasPagina($any($event.target).checked)"
+                  title="Seleccionar todas las facturas aptas de esta página"
+                />
+              </th>
               <th class="ps-4">No. Factura</th>
               <th>Fecha</th>
               <th>Cliente</th>
@@ -83,7 +111,7 @@
           </thead>
           <tbody>
             <tr *ngIf="loading">
-              <td colspan="12" class="text-center py-5">
+              <td colspan="13" class="text-center py-5">
                 <div class="spinner-border text-primary" role="status">
                   <span class="visually-hidden">Cargando...</span>
                 </div>
@@ -91,12 +119,22 @@
               </td>
             </tr>
             <tr *ngIf="!loading && facturas.length === 0">
-              <td colspan="12" class="text-center py-5 text-muted">
+              <td colspan="13" class="text-center py-5 text-muted">
                 <i class="bi bi-inbox fs-1 d-block mb-2"></i>
                 {{ busquedaRealizada ? 'No hay facturas pendientes de envio' : 'Asigne condiciones de busqueda y presione Filtrar' }}
               </td>
             </tr>
             <tr *ngFor="let f of facturas">
+              <td class="ps-3 text-center">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  [checked]="estaSeleccionada(f)"
+                  [disabled]="!esAptaParaEnvio(f) || enviandoLote"
+                  (change)="cambiarSeleccion(f, $any($event.target).checked)"
+                  [title]="esAptaParaEnvio(f) ? 'Seleccionar para enviar' : motivoNoApta(f)"
+                />
+              </td>
               <td class="ps-4 fw-medium">{{ f.fa_codFact }}</td>
               <td>{{ f.fa_fecFact || f.fa_fecfact || 'N/A' }}</td>
               <td>{{ f.fa_nomClie || 'Sin cliente' }}</td>
@@ -148,9 +186,9 @@
                 <div class="btn-group btn-group-sm">
                   <button
                     class="btn btn-outline-success"
-                    [disabled]="!!facturaEnviando"
+                    [disabled]="!!facturaEnviando || !esAptaParaEnvio(f)"
                     (click)="enviar(f)"
-                    title="Cobrar y enviar a DGII"
+                    [title]="esAptaParaEnvio(f) ? 'Cobrar y enviar a DGII' : motivoNoApta(f)"
                   >
                     <span
                       *ngIf="facturaEnviando === f.fa_codFact"

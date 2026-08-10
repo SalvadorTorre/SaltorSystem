@@ -161,6 +161,8 @@ export class ServicioFacturacion {
     estadoDgii?: string;
     empresa?: string;
     sucursal?: string | number;
+    numeroFactura?: string;
+    encf?: string;
   }): Promise<{ blob: Blob; filename: string }> {
     return this.supabase.invokeBinaryFunction('exportar-reporte-607-xlsx', params);
   }
@@ -1301,13 +1303,18 @@ export class ServicioFacturacion {
     })());
   }
 
-  marcarFacturaComoImpresa(payload: any) {
+  marcarFacturaComoImpresa(
+    payload: any,
+    scope?: { empresa?: string | null; sucursal?: number | string | null },
+  ) {
     if (!this.useSupabase) {
       const cod = payload.fa_codFact;
       return this.http.PatchRequest(`/factura-impresa/${cod}`, payload);
     }
 
     const cod = String(payload?.fa_codFact || '').trim();
+    const empresa = String(scope?.empresa || '').trim();
+    const sucursal = this.toNumberOrNull(scope?.sucursal);
     return from((async () => {
       const patch: any = {
         fa_impresa: 'S',
@@ -1327,7 +1334,9 @@ export class ServicioFacturacion {
         .update(patch)
         .eq('fa_codfact', cod)
         .select('*');
-      updateQuery = this.applyTenantFilter(updateQuery);
+      if (empresa) updateQuery = updateQuery.eq('fa_codempr', empresa);
+      if (sucursal) updateQuery = updateQuery.eq('fa_codsucu', sucursal);
+      if (!empresa && !sucursal) updateQuery = this.applyTenantFilter(updateQuery);
       const { data, error } = await updateQuery.maybeSingle();
       if (error) throw error;
       return { status: 'success', code: 200, data: this.mapFacturaDbToUi(data) };
@@ -1486,7 +1495,7 @@ export class ServicioFacturacion {
         const { data: updatedData, error } = await updateQuery.maybeSingle();
         if (error) throw error;
         if (!updatedData) {
-          throw new Error(`Supabase no devolviÃ³ una factura actualizada para ${cod}. Revise permisos o filtros de empresa/sucursal.`);
+          throw new Error(`No tiene permiso para editar la factura ${cod} desde Control de Facturas.`);
         }
         data = updatedData;
       }
@@ -2318,11 +2327,13 @@ export class ServicioFacturacion {
     sucursal?: string | number | null;
     fechaDesde?: string | null;
     fechaHasta?: string | null;
+    numeroFactura?: string | null;
   } = {}): Observable<any> {
     const empresa = String(params.empresa || '').trim();
     const sucursal = this.toNumberOrNull(params.sucursal);
     const fechaDesde = this.normalizeDate(params.fechaDesde);
     const fechaHasta = this.normalizeDate(params.fechaHasta);
+    const numeroFactura = String(params.numeroFactura || '').trim();
 
     if (!this.useSupabase) {
       const query = new URLSearchParams();
@@ -2330,6 +2341,7 @@ export class ServicioFacturacion {
       if (sucursal) query.set('sucursal', String(sucursal));
       if (fechaDesde) query.set('fechaDesde', fechaDesde);
       if (fechaHasta) query.set('fechaHasta', fechaHasta);
+      if (numeroFactura) query.set('numeroFactura', numeroFactura);
       const qs = query.toString();
       return this.http.GetRequest<any>(`/facturacion/pendientes-dgii${qs ? `?${qs}` : ''}`);
     }
@@ -2341,6 +2353,7 @@ export class ServicioFacturacion {
         if (empresa) scoped = scoped.eq('fa_codempr', empresa);
         if (sucursal) scoped = scoped.eq('fa_codsucu', sucursal);
         if (!empresa && !sucursal) scoped = this.applyTenantFilter(scoped);
+        if (numeroFactura) scoped = scoped.eq('fa_codfact', numeroFactura);
         if (fechaDia) scoped = scoped.eq('fa_fecfact', fechaDia);
         else {
           if (fechaDesde) scoped = scoped.gte('fa_fecfact', fechaDesde);
@@ -2428,6 +2441,8 @@ export class ServicioFacturacion {
     empresa?: string;
     sucursal?: string | number;
     exportacion?: boolean;
+    numeroFactura?: string;
+    encf?: string;
   } = {}): Observable<any> {
     const safePage = Math.max(1, Number(params.page) || 1);
     const safeLimit = Math.max(10, Number(params.pageSize) || 20);
@@ -2439,6 +2454,8 @@ export class ServicioFacturacion {
     const empresa = String(params.empresa || '').trim();
     const sucursal = this.toNumberOrNull(params.sucursal);
     const exportacion = params.exportacion === true;
+    const numeroFactura = String(params.numeroFactura || '').trim();
+    const encf = String(params.encf || '').trim().toUpperCase();
 
     if (!this.useSupabase) {
       const query = new URLSearchParams({
@@ -2450,6 +2467,8 @@ export class ServicioFacturacion {
       if (fechaHasta) query.set('fechaHasta', fechaHasta);
       if (tipoComprobante) query.set('tipoComprobante', tipoComprobante);
       if (estadoDgii) query.set('estadoDgii', estadoDgii);
+      if (numeroFactura) query.set('numeroFactura', numeroFactura);
+      if (encf) query.set('encf', encf);
       if (empresa) query.set('empresa', empresa);
       if (sucursal) query.set('sucursal', String(sucursal));
       return this.http.GetRequest<any>(`/facturacion/reporte-607?${query.toString()}`);
@@ -2461,8 +2480,8 @@ export class ServicioFacturacion {
     const offsetDirecto = (safePage - 1) * safeLimit;
     return from((async () => {
       const columnas607 = exportacion
-        ? 'fa_codfact,fa_ncffact,fa_rncfact,fa_fecfact,fa_valfact,fa_itbifact,fa_subfact,fa_codfpago,estado_dgii,estado_envio_dgii,fec_firma'
-        : 'fa_codfact,fa_ncffact,fa_rncfact,fa_tiponcf,fa_fecfact,fa_fechora,fa_fehora,fa_valfact,fa_itbifact,fa_subfact,fa_nomclie,fa_codempr,fa_codsucu,fa_codfpago,estado_dgii,estado_envio_dgii,codseguridad,qr_link,fec_firma,dgii_track_id,dgii_codigo,dgii_error_message,dgii_mensajes,dgii_response_json,dgii_response_raw';
+        ? 'fa_codfact,fa_ncffact,fa_rncfact,fa_fecncf,fa_fecfact,fa_valfact,fa_itbifact,fa_subfact,fa_codfpago,estado_dgii,estado_envio_dgii,fec_firma'
+        : 'fa_codfact,fa_ncffact,fa_rncfact,fa_tiponcf,fa_fecncf,fa_fecfact,fa_fechora,fa_fehora,fa_valfact,fa_itbifact,fa_subfact,fa_nomclie,fa_codempr,fa_codsucu,fa_codfpago,estado_dgii,estado_envio_dgii,codseguridad,qr_link,fec_firma,dgii_track_id,dgii_codigo,dgii_error_message,dgii_mensajes,dgii_response_json,dgii_response_raw';
 
       let query = this.db
         .from('factura')
@@ -2471,8 +2490,8 @@ export class ServicioFacturacion {
         .select(columnas607)
         .not('estado_envio_dgii', 'is', null)
         .neq('estado_envio_dgii', 'PENDIENTE')
-        .order('fa_fecfact', { ascending: false })
-        .order('fa_codfact', { ascending: false })
+        .order('fa_fecncf', { ascending: false })
+        .order('fa_ncffact', { ascending: false })
         // Se solicita una fila adicional para detectar paginas que el conteo
         // planificado de PostgreSQL no haya estimado.
         .range(offsetDirecto, offsetDirecto + safeLimit);
@@ -2486,11 +2505,13 @@ export class ServicioFacturacion {
 
       if (tipoComprobante) query = query.eq('fa_tiponcf', Number(tipoComprobante));
       if (estadoDgii) query = query.ilike('estado_dgii', estadoDgii);
+      if (numeroFactura) query = query.eq('fa_codfact', numeroFactura);
+      if (encf) query = query.eq('fa_ncffact', encf);
       if (fecha) {
-        query = query.eq('fa_fecfact', fecha);
+        query = query.eq('fa_fecncf', fecha);
       } else {
-        if (fechaDesde) query = query.gte('fa_fecfact', fechaDesde);
-        if (fechaHasta) query = query.lte('fa_fecfact', fechaHasta);
+        if (fechaDesde) query = query.gte('fa_fecncf', fechaDesde);
+        if (fechaHasta) query = query.lte('fa_fecncf', fechaHasta);
       }
 
       const { data, error } = await query;
@@ -2574,9 +2595,9 @@ export class ServicioFacturacion {
 
       if (empresa) query = query.eq('fa_codempr', empresa);
       if (sucursal) query = query.eq('fa_codsucu', sucursal);
-      if (fecha) query = query.eq('fa_fecfact', fecha);
-      if (!fecha && fechaDesde) query = query.gte('fa_fecfact', fechaDesde);
-      if (!fecha && fechaHasta) query = query.lte('fa_fecfact', fechaHasta);
+      if (fecha) query = query.eq('fa_fecncf', fecha);
+      if (!fecha && fechaDesde) query = query.gte('fa_fecncf', fechaDesde);
+      if (!fecha && fechaHasta) query = query.lte('fa_fecncf', fechaHasta);
       if (tipoComprobante) query = query.eq('fa_tiponcf', Number(tipoComprobante));
 
       const { data: extraData, error: extraError } = await query;

@@ -8,7 +8,7 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Expose-Headers": "Content-Disposition",
 };
-type Filters = { fecha?: string; fechaDesde?: string; fechaHasta?: string; tipoComprobante?: string | number; estadoDgii?: string; empresa?: string; sucursal?: string | number };
+type Filters = { fecha?: string; fechaDesde?: string; fechaHasta?: string; tipoComprobante?: string | number; estadoDgii?: string; empresa?: string; sucursal?: string | number; numeroFactura?: string; encf?: string };
 const txt = (v: unknown) => String(v ?? "").trim();
 const num = (v: unknown) => Number.isFinite(Number(v)) ? Number(v) : 0;
 const responseJson = (status: number, body: Record<string, unknown>) => new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json; charset=utf-8" } });
@@ -69,16 +69,18 @@ Deno.serve(async (req: Request) => {
     const branch = privileged && requestedBranch > 0 ? requestedBranch : (!privileged ? Number(user.sucursalid) : null);
     if (!company) return responseJson(422, { message: "No se pudo determinar la empresa." });
 
-    const columns = "fa_codfact,fa_ncffact,fa_rncfact,fa_fecfact,fa_valfact,fa_itbifact,fa_subfact,fa_codfpago,estado_dgii,estado_envio_dgii,fec_firma";
+    const columns = "fa_codfact,fa_ncffact,fa_rncfact,fa_fecncf,fa_valfact,fa_itbifact,fa_subfact,fa_codfpago,estado_dgii,estado_envio_dgii,fec_firma";
     const rows: any[] = [];
     for (const date of dates) {
       for (let offset = 0; ; offset += 500) {
-        let query = admin.from("factura").select(columns).eq("fa_codempr", company).eq("fa_fecfact", date)
+        let query = admin.from("factura").select(columns).eq("fa_codempr", company).eq("fa_fecncf", date)
           .not("estado_envio_dgii", "is", null).neq("estado_envio_dgii", "PENDIENTE")
-          .order("fa_codfact", { ascending: false }).range(offset, offset + 499);
+          .order("fa_fecncf", { ascending: false }).order("fa_ncffact", { ascending: false }).range(offset, offset + 499);
         if (branch) query = query.eq("fa_codsucu", branch);
         if (txt(filters.tipoComprobante)) query = query.eq("fa_tiponcf", Number(filters.tipoComprobante));
         if (txt(filters.estadoDgii)) query = query.ilike("estado_dgii", txt(filters.estadoDgii));
+        if (txt(filters.numeroFactura)) query = query.eq("fa_codfact", txt(filters.numeroFactura));
+        if (txt(filters.encf)) query = query.eq("fa_ncffact", txt(filters.encf).toUpperCase());
         const result = await query;
         if (result.error) throw result.error;
         rows.push(...(result.data || []));
@@ -95,7 +97,7 @@ Deno.serve(async (req: Request) => {
       const rejected = /rechaz|error/i.test(status);
       const total = num(row.fa_valfact), itbis = num(row.fa_itbifact), code = txt(row.fa_codfpago);
       const out: Record<string, string | number> = {
-        "RNC Receptor": txt(row.fa_rncfact), ENCF: txt(row.fa_ncffact), "Fecha Comprobante": txt(row.fa_fecfact),
+        "RNC Receptor": txt(row.fa_rncfact), ENCF: txt(row.fa_ncffact), "Fecha Comprobante": txt(row.fa_fecncf),
         "Fecha Recepcion": txt(row.fec_firma), Estado: status,
         "Forma de Pago": code && descriptions.get(code) ? `${code} - ${descriptions.get(code)}` : code,
         "ITBIS Facturado": rejected ? "" : itbis, "Monto Total": rejected ? "" : total,

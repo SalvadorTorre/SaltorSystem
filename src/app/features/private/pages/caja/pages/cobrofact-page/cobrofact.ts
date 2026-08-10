@@ -1913,6 +1913,7 @@ export class CobroFact implements OnInit {
         await this.imprimirFacturaConDatosDisponibles(
           facturaData,
           datosLocalesImpresion,
+          payloadError,
         );
       },
     );
@@ -2504,6 +2505,7 @@ export class CobroFact implements OnInit {
       fa_notapago: this.chekPagado ? this.notaPago : '',
     };
 
+    this.printingService.reservarVentanaImpresion();
     this.iniciarProcesamientoCobroDgii();
 
     this.servicioFacturacion.asignarEncfFactura(cod).subscribe({
@@ -2558,6 +2560,7 @@ export class CobroFact implements OnInit {
           },
           error: (err) => {
             console.error('Error guardando factura antes de imprimir:', err);
+            this.printingService.cancelarVentanaImpresionReservada();
             this.finalizarProcesamientoCobroDgii();
             Swal.fire('Error', this.extraerMensajeError(err), 'error');
           },
@@ -2565,6 +2568,7 @@ export class CobroFact implements OnInit {
       },
       error: (err) => {
         console.error('Error generando ENCF antes de enviar DGII:', err);
+        this.printingService.cancelarVentanaImpresionReservada();
         this.finalizarProcesamientoCobroDgii();
         Swal.fire('Error', this.extraerMensajeError(err), 'error');
       },
