@@ -86,6 +86,21 @@ export class Cotizacion implements OnInit {
   totalGral: number = 0;
   totalItbis: number = 0;
   subTotal: number = 0;
+  existenciatxt: number = 0;
+  medidatxt: string = '';
+  fecacttxt: string = '';
+  margenVentatxt: number = 0;
+  costotxt: number = 0;
+  protxt: number = 0;
+  precioMenorIgualCosto: boolean = false;
+  atxt: number = 0;
+  btxt: number = 0;
+  ctxt: number = 0;
+  dtxt: number = 0;
+  etxt: number = 0;
+  ftxt: number = 0;
+  gtxt: number = 0;
+  htxt: number = 0;
   static detCotizacion: detCotizacionData[];
   codmerc: string = '';
   descripcionmerc: string = '';
@@ -949,6 +964,15 @@ export class Cotizacion implements OnInit {
   // Función para agregar un nuevo item a la tabla
   agregaItem(event: Event) {
     event.preventDefault();
+    if (!this.validarPrecioMayorAlCosto()) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Precio no válido',
+        text: `El precio debe ser mayor al costo (${this.formatNumber(this.costotxt)}).`,
+      });
+      return;
+    }
+
     if (this.isEditing) {
       console.log('editando');
       // Actualizar el ítem existente
@@ -1000,11 +1024,22 @@ export class Cotizacion implements OnInit {
   }
 
   limpiarCampos() {
-    this.productoselect;
+    this.productoselect = undefined as any;
     this.codmerc = '';
     this.descripcionmerc = '';
     this.preciomerc = 0;
     this.cantidadmerc = 0;
+    this.precioform.setValue(0, { emitEvent: false });
+    this.cantidadform.setValue(0, { emitEvent: false });
+    this.precioMenorIgualCosto = false;
+    this.existenciatxt = 0;
+    this.medidatxt = '';
+    this.fecacttxt = '';
+    this.margenVentatxt = 0;
+    this.costotxt = 0;
+    this.protxt = 0;
+    this.atxt = this.btxt = this.ctxt = this.dtxt = 0;
+    this.etxt = this.ftxt = this.gtxt = this.htxt = 0;
     this.isEditing = false;
   }
 
@@ -1043,6 +1078,8 @@ export class Cotizacion implements OnInit {
     this.descripcionmerc = item.producto.in_desmerc;
     this.preciomerc = item.precio;
     this.cantidadmerc = item.cantidad;
+    this.actualizarInformacionProducto(item.producto);
+    this.actualizarPrecioProducto(item.precio);
   }
   actualizarTotales() {
     this.totalGral = this.items.reduce((sum, item) => sum + item.total, 0);
@@ -1207,22 +1244,89 @@ export class Cotizacion implements OnInit {
     console.log(inventario);
     this.resultadoCodmerc = [];
     this.resultadodescripcionmerc = [];
-    this.codmerc = inventario.in_codmerc;
-    this.preciomerc = inventario.in_premerc;
-    this.descripcionmerc = inventario.in_desmerc;
+    const dato = (campo: string) =>
+      (inventario as any)?.[campo] ??
+      (inventario as any)?.[campo.toUpperCase()] ??
+      (inventario as any)?.[campo.toLowerCase()];
+
+    this.codmerc = dato('in_codmerc');
+    this.descripcionmerc = dato('in_desmerc');
     this.productoselect = inventario;
+    this.actualizarInformacionProducto(inventario);
+
+    const precioRegistrado = Number(
+      dato('in_premerc') ?? dato('in_precio') ?? dato('in_prevta'),
+    );
+    this.preciomerc = Number.isFinite(precioRegistrado) && precioRegistrado > 0
+      ? precioRegistrado
+      : this.costotxt * (1 + this.margenVentatxt / 100);
+    this.precioform.setValue(this.preciomerc, { emitEvent: false });
+    this.actualizarPrecioProducto(this.preciomerc);
     this.cancelarBusquedaDescripcion = true;
     this.cancelarBusquedaCodigo = true;
     this.formularioCotizacion.patchValue({
       dc_codmerc: inventario.in_codmerc,
       dc_desmerc: inventario.in_desmerc,
       dc_canmerc: inventario.in_canmerc,
-      dc_premerc: inventario.in_premerc,
+      dc_premerc: this.preciomerc,
       dc_cosmerc: inventario.in_cosmerc,
       dc_unidad: inventario.in_unidad,
     });
     $('#input8').focus();
     $('#input8').select();
+  }
+
+  private actualizarInformacionProducto(inventario: any): void {
+    const valor = (...campos: string[]) => {
+      for (const campo of campos) {
+        const encontrado = inventario?.[campo] ?? inventario?.[campo.toUpperCase()] ?? inventario?.[campo.toLowerCase()];
+        if (encontrado !== undefined && encontrado !== null) return encontrado;
+      }
+      return '';
+    };
+
+    this.existenciatxt = Number(valor('in_canmerc', 'inv_existencia')) || 0;
+    this.medidatxt = String(valor('in_medida', 'in_unidad') || '');
+    this.fecacttxt = String(valor('in_fecmodif', 'in_fecmodi') || '');
+    this.costotxt = Number(valor('in_cosmerc', 'in_ucosto', 'in_costmer')) || 0;
+    this.margenVentatxt = Number(valor('in_porgana')) || 0;
+
+    const costo = this.costotxt;
+    this.atxt = costo * 1.05;
+    this.btxt = costo * 1.07;
+    this.ctxt = costo * 1.10;
+    this.dtxt = costo * 1.12;
+    this.etxt = costo * 1.14;
+    this.ftxt = costo * 1.16;
+    this.gtxt = costo * 1.18;
+    this.htxt = costo * 1.20;
+    this.actualizarPrecioProducto(this.preciomerc);
+  }
+
+  actualizarPrecioProducto(precio: any): void {
+    const precioActual = Number(precio) || 0;
+    this.precioMenorIgualCosto = Boolean(
+      this.productoselect && precioActual > 0 && precioActual <= this.costotxt,
+    );
+    this.protxt = this.costotxt > 0
+      ? ((precioActual - this.costotxt) * 100) / this.costotxt
+      : 0;
+  }
+
+  private validarPrecioMayorAlCosto(): boolean {
+    const precio = Number(this.preciomerc) || 0;
+    const costo = Number(this.costotxt) || 0;
+    this.precioMenorIgualCosto = Boolean(this.productoselect && precio <= costo);
+    return !this.precioMenorIgualCosto;
+  }
+
+  formatNumber(value: any): string {
+    const numero = Number(value);
+    if (!Number.isFinite(numero)) return '0.00';
+    return numero.toLocaleString('es-DO', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
   }
 
   handleKeydownInventario(event: KeyboardEvent): void {

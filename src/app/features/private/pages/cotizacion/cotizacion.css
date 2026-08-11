@@ -385,6 +385,342 @@ input.text-uppercase {
   max-width: 100%;
 }
 
+/* Composición final solicitada: modal compacto + información del producto abajo */
+#modalcotizacion .cotizacion-header {
+  background: #0d6efd;
+}
+
+#modalcotizacion .formulario-cotizacion {
+  display: block !important;
+}
+
+#modalcotizacion .panel-lateral-cotizacion {
+  display: none !important;
+}
+
+#modalcotizacion .datos-cotizacion-row {
+  display: flex;
+  margin: 0 0 0.5rem !important;
+}
+
+#modalcotizacion .datos-cotizacion-row > .col-lg-8 {
+  width: 66.666667%;
+  margin-bottom: 0;
+}
+
+#modalcotizacion .datos-cotizacion-row > .col-lg-4 {
+  width: 33.333333%;
+}
+
+#modalcotizacion form.formulario-cotizacion .producto-card,
+#modalcotizacion form.formulario-cotizacion .detalle-card {
+  margin-top: 0.75rem !important;
+}
+
+#modalcotizacion .producto-card {
+  padding: 0.5rem 0.75rem 0.75rem;
+  border-top: 0 !important;
+}
+
+#modalcotizacion form.formulario-cotizacion .producto-card::before,
+#modalcotizacion form.formulario-cotizacion .detalle-card::before {
+  display: none;
+}
+
+#modalcotizacion .detalle-card {
+  border-top: 0 !important;
+}
+
+#modalcotizacion .tabla-fija {
+  height: 315px;
+}
+
+#modalcotizacion form.formulario-cotizacion .detalle-card .resumen-cotizacion {
+  display: block;
+}
+
+#modalcotizacion form.formulario-cotizacion .acciones-cotizacion {
+  display: flex !important;
+  width: 100%;
+}
+
+#modalcotizacion .acciones-cotizacion .btn {
+  flex: 0 0 auto;
+}
+
+#modalcotizacion .info-producto-cotizacion {
+  border: 1px solid #dee2e6 !important;
+  border-radius: 8px;
+}
+
+#modalcotizacion .info-producto-titulo {
+  letter-spacing: 0.35px;
+}
+
+#modalcotizacion .info-producto-cotizacion .form-label {
+  color: #374151 !important;
+  font-size: 0.85rem;
+}
+
+#modalcotizacion .info-producto-cotizacion .form-control,
+#modalcotizacion .info-producto-cotizacion .input-group-text {
+  min-height: 40px;
+  font-size: 0.95rem;
+}
+
+#modalcotizacion .precios-sugeridos-grid {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(80px, 1fr));
+  gap: 0.5rem;
+}
+
+#modalcotizacion .precio-sugerido {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0.4rem;
+  background: #fff;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+}
+
+#modalcotizacion .precio-sugerido span {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #495057;
+}
+
+#modalcotizacion .precio-sugerido strong {
+  font-size: 0.85rem;
+  color: #212529;
+}
+
+@media (max-width: 991.98px) {
+  #modalcotizacion .datos-cotizacion-row > .col-lg-8,
+  #modalcotizacion .datos-cotizacion-row > .col-lg-4 {
+    width: 100%;
+  }
+
+  #modalcotizacion .precios-sugeridos-grid {
+    grid-template-columns: repeat(4, minmax(80px, 1fr));
+  }
+}
+
+/* Overrides finales del modal aprobado */
+#modalcotizacion .cotizacion-header {
+  background: #0d6efd !important;
+}
+
+#modalcotizacion .formulario-cotizacion {
+  display: block !important;
+}
+
+#modalcotizacion .panel-lateral-cotizacion {
+  display: none !important;
+}
+
+#modalcotizacion .producto-card,
+#modalcotizacion .detalle-card {
+  margin-top: 0.75rem !important;
+  border-top: 0 !important;
+}
+
+#modalcotizacion .producto-card::before,
+#modalcotizacion .detalle-card::before {
+  display: none !important;
+}
+
+#modalcotizacion .detalle-card .resumen-cotizacion {
+  display: block !important;
+}
+
+#modalcotizacion .acciones-cotizacion {
+  display: flex !important;
+}
+
+@media (max-width: 575.98px) {
+  #modalcotizacion .precios-sugeridos-grid {
+    grid-template-columns: repeat(2, minmax(80px, 1fr));
+  }
+}
+
+.cotizacion-listado-header {
+  background: linear-gradient(90deg, #0d6efd, #20c997);
+  box-shadow: 0 2px 8px rgba(13, 110, 253, 0.2);
+}
+
+/* Formulario: mismo lenguaje visual y estructura operativa de FacturaciÃ³n */
+#modalcotizacion .modal-dialog {
+  max-width: min(1480px, calc(100vw - 2rem));
+}
+
+#modalcotizacion .modal-content {
+  overflow: hidden;
+}
+
+#modalcotizacion .cotizacion-header {
+  background: linear-gradient(90deg, #0d6efd, #20c997);
+  box-shadow: 0 2px 8px rgba(13, 110, 253, 0.2);
+}
+
+#modalcotizacion .cotizacion-datos-header {
+  background: linear-gradient(90deg, #0d6efd, #20c997);
+  padding: 0.65rem 1rem;
+}
+
+#modalcotizacion .modal-body {
+  padding: 1rem !important;
+}
+
+#modalcotizacion .formulario-cotizacion > .card,
+#modalcotizacion .datos-cotizacion-row {
+  margin-bottom: 1rem;
+}
+
+#modalcotizacion .panel-lateral-cotizacion {
+  min-width: 0;
+}
+
+#modalcotizacion .datos-cliente-card .card-body,
+#modalcotizacion .documento-card .card-body {
+  background: #f8f9fa;
+}
+
+#modalcotizacion .form-control {
+  color: #111827;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+#modalcotizacion .form-label {
+  color: #3895f1 !important;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+#modalcotizacion .producto-card {
+  padding: 0.75rem 1rem 1rem;
+  border-top: 4px solid #0d6efd !important;
+}
+
+#modalcotizacion .producto-card::before {
+  content: "Agregar producto";
+  display: block;
+  margin-bottom: 0.65rem;
+  color: #0d6efd;
+  font-weight: 700;
+}
+
+#modalcotizacion .detalle-card {
+  border-top: 4px solid #20c997 !important;
+  overflow: hidden;
+}
+
+#modalcotizacion .detalle-card::before {
+  content: "Detalle de productos";
+  display: block;
+  padding: 0.65rem 1rem;
+  color: #0d6efd;
+  background: #fff;
+  border-bottom: 1px solid #dee2e6;
+  font-weight: 700;
+}
+
+#modalcotizacion .tabla-fija {
+  height: 270px;
+  border: 0;
+  border-radius: 0;
+}
+
+#modalcotizacion .resumen-cotizacion {
+  margin-left: auto;
+  width: min(100%, 420px);
+  padding: 1rem;
+  background: #f8f9fa;
+  border: 1px solid #198754;
+  border-radius: 8px;
+}
+
+#modalcotizacion .resumen-cotizacion .col-md-4 {
+  width: 100%;
+}
+
+#modalcotizacion .resumen-cotizacion .col-md-8 {
+  display: none;
+}
+
+#modalcotizacion .acciones-cotizacion {
+  display: none !important;
+}
+
+#modalcotizacion .acciones-cotizacion .btn {
+  flex: 1;
+}
+
+@media (min-width: 992px) {
+  #modalcotizacion .formulario-cotizacion {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(290px, 1fr);
+    grid-template-areas:
+      "datos resumen"
+      "producto resumen"
+      "detalle resumen";
+    gap: 1rem;
+    align-items: start;
+  }
+
+  #modalcotizacion .datos-cotizacion-row {
+    grid-area: datos;
+    margin: 0;
+  }
+
+  #modalcotizacion .datos-cotizacion-row > .col-lg-8,
+  #modalcotizacion .datos-cotizacion-row > .col-lg-4 {
+    width: 100%;
+  }
+
+  #modalcotizacion .datos-cotizacion-row > .col-lg-8 {
+    margin-bottom: 1rem;
+  }
+
+  #modalcotizacion .panel-lateral-cotizacion {
+    grid-area: resumen;
+    position: sticky;
+    top: 0;
+  }
+
+  #modalcotizacion .producto-card {
+    grid-area: producto;
+    margin-top: 0 !important;
+  }
+
+  #modalcotizacion .detalle-card {
+    grid-area: detalle;
+    margin-top: 0 !important;
+  }
+
+  #modalcotizacion .detalle-card .resumen-cotizacion {
+    display: none;
+  }
+
+  #modalcotizacion .datos-cotizacion-row > .col-lg-8 {
+    width: 100%;
+  }
+}
+
+@media (max-width: 991.98px) {
+  #modalcotizacion .panel-lateral-cotizacion {
+    margin-bottom: 1rem;
+  }
+
+  #modalcotizacion .detalle-card .resumen-cotizacion {
+    display: none;
+  }
+}
+
 /* Mejorar el ancho de columnas en móvil */
 @media (max-width: 768px) {
   /* Ajustar anchos de columnas para mejor visualización */
