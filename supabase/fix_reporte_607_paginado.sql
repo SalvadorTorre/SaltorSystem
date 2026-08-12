@@ -98,7 +98,8 @@ BEGIN
         v_is_root
         OR (
           upper(coalesce(f.fa_codempr, '')) = upper(coalesce(cu.cod_empre, ''))
-          AND (v_is_admin OR f.fa_codsucu = cu.sucursalid)
+          -- El Reporte 607 puede consolidar cualquiera de las sucursales de
+          -- la empresa asignada al usuario. La empresa sigue siendo obligatoria.
         )
       )
       AND (v_empresa IS NULL OR upper(coalesce(f.fa_codempr, '')) = upper(v_empresa))

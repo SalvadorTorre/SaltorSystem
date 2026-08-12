@@ -75,6 +75,7 @@ export class Reporte607Component implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.empresaFiltro = this.empresaUsuarioActual();
     this.cargarCatalogosFiltro();
     this.cargarFormasPago();
   }
@@ -93,7 +94,16 @@ export class Reporte607Component implements OnInit {
   private cargarCatalogosFiltro(): void {
     this.servicioEmpresa.buscarTodasEmpresa(1, 500).subscribe({
       next: (response: any) => {
-        this.empresas = Array.isArray(response?.data) ? response.data : [];
+        const todas = Array.isArray(response?.data) ? response.data : [];
+        const empresaUsuario = this.empresaUsuarioActual().toUpperCase();
+        this.empresas = this.esUsuarioRoot()
+          ? todas
+          : todas.filter((empresa: any) =>
+              String(empresa?.cod_empre || '').trim().toUpperCase() === empresaUsuario
+            );
+        if (!this.esUsuarioRoot() && empresaUsuario) {
+          this.empresaFiltro = empresaUsuario;
+        }
       },
       error: (error) => {
         console.error('[Reporte607Component] Error cargando empresas', error);
@@ -108,6 +118,32 @@ export class Reporte607Component implements OnInit {
         console.error('[Reporte607Component] Error cargando sucursales', error);
       },
     });
+  }
+
+  private empresaUsuarioActual(): string {
+    let empresa: any = null;
+    try {
+      empresa = JSON.parse(localStorage.getItem('empresa') || 'null');
+      if (Array.isArray(empresa)) empresa = empresa[0];
+    } catch {
+      empresa = null;
+    }
+    return String(
+      localStorage.getItem('codigoempresa') ||
+      localStorage.getItem('cod_empre') ||
+      empresa?.cod_empre ||
+      '',
+    ).trim();
+  }
+
+  esUsuarioRoot(): boolean {
+    const tipo = Number(
+      localStorage.getItem('idtipoUsuario') ||
+      localStorage.getItem('idtipousuario') ||
+      localStorage.getItem('tipoUsuario') ||
+      0,
+    );
+    return tipo === 1;
   }
 
   private fechaIsoFiltro(value: string): string {
@@ -183,7 +219,7 @@ export class Reporte607Component implements OnInit {
     this.estadoDgii = '';
     this.numeroFactura = '';
     this.encf = '';
-    this.empresaFiltro = '';
+    this.empresaFiltro = this.esUsuarioRoot() ? '' : this.empresaUsuarioActual();
     this.sucursalFiltro = '';
     this.modoFecha = 'rango';
     this.page = 1;

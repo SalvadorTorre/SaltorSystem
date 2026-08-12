@@ -798,6 +798,36 @@ export class ServicioSalidafactura {
         await this.clearFacturasSalidaSupabase({ codsalida, codfacts: removedAll });
       }
 
+      const statusSolicitado = String(payload?.status || '').trim().toUpperCase();
+      if (statusSolicitado === 'C' && codsalida && detalles.length > 0) {
+        const { data: detallesCerrados, error: closeDetErr } = await this.db
+          .from('detsalida')
+          .update({ status: 'C', pagado: 'S' })
+          .eq('codsalida', codsalida)
+          .select('codfact,status,pagado');
+        if (closeDetErr) throw closeDetErr;
+
+        const cerrados = Array.isArray(detallesCerrados) ? detallesCerrados : [];
+        const codfactsEsperados = new Set<string>(
+          detalles
+            .map((d: any) => String(d?.codfact ?? d?.codFact ?? '').trim())
+            .filter(Boolean),
+        );
+        const codfactsCerrados = new Set<string>(
+          cerrados
+            .filter((d: any) =>
+              String(d?.status || '').trim().toUpperCase() === 'C' &&
+              String(d?.pagado || '').trim().toUpperCase() === 'S'
+            )
+            .map((d: any) => String(d?.codfact || '').trim())
+            .filter(Boolean),
+        );
+        const faltantes = Array.from(codfactsEsperados).filter((cod) => !codfactsCerrados.has(cod));
+        if (faltantes.length > 0) {
+          throw new Error(`No se pudo cerrar el detalle de las facturas: ${faltantes.join(', ')}.`);
+        }
+      }
+
       let detSelectQuery = this.db
         .from('detsalida')
         .select('*')
@@ -806,11 +836,33 @@ export class ServicioSalidafactura {
       const { data: dets, error: detErr } = await detSelectQuery;
       if (detErr) throw detErr;
 
+      const { data: salidaVerificada, error: verifySalidaErr } = await this.db
+        .from('salida')
+        .select('*')
+        .eq('id', safeId)
+        .maybeSingle();
+      if (verifySalidaErr) throw verifySalidaErr;
+      if (!salidaVerificada) {
+        throw new Error(`No se pudo verificar el control de salida ${safeId}.`);
+      }
+      if (
+        statusSolicitado === 'C' &&
+        String(salidaVerificada?.status || '').trim().toUpperCase() !== 'C'
+      ) {
+        throw new Error(`El control ${codsalida || safeId} no quedó marcado como cobrado.`);
+      }
+      if (
+        statusSolicitado === 'C' &&
+        (dets || []).some((d: any) => String(d?.status || '').trim().toUpperCase() !== 'C')
+      ) {
+        throw new Error(`Uno o más detalles del control ${codsalida || safeId} no quedaron cerrados.`);
+      }
+
       return {
         status: 'success',
         code: 200,
         data: {
-          ...this.mapSalidaDbToUi(salidaUpdated || {}),
+          ...this.mapSalidaDbToUi(salidaVerificada || {}),
           detsalida: (dets || []).map((r: any) => this.mapDetSalidaDbToUi(r)),
         },
       };

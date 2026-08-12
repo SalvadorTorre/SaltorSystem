@@ -66,8 +66,17 @@ Deno.serve(async (req: Request) => {
     const root = Number(user.idtipousuario) === 1;
     const company = root && txt(filters.empresa) ? txt(filters.empresa) : txt(user.cod_empre);
     const requestedBranch = Number(filters.sucursal);
-    const branch = privileged && requestedBranch > 0 ? requestedBranch : (!privileged ? Number(user.sucursalid) : null);
+    let branch: number | null = requestedBranch > 0 ? requestedBranch : null;
     if (!company) return responseJson(422, { message: "No se pudo determinar la empresa." });
+    if (branch) {
+      const branchCheck = await admin.from("sucursales")
+        .select("cod_sucursal,cod_empre")
+        .eq("cod_sucursal", branch)
+        .eq("cod_empre", company)
+        .maybeSingle();
+      if (branchCheck.error) throw branchCheck.error;
+      if (!branchCheck.data) return responseJson(403, { message: "La sucursal seleccionada no pertenece a la empresa del usuario." });
+    }
 
     const columns = "fa_codfact,fa_ncffact,fa_rncfact,fa_fecncf,fa_valfact,fa_itbifact,fa_subfact,fa_codfpago,estado_dgii,estado_envio_dgii,fec_firma";
     const rows: any[] = [];
