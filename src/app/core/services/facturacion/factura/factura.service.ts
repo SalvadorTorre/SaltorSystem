@@ -2479,6 +2479,38 @@ export class ServicioFacturacion {
     // listar_reporte_607 y eso provocaba que facturas aceptadas desaparecieran.
     const offsetDirecto = (safePage - 1) * safeLimit;
     return from((async () => {
+      // Esta RPC valida la empresa del usuario en servidor y permite consultar
+      // cualquiera de sus sucursales sin ampliar el acceso general a factura.
+      const rpc = await this.db.rpc('listar_reporte_607', {
+        p_page: safePage,
+        p_page_size: safeLimit,
+        p_search: numeroFactura || encf || null,
+        p_fecha: fecha || null,
+        p_fecha_desde: fechaDesde || null,
+        p_fecha_hasta: fechaHasta || null,
+        p_tipo_comprobante: tipoComprobante ? Number(tipoComprobante) : null,
+        p_estado_dgii: estadoDgii || null,
+        p_empresa: empresa || null,
+        p_sucursal: sucursal || null,
+      });
+      if (!rpc.error) {
+        const rpcRows = Array.isArray(rpc.data) ? rpc.data : [];
+        const rows = rpcRows.map((row: any) => this.mapFacturaDbToUi(row));
+        const total = Number(rpcRows[0]?.total_count ?? rows.length ?? 0);
+        return {
+          status: 'success',
+          code: 200,
+          data: rows,
+          pagination: {
+            total,
+            page: safePage,
+            pageSize: safeLimit,
+            totalPages: Math.max(1, Math.ceil(total / safeLimit)),
+          },
+        };
+      }
+      console.warn('[ServicioFacturacion] RPC 607 no disponible; usando consulta compatible', rpc.error);
+
       const columnas607 = exportacion
         ? 'fa_codfact,fa_ncffact,fa_rncfact,fa_fecncf,fa_fecfact,fa_valfact,fa_itbifact,fa_subfact,fa_codfpago,estado_dgii,estado_envio_dgii,fec_firma'
         : 'fa_codfact,fa_ncffact,fa_rncfact,fa_tiponcf,fa_fecncf,fa_fecfact,fa_fechora,fa_fehora,fa_valfact,fa_itbifact,fa_subfact,fa_nomclie,fa_codempr,fa_codsucu,fa_codfpago,estado_dgii,estado_envio_dgii,codseguridad,qr_link,fec_firma,dgii_track_id,dgii_codigo,dgii_error_message,dgii_mensajes,dgii_response_json,dgii_response_raw';

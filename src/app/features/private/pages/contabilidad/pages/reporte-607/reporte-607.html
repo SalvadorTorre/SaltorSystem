@@ -41,8 +41,8 @@
   <div class="filter-panel">
     <label class="select-filter">
       <span>Empresa</span>
-      <select class="form-select" [(ngModel)]="empresaFiltro" (change)="onEmpresaFiltroChange()">
-        <option value="">Todas</option>
+      <select class="form-select" [(ngModel)]="empresaFiltro" (change)="onEmpresaFiltroChange()" [disabled]="!esUsuarioRoot()">
+        <option value="" *ngIf="esUsuarioRoot()">Todas</option>
         <option *ngFor="let empresa of empresas" [value]="empresa.cod_empre">
           {{ empresa.nom_empre || empresa.cod_empre }}
         </option>

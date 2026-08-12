@@ -90,21 +90,46 @@ export class ServicioPermiso {
   }
 
   private async isPermisoV2Disponible(): Promise<boolean> {
-    if (this.permisoV2Enabled !== null) {
+    if (this.permisoV2Enabled === true) {
       return this.permisoV2Enabled;
     }
-    try {
-      const [{ error: errA }, { error: errR }, { error: errU }] = await Promise.all([
-        this.db.from("permiso_accion_catalogo").select("accion_key").limit(1),
-        this.db.from("permiso_recurso_catalogo").select("recurso_key").limit(1),
-        this.db.from("usuario_permiso_accion").select("id").limit(1),
-      ]);
-      this.permisoV2Enabled = !(errA || errR || errU);
-      return this.permisoV2Enabled;
-    } catch {
-      this.permisoV2Enabled = false;
-      return false;
+
+    const consultarCatalogos = async (): Promise<any[]> => Promise.all([
+      this.db.from("permiso_accion_catalogo").select("accion_key").limit(1),
+      this.db.from("permiso_recurso_catalogo").select("recurso_key").limit(1),
+    ]);
+
+    for (let intento = 0; intento < 2; intento += 1) {
+      try {
+        if (intento > 0) {
+          await this.supabase.recoverSession();
+        }
+        const resultados = await consultarCatalogos();
+        const errores = resultados.map((resultado: any) => resultado?.error).filter(Boolean);
+        if (errores.length === 0) {
+          this.permisoV2Enabled = true;
+          return true;
+        }
+
+        const tablasNoExisten = errores.every((error: any) => {
+          const codigo = String(error?.code || '').toUpperCase();
+          const mensaje = String(error?.message || error?.details || '').toLowerCase();
+          return codigo === '42P01' || codigo === 'PGRST205' || mensaje.includes('does not exist');
+        });
+        if (tablasNoExisten) {
+          return false;
+        }
+        if (intento === 1) throw errores[0];
+      } catch (error) {
+        if (intento === 1) {
+          // Un error de red, sesión o RLS no significa que el esquema sea Legacy.
+          // Se propaga para evitar mostrar y guardar accidentalmente la matriz antigua.
+          throw error;
+        }
+      }
     }
+
+    return false;
   }
 
   private aplicarFiltroScope(query: any, codEmpre?: string | null, sucursalid?: number | null): any {

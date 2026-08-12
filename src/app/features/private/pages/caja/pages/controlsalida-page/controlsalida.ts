@@ -616,8 +616,14 @@ export class ControlSalidaCajaComponent implements OnInit, OnDestroy {
           'success'
         );
       },
-      error: () => {
-        this.mostrarMensaje('Error al guardar los cambios');
+      error: (error: any) => {
+        console.error('Error cerrando control de salida', error);
+        const detalleError = String(error?.message || error?.error?.message || '').trim();
+        this.mostrarMensaje(
+          detalleError || 'Error al guardar los cambios. El control no fue confirmado como cobrado.',
+          'error',
+          true,
+        );
         this.cargando = false;
         this.guardando = false;
       },
