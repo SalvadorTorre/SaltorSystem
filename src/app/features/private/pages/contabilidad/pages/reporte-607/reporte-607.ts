@@ -488,7 +488,7 @@ export class Reporte607Component implements OnInit {
 
   puedeReenviar(factura: any): boolean {
     const estado = this.estadoTexto(factura).toLowerCase();
-    return estado.includes('rechaz') || estado.includes('error');
+    return estado.includes('rechaz') || estado.includes('error') || estado.includes('success');
   }
 
   tipoComprobanteTexto(factura: any): string {
