@@ -211,8 +211,8 @@
 
             <!-- Tipo Pago, Envío y Vendedor -->
             <div class="row g-3 mb-2">
-              <div class="col-md-4 position-relative">
-                <label class="form-label small text-muted fw-semibold">Tipo Pago</label>
+              <div class="col-md-3 position-relative">
+                <label class="form-label small text-muted fw-semibold">Forma de pago</label>
                 <input
                   type="text"
                   #input9
@@ -241,7 +241,18 @@
                   </a>
                 </div>
               </div>
-              <div class="col-md-4 position-relative">
+              <div class="col-md-3">
+                <label class="form-label small text-muted fw-semibold">Tipo de venta</label>
+                <select
+                  formControlName="fa_tipopago"
+                  class="form-select"
+                  (change)="cambiarTipoVenta()"
+                >
+                  <option [ngValue]="1">Contado</option>
+                  <option [ngValue]="2" [disabled]="!clientePermiteCredito">Crédito</option>
+                </select>
+              </div>
+              <div class="col-md-3 position-relative">
                 <label class="form-label small text-muted fw-semibold">Entrega</label>
                 <input
                   type="text"
@@ -271,7 +282,7 @@
                   </a>
                 </div>
               </div>
-              <div class="col-md-2">
+              <div class="col-md-1">
                 <label class="form-label small text-muted fw-semibold">Vend.</label>
                 <input
                   type="password"
@@ -486,6 +497,21 @@
               (click)="generarPdfFacturaDgiiA4()"
             >
               <i class="bi bi-file-earmark-pdf me-2"></i>Crear PDF A4
+            </button>
+
+            <button
+              *ngIf="puedeEnviarFacturaConsultaDgii"
+              type="button"
+              class="btn btn-primary mb-2"
+              (click)="enviarFacturaConsultaDgii()"
+              [disabled]="enviandoFacturaConsultaDgii"
+            >
+              <ng-container *ngIf="!enviandoFacturaConsultaDgii">
+                <i class="bi bi-send-check me-2"></i>Enviar a DGII e imprimir
+              </ng-container>
+              <ng-container *ngIf="enviandoFacturaConsultaDgii">
+                <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Enviando...
+              </ng-container>
             </button>
 
             <div class="d-flex gap-2">

@@ -18,6 +18,7 @@ interface DetalleSalidaCaja {
   fpago: string;
   codfpago: string;
   descfpago: string;
+  tipopago?: number;
   fa_status: string;
   pagado: boolean;
   pagadoOriginal: boolean;
@@ -365,6 +366,7 @@ export class ControlSalidaCajaComponent implements OnInit, OnDestroy {
             descfpago: this.obtenerDescripcionFpago(
               f?.fa_codfpago ?? det?.codfpago
             ),
+            tipopago: Number(f?.fa_tipopago || 1),
             fa_status: estadoFactura,
             pagado: esPagadaPorSalida || esPagadaPorFactura,
             pagadoOriginal: esPagadaPorFactura,
@@ -402,6 +404,10 @@ export class ControlSalidaCajaComponent implements OnInit, OnDestroy {
     if (status === 'A') return 'bg-success';
     if (status === 'P') return 'bg-secondary';
     return 'bg-light text-muted border';
+  }
+
+  obtenerTipoVenta(detalle: DetalleSalidaCaja): string {
+    return Number(detalle?.tipopago || 1) === 2 ? 'Crédito' : 'Contado';
   }
 
   togglePagado(detalle: DetalleSalidaCaja) {
@@ -510,10 +516,12 @@ export class ControlSalidaCajaComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const hayPendientesPago = this.detalles.some((d) => !d.pagado);
-    if (hayPendientesPago) {
+    const contadoPendiente = this.detalles.find(
+      (d) => Number(d.tipopago || 1) !== 2 && !d.pagado,
+    );
+    if (contadoPendiente) {
       this.mostrarMensaje(
-        'No se puede guardar el cobro porque hay facturas pendientes de pago. Por favor marque todas como pagadas.',
+        `La factura de contado ${contadoPendiente.codFact} debe marcarse como pagada. Las facturas de crédito pueden guardarse pendientes.`,
         'warning',
         true
       );
@@ -593,7 +601,7 @@ export class ControlSalidaCajaComponent implements OnInit, OnDestroy {
 
     facturasParaActualizar = this.detalles.map((d) => ({
       fa_codFact: d.codFact,
-      fa_fpago: 'P',
+      ...(d.pagado ? { fa_fpago: 'S' } : {}),
       fa_entrega: 'S',
     }));
 

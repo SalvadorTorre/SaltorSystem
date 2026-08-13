@@ -171,6 +171,7 @@
                       <th class="text-center" style="width: 10%">Tipo</th>
                       <th style="width: 12%">Fecha</th>
                       <th style="width: 13%">Forma Pago</th>
+                      <th class="text-center" style="width: 10%">Tipo de venta</th>
                       <th class="text-end" style="width: 12%">Valor</th>
                       <th class="text-center" style="width: 8%; cursor: pointer;" (click)="toggleTodosPagado()" title="Click para marcar/desmarcar todas">
                         Pagado <i class="bi bi-check-all ms-1"></i>
@@ -200,6 +201,14 @@
                           [ngClass]="d.pagado ? 'bg-light text-secondary border' : 'bg-warning text-dark'"
                         >
                           {{ d.descfpago }}
+                        </span>
+                      </td>
+                      <td class="text-center">
+                        <span
+                          class="badge"
+                          [ngClass]="d.tipopago === 2 ? 'bg-danger' : 'bg-success'"
+                        >
+                          {{ obtenerTipoVenta(d) }}
                         </span>
                       </td>
                       <td class="text-end fw-bold">{{ d.valFact | currency }}</td>
@@ -243,7 +252,7 @@
                       </td>
                     </tr>
                     <tr *ngIf="detalles.length === 0">
-                      <td colspan="8" class="text-center py-4 text-muted">
+                      <td colspan="9" class="text-center py-4 text-muted">
                         <i class="bi bi-inbox display-6 d-block mb-2 opacity-50"></i>
                         No hay facturas en el control de salida.
                       </td>

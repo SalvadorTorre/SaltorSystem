@@ -16,8 +16,10 @@ export interface ModeloClienteData{
   cl_codZona: number;
   cl_telClie: string;
   cl_tipo: string;
+  cl_limiteCredito?: number | null;
+  cl_diasCredito?: number | null;
   cl_status: boolean;
-  cl_rnc: number;
+  cl_rnc: string | number;
   cl_codSucursal?: string | null;
   cl_codsucursal?: string | null;
 }

@@ -195,6 +195,7 @@
                   <th class="text-center" style="width: 10%">Fecha</th>
                   <th class="text-center" style="width: 10%">Estado</th>
                   <th class="text-center" style="width: 15%">Forma Pago</th>
+                  <th class="text-center" style="width: 10%">Tipo de venta</th>
                   <th class="text-end" style="width: 10%">Valor</th>
                   <th class="text-center" style="width: 5%">Acción</th>
                 </tr>
@@ -218,6 +219,14 @@
                   <td class="text-center">
                     <span class="fw-medium">{{ getDescripcionFpago(item.codfpago) }}</span>
                   </td>
+                  <td class="text-center">
+                    <span
+                      class="badge"
+                      [ngClass]="item.tipopago === 2 ? 'bg-danger' : 'bg-success'"
+                    >
+                      {{ getTipoVenta(item) }}
+                    </span>
+                  </td>
                   <td class="text-end fw-bold">{{ item.valFact | currency }}</td>
                   <td class="text-center">
                     <button class="btn btn-sm btn-outline-danger border-0" 
@@ -228,7 +237,7 @@
                   </td>
                 </tr>
                 <tr *ngIf="detallesSalida.length === 0">
-                  <td colspan="9" class="text-center py-5 text-muted">
+                  <td colspan="10" class="text-center py-5 text-muted">
                     <i class="bi bi-box-seam display-4 d-block mb-3 opacity-50"></i>
                     No hay facturas agregadas para esta salida.
                   </td>
@@ -236,7 +245,7 @@
               </tbody>
               <tfoot class="bg-light border-top" *ngIf="detallesSalida.length > 0">
                 <tr>
-                  <td colspan="7" class="text-end fw-bold fs-5 py-3">Total Salida:</td>
+                  <td colspan="8" class="text-end fw-bold fs-5 py-3">Total Salida:</td>
                   <td class="text-end fw-bold fs-5 py-3 text-success">{{ totalSalida | currency }}</td>
                   <td></td>
                 </tr>

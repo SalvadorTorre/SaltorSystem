@@ -6,6 +6,7 @@ import { ModeloSectorData } from 'src/app/core/services/mantenimientos/sector';
 import { ServicioSector } from 'src/app/core/services/mantenimientos/sector/sector.service';
 import { ModeloZonaData } from 'src/app/core/services/mantenimientos/zonas';
 import { ServicioZona } from 'src/app/core/services/mantenimientos/zonas/zonas.service';
+import { ServicioRnc } from 'src/app/core/services/mantenimientos/rnc/rnc.service';
 import { BehaviorSubject, debounceTime, distinctUntilChanged, switchMap } from 'rxjs';
 import Swal from 'sweetalert2';
 declare var $: any;
@@ -37,15 +38,16 @@ export class Cliente implements OnInit {
   selectedCliente: any = null;
   private idBuscar = new BehaviorSubject<string>('');
   private descripcionBuscar = new BehaviorSubject<string>('');
+  private temporizadorBusquedaRnc: any = null;
 
-  constructor(private fb: FormBuilder, private servicioCliente: ServicioCliente, private servicioSector: ServicioSector, private servicioZona: ServicioZona) {
+  constructor(private fb: FormBuilder, private servicioCliente: ServicioCliente, private servicioSector: ServicioSector, private servicioZona: ServicioZona, private servicioRnc: ServicioRnc) {
     this.crearFormularioCliente();
     this.descripcionBuscar.pipe(
       debounceTime(1000),
       distinctUntilChanged(),
       switchMap(descripcion => {
         this.descripcion = descripcion;
-        return this.servicioCliente.buscarTodosCliente(this.currentPage, this.pageSize, this.codigo, this.descripcion);
+        return this.servicioCliente.buscarTodosCliente(this.currentPage, this.pageSize, this.codigo, this.descripcion, true);
       })
     )
     .subscribe(response => {
@@ -60,7 +62,7 @@ export class Cliente implements OnInit {
       distinctUntilChanged(),
       switchMap(codigo => {
         this.codigo = codigo;
-        return this.servicioCliente.buscarTodosCliente(this.currentPage, this.pageSize, this.codigo, this.descripcion);
+        return this.servicioCliente.buscarTodosCliente(this.currentPage, this.pageSize, this.codigo, this.descripcion, true);
       })
     )
     .subscribe(response => {
@@ -87,8 +89,13 @@ export class Cliente implements OnInit {
       cl_codZona: [{ value: '', disabled: true }],
       cl_telClie: [''],
       cl_tipo: [''],
+      cl_limiteCredito: [{ value: null, disabled: true }],
+      cl_diasCredito: [{ value: null, disabled: true }],
       cl_status: [true],
       cl_rnc: [''],
+    });
+    this.formularioCliente.get('cl_tipo')?.valueChanges.subscribe(tipo => {
+      this.actualizarCamposCredito(tipo);
     });
   }
 
@@ -102,7 +109,7 @@ export class Cliente implements OnInit {
     this.formularioCliente.reset();
     this.crearFormularioCliente();
     // Estado activo por defecto y zona deshabilitada
-    this.formularioCliente.patchValue({ cl_status: '1' });
+    this.formularioCliente.patchValue({ cl_status: '1', cl_tipo: 'CONTADO' });
     this.formularioCliente.get('cl_codZona')?.disable();
     $('#modalcliente').modal('show');
     this.habilitarFormulario = true;
@@ -128,10 +135,13 @@ export class Cliente implements OnInit {
       cl_codSect: clientes.cl_codSect,
       cl_codZona: clientes.cl_codZona,
       cl_telClie: (clientes.cl_telClie || '').toUpperCase(),
-      cl_tipo: clientes.cl_tipo,
+      cl_tipo: this.normalizarTipoCliente(clientes.cl_tipo),
+      cl_limiteCredito: clientes.cl_limiteCredito ?? null,
+      cl_diasCredito: clientes.cl_diasCredito ?? null,
       cl_status: clientes.cl_status ? '1' : '0',
       cl_rnc: clientes.cl_rnc,
     });
+    this.actualizarCamposCredito(this.formularioCliente.get('cl_tipo')?.value);
     // Mantener zona solo lectura
     this.formularioCliente.get('cl_codZona')?.disable();
     this.tituloModalCliente = 'Editando Cliente';
@@ -140,7 +150,7 @@ export class Cliente implements OnInit {
   }
 
   buscarTodosCliente(page: number) {
-    this.servicioCliente.buscarTodosCliente(page, this.pageSize, this.codigo, this.descripcion).subscribe(response => {
+    this.servicioCliente.buscarTodosCliente(page, this.pageSize, this.codigo, this.descripcion, true).subscribe(response => {
       this.clienteList = response.data;
       this.totalItems = response.pagination.total;
       this.currentPage = response.pagination.page;
@@ -150,7 +160,13 @@ export class Cliente implements OnInit {
   }
   consultarCliente(Cliente: ModeloClienteData) {
     this.tituloModalCliente = 'Consulta Cliente';
-    this.formularioCliente.patchValue(Cliente);
+    this.formularioCliente.patchValue({
+      ...Cliente,
+      cl_tipo: this.normalizarTipoCliente(Cliente.cl_tipo),
+      cl_limiteCredito: Cliente.cl_limiteCredito ?? null,
+      cl_diasCredito: Cliente.cl_diasCredito ?? null,
+    });
+    this.actualizarCamposCredito(this.formularioCliente.get('cl_tipo')?.value);
     $('#modalcliente').modal('show');
     this.habilitarFormulario = true;
     this.modoconsultaCliente = true;
@@ -209,6 +225,81 @@ export class Cliente implements OnInit {
       }
     }
   }
+
+  programarBusquedaRnc(): void {
+    if (this.temporizadorBusquedaRnc) {
+      clearTimeout(this.temporizadorBusquedaRnc);
+    }
+    this.temporizadorBusquedaRnc = setTimeout(() => this.buscarNombrePorRnc(), 500);
+  }
+
+  normalizarEntradaRnc(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const rnc = String(input.value || '').replace(/\D/g, '').slice(0, 11);
+    input.value = rnc;
+    this.formularioCliente.get('cl_rnc')?.setValue(rnc, { emitEvent: false });
+    this.programarBusquedaRnc();
+  }
+
+  buscarNombrePorRnc(): void {
+    const controlRnc = this.formularioCliente?.get('cl_rnc');
+    const rnc = String(controlRnc?.value ?? '').replace(/\D/g, '').trim();
+    if (rnc.length !== 9 && rnc.length !== 11) return;
+
+    controlRnc?.setValue(rnc, { emitEvent: false });
+    this.servicioRnc.buscarRncPorrncId(rnc).subscribe({
+      next: (response) => {
+        const registro = Array.isArray(response?.data)
+          ? response.data[0]
+          : response?.data;
+        const nombre = String(registro?.rason || '').trim();
+        if (!nombre) return;
+        const rncActual = String(
+          this.formularioCliente.get('cl_rnc')?.value ?? '',
+        ).replace(/\D/g, '').trim();
+        if (rncActual !== rnc) return;
+        this.formularioCliente.patchValue({
+          cl_nomClie: nombre.toUpperCase(),
+        });
+      },
+      error: (error) => {
+        console.warn('No se pudo buscar el RNC en la tabla rnc:', error);
+      },
+    });
+  }
+
+  get esClienteCredito(): boolean {
+    return this.normalizarTipoCliente(this.formularioCliente?.get('cl_tipo')?.value) === 'CREDITO';
+  }
+
+  private normalizarTipoCliente(tipo: any): string {
+    const valor = String(tipo ?? '').trim().toUpperCase();
+    if (valor === 'C' || valor === '2' || valor === 'CREDITO' || valor === 'CRÉDITO') return 'CREDITO';
+    return 'CONTADO';
+  }
+
+  private actualizarCamposCredito(tipo: any): void {
+    const limite = this.formularioCliente?.get('cl_limiteCredito');
+    const dias = this.formularioCliente?.get('cl_diasCredito');
+    if (!limite || !dias) return;
+
+    if (this.normalizarTipoCliente(tipo) === 'CREDITO') {
+      limite.enable({ emitEvent: false });
+      dias.enable({ emitEvent: false });
+      limite.setValidators([Validators.required, Validators.min(0.01)]);
+      dias.setValidators([Validators.required, Validators.min(1)]);
+    } else {
+      limite.reset(null, { emitEvent: false });
+      dias.reset(null, { emitEvent: false });
+      limite.clearValidators();
+      dias.clearValidators();
+      limite.disable({ emitEvent: false });
+      dias.disable({ emitEvent: false });
+    }
+    limite.updateValueAndValidity({ emitEvent: false });
+    dias.updateValueAndValidity({ emitEvent: false });
+  }
+
   guardarCliente() {
     console.log("aa", this.formularioCliente.value);
     if (this.formularioCliente.valid) {
@@ -219,6 +310,14 @@ export class Cliente implements OnInit {
         cl_dirClie: (raw.cl_dirClie || '').toUpperCase(),
         cl_telClie: (raw.cl_telClie || '').toUpperCase(),
         cl_status: raw.cl_status === true || raw.cl_status === '1',
+        cl_tipo: this.normalizarTipoCliente(raw.cl_tipo) === 'CREDITO' ? 'C' : null,
+        cl_limiteCredito: this.normalizarTipoCliente(raw.cl_tipo) === 'CREDITO'
+          ? Number(raw.cl_limiteCredito)
+          : null,
+        cl_diasCredito: this.normalizarTipoCliente(raw.cl_tipo) === 'CREDITO'
+          ? Number(raw.cl_diasCredito)
+          : null,
+        cl_codSucursal: String(localStorage.getItem('idSucursal') || '').trim(),
       };
       if (this.modoedicionCliente) {
         this.servicioCliente.editarCliente(this.clienteid, payload).subscribe(response => {
@@ -283,7 +382,7 @@ export class Cliente implements OnInit {
     // Trigger a new search with the current codigo and descripcion
     const codigo = this.idBuscar.getValue();
     const descripcion = this.descripcionBuscar.getValue();
-    this.servicioCliente.buscarTodosCliente(this.currentPage, this.pageSize, codigo, descripcion)
+    this.servicioCliente.buscarTodosCliente(this.currentPage, this.pageSize, codigo, descripcion, true)
       .subscribe(response => {
         this.clienteList = response.data;
         this.totalItems = response.pagination.total;

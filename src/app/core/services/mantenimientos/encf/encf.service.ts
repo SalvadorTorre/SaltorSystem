@@ -75,7 +75,8 @@ export class ServicioEncf {
     limit: number = 10,
     codigo?: string,
     descripcion?: string,
-    tipo?: string
+    tipo?: string,
+    empresaActiva?: string,
   ): Observable<any> {
     const currentPage = Math.max(Number(page || 1), 1);
     const pageSize = Math.max(Number(limit || 10), 1);
@@ -89,8 +90,13 @@ export class ServicioEncf {
           .order("id", { ascending: false })
           .range(offset, offset + pageSize - 1);
 
+        const empresa = String(empresaActiva || "").trim().toUpperCase();
+        if (empresa) {
+          query = query.eq("codempr", empresa);
+        }
+
         const cod = String(codigo || "").trim();
-        if (cod) {
+        if (cod && !empresa) {
           query = query.ilike("codempr", `%${cod}%`);
         }
 

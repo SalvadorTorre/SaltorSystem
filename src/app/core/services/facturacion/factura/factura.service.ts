@@ -1708,7 +1708,7 @@ export class ServicioFacturacion {
         const pageLimit = Math.min(pageSize, safeLimit - offset);
         let query = this.db
           .from('factura')
-          .select('fa_codfact,fa_ncffact,fa_rncfact,fa_tiponcf,fa_fecfact,fa_valfact,fa_itbifact,fa_subfact,fa_desfact,fa_codclie,fa_nomclie,fa_codvend,fa_nomvend,fa_fpago,fa_codfpago,fa_status,fa_codsucu,fa_codempr,fa_cierre,fa_entrega,fa_impresa,fa_facturada')
+          .select('fa_codfact,fa_ncffact,fa_rncfact,fa_tiponcf,fa_fecfact,fa_valfact,fa_itbifact,fa_subfact,fa_desfact,fa_codclie,fa_nomclie,fa_codvend,fa_nomvend,fa_fpago,fa_codfpago,fa_tipopago,fa_status,fa_codsucu,fa_codempr,fa_cierre,fa_entrega,fa_impresa,fa_facturada')
           .is('fa_cierre', null)
           .order('fa_codfact', { ascending: true })
           .range(offset, offset + pageLimit - 1);
