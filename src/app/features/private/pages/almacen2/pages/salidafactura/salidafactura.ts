@@ -19,6 +19,7 @@ interface DetalleSalida {
   fecFact: string;
   valFact: number;
   codfpago: string;
+  tipopago?: number;
   fa_status?: string;
   // Flag de pago: 'S' (pagada) / 'N' (pendiente)
   fpago: string;
@@ -354,6 +355,7 @@ private pickContFacturaRow(rows: any[], idsucursal: number): any | null {
                                fecFact: f.fa_fecFact,
                                valFact: Number(f.fa_valFact),
                                codfpago: String(f.fa_codfpago || '').trim(),
+                               tipopago: Number(f.fa_tipopago || 1),
                                fa_status: String(f.fa_status || '').trim(),
                                fpago: f.fa_fpago
                            });
@@ -682,6 +684,7 @@ agregarFactura() {
         fecFact: factura.fa_fecFact,
         valFact: Number(factura.fa_valFact),
         codfpago: String(factura.fa_codfpago || '').trim(),
+        tipopago: Number(factura.fa_tipopago || 1),
         fa_status: String(factura.fa_status || '').trim(),
         fpago: fpagoFlag
       });
@@ -712,6 +715,10 @@ agregarFactura() {
 
   getDescripcionFpago(codigo: string): string {
     return this.mapaFpagos.get(codigo) || codigo; // Si no encuentra, muestra el código
+  }
+
+  getTipoVenta(item: DetalleSalida): string {
+    return Number(item?.tipopago || 1) === 2 ? 'Crédito' : 'Contado';
   }
 
 

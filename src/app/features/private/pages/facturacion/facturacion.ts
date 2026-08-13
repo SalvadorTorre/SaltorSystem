@@ -57,6 +57,7 @@ import { ServicioNcf } from 'src/app/core/services/mantenimientos/ncf/ncf.servic
 import { ModeloNcfData } from 'src/app/core/services/mantenimientos/ncf';
 import { ServicioSalidafactura } from 'src/app/core/services/almacen/salidafactura/salidafactura.service';
 import { ItbisData, ServicioItbis } from 'src/app/core/services/mantenimientos/itbis/itbis.service';
+import { FacturaDgiiService } from 'src/app/core/services/facturacion/factura/factura-dgii.service';
 declare var $: any;
 
 interface ResumenConsultaFactura {
@@ -173,6 +174,9 @@ export class Facturacion implements OnInit, OnDestroy {
   detallePendienteConsulta: any[] = [];
   cargandoDetallePendienteConsulta: boolean = false;
   facturaConsultaActual: string = '';
+  enviandoFacturaConsultaDgii: boolean = false;
+  clientePermiteCredito: boolean = false;
+  diasCreditoCliente: number = 0;
 
   habilitarCampos: boolean = false;
 
@@ -208,6 +212,7 @@ export class Facturacion implements OnInit, OnDestroy {
     private servicioNcf: ServicioNcf,
     private servicioSalidaFactura: ServicioSalidafactura,
     private servicioItbis: ServicioItbis,
+    private facturaDgiiService: FacturaDgiiService,
   ) {
     this.form = this.fb.group({
       fa_codVend: ['', Validators.required], // El campo es requerido
@@ -575,6 +580,7 @@ export class Facturacion implements OnInit, OnDestroy {
       fa_desZona: [''],
       fa_fpago: [''],
       fa_codfpago: [''],
+      fa_tipopago: [1],
       fa_expFact: [''],
       fa_envio: [''],
       fa_ncfFact: [{ value: '', disabled: true }],
@@ -595,6 +601,7 @@ export class Facturacion implements OnInit, OnDestroy {
       ...factura,
       fa_codVend: String(factura?.fa_codVend ?? factura?.fa_codvend ?? '').trim(),
       fa_codfpago: String(factura?.fa_codfpago ?? '').trim(),
+      fa_tipopago: Number(factura?.fa_tipopago ?? 1),
       fa_envio: String(factura?.fa_envio ?? '').trim(),
     };
   }
@@ -697,6 +704,8 @@ export class Facturacion implements OnInit, OnDestroy {
     this.detallePendienteConsulta = [];
     this.cargandoDetallePendienteConsulta = false;
     this.facturaConsultaActual = '';
+    this.clientePermiteCredito = false;
+    this.diasCreditoCliente = 0;
     this.facturaOriginalEdicion = null;
     this.detalleOriginalEdicion = '';
     this.habilitarIcono = true;
@@ -984,7 +993,7 @@ export class Facturacion implements OnInit, OnDestroy {
       Boolean(String(factura.idsalida ?? '').trim());
 
     return {
-      pagada: this.banderaConsulta(factura.fa_fpago),
+      pagada: this.banderaConsulta(factura.fa_fpago, ['P']),
       documento: this.etiquetaDocumentoConsulta(factura.fa_status),
       estadoDgii: this.etiquetaEstadoDgii(
         (factura as any).estado_dgii || (factura as any).estado_envio_dgii,
@@ -1126,6 +1135,81 @@ export class Facturacion implements OnInit, OnDestroy {
     );
   }
 
+  get puedeEnviarFacturaConsultaDgii(): boolean {
+    const factura: any = this.facturaConsultaSeleccionada;
+    if (!this.modoconsultaFacturacion || !factura || this.enviandoFacturaConsultaDgii) {
+      return false;
+    }
+
+    const tipoNcf = String(factura.fa_tipoNcf ?? factura.fa_tiponcf ?? '').trim();
+    const estadoFactura = this.normalizarBandera(factura.fa_status);
+    const estadoDgii = String(
+      factura.estado_dgii || factura.estado_envio_dgii || '',
+    ).trim().toLowerCase();
+    const yaEnviada = Boolean(
+      String(factura.dgii_track_id || '').trim() ||
+      String(factura.codseguridad || '').trim() ||
+      estadoDgii.includes('acept') ||
+      estadoDgii.includes('enviad'),
+    );
+
+    return Boolean(
+      tipoNcf === '31' &&
+      estadoFactura === 'C' &&
+      !yaEnviada &&
+      this.facturaDgiiService.esAptaParaEnvio(factura)
+    );
+  }
+
+  async enviarFacturaConsultaDgii(): Promise<void> {
+    const factura: any = this.facturaConsultaSeleccionada;
+    if (!factura || !this.puedeEnviarFacturaConsultaDgii) return;
+
+    const codigo = String(factura.fa_codFact || factura.fa_codfact || '').trim();
+    const confirmacion = await Swal.fire({
+      title: 'Enviar factura a DGII',
+      text: `Se enviará la factura ${codigo} y luego se imprimirá.`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Enviar e imprimir',
+      cancelButtonText: 'Cancelar',
+    });
+    if (!confirmacion.isConfirmed) return;
+
+    this.enviandoFacturaConsultaDgii = true;
+    Swal.fire({
+      title: 'Enviando factura a DGII',
+      text: `Factura ${codigo}`,
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+      didOpen: () => Swal.showLoading(),
+    });
+
+    try {
+      const actualizada = await this.facturaDgiiService.procesar(
+        factura,
+        (mensaje) => {
+          if (Swal.isVisible()) Swal.update({ text: mensaje });
+        },
+        { imprimir: true },
+      );
+      this.facturaConsultaSeleccionada = actualizada as FacturacionModelData;
+      this.resumenConsultaFactura = this.crearResumenConsultaFactura(actualizada);
+      await Swal.fire({
+        title: 'Factura enviada',
+        text: `La factura ${codigo} fue enviada a DGII e impresa.`,
+        icon: 'success',
+      });
+    } catch (error: any) {
+      const mensaje = String(
+        error?.error?.message || error?.message || 'No se pudo enviar la factura a DGII.',
+      );
+      await Swal.fire({ title: 'Error', text: mensaje, icon: 'error' });
+    } finally {
+      this.enviandoFacturaConsultaDgii = false;
+    }
+  }
+
   private etiquetaEstadoDgii(valor: any): string {
     return String(valor || '').trim() || 'Sin enviar';
   }
@@ -1244,13 +1328,14 @@ export class Facturacion implements OnInit, OnDestroy {
 
   private calcularFechaExpiracionCredito(
     fechaFactura: string | Date | null | undefined,
+    diasCredito = 30,
   ): string {
     const fechaBase = this.toPrismaDate(fechaFactura);
     if (!/^\d{4}-\d{2}-\d{2}$/.test(fechaBase)) return '';
 
     const [year, month, day] = fechaBase.split('-').map(Number);
     const fecha = new Date(year, month - 1, day);
-    fecha.setDate(fecha.getDate() + 30);
+    fecha.setDate(fecha.getDate() + Math.max(Number(diasCredito || 0), 0));
     return this.toPrismaDate(fecha);
   }
 
@@ -2398,7 +2483,7 @@ export class Facturacion implements OnInit, OnDestroy {
       }
     }
   }
-  cargarDatosCliente(cliente: ModeloClienteData) {
+  async cargarDatosCliente(cliente: ModeloClienteData) {
     this.resultadoNombre = [];
     if (cliente.cl_nomClie !== '') {
       console.log(this.resultadoNombre);
@@ -2414,6 +2499,23 @@ export class Facturacion implements OnInit, OnDestroy {
         },
         { emitEvent: false },
       );
+      this.clientePermiteCredito = String(cliente.cl_tipo || '').trim().toUpperCase() === 'C';
+      this.diasCreditoCliente = Math.max(Number(cliente.cl_diasCredito || 0), 0);
+      let tipoVenta = 1;
+      if (this.clientePermiteCredito) {
+        const respuesta = await Swal.fire({
+          title: '¿Tipo de venta?',
+          text: `El cliente tiene crédito autorizado${this.diasCreditoCliente ? ` por ${this.diasCreditoCliente} días` : ''}.`,
+          icon: 'question',
+          showDenyButton: true,
+          confirmButtonText: 'Crédito',
+          denyButtonText: 'Contado',
+          allowOutsideClick: false,
+          allowEscapeKey: false,
+        });
+        tipoVenta = respuesta.isConfirmed ? 2 : 1;
+      }
+      this.actualizarTipoVenta(tipoVenta);
       this.actualizarTipoNcfPorRnc(cliente.cl_rnc);
       console.log(cliente);
       console.log('Formulario actualizado:', this.formularioFacturacion.value);
@@ -2899,6 +3001,23 @@ export class Facturacion implements OnInit, OnDestroy {
     }
   }
 
+  cambiarTipoVenta(): void {
+    const tipo = Number(this.formularioFacturacion.get('fa_tipopago')?.value || 1);
+    this.actualizarTipoVenta(tipo);
+  }
+
+  private actualizarTipoVenta(tipo: number): void {
+    const esCredito = tipo === 2 && this.clientePermiteCredito;
+    const tipoVenta = esCredito ? 2 : 1;
+    const vencimiento = esCredito
+      ? this.calcularFechaExpiracionCredito(new Date(), this.diasCreditoCliente)
+      : null;
+    this.formularioFacturacion.patchValue(
+      { fa_tipopago: tipoVenta, fa_expFact: vencimiento },
+      { emitEvent: false },
+    );
+  }
+
   private async validarRncAntesDeGuardar(): Promise<boolean> {
     const rnc = String(
       this.formularioFacturacion.get('fa_rncFact')?.value || '',
@@ -3004,7 +3123,7 @@ export class Facturacion implements OnInit, OnDestroy {
       ...this.formularioFacturacion.getRawValue(),
     } as any;
     facturaPayload.fa_status = 'C';
-    facturaPayload.fa_tipopago = 1;
+    facturaPayload.fa_tipopago = Number(facturaPayload.fa_tipopago) === 2 ? 2 : 1;
     if (!this.modoedicionFacturacion) {
       facturaPayload.fa_salida = 'N';
       facturaPayload.fa_impresa = 'N';
@@ -3057,12 +3176,19 @@ export class Facturacion implements OnInit, OnDestroy {
     facturaPayload.fa_tipoitbis = itbisFactura.codigo;
     this.formularioFacturacion.patchValue({ fa_tipoitbis: itbisFactura.codigo }, { emitEvent: false });
     facturaPayload.fa_fecFact = this.toPrismaDate(facturaPayload.fa_fecFact);
-    if (Number(facturaPayload.fa_codfpago) === 2) {
+    if (Number(facturaPayload.fa_tipopago) === 2 && !this.modoedicionFacturacion) {
       facturaPayload.fa_expFact = this.calcularFechaExpiracionCredito(
-        facturaPayload.fa_fecFact,
+        new Date(),
+        this.diasCreditoCliente,
       );
       this.formularioFacturacion.patchValue(
         { fa_expFact: facturaPayload.fa_expFact },
+        { emitEvent: false },
+      );
+    } else if (Number(facturaPayload.fa_tipopago) !== 2) {
+      facturaPayload.fa_expFact = null;
+      this.formularioFacturacion.patchValue(
+        { fa_expFact: null },
         { emitEvent: false },
       );
     }

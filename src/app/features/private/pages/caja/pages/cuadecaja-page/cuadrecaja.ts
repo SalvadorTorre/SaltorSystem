@@ -84,16 +84,23 @@ export class CuadreCaja implements OnInit {
   }
 
   obtenerFormaPagoVisible(factura: any): string {
+    if (this.esCreditoPendiente(factura)) return 'Crédito';
     if (!this.facturaEstaPagada(factura)) return '';
     return this.obtenerDescripcionPago(factura.fa_codfpago || factura.fa_fpago);
   }
 
   obtenerCodigoPagoVisible(factura: any): string {
+    if (this.esCreditoPendiente(factura)) return 'CRÉDITO';
     if (!this.facturaEstaPagada(factura)) return '';
     return String(factura?.fa_codfpago ?? '').trim();
   }
 
   esFacturaCredito(factura: any): boolean {
+    const tipoVenta = Number(factura?.fa_tipopago ?? 1);
+    if (tipoVenta === 2) {
+      return true;
+    }
+
     if (Number(factura?.fa_codfpago) === 3) {
       return false;
     }
@@ -103,6 +110,10 @@ export class CuadreCaja implements OnInit {
       .replace(/[\u0300-\u036f]/g, '')
       .toLowerCase();
     return descripcion.includes('credito');
+  }
+
+  esCreditoPendiente(factura: any): boolean {
+    return !this.facturaEstaPagada(factura) && this.esFacturaCredito(factura);
   }
 
   facturaTieneCierre(factura: any): boolean {
@@ -125,7 +136,7 @@ export class CuadreCaja implements OnInit {
   }
 
   obtenerEtiquetaPago(factura: any): string {
-    if (this.esFacturaCredito(factura)) {
+    if (this.esCreditoPendiente(factura)) {
         return 'CREDITO';
     }
     if (this.facturaEstaPagada(factura)) {
@@ -252,7 +263,7 @@ export class CuadreCaja implements OnInit {
         return;
       }
 
-      if (this.esFacturaCredito(f)) {
+      if (this.esCreditoPendiente(f)) {
         this.totales.credito += monto;
         return;
       }

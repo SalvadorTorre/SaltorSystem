@@ -174,10 +174,14 @@
                   <div class="col-md-6">
                     <div class="form-floating">
                       <input
-                        type="number"
+                        type="text"
+                        inputmode="numeric"
+                        maxlength="11"
+                        pattern="[0-9]*"
                         id="cl_rnc"
                         class="form-control uppercase-input"
-                        (input)="convertToUpperCase($event)"
+                        (input)="normalizarEntradaRnc($event)"
+                        (blur)="buscarNombrePorRnc()"
                         (keydown)="moveFocus($event, input2)"
                         #input1
                         formControlName="cl_rnc"
@@ -268,15 +272,48 @@
                   </div>
                   <div class="col-md-6">
                     <div class="form-floating">
-                      <input
+                      <select
                         id="cl_tipo"
                         formControlName="cl_tipo"
-                        class="form-control"
-                        placeholder="Tipo"
-                      />
-                      <label for="cl_tipo">Tipo</label>
+                        class="form-select"
+                      >
+                        <option value="CONTADO">Contado</option>
+                        <option value="CREDITO">Crédito</option>
+                      </select>
+                      <label for="cl_tipo">Tipo de cliente</label>
                     </div>
                   </div>
+
+                  <ng-container *ngIf="esClienteCredito">
+                    <div class="col-md-6">
+                      <div class="form-floating">
+                        <input
+                          type="number"
+                          id="cl_limiteCredito"
+                          formControlName="cl_limiteCredito"
+                          class="form-control"
+                          min="0.01"
+                          step="0.01"
+                          placeholder="Límite de crédito"
+                        />
+                        <label for="cl_limiteCredito">Límite de crédito</label>
+                      </div>
+                    </div>
+                    <div class="col-md-6">
+                      <div class="form-floating">
+                        <input
+                          type="number"
+                          id="cl_diasCredito"
+                          formControlName="cl_diasCredito"
+                          class="form-control"
+                          min="1"
+                          step="1"
+                          placeholder="Días de crédito"
+                        />
+                        <label for="cl_diasCredito">Cantidad de días de crédito</label>
+                      </div>
+                    </div>
+                  </ng-container>
                   
                   <!-- Quinta fila -->
                   <div class="col-md-6">

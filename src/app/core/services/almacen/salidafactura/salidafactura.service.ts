@@ -802,7 +802,7 @@ export class ServicioSalidafactura {
       if (statusSolicitado === 'C' && codsalida && detalles.length > 0) {
         const { data: detallesCerrados, error: closeDetErr } = await this.db
           .from('detsalida')
-          .update({ status: 'C', pagado: 'S' })
+          .update({ status: 'C' })
           .eq('codsalida', codsalida)
           .select('codfact,status,pagado');
         if (closeDetErr) throw closeDetErr;
@@ -816,8 +816,7 @@ export class ServicioSalidafactura {
         const codfactsCerrados = new Set<string>(
           cerrados
             .filter((d: any) =>
-              String(d?.status || '').trim().toUpperCase() === 'C' &&
-              String(d?.pagado || '').trim().toUpperCase() === 'S'
+              String(d?.status || '').trim().toUpperCase() === 'C'
             )
             .map((d: any) => String(d?.codfact || '').trim())
             .filter(Boolean),

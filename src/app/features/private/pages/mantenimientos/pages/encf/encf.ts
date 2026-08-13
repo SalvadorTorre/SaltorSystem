@@ -28,6 +28,7 @@ export class EncfComponent implements OnInit {
   filtroTipo: string = '';
   filtroDescripcion: string = '';
   paginacion: { total: number; page: number; limit: number; totalPages: number } = { total: 0, page: 1, limit: this.limit, totalPages: 1 };
+  readonly empresaActiva = String(localStorage.getItem('codigoempresa') || '').trim().toUpperCase();
 
   constructor(
     private servicioEncf: ServicioEncf,
@@ -36,6 +37,7 @@ export class EncfComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.filtroCodempr = this.empresaActiva;
     this.cargarEncf();
     this.cargarTiposNcf();
     this.cargarEmpresas();
@@ -63,12 +65,13 @@ export class EncfComponent implements OnInit {
 
   abrirNuevoEncf(): void {
     this.limpiarFormulario();
+    this.encf.codempr = this.empresaActiva;
     this.abrirModalEncf();
   }
 
   cargarEncf(): void {
     this.servicioEncf
-      .listarEncf(this.page, this.limit, this.filtroCodempr || undefined, this.filtroDescripcion || undefined, this.filtroTipo || undefined)
+      .listarEncf(this.page, this.limit, undefined, this.filtroDescripcion || undefined, this.filtroTipo || undefined, this.empresaActiva)
       .subscribe({
         next: (resp) => {
           // El controlador obtenerEncf devuelve {status, code, message, data, pagination}
@@ -115,7 +118,11 @@ export class EncfComponent implements OnInit {
     // Cargamos las empresas para el selector de empresa
     this.servicioEmpresa.buscarTodasEmpresa(1, 100).subscribe({
       next: (resp) => {
-        this.empresas = resp?.data ?? [];
+        const empresas = resp?.data ?? [];
+        this.empresas = empresas.filter(
+          (empresa: EmpresaModelData) =>
+            String(empresa?.cod_empre || '').trim().toUpperCase() === this.empresaActiva,
+        );
       },
       error: (err) => {
         console.error('Error cargando empresas', err);
@@ -149,7 +156,7 @@ export class EncfComponent implements OnInit {
 
   private existeDuplicado(codempr: string, tipoencf: string, currentId?: number): Observable<boolean> {
     return this.servicioEncf
-      .listarEncf(1, 5, codempr, undefined, tipoencf)
+      .listarEncf(1, 5, undefined, undefined, tipoencf, this.empresaActiva)
       .pipe(
         map((resp: any) => {
           const data = Array.isArray(resp) ? resp : resp?.data;
@@ -165,7 +172,7 @@ export class EncfComponent implements OnInit {
   }
 
   limpiarFiltros(): void {
-    this.filtroCodempr = '';
+    this.filtroCodempr = this.empresaActiva;
     this.filtroTipo = '';
     this.filtroDescripcion = '';
     this.page = 1;
@@ -179,6 +186,7 @@ export class EncfComponent implements OnInit {
   }
 
   guardarEncf() {
+    this.encf.codempr = this.empresaActiva;
     if (!this.encf.codempr || !this.encf.tipoencf || !this.encf.fechaencf) {
       Swal.fire({
         title: 'Formulario incompleto',
@@ -262,6 +270,7 @@ export class EncfComponent implements OnInit {
 
   limpiarFormulario() {
     this.encf = new EncfModel();
+    this.encf.codempr = this.empresaActiva;
     this.editIndex = -1;
   }
 

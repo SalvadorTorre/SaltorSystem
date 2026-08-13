@@ -75,6 +75,8 @@ export class ServicioCliente {
       cl_codZona: row?.cl_codzona ?? row?.cl_codZona ?? null,
       cl_telClie: row?.cl_telclie ?? row?.cl_telClie ?? "",
       cl_tipo: row?.cl_tipo ?? "",
+      cl_limiteCredito: row?.cl_limclie ?? row?.cl_limiteCredito ?? null,
+      cl_diasCredito: row?.dias ?? row?.cl_diasCredito ?? null,
       cl_status: this.toBoolean(row?.cl_status),
       cl_rnc: row?.cl_rnc ?? null,
       cl_codSucursal: row?.cl_codsucursal ?? row?.cl_codSucursal ?? null,
@@ -91,11 +93,17 @@ export class ServicioCliente {
       cl_codzona: this.toNullableNumber(cliente?.cl_codZona ?? cliente?.cl_codzona),
       cl_telclie: this.toNullableString(cliente?.cl_telClie ?? cliente?.cl_telclie),
       cl_tipo: this.toNullableString(cliente?.cl_tipo),
+      cl_limclie: this.toNullableNumber(
+        cliente?.cl_limiteCredito ?? cliente?.cl_limclie,
+      ),
+      dias: this.toNullableNumber(
+        cliente?.cl_diasCredito ?? cliente?.dias,
+      ),
       cl_status:
         cliente?.cl_status !== undefined
-          ? this.toBoolean(cliente?.cl_status)
+          ? (this.toBoolean(cliente?.cl_status) ? 1 : 0)
           : undefined,
-      cl_rnc: this.toNullableNumber(cliente?.cl_rnc),
+      cl_rnc: this.toNullableString(cliente?.cl_rnc),
       cl_codsucursal:
         this.toNullableString(cliente?.cl_codSucursal ?? cliente?.cl_codsucursal),
     };
@@ -113,7 +121,8 @@ export class ServicioCliente {
     pageIndex: number,
     pageSize: number,
     codigo?: string,
-    descripcion?: string
+    descripcion?: string,
+    filtrarSucursalUsuario = false,
   ): Observable<any> {
     const page = Math.max(Number(pageIndex || 1), 1);
     const limit = Math.max(Number(pageSize || 10), 1);
@@ -126,6 +135,7 @@ export class ServicioCliente {
           .select("*", { count: "exact" })
           .order("cl_codclie", { ascending: true })
           .range(offset, offset + limit - 1);
+        query = this.filtrarPorSucursalUsuario(query, filtrarSucursalUsuario);
 
         const codigoTxt = String(codigo || "").trim();
         if (codigoTxt) {
@@ -186,6 +196,24 @@ export class ServicioCliente {
         message: "Cliente guardado",
         data: row,
       }))
+    );
+  }
+
+  buscarNombrePorRnc(rnc: string): Observable<string | null> {
+    const numero = String(rnc || "").replace(/\D/g, "").trim();
+    if (!numero) return of(null);
+
+    return from(
+      (async () => {
+        const { data, error } = await this.db
+          .from("rnc")
+          .select("rason")
+          .eq("rnc", numero)
+          .maybeSingle();
+        if (error) throw error;
+        const nombre = String(data?.rason || "").trim();
+        return nombre || null;
+      })()
     );
   }
 
