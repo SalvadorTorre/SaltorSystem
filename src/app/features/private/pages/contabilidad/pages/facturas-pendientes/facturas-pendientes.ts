@@ -78,7 +78,7 @@ export class FacturasPendientesComponent implements OnInit {
         this.allFacturas = (response.data || [])
           .filter((factura: any) =>
             !this.esStatusExcluido(factura) &&
-            (this.faltaNcf(factura) || this.esRechazadaDgii(factura)) &&
+            (this.faltaNcf(factura) || this.esRechazadaDgii(factura) || this.esSuccessEnvioDgii(factura)) &&
             this.cumpleFiltrosLocales(factura)
           )
           .sort(
@@ -194,6 +194,10 @@ export class FacturasPendientesComponent implements OnInit {
 
   esRechazadaDgii(factura: any): boolean {
     return this.normalizarTexto(factura?.estado_dgii).includes('RECHAZADO');
+  }
+
+  esSuccessEnvioDgii(factura: any): boolean {
+    return this.normalizarTexto(factura?.estado_envio_dgii).includes('SUCCESS');
   }
 
   estadoDgiiTexto(factura: any): string {
