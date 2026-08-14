@@ -473,8 +473,12 @@ export class ControlFact implements OnInit, OnDestroy {
         __invoiceTitle: this.tituloImpresionFactura(facturaCompleta),
         __singlePrintCopy: true,
         __copyLabel: status === 'C' ? 'CONDUCTOR' : 'CLIENTE',
+        __hideCopyLabel: status === 'C',
+        __combineDescriptionCode: true,
+        __detailFontSize: 8,
+        __stampSpaceAfterTotal: status === 'C' ? 0 : 35,
         __hideInvoiceDetails: false,
-        __thermalShiftX: -3,
+        __thermalShiftX: -4,
       };
 
       Swal.close();

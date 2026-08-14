@@ -210,7 +210,8 @@ export class PrintingService {
       String(copyLabel || '').trim().toUpperCase() === 'CONDUCTOR'
         ? 45
         : 0;
-    const altura = 320 + totalLineas * 13 + datosEnvio;
+    const espacioSello = Math.max(0, Number(facturaData?.__stampSpaceAfterTotal) || 0);
+    const altura = 320 + totalLineas * 13 + datosEnvio + espacioSello;
     return Math.max(297, Math.min(altura, 5000));
   }
 
@@ -380,7 +381,7 @@ export class PrintingService {
         doc.text(text, centerX, y, { align: 'center', ...options });
       };
 
-      if (copyLabel) {
+      if (copyLabel && !facturaData?.__hideCopyLabel) {
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(10);
         doc.text(copyLabel, leftMargin, yPos);
@@ -559,7 +560,7 @@ export class PrintingService {
         .replace(/[\u0300-\u036f]/g, '')
         .toUpperCase()
         .includes('RECHAZ');
-      if (respuestaDgiiRechazada) {
+      if (respuestaDgiiRechazada && !facturaData?.__hideDgiiAction) {
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(11);
         centerText('ACCION DGII: RECHAZADA', yPos);
@@ -567,9 +568,13 @@ export class PrintingService {
         doc.setFontSize(9);
       }
 
-      doc.setFont('helvetica', 'normal');
+      doc.setFont(
+        'helvetica',
+        facturaData?.__boldInvoiceNumbers ? 'bold' : 'normal',
+      );
       doc.text(`NCF: ${ncf}`, leftMargin, yPos);
       yPos += 4;
+      doc.setFont('helvetica', 'normal');
 
       // Format Date Helper
       const formatDate = (date: Date) => {
@@ -584,7 +589,12 @@ export class PrintingService {
 
       doc.text(`Fecha: ${formatDate(fecha)}`, leftMargin, yPos);
       yPos += 4;
+      doc.setFont(
+        'helvetica',
+        facturaData?.__boldInvoiceNumbers ? 'bold' : 'normal',
+      );
       doc.text(`Factura: ${codFact}`, leftMargin, yPos);
+      doc.setFont('helvetica', 'normal');
       yPos += 4;
 
       drawDashedLine(yPos);
@@ -617,14 +627,20 @@ export class PrintingService {
       const xPrecio = 28 + shiftX;
       const xItbis = 49 + shiftX;
       const xValor = pageWidth - rightMargin;
+      const combineDescriptionCode = !!facturaData?.__combineDescriptionCode;
+      const detailFontSize = Math.max(7, Number(facturaData?.__detailFontSize) || 6.5);
 
       if (!hideInvoiceDetails) {
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(6.5);
-        doc.text('COD', xCod, yPos);
-        doc.text('DESC', xDesc, yPos);
-        doc.text('CANT', xCant, yPos, { align: 'right' });
+        doc.setFontSize(detailFontSize);
+        if (combineDescriptionCode) {
+          doc.text('DESCRIPCION (CODIGO)', xCod, yPos);
+        } else {
+          doc.text('COD', xCod, yPos);
+          doc.text('DESC', xDesc, yPos);
+        }
         yPos += 4;
+        doc.text('CANT', xCod, yPos);
         doc.text('PRECIO', xPrecio, yPos, { align: 'right' });
         doc.text('ITBIS', xItbis, yPos, { align: 'right' });
         doc.text('VALOR', xValor, yPos, { align: 'right' });
@@ -634,6 +650,7 @@ export class PrintingService {
       }
 
       doc.setFont('helvetica', 'normal');
+      doc.setFontSize(detailFontSize);
 
       const formatoMoneda = new Intl.NumberFormat('es-DO', {
         style: 'decimal',
@@ -703,14 +720,20 @@ export class PrintingService {
         totalImpresion += totalItem;
 
         if (!hideInvoiceDetails) {
-          const codigoCorto = truncateText(codigo, 11);
-          const descCorta = truncateText(desc, 37);
-          const itemY = yPos;
-          doc.text(codigoCorto, xCod, itemY);
-          doc.text(descCorta, xDesc, yPos);
-
-          doc.text(formatoMoneda.format(Number(cant || 0)), xCant, yPos, { align: 'right' });
+          if (combineDescriptionCode) {
+            const descripcionCodigo = truncateText(
+              `${String(desc || '').trim()}(${String(codigo || '').trim()})`,
+              pageWidth - rightMargin - xCod,
+            );
+            doc.text(descripcionCodigo, xCod, yPos);
+          } else {
+            const codigoCorto = truncateText(codigo, 11);
+            const descCorta = truncateText(desc, 37);
+            doc.text(codigoCorto, xCod, yPos);
+            doc.text(descCorta, xDesc, yPos);
+          }
           yPos += 4;
+          doc.text(formatoMoneda.format(Number(cant || 0)), xCod, yPos);
           doc.text(formatoMoneda.format(precioSinItbis), xPrecio, yPos, { align: 'right' });
           doc.text(formatoMoneda.format(itbisItem), xItbis, yPos, {
             align: 'right',
@@ -763,7 +786,22 @@ export class PrintingService {
       yPos += 6;
       doc.setFontSize(8);
 
-      if (['CLIENTE', 'CONDUCTOR'].includes(copyLabel.toUpperCase())) {
+      const stampSpaceAfterTotal = Math.max(
+        0,
+        Number(facturaData?.__stampSpaceAfterTotal) || 0,
+      );
+      if (stampSpaceAfterTotal > 0) {
+        if (facturaData?.__drawStampBox) {
+          doc.setLineWidth(0.3);
+          doc.rect(
+            leftMargin,
+            yPos + 2,
+            pageWidth - leftMargin - rightMargin,
+            Math.max(10, stampSpaceAfterTotal - 4),
+          );
+        }
+        yPos += stampSpaceAfterTotal;
+      } else if (['CLIENTE', 'CONDUCTOR'].includes(copyLabel.toUpperCase())) {
         yPos += 24;
       }
 
@@ -1919,7 +1957,7 @@ items.forEach((it: any) => {
         doc.text(String(text), centerX, y, { align: 'center', ...options });
       };
 
-      if (copyLabel) {
+      if (copyLabel && !facturaData?.__hideCopyLabel) {
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(10);
         doc.text(copyLabel, leftMargin, yPos);
@@ -2014,7 +2052,12 @@ items.forEach((it: any) => {
       doc.text(`Factura: ${f.fa_codFact || ''}`, leftMargin, yPos);
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(10);
-      doc.text(formatDateShort(fecha), pageWidth - rightMargin, yPos, { align: 'right' });
+      doc.text(
+        formatDateShort(fecha),
+        pageWidth - rightMargin - (facturaData?.__combineDescriptionCode ? 3 : 0),
+        yPos,
+        { align: 'right' },
+      );
       yPos += 4;
       if (tieneHoraFactura) {
         doc.text(`Hora: ${formatTimeShort(fechaHora)}`, leftMargin, yPos);
@@ -2055,27 +2098,32 @@ items.forEach((it: any) => {
 
       drawDashedLine(yPos);
       yPos += 5;
+      const combineDescriptionCode = !!facturaData?.__combineDescriptionCode;
       const xCant = leftMargin;
-      const xPrecio = 36 + shiftX;
-      const xItbis = 55 + shiftX;
-      const xValor = pageWidth - rightMargin;
+      const xPrecio = combineDescriptionCode ? 28 : 36 + shiftX;
+      const xItbis = combineDescriptionCode ? 44 : 55 + shiftX;
+      const xValor = combineDescriptionCode ? pageWidth - rightMargin - 3 : pageWidth - rightMargin;
       const xCod = leftMargin;
       const xDesc = 23 + shiftX;
       if (!hideInvoiceDetails) {
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(10);
+        doc.setFontSize(combineDescriptionCode ? 8 : 10);
         doc.text('CANT', xCant, yPos);
         doc.text('PRECIO', xPrecio, yPos, { align: 'right' });
         doc.text('ITBIS', xItbis, yPos, { align: 'right' });
         doc.text('VALOR', xValor, yPos, { align: 'right' });
         yPos += 5;
-        doc.text('CODIGO', xCod, yPos);
-        doc.text('DESCRIPCION', xDesc, yPos);
+        if (combineDescriptionCode) {
+          doc.text('DESCRIPCION (CODIGO)', xCod, yPos);
+        } else {
+          doc.text('CODIGO', xCod, yPos);
+          doc.text('DESCRIPCION', xDesc, yPos);
+        }
         yPos += 2;
         drawDashedLine(yPos);
         yPos += 4;
         doc.setFont('helvetica', 'normal');
-        doc.setFontSize(10);
+        doc.setFontSize(combineDescriptionCode ? 8 : 10);
       } else {
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(9);
@@ -2151,12 +2199,23 @@ items.forEach((it: any) => {
           doc.text(formatoMoneda.format(itbisItem), xItbis, yPos, { align: 'right' });
           doc.text(formatoMoneda.format(totalItem), xValor, yPos, { align: 'right' });
           yPos += 5.5;
-          const codigoCorto = truncateText(codigo, 15);
-          const descCorta = truncateText(desc, pageWidth - rightMargin - xDesc);
-          doc.setFont('helvetica', 'bold');
-          doc.text(codigoCorto, xCod, yPos);
-          doc.setFont('helvetica', 'normal');
-          doc.text(descCorta, xDesc, yPos);
+          if (combineDescriptionCode) {
+            const descripcionCodigo = truncateText(
+              `${String(desc || '').trim()}(${String(codigo || '').trim()})`,
+              pageWidth - rightMargin - xCod,
+            );
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(8);
+            doc.text(descripcionCodigo, xCod, yPos);
+            doc.setFontSize(8);
+          } else {
+            const codigoCorto = truncateText(codigo, 15);
+            const descCorta = truncateText(desc, pageWidth - rightMargin - xDesc);
+            doc.setFont('helvetica', 'bold');
+            doc.text(codigoCorto, xCod, yPos);
+            doc.setFont('helvetica', 'normal');
+            doc.text(descCorta, xDesc, yPos);
+          }
           yPos += 5.5;
         }
       });
@@ -2270,9 +2329,9 @@ items.forEach((it: any) => {
         format: [80, 297],
       });
       const pageWidth = 74;
-      const centerX = pageWidth / 2;
-      const leftMargin = 5;
-      const rightMargin = 5;
+      const leftMargin = 3;
+      const rightMargin = 7;
+      const centerX = (leftMargin + (pageWidth - rightMargin)) / 2;
       let yPos = 5;
 
       const formatoMoneda = new Intl.NumberFormat('es-DO', {
@@ -2439,14 +2498,15 @@ items.forEach((it: any) => {
       yPos += 5;
 
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(6.2);
+      doc.setFontSize(7.2);
       const xCant = leftMargin;
-      const xDesc = 13;
-      const xPrecio = 41;
-      const xItbis = 55;
+      const xDesc = leftMargin;
+      const xPrecio = 24;
+      const xItbis = 45;
       const xTotal = pageWidth - rightMargin;
-      doc.text('CANT', xCant, yPos);
       doc.text('DESC', xDesc, yPos);
+      doc.text('CANT', xTotal, yPos, { align: 'right' });
+      yPos += 4;
       doc.text('PRECIO', xPrecio, yPos, { align: 'right' });
       doc.text('ITBIS', xItbis, yPos, { align: 'right' });
       doc.text('TOTAL', xTotal, yPos, { align: 'right' });
@@ -2455,7 +2515,7 @@ items.forEach((it: any) => {
       yPos += 4;
 
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(6.2);
+      doc.setFontSize(7.2);
       let subtotal = 0;
       let totalItbis = 0;
       let totalIncluido = 0;
@@ -2476,13 +2536,18 @@ items.forEach((it: any) => {
         totalItbis += itbisItem;
         totalIncluido += total;
 
-        const descSplit = doc.splitTextToSize(descripcion, 24);
-        doc.text(formatoMoneda.format(cantidad), xCant, yPos);
-        doc.text(descSplit, xDesc, yPos);
+        let descripcionCorta = descripcion;
+        const anchoDescripcion = xTotal - xDesc - 13;
+        while (descripcionCorta && doc.getTextWidth(descripcionCorta) > anchoDescripcion) {
+          descripcionCorta = descripcionCorta.slice(0, -1);
+        }
+        doc.text(descripcionCorta, xDesc, yPos);
+        doc.text(formatoMoneda.format(cantidad), xTotal, yPos, { align: 'right' });
+        yPos += 4;
         doc.text(formatoMoneda.format(precioSinItbis), xPrecio, yPos, { align: 'right' });
         doc.text(formatoMoneda.format(itbisItem), xItbis, yPos, { align: 'right' });
         doc.text(formatoMoneda.format(total), xTotal, yPos, { align: 'right' });
-        yPos += Math.max(4.5, descSplit.length * 4 + 1);
+        yPos += 5;
       });
 
       const itbis = totalItbis || Number(cotizacionData?.ct_itbis ?? 0) || 0;

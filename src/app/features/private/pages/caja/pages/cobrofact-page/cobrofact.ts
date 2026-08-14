@@ -1943,6 +1943,13 @@ export class CobroFact implements OnInit {
           facturaData?.fa_tipoitbis ??
           datosLocalesImpresion?.fa_tipoitbis,
       ),
+      __hideDgiiAction: true,
+      __boldInvoiceNumbers: true,
+      __thermalShiftX: -4,
+      __combineDescriptionCode: true,
+      __detailFontSize: 7.5,
+      __stampSpaceAfterTotal: 35,
+      __drawStampBox: true,
     };
 
     const itemsImpresion = this.deduplicarItemsImpresion([...this.items]);
