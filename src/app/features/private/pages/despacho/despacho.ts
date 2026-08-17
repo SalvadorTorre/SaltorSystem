@@ -1,5 +1,6 @@
 import { Component, ElementRef, ViewChild } from '@angular/core';
 import { ServicioFacturacion } from 'src/app/core/services/facturacion/factura/factura.service';
+import { PrintingService } from 'src/app/core/services/utils/printing.service';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -17,7 +18,8 @@ export class DespachoComponent {
   facturaData: any = null;
 
   constructor(
-    private serviciofacturacion: ServicioFacturacion
+    private serviciofacturacion: ServicioFacturacion,
+    private printingService: PrintingService,
   ) {}
 
   buscarFactura() {
@@ -81,7 +83,7 @@ export class DespachoComponent {
     setTimeout(() => this.facturaInputRef?.nativeElement.focus(), 0);
   }
 
-  imprimirConduce() {
+  async imprimirConduce(): Promise<void> {
     if (!this.facturaData) {
       this.mensaje = 'Debe buscar una factura primero';
       return;
@@ -203,22 +205,15 @@ export class DespachoComponent {
 
     doc.autoPrint();
     const blob = doc.output('blob');
-    const url = URL.createObjectURL(blob);
-    const win = window.open(url, '_blank');
-    if (!win) {
-      this.mensaje = 'El navegador bloqueo la ventana de impresion';
-      return;
+    try {
+      await this.printingService.printBlob(blob, 'ticket');
+      this.registrarImpresionDespacho(f);
+    } catch (error: any) {
+      this.mensaje = String(
+        error?.message ||
+        'No se pudo completar la impresion; la factura no fue marcada.',
+      );
     }
-
-    setTimeout(() => {
-      try {
-        win.focus();
-        win.print();
-        this.registrarImpresionDespacho(f);
-      } catch {
-        this.mensaje = 'No se pudo completar la impresion; la factura no fue marcada.';
-      }
-    }, 600);
   }
 
   private cargarDetalleEImprimir(factura: any, codigoFactura: string) {
