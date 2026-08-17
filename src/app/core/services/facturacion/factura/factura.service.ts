@@ -1038,10 +1038,13 @@ export class ServicioFacturacion {
 
     const codigo = String(numero || '').trim();
     const empresa = String(scope?.empresa || '').trim();
-    const sucursal = this.toNumberOrNull(scope?.sucursal);
     return from((async () => {
       let query = this.db.from('factura').select('*').eq('fa_codfact', codigo).limit(1);
-      query = this.applyTenantFilter(query);
+      if (empresa) {
+        query = query.eq('fa_codempr', empresa);
+      } else {
+        query = this.applyTenantFilter(query);
+      }
       const { data, error } = await query.maybeSingle();
       if (error) throw error;
       const mapped = data ? this.mapFacturaDbToUi(data) : null;
@@ -1401,7 +1404,7 @@ export class ServicioFacturacion {
       if (!empresa && !sucursal) consulta = this.applyTenantFilter(consulta);
       const { data: factura, error: consultaError } = await consulta.maybeSingle();
       if (consultaError) throw consultaError;
-      if (!factura) throw new Error(`No se encontro la factura ${codigo} en la empresa y sucursal activas.`);
+      if (!factura) throw new Error(`No se encontro la factura ${codigo} en la empresa activa.`);
 
       const estado = String(
         factura?.estado_dgii || factura?.estado_envio_dgii || '',

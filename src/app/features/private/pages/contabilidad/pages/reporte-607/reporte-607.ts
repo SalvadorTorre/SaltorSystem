@@ -129,9 +129,9 @@ export class Reporte607Component implements OnInit {
       empresa = null;
     }
     return String(
-      localStorage.getItem('codigoempresa') ||
-      localStorage.getItem('cod_empre') ||
       empresa?.cod_empre ||
+      localStorage.getItem('cod_empre') ||
+      localStorage.getItem('codigoempresa') ||
       '',
     ).trim();
   }
@@ -368,8 +368,7 @@ export class Reporte607Component implements OnInit {
     if (!this.puedeEditarEncf(factura) || this.facturaEditando) return;
     const codigo = String(factura?.fa_codFact || factura?.fa_codfact || '').trim();
     const encf = String(factura?.fa_ncfFact || factura?.fa_ncffact || '').trim();
-    const empresa = String(factura?.fa_codEmpr || factura?.fa_codempr || '').trim();
-    const sucursal = factura?.fa_codSucu ?? factura?.fa_codsucu ?? null;
+    const empresa = this.empresaUsuarioActual();
     if (!codigo) return;
 
     const confirmacion = await Swal.fire({
@@ -397,7 +396,7 @@ export class Reporte607Component implements OnInit {
     this.facturaEditando = codigo;
     try {
       const response = await firstValueFrom(
-        this.servicioFacturacion.eliminarEncfFacturaRechazada(codigo, { empresa, sucursal }),
+        this.servicioFacturacion.eliminarEncfFacturaRechazada(codigo, { empresa }),
       );
       factura.fa_ncfFact = '';
       factura.fa_ncffact = null;

@@ -23,10 +23,7 @@ export class FacturaDgiiService {
   ): Promise<any> {
     const codigo = String(factura?.fa_codFact || factura?.fa_codfact || '').trim();
     if (!codigo) throw new Error('La factura no tiene numero.');
-    const scope = {
-      empresa: String(factura?.fa_codEmpr || factura?.fa_codempr || '').trim(),
-      sucursal: factura?.fa_codSucu ?? factura?.fa_codsucu ?? null,
-    };
+    const scope = { empresa: this.empresaActiva() };
 
     progreso?.('Validando y cargando la factura...');
     const facturaResp = await firstValueFrom(
@@ -131,10 +128,7 @@ export class FacturaDgiiService {
   ): Promise<any> {
     const codigo = String(factura?.fa_codFact || factura?.fa_codfact || '').trim();
     if (!codigo) throw new Error('La factura no tiene numero.');
-    const scope = {
-      empresa: String(factura?.fa_codEmpr || factura?.fa_codempr || '').trim(),
-      sucursal: factura?.fa_codSucu ?? factura?.fa_codsucu ?? null,
-    };
+    const scope = { empresa: this.empresaActiva() };
 
     progreso?.('Cargando factura rechazada...');
     const [facturaResp, detalleResp] = await Promise.all([
@@ -248,6 +242,17 @@ export class FacturaDgiiService {
     return String(value || '').trim().replace(/-/g, '');
   }
 
+  private empresaActiva(): string {
+    const empresa = this.storageJson(localStorage.getItem('empresa'));
+    const empresaActual = Array.isArray(empresa) ? empresa[0] : empresa;
+    return String(
+      empresaActual?.cod_empre ||
+      localStorage.getItem('cod_empre') ||
+      localStorage.getItem('codigoempresa') ||
+      '',
+    ).trim();
+  }
+
   private storageJson(value: string | null): any {
     if (!value) return null;
     try {
@@ -307,14 +312,7 @@ export class FacturaDgiiService {
     const direccion = String(
       localStorage.getItem('direccion_empresa') || '',
     ).trim();
-    const codEmpresa = String(
-      factura?.fa_codEmpr ||
-        localStorage.getItem('cod_empre') ||
-        localStorage.getItem('codigoempresa') ||
-        '',
-    )
-      .trim()
-      .toUpperCase();
+    const codEmpresa = this.empresaActiva().toUpperCase();
     const sucursal = this.storageJson(localStorage.getItem('sucursal'));
     const nombreSucursal = String(
       sucursal?.nom_sucursal || sucursal?.descripcion || sucursal?.nombre || '',
