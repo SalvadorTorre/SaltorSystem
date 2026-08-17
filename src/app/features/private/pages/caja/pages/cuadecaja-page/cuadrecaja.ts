@@ -31,6 +31,8 @@ export class CuadreCaja implements OnInit {
     deposito: 0,
     cheque: 0,
     pendiente: 0,
+    valoresCobrados: 0,
+    valoresNoCobrados: 0,
     total: 0
   };
 
@@ -90,8 +92,8 @@ export class CuadreCaja implements OnInit {
   }
 
   obtenerCodigoPagoVisible(factura: any): string {
-    if (this.esCreditoPendiente(factura)) return 'CRÉDITO';
-    if (!this.facturaEstaPagada(factura)) return '';
+    if (this.esFacturaCredito(factura)) return 'C';
+    if (!this.facturaEstaPagada(factura)) return 'P';
     return String(factura?.fa_codfpago ?? '').trim();
   }
 
@@ -247,12 +249,20 @@ export class CuadreCaja implements OnInit {
       deposito: 0,
       cheque: 0,
       pendiente: 0,
+      valoresCobrados: 0,
+      valoresNoCobrados: 0,
       total: 0
     };
 
     this.facturasFiltradas.forEach(f => {
       const monto = Number(f.fa_valFact) || 0;
       const codigoFormaPago = Number(f.fa_codfpago);
+
+      if (this.esFacturaCredito(f) || !this.facturaEstaPagada(f)) {
+        this.totales.valoresNoCobrados += monto;
+      } else {
+        this.totales.valoresCobrados += monto;
+      }
 
       if (codigoFormaPago === 3) {
         if (this.facturaEstaPagada(f)) {
@@ -291,7 +301,7 @@ export class CuadreCaja implements OnInit {
       }
     });
 
-    this.totales.total = this.totales.efectivo + this.totales.tarjeta + this.totales.credito + this.totales.deposito + this.totales.cheque;
+    this.totales.total = this.totales.valoresCobrados + this.totales.valoresNoCobrados;
   }
 
   generarReporte() {
@@ -338,7 +348,9 @@ export class CuadreCaja implements OnInit {
 
     const primeraDeEsteCierre = this.facturasFiltradas[0]?.fa_codFact;
     const ultimaDeEsteCierre = this.facturasFiltradas[this.facturasFiltradas.length - 1].fa_codFact;
-    const facturasCobradas = this.facturasFiltradas.filter(f => this.facturaEstaPagada(f) || this.esFacturaCredito(f));
+    const facturasCobradas = this.facturasFiltradas.filter(
+      f => String(f?.fa_fpago || '').trim().toUpperCase() === 'S'
+    );
     const codigosFacturasCobradas = facturasCobradas
       .map(f => String(f.fa_codFact || '').trim())
       .filter(Boolean);

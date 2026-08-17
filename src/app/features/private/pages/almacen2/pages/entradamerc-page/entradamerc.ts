@@ -1323,5 +1323,43 @@ get totalPages(): number {
     const items = this.detalleConsulta || [];
     this.printing.imprimirEntrada80mm(header, items);
   }
+
+  imprimirEntradaDesdeConsulta(entrada: any): void {
+    const codigo = String(entrada?.me_codEntr || entrada?.me_codentr || '').trim();
+    if (!codigo) {
+      this.Toast.fire({ title: 'Entrada invalida', icon: 'warning' });
+      return;
+    }
+
+    this.servicioEntradamerc.buscarEntradamercDetalle(`${codigo}?limit=9999`).subscribe({
+      next: (res: any) => {
+        const raw = Array.isArray(res?.data)
+          ? res.data
+          : Array.isArray(res)
+            ? res
+            : Array.isArray(res?.detalle)
+              ? res.detalle
+              : [];
+        const items = raw.map((d: any) => ({
+          de_codMerc: d.dc_codmerc ?? d.DC_CODMERC ?? d.de_codMerc ?? d.DE_CODMERC ?? d.in_codmerc ?? '',
+          de_desMerc: d.dc_descrip ?? d.DC_DESCRIP ?? d.de_desMerc ?? d.DE_DESMERC ?? d.in_desmerc ?? '',
+          de_canEntr: Number(d.dc_cantidad ?? d.DC_CANTIDAD ?? d.de_canEntr ?? d.DE_CANENTR ?? 0),
+          de_preMerc: Number(d.dc_precio ?? d.DC_PRECIO ?? d.de_preMerc ?? d.DE_PREMERC ?? 0),
+          de_valEntr: Number(d.dc_total ?? d.DC_TOTAL ?? d.de_valEntr ?? d.DE_VALENTR ?? 0),
+        }));
+        this.printing.imprimirEntrada80mm(
+          this.normalizarEntradaParaImpresion(entrada),
+          items,
+        );
+      },
+      error: (err: any) => {
+        this.Toast.fire({
+          title: 'No se pudo imprimir la entrada',
+          text: this.getErrorMessage(err),
+          icon: 'error',
+        });
+      },
+    });
+  }
 }
 

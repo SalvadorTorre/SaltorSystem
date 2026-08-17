@@ -43,33 +43,58 @@ export class ReporteCierreBuilder {
 
   public agregarTotales(totales: any, formatoMoneda: (val: number) => string): ReporteCierreBuilder {
     this.doc.setFontSize(14);
-    this.doc.text('Resumen de Valores Cobrados', 14, this.yPos);
+    this.doc.text('Resumen de valores', 14, this.yPos);
     this.yPos += 10;
 
-    this.doc.setFontSize(12);
-    const startX = 20;
+    const columnaCobrados = 20;
+    const columnaNoCobrados = 112;
     const lineHeight = 8;
+    const inicioDetalle = this.yPos;
 
-    this.doc.text(`Efectivo:`, startX, this.yPos);
-    this.doc.text(`${formatoMoneda(totales.efectivo)}`, startX + 40, this.yPos, { align: 'right' });
+    this.doc.setFont('helvetica', 'bold');
+    this.doc.setFontSize(11);
+    this.doc.text('Valores cobrados', columnaCobrados, this.yPos);
+    this.doc.text('Valores no cobrados', columnaNoCobrados, this.yPos);
+    this.doc.setFont('helvetica', 'normal');
+    this.doc.setFontSize(10);
     this.yPos += lineHeight;
 
-    this.doc.text(`Tarjeta:`, startX, this.yPos);
-    this.doc.text(`${formatoMoneda(totales.tarjeta)}`, startX + 40, this.yPos, { align: 'right' });
+    this.doc.text('Efectivo:', columnaCobrados, this.yPos);
+    this.doc.text(formatoMoneda(totales.efectivo), columnaCobrados + 65, this.yPos, { align: 'right' });
+    this.doc.text('Pendiente de pago:', columnaNoCobrados, this.yPos);
+    this.doc.text(formatoMoneda(totales.pendiente), columnaNoCobrados + 78, this.yPos, { align: 'right' });
     this.yPos += lineHeight;
 
-    this.doc.text(`Depósito:`, startX, this.yPos);
-    this.doc.text(`${formatoMoneda(totales.deposito)}`, startX + 40, this.yPos, { align: 'right' });
+    this.doc.text('Tarjeta:', columnaCobrados, this.yPos);
+    this.doc.text(formatoMoneda(totales.tarjeta), columnaCobrados + 65, this.yPos, { align: 'right' });
+    this.doc.text('Crédito:', columnaNoCobrados, this.yPos);
+    this.doc.text(formatoMoneda(totales.credito), columnaNoCobrados + 78, this.yPos, { align: 'right' });
     this.yPos += lineHeight;
 
-    this.doc.text(`Cheque:`, startX, this.yPos);
-    this.doc.text(`${formatoMoneda(totales.cheque)}`, startX + 40, this.yPos, { align: 'right' });
+    this.doc.text('Depósito:', columnaCobrados, this.yPos);
+    this.doc.text(formatoMoneda(totales.deposito), columnaCobrados + 65, this.yPos, { align: 'right' });
+    this.doc.setFont('helvetica', 'bold');
+    this.doc.text('Total no cobrado:', columnaNoCobrados, this.yPos);
+    this.doc.text(formatoMoneda(totales.valoresNoCobrados), columnaNoCobrados + 78, this.yPos, { align: 'right' });
+    this.doc.setFont('helvetica', 'normal');
+    this.yPos += lineHeight;
+
+    this.doc.text('Cheque:', columnaCobrados, this.yPos);
+    this.doc.text(formatoMoneda(totales.cheque), columnaCobrados + 65, this.yPos, { align: 'right' });
     this.yPos += lineHeight + 2;
+
+    this.doc.setFont('helvetica', 'bold');
+    this.doc.text('Total cobrado:', columnaCobrados, this.yPos);
+    this.doc.text(formatoMoneda(totales.valoresCobrados), columnaCobrados + 65, this.yPos, { align: 'right' });
+    this.doc.setFont('helvetica', 'normal');
+    this.yPos = Math.max(this.yPos, inicioDetalle + (lineHeight * 4) + 2);
+    this.yPos += lineHeight;
 
     this.doc.setFontSize(14);
     this.doc.setFont('helvetica', 'bold');
     this.doc.text(`TOTAL GENERAL:`, 14, this.yPos);
-    this.doc.text(`${formatoMoneda(totales.total)}`, 196, this.yPos, { align: 'right' });
+    const totalGeneral = Number(totales.valoresCobrados || 0) + Number(totales.valoresNoCobrados || 0);
+    this.doc.text(`${formatoMoneda(totalGeneral)}`, 196, this.yPos, { align: 'right' });
     this.doc.setFont('helvetica', 'normal');
     this.yPos += 15;
     return this;
@@ -105,9 +130,9 @@ export class ReporteCierreBuilder {
       .filter((forma) => forma?.fp_codfpago !== null && forma?.fp_codfpago !== undefined)
       .sort((a, b) => Number(a.fp_codfpago) - Number(b.fp_codfpago));
 
-    if (!formas.length) return this;
+    const leyendasAdicionales = ['P - Pendiente de pago', 'C - Crédito'];
 
-    if (this.yPos + 12 + formas.length * 6 > 270) {
+    if (this.yPos + 12 + (formas.length + leyendasAdicionales.length) * 6 > 270) {
       this.doc.addPage();
       this.yPos = 20;
     }
@@ -125,6 +150,11 @@ export class ReporteCierreBuilder {
         14,
         this.yPos,
       );
+      this.yPos += 6;
+    });
+
+    leyendasAdicionales.forEach((leyenda) => {
+      this.doc.text(leyenda, 14, this.yPos);
       this.yPos += 6;
     });
 

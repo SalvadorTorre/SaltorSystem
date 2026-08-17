@@ -2372,7 +2372,17 @@ export class CobroFact implements OnInit {
         this.sincronizarSalidaCaja(facturaActualizada, async () => {
           const itemsImpresion = this.deduplicarItemsImpresion([...this.items]);
           await this.printingService.imprimirConduceFactura80mm(
-            facturaActualizada,
+            {
+              ...facturaActualizada,
+              __combineDescriptionCode: true,
+              __detailFontSize: 9,
+              __thermalShiftX: -4,
+              __thermalRightMargin: 9,
+              __hideInvoiceTime: true,
+              __dateShiftX: 5,
+              __stampSpaceAfterTotal: 35,
+              __drawStampBox: true,
+            },
             itemsImpresion,
           );
           this.limpia();

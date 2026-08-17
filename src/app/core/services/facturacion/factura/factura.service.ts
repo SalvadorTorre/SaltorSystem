@@ -1307,27 +1307,32 @@ export class ServicioFacturacion {
     payload: any,
     scope?: { empresa?: string | null; sucursal?: number | string | null },
   ) {
+    const payloadActualizado = String(payload?.fa_fpago ?? '').trim().toUpperCase() === 'S'
+      ? { ...payload, fa_tipopago: 1 }
+      : payload;
+
     if (!this.useSupabase) {
-      const cod = payload.fa_codFact;
-      return this.http.PatchRequest(`/factura-impresa/${cod}`, payload);
+      const cod = payloadActualizado.fa_codFact;
+      return this.http.PatchRequest(`/factura-impresa/${cod}`, payloadActualizado);
     }
 
-    const cod = String(payload?.fa_codFact || '').trim();
+    const cod = String(payloadActualizado?.fa_codFact || '').trim();
     const empresa = String(scope?.empresa || '').trim();
     const sucursal = this.toNumberOrNull(scope?.sucursal);
     return from((async () => {
       const patch: any = {
         fa_impresa: 'S',
       };
-      if (payload?.fa_reimpresa !== undefined) patch.fa_reimpresa = this.toDbFlag(payload.fa_reimpresa);
-      if (payload?.fa_fpago !== undefined) patch.fa_fpago = this.toStringOrNull(payload.fa_fpago);
-      if (payload?.fa_envio !== undefined) patch.fa_envio = this.toNumberOrNull(payload.fa_envio);
-      if (payload?.fa_codfpago !== undefined) patch.fa_codfpago = this.toNumberOrNull(payload.fa_codfpago);
-      if (payload?.fa_origenpago !== undefined) patch.fa_origenpago = this.toStringOrNull(payload.fa_origenpago);
-      if (payload?.fa_confirpago !== undefined) patch.fa_confirpago = this.toStringOrNull(payload.fa_confirpago);
-      if (payload?.fa_notapago !== undefined) patch.fa_notapago = this.toStringOrNull(payload.fa_notapago);
-      if (payload?.fa_status !== undefined) patch.fa_status = this.toStringMax(payload.fa_status, 3);
-      if (payload?.estado_envio_dgii !== undefined) patch.estado_envio_dgii = this.toStringOrNull(payload.estado_envio_dgii);
+      if (payloadActualizado?.fa_reimpresa !== undefined) patch.fa_reimpresa = this.toDbFlag(payloadActualizado.fa_reimpresa);
+      if (payloadActualizado?.fa_fpago !== undefined) patch.fa_fpago = this.toStringOrNull(payloadActualizado.fa_fpago);
+      if (payloadActualizado?.fa_tipopago !== undefined) patch.fa_tipopago = this.toNumberOrNull(payloadActualizado.fa_tipopago);
+      if (payloadActualizado?.fa_envio !== undefined) patch.fa_envio = this.toNumberOrNull(payloadActualizado.fa_envio);
+      if (payloadActualizado?.fa_codfpago !== undefined) patch.fa_codfpago = this.toNumberOrNull(payloadActualizado.fa_codfpago);
+      if (payloadActualizado?.fa_origenpago !== undefined) patch.fa_origenpago = this.toStringOrNull(payloadActualizado.fa_origenpago);
+      if (payloadActualizado?.fa_confirpago !== undefined) patch.fa_confirpago = this.toStringOrNull(payloadActualizado.fa_confirpago);
+      if (payloadActualizado?.fa_notapago !== undefined) patch.fa_notapago = this.toStringOrNull(payloadActualizado.fa_notapago);
+      if (payloadActualizado?.fa_status !== undefined) patch.fa_status = this.toStringMax(payloadActualizado.fa_status, 3);
+      if (payloadActualizado?.estado_envio_dgii !== undefined) patch.estado_envio_dgii = this.toStringOrNull(payloadActualizado.estado_envio_dgii);
 
       let updateQuery = this.db
         .from('factura')
@@ -3037,7 +3042,8 @@ export class ServicioFacturacion {
         let query = this.db
           .from('factura')
           .update({ fa_cierre: Number(idCierre) })
-          .in('fa_codfact', lote);
+          .in('fa_codfact', lote)
+          .eq('fa_fpago', 'S');
 
         // La sucursal recibida y applyTenantFilter agregaban dos veces el mismo
         // filtro. Aplicamos empresa una sola vez y luego la sucursal explícita.
