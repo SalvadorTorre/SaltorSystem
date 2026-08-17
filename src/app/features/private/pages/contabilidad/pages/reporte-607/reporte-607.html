@@ -178,7 +178,7 @@
               <div class="invoice-code">{{ factura.fa_codFact || factura.fa_codfact }}</div>
               <small>{{ factura.fa_codEmpr || factura.fa_codempr || 'Sin empresa' }}</small>
             </td>
-            <td>{{ formatFecha(factura.fa_fecNcf || factura.fa_fecncf) }}</td>
+            <td>{{ formatFecha(fechaComprobante(factura)) }}</td>
             <td>
               <span class="type-chip">{{ tipoComprobanteTexto(factura) }}</span>
             </td>

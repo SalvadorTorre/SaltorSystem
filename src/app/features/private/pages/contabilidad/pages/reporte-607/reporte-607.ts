@@ -473,6 +473,14 @@ export class Reporte607Component implements OnInit {
     return text;
   }
 
+  fechaComprobante(factura: any): any {
+    return factura?.fa_fecncf ??
+      factura?.fa_fecNcf ??
+      factura?.fa_fecfact ??
+      factura?.fa_fecFact ??
+      null;
+  }
+
   estadoClase(factura: any): string {
     const estado = String(factura?.estado_dgii || factura?.estado_envio_dgii || '').trim().toLowerCase();
     if (estado.includes('condicional')) return 'status-pill status-warning';
@@ -488,7 +496,10 @@ export class Reporte607Component implements OnInit {
 
   puedeReenviar(factura: any): boolean {
     const estado = this.estadoTexto(factura).toLowerCase();
-    return estado.includes('rechaz') || estado.includes('error') || estado.includes('success');
+    return estado.includes('rechaz') ||
+      estado.includes('error') ||
+      estado.includes('success') ||
+      estado.includes('aceptado condicional');
   }
 
   tipoComprobanteTexto(factura: any): string {
@@ -668,7 +679,7 @@ export class Reporte607Component implements OnInit {
           <td class="text">${this.escapeHtml(factura.fa_rncFact || factura.fa_rncfact || '')}</td>
           <td class="text">${this.escapeHtml(factura.fa_ncfFact || factura.fa_ncffact || factura.ecf || '')}</td>
           <td class="text">${this.escapeHtml(this.encfModificado(factura))}</td>
-          <td class="date">${this.escapeHtml(this.fechaXls(factura.fa_fecNcf || factura.fa_fecncf, true))}</td>
+          <td class="date">${this.escapeHtml(this.fechaXls(this.fechaComprobante(factura), true))}</td>
           <td class="date">${this.escapeHtml(this.fechaXls(this.fechaRecepcionDgii(factura), false))}</td>
           <td class="text">${this.escapeHtml(this.aprobacionComercial(factura))}</td>
           <td class="date">${this.escapeHtml(this.fechaXls(this.fechaAprobacionComercial(factura), false))}</td>
