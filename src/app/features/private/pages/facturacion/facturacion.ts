@@ -164,6 +164,8 @@ export class Facturacion implements OnInit, OnDestroy {
   codnotfound: boolean = false;
   desnotfound: boolean = false;
   mensagePantalla: boolean = false;
+  private codigoVendedorValidado = '';
+  private validandoVendedor = false;
   codmerVacio: boolean = false;
   desmerVacio: boolean = false;
   isLoading: boolean = false;
@@ -1679,20 +1681,7 @@ export class Facturacion implements OnInit, OnDestroy {
           }
         }
         // No existe: mostrar error y avanzar a Descripción
-        this.mensagePantalla = true;
-        Swal.fire({
-          icon: 'error',
-          title: 'A V I S O',
-          text: 'Producto no encontrado.',
-          focusConfirm: true,
-          allowEnterKey: true,
-          showConfirmButton: false,
-          timer: 1200,
-        }).then(() => {
-          this.mensagePantalla = false;
-          descripcionInput?.focus();
-          descripcionInput?.select?.();
-        });
+        void this.mostrarAvisoDetalle('Producto no encontrado.', descripcionInput);
         this.codmerc = '';
         this.descripcionmerc = '';
         this.codmerVacio = false;
@@ -1848,19 +1837,40 @@ export class Facturacion implements OnInit, OnDestroy {
 
   buscarUsuario(event: Event, nextElement: HTMLInputElement | null): void {
     event.preventDefault();
+    void this.validarCodigoVendedor(true, nextElement);
+  }
+
+  onCodigoVendedorInput(): void {
+    this.codigoVendedorValidado = '';
+    this.formularioFacturacion.patchValue({ fa_nomVend: '' }, { emitEvent: false });
+  }
+
+  validarVendedorAlSalir(): void {
+    const claveUsuario = String(
+      this.formularioFacturacion.get('fa_codVend')?.value || '',
+    ).trim();
+    if (!claveUsuario || claveUsuario === this.codigoVendedorValidado || this.validandoVendedor) return;
+    void this.validarCodigoVendedor(false, null);
+  }
+
+  private async validarCodigoVendedor(
+    abrirDetalle: boolean,
+    nextElement: HTMLInputElement | null,
+  ): Promise<boolean> {
     const claveUsuario = String(
       this.formularioFacturacion.get('fa_codVend')?.value || '',
     ).trim();
     if (!claveUsuario) {
-      this.mensagePantalla = true;
-      Swal.fire({
+      this.codigoVendedorValidado = '';
+      this.formularioFacturacion.patchValue({ fa_nomVend: '' }, { emitEvent: false });
+      await Swal.fire({
         icon: 'error',
         title: 'A V I S O',
         text: 'Codigo de usuario invalido.',
-      }).then(() => {
-        this.mensagePantalla = false;
+        confirmButtonText: 'OK',
+        focusConfirm: true,
       });
-      return;
+      return false;
     }
 
     this.formularioFacturacion.patchValue(
@@ -1868,26 +1878,36 @@ export class Facturacion implements OnInit, OnDestroy {
       { emitEvent: false },
     );
 
-    this.ServicioUsuario.buscarUsuarioPorCodigoVendedor(claveUsuario).subscribe({
-      next: (usuarioResp) => {
-        const u = usuarioResp?.data;
-        if (u) {
-          const nombreVendedor = String(
-            u?.nombreUsuario || u?.idUsuario || '',
-          ).trim();
-          this.formularioFacturacion.patchValue({
-            fa_nomVend: nombreVendedor,
-          });
-          this.abrirModalDetalle();
-          nextElement?.focus();
-          return;
-        }
-        this.mostrarMensajeError('Codigo de usuario invalido.');
-      },
-      error: () => {
-        this.mostrarMensajeError('Codigo de usuario invalido.');
-      },
-    });
+    this.validandoVendedor = true;
+    try {
+      const usuarioResp = await firstValueFrom(
+        this.ServicioUsuario.buscarUsuarioPorCodigoVendedor(claveUsuario),
+      );
+      const u = usuarioResp?.data;
+      const nombreVendedor = String(u?.nombreUsuario || u?.idUsuario || '').trim();
+      if (!u || !nombreVendedor) throw new Error('VENDEDOR_INVALIDO');
+
+      this.codigoVendedorValidado = claveUsuario;
+      this.formularioFacturacion.patchValue({ fa_nomVend: nombreVendedor });
+      if (abrirDetalle) {
+        this.abrirModalDetalle();
+        nextElement?.focus();
+      }
+      return true;
+    } catch {
+      this.codigoVendedorValidado = '';
+      this.formularioFacturacion.patchValue({ fa_nomVend: '' }, { emitEvent: false });
+      await Swal.fire({
+        icon: 'error',
+        title: 'A V I S O',
+        text: 'Codigo de usuario invalido.',
+        confirmButtonText: 'OK',
+        focusConfirm: true,
+      });
+      return false;
+    } finally {
+      this.validandoVendedor = false;
+    }
   }
   buscarRnc(event: Event, nextElement: HTMLInputElement | null): void {
     event.preventDefault();
@@ -2127,6 +2147,34 @@ export class Facturacion implements OnInit, OnDestroy {
     });
   }
 
+  private async mostrarAvisoDetalle(
+    mensaje: string,
+    campo?: HTMLInputElement | null,
+  ): Promise<void> {
+    this.mensagePantalla = true;
+    try {
+      await Swal.fire({
+        icon: 'error',
+        title: 'A V I S O',
+        text: mensaje,
+        confirmButtonText: 'OK',
+        showConfirmButton: true,
+        focusConfirm: true,
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        stopKeydownPropagation: true,
+        returnFocus: false,
+        didOpen: () => Swal.getConfirmButton()?.focus(),
+      });
+    } finally {
+      this.mensagePantalla = false;
+      setTimeout(() => {
+        campo?.focus();
+        campo?.select?.();
+      }, 0);
+    }
+  }
+
   private extraerMensajeError(error: any): string {
     return String(
       error?.error?.message ||
@@ -2302,21 +2350,10 @@ export class Facturacion implements OnInit, OnDestroy {
 
       if (currentInputValue === '') {
         this.desmerVacio = true;
-        this.mensagePantalla = true;
-        Swal.fire({
-          icon: 'error',
-          title: 'A V I S O',
-          text: 'Producto no encontrado.',
-          focusConfirm: true,
-          allowEnterKey: true,
-          showConfirmButton: false,
-          timer: 1200,
-        }).then(() => {
-          this.mensagePantalla = false;
-          const input = event.target as HTMLInputElement;
-          input?.focus();
-          input?.select?.();
-        });
+        void this.mostrarAvisoDetalle(
+          'Producto no encontrado.',
+          event.target as HTMLInputElement,
+        );
         this.desnotfound = true;
         return;
       }
@@ -2385,21 +2422,10 @@ export class Facturacion implements OnInit, OnDestroy {
             }
           }
           // No existe: mostrar error y mantener foco en descripción
-          this.mensagePantalla = true;
-          Swal.fire({
-            icon: 'error',
-            title: 'A V I S O',
-            text: 'Producto no encontrado.',
-            focusConfirm: true,
-            allowEnterKey: true,
-            showConfirmButton: false,
-            timer: 1200,
-          }).then(() => {
-            this.mensagePantalla = false;
-            const input = event.target as HTMLInputElement;
-            input?.focus();
-            input?.select?.();
-          });
+          void this.mostrarAvisoDetalle(
+            'Producto no encontrado.',
+            event.target as HTMLInputElement,
+          );
           this.desnotfound = true;
           this.desmerVacio = false;
         });
@@ -2409,14 +2435,10 @@ export class Facturacion implements OnInit, OnDestroy {
     if (event.key === 'Enter' || event.key === 'Tab') {
       event.preventDefault();
       if (!this.productoselect || this.cantidadmerc <= 0) {
-        this.mensagePantalla = true;
-        Swal.fire({
-          icon: 'error',
-          title: 'A V I S O',
-          text: 'Por favor complete todos los campos requeridos antes de continuar.',
-        }).then(() => {
-          this.mensagePantalla = false;
-        });
+        void this.mostrarAvisoDetalle(
+          'Por favor complete todos los campos requeridos antes de continuar.',
+          event.target as HTMLInputElement,
+        );
         return;
       }
       // Pasar a Precio (nextInput)
@@ -2445,14 +2467,10 @@ export class Facturacion implements OnInit, OnDestroy {
       this.preciomerc <= 0 ||
       this.preciomerc <= this.productoselect.in_cosmerc
     ) {
-      this.mensagePantalla = true;
-      Swal.fire({
-        icon: 'error',
-        title: 'A V I S O',
-        text: 'Por favor complete todos los campos requeridos antes de agregar el ítem.',
-      }).then(() => {
-        this.mensagePantalla = false;
-      });
+      void this.mostrarAvisoDetalle(
+        'Por favor complete todos los campos requeridos antes de agregar el ítem.',
+        event.target as HTMLInputElement,
+      );
       return;
     }
 
@@ -2701,22 +2719,17 @@ export class Facturacion implements OnInit, OnDestroy {
       this.preciomerc <= 0 ||
       this.preciomerc <= this.productoselect.in_cosmerc
     ) {
-      this.mensagePantalla = true;
-      Swal.fire({
-        icon: 'error',
-        title: 'A V I S O',
-        text: 'Por favor complete todos los campos requeridos antes de agregar el ítem.',
-      }).then(() => {
-        this.mensagePantalla = false;
-      });
+      void this.mostrarAvisoDetalle(
+        'Por favor complete todos los campos requeridos antes de agregar el ítem.',
+        event.target as HTMLInputElement,
+      );
       return;
     }
     if (!this.productoTieneTramoFacturable()) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Producto no permitido',
-        text: 'Solo se pueden agregar productos con tramo F o H.',
-      });
+      void this.mostrarAvisoDetalle(
+        'Solo se pueden agregar productos con tramo F o H.',
+        this.codigoInput?.nativeElement,
+      );
       return;
     }
     const fechaActual = new Date(); // Obtiene la fecha actual
@@ -3072,6 +3085,11 @@ export class Facturacion implements OnInit, OnDestroy {
 
   async guardarFacturacion() {
     if (this.isLoading) {
+      return;
+    }
+
+    if (!(await this.validarCodigoVendedor(false, null))) {
+      this.enfocarCampoFactura('input12');
       return;
     }
 

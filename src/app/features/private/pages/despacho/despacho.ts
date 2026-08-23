@@ -208,6 +208,7 @@ export class DespachoComponent {
     try {
       await this.printingService.printBlob(blob, 'ticket');
       this.registrarImpresionDespacho(f);
+      this.limpiarParaSiguienteFactura();
     } catch (error: any) {
       this.mensaje = String(
         error?.message ||
@@ -292,12 +293,6 @@ export class DespachoComponent {
     }).subscribe({
       next: (response: any) => {
         if (response?.data) {
-          this.facturaData = {
-            ...this.facturaData,
-            fa_impalmaf: response.data.fa_impalmaf ?? this.facturaData?.fa_impalmaf,
-            fa_impalmap: response.data.fa_impalmap ?? this.facturaData?.fa_impalmap,
-            fa_despacho: response.data.fa_despacho ?? this.facturaData?.fa_despacho,
-          };
           this.mensaje = tipoDespacho === 'F'
             ? 'Factura impresa y marcada en forjas.'
             : 'Factura impresa y marcada en hierro.';
@@ -357,6 +352,13 @@ export class DespachoComponent {
     this.facturaData = null;
     this.clienteNombre = '';
     this.mensaje = mensaje;
+    setTimeout(() => this.facturaInputRef?.nativeElement.focus(), 0);
+  }
+
+  private limpiarParaSiguienteFactura(): void {
+    this.facturaNumero = '';
+    this.facturaData = null;
+    this.clienteNombre = '';
     setTimeout(() => this.facturaInputRef?.nativeElement.focus(), 0);
   }
 

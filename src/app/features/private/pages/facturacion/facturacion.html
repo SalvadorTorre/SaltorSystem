@@ -287,6 +287,8 @@
                 <input
                   type="password"
                   (keydown.enter)="buscarUsuario($event, input13)"
+                  (input)="onCodigoVendedorInput()"
+                  (blur)="validarVendedorAlSalir()"
                   formControlName="fa_codVend"
                   #input12
                   id="input12"

@@ -189,7 +189,9 @@ export class Usuario implements OnInit {
   }
 
   cargarUsuarios(): void {
-    this.usuarioSrv.buscarTodosUsuario(1, 200).subscribe({
+    // No limitar la carga a los primeros 200 códigos: los registros
+    // posteriores quedarían fuera del filtro local y parecerían inexistentes.
+    this.usuarioSrv.buscarTodosUsuario(1, 1000).subscribe({
       next: (res) => { this.usuarios = this.unwrapList(res); },
       error: () => { this.usuarios = []; }
     });
