@@ -19,6 +19,7 @@ export class CuadreCaja implements OnInit {
   paginaActual = 1;
   tamanoPagina = 50;
   totalFacturas = 0;
+  totalFacturasPendientesSucursal: number | null = null;
   ultimaFacturaCuadrada: string = ''; 
   isLoading: boolean = false;
   formasPago: any[] = [];
@@ -197,7 +198,8 @@ export class CuadreCaja implements OnInit {
 
   cargarFacturasPendientes() {
     this.isLoading = true;
-    this.facturaService.buscarFacturasPendientesCierre(this.paginaActual, this.tamanoPagina, true, this.sucursalUsuarioActual()).subscribe({
+    const sucursal = this.sucursalUsuarioActual();
+    this.facturaService.buscarFacturasPendientesCierre(this.paginaActual, this.tamanoPagina, true, sucursal).subscribe({
       next: (res: any) => {
         this.isLoading = false;
         this.facturas = res.data || [];
@@ -218,9 +220,11 @@ export class CuadreCaja implements OnInit {
     });
 
     if (this.facturasResumen.length === 0 || this.paginaActual === 1) {
-      this.facturaService.buscarResumenFacturasPendientesCierre(true, this.sucursalUsuarioActual()).subscribe({
+      this.facturaService.buscarResumenFacturasPendientesCierre(true, sucursal).subscribe({
         next: (res: any) => {
           this.facturasResumen = res.data || [];
+          this.totalFacturasPendientesSucursal = this.facturasResumen.length;
+          this.totalFacturas = this.totalFacturasPendientesSucursal;
           this.actualizarRangoYTotales();
         },
         error: (err: any) => console.error('Error cargando resumen de cierre', err),
@@ -230,6 +234,10 @@ export class CuadreCaja implements OnInit {
 
   get totalPaginas(): number {
     return Math.max(1, Math.ceil(this.totalFacturas / this.tamanoPagina));
+  }
+
+  cantidadFacturasPendientesVisible(): number {
+    return this.totalFacturasPendientesSucursal ?? this.totalFacturas;
   }
 
   cambiarPagina(pagina: number): void {
@@ -397,7 +405,7 @@ export class CuadreCaja implements OnInit {
     return new Intl.NumberFormat('es-DO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(valor);
   }
 
-  private sucursalUsuarioActual(): number | null {
+  sucursalUsuarioActual(): number | null {
     const id = Number(localStorage.getItem('idSucursal') || 0);
     return Number.isFinite(id) && id > 0 ? id : null;
   }

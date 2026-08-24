@@ -338,6 +338,14 @@ export class ServicioFacturacion {
     return scoped;
   }
 
+  private applyPendienteCajaFilter(query: any): any {
+    return query.or('fa_impresa.is.null,fa_impresa.eq.,fa_impresa.eq.N,and(fa_impresa.eq.S,fa_fpago.is.null),and(fa_impresa.eq.S,fa_fpago.eq.),and(fa_impresa.eq.S,fa_fpago.eq.N),and(fa_status.eq.C,fa_fpago.is.null),and(fa_status.eq.C,fa_fpago.eq.),and(fa_status.eq.C,fa_fpago.eq.N),and(fa_status.eq.F,fa_fpago.is.null),and(fa_status.eq.F,fa_fpago.eq.),and(fa_status.eq.F,fa_fpago.eq.N)');
+  }
+
+  private applySinCierreCajaFilter(query: any): any {
+    return query.or('fa_cierre.is.null,fa_cierre.eq.0');
+  }
+
   private applyTenantFilterDetalle(query: any): any {
     const { codEmpre, sucursal, rncEmpre } = this.currentTenant();
     let scoped = query;
@@ -1393,9 +1401,9 @@ export class ServicioFacturacion {
       let query = this.db
         .from('factura')
         .select(this.columnasFacturaCajaResumen)
-        .or('fa_impresa.eq.N,and(fa_impresa.eq.S,fa_fpago.eq.N),and(fa_status.eq.C,fa_fpago.eq.N),and(fa_status.eq.F,fa_fpago.eq.N)')
         .order('fa_fecfact', { ascending: false })
         .limit(500);
+      query = this.applyPendienteCajaFilter(query);
       query = this.applyTenantFilter(query);
       const { data, error } = await query;
       if (error) throw error;
@@ -1848,13 +1856,16 @@ export class ServicioFacturacion {
       let query = this.db
         .from('factura')
         .select('fa_codfact,fa_ncffact,fa_rncfact,fa_tiponcf,fa_fecfact,fa_valfact,fa_itbifact,fa_subfact,fa_desfact,fa_codclie,fa_nomclie,fa_codvend,fa_nomvend,fa_fpago,fa_codfpago,fa_tipopago,fa_status,fa_codsucu,fa_codempr,fa_cierre,fa_entrega,fa_impresa,fa_facturada', { count: 'planned' })
-        .is('fa_cierre', null)
         .or('fa_status.is.null,fa_status.neq.N')
         .order('fa_codfact', { ascending: true })
         .range(fromRow, fromRow + safePageSize - 1);
+      query = this.applySinCierreCajaFilter(query);
 
-      query = filtrarSucursal ? this.applyTenantFilter(query) : this.applyTenantCompanyFilter(query);
-      if (sucursal && sucursal > 0 && !filtrarSucursal) query = query.eq('fa_codsucu', sucursal);
+      query = sucursal && sucursal > 0
+        ? this.applyTenantCompanyFilter(query).eq('fa_codsucu', sucursal)
+        : filtrarSucursal
+          ? this.applyTenantFilter(query)
+          : this.applyTenantCompanyFilter(query);
 
       const { data, error, count } = await query;
       if (error) throw error;
@@ -1883,6 +1894,7 @@ export class ServicioFacturacion {
           {
             p_limit: 10000,
             p_filtrar_sucursal: filtrarSucursal,
+            p_sucursal_id: sucursal,
           },
         );
         if (!rpcError && Array.isArray(rpcData)) {
@@ -1905,12 +1917,15 @@ export class ServicioFacturacion {
         let query = this.db
           .from('factura')
           .select('fa_codfact,fa_valfact,fa_fpago,fa_codfpago,fa_tipopago,fa_status,fa_codsucu,fa_cierre')
-          .is('fa_cierre', null)
           .or('fa_status.is.null,fa_status.neq.N')
           .order('fa_codfact', { ascending: true })
           .range(offset, offset + batchSize - 1);
-        query = filtrarSucursal ? this.applyTenantFilter(query) : this.applyTenantCompanyFilter(query);
-        if (sucursal && sucursal > 0 && !filtrarSucursal) query = query.eq('fa_codsucu', sucursal);
+        query = this.applySinCierreCajaFilter(query);
+        query = sucursal && sucursal > 0
+          ? this.applyTenantCompanyFilter(query).eq('fa_codsucu', sucursal)
+          : filtrarSucursal
+            ? this.applyTenantFilter(query)
+            : this.applyTenantCompanyFilter(query);
         const { data, error } = await query;
         if (error) throw error;
         rows.push(...(data || []));

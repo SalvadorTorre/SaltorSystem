@@ -2,10 +2,99 @@
     font-weight: bold;
 }
 
-.table th {
-    background-color: #f8f9fa;
-}
-
 .text-end {
     text-align: right;
+}
+
+.cuadre-table-card {
+    border: 1px solid #d8dee8;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.cuadre-table-card .card-header {
+    min-height: 54px;
+    border-bottom: 1px solid #d8dee8;
+}
+
+.cuadre-table {
+    min-width: 980px;
+    table-layout: fixed;
+}
+
+.cuadre-table col.col-factura {
+    width: 12%;
+}
+
+.cuadre-table col.col-fecha {
+    width: 14%;
+}
+
+.cuadre-table col.col-cliente {
+    width: 27%;
+}
+
+.cuadre-table col.col-tipo {
+    width: 10%;
+}
+
+.cuadre-table col.col-pago {
+    width: 18%;
+}
+
+.cuadre-table col.col-valor {
+    width: 10%;
+}
+
+.cuadre-table col.col-estado {
+    width: 9%;
+}
+
+.cuadre-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    padding: 0.72rem 0.75rem;
+    background-color: #eef3f8;
+    border-bottom: 1px solid #c9d3df;
+    color: #24445f;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.cuadre-table tbody td {
+    padding: 0.68rem 0.75rem;
+    border-color: #edf1f5;
+    color: #1f2933;
+    vertical-align: middle;
+}
+
+.cuadre-table tbody tr:nth-child(even) td {
+    background-color: #fbfcfe;
+}
+
+.cuadre-table tbody tr:hover td {
+    background-color: #f4f8fb;
+}
+
+.cuadre-table .cliente-cell,
+.cuadre-table .pago-cell {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+    .cuadre-table {
+        min-width: 860px;
+    }
+
+    .cuadre-table thead th,
+    .cuadre-table tbody td {
+        padding-left: 0.55rem;
+        padding-right: 0.55rem;
+    }
 }

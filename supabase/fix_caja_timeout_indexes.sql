@@ -3,6 +3,11 @@ CREATE INDEX IF NOT EXISTS idx_factura_caja_pendiente_cierre_sucursal
   WHERE fa_cierre IS NULL
     AND (fa_status IS NULL OR fa_status <> 'N');
 
+CREATE INDEX IF NOT EXISTS idx_factura_caja_pendiente_cierre_estado_sucursal
+  ON myappdb.factura (fa_codempr, fa_codsucu, fa_codfact)
+  WHERE (fa_cierre IS NULL OR btrim(fa_cierre::text) = '' OR btrim(fa_cierre::text) IN ('0', 'N'))
+    AND (fa_status IS NULL OR fa_status <> 'N');
+
 CREATE INDEX IF NOT EXISTS idx_factura_caja_no_impresa_sucursal_fecha
   ON myappdb.factura (fa_codempr, fa_codsucu, fa_fecfact DESC, fa_codfact DESC)
   WHERE fa_impresa = 'N'

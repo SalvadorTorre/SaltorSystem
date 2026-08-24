@@ -1,12 +1,15 @@
 CREATE INDEX IF NOT EXISTS idx_factura_cierre_pendiente_tenant
   ON myappdb.factura (fa_codempr, fa_codsucu, fa_codfact)
-  WHERE fa_cierre IS NULL;
+  WHERE (fa_cierre IS NULL OR btrim(fa_cierre::text) = '' OR btrim(fa_cierre::text) IN ('0', 'N'))
+    AND (fa_status IS NULL OR fa_status <> 'N');
 
 DROP FUNCTION IF EXISTS myappdb.listar_facturas_pendientes_cierre(integer, boolean);
+DROP FUNCTION IF EXISTS myappdb.listar_facturas_pendientes_cierre(integer, boolean, integer);
 
 CREATE OR REPLACE FUNCTION myappdb.listar_facturas_pendientes_cierre(
   p_limit integer DEFAULT 5000,
-  p_filtrar_sucursal boolean DEFAULT true
+  p_filtrar_sucursal boolean DEFAULT true,
+  p_sucursal_id integer DEFAULT NULL
 )
 RETURNS TABLE (
   fa_codfact text,
@@ -42,6 +45,7 @@ DECLARE
   cu record;
   v_is_root boolean := false;
   v_is_admin boolean := false;
+  v_sucursal integer := nullif(p_sucursal_id, 0);
 BEGIN
   IF auth.uid() IS NULL THEN
     RETURN;
@@ -80,10 +84,22 @@ BEGIN
     f.fa_impresa::text,
     f.fa_facturada::text
   FROM myappdb.factura f
-  WHERE f.fa_cierre IS NULL
+  WHERE (f.fa_cierre IS NULL OR btrim(f.fa_cierre::text) = '' OR btrim(f.fa_cierre::text) IN ('0', 'N'))
+    AND (f.fa_status IS NULL OR f.fa_status <> 'N')
     AND (
-      v_is_root
+      (
+        v_sucursal IS NOT NULL
+        AND f.fa_codempr = cu.cod_empre
+        AND f.fa_codsucu = v_sucursal
+        AND (v_is_root OR v_is_admin OR v_sucursal = cu.sucursalid)
+      )
       OR (
+        v_sucursal IS NULL
+        AND v_is_root
+      )
+      OR (
+        v_sucursal IS NULL
+        AND
         f.fa_codempr = cu.cod_empre
         AND (
           NOT coalesce(p_filtrar_sucursal, true)
@@ -100,7 +116,7 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION myappdb.listar_facturas_pendientes_cierre(integer, boolean) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION myappdb.listar_facturas_pendientes_cierre(integer, boolean) TO authenticated;
+REVOKE ALL ON FUNCTION myappdb.listar_facturas_pendientes_cierre(integer, boolean, integer) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION myappdb.listar_facturas_pendientes_cierre(integer, boolean, integer) TO authenticated;
 
 NOTIFY pgrst, 'reload schema';

@@ -8,6 +8,9 @@
       <p class="text-muted" *ngIf="!ultimaFacturaCuadrada">
         No se detectó cierre previo. Se cargarán todas las facturas disponibles.
       </p>
+      <p class="text-muted mb-0">
+        Sucursal: <strong>{{ sucursalUsuarioActual() || 'No definida' }}</strong>
+      </p>
     </div>
     
     <div class="col-md-6 d-flex justify-content-end align-items-center gap-2">
@@ -83,47 +86,56 @@
   </div>
 
   <!-- Tabla de Facturas -->
-  <div class="card shadow mb-4">
-    <div class="card-header py-3 bg-white d-flex justify-content-between align-items-center">
-      <h6 class="m-0 font-weight-bold text-primary">Detalle de Movimientos Pendientes de Cierre</h6>
-      <span class="badge bg-secondary">{{ totalFacturas }} Facturas</span>
+  <div class="card shadow-sm mb-4 cuadre-table-card">
+    <div class="card-header bg-white d-flex flex-wrap justify-content-between align-items-center gap-2">
+      <h6 class="m-0 fw-bold text-primary">Detalle de movimientos pendientes de cierre</h6>
+      <span class="badge rounded-pill bg-secondary">{{ cantidadFacturasPendientesVisible() }} facturas pendientes</span>
     </div>
     <div class="card-body p-0">
       <div class="table-responsive">
-        <table class="table table-hover table-striped align-middle mb-0">
-          <thead class="bg-light">
+        <table class="table table-hover align-middle mb-0 cuadre-table">
+          <colgroup>
+            <col class="col-factura">
+            <col class="col-fecha">
+            <col class="col-cliente">
+            <col class="col-tipo">
+            <col class="col-pago">
+            <col class="col-valor">
+            <col class="col-estado">
+          </colgroup>
+          <thead>
             <tr>
-              <th class="ps-4">Código Factura</th>
-          <th>Fecha</th>
-          <th>Nombre Cliente</th>
-          <th class="text-center">Tipo</th>
-          <th>Forma de Pago</th>
-          <th class="text-end">Valor Factura</th>
-          <th class="text-end pe-4">Estado</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let f of facturasFiltradas">
-          <td class="ps-4 fw-bold">{{ f.fa_codFact }}</td>
-          <td>{{ f.fa_fecFact | date:'dd/MM/yyyy HH:mm' }}</td>
-          <td>{{ f.fa_nomClie }}</td>
-          <td class="text-center">
-            <span class="badge" [ngClass]="obtenerClaseTipoFactura(f)">
-              {{ obtenerTipoFactura(f) }}
-            </span>
-          </td>
-          <td [ngClass]="esCreditoPendiente(f) ? 'text-danger fw-bold' : ''">
-            {{ obtenerFormaPagoVisible(f) }}
-          </td>
-          <td class="fw-bold text-end">{{ f.fa_valFact | number:'1.2-2' }}</td>
-          <td class="text-end pe-4" 
-              [ngClass]="{
-                'text-success fw-bold': obtenerEtiquetaPago(f) === 'COBRADA',
-                'text-danger fw-bold': obtenerEtiquetaPago(f) === 'CREDITO' || obtenerEtiquetaPago(f) === 'Pendiente Pago'
-              }">
-              {{ obtenerEtiquetaPago(f) }}
-          </td>
-        </tr>
+              <th scope="col">Factura</th>
+              <th scope="col">Fecha</th>
+              <th scope="col">Cliente</th>
+              <th scope="col" class="text-center">Tipo</th>
+              <th scope="col">Forma de pago</th>
+              <th scope="col" class="text-end">Valor</th>
+              <th scope="col" class="text-end">Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let f of facturasFiltradas">
+              <td class="fw-bold text-nowrap">{{ f.fa_codFact }}</td>
+              <td class="text-nowrap">{{ f.fa_fecFact | date:'dd/MM/yyyy HH:mm' }}</td>
+              <td class="cliente-cell">{{ f.fa_nomClie }}</td>
+              <td class="text-center">
+                <span class="badge" [ngClass]="obtenerClaseTipoFactura(f)">
+                  {{ obtenerTipoFactura(f) }}
+                </span>
+              </td>
+              <td class="pago-cell" [ngClass]="esCreditoPendiente(f) ? 'text-danger fw-bold' : ''">
+                {{ obtenerFormaPagoVisible(f) }}
+              </td>
+              <td class="fw-bold text-end text-nowrap">{{ f.fa_valFact | number:'1.2-2' }}</td>
+              <td class="text-end text-nowrap"
+                  [ngClass]="{
+                    'text-success fw-bold': obtenerEtiquetaPago(f) === 'COBRADA',
+                    'text-danger fw-bold': obtenerEtiquetaPago(f) === 'CREDITO' || obtenerEtiquetaPago(f) === 'Pendiente Pago'
+                  }">
+                  {{ obtenerEtiquetaPago(f) }}
+              </td>
+            </tr>
             <tr *ngIf="facturasFiltradas.length === 0">
               <td colspan="7" class="text-center py-5 text-muted">
                 <i class="fas fa-inbox fa-3x mb-3"></i>
