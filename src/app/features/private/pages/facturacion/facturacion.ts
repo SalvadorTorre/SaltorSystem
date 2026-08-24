@@ -89,8 +89,8 @@ export class Facturacion implements OnInit, OnDestroy {
   isDisabled: boolean = true;
   totalItems = 0;
   pageSize = 5;
-  readonly limiteFacturasInicial = 100;
-  readonly limiteFacturasBusqueda = 100;
+  readonly limiteFacturasInicial = 20;
+  readonly limiteFacturasBusqueda = 20;
   readonly minimoLetrasBusquedaNombreFactura = 4;
   currentPage = 1;
   maxPagesToShow = 5;
