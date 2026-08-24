@@ -89,6 +89,7 @@ export class Facturacion implements OnInit, OnDestroy {
   isDisabled: boolean = true;
   totalItems = 0;
   pageSize = 5;
+  readonly limiteFacturasInicial = 100;
   readonly limiteFacturasBusqueda = 100;
   readonly minimoLetrasBusquedaNombreFactura = 4;
   currentPage = 1;
@@ -817,10 +818,12 @@ export class Facturacion implements OnInit, OnDestroy {
   buscarTodasFactura(page: number) {
     this.servicioFacturacion.buscarFacturacion(
       page || 1,
-      10000,
+      this.limiteFacturasInicial,
       undefined,
       undefined,
-      this.fechaHoyIso()
+      this.fechaHoyIso(),
+      true,
+      true,
     ).subscribe((response) => {
       console.log('buscarTodasFactura response:', response);
       if (response && Array.isArray(response.data)) {
@@ -1361,10 +1364,12 @@ export class Facturacion implements OnInit, OnDestroy {
   buscarTodasFacturacion() {
     this.servicioFacturacion.buscarFacturacion(
       1,
-      10000,
+      this.limiteFacturasInicial,
       undefined,
       undefined,
-      this.fechaHoyIso()
+      this.fechaHoyIso(),
+      true,
+      true,
     ).subscribe((response) => {
       console.log('buscarTodasFacturacion hoy response:', response);
       if (response && Array.isArray(response.data)) {
@@ -1547,10 +1552,12 @@ export class Facturacion implements OnInit, OnDestroy {
           }
           return this.servicioFacturacion.buscarFacturacion(
             1,
-            sinFiltros ? 10000 : this.limiteFacturasBusqueda,
+            this.limiteFacturasBusqueda,
             filtros.codigo || undefined,
             filtros.nombre || undefined,
             filtros.fecha || (sinFiltros ? this.fechaHoyIso() : undefined),
+            true,
+            true,
           ).pipe(
             map((response: any) => ({ response, filtros, error: null })),
             catchError((error) => {

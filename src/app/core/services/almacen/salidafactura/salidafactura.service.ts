@@ -627,9 +627,9 @@ export class ServicioSalidafactura {
     return from((async () => {
       let q = this.db
         .from('salida')
-        .select('*')
+        .select('id,idsucursal,codsalida,fecsalida,horasalida,canfact,valfact,valpagado,valdevolucion,codchofer,nomchofer,cedchofer,status,envia,idusuario')
         .order('id', { ascending: false })
-        .limit(5);
+        .limit(1);
 
       if (cod !== null) q = q.eq('codchofer', cod);
       if (st) q = q.eq('status', st);
@@ -649,7 +649,7 @@ export class ServicioSalidafactura {
       const codsalida = String(first?.codsalida ?? first?.codSalida ?? '').trim();
       let detQuery = this.db
         .from('detsalida')
-        .select('*')
+        .select('idsalida,idsucursal,codsalida,codfact,fecfact,nomclie,valfact,codchofer,nomchofer,pagado,status')
         .order('codfact', { ascending: true });
       detQuery = codsalida ? detQuery.eq('codsalida', codsalida) : detQuery.eq('idsalida', idsalida);
       const { data: dets, error: detErr } = await detQuery;

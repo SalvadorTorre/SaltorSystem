@@ -8,6 +8,22 @@ import { SupabaseService } from "../../supabase/supabase.service";
   providedIn: "root"
 })
 export class ServicioCliente {
+  private readonly columnasBusquedaCliente = [
+    "cl_codclie",
+    "cl_nomclie",
+    "cl_dirclie",
+    "cl_codsect",
+    "cl_sector",
+    "cl_codzona",
+    "cl_telclie",
+    "cl_tipo",
+    "cl_limclie",
+    "dias",
+    "cl_status",
+    "cl_rnc",
+    "cl_codsucursal",
+  ].join(",");
+
   constructor(private supabase: SupabaseService) {}
 
   private get db(): any {
@@ -290,7 +306,7 @@ export class ServicioCliente {
 
         let query = this.db
           .from("clientes")
-          .select("*")
+          .select(this.columnasBusquedaCliente)
           .ilike("cl_nomclie", `%${term}%`);
         query = this.filtrarPorSucursalUsuario(query, filtrarSucursalUsuario);
         query = query

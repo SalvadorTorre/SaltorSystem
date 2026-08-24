@@ -21,6 +21,100 @@ interface EncfReservation {
 })
 export class ServicioFacturacion {
   private readonly minimoLetrasBusquedaNombreFactura = 4;
+  private readonly columnasFacturaGrid = [
+    'fa_codfact',
+    'fa_nomclie',
+    'fa_fecfact',
+    'fa_valfact',
+  ].join(',');
+  private readonly columnasFacturaLista = [
+    'fa_codfact',
+    'fa_ncffact',
+    'fa_rncfact',
+    'fa_tiponcf',
+    'fa_fecfact',
+    'fa_valfact',
+    'fa_itbifact',
+    'fa_subfact',
+    'fa_desfact',
+    'fa_cosfact',
+    'fa_codclie',
+    'fa_nomclie',
+    'fa_telclie',
+    'fa_dirclie',
+    'fa_contacto',
+    'fa_codzona',
+    'fa_deszona',
+    'fa_codsect',
+    'fa_sector',
+    'fa_codvend',
+    'fa_nomvend',
+    'fa_envio',
+    'fa_fpago',
+    'fa_codfpago',
+    'fa_tipopago',
+    'fa_status',
+    'fa_codsucu',
+    'fa_codempr',
+    'fa_impresa',
+    'fa_reimpresa',
+    'fa_entrega',
+    'fa_impalmaf',
+    'fa_impalmap',
+    'fa_facturada',
+    'fa_pendiente',
+    'fa_despacho',
+    'estado_dgii',
+    'codseguridad',
+    'qr_link',
+    'fec_firma',
+    'estado_envio_dgii',
+    'fa_cierre',
+    'fa_salida',
+    'idsalida',
+  ].join(',');
+  private readonly columnasFacturaCajaResumen = [
+    'fa_codfact',
+    'fa_nomclie',
+    'fa_fecfact',
+    'fa_envio',
+    'fa_status',
+    'fa_valfact',
+    'fa_impresa',
+    'fa_fpago',
+    'fa_codfpago',
+    'fa_tipopago',
+    'fa_entrega',
+    'fa_salida',
+    'idsalida',
+    'fa_codsucu',
+    'fa_codempr',
+    'fa_reimpresa',
+  ].join(',');
+  private readonly columnasDetalleFactura = [
+    'id',
+    'df_codfact',
+    'df_fecfact',
+    'df_codmerc',
+    'df_tipomerc',
+    'df_codgrupo',
+    'df_desmerc',
+    'df_canmerc',
+    'df_premerc',
+    'df_valmerc',
+    'df_unidad',
+    'df_cosmerc',
+    'df_codclie',
+    'df_imp',
+    'df_status',
+    'enviado',
+    'reimpresa',
+    'df_nomclie',
+    'df_codepr',
+    'df_codsucu',
+    'df_pendiente',
+    'df_canpend',
+  ].join(',');
 
   constructor(
     private http: HttpInvokeService,
@@ -1057,6 +1151,44 @@ export class ServicioFacturacion {
     })());
   }
 
+  getResumenCajaPorNumero(numero: string, scope?: { empresa?: string | null; sucursal?: number | string | null }): Observable<any> {
+    if (!this.useSupabase) {
+      return this.getByNumero(numero, scope);
+    }
+
+    const codigo = String(numero || '').trim();
+    const empresa = String(scope?.empresa || '').trim();
+    const sucursal = this.toNumberOrNull(scope?.sucursal);
+    return from((async () => {
+      let query = this.db
+        .from('factura')
+        .select(this.columnasFacturaCajaResumen)
+        .eq('fa_codfact', codigo)
+        .limit(1);
+
+      if (empresa) {
+        query = query.eq('fa_codempr', empresa);
+        if (sucursal && sucursal > 0) {
+          query = query.eq('fa_codsucu', sucursal);
+        }
+      } else if (sucursal && sucursal > 0) {
+        query = this.applyTenantCompanyFilter(query).eq('fa_codsucu', sucursal);
+      } else {
+        query = this.applyTenantFilter(query);
+      }
+
+      const { data, error } = await query.maybeSingle();
+      if (error) throw error;
+      const mapped = data ? this.mapFacturaDbToUi(data) : null;
+      return {
+        ...(mapped || {}),
+        status: mapped ? 'success' : 'not_found',
+        code: mapped ? 200 : 404,
+        data: mapped,
+      };
+    })());
+  }
+
   obtenerNcfFactura(numero: string): Observable<string> {
     const codigo = String(numero || '').trim();
     if (!this.useSupabase) {
@@ -1258,20 +1390,9 @@ export class ServicioFacturacion {
       // La pantalla de CobroFact solo necesita estos campos para construir
       // la tabla y determinar su estado. El encabezado completo y el detalle
       // se consultan cuando el usuario selecciona una factura.
-      const columnasListaCaja = [
-        'fa_codfact',
-        'fa_nomclie',
-        'fa_fecfact',
-        'fa_envio',
-        'fa_status',
-        'fa_valfact',
-        'fa_impresa',
-        'fa_fpago',
-        'fa_reimpresa',
-      ].join(',');
       let query = this.db
         .from('factura')
-        .select(columnasListaCaja)
+        .select(this.columnasFacturaCajaResumen)
         .or('fa_impresa.eq.N,and(fa_impresa.eq.S,fa_fpago.eq.N),and(fa_status.eq.C,fa_fpago.eq.N),and(fa_status.eq.F,fa_fpago.eq.N)')
         .order('fa_fecfact', { ascending: false })
         .limit(500);
@@ -1306,7 +1427,7 @@ export class ServicioFacturacion {
 
       let detalleQuery = this.db
         .from('detfactura')
-        .select('*')
+        .select(this.columnasDetalleFactura)
         .eq('df_codfact', codigo)
         .order('id', { ascending: true });
       detalleQuery = this.applyTenantFilterDetalle(detalleQuery);
@@ -1726,7 +1847,7 @@ export class ServicioFacturacion {
       const fromRow = (safePage - 1) * safePageSize;
       let query = this.db
         .from('factura')
-        .select('fa_codfact,fa_ncffact,fa_rncfact,fa_tiponcf,fa_fecfact,fa_valfact,fa_itbifact,fa_subfact,fa_desfact,fa_codclie,fa_nomclie,fa_codvend,fa_nomvend,fa_fpago,fa_codfpago,fa_tipopago,fa_status,fa_codsucu,fa_codempr,fa_cierre,fa_entrega,fa_impresa,fa_facturada', { count: 'exact' })
+        .select('fa_codfact,fa_ncffact,fa_rncfact,fa_tiponcf,fa_fecfact,fa_valfact,fa_itbifact,fa_subfact,fa_desfact,fa_codclie,fa_nomclie,fa_codvend,fa_nomvend,fa_fpago,fa_codfpago,fa_tipopago,fa_status,fa_codsucu,fa_codempr,fa_cierre,fa_entrega,fa_impresa,fa_facturada', { count: 'planned' })
         .is('fa_cierre', null)
         .or('fa_status.is.null,fa_status.neq.N')
         .order('fa_codfact', { ascending: true })
@@ -1756,6 +1877,28 @@ export class ServicioFacturacion {
 
     const sucursal = this.toNumberOrNull(sucursalId);
     return from((async () => {
+      try {
+        const { data: rpcData, error: rpcError } = await this.db.rpc(
+          'listar_facturas_pendientes_cierre',
+          {
+            p_limit: 10000,
+            p_filtrar_sucursal: filtrarSucursal,
+          },
+        );
+        if (!rpcError && Array.isArray(rpcData)) {
+          return {
+            status: 'success',
+            code: 200,
+            data: rpcData.map((row: any) => this.mapFacturaDbToUi(row)),
+          };
+        }
+        if (rpcError) {
+          console.warn('RPC listar_facturas_pendientes_cierre no disponible, usando consulta paginada.', rpcError);
+        }
+      } catch (error) {
+        console.warn('RPC listar_facturas_pendientes_cierre no disponible, usando consulta paginada.', error);
+      }
+
       const rows: any[] = [];
       const batchSize = 1000;
       for (let offset = 0; ; offset += batchSize) {
@@ -1964,7 +2107,7 @@ export class ServicioFacturacion {
 
       let detalleQuery = this.db
         .from('detfactura')
-        .select('*')
+        .select(this.columnasDetalleFactura)
         .eq('df_codfact', codigo)
         .order('id', { ascending: true });
       if (empresa) detalleQuery = detalleQuery.eq('df_codepr', empresa);
@@ -1993,7 +2136,7 @@ export class ServicioFacturacion {
 
       let detalleQuery = this.db
         .from('detfactura')
-        .select('*')
+        .select(this.columnasDetalleFactura)
         .eq('df_codfact', codigo)
         .or('df_pendiente.eq.P,df_canpend.gt.0')
         .order('id', { ascending: true });
@@ -2182,6 +2325,7 @@ export class ServicioFacturacion {
     nomcliente?: string,
     fecha?: string,
     filtrarSucursal = true,
+    soloGrid = false,
   ): Observable<any> {
     if (!this.useSupabase) {
       let url = `/facturacion-numero?page=${pageIndex}&limit=${pageSize}`;
@@ -2227,29 +2371,12 @@ export class ServicioFacturacion {
       }
 
       const ejecutarConsulta = async (nombrePattern?: string) => {
+        const columnas = soloGrid ? this.columnasFacturaGrid : this.columnasFacturaLista;
         if (nombreTxt && !codigoTxt && !fechaTxt) {
           const nombreHasta = this.nextTextPrefix(nombreTxt);
           let nombreQuery = this.db
             .from('factura')
-            .select(
-              [
-                'fa_codfact',
-                'fa_nomclie',
-                'fa_fecfact',
-                'fa_valfact',
-                'fa_cosfact',
-                'fa_status',
-                'fa_impresa',
-                'fa_fpago',
-                'fa_despacho',
-                'fa_entrega',
-                'fa_impalmaf',
-                'fa_impalmap',
-                'fa_pendiente',
-                'fa_codsucu',
-                'fa_codempr',
-              ].join(','),
-            )
+            .select(columnas)
             .gte('fa_nomclie', nombreTxt)
             .order('fa_nomclie', { ascending: true })
             .order('fa_codfact', { ascending: false })
@@ -2268,7 +2395,7 @@ export class ServicioFacturacion {
 
         let query = this.db
           .from('factura')
-          .select('*', { count: 'planned' })
+          .select(columnas, { count: 'planned' })
           .order('fa_fecfact', { ascending: false })
           .order('fa_codfact', { ascending: false })
           .range(offset, offset + safeLimit - 1);

@@ -149,7 +149,7 @@ export class ServicioRecibo {
         }
         const { data, error } = await this.db
           .from(this.tableName)
-          .select('*')
+          .select('id,fecha,cantidad,nombre,concepto,fpago,codusuario,nombreusuario,codsucu')
           .eq('codsucu', codsucu)
           .order('id', { ascending: false })
           .limit(200);
@@ -172,7 +172,7 @@ export class ServicioRecibo {
       return from((async () => {
         const { data, error } = await this.db
           .from(this.tableName)
-          .select('*')
+          .select('id,fecha,cantidad,nombre,concepto,fpago,codusuario,nombreusuario,codsucu')
           .eq('id', Number(id))
           .eq('codsucu', this.sucursalActual())
           .maybeSingle();

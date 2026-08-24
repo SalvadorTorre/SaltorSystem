@@ -410,7 +410,19 @@ export class Cotizacion implements OnInit {
   editardetCotizacion(detcotizacion: detCotizacionData) {
     this.cotizacionid = detcotizacion.dc_codcoti;
   }
-  editarCotizacion(Cotizacion: CotizacionModelData) {
+  private async cargarEncabezadoCotizacion(Cotizacion: CotizacionModelData): Promise<CotizacionModelData> {
+    const codigo = String(Cotizacion?.ct_codcoti || '').trim();
+    if (!codigo) return Cotizacion;
+    const response = await firstValueFrom(this.servicioCotizacion.getByNumero(codigo, false));
+    const cotizacionCompleta = response?.data || response || {};
+    return {
+      ...Cotizacion,
+      ...cotizacionCompleta,
+    } as CotizacionModelData;
+  }
+
+  async editarCotizacion(Cotizacion: CotizacionModelData) {
+    Cotizacion = await this.cargarEncabezadoCotizacion(Cotizacion);
     this.cotizacionid = Cotizacion.ct_codcoti;
     this.modoedicionCotizacion = true;
     this.formularioCotizacion.patchValue(Cotizacion);
@@ -493,7 +505,8 @@ export class Cotizacion implements OnInit {
         this.cotizacionList = response.data;
       });
   }
-  consultarCotizacion(Cotizacion: CotizacionModelData) {
+  async consultarCotizacion(Cotizacion: CotizacionModelData) {
+    Cotizacion = await this.cargarEncabezadoCotizacion(Cotizacion);
     this.modoconsultaCotizacion = true;
     this.formularioCotizacion.patchValue(Cotizacion);
     this.tituloModalCotizacion = 'Consulta Cotizacion';

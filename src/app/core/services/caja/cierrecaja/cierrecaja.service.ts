@@ -47,6 +47,11 @@ export class ServicioCierreCaja {
     return `${year}-${month}-${day}`;
   }
 
+  private sucursalActual(): number {
+    const value = Number(localStorage.getItem('idSucursal') || 0);
+    return Number.isFinite(value) ? value : 0;
+  }
+
   private mapRow(row: any): any {
     if (!row) return row;
     return {
@@ -67,13 +72,13 @@ export class ServicioCierreCaja {
       return this.http.GetRequest<any>('/cierrecaja');
     }
 
-    const sucursal = this.toNumber(sucursalId);
+    const sucursal = this.toNumber(sucursalId ?? this.sucursalActual());
     return from((async () => {
       let query = this.db
         .from('cierrecaja')
-        .select('*')
+        .select('idcierre,feccierre,tefectivo,ttarjeta,tdeposito,totalcierre,tcheque,factini,factfin,cajera,nota,codsucursal')
         .order('idcierre', { ascending: false })
-        .limit(10);
+        .limit(1);
 
       if (sucursal > 0) {
         query = query.eq('codsucursal', sucursal);

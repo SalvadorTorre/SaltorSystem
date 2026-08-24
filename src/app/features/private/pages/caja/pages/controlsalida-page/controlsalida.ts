@@ -96,7 +96,7 @@ export class ControlSalidaCajaComponent implements OnInit, OnDestroy {
   }
 
   cargarUltimoCierre() {
-    this.servicioCierre.obtenerUltimoCierre().subscribe({
+    this.servicioCierre.obtenerUltimoCierre(this.sucursalLogiada()).subscribe({
       next: (resp: any) => {
         // Asumiendo que resp.data contiene el objeto del último cierre
         // y que tiene un campo como 'cc_finFact' o similar.
@@ -334,8 +334,9 @@ export class ControlSalidaCajaComponent implements OnInit, OnDestroy {
       return;
     }
 
+    const sucursal = this.sucursalLogiada();
     const observables = dets.map((d: any) =>
-      this.servicioFacturacion.getByNumero(d.codFact)
+      this.servicioFacturacion.getResumenCajaPorNumero(d.codFact, { sucursal })
     );
 
     forkJoin(observables).subscribe(

@@ -9,6 +9,22 @@ import { SupabaseService } from "../../supabase/supabase.service";
 })
 export class ServicioInventario {
   private readonly fetchBatchSize = 250;
+  private readonly columnasBusquedaProducto = [
+    "id",
+    "in_codmerc",
+    "in_desmerc",
+    "in_categor",
+    "in_tramo",
+    "in_canmerc",
+    "in_caninve",
+    "in_costmer",
+    "in_premerc",
+    "in_precmin",
+    "in_porgana",
+    "in_unidad",
+    "media",
+    "status",
+  ].join(",");
 
   constructor(private supabase: SupabaseService) {}
 
@@ -356,7 +372,7 @@ export class ServicioInventario {
     return from((async () => {
       const { data, error } = await this.db
         .from("productos2")
-        .select("*")
+        .select(this.columnasBusquedaProducto)
         .ilike("in_codmerc", `%${codigo}%`)
         .order("in_codmerc", { ascending: true })
         .limit(50);
@@ -373,7 +389,7 @@ export class ServicioInventario {
 
       const { data, error } = await this.db
         .from("productos2")
-        .select("*")
+        .select(this.columnasBusquedaProducto)
         .ilike("in_desmerc", `${descripcionInicial}%`)
         .order("in_desmerc", { ascending: true })
         .limit(50);

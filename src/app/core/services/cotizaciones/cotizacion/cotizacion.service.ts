@@ -9,6 +9,29 @@ import { SupabaseService } from "../../supabase/supabase.service";
   providedIn: "root"
 })
 export class ServicioCotizacion {
+  private readonly columnasCotizacionGrid = [
+    "ct_codcoti",
+    "ct_nomclie",
+    "ct_feccoti",
+    "ct_valcoti",
+  ].join(",");
+  private readonly columnasDetalleCotizacion = [
+    "id",
+    "dc_codcoti",
+    "dc_codmerc",
+    "dc_descrip",
+    "dc_canmerc",
+    "dc_premerc",
+    "dc_valmerc",
+    "dc_unidad",
+    "dc_costmer",
+    "dc_codclie",
+    "dc_item",
+    "dc_status",
+    "dc_codempr",
+    "dc_codsucu",
+  ].join(",");
+
   constructor(
     private http: HttpInvokeService,
     private supabase: SupabaseService,
@@ -507,7 +530,7 @@ export class ServicioCotizacion {
         const offset = Math.max(pageIndex - 1, 0) * pageSize;
         let query = this.db
           .from("cotizacion")
-          .select("*", { count: "exact" })
+          .select(this.columnasCotizacionGrid, { count: "exact" })
           .order("ct_feccoti", { ascending: false })
           .order("ct_codcoti", { ascending: false })
           .range(offset, offset + pageSize - 1);
@@ -576,7 +599,7 @@ export class ServicioCotizacion {
         const codigo = String(dc_codcoti || "").trim();
         let query = this.db
           .from("detcotizacion")
-          .select("*")
+          .select(this.columnasDetalleCotizacion)
           .eq("dc_codcoti", codigo)
           .order("dc_item", { ascending: true });
         query = this.applyDetalleReadScope(query);
@@ -595,7 +618,7 @@ export class ServicioCotizacion {
     return this.http.GetRequest<any>(`/detalle-cotizacion/${dc_codcoti}`);
   }
 
-  getByNumero(numero: string): Observable<any> {
+  getByNumero(numero: string, incluirDetalle = true): Observable<any> {
     if (this.useSupabase) {
       return from((async () => {
         const codigo = String(numero || "").trim();
@@ -608,14 +631,18 @@ export class ServicioCotizacion {
         const { data: cotizacionData, error: cotizacionError } = await cotizacionQuery.maybeSingle();
         if (cotizacionError) throw cotizacionError;
 
-        let detalleQuery = this.db
-          .from("detcotizacion")
-          .select("*")
-          .eq("dc_codcoti", codigo)
-          .order("dc_item", { ascending: true });
-        detalleQuery = this.applyDetalleReadScope(detalleQuery);
-        const { data: detalleData, error: detalleError } = await detalleQuery;
-        if (detalleError) throw detalleError;
+        let detalleData: any[] = [];
+        if (incluirDetalle) {
+          let detalleQuery = this.db
+            .from("detcotizacion")
+            .select(this.columnasDetalleCotizacion)
+            .eq("dc_codcoti", codigo)
+            .order("dc_item", { ascending: true });
+          detalleQuery = this.applyDetalleReadScope(detalleQuery);
+          const { data, error } = await detalleQuery;
+          if (error) throw error;
+          detalleData = data || [];
+        }
 
         return {
           status: cotizacionData ? "success" : "not_found",
@@ -623,7 +650,7 @@ export class ServicioCotizacion {
           data: cotizacionData
             ? {
                 ...this.mapCotizacionDbToUi(cotizacionData),
-                detCotizacion: (detalleData || []).map((row: any) => this.mapDetalleDbToUi(row)),
+                detCotizacion: detalleData.map((row: any) => this.mapDetalleDbToUi(row)),
               }
             : null,
         };
@@ -651,7 +678,7 @@ console.log("paso por servicio buscar")
         const offset = Math.max(pageIndex - 1, 0) * pageSize;
         let query = this.db
           .from("cotizacion")
-          .select("*", { count: "exact" })
+          .select(this.columnasCotizacionGrid, { count: "exact" })
           .order("ct_feccoti", { ascending: false })
           .order("ct_codcoti", { ascending: false })
           .range(offset, offset + pageSize - 1);
