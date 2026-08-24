@@ -5,6 +5,7 @@ import { ServicioCierreCaja } from 'src/app/core/services/caja/cierrecaja/cierre
 import { ServicioFpago } from 'src/app/core/services/mantenimientos/fpago/fpago.service';
 import Swal from 'sweetalert2';
 import { ReporteCierreBuilder } from './reporte-builder';
+import { firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'app-cuadrecaja',
@@ -14,6 +15,10 @@ import { ReporteCierreBuilder } from './reporte-builder';
 export class CuadreCaja implements OnInit {
   facturas: any[] = [];
   facturasFiltradas: any[] = [];
+  facturasResumen: any[] = [];
+  paginaActual = 1;
+  tamanoPagina = 50;
+  totalFacturas = 0;
   ultimaFacturaCuadrada: string = ''; 
   isLoading: boolean = false;
   formasPago: any[] = [];
@@ -191,12 +196,18 @@ export class CuadreCaja implements OnInit {
   }
 
   cargarFacturasPendientes() {
-    this.facturaService.buscarFacturasPendientesCierre(5000, true, this.sucursalUsuarioActual()).subscribe({
+    this.isLoading = true;
+    this.facturaService.buscarFacturasPendientesCierre(this.paginaActual, this.tamanoPagina, true, this.sucursalUsuarioActual()).subscribe({
       next: (res: any) => {
         this.isLoading = false;
-        const todas = res.data || [];
-        console.log('Facturas pendientes de cierre cargadas:', todas.length);
-        this.facturas = todas; 
+        this.facturas = res.data || [];
+        this.totalFacturas = Number(res.total) || 0;
+        const ultimaPagina = this.totalPaginas;
+        if (this.paginaActual > ultimaPagina) {
+          this.paginaActual = ultimaPagina;
+          this.cargarFacturasPendientes();
+          return;
+        }
         this.aplicarFiltros();
       },
       error: (err: any) => {
@@ -205,6 +216,33 @@ export class CuadreCaja implements OnInit {
         Swal.fire('Error', 'No se pudieron cargar las facturas', 'error');
       }
     });
+
+    if (this.facturasResumen.length === 0 || this.paginaActual === 1) {
+      this.facturaService.buscarResumenFacturasPendientesCierre(true, this.sucursalUsuarioActual()).subscribe({
+        next: (res: any) => {
+          this.facturasResumen = res.data || [];
+          this.actualizarRangoYTotales();
+        },
+        error: (err: any) => console.error('Error cargando resumen de cierre', err),
+      });
+    }
+  }
+
+  get totalPaginas(): number {
+    return Math.max(1, Math.ceil(this.totalFacturas / this.tamanoPagina));
+  }
+
+  cambiarPagina(pagina: number): void {
+    if (pagina < 1 || pagina > this.totalPaginas || pagina === this.paginaActual || this.isLoading) return;
+    this.paginaActual = pagina;
+    this.cargarFacturasPendientes();
+  }
+
+  private actualizarRangoYTotales(): void {
+    const ordenadas = [...this.facturasResumen].sort((a, b) => Number(a.fa_codFact) - Number(b.fa_codFact));
+    this.inicioFactura = ordenadas[0]?.fa_codFact || '';
+    this.finFactura = ordenadas[ordenadas.length - 1]?.fa_codFact || '';
+    this.calcularTotales();
   }
 
   aplicarFiltros() {
@@ -238,7 +276,7 @@ export class CuadreCaja implements OnInit {
       this.facturasFiltradas = [];
     }
 
-    this.calcularTotales();
+    if (this.facturasResumen.length === 0) this.calcularTotales();
   }
 
   calcularTotales() {
@@ -254,7 +292,8 @@ export class CuadreCaja implements OnInit {
       total: 0
     };
 
-    this.facturasFiltradas.forEach(f => {
+    const facturasParaTotales = this.facturasResumen.length ? this.facturasResumen : this.facturasFiltradas;
+    facturasParaTotales.forEach(f => {
       const monto = Number(f.fa_valFact) || 0;
       const codigoFormaPago = Number(f.fa_codfpago);
 
@@ -304,13 +343,36 @@ export class CuadreCaja implements OnInit {
     this.totales.total = this.totales.valoresCobrados + this.totales.valoresNoCobrados;
   }
 
-  generarReporte() {
+  private async cargarDetalleCompleto(): Promise<any[]> {
+    const detalleCompleto: any[] = [];
+    for (let pagina = 1; pagina <= this.totalPaginas; pagina++) {
+      const res: any = await firstValueFrom(
+        this.facturaService.buscarFacturasPendientesCierre(pagina, this.tamanoPagina, true, this.sucursalUsuarioActual())
+      );
+      detalleCompleto.push(...(res?.data || []));
+    }
+    return detalleCompleto;
+  }
+
+  async generarReporte(facturasReporte?: any[]) {
+    this.isLoading = true;
+    let detalleCompleto = facturasReporte || [];
+    try {
+      if (!facturasReporte) detalleCompleto = await this.cargarDetalleCompleto();
+    } catch (err) {
+      console.error('Error cargando el detalle completo del reporte', err);
+      Swal.fire('Error', 'No se pudo cargar el detalle completo para generar el PDF.', 'error');
+      return;
+    } finally {
+      this.isLoading = false;
+    }
+
     const builder = new ReporteCierreBuilder();
     const nombreEmpresa = String(localStorage.getItem('nombre_empresa') || '').trim();
     builder.iniciarDocumento('Cierre de Caja', nombreEmpresa)
            .agregarDatosGenerales(`Desde Factura ${this.inicioFactura} hasta ${this.finFactura}`, `Última Cuadrada: ${this.ultimaFacturaCuadrada || 'Ninguna'}`)
            .agregarTotales(this.totales, this.formatoMoneda)
-           .agregarTablaDetalle(this.facturasFiltradas, this.formatoMoneda, (factura) => this.obtenerCodigoPagoVisible(factura))
+           .agregarTablaDetalle(detalleCompleto, this.formatoMoneda, (factura) => this.obtenerCodigoPagoVisible(factura))
            .agregarLeyendaFormasPago(this.formasPago)
            .agregarFirma()
            .build(this.nombreArchivoCierre());
@@ -340,20 +402,33 @@ export class CuadreCaja implements OnInit {
     return Number.isFinite(id) && id > 0 ? id : null;
   }
 
-  realizarCierre() {
-    if (this.facturasFiltradas.length === 0) {
+  async realizarCierre() {
+    const facturasDelCierre = this.facturasResumen.length ? this.facturasResumen : this.facturasFiltradas;
+    if (facturasDelCierre.length === 0) {
         Swal.fire('Atención', 'No hay facturas para cerrar en este periodo.', 'warning');
         return;
     }
 
-    const primeraDeEsteCierre = this.facturasFiltradas[0]?.fa_codFact;
-    const ultimaDeEsteCierre = this.facturasFiltradas[this.facturasFiltradas.length - 1].fa_codFact;
-    const facturasCobradas = this.facturasFiltradas.filter(
+    const primeraDeEsteCierre = facturasDelCierre[0]?.fa_codFact;
+    const ultimaDeEsteCierre = facturasDelCierre[facturasDelCierre.length - 1].fa_codFact;
+    const facturasCobradas = facturasDelCierre.filter(
       f => String(f?.fa_fpago || '').trim().toUpperCase() === 'S'
     );
     const codigosFacturasCobradas = facturasCobradas
       .map(f => String(f.fa_codFact || '').trim())
       .filter(Boolean);
+
+    let detalleCompleto: any[];
+    this.isLoading = true;
+    try {
+      detalleCompleto = await this.cargarDetalleCompleto();
+    } catch (err) {
+      this.isLoading = false;
+      console.error('Error preparando el detalle del cierre', err);
+      Swal.fire('Error', 'No se pudo cargar el detalle completo para cerrar la caja.', 'error');
+      return;
+    }
+    this.isLoading = false;
 
     Swal.fire({
       title: '¿Confirmar Cierre de Caja?',
@@ -386,7 +461,7 @@ export class CuadreCaja implements OnInit {
                           next: (resp) => {
                             console.log('Facturas cobradas actualizadas con idcierre', resp);
                             Swal.fire('Cerrado!', 'La caja ha sido cerrada correctamente.', 'success');
-                            this.generarReporte();
+                            this.generarReporte(detalleCompleto);
                             this.obtenerUltimoCierreYFacturas(); 
                           },
                           error: (err) => {

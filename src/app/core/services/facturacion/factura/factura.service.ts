@@ -1255,9 +1255,23 @@ export class ServicioFacturacion {
     }
 
     return from((async () => {
+      // La pantalla de CobroFact solo necesita estos campos para construir
+      // la tabla y determinar su estado. El encabezado completo y el detalle
+      // se consultan cuando el usuario selecciona una factura.
+      const columnasListaCaja = [
+        'fa_codfact',
+        'fa_nomclie',
+        'fa_fecfact',
+        'fa_envio',
+        'fa_status',
+        'fa_valfact',
+        'fa_impresa',
+        'fa_fpago',
+        'fa_reimpresa',
+      ].join(',');
       let query = this.db
         .from('factura')
-        .select('*')
+        .select(columnasListaCaja)
         .or('fa_impresa.eq.N,and(fa_impresa.eq.S,fa_fpago.eq.N),and(fa_status.eq.C,fa_fpago.eq.N),and(fa_status.eq.F,fa_fpago.eq.N)')
         .order('fa_fecfact', { ascending: false })
         .limit(500);
@@ -1691,9 +1705,11 @@ export class ServicioFacturacion {
     })());
   }
 
-  buscarFacturasPendientesCierre(limit: number = 5000, filtrarSucursal: boolean = true, sucursalId?: number | string | null): Observable<any> {
+  buscarFacturasPendientesCierre(page: number = 1, pageSize: number = 50, filtrarSucursal: boolean = true, sucursalId?: number | string | null): Observable<any> {
+    const safePage = Math.max(1, Math.trunc(Number(page) || 1));
+    const safePageSize = Math.min(200, Math.max(1, Math.trunc(Number(pageSize) || 50)));
     if (!this.useSupabase) {
-      const url = `/facturacion?limit=${limit}`;
+      const url = `/facturacion?limit=${safePageSize}&page=${safePage}`;
       return this.http.GetRequest<any>(url).pipe(
         map((response: any) => ({
           ...response,
@@ -1705,42 +1721,59 @@ export class ServicioFacturacion {
       );
     }
 
-    const safeLimit = Math.max(1, Number(limit) || 5000);
     const sucursal = this.toNumberOrNull(sucursalId);
     return from((async () => {
-      // Consultar por lotes evita que PostgreSQL tenga que ordenar y convertir
-      // miles de registros dentro de una sola RPC antes de aplicar el límite.
-      const facturas: any[] = [];
-      const pageSize = 500;
-      for (let offset = 0; offset < safeLimit; offset += pageSize) {
-        const pageLimit = Math.min(pageSize, safeLimit - offset);
-        let query = this.db
-          .from('factura')
-          .select('fa_codfact,fa_ncffact,fa_rncfact,fa_tiponcf,fa_fecfact,fa_valfact,fa_itbifact,fa_subfact,fa_desfact,fa_codclie,fa_nomclie,fa_codvend,fa_nomvend,fa_fpago,fa_codfpago,fa_tipopago,fa_status,fa_codsucu,fa_codempr,fa_cierre,fa_entrega,fa_impresa,fa_facturada')
-          .is('fa_cierre', null)
-          .order('fa_codfact', { ascending: true })
-          .range(offset, offset + pageLimit - 1);
+      const fromRow = (safePage - 1) * safePageSize;
+      let query = this.db
+        .from('factura')
+        .select('fa_codfact,fa_ncffact,fa_rncfact,fa_tiponcf,fa_fecfact,fa_valfact,fa_itbifact,fa_subfact,fa_desfact,fa_codclie,fa_nomclie,fa_codvend,fa_nomvend,fa_fpago,fa_codfpago,fa_tipopago,fa_status,fa_codsucu,fa_codempr,fa_cierre,fa_entrega,fa_impresa,fa_facturada', { count: 'exact' })
+        .is('fa_cierre', null)
+        .or('fa_status.is.null,fa_status.neq.N')
+        .order('fa_codfact', { ascending: true })
+        .range(fromRow, fromRow + safePageSize - 1);
 
-        query = filtrarSucursal
-          ? this.applyTenantFilter(query)
-          : this.applyTenantCompanyFilter(query);
+      query = filtrarSucursal ? this.applyTenantFilter(query) : this.applyTenantCompanyFilter(query);
+      if (sucursal && sucursal > 0 && !filtrarSucursal) query = query.eq('fa_codsucu', sucursal);
 
-        const { data: page, error: pageError } = await query;
-        if (pageError) throw pageError;
-        facturas.push(...(page || []));
-        if ((page || []).length < pageLimit) break;
-      }
-
-      const rows = facturas.filter((row: any) => {
-        if (!sucursal || sucursal <= 0) return true;
-        return this.toNumberOrNull(row?.fa_codsucu ?? row?.fa_codSucu) === sucursal;
-      });
+      const { data, error, count } = await query;
+      if (error) throw error;
 
       return {
         status: 'success',
         code: 200,
-        data: rows.map((row: any) => this.mapFacturaDbToUi(row)),
+        data: (data || []).map((row: any) => this.mapFacturaDbToUi(row)),
+        total: count || 0,
+        page: safePage,
+        pageSize: safePageSize,
       };
+    })());
+  }
+
+  buscarResumenFacturasPendientesCierre(filtrarSucursal: boolean = true, sucursalId?: number | string | null): Observable<any> {
+    if (!this.useSupabase) {
+      return this.http.GetRequest<any>('/facturacion?limit=5000');
+    }
+
+    const sucursal = this.toNumberOrNull(sucursalId);
+    return from((async () => {
+      const rows: any[] = [];
+      const batchSize = 1000;
+      for (let offset = 0; ; offset += batchSize) {
+        let query = this.db
+          .from('factura')
+          .select('fa_codfact,fa_valfact,fa_fpago,fa_codfpago,fa_tipopago,fa_status,fa_codsucu,fa_cierre')
+          .is('fa_cierre', null)
+          .or('fa_status.is.null,fa_status.neq.N')
+          .order('fa_codfact', { ascending: true })
+          .range(offset, offset + batchSize - 1);
+        query = filtrarSucursal ? this.applyTenantFilter(query) : this.applyTenantCompanyFilter(query);
+        if (sucursal && sucursal > 0 && !filtrarSucursal) query = query.eq('fa_codsucu', sucursal);
+        const { data, error } = await query;
+        if (error) throw error;
+        rows.push(...(data || []));
+        if ((data || []).length < batchSize) break;
+      }
+      return { status: 'success', code: 200, data: rows.map(row => this.mapFacturaDbToUi(row)) };
     })());
   }
 

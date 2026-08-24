@@ -804,6 +804,12 @@ export class CobroFact implements OnInit {
     this.facturacionid = detFactura.df_codFact;
   }
   editarFacturacion(Factura: FacturacionModelData) {
+    this.cargarFacturaCompleta(Factura, (facturaCompleta) => {
+      this.editarFacturacionCompleta(facturaCompleta);
+    });
+  }
+
+  private editarFacturacionCompleta(Factura: FacturacionModelData) {
     this.reiniciarCobroAlCambiarFactura(Factura.fa_codFact);
     if (this.esFacturaPagadaConsulta(Factura)) {
       this.consultarFacturacion(Factura);
@@ -1425,11 +1431,41 @@ export class CobroFact implements OnInit {
 
   seleccionarFacturaLista(factura: FacturacionModelData, index: number): void {
     this.selectedFacturaIndex = index;
-    this.consultarFacturacion(factura);
+    this.cargarFacturaCompleta(factura, (facturaCompleta) => {
+      // consultarFacturacion solicita detfactura únicamente después de que el
+      // usuario eligió una fila de la tabla.
+      this.consultarFacturacion(facturaCompleta);
+    });
     setTimeout(() => {
       this.filas?.get(index)?.nativeElement?.scrollIntoView({
         block: 'nearest',
       });
+    });
+  }
+
+  private cargarFacturaCompleta(
+    facturaResumen: FacturacionModelData,
+    continuar: (factura: FacturacionModelData) => void,
+  ): void {
+    const codigo = String(facturaResumen?.fa_codFact || '').trim();
+    if (!codigo) {
+      Swal.fire('Aviso', 'La factura seleccionada no tiene número.', 'warning');
+      return;
+    }
+
+    this.servicioFacturacion.getByNumero(codigo).subscribe({
+      next: (response: any) => {
+        const facturaCompleta = response?.data;
+        if (!facturaCompleta) {
+          Swal.fire('Aviso', `No se encontró la factura ${codigo}.`, 'warning');
+          return;
+        }
+        continuar(facturaCompleta as FacturacionModelData);
+      },
+      error: (err) => {
+        console.error('Error cargando la factura seleccionada:', err);
+        Swal.fire('Error', this.extraerMensajeError(err), 'error');
+      },
     });
   }
 
