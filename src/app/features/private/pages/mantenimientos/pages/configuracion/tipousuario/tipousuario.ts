@@ -2,6 +2,12 @@ import { Component, OnInit } from '@angular/core';
 import { NgForm } from '@angular/forms';
 import { ServicioTipousuario } from 'src/app/core/services/mantenimientos/tipousuario/tipousuario.service';
 import { ServicioModulo } from 'src/app/core/services/mantenimientos/modulo/modulo.service';
+import {
+  AccionCatalogoPermiso,
+  PermisoMatrizFila,
+  ServicioPermiso
+} from 'src/app/core/services/mantenimientos/permiso/permiso.service';
+import { AccessControlService } from 'src/app/core/services/access/access-control.service';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -24,6 +30,18 @@ export class TipousuarioPage implements OnInit {
   actualDet: any = { idmodulo: undefined, acceso: 'N', lectura: 'N' };
   editDetIndex = -1;
 
+  // Matriz de permisos (v2) del tipo seleccionado
+  modoPermisosTipo: 'v2' | 'tipo' | null = null;
+  cargandoPermisosTipo = false;
+  permisosTipoCargados = false;
+  accionesPermisosCatalogoTipo: AccionCatalogoPermiso[] = [];
+  permisosMatrizTipo: PermisoMatrizFila[] = [];
+  gruposPermisosTipo: Array<{ nombre: string; filas: PermisoMatrizFila[] }> = [];
+  grupoAccesoAbiertoTipo = '';
+  filtroPermisosTipo = '';
+  mostrarSoloActivosTipo = false;
+  guardandoPermisosTipo = false;
+
   // Toast SweetAlert para mensajes no bloqueantes
   Toast = (Swal as any).mixin({
     toast: true,
@@ -36,6 +54,8 @@ export class TipousuarioPage implements OnInit {
   constructor(
     private tipoSrv: ServicioTipousuario,
     private moduloSrv: ServicioModulo,
+    private permisoSrv: ServicioPermiso,
+    private accessControl: AccessControlService,
   ) {}
 
   private obtenerMensajeError(err: any): string {
@@ -125,7 +145,7 @@ export class TipousuarioPage implements OnInit {
 
   seleccionarTipo(t: any): void {
     this.seleccionado = t;
-    this.cargarDetalles();
+    this.cargarMatrizPermisosTipo();
   }
 
   descModulo(id?: number): string {
@@ -208,6 +228,7 @@ export class TipousuarioPage implements OnInit {
           if (this.seleccionado?.id === t.id) {
             this.seleccionado = null;
             this.detalles = [];
+            this.limpiarEstadoPermisosTipo();
           }
           this.cargarTipos();
           this.Toast.fire({ title: 'Tipo eliminado', icon: 'success' as any, timer: 4000, timerProgressBar: true });
@@ -219,7 +240,7 @@ export class TipousuarioPage implements OnInit {
     });
   }
 
-  // Detalle de TipoUsuario: acciones
+  // Detalle de TipoUsuario (fallback legacy, solo cuando no hay catálogo v2)
   abrirModalNuevoDet(): void {
     this.editDetIndex = -1;
     this.actualDet = { idmodulo: undefined, acceso: 'N', lectura: 'N' };
@@ -304,5 +325,225 @@ export class TipousuarioPage implements OnInit {
         }
       });
     });
+  }
+
+  // --- Matriz de permisos (v2) por tipo de usuario ---
+
+  private limpiarEstadoPermisosTipo(): void {
+    this.modoPermisosTipo = null;
+    this.permisosTipoCargados = false;
+    this.accionesPermisosCatalogoTipo = [];
+    this.permisosMatrizTipo = [];
+    this.gruposPermisosTipo = [];
+    this.grupoAccesoAbiertoTipo = '';
+    this.filtroPermisosTipo = '';
+    this.mostrarSoloActivosTipo = false;
+  }
+
+  cargarMatrizPermisosTipo(): void {
+    if (!this.seleccionado?.id) {
+      this.limpiarEstadoPermisosTipo();
+      return;
+    }
+    this.cargandoPermisosTipo = true;
+    this.permisosTipoCargados = false;
+    this.grupoAccesoAbiertoTipo = '';
+    this.filtroPermisosTipo = '';
+    this.mostrarSoloActivosTipo = false;
+
+    this.permisoSrv.obtenerMatrizPermisosTipoUsuario(Number(this.seleccionado.id)).subscribe({
+      next: (res: any) => {
+        const data = res?.data || {};
+        this.modoPermisosTipo = data?.modo === 'v2' ? 'v2' : 'tipo';
+        this.cargandoPermisosTipo = false;
+
+        if (this.modoPermisosTipo === 'v2') {
+          this.accionesPermisosCatalogoTipo = this.unwrapList(data?.acciones);
+          this.permisosMatrizTipo = Array.isArray(data?.filas) ? data.filas : [];
+          this.actualizarGruposPermisosTipo();
+          this.permisosTipoCargados = true;
+        } else {
+          // Sin catálogo v2 disponible: usar el flujo clásico de módulos acceso/lectura.
+          this.cargarDetalles();
+        }
+      },
+      error: (err) => {
+        this.cargandoPermisosTipo = false;
+        this.modoPermisosTipo = null;
+        this.Toast.fire({ title: this.obtenerMensajeError(err), icon: 'error' as any });
+      }
+    });
+  }
+
+  guardarPermisosTipo(): void {
+    if (!this.seleccionado?.id) return;
+    this.guardandoPermisosTipo = true;
+    this.permisoSrv.guardarMatrizPermisosTipoUsuario(Number(this.seleccionado.id), this.permisosMatrizTipo).subscribe({
+      next: () => {
+        this.guardandoPermisosTipo = false;
+        this.accessControl.reset();
+        this.Toast.fire({ title: 'Permisos del tipo guardados. Los usuarios de este tipo los heredarán automáticamente.', icon: 'success' as any, timer: 6000, timerProgressBar: true });
+        this.cargarMatrizPermisosTipo();
+      },
+      error: (err) => {
+        this.guardandoPermisosTipo = false;
+        this.Toast.fire({ title: this.obtenerMensajeError(err), icon: 'error' as any });
+      }
+    });
+  }
+
+  private normalizarTexto(valor: any): string {
+    return String(valor || '')
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')
+      .trim()
+      .toLowerCase();
+  }
+
+  private get permisosMatrizTipoFiltrados(): PermisoMatrizFila[] {
+    const filtro = this.normalizarTexto(this.filtroPermisosTipo);
+    return (this.permisosMatrizTipo || []).filter((fila: PermisoMatrizFila) => {
+      if (this.mostrarSoloActivosTipo && !this.tieneAccionActiva(fila)) {
+        return false;
+      }
+      if (!filtro) return true;
+      const texto = this.normalizarTexto(
+        `${fila?.modulo_nombre || ''} ${fila?.pantalla_nombre || ''} ${fila?.recurso_key || ''}`
+      );
+      return texto.includes(filtro);
+    });
+  }
+
+  private construirGruposPermisos(filasOrigen: PermisoMatrizFila[]): Array<{ nombre: string; filas: PermisoMatrizFila[] }> {
+    const grupos = new Map<string, PermisoMatrizFila[]>();
+    (filasOrigen || []).forEach((fila: PermisoMatrizFila) => {
+      const nombre = String(fila?.modulo_nombre || 'General').trim() || 'General';
+      if (!grupos.has(nombre)) {
+        grupos.set(nombre, []);
+      }
+      grupos.get(nombre)!.push(fila);
+    });
+    return Array.from(grupos.entries())
+      .map(([nombre, filas]) => ({
+        nombre,
+        filas: [...filas].sort((a: PermisoMatrizFila, b: PermisoMatrizFila) =>
+          String(a?.pantalla_nombre || '').localeCompare(String(b?.pantalla_nombre || ''), 'es', { sensitivity: 'base' })
+        ),
+      }))
+      .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }));
+  }
+
+  actualizarGruposPermisosTipo(): void {
+    this.gruposPermisosTipo = this.construirGruposPermisos(this.permisosMatrizTipoFiltrados);
+    if (!this.grupoAccesoAbiertoTipo && this.gruposPermisosTipo.length) {
+      const activo = this.gruposPermisosTipo.find((grupo) => this.contarRecursosActivosGrupo(grupo.filas) > 0);
+      this.grupoAccesoAbiertoTipo = activo?.nombre || this.gruposPermisosTipo[0].nombre;
+    }
+  }
+
+  trackPermisoFila(index: number, fila: PermisoMatrizFila): string {
+    return String(fila?.recurso_key || fila?.idmodulo || fila?.pantalla_nombre || index);
+  }
+
+  trackAccionPermiso(index: number, accion: AccionCatalogoPermiso): string {
+    return String(accion?.accion_key || index);
+  }
+
+  trackGrupoPermiso(index: number, grupo: { nombre: string }): string {
+    return String(grupo?.nombre || index);
+  }
+
+  descripcionAccionPermiso(accion: AccionCatalogoPermiso): string {
+    const key = String(accion?.accion_key || '').trim().toLowerCase();
+    const etiquetas: Record<string, string> = {
+      ver: 'Consultar',
+      acceso: 'Acceso',
+      lectura: 'Solo consulta',
+      crear: 'Insertar / Crear',
+      editar: 'Editar',
+      eliminar: 'Eliminar',
+      guardar: 'Guardar',
+    };
+    return etiquetas[key] || String(accion?.descripcion || key || 'Acción');
+  }
+
+  contarAccionesActivas(fila?: PermisoMatrizFila | null): number {
+    return Object.values(fila?.acciones || {}).filter((valor: any) => !!valor).length;
+  }
+
+  tieneAccionActiva(fila?: PermisoMatrizFila | null): boolean {
+    return this.contarAccionesActivas(fila) > 0;
+  }
+
+  alternarFilaPermisos(fila: PermisoMatrizFila, activo: boolean): void {
+    Object.keys(fila?.acciones || {}).forEach((key: string) => {
+      fila.acciones[key] = activo;
+    });
+  }
+
+  alternarGrupoPermisos(filas: PermisoMatrizFila[], activo: boolean): void {
+    (filas || []).forEach((fila: PermisoMatrizFila) => this.alternarFilaPermisos(fila, activo));
+  }
+
+  aplicarConsultaGrupoPermisos(filas: PermisoMatrizFila[]): void {
+    (filas || []).forEach((fila: PermisoMatrizFila) => {
+      Object.keys(fila?.acciones || {}).forEach((key: string) => {
+        const normalizada = this.normalizarTexto(key);
+        fila.acciones[key] = ['ver', 'acceso', 'lectura', 'consultar'].includes(normalizada);
+      });
+    });
+  }
+
+  contarRecursosActivosGrupo(filas: PermisoMatrizFila[]): number {
+    return (filas || []).filter((fila: PermisoMatrizFila) => this.tieneAccionActiva(fila)).length;
+  }
+
+  contarAccionesActivasGrupo(filas: PermisoMatrizFila[]): number {
+    return (filas || []).reduce((total: number, fila: PermisoMatrizFila) => total + this.contarAccionesActivas(fila), 0);
+  }
+
+  resumenGrupoPermisos(filas: PermisoMatrizFila[]): string {
+    const total = (filas || []).length;
+    const activos = this.contarRecursosActivosGrupo(filas);
+    if (!activos) return 'Sin acceso';
+    if (activos === total) return 'Activo completo';
+    return `${activos} de ${total} pantallas`;
+  }
+
+  abrirGrupoPermisos(nombre: string): void {
+    this.grupoAccesoAbiertoTipo = this.grupoAccesoAbiertoTipo === nombre ? '' : nombre;
+  }
+
+  estaGrupoPermisoAbierto(nombre: string): boolean {
+    return this.grupoAccesoAbiertoTipo === nombre;
+  }
+
+  alternarTodosPermisosTipo(activo: boolean): void {
+    (this.permisosMatrizTipo || []).forEach((fila: PermisoMatrizFila) => {
+      this.alternarFilaPermisos(fila, activo);
+    });
+    this.actualizarGruposPermisosTipo();
+  }
+
+  limpiarPermisosTipo(): void {
+    this.alternarTodosPermisosTipo(false);
+  }
+
+  onCambioPermisoTipo(): void {
+    if (this.mostrarSoloActivosTipo) {
+      this.actualizarGruposPermisosTipo();
+    }
+  }
+
+  get totalRecursosPermisosTipo(): number {
+    return Array.isArray(this.permisosMatrizTipo) ? this.permisosMatrizTipo.length : 0;
+  }
+
+  get totalRecursosActivosTipo(): number {
+    return (this.permisosMatrizTipo || []).filter((fila: PermisoMatrizFila) => this.tieneAccionActiva(fila)).length;
+  }
+
+  get totalAccionesActivasTipo(): number {
+    return (this.permisosMatrizTipo || []).reduce((acc: number, fila: PermisoMatrizFila) => acc + this.contarAccionesActivas(fila), 0);
   }
 }

@@ -43,6 +43,7 @@ export class Usuario implements OnInit {
   nuevoUsuario: Partial<ModeloUsuarioData> = {};
   // Detalles de tipo seleccionado para nuevo usuario
   detallesTipoSeleccionado: any[] = [];
+  personalizarPermisosNuevoUsuario = false;
   accionesPermisosCatalogo: AccionCatalogoPermiso[] = [];
   permisosMatrizNuevoUsuario: PermisoMatrizFila[] = [];
   accionesPermisosCatalogoEdicion: AccionCatalogoPermiso[] = [];
@@ -766,6 +767,28 @@ export class Usuario implements OnInit {
     });
   }
 
+  restablecerHerenciaTipoEdicion(): void {
+    if (!this.selectedUsuario) {
+      this.fireToast({ title: 'Usuario no seleccionado', icon: 'warning' });
+      return;
+    }
+    const codusuario = Number(this.selectedUsuario.codUsuario || 0);
+    if (!codusuario) return;
+    const codEmpre = String((this.selectedUsuario as any)?.cod_empre || '').trim() || null;
+    const sucursalid = Number((this.selectedUsuario as any)?.sucursalid ?? (this.selectedUsuario as any)?.sucursal ?? 0) || null;
+
+    this.permisoSrv.guardarMatrizPermisosUsuario(codusuario, [], codEmpre, sucursalid).subscribe({
+      next: () => {
+        this.accessControl.reset();
+        this.fireToast({ title: 'Este usuario ahora hereda los permisos de su tipo', icon: 'success' });
+        this.abrirEditorAccesosUsuario(this.selectedUsuario!, false);
+      },
+      error: () => {
+        this.fireToast({ title: 'No se pudo restablecer la herencia del tipo', icon: 'error' });
+      }
+    });
+  }
+
   cerrarEditorAccesosUsuario(): void {
     $('#modalEditarAccesosUsuario').modal('hide');
     this.cargandoPermisosEdicion = false;
@@ -1009,6 +1032,7 @@ export class Usuario implements OnInit {
       empresa: '',
     } as any;
     this.detallesTipoSeleccionado = [];
+    this.personalizarPermisosNuevoUsuario = false;
     this.accionesPermisosCatalogo = [];
     this.permisosMatrizNuevoUsuario = [];
     this.gruposPermisosNuevoUsuario = [];
@@ -1111,12 +1135,18 @@ export class Usuario implements OnInit {
     this.detallesTipoSeleccionado = [];
     this.aplicarPlantillaPredeterminadaTipo(idtipo);
     this.actualizarGruposPermisosNuevo();
-    if (!idtipo) return;
+    if (!idtipo) {
+      this.personalizarPermisosNuevoUsuario = false;
+      return;
+    }
     this.tipoSrv.buscarTipousuario(Number(idtipo)).subscribe({
       next: (res: any) => {
         const tipo = Array.isArray(res?.data) ? res.data[0] : (res?.data ?? res);
         this.detallesTipoSeleccionado = Array.isArray(tipo?.dtipousuarios) ? tipo.dtipousuarios : [];
         this.reAplicarTipoActualEnMatrizNuevoUsuario();
+        if (this.personalizarPermisosNuevoUsuario) {
+          this.activarPersonalizacionNuevoUsuario();
+        }
       },
       error: () => {
         this.detallesTipoSeleccionado = [];
@@ -1134,6 +1164,49 @@ export class Usuario implements OnInit {
       descripcion,
     );
     this.actualizarGruposPermisosNuevo();
+  }
+
+  private aplicarMatrizTipoV2EnMatrizNuevoUsuario(filasTipo: PermisoMatrizFila[]): void {
+    if (!Array.isArray(filasTipo) || !filasTipo.length || !this.permisosMatrizNuevoUsuario.length) return;
+    const mapa = new Map<string, PermisoMatrizFila>();
+    filasTipo.forEach((f: PermisoMatrizFila) => {
+      const key = String(f?.recurso_key || '').trim();
+      if (key) mapa.set(key, f);
+    });
+    this.permisosMatrizNuevoUsuario.forEach((fila: PermisoMatrizFila) => {
+      const key = String(fila?.recurso_key || '').trim();
+      if (!key || !mapa.has(key)) return;
+      const origen = mapa.get(key)!;
+      Object.keys(fila.acciones || {}).forEach((accionKey: string) => {
+        if (Object.prototype.hasOwnProperty.call(origen.acciones || {}, accionKey)) {
+          fila.acciones[accionKey] = !!origen.acciones[accionKey];
+        }
+      });
+    });
+  }
+
+  activarPersonalizacionNuevoUsuario(): void {
+    const idtipo = Number((this.nuevoUsuario as any)?.idtipoUsuario || 0) || undefined;
+    if (!idtipo) return;
+    this.personalizarPermisosNuevoUsuario = true;
+
+    this.permisoSrv.obtenerMatrizPermisosTipoUsuario(idtipo).subscribe({
+      next: (res: any) => {
+        const data = res?.data || {};
+        if (data?.modo === 'v2' && Array.isArray(data?.filas)) {
+          this.aplicarMatrizTipoV2EnMatrizNuevoUsuario(data.filas);
+        }
+        this.actualizarGruposPermisosNuevo();
+      },
+      error: () => {
+        this.actualizarGruposPermisosNuevo();
+      }
+    });
+  }
+
+  desactivarPersonalizacionNuevoUsuario(): void {
+    this.personalizarPermisosNuevoUsuario = false;
+    this.limpiarPermisosNuevoUsuario();
   }
 
   guardarNuevoUsuario(form: NgForm): void {
@@ -1263,7 +1336,9 @@ export class Usuario implements OnInit {
     sucursalScope?: number | null,
   ): void {
     const persistirYSalir = () => {
-      this.persistirPermisosSeleccionados(codusuario, empresaScope, sucursalScope);
+      if (this.personalizarPermisosNuevoUsuario) {
+        this.persistirPermisosSeleccionados(codusuario, empresaScope, sucursalScope);
+      }
       this.cargarUsuarios();
       $('#modalNuevoUsuario').modal('hide');
       this.fireToast({ title: 'Usuario creado', icon: 'success' });

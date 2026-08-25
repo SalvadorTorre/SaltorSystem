@@ -461,6 +461,9 @@
                     <button type="button" class="btn btn-outline-danger btn-sm" (click)="limpiarPermisosEdicionUsuario()">
                       <i class="bi bi-eraser me-1"></i> Limpiar
                     </button>
+                    <button type="button" class="btn btn-outline-success btn-sm" (click)="restablecerHerenciaTipoEdicion()" title="Elimina cualquier excepción personal y hace que este usuario vuelva a heredar en vivo los permisos de su tipo">
+                      <i class="bi bi-arrow-repeat me-1"></i> Restablecer y heredar del tipo
+                    </button>
                   </div>
                 </div>
 
@@ -943,13 +946,32 @@
 
             <div class="col-xl-8 usuario-modal-permissions-col">
               <section class="usuario-modal-panel usuario-modal-panel--permissions">
+                <div class="usuario-modal-empty-state" style="min-height: 260px;" *ngIf="!personalizarPermisosNuevoUsuario">
+                  <div class="usuario-modal-empty-state__icon">
+                    <i class="bi bi-shield-check"></i>
+                  </div>
+                  <h6 class="mb-1">Este usuario heredará los permisos de su tipo</h6>
+                  <p class="mb-3 text-muted small">
+                    <ng-container *ngIf="nuevoUsuario.idtipoUsuario; else sinTipoSeleccionadoNuevoTpl">
+                      Todo usuario del tipo <strong>{{ descTipoUsuario(nuevoUsuario.idtipoUsuario) }}</strong> obtiene automáticamente los permisos configurados para ese tipo en la pantalla "Tipos de Usuario". Si necesitas una excepción solo para este usuario, personalízalos abajo.
+                    </ng-container>
+                    <ng-template #sinTipoSeleccionadoNuevoTpl>
+                      Selecciona primero un tipo de usuario para que este usuario herede sus permisos automáticamente.
+                    </ng-template>
+                  </p>
+                  <button type="button" class="btn btn-outline-primary btn-sm" [disabled]="!nuevoUsuario.idtipoUsuario" (click)="activarPersonalizacionNuevoUsuario()">
+                    <i class="bi bi-sliders me-1"></i> Personalizar permisos para este usuario
+                  </button>
+                </div>
+
+                <ng-container *ngIf="personalizarPermisosNuevoUsuario">
                 <section class="permisos-builder" *ngIf="permisosMatrizNuevoUsuario?.length; else permisosPendientesTpl">
               <div class="permisos-builder__header">
                 <div>
                   <p class="permisos-builder__eyebrow mb-1">Control de acceso</p>
-                  <h6 class="mb-1">Accesos por módulo</h6>
+                  <h6 class="mb-1">Accesos por módulo (personalizado)</h6>
                   <p class="mb-0 text-muted small">
-                    Elige una plantilla por tipo o ajusta los módulos sin tener todo abierto a la vez.
+                    Se precargó desde el tipo seleccionado. Ajusta lo que necesites; se guardará como excepción solo para este usuario.
                   </p>
                 </div>
                 <div class="permisos-builder__stats">
@@ -1081,10 +1103,16 @@
                 </section>
               </div>
                 </section>
+                </ng-container>
 
-                <small class="text-muted d-block mt-2">
-                  Si no activas nada, se intentará aplicar la plantilla base del tipo de usuario seleccionado.
-                </small>
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-2" *ngIf="personalizarPermisosNuevoUsuario">
+                  <small class="text-muted">
+                    Estos permisos se guardarán como una excepción exclusiva para este usuario.
+                  </small>
+                  <button type="button" class="btn btn-link btn-sm p-0" (click)="desactivarPersonalizacionNuevoUsuario()">
+                    Volver a heredar del tipo
+                  </button>
+                </div>
               </section>
             </div>
           </div>

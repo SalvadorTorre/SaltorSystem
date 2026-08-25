@@ -439,6 +439,64 @@ export class ServicioPermiso {
         return { acciones: [], recursos: [], filas: [], modo: "tipo" as const };
       }
 
+      const v2 = await this.isPermisoV2Disponible();
+      if (v2) {
+        const [{ data: acciones, error: errA }, { data: recursos, error: errR }, { data: asignaciones, error: errT }] = await Promise.all([
+          this.db
+            .from("permiso_accion_catalogo")
+            .select("accion_key,descripcion,orden")
+            .eq("activo", true)
+            .order("orden", { ascending: true }),
+          this.db
+            .from("permiso_recurso_catalogo")
+            .select("recurso_key,modulo_key,modulo_nombre,pantalla_nombre,ruta,requiere_tenant")
+            .eq("activo", true)
+            .order("orden", { ascending: true }),
+          this.db
+            .from("tipousuario_permiso_accion")
+            .select("recurso_key,accion_key,permitido")
+            .eq("idtipousuario", tipoId)
+            .eq("activo", true),
+        ]);
+        if (errA) throw errA;
+        if (errR) throw errR;
+        if (errT) throw errT;
+
+        const actionKeys = (acciones || []).map((a: any) => String(a.accion_key));
+        const mapa = new Map<string, any>();
+        (asignaciones || []).forEach((a: any) => {
+          if (!mapa.has(a.recurso_key)) {
+            mapa.set(a.recurso_key, {});
+          }
+          mapa.get(a.recurso_key)[String(a.accion_key)] = !!a.permitido;
+        });
+
+        const filas: PermisoMatrizFila[] = (recursos || []).map((row: any) => {
+          const r = this.normalizarRecursoCatalogo(row);
+          const base: Record<string, boolean> = {};
+          actionKeys.forEach((k: string) => base[k] = false);
+          const current = mapa.get(String(r.recurso_key)) || {};
+          Object.keys(current).forEach((k: string) => base[k] = !!current[k]);
+          return {
+            codusuario: null,
+            recurso_key: r.recurso_key,
+            modulo_key: r.modulo_key,
+            pantalla_nombre: r.pantalla_nombre,
+            modulo_nombre: r.modulo_nombre,
+            ruta: r.ruta || null,
+            acciones: base,
+            modo: "v2",
+          };
+        });
+
+        return {
+          acciones: acciones || [],
+          recursos: recursos || [],
+          filas,
+          modo: "v2" as const,
+        };
+      }
+
       const [{ data: modulos, error: errM }, { data: detalles, error: errD }] = await Promise.all([
         this.db
           .from("modulo")
@@ -564,6 +622,76 @@ export class ServicioPermiso {
 
       if (rowsToInsert.length) {
         const { error: insErr } = await this.db.from("usuario_permiso_accion").insert(rowsToInsert);
+        if (insErr) throw insErr;
+      }
+      return { saved: rowsToInsert.length, modo: "v2" };
+    })()).pipe(
+      map((payload: any) => ({
+        status: "success",
+        code: 200,
+        data: payload
+      }))
+    );
+  }
+
+  guardarMatrizPermisosTipoUsuario(
+    idtipousuario: number,
+    filas: PermisoMatrizFila[]
+  ): Observable<any> {
+    return from((async () => {
+      const tipoId = Number(idtipousuario || 0);
+      if (!tipoId) throw new Error("Tipo de usuario inválido");
+
+      const v2 = await this.isPermisoV2Disponible();
+      if (!v2) {
+        // Fallback legacy: sincroniza dtipousuario con acceso/lectura por módulo.
+        const { error: delErr } = await this.db
+          .from("dtipousuario")
+          .delete()
+          .eq("idtipousuario", tipoId);
+        if (delErr) throw delErr;
+
+        const inserts = (filas || [])
+          .filter((f: PermisoMatrizFila) => Number(f.idmodulo || 0) > 0)
+          .filter((f: PermisoMatrizFila) => f?.acciones?.["acceso"] || f?.acciones?.["lectura"])
+          .map((f: PermisoMatrizFila) => ({
+            idtipousuario: tipoId,
+            idmodulo: Number(f.idmodulo),
+            acceso: f?.acciones?.["acceso"] ? "S" : "N",
+            lectura: f?.acciones?.["lectura"] ? "S" : "N",
+          }));
+
+        if (inserts.length) {
+          const { error: insErr } = await this.db.from("dtipousuario").insert(inserts);
+          if (insErr) throw insErr;
+        }
+        return { saved: inserts.length, modo: "legacy" };
+      }
+
+      const { error: delErr } = await this.db
+        .from("tipousuario_permiso_accion")
+        .delete()
+        .eq("idtipousuario", tipoId);
+      if (delErr) throw delErr;
+
+      const rowsToInsert: any[] = [];
+      (filas || []).forEach((f: PermisoMatrizFila) => {
+        const recursoKey = String(f.recurso_key || "").trim();
+        if (!recursoKey) return;
+        Object.entries(f.acciones || {}).forEach(([accionKey, permitido]) => {
+          if (!permitido) return;
+          rowsToInsert.push({
+            idtipousuario: tipoId,
+            recurso_key: recursoKey,
+            accion_key: accionKey,
+            permitido: true,
+            activo: true,
+          });
+        });
+      });
+
+      if (rowsToInsert.length) {
+        const { error: insErr } = await this.db.from("tipousuario_permiso_accion").insert(rowsToInsert);
         if (insErr) throw insErr;
       }
       return { saved: rowsToInsert.length, modo: "v2" };

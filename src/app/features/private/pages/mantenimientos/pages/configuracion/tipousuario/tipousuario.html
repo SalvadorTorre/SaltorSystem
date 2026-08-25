@@ -1,70 +1,240 @@
-<div class="container-fluid">
+<div class="tipousuario-page container-fluid">
+  <div class="card tipousuario-hero border-0 shadow-sm mb-3">
+    <div class="card-body d-flex flex-wrap align-items-center justify-content-between gap-3">
+      <div>
+        <p class="tipousuario-eyebrow mb-1">Control de acceso por rol</p>
+        <h4 class="mb-1"><i class="bi bi-people-fill me-2"></i>Tipos de Usuario</h4>
+        <p class="mb-0 text-white-75 small">
+          Configura los permisos una sola vez por tipo (rol) y todos los usuarios de ese tipo los heredarán automáticamente.
+        </p>
+      </div>
+      <div class="d-flex gap-2 flex-wrap">
+        <div class="tipousuario-metric-card">
+          <span>Tipos registrados</span>
+          <strong>{{ tipos.length }}</strong>
+        </div>
+        <div class="tipousuario-metric-card" *ngIf="seleccionado && modoPermisosTipo === 'v2'">
+          <span>Pantallas configuradas</span>
+          <strong>{{ totalRecursosActivosTipo }} / {{ totalRecursosPermisosTipo }}</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="row g-3">
     <!-- Tipos de Usuario -->
-    <div class="col-12 col-xl-5">
-      <div class="card shadow-sm">
-        <div class="card-header bg-primary text-white d-flex align-items-center justify-content-between">
+    <div class="col-12 col-xl-4">
+      <div class="card tipousuario-panel shadow-sm h-100">
+        <div class="tipousuario-panel__header d-flex align-items-center justify-content-between">
           <div class="d-flex align-items-center">
-            <i class="bi bi-people me-2"></i>
-            <h5 class="mb-0">Tipos de Usuario</h5>
+            <i class="bi bi-diagram-3 me-2"></i>
+            <h6 class="mb-0">Lista de tipos</h6>
           </div>
-          <button class="btn btn-light btn-sm" (click)="abrirModalNuevoTipo()" data-bs-toggle="modal" data-bs-target="#tipoModal">
+          <button class="btn btn-primary btn-sm" (click)="abrirModalNuevoTipo()" data-bs-toggle="modal" data-bs-target="#tipoModal">
             <i class="bi bi-plus-circle me-1"></i> Nuevo
           </button>
         </div>
         <div class="card-body">
-          <div class="input-group mb-3">
+          <div class="input-group input-group-sm mb-3 tipousuario-search">
             <span class="input-group-text"><i class="bi bi-search"></i></span>
             <input type="text" class="form-control" placeholder="Buscar tipo..." [(ngModel)]="filtroTipo">
           </div>
-          <div class="table-responsive">
-            <table class="table table-sm table-hover">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Descripción</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let t of tiposFiltrados; let i = index" [class.table-active]="seleccionado?.id === t.id" (click)="seleccionarTipo(t)">
-                  <td>{{ t.id }}</td>
-                  <td>{{ t.descripcion }}</td>
-                  <td>
-                    <button class="btn btn-primary btn-sm me-2" (click)="abrirModalEditarTipo(t, i); $event.stopPropagation();" data-bs-toggle="modal" data-bs-target="#tipoModal" title="Editar tipo" aria-label="Editar tipo">
-                      <i class="bi bi-pencil"></i>
-                    </button>
-                    <button class="btn btn-danger btn-sm" (click)="eliminarTipo(t); $event.stopPropagation();" title="Eliminar tipo" aria-label="Eliminar tipo">
-                      <i class="bi bi-trash"></i>
-                    </button>
-                  </td>
-                </tr>
-                <tr *ngIf="tiposFiltrados.length === 0">
-                  <td colspan="3" class="text-muted text-center">No hay tipos visibles</td>
-                </tr>
-              </tbody>
-            </table>
+          <div class="tipousuario-list">
+            <button
+              type="button"
+              class="tipousuario-list-item"
+              *ngFor="let t of tiposFiltrados"
+              [class.tipousuario-list-item--active]="seleccionado?.id === t.id"
+              (click)="seleccionarTipo(t)"
+            >
+              <span class="tipousuario-list-item__id">#{{ t.id }}</span>
+              <span class="tipousuario-list-item__name">{{ t.descripcion }}</span>
+              <span class="tipousuario-list-item__actions" (click)="$event.stopPropagation()">
+                <button class="btn btn-light btn-sm" (click)="abrirModalEditarTipo(t, tiposFiltrados.indexOf(t))" data-bs-toggle="modal" data-bs-target="#tipoModal" title="Editar tipo" aria-label="Editar tipo">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn btn-light btn-sm text-danger" (click)="eliminarTipo(t)" title="Eliminar tipo" aria-label="Eliminar tipo">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </span>
+            </button>
+            <div *ngIf="tiposFiltrados.length === 0" class="text-muted text-center py-4">No hay tipos visibles</div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Detalles (Módulos por Tipo) -->
-    <div class="col-12 col-xl-7">
-      <div class="card shadow-sm">
-        <div class="card-header bg-secondary text-white d-flex align-items-center justify-content-between">
+    <!-- Permisos del tipo seleccionado -->
+    <div class="col-12 col-xl-8">
+      <div class="tipousuario-empty-state" *ngIf="!seleccionado">
+        <div class="tipousuario-empty-state__icon">
+          <i class="bi bi-shield-lock"></i>
+        </div>
+        <h6 class="mb-1">Selecciona un tipo de usuario</h6>
+        <p class="mb-0 text-muted small">
+          Elige un tipo en la lista para ver y configurar los permisos que tendrán todos los usuarios de ese tipo.
+        </p>
+      </div>
+
+      <div class="tipousuario-empty-state" *ngIf="seleccionado && cargandoPermisosTipo">
+        <div class="tipousuario-empty-state__icon">
+          <i class="bi bi-arrow-repeat"></i>
+        </div>
+        <h6 class="mb-1">Cargando permisos...</h6>
+        <p class="mb-0 text-muted small">Preparando la matriz de permisos de {{ seleccionado.descripcion }}.</p>
+      </div>
+
+      <section class="permisos-builder" *ngIf="seleccionado && !cargandoPermisosTipo && modoPermisosTipo === 'v2'">
+        <div class="permisos-builder__header">
+          <div>
+            <p class="permisos-builder__eyebrow mb-1">Permisos del tipo</p>
+            <h6 class="mb-1">{{ seleccionado.descripcion }} <span class="text-muted small">(ID {{ seleccionado.id }})</span></h6>
+            <p class="mb-0 text-muted small">
+              Estos permisos se aplican automáticamente a todo usuario de este tipo que no tenga una excepción personal.
+            </p>
+          </div>
+          <div class="permisos-builder__stats">
+            <div class="permisos-builder__stat">
+              <span>Recursos</span>
+              <strong>{{ totalRecursosPermisosTipo }}</strong>
+            </div>
+            <div class="permisos-builder__stat">
+              <span>Configurados</span>
+              <strong>{{ totalRecursosActivosTipo }}</strong>
+            </div>
+            <div class="permisos-builder__stat">
+              <span>Acciones activas</span>
+              <strong>{{ totalAccionesActivasTipo }}</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="permisos-builder__toolbar">
+          <div class="permisos-builder__filters">
+            <div class="input-group input-group-sm permisos-builder__search">
+              <span class="input-group-text"><i class="bi bi-search"></i></span>
+              <input
+                type="text"
+                class="form-control"
+                placeholder="Buscar pantalla o módulo..."
+                [(ngModel)]="filtroPermisosTipo"
+                (ngModelChange)="actualizarGruposPermisosTipo()"
+                name="filtroPermisosTipo"
+              >
+            </div>
+            <div class="form-check form-switch m-0 permisos-builder__switch">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                id="soloActivosTipo"
+                [(ngModel)]="mostrarSoloActivosTipo"
+                (ngModelChange)="actualizarGruposPermisosTipo()"
+                name="mostrarSoloActivosTipo"
+              >
+              <label class="form-check-label small" for="soloActivosTipo">
+                Solo configurados
+              </label>
+            </div>
+          </div>
+          <div class="permisos-builder__actions">
+            <button type="button" class="btn btn-outline-primary btn-sm" (click)="alternarTodosPermisosTipo(true)">
+              <i class="bi bi-check2-square me-1"></i> Marcar todo
+            </button>
+            <button type="button" class="btn btn-outline-danger btn-sm" (click)="limpiarPermisosTipo()">
+              <i class="bi bi-eraser me-1"></i> Limpiar
+            </button>
+            <button type="button" class="btn btn-success btn-sm" (click)="guardarPermisosTipo()" [disabled]="guardandoPermisosTipo">
+              <i class="bi bi-save me-1"></i> Guardar permisos
+            </button>
+          </div>
+        </div>
+
+        <div class="permisos-builder__groups permisos-builder__groups--scroll" *ngIf="gruposPermisosTipo.length; else permisosTipoSinFiltroTpl">
+          <section class="permisos-builder__group" *ngFor="let grupo of gruposPermisosTipo; trackBy: trackGrupoPermiso">
+            <div
+              class="permisos-builder__group-header permisos-builder__group-header--button"
+              role="button"
+              tabindex="0"
+              (click)="abrirGrupoPermisos(grupo.nombre)"
+            >
+              <div>
+                <h6 class="mb-0">{{ grupo.nombre }}</h6>
+                <small class="text-muted">
+                  {{ resumenGrupoPermisos(grupo.filas) }} · {{ contarAccionesActivasGrupo(grupo.filas) }} acciones activas
+                </small>
+              </div>
+              <div class="permisos-builder__group-actions" (click)="$event.stopPropagation()">
+                <button type="button" class="btn btn-primary btn-sm" (click)="alternarGrupoPermisos(grupo.filas, true); actualizarGruposPermisosTipo()">
+                  Activar módulo
+                </button>
+                <button type="button" class="btn btn-outline-primary btn-sm" (click)="aplicarConsultaGrupoPermisos(grupo.filas); actualizarGruposPermisosTipo()">
+                  Solo consultar
+                </button>
+                <button type="button" class="btn btn-outline-danger btn-sm" (click)="alternarGrupoPermisos(grupo.filas, false); actualizarGruposPermisosTipo()">
+                  Quitar
+                </button>
+                <i class="bi" [ngClass]="estaGrupoPermisoAbierto(grupo.nombre) ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+              </div>
+            </div>
+
+            <div class="permisos-builder__list" *ngIf="estaGrupoPermisoAbierto(grupo.nombre)">
+              <article class="permiso-card" *ngFor="let f of grupo.filas; let i = index; trackBy: trackPermisoFila" [class.permiso-card--active]="tieneAccionActiva(f)">
+                <div class="permiso-card__top">
+                  <div class="permiso-card__identity">
+                    <span class="permiso-card__module">{{ f.modulo_nombre || '-' }}</span>
+                    <h6 class="mb-1">{{ f.pantalla_nombre || '-' }}</h6>
+                    <p class="mb-0 text-muted small">
+                      {{ contarAccionesActivas(f) }} de {{ accionesPermisosCatalogoTipo.length }} acciones activas
+                    </p>
+                  </div>
+                  <div class="permiso-card__toggles">
+                    <button type="button" class="btn btn-outline-primary btn-sm" (click)="alternarFilaPermisos(f, true); onCambioPermisoTipo()">
+                      Todo
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" (click)="alternarFilaPermisos(f, false); onCambioPermisoTipo()">
+                      Nada
+                    </button>
+                  </div>
+                </div>
+
+                <div class="permiso-card__actions">
+                  <label class="permiso-toggle" *ngFor="let a of accionesPermisosCatalogoTipo; trackBy: trackAccionPermiso" [class.permiso-toggle--checked]="f.acciones[a.accion_key]">
+                    <input
+                      type="checkbox"
+                      class="permiso-toggle__input"
+                      [(ngModel)]="f.acciones[a.accion_key]"
+                      (ngModelChange)="onCambioPermisoTipo()"
+                      [name]="'permtipo-' + grupo.nombre + '-' + i + '-' + a.accion_key"
+                    >
+                    <span class="permiso-toggle__label">{{ descripcionAccionPermiso(a) }}</span>
+                  </label>
+                </div>
+              </article>
+            </div>
+          </section>
+        </div>
+
+        <ng-template #permisosTipoSinFiltroTpl>
+          <div class="text-muted text-center py-4">No hay pantallas que coincidan con el filtro.</div>
+        </ng-template>
+      </section>
+
+      <div class="card tipousuario-panel shadow-sm" *ngIf="seleccionado && modoPermisosTipo === 'tipo'">
+        <div class="tipousuario-panel__header d-flex align-items-center justify-content-between">
           <div class="d-flex align-items-center">
             <i class="bi bi-ui-checks-grid me-2"></i>
-            <h5 class="mb-0">Módulos del Tipo</h5>
+            <h6 class="mb-0">Módulos del tipo {{ seleccionado.descripcion }}</h6>
           </div>
-          <button class="btn btn-light btn-sm" (click)="abrirModalNuevoDet()" [disabled]="!seleccionado" data-bs-toggle="modal" data-bs-target="#detModal">
+          <button class="btn btn-primary btn-sm" (click)="abrirModalNuevoDet()" data-bs-toggle="modal" data-bs-target="#detModal">
             <i class="bi bi-plus-circle me-1"></i> Agregar módulo
           </button>
         </div>
         <div class="card-body">
-          <div *ngIf="!seleccionado" class="text-muted">Seleccione un tipo de usuario para ver sus módulos.</div>
-          <div *ngIf="seleccionado" class="mb-2"><strong>Tipo seleccionado:</strong> {{ seleccionado.descripcion }} (ID {{ seleccionado.id }})</div>
-          <div class="table-responsive" *ngIf="seleccionado">
+          <div class="alert alert-warning small mb-3">
+            <i class="bi bi-exclamation-triangle me-1"></i>
+            Este ambiente aún no tiene el catálogo de permisos por acción disponible; se muestra el control clásico de acceso/lectura por módulo.
+          </div>
+          <div class="table-responsive">
             <table class="table table-sm table-hover">
               <thead>
                 <tr>
@@ -100,9 +270,9 @@
   <div class="modal fade" id="tipoModal" tabindex="-1" aria-labelledby="tipoModalLabel" aria-hidden="true">
     <div class="modal-dialog">
       <div class="modal-content">
-        <div class="modal-header">
+        <div class="modal-header modal-header-degradado text-white">
           <h5 class="modal-title" id="tipoModalLabel">{{ editTipoIndex >= 0 ? 'Editar Tipo' : 'Nuevo Tipo' }}</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <form #tipoForm="ngForm" (ngSubmit)="guardarTipo(tipoForm)">
           <div class="modal-body">
@@ -120,13 +290,13 @@
     </div>
   </div>
 
-  <!-- Modal: Dtipousuario -->
+  <!-- Modal: Dtipousuario (fallback legacy) -->
   <div class="modal fade" id="detModal" tabindex="-1" aria-labelledby="detModalLabel" aria-hidden="true">
     <div class="modal-dialog">
       <div class="modal-content">
-        <div class="modal-header">
+        <div class="modal-header modal-header-degradado text-white">
           <h5 class="modal-title" id="detModalLabel">{{ editDetIndex >= 0 ? 'Editar módulo del tipo' : 'Agregar módulo al tipo' }}</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <form #detForm="ngForm" (ngSubmit)="guardarDet(detForm)">
           <div class="modal-body">

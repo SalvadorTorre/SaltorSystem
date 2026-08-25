@@ -63,6 +63,29 @@ export class ServicioUsuario {
     };
   }
 
+  private mapearPayloadUsuarioParcial(input: any): any {
+    const payload: any = {
+      idusuario: input?.idUsuario ?? input?.idusuario,
+      claveusuario: input?.claveUsuario ?? input?.claveusuario,
+      nombreusuario: input?.nombreUsuario ?? input?.nombreusuario,
+      nivel: input?.nivel,
+      metaventa: input?.metaVenta ?? input?.metaventa,
+      correo: input?.correo,
+      clavecorreo: input?.claveCorreo ?? input?.clavecorreo,
+      sucursalid: input?.sucursalid ?? input?.sucursal,
+      idtipousuario: input?.idtipoUsuario ?? input?.idtipousuario,
+      idpermiso: input?.idpermiso,
+      cod_empre: input?.cod_empre,
+      auth_user_id: input?.auth_user_id,
+    };
+    Object.keys(payload).forEach((key: string) => {
+      if (payload[key] === undefined) {
+        delete payload[key];
+      }
+    });
+    return payload;
+  }
+
   private sanitizeEmail(email: any): string {
     const raw = String(email ?? '').trim().toLowerCase();
     if (!raw) return '';
@@ -419,7 +442,7 @@ export class ServicioUsuario {
 
   editarUsuario(codUsuario: number, usuario: ModeloUsuario): Observable<any> {
     return from((async () => {
-      const payload = this.mapearPayloadUsuario(usuario);
+      const payload = this.mapearPayloadUsuarioParcial(usuario);
       const { data: rows, error } = await this.db
         .from("usuario")
         .update(payload)
