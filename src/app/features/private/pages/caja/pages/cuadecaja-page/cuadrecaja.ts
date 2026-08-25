@@ -219,13 +219,26 @@ export class CuadreCaja implements OnInit {
       }
     });
 
-    if (this.facturasResumen.length === 0 || this.paginaActual === 1) {
-      this.facturaService.buscarResumenFacturasPendientesCierre(true, sucursal).subscribe({
+    if (this.paginaActual === 1 || this.totalFacturasPendientesSucursal === null) {
+      this.facturaService.buscarResumenTotalesFacturasPendientesCierre(true, sucursal).subscribe({
         next: (res: any) => {
-          this.facturasResumen = res.data || [];
-          this.totalFacturasPendientesSucursal = this.facturasResumen.length;
+          const resumen = res.data || {};
+          this.facturasResumen = [];
+          this.totalFacturasPendientesSucursal = Number(resumen.cantidad) || 0;
           this.totalFacturas = this.totalFacturasPendientesSucursal;
-          this.actualizarRangoYTotales();
+          this.inicioFactura = resumen.inicioFactura || '';
+          this.finFactura = resumen.finFactura || '';
+          this.totales = {
+            efectivo: Number(resumen.efectivo) || 0,
+            tarjeta: Number(resumen.tarjeta) || 0,
+            credito: Number(resumen.credito) || 0,
+            deposito: Number(resumen.deposito) || 0,
+            cheque: Number(resumen.cheque) || 0,
+            pendiente: Number(resumen.pendiente) || 0,
+            valoresCobrados: Number(resumen.valoresCobrados) || 0,
+            valoresNoCobrados: Number(resumen.valoresNoCobrados) || 0,
+            total: Number(resumen.total) || 0,
+          };
         },
         error: (err: any) => console.error('Error cargando resumen de cierre', err),
       });
@@ -353,12 +366,20 @@ export class CuadreCaja implements OnInit {
 
   private async cargarDetalleCompleto(): Promise<any[]> {
     const detalleCompleto: any[] = [];
-    for (let pagina = 1; pagina <= this.totalPaginas; pagina++) {
+    const maxPaginasSeguridad = 500;
+
+    for (let pagina = 1; pagina <= maxPaginasSeguridad; pagina++) {
       const res: any = await firstValueFrom(
         this.facturaService.buscarFacturasPendientesCierre(pagina, this.tamanoPagina, true, this.sucursalUsuarioActual())
       );
-      detalleCompleto.push(...(res?.data || []));
+      const rows = res?.data || [];
+      detalleCompleto.push(...rows);
+
+      if (!res?.hasMore || rows.length < this.tamanoPagina) {
+        break;
+      }
     }
+
     return detalleCompleto;
   }
 
@@ -411,20 +432,10 @@ export class CuadreCaja implements OnInit {
   }
 
   async realizarCierre() {
-    const facturasDelCierre = this.facturasResumen.length ? this.facturasResumen : this.facturasFiltradas;
-    if (facturasDelCierre.length === 0) {
+    if (this.cantidadFacturasPendientesVisible() === 0) {
         Swal.fire('Atención', 'No hay facturas para cerrar en este periodo.', 'warning');
         return;
     }
-
-    const primeraDeEsteCierre = facturasDelCierre[0]?.fa_codFact;
-    const ultimaDeEsteCierre = facturasDelCierre[facturasDelCierre.length - 1].fa_codFact;
-    const facturasCobradas = facturasDelCierre.filter(
-      f => String(f?.fa_fpago || '').trim().toUpperCase() === 'S'
-    );
-    const codigosFacturasCobradas = facturasCobradas
-      .map(f => String(f.fa_codFact || '').trim())
-      .filter(Boolean);
 
     let detalleCompleto: any[];
     this.isLoading = true;
@@ -438,9 +449,19 @@ export class CuadreCaja implements OnInit {
     }
     this.isLoading = false;
 
+    const facturasDelCierre = detalleCompleto;
+    const primeraDeEsteCierre = facturasDelCierre[0]?.fa_codFact || this.inicioFactura;
+    const ultimaDeEsteCierre = facturasDelCierre[facturasDelCierre.length - 1]?.fa_codFact || this.finFactura;
+    const facturasCobradas = facturasDelCierre.filter(
+      f => String(f?.fa_fpago || '').trim().toUpperCase() === 'S'
+    );
+    const codigosFacturasCobradas = facturasCobradas
+      .map(f => String(f.fa_codFact || '').trim())
+      .filter(Boolean);
+
     Swal.fire({
       title: '¿Confirmar Cierre de Caja?',
-      text: `Se cerrará hasta la factura ${ultimaDeEsteCierre}.`,
+      text: `Se cerrarán ${facturasDelCierre.length} facturas, desde ${primeraDeEsteCierre} hasta ${ultimaDeEsteCierre}.`,
       icon: 'warning',
       showCancelButton: true,
       confirmButtonText: 'Sí, cerrar caja'

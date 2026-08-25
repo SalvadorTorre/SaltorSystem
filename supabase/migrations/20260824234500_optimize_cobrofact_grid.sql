@@ -3,6 +3,7 @@ create index if not exists idx_factura_cobrofact_grid_scope_fecha
   where (
     fa_status in ('C', 'F')
     and (fa_fpago is null or btrim(fa_fpago::text) = '' or fa_fpago = 'N')
+    and (fa_cierre is null or btrim(fa_cierre::text) = '' or btrim(fa_cierre::text) = '0')
   );
 
 create index if not exists idx_factura_cobrofact_numero_scope

@@ -75,6 +75,8 @@ export class ServicioFacturacion {
   ].join(',');
   private readonly columnasFacturaCajaResumen = [
     'fa_codfact',
+    'fa_ncffact',
+    'fa_tiponcf',
     'fa_nomclie',
     'fa_fecfact',
     'fa_envio',
@@ -1377,11 +1379,12 @@ export class ServicioFacturacion {
     })());
   }
 
-  obtenerFacturasNoImpresas(pageIndex = 1, pageSize = 75): Observable<any> {
+  obtenerFacturasNoImpresas(pageIndex = 1, pageSize = 20, nombreCliente = ''): Observable<any> {
     const safePage = Math.max(1, Number(pageIndex) || 1);
-    const safePageSize = Math.min(Math.max(25, Number(pageSize) || 75), 100);
+    const safePageSize = Math.min(Math.max(10, Number(pageSize) || 20), 50);
     const fromRow = (safePage - 1) * safePageSize;
     const toRow = fromRow + safePageSize - 1;
+    const nombre = String(nombreCliente || '').trim();
 
     if (!this.useSupabase) {
       const endpoint = '/facturas-no-impresas';
@@ -1412,7 +1415,11 @@ export class ServicioFacturacion {
         .order('fa_codfact', { ascending: false })
         .range(fromRow, toRow);
       query = this.applyPendienteCajaFilter(query);
+      query = this.applySinCierreCajaFilter(query);
       query = this.applyTenantFilter(query);
+      if (nombre) {
+        query = query.ilike('fa_nomclie', `%${nombre}%`);
+      }
       const { data, error } = await query;
       if (error) throw error;
       const mapped = (data || []).map((row: any) => this.mapFacturaDbToUi(row));
@@ -1869,7 +1876,7 @@ export class ServicioFacturacion {
       const fromRow = (safePage - 1) * safePageSize;
       let query = this.db
         .from('factura')
-        .select('fa_codfact,fa_ncffact,fa_rncfact,fa_tiponcf,fa_fecfact,fa_valfact,fa_itbifact,fa_subfact,fa_desfact,fa_codclie,fa_nomclie,fa_codvend,fa_nomvend,fa_fpago,fa_codfpago,fa_tipopago,fa_status,fa_codsucu,fa_codempr,fa_cierre,fa_entrega,fa_impresa,fa_facturada', { count: 'planned' })
+        .select('fa_codfact,fa_ncffact,fa_rncfact,fa_tiponcf,fa_fecfact,fa_valfact,fa_itbifact,fa_subfact,fa_desfact,fa_codclie,fa_nomclie,fa_codvend,fa_nomvend,fa_fpago,fa_codfpago,fa_tipopago,fa_status,fa_codsucu,fa_codempr,fa_cierre,fa_entrega,fa_impresa,fa_facturada')
         .or('fa_status.is.null,fa_status.neq.N')
         .order('fa_codfact', { ascending: true })
         .range(fromRow, fromRow + safePageSize - 1);
@@ -1881,14 +1888,16 @@ export class ServicioFacturacion {
           ? this.applyTenantFilter(query)
           : this.applyTenantCompanyFilter(query);
 
-      const { data, error, count } = await query;
+      const { data, error } = await query;
       if (error) throw error;
+      const rows = data || [];
 
       return {
         status: 'success',
         code: 200,
-        data: (data || []).map((row: any) => this.mapFacturaDbToUi(row)),
-        total: count || 0,
+        data: rows.map((row: any) => this.mapFacturaDbToUi(row)),
+        total: fromRow + rows.length,
+        hasMore: rows.length === safePageSize,
         page: safePage,
         pageSize: safePageSize,
       };
@@ -1947,6 +1956,96 @@ export class ServicioFacturacion {
       }
       return { status: 'success', code: 200, data: rows.map(row => this.mapFacturaDbToUi(row)) };
     })());
+  }
+
+  buscarResumenTotalesFacturasPendientesCierre(filtrarSucursal: boolean = true, sucursalId?: number | string | null): Observable<any> {
+    if (!this.useSupabase) {
+      return this.buscarResumenFacturasPendientesCierre(filtrarSucursal, sucursalId).pipe(
+        map((resp: any) => this.calcularResumenCierreDesdeFilas(resp?.data || [])),
+      );
+    }
+
+    const sucursal = this.toNumberOrNull(sucursalId);
+    return from((async () => {
+      try {
+        const { data, error } = await this.db.rpc(
+          'resumen_facturas_pendientes_cierre',
+          {
+            p_filtrar_sucursal: filtrarSucursal,
+            p_sucursal_id: sucursal,
+          },
+        );
+        if (!error) {
+          const row = Array.isArray(data) ? data[0] : data;
+          return {
+            status: 'success',
+            code: 200,
+            data: this.normalizarResumenCierre(row || {}),
+          };
+        }
+        throw error;
+      } catch (error) {
+        console.warn('RPC resumen_facturas_pendientes_cierre no disponible. Aplique la migración de cuadre de caja.', error);
+        throw error;
+      }
+    })());
+  }
+
+  private normalizarResumenCierre(row: any): any {
+    return {
+      cantidad: this.toNumber(row?.cantidad),
+      inicioFactura: row?.inicio_factura ?? row?.inicioFactura ?? '',
+      finFactura: row?.fin_factura ?? row?.finFactura ?? '',
+      efectivo: this.toNumber(row?.efectivo),
+      tarjeta: this.toNumber(row?.tarjeta),
+      credito: this.toNumber(row?.credito),
+      deposito: this.toNumber(row?.deposito),
+      cheque: this.toNumber(row?.cheque),
+      pendiente: this.toNumber(row?.pendiente),
+      valoresCobrados: this.toNumber(row?.valores_cobrados ?? row?.valoresCobrados),
+      valoresNoCobrados: this.toNumber(row?.valores_no_cobrados ?? row?.valoresNoCobrados),
+      total: this.toNumber(row?.total),
+    };
+  }
+
+  private calcularResumenCierreDesdeFilas(rows: any[]): any {
+    const resumen = this.normalizarResumenCierre({});
+    const ordenadas = [...rows].sort((a, b) => String(a?.fa_codFact || '').localeCompare(String(b?.fa_codFact || '')));
+    resumen.cantidad = ordenadas.length;
+    resumen.inicioFactura = ordenadas[0]?.fa_codFact || '';
+    resumen.finFactura = ordenadas[ordenadas.length - 1]?.fa_codFact || '';
+
+    rows.forEach((f: any) => {
+      const monto = this.toNumber(f?.fa_valFact);
+      const fpago = String(f?.fa_fpago || '').trim().toUpperCase();
+      const pagada = ['S', 'P', 'PAGADA', 'COBRADA'].includes(fpago);
+      const codPago = Number(f?.fa_codfpago);
+      const credito = Number(f?.fa_tipopago ?? 1) === 2;
+
+      if (credito || !pagada) resumen.valoresNoCobrados += monto;
+      else resumen.valoresCobrados += monto;
+
+      if (codPago === 3) {
+        if (pagada) resumen.tarjeta += monto;
+        else resumen.pendiente += monto;
+        return;
+      }
+
+      if (credito && !pagada) {
+        resumen.credito += monto;
+        return;
+      }
+
+      if (!pagada) {
+        resumen.pendiente += monto;
+        return;
+      }
+
+      resumen.efectivo += monto;
+    });
+
+    resumen.total = resumen.valoresCobrados + resumen.valoresNoCobrados;
+    return { status: 'success', code: 200, data: resumen };
   }
 
   private async buscarFacturasPaginadas(limit: number, filtrarSucursal: boolean): Promise<any[]> {

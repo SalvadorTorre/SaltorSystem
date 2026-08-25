@@ -1,692 +1,284 @@
-<div class="container-fluid px-2 px-lg-3 py-2 compact-form cobrofact-page">
-  <div class="row">
-    <div class="col-lg-7 col-md-12 mb-3">
+<div class="container-fluid px-1 py-1 compact-form cobrofact-page">
+  <div class="row g-1">
+    <div class="col-xl-8 col-lg-7 col-md-12">
       <div class="card shadow-sm cobrofact-card">
-        <div
-          class="card-header d-flex align-items-center card-header-brand py-2"
-        >
-          <i class="bi bi-list-ul me-2"></i>
-          <h5 class="card-title m-0">Lista de Facturas</h5>
-        </div>
-        <div
-          class="card-body bg-light p-2"
-        >
-        <div class="row">
-            <div
-              #contenedorScroll
-              class="table-responsive facturas-table-wrap"
+        <div class="card-header d-flex align-items-center justify-content-between card-header-brand py-1 px-2">
+          <div class="d-flex align-items-center">
+            <i class="bi bi-list-ul me-2"></i>
+            <h5 class="card-title m-0">Lista de Facturas</h5>
+          </div>
+          <label class="page-size-control" title="Facturas por página">
+            <select
+              class="form-select form-select-sm"
+              [(ngModel)]="facturasCajaPageSize"
+              (change)="cambiarCantidadFacturasCaja()"
+              [disabled]="cargandoFacturasCaja"
             >
-              <table class="table table-hover table-sm sticky-header">
-                <thead class="table-dark">
-                  <tr>
-                    <th class="col-2">Número</th>
-                    <th class="col-5">Cliente / Fecha</th>
-                    <th class="col-1 text-center">Tipo</th>
-                    <th class="col-2 text-end">Valor</th>
-                    <th class="col-2 text-center">Status</th>
-                    <th class="col-2 text-center">Opciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr *ngIf="cargandoFacturasCaja">
-                    <td colspan="6" class="text-center text-muted py-3">
-                      <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                      Cargando facturas...
-                    </td>
-                  </tr>
-                  <tr *ngIf="!cargandoFacturasCaja && facturacionList.length === 0">
-                    <td colspan="6" class="text-center text-muted py-3">
-                      No hay facturas pendientes para cobrar.
-                    </td>
-                  </tr>
-                  <tr
-                    #filaSeleccionada
-                    *ngFor="let factura of facturacionList; let i = index"
-                    [ngClass]="{
-                      'table-primary': i === selectedFacturaIndex,
-                      'fila-reimpresa': facturaReimpresa(factura)
-                    }"
-                    (click)="seleccionarFacturaLista(factura, i)"
-                    class="align-middle cursor-pointer"
-                  >
-                    <!-- Número -->
-                    <td>
-                      <div class="fw-bold">{{ factura.fa_codFact }}</div>
-                    </td>
+              <option *ngFor="let cantidad of facturasCajaPageSizeOptions" [ngValue]="cantidad">
+                {{ cantidad }} por página
+              </option>
+            </select>
+          </label>
+        </div>
+        <div class="card-body bg-light p-1">
+          <div class="cobrofact-toolbar">
+            <div class="input-group input-group-sm">
+              <span class="input-group-text"><i class="bi bi-search"></i></span>
+              <input
+                type="text"
+                class="form-control"
+                placeholder="Buscar cliente"
+                [(ngModel)]="txtNombre"
+                (keyup.enter)="buscarClienteFacturasCaja()"
+              />
+              <button class="btn btn-primary" type="button" (click)="buscarClienteFacturasCaja()">Buscar</button>
+              <button class="btn btn-outline-secondary" type="button" (click)="limpiarBusquedaClienteFacturasCaja()">
+                <i class="bi bi-x-lg"></i>
+              </button>
+            </div>
+          </div>
 
-                    <!-- Nombre del cliente y Fecha -->
-                    <td>
-                      <div class="d-flex align-items-center">
-                        <span class="fw-semibold me-2">{{ factura.fa_nomClie || 'Sin nombre' }}</span>
-                        <span class="badge rounded-pill" [ngClass]="{'bg-success': factura.fa_envio === 'Envio', 'bg-danger': factura.fa_envio === 'Retiro'}">
-                          <i class="bi" [ngClass]="{'bi-truck': factura.fa_envio === 'Envio', 'bi-box-arrow-down': factura.fa_envio === 'Retiro'}"></i>
-                          {{ factura.fa_envio }}
-                        </span>
-                      </div>
-                      <div class="text-muted small">{{ factura.fa_fecFact }}</div>
-                    </td>
-
-                    <!-- Tipo -->
-                    <td class="text-center align-middle">
-                      <span class="badge bg-secondary" *ngIf="factura.fa_status === 'C'">Conduce</span>
-                      <span class="badge bg-primary" *ngIf="factura.fa_status === 'F'">Factura</span>
-                    </td>
-
-                    <!-- Valor -->
-                    <td class="text-end align-middle">
-                    <div class="fw-bold fs-5 text-success">
-                      ${{ factura.fa_valFact | number: '1.2-2' }}
-                    </div>
+          <div #contenedorScroll class="table-responsive facturas-table-wrap">
+            <table class="table table-hover table-sm sticky-header mb-0">
+              <thead class="table-dark">
+                <tr>
+                  <th>Número</th>
+                  <th>Cliente</th>
+                  <th class="text-center">Fecha</th>
+                  <th class="text-center">e-CF</th>
+                  <th class="text-center">Doc.</th>
+                  <th class="text-end">Valor</th>
+                  <th class="text-center">Status</th>
+                  <th class="text-center">Opc.</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngIf="cargandoFacturasCaja">
+                  <td colspan="8" class="text-center text-muted py-3">
+                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    Cargando facturas...
                   </td>
-
-                  <!-- Status -->
-                  <td class="text-center align-middle">
-                    <span *ngIf="factura.caja_status" class="badge" [ngClass]="claseStatusCaja(factura)">
-                      {{ factura.caja_status }}
+                </tr>
+                <tr *ngIf="!cargandoFacturasCaja && facturacionList.length === 0">
+                  <td colspan="8" class="text-center text-muted py-3">
+                    No hay facturas abiertas sin cierre.
+                  </td>
+                </tr>
+                <tr
+                  #filaSeleccionada
+                  *ngFor="let factura of facturacionList; let i = index"
+                  [ngClass]="{
+                    'table-primary': i === selectedFacturaIndex,
+                    'fila-reimpresa': facturaReimpresa(factura)
+                  }"
+                  (click)="seleccionarFacturaLista(factura, i)"
+                  class="align-middle cursor-pointer"
+                >
+                  <td><div class="fw-bold factura-numero-cell">{{ factura.fa_codFact }}</div></td>
+                  <td>
+                    <div class="cliente-cell">
+                      <span class="fw-semibold" *ngFor="let linea of nombreClienteGridLineas(factura.fa_nomClie)">
+                        {{ linea }}
+                      </span>
+                    </div>
+                    <span class="badge rounded-pill" [ngClass]="{'bg-success': factura.fa_envio === 'Envio', 'bg-danger': factura.fa_envio === 'Retiro'}">
+                      <i class="bi" [ngClass]="{'bi-truck': factura.fa_envio === 'Envio', 'bi-box-arrow-down': factura.fa_envio === 'Retiro'}"></i>
+                      {{ factura.fa_envio }}
                     </span>
                   </td>
-
-                  <!-- Opciones -->
-                  <td class="text-center align-middle">
+                  <td class="text-center">{{ factura.fa_fecFact }}</td>
+                  <td class="text-center">
+                    <span class="badge" [ngClass]="claseTipoComprobanteGrid(factura)">
+                      {{ tipoComprobanteGrid(factura) }}
+                    </span>
+                  </td>
+                  <td class="text-center">
+                    <span class="badge bg-secondary" *ngIf="factura.fa_status === 'C'" title="Conduce">Cond.</span>
+                    <span class="badge bg-info text-dark" *ngIf="factura.fa_status === 'F'" title="Factura">Fact.</span>
+                  </td>
+                  <td class="text-end fw-bold text-success">${{ factura.fa_valFact | number: '1.2-2' }}</td>
+                  <td class="text-center">
+                    <span *ngIf="factura.caja_status" class="badge" [ngClass]="claseStatusCaja(factura)">
+                      {{ statusCajaGrid(factura) }}
+                    </span>
+                  </td>
+                  <td class="text-center">
                     <div class="btn-group btn-group-sm">
                       <button
                         *ngIf="!esFacturaPagadaConsulta(factura)"
-                        class="btn btn-outline-primary"
+                        class="btn btn-outline-primary btn-icon"
                         (click)="$event.stopPropagation(); editarFacturacion(factura)"
                         title="Editar factura"
                       >
                         <i class="bi bi-pencil-square"></i>
                       </button>
                       <button
-                        class="btn btn-outline-success"
+                        class="btn btn-outline-success btn-icon"
                         (click)="$event.stopPropagation(); seleccionarFacturaLista(factura, i)"
-                        title="Ver detalles"
+                        title="Seleccionar"
                       >
-                        <i class="bi bi-card-list"></i>
+                        <i class="bi bi-check2-square"></i>
                       </button>
                     </div>
                   </td>
                 </tr>
               </tbody>
             </table>
+          </div>
 
-            <div class="d-flex justify-content-between align-items-center px-1 pb-1" *ngIf="!cargandoFacturasCaja && facturacionList.length > 0">
-              <small class="text-muted">
-                Mostrando {{ facturacionList.length }} de {{ totalFacturasCaja || facturacionList.length }}
-              </small>
-              <button
-                type="button"
-                class="btn btn-outline-primary btn-sm"
-                *ngIf="facturasCajaHasMore"
-                [disabled]="cargandoMasFacturasCaja"
-                (click)="cargarMasFacturasCaja()"
-              >
-                <span *ngIf="cargandoMasFacturasCaja" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-                Cargar más
+          <div class="cobrofact-pager">
+            <small class="text-muted">Página {{ facturasCajaPage }}</small>
+            <div class="btn-group btn-group-sm">
+              <button type="button" class="btn btn-outline-secondary" [disabled]="cargandoFacturasCaja || facturasCajaPage <= 1" (click)="paginaAnteriorFacturasCaja()">
+                <i class="bi bi-chevron-left"></i>
+              </button>
+              <button type="button" class="btn btn-outline-secondary" [disabled]="cargandoFacturasCaja || !facturasCajaHasMore" (click)="paginaSiguienteFacturasCaja()">
+                <i class="bi bi-chevron-right"></i>
               </button>
             </div>
-
-            <!-- Controles de paginación -->
-            <!-- <nav aria-label="Paginación de facturas" class="mt-2">
-              <ul class="pagination pagination-sm justify-content-center">
-                <li class="page-item disabled">
-                  <a class="page-link" href="#">
-                    <i class="bi bi-chevron-left"></i>
-                  </a>
-                </li>
-                <li class="page-item active"><a class="page-link" href="#">1</a></li>
-                <li class="page-item"><a class="page-link" href="#">2</a></li>
-                <li class="page-item"><a class="page-link" href="#">3</a></li>
-                <li class="page-item">
-                  <a class="page-link" href="#">
-                    <i class="bi bi-chevron-right"></i>
-                  </a>
-                </li>
-              </ul>
-            </nav> -->
           </div>
         </div>
+      </div>
+    </div>
 
-        <!-- Panel de Cobro -->
-        <div class="row mt-2">
-          <div class="col-12">
-            <div class="card shadow-sm cobrofact-card">
-              <div
-                class="card-header d-flex justify-content-between align-items-center bg-success text-white py-2 cobro-payment-header"
+    <div class="col-xl-4 col-lg-5 col-md-12">
+      <div class="card shadow-sm cobrofact-card cobro-panel">
+        <div class="card-header d-flex justify-content-between align-items-center bg-success text-white py-1 px-2 cobro-payment-header">
+          <h5 class="card-title m-0">
+            <i class="bi bi-cash-coin me-2"></i>Gestión de Pago
+          </h5>
+          <span class="badge bg-light text-dark">Factura #{{ formularioFacturacion.get('fa_codFact')?.value || '-' }}</span>
+        </div>
+        <div class="card-body bg-light p-1">
+          <div *ngIf="bloquearReimpresion" class="alert alert-warning py-1 px-2 mb-1">
+            Factura impresa pendiente de pago: puede registrar el cobro, pero no imprimir conduce ni enviar a DGII.
+          </div>
+
+          <div class="form-check form-switch mb-1">
+            <input
+              [disabled]="chekpagada"
+              type="checkbox"
+              id="chk1"
+              class="form-check-input"
+              [checked]="chekPagado"
+              (click)="toggleCheckPagado()"
+            />
+            <label for="chk1" class="form-check-label fw-bold">Factura Pagada</label>
+          </div>
+
+          <div class="row g-1">
+            <div class="col-6">
+              <label class="form-label">Tipo de pago</label>
+              <select
+                #input9
+                name="formapago"
+                [(ngModel)]="ftipoPago"
+                class="form-select"
+                [disabled]="!hayFacturaSeleccionada || facturaSoloConsulta"
+                (change)="onTipoPagoChange()"
               >
-                <h5 class="card-title m-0">
-                  <i class="bi bi-cash-coin me-2"></i>Gestión de Pago
-                </h5>
-                <span class="badge bg-light text-dark">Factura #{{ formularioFacturacion.get('fa_codFact')?.value }}</span>
-              </div>
-              <div class="card-body bg-light p-2">
-                <div *ngIf="bloquearReimpresion" class="alert alert-warning py-2 mb-2">
-                  Factura impresa pendiente de pago: puede registrar el cobro, pero no imprimir conduce ni enviar a DGII.
-                </div>
-                <div class="row g-2">
-                  <div class="col-md-6">
-                    <div class="form-check form-switch mb-2">
-                      <input
-                        [disabled]="chekpagada"
-                        type="checkbox"
-                        id="chk1"
-                        class="form-check-input"
-                        [checked]="chekPagado"
-                        (click)="toggleCheckPagado()"
-                      />
-                      <label for="chk1" class="form-check-label fw-bold">Factura Pagada</label>
-                    </div>
+                <option [value]="fpago.fp_codfpago" *ngFor="let fpago of resultadoFpago">
+                  {{fpago.fp_descfpago}}
+                </option>
+              </select>
+            </div>
+            <div class="col-6">
+              <label class="form-label">Entrega</label>
+              <select
+                #formaEntregaSelect
+                class="form-select"
+                [(ngModel)]="fentrega"
+                [disabled]="!hayFacturaSeleccionada || facturaSoloConsulta"
+                (change)="onEntregaChange()"
+              >
+                <option [value]="fe.idfentrega" *ngFor="let fe of resultadoFentrega">{{ fe.desentrega }}</option>
+              </select>
+            </div>
+          </div>
 
-                    <div class="mb-2">
-                      <label class="form-label">Tipo de pago</label>
-                      <select
-                        #input9
-                        name="formapago"
-                        [(ngModel)]="ftipoPago"
-                        class="form-select"
-                        [disabled]="!hayFacturaSeleccionada || facturaSoloConsulta"
-                        (change)="onTipoPagoChange()"
-                      >
-                        <option
-                          [value]="fpago.fp_codfpago"
-                          *ngFor="let fpago of resultadoFpago"
-                        >
-                          {{fpago.fp_descfpago}}
-                        </option>
-                      </select>
-                    </div>
-
-                    <div class="mb-2">
-                      <label class="form-label">Forma de entrega</label>
-                      <select
-                        #formaEntregaSelect
-                        class="form-select"
-                        [(ngModel)]="fentrega"
-                        [disabled]="!hayFacturaSeleccionada || facturaSoloConsulta"
-                        (change)="onEntregaChange()"
-                      >
-                        <option [value]="fe.idfentrega" *ngFor="let fe of resultadoFentrega">{{ fe.desentrega }}</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div class="col-md-6">
-                    <div class="mb-2">
-                      <label class="form-label fw-bold">Valor a pagar</label>
-                      <div class="input-group">
-                        <span class="input-group-text">$</span>
-                        <input
-                          type="text"
-                          class="form-control form-control-lg bg-light fw-bold text-success"
-                          [value]="formularioFacturacion.get('fa_valFact')?.value | number:'1.2-2'"
-                          readonly
-                        />
-                      </div>
-                    </div>
-
-                    <div class="mb-2 valor-pagado-row">
-                      <label class="form-label fw-bold mb-0">Valor pagado</label>
-                      <div class="valor-pagado-control">
-                        <div class="input-group">
-                          <span class="input-group-text">$</span>
-                          <input
-                            #valorPagadoInput
-                            type="number"
-                            class="form-control form-control-lg"
-                            [ngClass]="{ 'is-invalid': valorPagado < formularioFacturacion.get('fa_valFact')?.value }"
-                            style="font-weight: bold"
-                            [value]="valorPagado"
-                            [disabled]="txtvalPagado"
-                            (input)="onValorPagadoChange($event)"
-                          />
-                        </div>
-                        <div class="invalid-feedback" *ngIf="valorPagado < formularioFacturacion.get('fa_valFact')?.value">
-                          El valor pagado debe ser igual o mayor al valor de la factura
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="mb-2">
-                      <label class="form-label fw-bold">Cambio</label>
-                      <div class="input-group">
-                        <span class="input-group-text">$</span>
-                        <input
-                          type="text"
-                          class="form-control form-control-lg bg-light fw-bold text-primary"
-                          [value]="valCambio | number:'1.2-2'"
-                          readonly
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <!-- jhsfjghfdsjhj -->
-                <div class="row mt-1">
-                <div class="action-bar d-flex justify-content-between gap-2 mt-1">
-                <button
-                  class="btn btn-success flex-fill"
-                  [disabled]="!puedeActivarGuardarPagoEntrega"
-                  (click)="guardarPagoEntrega()"  >
-                  <i class="bi bi-save me-1"></i>Guardar
-                </button>
-                <button
-                  class="btn btn-warning flex-fill"
-                  [disabled]="!puedeImprimirConduceFactura"
-                  [title]="facturaEstaImpresa && !facturaSeleccionadaReimpresa && !(tipoNcfFacturaSeleccionada() === '32' && chekPagado) ? 'La factura ya esta impresa' : ''"
-                  (click)="imprimirConduceFactura()">
-                  <i class="bi bi-printer me-1"></i> Imprimir conduce
-                </button>
-                <button
-                  class="btn btn-outline-secondary flex-fill"
-                  (click)="limpia()" >
-                  <i class="bi bi-arrow-counterclockwise me-1"></i>Deshacer
-                </button>
-                <button
-                  class="btn btn-primary flex-fill"
-                  [disabled]="facturaSoloConsulta || !chekPagado || bloquearCobroDgiiPorEnvioNcfSinPago || bloquearReimpresion || procesandoCobroDgii"
-                  [title]="bloquearReimpresion ? 'Pendiente de pago: impresión deshabilitada' : ''"
-                  (click)="buscarFactura()">
-                  <i class="bi" [ngClass]="procesandoCobroDgii ? 'bi-hourglass-split me-1' : 'bi-cash-stack me-1'"></i>
-                  {{ procesandoCobroDgii ? 'Procesando...' : 'Cobrar y enviar DGII' }}
-                </button>
+          <div class="row g-1 mt-1">
+            <div class="col-12">
+              <label class="form-label fw-bold">Valor a pagar</label>
+              <div class="input-group input-group-sm">
+                <span class="input-group-text">$</span>
+                <input type="text" class="form-control bg-light fw-bold text-success" [value]="formularioFacturacion.get('fa_valFact')?.value | number:'1.2-2'" readonly />
               </div>
             </div>
+            <div class="col-12">
+              <label class="form-label fw-bold">Valor pagado</label>
+              <div class="input-group input-group-sm">
+                <span class="input-group-text">$</span>
+                <input
+                  #valorPagadoInput
+                  type="number"
+                  class="form-control fw-bold"
+                  [ngClass]="{ 'is-invalid': valorPagado < formularioFacturacion.get('fa_valFact')?.value }"
+                  [value]="valorPagado"
+                  [disabled]="txtvalPagado"
+                  (input)="onValorPagadoChange($event)"
+                />
+              </div>
+              <div class="invalid-feedback d-block" *ngIf="valorPagado < formularioFacturacion.get('fa_valFact')?.value">
+                El valor pagado debe ser igual o mayor al valor de la factura
+              </div>
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-bold">Cambio</label>
+              <div class="input-group input-group-sm">
+                <span class="input-group-text">$</span>
+                <input type="text" class="form-control bg-light fw-bold text-primary" [value]="valCambio | number:'1.2-2'" readonly />
+              </div>
+            </div>
+          </div>
+
+          <div class="cobro-totales mt-1">
+            <div class="total-line">
+              <span>Sub Total</span>
+              <strong>{{ subTotal | number:'1.2-2' }}</strong>
+            </div>
+            <div class="total-line">
+              <span>Desc.</span>
+              <strong>{{ descuentotxt || '0.00' }}</strong>
+            </div>
+            <div class="total-line">
+              <span>ITBI</span>
+              <strong>{{ totalItbis | number:'1.2-2' }}</strong>
+            </div>
+            <div class="total-line total-line-main">
+              <span>Total</span>
+              <strong>{{ totalGral | number:'1.2-2' }}</strong>
+            </div>
+          </div>
+
+          <div class="action-bar d-grid gap-1 mt-1">
+            <button class="btn btn-success btn-sm" [disabled]="!puedeActivarGuardarPagoEntrega" (click)="guardarPagoEntrega()">
+              <i class="bi bi-save me-1"></i>Guardar
+            </button>
+            <button
+              class="btn btn-warning btn-sm"
+              [disabled]="!puedeImprimirConduceFactura"
+              [title]="facturaEstaImpresa && !facturaSeleccionadaReimpresa && !(tipoNcfFacturaSeleccionada() === '32' && chekPagado) ? 'La factura ya esta impresa' : ''"
+              (click)="imprimirConduceFactura()"
+            >
+              <i class="bi bi-printer me-1"></i>Imprimir conduce
+            </button>
+            <button class="btn btn-outline-secondary btn-sm" (click)="limpia()">
+              <i class="bi bi-arrow-counterclockwise me-1"></i>Deshacer
+            </button>
+            <button
+              class="btn btn-primary btn-sm"
+              [disabled]="facturaSoloConsulta || !chekPagado || bloquearCobroDgiiPorEnvioNcfSinPago || bloquearReimpresion || procesandoCobroDgii"
+              [title]="bloquearReimpresion ? 'Pendiente de pago: impresión deshabilitada' : ''"
+              (click)="buscarFactura()"
+            >
+              <i class="bi" [ngClass]="procesandoCobroDgii ? 'bi-hourglass-split me-1' : 'bi-cash-stack me-1'"></i>
+              {{ procesandoCobroDgii ? 'Procesando...' : 'Cobrar y enviar DGII' }}
+            </button>
           </div>
         </div>
       </div>
     </div>
-    </div>
   </div>
-  </div>
-      <!-- Detalles de la factura -->
-
-   <div class="col-lg-5 col-md-12 mb-3">
-      <div class="row mt-2">
-        <div class="col-lg-12 col-md-12 mb-3">
-          <div class="card shadow-sm cobrofact-card">
-            <div class="card-header card-header-brand py-2">
-              <div class="d-flex justify-content-between align-items-center">
-                <h5 class="card-title m-0">
-                  <i class="bi bi-file-text me-2"></i>Detalles de la Factura
-                </h5>
-                <span class="badge bg-light text-dark">
-                  {{ formularioFacturacion.get('fa_codFact')?.value || 'Sin seleccionar' }}
-                </span>
-              </div>
-            </div>
-            <div class="card-body bg-light p-2">
-              <form [formGroup]="formularioFacturacion">
-                <div class="row g-2">
-                  <!-- Primera fila -->
-                  <div class="col-md-3">
-                    <div class="form-floating">
-                      <input
-                        type="text"
-                        class="form-control"
-                        id="codFact"
-                        formControlName="fa_codFact"
-                        readonly
-                      />
-                      <label for="codFact">No. Factura</label>
-                    </div>
-                  </div>
-                  <div class="col-md-3">
-                    <div class="form-floating">
-                      <input
-                        type="text"
-                        class="form-control"
-                        id="rncFact"
-                        formControlName="fa_rncFact"
-                        placeholder="RNC"
-                      />
-                      <label for="rncFact">RNC</label>
-                    </div>
-                  </div>
-                  <div class="col-md-3">
-                    <div class="form-floating">
-                      <input
-                        formControlName="fa_fecFact"
-                        type="text"
-                        class="form-control"
-                        id="fecFact"
-                        readonly
-                      />
-                      <label for="fecFact">Fecha</label>
-                    </div>
-                  </div>
-                  <div class="col-md-3">
-                    <div class="form-floating">
-                      <input
-                        type="text"
-                        class="form-control"
-                        id="ncfFact"
-                        formControlName="fa_ncfFact"
-                        placeholder="NCF"
-                      />
-                      <label for="ncfFact">NCF</label>
-                    </div>
-                  </div>
-
-                  <!-- Segunda fila -->
-                  <div class="col-md-6">
-                    <div class="form-floating">
-                      <input
-                        class="form-control"
-                        type="text"
-                        id="nomClie"
-                        formControlName="fa_nomClie"
-                        readonly
-                      />
-                      <label for="nomClie">Cliente</label>
-                    </div>
-                  </div>
-                  <div class="col-md-6">
-                    <div class="form-floating">
-                      <input
-                        type="text"
-                        id="dirClie"
-                        formControlName="fa_dirClie"
-                        class="form-control"
-                        readonly
-                      />
-                      <label for="dirClie">Dirección</label>
-                    </div>
-                  </div>
-
-                  <!-- Tercera fila -->
-                  <div class="col-md-4">
-                    <div class="form-floating">
-                      <input
-                        type="text"
-                        id="telClie"
-                        formControlName="fa_telClie"
-                        class="form-control"
-                        readonly
-                      />
-                      <label for="telClie">Teléfono</label>
-                    </div>
-                  </div>
-                  <div class="col-md-4">
-                    <div class="form-floating">
-                      <input
-                        type="text"
-                        id="sector"
-                        formControlName="fa_sector"
-                        class="form-control"
-                        readonly
-                      />
-                      <label for="sector">Sector</label>
-                    </div>
-                  </div>
-                  <div class="col-md-4">
-                    <div class="form-floating">
-                      <input
-                        type="text"
-                        id="nomVend"
-                        formControlName="fa_nomVend"
-                        class="form-control"
-                        placeholder="Vendedor"
-                        readonly
-                      />
-                      <label for="nomVend">Vendedor</label>
-                    </div>
-                  </div>
-                </div>
-              </form>
-
-              <!-- Estado de salida / entrega -->
-              <div class="row g-2 mt-2" [formGroup]="formularioFacturacion">
-                <div class="col-md-3 d-flex align-items-center">
-                  <div class="form-check">
-                    <input
-                      class="form-check-input"
-                      type="checkbox"
-                      [checked]="formularioFacturacion.get('fa_salida')?.value === 'S'"
-                      disabled
-                      id="chkSalida"
-                    />
-                    <label class="form-check-label fw-bold" for="chkSalida">
-                      Salida
-                    </label>
-                  </div>
-                </div>
-
-                <div class="col-md-3">
-                  <div class="form-floating">
-                    <input
-                      type="text"
-                      class="form-control"
-                      id="idsalida"
-                      formControlName="idsalida"
-                      readonly
-                    />
-                    <label for="idsalida">Id Salida</label>
-                  </div>
-                </div>
-
-                <div class="col-md-4">
-                  <div class="form-floating">
-                    <input
-                      type="text"
-                      class="form-control"
-                      id="choferSalida"
-                      [value]="nomChoferSalida"
-                      readonly
-                    />
-                    <label for="choferSalida">Chofer</label>
-                  </div>
-                </div>
-
-                <div class="col-md-2 d-flex align-items-center">
-                  <div class="form-check">
-                    <input
-                      class="form-check-input"
-                      type="checkbox"
-                      [checked]="formularioFacturacion.get('fa_entrega')?.value === 'S'"
-                      disabled
-                      id="chkEntrega"
-                    />
-                    <label class="form-check-label fw-bold" for="chkEntrega">
-                      Entregada
-                    </label>
-                  </div>
-                </div>
-              </div>
-
-              <div class="row">
-                <div class="card-header card-header-brand d-flex align-items-center py-2">
-                  <h5 class="card-title m-0">Detalles de Productos</h5>
-                </div>
-                <div
-                  class="card-body"
-                  style="background-color: #e6e4e4; padding-top: 0; margin-top: 0"
-                >
-                  <div class="row mt-1">
-                    <div
-                      #contenedorScroll
-                      class="table-responsive detalle-table-wrap"
-                    >
-                      <table class="table table-hover table-sm">
-                        <thead class="table-dark">
-                          <tr>
-                            <th style="width: 50%">Código/Descripción</th>
-                            <th style="width: 10%" class="text-center">Cant.</th>
-                            <th style="width: 13%" class="text-center">Precio</th>
-                            <th style="width: 15%" class="text-end">Total</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr
-                            *ngFor="let item of items; let i = index"
-                            [class.table-primary]="i === selectedRow"
-                            style="vertical-align: middle"
-                            (click)="selectRow(i)"
-                          >
-                            <!-- Descripción -->
-                            <td style="width: 50%">
-                              <div class="fw-bold">
-                                {{ item.producto?.in_codmerc }}
-                              </div>
-                              <div class="text-muted small">
-                                {{ item.producto?.in_desmerc }}
-                              </div>
-                            </td>
-
-                            <!-- Cantidad -->
-                            <td class="text-center align-middle" style="width: 10%">
-                              <div class="fw-bold">{{ item.cantidad }}</div>
-                            </td>
-
-                            <!-- Precio -->
-                            <td class="text-center align-middle" style="width: 10%">
-                              <div class="fw-bold text-info">
-                                ${{ item.precio | number: '1.2-2' }}
-                              </div>
-                            </td>
-
-                            <!-- Total -->
-                            <td class="text-end align-middle" style="width: 10%">
-                              <div class="fw-bold fs-5 text-success">
-                                {{ item.total | currency }}
-                              </div>
-                            </td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                  <div class="row">
-                    <div class="col-4"></div>
-                    <div class="col-8">
-                      <div class="row mt-0">
-                        <div
-                          style="
-                            margin-bottom: 0;
-                            margin-top: 0;
-                            padding: 5px;
-                            border: 2px solid rgb(4, 10, 185);
-                          "
-                        >
-                          <div class="row MT-0">
-                            <h6
-                              class="col-4 col-form-label text-black"
-                              style="font-size: 18px; font-weight: bold"
-                            >
-                              Sub Total
-                            </h6>
-                            <div class="col-8">
-                              <input
-                                type="text"
-                                style="font-size: 18px; font-weight: bold"
-                                class="form-control form-control-sm text-end"
-                                disabled
-                                [value]="subTotal | number:'1.2-2'"
-
-                              />
-                            </div>
-                          </div>
-                          <div
-                            class="row mt-0"
-                            style="
-                              padding-top: 0;
-                              margin-bottom: 0;
-                              padding-bottom: 0;
-                            "
-                          >
-                            <h6
-                              class="col-4 col-form-label text-black"
-                              style="
-                                font-size: 18px;
-                                font-weight: bold;
-                                padding-top: 0;
-                                margin-bottom: 0;
-                                padding-bottom: 0;
-                              "
-                            >
-                              Desc.
-                            </h6>
-                            <div class="col-8">
-                              <input
-                                type="text"
-                                style="
-                                  font-size: 18px;
-                                  font-weight: bold;
-                                  padding-top: 0;
-                                  margin-bottom: 0;
-                                  padding-bottom: 0;
-                                "
-                                class="form-control form-control-sm text-end"
-                                disabled
-                                [(ngModel)]="descuentotxt"
-
-                              />
-                            </div>
-                          </div>
-                          <div
-                            class="row mt-0"
-                            style="
-                              padding-top: 0;
-                              margin-bottom: 0;
-                              padding-bottom: 0;
-                            "
-                          >
-                            <h6
-                              class="col-4 col-form-label text-black"
-                              style="font-size: 18px; font-weight: bold"
-                            >
-                              ITBI
-                            </h6>
-                            <div class="col-8">
-                              <input
-                                type="text"
-                                style="font-size: 18px; font-weight: bold"
-                                class="form-control form-control-sm text-end"
-                                disabled
-                                [value]="totalItbis | number:'1.2-2'"
-
-                              />
-                            </div>
-                          </div>
-                          <div class="row mt-0">
-                            <h4
-                              class="col-4 text-black"
-                              style="
-                                padding-top: 0;
-                                margin-bottom: 0;
-                                padding-bottom: 0;
-                              "
-                            >
-                              Total
-                            </h4>
-                            <div class="col-8">
-                              <input
-                                type="text"
-                                style="
-                                  font-size: 18px;
-                                  font-weight: bold;
-                                  margin-top: 0;
-                                  padding-top: 0;
-                                  margin-bottom: 0;
-                                  padding-bottom: 0;
-                                "
-                                disabled
-                                class="form-control form-control-sm text-end"
-                                [value]="totalGral | number:'1.2-2'"
-
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
 </div>
 
 <div

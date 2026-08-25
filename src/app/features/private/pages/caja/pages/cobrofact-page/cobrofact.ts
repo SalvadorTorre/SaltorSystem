@@ -116,8 +116,8 @@ export class CobroFact implements OnInit {
   modoconsultaFacturacion: boolean = false;
   facturacionList: FacturaCajaRow[] = [];
   cargandoFacturasCaja = false;
-  cargandoMasFacturasCaja = false;
-  facturasCajaPageSize = 75;
+  facturasCajaPageSize = 20;
+  facturasCajaPageSizeOptions = [10, 20, 30, 50];
   facturasCajaPage = 1;
   facturasCajaHasMore = false;
   totalFacturasCaja = 0;
@@ -309,6 +309,68 @@ export class CobroFact implements OnInit {
     ).trim();
     const digits = raw.replace(/\D/g, '');
     return digits || raw.toUpperCase();
+  }
+
+  tipoComprobanteGrid(factura: any): string {
+    const encf = String(
+      factura?.fa_ncfFact ??
+      factura?.fa_ncffact ??
+      '',
+    ).trim().toUpperCase();
+    if (encf.startsWith('E') && encf.length >= 3) {
+      return encf.substring(0, 3);
+    }
+
+    const raw = String(
+      factura?.fa_tipoNcf ??
+      factura?.fa_tiponcf ??
+      '',
+    ).trim().toUpperCase();
+    if (!raw) return 'N/A';
+    if (raw.startsWith('E')) return raw;
+
+    const digits = raw.replace(/\D/g, '');
+    return digits ? `E${digits.padStart(2, '0')}` : raw;
+  }
+
+  claseTipoComprobanteGrid(factura: any): string {
+    const tipo = this.tipoComprobanteGrid(factura);
+    if (tipo === 'E31') return 'ecf-badge ecf-e31';
+    if (tipo === 'E32') return 'ecf-badge ecf-e32';
+    return 'ecf-badge ecf-other';
+  }
+
+  nombreClienteGridLineas(nombre: any): string[] {
+    const limpio = String(nombre || 'Sin nombre').replace(/\s+/g, ' ').trim();
+    if (limpio.length <= 24) return [limpio];
+
+    const palabras = limpio.split(' ');
+    const mitad = Math.ceil(limpio.length / 2);
+    let acumulado = '';
+    let mejorIndice = 1;
+    let mejorDiferencia = Number.MAX_SAFE_INTEGER;
+
+    palabras.forEach((palabra, index) => {
+      if (index === palabras.length - 1) return;
+      acumulado = acumulado ? `${acumulado} ${palabra}` : palabra;
+      const diferencia = Math.abs(acumulado.length - mitad);
+      if (diferencia < mejorDiferencia) {
+        mejorDiferencia = diferencia;
+        mejorIndice = index + 1;
+      }
+    });
+
+    return [
+      palabras.slice(0, mejorIndice).join(' '),
+      palabras.slice(mejorIndice).join(' '),
+    ].filter(Boolean);
+  }
+
+  statusCajaGrid(factura: any): string {
+    const status = this.statusCaja(factura);
+    if (status === 'Pend. pago') return 'Pend.';
+    if (status === 'Fact. Pagada') return 'Pagada';
+    return status;
   }
 
   get bloquearAccionesPorNcfDgiiPagada(): boolean {
@@ -892,16 +954,19 @@ export class CobroFact implements OnInit {
         this.totalGral = totalGeneral;
       });
   }
-  buscarFacturasNoImpresas(reintentarSesion = true, append = false) {
-    if (append && (this.cargandoFacturasCaja || this.cargandoMasFacturasCaja || !this.facturasCajaHasMore)) {
+  buscarFacturasNoImpresas(reintentarSesion = true, page = 1) {
+    if (this.cargandoFacturasCaja) {
       return;
     }
 
-    const page = append ? this.facturasCajaPage + 1 : 1;
-    this.cargandoFacturasCaja = !append;
-    this.cargandoMasFacturasCaja = append;
+    const safePage = Math.max(1, Number(page) || 1);
+    this.cargandoFacturasCaja = true;
 
-    this.servicioFacturacion.obtenerFacturasNoImpresas(page, this.facturasCajaPageSize).subscribe({
+    this.servicioFacturacion.obtenerFacturasNoImpresas(
+      safePage,
+      this.facturasCajaPageSize,
+      this.txtNombre,
+    ).subscribe({
       next: (resp) => {
         const rows = Array.isArray(resp?.data) ? resp.data : [];
         const facturas = rows
@@ -913,23 +978,19 @@ export class CobroFact implements OnInit {
           }))
           .sort((a: any, b: any) => this.compararNumeroFacturaDesc(a, b));
 
-        this.facturacionList = append
-          ? this.unirFacturasCaja(this.facturacionList, facturas)
-          : facturas;
-        this.facturasCajaPage = page;
+        this.facturacionList = facturas;
+        this.facturasCajaPage = safePage;
         this.totalFacturasCaja = Number(resp?.pagination?.total || this.facturacionList.length || 0);
         this.facturasCajaHasMore = !!resp?.pagination?.hasMore;
         this.cargandoFacturasCaja = false;
-        this.cargandoMasFacturasCaja = false;
       },
       error: async (err) => {
         console.error('Error cargando facturas de caja:', err);
         this.cargandoFacturasCaja = false;
-        this.cargandoMasFacturasCaja = false;
         if (reintentarSesion && this.esErrorJwtVencido(err)) {
           const recuperada = await this.supabase.recoverSession();
           if (recuperada) {
-            this.buscarFacturasNoImpresas(false, append);
+            this.buscarFacturasNoImpresas(false, safePage);
             return;
           }
 
@@ -942,25 +1003,39 @@ export class CobroFact implements OnInit {
           void this.router.navigate(['/public/sign-in']);
           return;
         }
-        if (!append) this.facturacionList = [];
+        this.facturacionList = [];
         Swal.fire('Error', this.extraerMensajeError(err), 'error');
       },
     });
   }
 
-  cargarMasFacturasCaja(): void {
-    this.buscarFacturasNoImpresas(true, true);
+  buscarClienteFacturasCaja(): void {
+    this.selectedFacturaIndex = -1;
+    this.buscarFacturasNoImpresas(true, 1);
   }
 
-  private unirFacturasCaja(actuales: FacturaCajaRow[], nuevas: FacturaCajaRow[]): FacturaCajaRow[] {
-    const porCodigo = new Map<string, FacturaCajaRow>();
-    [...actuales, ...nuevas].forEach((factura) => {
-      const codigo = String(factura?.fa_codFact || '').trim();
-      if (codigo) porCodigo.set(codigo, factura);
-    });
-    return Array.from(porCodigo.values()).sort((a: any, b: any) =>
-      this.compararNumeroFacturaDesc(a, b),
-    );
+  limpiarBusquedaClienteFacturasCaja(): void {
+    this.txtNombre = '';
+    this.selectedFacturaIndex = -1;
+    this.buscarFacturasNoImpresas(true, 1);
+  }
+
+  cambiarCantidadFacturasCaja(): void {
+    this.facturasCajaPageSize = Math.min(Math.max(Number(this.facturasCajaPageSize) || 20, 10), 50);
+    this.selectedFacturaIndex = -1;
+    this.buscarFacturasNoImpresas(true, 1);
+  }
+
+  paginaAnteriorFacturasCaja(): void {
+    if (this.facturasCajaPage <= 1) return;
+    this.selectedFacturaIndex = -1;
+    this.buscarFacturasNoImpresas(true, this.facturasCajaPage - 1);
+  }
+
+  paginaSiguienteFacturasCaja(): void {
+    if (!this.facturasCajaHasMore) return;
+    this.selectedFacturaIndex = -1;
+    this.buscarFacturasNoImpresas(true, this.facturasCajaPage + 1);
   }
 
   consultarFacturacion(factura: FacturacionModelData) {
