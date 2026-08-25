@@ -197,13 +197,15 @@ export class ServicioCliente {
 
     return from(
       (async () => {
-        const { data, error } = await this.db
+        // No solicitar una representacion de la fila insertada. Con RLS puede
+        // estar permitido INSERT pero la fila no ser visible inmediatamente
+        // para SELECT; en ese caso .single() producia PGRST116 aunque el
+        // cliente se hubiera guardado correctamente.
+        const { error } = await this.db
           .from("clientes")
-          .insert(payload)
-          .select("*")
-          .single();
+          .insert(payload);
         if (error) throw error;
-        return this.normalizarCliente(data);
+        return this.normalizarCliente(payload);
       })()
     ).pipe(
       map((row: ModeloClienteData) => ({
