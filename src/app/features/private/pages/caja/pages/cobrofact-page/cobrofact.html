@@ -28,6 +28,17 @@
                   </tr>
                 </thead>
                 <tbody>
+                  <tr *ngIf="cargandoFacturasCaja">
+                    <td colspan="6" class="text-center text-muted py-3">
+                      <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                      Cargando facturas...
+                    </td>
+                  </tr>
+                  <tr *ngIf="!cargandoFacturasCaja && facturacionList.length === 0">
+                    <td colspan="6" class="text-center text-muted py-3">
+                      No hay facturas pendientes para cobrar.
+                    </td>
+                  </tr>
                   <tr
                     #filaSeleccionada
                     *ngFor="let factura of facturacionList; let i = index"
@@ -98,6 +109,22 @@
                 </tr>
               </tbody>
             </table>
+
+            <div class="d-flex justify-content-between align-items-center px-1 pb-1" *ngIf="!cargandoFacturasCaja && facturacionList.length > 0">
+              <small class="text-muted">
+                Mostrando {{ facturacionList.length }} de {{ totalFacturasCaja || facturacionList.length }}
+              </small>
+              <button
+                type="button"
+                class="btn btn-outline-primary btn-sm"
+                *ngIf="facturasCajaHasMore"
+                [disabled]="cargandoMasFacturasCaja"
+                (click)="cargarMasFacturasCaja()"
+              >
+                <span *ngIf="cargandoMasFacturasCaja" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                Cargar más
+              </button>
+            </div>
 
             <!-- Controles de paginación -->
             <!-- <nav aria-label="Paginación de facturas" class="mt-2">

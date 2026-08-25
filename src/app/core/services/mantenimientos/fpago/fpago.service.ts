@@ -1,6 +1,7 @@
 import { Injectable } from "@angular/core";
 import { Observable, from } from "rxjs";
 import { map } from "rxjs/operators";
+import { shareReplay } from "rxjs/operators";
 import { ModeloFpago, ModeloFpagoData } from ".";
 import { SupabaseService } from "../../supabase/supabase.service";
 
@@ -8,6 +9,8 @@ import { SupabaseService } from "../../supabase/supabase.service";
   providedIn: "root"
 })
 export class ServicioFpago {
+  private fpagoCache$?: Observable<any>;
+
   constructor(private supabase: SupabaseService) { }
 
   private get db(): any {
@@ -135,11 +138,15 @@ export class ServicioFpago {
     );
   }
 
-  obtenerTodosFpago(): Observable<any> {
-    return from((async () => {
+  obtenerTodosFpago(forceRefresh = false): Observable<any> {
+    if (this.fpagoCache$ && !forceRefresh) {
+      return this.fpagoCache$;
+    }
+
+    this.fpagoCache$ = from((async () => {
       const { data, error } = await this.db
         .from("fpago")
-        .select("*")
+        .select("fp_codfpago,fp_descfpago,dgii_codigo,es_dgii,activo")
         .order("fp_codfpago", { ascending: true });
       if (error) throw error;
       return data || [];
@@ -149,8 +156,11 @@ export class ServicioFpago {
         code: 200,
         message: "Formas de pago cargadas",
         data: rows.map((row: any) => this.mapRow(row))
-      }))
+      })),
+      shareReplay(1)
     );
+
+    return this.fpagoCache$;
   }
 
   obtenerFpagoPorId(codigo: string): Observable<any> {

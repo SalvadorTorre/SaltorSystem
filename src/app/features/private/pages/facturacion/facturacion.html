@@ -1024,7 +1024,19 @@
                   </button>
                 </td>
               </tr>
-              <tr *ngIf="facturacionList.length === 0">
+              <tr *ngIf="cargandoFacturasModal">
+                <td colspan="5" class="text-center text-muted py-4">
+                  <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+                  Buscando facturas...
+                </td>
+              </tr>
+              <tr *ngIf="!cargandoFacturasModal && !busquedaFacturaModalRealizada && facturacionList.length === 0">
+                <td colspan="5" class="text-center text-muted py-4">
+                  <i class="bi bi-search fs-1 d-block mb-2"></i>
+                  Digite un numero, cliente o fecha para buscar
+                </td>
+              </tr>
+              <tr *ngIf="!cargandoFacturasModal && busquedaFacturaModalRealizada && facturacionList.length === 0">
                 <td colspan="5" class="text-center text-muted py-4">
                   <i class="bi bi-inbox fs-1 d-block mb-2"></i>
                   No se encontraron facturas

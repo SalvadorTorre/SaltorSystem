@@ -339,7 +339,9 @@ export class ServicioFacturacion {
   }
 
   private applyPendienteCajaFilter(query: any): any {
-    return query.or('fa_impresa.is.null,fa_impresa.eq.,fa_impresa.eq.N,and(fa_impresa.eq.S,fa_fpago.is.null),and(fa_impresa.eq.S,fa_fpago.eq.),and(fa_impresa.eq.S,fa_fpago.eq.N),and(fa_status.eq.C,fa_fpago.is.null),and(fa_status.eq.C,fa_fpago.eq.),and(fa_status.eq.C,fa_fpago.eq.N),and(fa_status.eq.F,fa_fpago.is.null),and(fa_status.eq.F,fa_fpago.eq.),and(fa_status.eq.F,fa_fpago.eq.N)');
+    return query
+      .in('fa_status', ['C', 'F'])
+      .or('fa_fpago.is.null,fa_fpago.eq.,fa_fpago.eq.N');
   }
 
   private applySinCierreCajaFilter(query: any): any {
@@ -1375,7 +1377,12 @@ export class ServicioFacturacion {
     })());
   }
 
-  obtenerFacturasNoImpresas(): Observable<any> {
+  obtenerFacturasNoImpresas(pageIndex = 1, pageSize = 75): Observable<any> {
+    const safePage = Math.max(1, Number(pageIndex) || 1);
+    const safePageSize = Math.min(Math.max(25, Number(pageSize) || 75), 100);
+    const fromRow = (safePage - 1) * safePageSize;
+    const toRow = fromRow + safePageSize - 1;
+
     if (!this.useSupabase) {
       const endpoint = '/facturas-no-impresas';
       const params = new HttpParams();
@@ -1402,7 +1409,8 @@ export class ServicioFacturacion {
         .from('factura')
         .select(this.columnasFacturaCajaResumen)
         .order('fa_fecfact', { ascending: false })
-        .limit(500);
+        .order('fa_codfact', { ascending: false })
+        .range(fromRow, toRow);
       query = this.applyPendienteCajaFilter(query);
       query = this.applyTenantFilter(query);
       const { data, error } = await query;
@@ -1417,6 +1425,12 @@ export class ServicioFacturacion {
             .toUpperCase();
           return impresa === 'N' || !this.esFacturaImpresaYPagada(row);
         }),
+        pagination: {
+          total: fromRow + mapped.length,
+          page: safePage,
+          pageSize: safePageSize,
+          hasMore: (data || []).length === safePageSize,
+        },
       };
     })());
   }

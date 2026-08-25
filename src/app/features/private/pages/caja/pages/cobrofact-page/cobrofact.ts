@@ -115,6 +115,12 @@ export class CobroFact implements OnInit {
   facturacionid!: string;
   modoconsultaFacturacion: boolean = false;
   facturacionList: FacturaCajaRow[] = [];
+  cargandoFacturasCaja = false;
+  cargandoMasFacturasCaja = false;
+  facturasCajaPageSize = 75;
+  facturasCajaPage = 1;
+  facturasCajaHasMore = false;
+  totalFacturasCaja = 0;
   factura!: FacturacionModelData;
 
   detFacturaList: detFacturaData[] = [];
@@ -886,12 +892,19 @@ export class CobroFact implements OnInit {
         this.totalGral = totalGeneral;
       });
   }
-  buscarFacturasNoImpresas(reintentarSesion = true) {
-    this.servicioFacturacion.obtenerFacturasNoImpresas().subscribe({
+  buscarFacturasNoImpresas(reintentarSesion = true, append = false) {
+    if (append && (this.cargandoFacturasCaja || this.cargandoMasFacturasCaja || !this.facturasCajaHasMore)) {
+      return;
+    }
+
+    const page = append ? this.facturasCajaPage + 1 : 1;
+    this.cargandoFacturasCaja = !append;
+    this.cargandoMasFacturasCaja = append;
+
+    this.servicioFacturacion.obtenerFacturasNoImpresas(page, this.facturasCajaPageSize).subscribe({
       next: (resp) => {
-        console.log('Facturas recibidas:', resp.data);
         const rows = Array.isArray(resp?.data) ? resp.data : [];
-        this.facturacionList = rows
+        const facturas = rows
           .filter((row: any) => this.cumpleFiltroListaCaja(row))
           .map((row: any) => ({
             ...(row as any),
@@ -899,13 +912,24 @@ export class CobroFact implements OnInit {
             caja_status: this.statusCaja(row),
           }))
           .sort((a: any, b: any) => this.compararNumeroFacturaDesc(a, b));
+
+        this.facturacionList = append
+          ? this.unirFacturasCaja(this.facturacionList, facturas)
+          : facturas;
+        this.facturasCajaPage = page;
+        this.totalFacturasCaja = Number(resp?.pagination?.total || this.facturacionList.length || 0);
+        this.facturasCajaHasMore = !!resp?.pagination?.hasMore;
+        this.cargandoFacturasCaja = false;
+        this.cargandoMasFacturasCaja = false;
       },
       error: async (err) => {
         console.error('Error cargando facturas de caja:', err);
+        this.cargandoFacturasCaja = false;
+        this.cargandoMasFacturasCaja = false;
         if (reintentarSesion && this.esErrorJwtVencido(err)) {
           const recuperada = await this.supabase.recoverSession();
           if (recuperada) {
-            this.buscarFacturasNoImpresas(false);
+            this.buscarFacturasNoImpresas(false, append);
             return;
           }
 
@@ -918,10 +942,25 @@ export class CobroFact implements OnInit {
           void this.router.navigate(['/public/sign-in']);
           return;
         }
-        this.facturacionList = [];
+        if (!append) this.facturacionList = [];
         Swal.fire('Error', this.extraerMensajeError(err), 'error');
       },
     });
+  }
+
+  cargarMasFacturasCaja(): void {
+    this.buscarFacturasNoImpresas(true, true);
+  }
+
+  private unirFacturasCaja(actuales: FacturaCajaRow[], nuevas: FacturaCajaRow[]): FacturaCajaRow[] {
+    const porCodigo = new Map<string, FacturaCajaRow>();
+    [...actuales, ...nuevas].forEach((factura) => {
+      const codigo = String(factura?.fa_codFact || '').trim();
+      if (codigo) porCodigo.set(codigo, factura);
+    });
+    return Array.from(porCodigo.values()).sort((a: any, b: any) =>
+      this.compararNumeroFacturaDesc(a, b),
+    );
   }
 
   consultarFacturacion(factura: FacturacionModelData) {

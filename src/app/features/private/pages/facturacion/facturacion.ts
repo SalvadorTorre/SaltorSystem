@@ -19,6 +19,7 @@ import {
   firstValueFrom,
   Subscription,
   Subject,
+  timeout,
 } from 'rxjs';
 import Swal from 'sweetalert2';
 // import { ModeloUsuarioData } from 'src/app/core/services/mantenimientos/usuario';
@@ -85,11 +86,12 @@ export class Facturacion implements OnInit, OnDestroy {
   @ViewChild('inputCodmerc') inputCodmerc!: ElementRef; // Para manejar el foco
   @ViewChild('codigoInput') codigoInput!: ElementRef<HTMLInputElement>;
   @ViewChild('descripcionInput') descripcionInput!: ElementRef; // Para manejar el foco
-  @ViewChild('Tabladetalle') Tabladetalle!: ElementRef;
+  @ViewChild('Tabladetalle') Tabladetalle?: ElementRef;
   isDisabled: boolean = true;
   totalItems = 0;
   pageSize = 5;
   readonly limiteFacturasInicial = 20;
+  readonly limiteFacturasModalInicial = 10;
   readonly limiteFacturasBusqueda = 20;
   readonly minimoLetrasBusquedaNombreFactura = 4;
   currentPage = 1;
@@ -113,6 +115,8 @@ export class Facturacion implements OnInit, OnDestroy {
   facturaConsultaSeleccionada: FacturacionModelData | null = null;
   facturacionList: FacturacionModelData[] = [];
   facturacionListBase: FacturacionModelData[] = [];
+  cargandoFacturasModal = false;
+  busquedaFacturaModalRealizada = false;
   detFacturaList: detFacturaData[] = [];
   selectedFacturacion: any = null;
   items: interfaceDetalleModel[] = [];
@@ -265,7 +269,6 @@ export class Facturacion implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.buscarTodasFacturacion();
     this.conectarBusquedaFacturaModal();
     this.buscarcodmerc.valueChanges
       .pipe(
@@ -525,9 +528,15 @@ export class Facturacion implements OnInit, OnDestroy {
     updateState();
   }
   obtenerfpago() {
-    this.servicioFpago.obtenerTodosFpago().subscribe((response) => {
-      this.listaFpago = response.data; // Guardamos la lista completa
-      // Si hay un valor seleccionado, intentamos setear el nombre en el input
+    this.servicioFpago.obtenerTodosFpago().pipe(
+      timeout(5000),
+      catchError((error) => {
+        console.error('Error cargando formas de pago:', error);
+        return of({ data: this.listaFpago || [] } as any);
+      }),
+    ).subscribe((response) => {
+      this.listaFpago = Array.isArray(response?.data) ? response.data : [];
+      this.resultadoFpago = [];
       const currentId = this.formularioFacturacion.get('fa_codfpago')?.value;
       if (currentId) {
         const found = this.listaFpago.find(
@@ -645,6 +654,28 @@ export class Facturacion implements OnInit, OnDestroy {
     }
   }
 
+  private limpiarControlesPagoEntrega(): void {
+    this.formularioFacturacion.patchValue(
+      {
+        fa_fpago: '',
+        fa_codfpago: '',
+        fa_tipopago: 1,
+        fa_envio: '',
+      },
+      { emitEvent: false },
+    );
+    this.buscarFpago.setValue('', { emitEvent: false });
+    this.buscarEnvio.setValue('', { emitEvent: false });
+    this.resultadoFpago = [];
+    this.resultadoEnvio = [];
+    this.mostrarDropdownFpago = false;
+    this.mostrarDropdownEnvio = false;
+    this.selectedIndexfpago = 0;
+    this.selectedIndexEnvio = 0;
+    this.clientePermiteCredito = false;
+    this.diasCreditoCliente = 0;
+  }
+
   private conectarBusquedaCliente(): void {
     this.clienteSearchSubscription?.unsubscribe();
     this.clienteSearchSubscription = this.formularioFacturacion
@@ -676,6 +707,7 @@ export class Facturacion implements OnInit, OnDestroy {
     //this.formularioFacturacion.reset();
     this.crearFormularioFacturacion();
     this.setControlesPagoEntregaActivos(true);
+    this.limpiarControlesPagoEntrega();
     this.txtdescripcion = '';
     this.txtFactura = '';
     this.txtFecha = '';
@@ -707,8 +739,6 @@ export class Facturacion implements OnInit, OnDestroy {
     this.detallePendienteConsulta = [];
     this.cargandoDetallePendienteConsulta = false;
     this.facturaConsultaActual = '';
-    this.clientePermiteCredito = false;
-    this.diasCreditoCliente = 0;
     this.facturaOriginalEdicion = null;
     this.detalleOriginalEdicion = '';
     this.habilitarIcono = true;
@@ -840,16 +870,19 @@ export class Facturacion implements OnInit, OnDestroy {
     const codigoFactura = String(factura?.fa_codFact || '').trim();
     let encfConsulta = '';
     try {
-      const [response, faNcfFact] = codigoFactura
-        ? await Promise.all([
-            firstValueFrom(this.servicioFacturacion.getByNumero(codigoFactura)),
-            firstValueFrom(this.servicioFacturacion.obtenerNcfFactura(codigoFactura)),
-          ])
-        : [null, ''];
+      const response = codigoFactura
+        ? await firstValueFrom(this.servicioFacturacion.getByNumero(codigoFactura))
+        : null;
       const facturaCompleta = Array.isArray(response?.data)
         ? response.data[0] || {}
         : response?.data || response || {};
-      encfConsulta = String(faNcfFact ?? '').trim();
+      encfConsulta = String(
+        facturaCompleta?.fa_ncfFact ??
+        facturaCompleta?.fa_ncffact ??
+        (factura as any)?.fa_ncfFact ??
+        (factura as any)?.fa_ncffact ??
+        ''
+      ).trim();
 
       factura = {
         ...factura,
@@ -1385,11 +1418,32 @@ export class Facturacion implements OnInit, OnDestroy {
   }
 
   onOpenBuscarFacturaModal(): void {
-    // Al abrir solo carga las facturas del dia. Las demas se buscan digitando filtros.
     this.txtFactura = '';
     this.txtdescripcion = '';
     this.txtFecha = '';
-    this.buscarTodasFacturacion();
+    this.facturacionListBase = [];
+    this.facturacionList = [];
+    this.cargandoFacturasModal = true;
+    this.busquedaFacturaModalRealizada = true;
+    this.servicioFacturacion.buscarFacturacion(
+      1,
+      this.limiteFacturasModalInicial,
+      undefined,
+      undefined,
+      undefined,
+      true,
+      true,
+    ).pipe(
+      catchError((error) => {
+        console.error('Error cargando facturas iniciales del modal:', error);
+        return of({ data: [] } as any);
+      }),
+    ).subscribe((response) => {
+      const rows = Array.isArray(response?.data) ? response.data : [];
+      this.facturacionListBase = rows;
+      this.facturacionList = [...rows];
+      this.cargandoFacturasModal = false;
+    });
   }
 
   solicitarBusquedaFactura(): void {
@@ -1511,12 +1565,33 @@ export class Facturacion implements OnInit, OnDestroy {
     if (overrides.fecha !== undefined) this.txtFecha = overrides.fecha;
     const fecha = this.normalizarFechaBusquedaFactura(this.txtFecha);
 
-    if (!codigo && !fecha && nombre && nombre.length < this.minimoLetrasBusquedaNombreFactura) {
+    if (!codigo && !nombre && !fecha) {
       this.facturacionListBase = [];
       this.facturacionList = [];
+      this.cargandoFacturasModal = false;
+      this.busquedaFacturaModalRealizada = false;
+      if (mostrarAvisoNoEncontrado) {
+        Swal.fire(
+          'Aviso',
+          'Digite un numero, cliente o fecha para buscar la factura.',
+          'info',
+        );
+      }
       return;
     }
 
+    if (!codigo && !fecha && nombre && nombre.length < this.minimoLetrasBusquedaNombreFactura) {
+      this.facturacionListBase = [];
+      this.facturacionList = [];
+      this.cargandoFacturasModal = false;
+      this.busquedaFacturaModalRealizada = true;
+      return;
+    }
+
+    this.cargandoFacturasModal = true;
+    this.busquedaFacturaModalRealizada = true;
+    this.facturacionListBase = [];
+    this.facturacionList = [];
     this.busquedaFacturaModal$.next({
       codigo,
       nombre,
@@ -1537,7 +1612,6 @@ export class Facturacion implements OnInit, OnDestroy {
           prev.mostrarAvisoNoEncontrado === curr.mostrarAvisoNoEncontrado,
         ),
         switchMap((filtros) => {
-          const sinFiltros = !filtros.codigo && !filtros.nombre && !filtros.fecha;
           const nombreMuyCorto =
             !filtros.codigo &&
             !filtros.fecha &&
@@ -1555,7 +1629,7 @@ export class Facturacion implements OnInit, OnDestroy {
             this.limiteFacturasBusqueda,
             filtros.codigo || undefined,
             filtros.nombre || undefined,
-            filtros.fecha || (sinFiltros ? this.fechaHoyIso() : undefined),
+            filtros.fecha || undefined,
             true,
             true,
           ).pipe(
@@ -1571,6 +1645,7 @@ export class Facturacion implements OnInit, OnDestroy {
         const rows = response?.data || [];
         this.facturacionListBase = rows;
         this.facturacionList = [...this.facturacionListBase];
+        this.cargandoFacturasModal = false;
 
         if (filtros.mostrarAvisoNoEncontrado && (error || this.facturacionList.length === 0)) {
           Swal.fire(
@@ -3274,7 +3349,6 @@ export class Facturacion implements OnInit, OnDestroy {
             showConfirmButton: false,
           });
 
-          this.buscarTodasFacturacion();
           this.formularioFacturacion.reset();
           this.crearFormularioFacturacion();
           this.formularioFacturacion.enable();
@@ -3532,8 +3606,7 @@ export class Facturacion implements OnInit, OnDestroy {
   }
 
   ngAfterViewInit() {
-    // Establece el foco en la tabla cuando se cargue la vista
-    this.Tabladetalle.nativeElement.focus();
+    this.Tabladetalle?.nativeElement?.focus?.();
   }
 
   formatNumber(value: any): string {
