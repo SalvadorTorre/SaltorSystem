@@ -302,6 +302,15 @@ export class ControlFact implements OnInit, OnDestroy {
     ).trim().toUpperCase();
 
     if (
+      descripcion.includes('REGIMEN ESPECIAL') ||
+      descripcion.includes('RÉGIMEN ESPECIAL') ||
+      ncf.startsWith('E44') ||
+      ['44', 'E44'].includes(tipo)
+    ) {
+      return 'REGIMEN ESPECIAL ELECTRONICO';
+    }
+
+    if (
       descripcion.includes('GUBERN') ||
       ncf.startsWith('B14') ||
       ncf.startsWith('B15') ||
@@ -480,7 +489,7 @@ export class ControlFact implements OnInit, OnDestroy {
         __drawStampBox: status === 'C',
         __hideInvoiceTime: status === 'C',
         __dateShiftX: status === 'C' ? 5 : 3,
-        __thermalRightMargin: status === 'C' ? 9 : undefined,
+        __thermalRightMargin: 10,
         __boldUppercaseClient: status === 'C',
         __hideInvoiceDetails: false,
         __thermalShiftX: -4,

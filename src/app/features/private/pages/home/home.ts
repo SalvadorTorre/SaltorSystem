@@ -116,6 +116,9 @@ interface PieSegment {
   styleUrls: ['./home.css']
 })
 export class Home implements OnInit {
+  // Suspensión temporal solicitada para evitar carga sobre el servidor.
+  // Cambiar a false únicamente cuando se autorice reactivar el dashboard.
+  readonly dashboardSuspendido = true;
   dashboardCargando = true;
   role: DashboardRole = 'vendedor';
   username: string = '';
@@ -171,6 +174,10 @@ export class Home implements OnInit {
     this.isDesktopApp = typeof window !== 'undefined' && !!window.electronAPI?.isDesktop;
     this.periodoActual = new Intl.DateTimeFormat('es-DO', { month: 'long', year: 'numeric' }).format(new Date());
     this.loadSession();
+    if (this.dashboardSuspendido) {
+      this.dashboardCargando = false;
+      return;
+    }
     this.restaurarDashboardCache();
     this.cargarDashboardReal();
   }

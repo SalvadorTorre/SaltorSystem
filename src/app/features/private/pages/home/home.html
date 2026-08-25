@@ -32,12 +32,16 @@
     </div>
   </header>
 
-  <div *ngIf="dashboardCargando" class="dashboard-loading" role="status" aria-live="polite">
+  <div *ngIf="dashboardSuspendido" class="dashboard-loading" role="status" aria-live="polite">
+    <strong>Panel de rendimiento suspendido temporalmente.</strong>
+  </div>
+
+  <div *ngIf="!dashboardSuspendido && dashboardCargando" class="dashboard-loading" role="status" aria-live="polite">
     <span class="dashboard-loading__spinner"></span>
     <strong>Cargando rendimiento de {{ sucursalNombre }}...</strong>
   </div>
 
-  <ng-container *ngIf="!dashboardCargando" [ngTemplateOutlet]="adminDashboard"></ng-container>
+  <ng-container *ngIf="!dashboardSuspendido && !dashboardCargando" [ngTemplateOutlet]="adminDashboard"></ng-container>
 
   <ng-container *ngIf="false">
     <section class="kpi-grid">
