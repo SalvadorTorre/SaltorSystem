@@ -16,10 +16,8 @@ export class CuadreCaja implements OnInit {
   facturas: any[] = [];
   facturasFiltradas: any[] = [];
   facturasResumen: any[] = [];
-  paginaActual = 1;
-  tamanoPagina = 20;
+  private readonly tamanoLote = 200;
   totalFacturas = 0;
-  hayPaginaSiguiente = false;
   totalFacturasPendientesSucursal: number | null = null;
   ultimaFacturaCuadrada: string = ''; 
   isLoading: boolean = false;
@@ -197,37 +195,21 @@ export class CuadreCaja implements OnInit {
     });
   }
 
-  cargarFacturasPendientes() {
+  async cargarFacturasPendientes() {
     this.isLoading = true;
     const sucursal = this.sucursalUsuarioActual();
-    this.facturaService.buscarFacturasPendientesCierre(this.paginaActual, this.tamanoPagina, true, sucursal).subscribe({
-      next: (res: any) => {
-        this.isLoading = false;
-        this.facturas = res.data || [];
-        this.totalFacturas = Number(res.total) || 0;
-        this.hayPaginaSiguiente = res.hasMore === true;
-        if (this.paginaActual > 1 && this.facturas.length === 0) {
-          this.hayPaginaSiguiente = false;
-          this.paginaActual -= 1;
-          this.cargarFacturasPendientes();
-          return;
-        }
-        const ultimaPagina = this.totalPaginas;
-        if (this.paginaActual > ultimaPagina) {
-          this.paginaActual = ultimaPagina;
-          this.cargarFacturasPendientes();
-          return;
-        }
-        this.aplicarFiltros();
-      },
-      error: (err: any) => {
-        this.isLoading = false;
-        console.error(err);
-        Swal.fire('Error', 'No se pudieron cargar las facturas', 'error');
-      }
-    });
+    try {
+      this.facturas = await this.cargarDetalleCompleto();
+      this.totalFacturas = this.facturas.length;
+      this.aplicarFiltros();
+    } catch (err) {
+      console.error(err);
+      Swal.fire('Error', 'No se pudieron cargar las facturas', 'error');
+    } finally {
+      this.isLoading = false;
+    }
 
-    if (this.paginaActual === 1 || this.totalFacturasPendientesSucursal === null) {
+    if (this.totalFacturasPendientesSucursal === null) {
       this.facturaService.buscarResumenTotalesFacturasPendientesCierre(true, sucursal).subscribe({
         next: (res: any) => {
           const resumen = res.data || {};
@@ -253,21 +235,8 @@ export class CuadreCaja implements OnInit {
     }
   }
 
-  get totalPaginas(): number {
-    const totalCalculado = Math.ceil(this.totalFacturas / this.tamanoPagina);
-    const totalSegunConsulta = this.paginaActual + (this.hayPaginaSiguiente ? 1 : 0);
-    return Math.max(1, totalCalculado, totalSegunConsulta);
-  }
-
   cantidadFacturasPendientesVisible(): number {
     return this.totalFacturasPendientesSucursal ?? this.totalFacturas;
-  }
-
-  cambiarPagina(pagina: number): void {
-    if (pagina < 1 || pagina === this.paginaActual || this.isLoading) return;
-    if (pagina > this.paginaActual && !this.hayPaginaSiguiente) return;
-    this.paginaActual = pagina;
-    this.cargarFacturasPendientes();
   }
 
   private actualizarRangoYTotales(): void {
@@ -381,12 +350,12 @@ export class CuadreCaja implements OnInit {
 
     for (let pagina = 1; pagina <= maxPaginasSeguridad; pagina++) {
       const res: any = await firstValueFrom(
-        this.facturaService.buscarFacturasPendientesCierre(pagina, this.tamanoPagina, true, this.sucursalUsuarioActual())
+        this.facturaService.buscarFacturasPendientesCierre(pagina, this.tamanoLote, true, this.sucursalUsuarioActual())
       );
       const rows = res?.data || [];
       detalleCompleto.push(...rows);
 
-      if (!res?.hasMore || rows.length < this.tamanoPagina) {
+      if (!res?.hasMore || rows.length < this.tamanoLote) {
         break;
       }
     }

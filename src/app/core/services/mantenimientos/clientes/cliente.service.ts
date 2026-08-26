@@ -197,6 +197,24 @@ export class ServicioCliente {
 
     return from(
       (async () => {
+        const rnc = String(payload?.cl_rnc || "").replace(/\D/g, "").trim();
+        if (rnc) {
+          let duplicadoQuery = this.db
+            .from("clientes")
+            .select("cl_codclie")
+            .eq("cl_rnc", rnc)
+            .limit(1);
+          const sucursales = this.sucursalUsuarioValores();
+          if (sucursales.length) {
+            duplicadoQuery = duplicadoQuery.in("cl_codsucursal", sucursales);
+          }
+          const { data: duplicados, error: duplicadoError } = await duplicadoQuery;
+          if (duplicadoError) throw duplicadoError;
+          if (Array.isArray(duplicados) && duplicados.length > 0) {
+            throw new Error(`Ya existe un cliente registrado con el RNC ${rnc}.`);
+          }
+        }
+
         // No solicitar una representacion de la fila insertada. Con RLS puede
         // estar permitido INSERT pero la fila no ser visible inmediatamente
         // para SELECT; en ese caso .single() producia PGRST116 aunque el
@@ -204,7 +222,12 @@ export class ServicioCliente {
         const { error } = await this.db
           .from("clientes")
           .insert(payload);
-        if (error) throw error;
+        if (error) {
+          if (String(error?.code || "") === "23505") {
+            throw new Error("Este cliente ya se encuentra registrado.");
+          }
+          throw error;
+        }
         return this.normalizarCliente(payload);
       })()
     ).pipe(

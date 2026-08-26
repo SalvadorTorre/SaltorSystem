@@ -437,10 +437,11 @@ export class Cliente implements OnInit {
 
   private mostrarErrorSupabase(error: any) {
     const message = error?.message || error?.error_description || 'No se pudo completar la operacion en Supabase.';
+    const esDuplicado = /ya existe|ya se encuentra registrado|duplicad/i.test(String(message));
     Swal.fire({
-      title: 'Error de Supabase',
+      title: esDuplicado ? 'Cliente duplicado' : 'Error de Supabase',
       text: message,
-      icon: 'error',
+      icon: esDuplicado ? 'warning' : 'error',
       confirmButtonText: 'OK',
     });
   }
