@@ -17,8 +17,9 @@ export class CuadreCaja implements OnInit {
   facturasFiltradas: any[] = [];
   facturasResumen: any[] = [];
   paginaActual = 1;
-  tamanoPagina = 50;
+  tamanoPagina = 20;
   totalFacturas = 0;
+  hayPaginaSiguiente = false;
   totalFacturasPendientesSucursal: number | null = null;
   ultimaFacturaCuadrada: string = ''; 
   isLoading: boolean = false;
@@ -204,6 +205,13 @@ export class CuadreCaja implements OnInit {
         this.isLoading = false;
         this.facturas = res.data || [];
         this.totalFacturas = Number(res.total) || 0;
+        this.hayPaginaSiguiente = res.hasMore === true;
+        if (this.paginaActual > 1 && this.facturas.length === 0) {
+          this.hayPaginaSiguiente = false;
+          this.paginaActual -= 1;
+          this.cargarFacturasPendientes();
+          return;
+        }
         const ultimaPagina = this.totalPaginas;
         if (this.paginaActual > ultimaPagina) {
           this.paginaActual = ultimaPagina;
@@ -246,7 +254,9 @@ export class CuadreCaja implements OnInit {
   }
 
   get totalPaginas(): number {
-    return Math.max(1, Math.ceil(this.totalFacturas / this.tamanoPagina));
+    const totalCalculado = Math.ceil(this.totalFacturas / this.tamanoPagina);
+    const totalSegunConsulta = this.paginaActual + (this.hayPaginaSiguiente ? 1 : 0);
+    return Math.max(1, totalCalculado, totalSegunConsulta);
   }
 
   cantidadFacturasPendientesVisible(): number {
@@ -254,7 +264,8 @@ export class CuadreCaja implements OnInit {
   }
 
   cambiarPagina(pagina: number): void {
-    if (pagina < 1 || pagina > this.totalPaginas || pagina === this.paginaActual || this.isLoading) return;
+    if (pagina < 1 || pagina === this.paginaActual || this.isLoading) return;
+    if (pagina > this.paginaActual && !this.hayPaginaSiguiente) return;
     this.paginaActual = pagina;
     this.cargarFacturasPendientes();
   }

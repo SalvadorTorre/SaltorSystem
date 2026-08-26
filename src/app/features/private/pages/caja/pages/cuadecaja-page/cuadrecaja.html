@@ -152,7 +152,7 @@
         <i class="fas fa-chevron-left me-1"></i> Anterior
       </button>
       <span class="text-muted small">Página <strong>{{ paginaActual }}</strong> de <strong>{{ totalPaginas }}</strong></span>
-      <button class="btn btn-sm btn-outline-primary" (click)="cambiarPagina(paginaActual + 1)" [disabled]="paginaActual === totalPaginas || isLoading">
+      <button class="btn btn-sm btn-outline-primary" (click)="cambiarPagina(paginaActual + 1)" [disabled]="!hayPaginaSiguiente || isLoading">
         Siguiente <i class="fas fa-chevron-right ms-1"></i>
       </button>
     </div>

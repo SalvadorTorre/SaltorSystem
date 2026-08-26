@@ -2243,6 +2243,7 @@ export class ControlFact implements OnInit, OnDestroy {
       this.formularioFacturacion.patchValue({
         fa_impresa: 'N',
         fa_reimpresa: 'S',
+        fa_fpago: 'N',
         fa_notaFact: causaReimpresion,
       });
       facturaActual = this.formularioFacturacion.getRawValue();
