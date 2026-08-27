@@ -1820,26 +1820,53 @@ export class Cotizacion implements OnInit {
   private async cotizacionConNombreVendedor(
     cotizacion: CotizacionModelData,
   ): Promise<CotizacionModelData> {
-    const codigoVendedor = String(cotizacion?.ct_codvend || '').trim();
-    const nombreActual = String(cotizacion?.ct_nomvend || '').trim();
+    let cotizacionCompleta = { ...cotizacion };
+    let codigoVendedor = String(cotizacionCompleta?.ct_codvend || '').trim();
+    let nombreActual = String(cotizacionCompleta?.ct_nomvend || '').trim();
 
-    if (!codigoVendedor) {
-      return { ...cotizacion, ct_nomvend: nombreActual };
+    // Las filas de la consulta son livianas y no incluyen el vendedor.
+    // Antes de imprimir recuperamos el encabezado completo por su número.
+    if (!codigoVendedor && !nombreActual && cotizacionCompleta?.ct_codcoti) {
+      try {
+        const respCotizacion = await firstValueFrom(
+          this.servicioCotizacion.getByNumero(cotizacionCompleta.ct_codcoti, false),
+        );
+        if (respCotizacion?.data) {
+          cotizacionCompleta = {
+            ...cotizacionCompleta,
+            ...respCotizacion.data,
+          };
+          codigoVendedor = String(cotizacionCompleta?.ct_codvend || '').trim();
+          nombreActual = String(cotizacionCompleta?.ct_nomvend || '').trim();
+        }
+      } catch (error) {
+        console.warn('No se pudo recuperar el encabezado completo de la cotizacion:', error);
+      }
+    }
+
+    const referenciaVendedor = codigoVendedor || nombreActual;
+    if (!referenciaVendedor) {
+      return { ...cotizacionCompleta, ct_nomvend: '' };
     }
 
     try {
       const resp = await firstValueFrom(
-        this.ServicioUsuario.buscarUsuarioPorCodigoVendedor(codigoVendedor),
+        this.ServicioUsuario.buscarUsuarioPorCodigoVendedor(referenciaVendedor),
       );
       const nombreVendedor = this.nombreVendedorDesdeUsuario(resp?.data);
       if (nombreVendedor) {
-        return { ...cotizacion, ct_nomvend: nombreVendedor };
+        return { ...cotizacionCompleta, ct_nomvend: nombreVendedor };
       }
     } catch (error) {
       console.warn('No se pudo buscar el nombre del vendedor para imprimir la cotizacion:', error);
     }
 
-    return { ...cotizacion, ct_nomvend: nombreActual || codigoVendedor };
+    // No usar el código como si fuera el nombre del vendedor.
+    const nombreValido =
+      nombreActual && nombreActual.toUpperCase() !== referenciaVendedor.toUpperCase()
+        ? nombreActual
+        : '';
+    return { ...cotizacionCompleta, ct_nomvend: nombreValido };
   }
 
   private crearCotizacionA4Pdf(

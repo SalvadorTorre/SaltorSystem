@@ -70,6 +70,7 @@ export class CobroFact implements OnInit {
   mensaje: string = '';
   facturas: any[] = []; // ✅ Declaración de la propiedad
   procesandoCobroDgii = false;
+  procesandoImpresion = false;
   botonEditar = true; // Empieza deshabilitado
   botonImprimir = true; // Empieza deshabilitado
   botonaddItems = true; // Empieza deshabilitado
@@ -1894,8 +1895,12 @@ export class CobroFact implements OnInit {
     return scenario;
   }
 
-  async imprimirFactura(facturaActual?: FacturacionModelData) {
+  async imprimirFactura(
+    facturaActual?: FacturacionModelData,
+    itemsActuales: any[] = this.items,
+  ) {
     this.formularioFacturacion.get('fa_codFact')?.enable();
+    const itemsImpresion = this.deduplicarItemsImpresion([...(itemsActuales || [])]);
 
     // Preparar datos de la factura
     const facturaData =
@@ -1930,6 +1935,8 @@ export class CobroFact implements OnInit {
       await this.imprimirFacturaConDatosDisponibles(
         facturaData,
         datosLocalesImpresion,
+        {},
+        itemsImpresion,
       );
       Swal.fire(
         'DGII no procesado',
@@ -1947,6 +1954,8 @@ export class CobroFact implements OnInit {
       await this.imprimirFacturaConDatosDisponibles(
         facturaData,
         datosLocalesImpresion,
+        {},
+        itemsImpresion,
       );
       Swal.fire(
         'Configuración incompleta',
@@ -1980,6 +1989,7 @@ export class CobroFact implements OnInit {
             facturaData,
             datosLocalesImpresion,
             payloadDgii,
+            itemsImpresion,
           );
           return;
         }
@@ -2013,6 +2023,7 @@ export class CobroFact implements OnInit {
                   ...(res?.data || {}),
                   ...payloadDgii,
                 },
+                itemsImpresion,
               );
             },
             error: async (err) => {
@@ -2027,6 +2038,7 @@ export class CobroFact implements OnInit {
                 facturaData,
                 datosLocalesImpresion,
                 payloadDgii,
+                itemsImpresion,
               );
             },
           });
@@ -2064,6 +2076,7 @@ export class CobroFact implements OnInit {
           facturaData,
           datosLocalesImpresion,
           payloadError,
+          itemsImpresion,
         );
       },
     );
@@ -2073,6 +2086,7 @@ export class CobroFact implements OnInit {
     facturaData: any,
     datosLocalesImpresion: any,
     datosAdicionales: any = {},
+    itemsActuales: any[] = this.items,
   ): Promise<void> {
     const datosParaImprimir = {
       ...(facturaData || {}),
@@ -2102,7 +2116,7 @@ export class CobroFact implements OnInit {
       __drawStampBox: true,
     };
 
-    const itemsImpresion = this.deduplicarItemsImpresion([...this.items]);
+    const itemsImpresion = this.deduplicarItemsImpresion([...(itemsActuales || [])]);
     await this.printingService.imprimirFactura80mm(
       datosParaImprimir,
       itemsImpresion,
@@ -2446,6 +2460,7 @@ export class CobroFact implements OnInit {
 
   imprimirConduceFactura() {
     if (this.facturaSoloConsulta) return;
+    if (this.procesandoImpresion) return;
     if (!this.hayFacturaSeleccionada) {
       Swal.fire('Aviso', 'Seleccione una factura primero.', 'warning');
       return;
@@ -2464,6 +2479,9 @@ export class CobroFact implements OnInit {
     }
     if (!this.validarFormaEntregaObligatoria()) return;
     if (!this.validarOrigenPagoSiAplica()) return;
+
+    this.procesandoImpresion = true;
+    const itemsImpresion = this.deduplicarItemsImpresion([...this.items]);
 
     const cod = this.formularioFacturacion.get('fa_codFact')?.value;
     const payload = {
@@ -2520,25 +2538,32 @@ export class CobroFact implements OnInit {
           { emitEvent: false },
         );
         this.sincronizarSalidaCaja(facturaActualizada, async () => {
-          const itemsImpresion = this.deduplicarItemsImpresion([...this.items]);
-          await this.printingService.imprimirConduceFactura80mm(
-            {
-              ...facturaActualizada,
-              __combineDescriptionCode: true,
-              __detailFontSize: 9,
-              __thermalShiftX: -4,
-              __thermalRightMargin: 9,
-              __hideInvoiceTime: true,
-              __dateShiftX: 5,
-              __stampSpaceAfterTotal: 35,
-              __drawStampBox: true,
-            },
-            itemsImpresion,
-          );
-          this.limpia();
+          try {
+            await this.printingService.imprimirConduceFactura80mm(
+              {
+                ...facturaActualizada,
+                __combineDescriptionCode: true,
+                __detailFontSize: 9,
+                __thermalShiftX: -4,
+                __thermalRightMargin: 9,
+                __hideInvoiceTime: true,
+                __dateShiftX: 5,
+                __stampSpaceAfterTotal: 35,
+                __drawStampBox: true,
+              },
+              itemsImpresion,
+            );
+            this.limpia();
+          } catch (error) {
+            console.error('Error imprimiendo conduce:', error);
+            Swal.fire('Error', this.extraerMensajeError(error), 'error');
+          } finally {
+            this.procesandoImpresion = false;
+          }
         });
       },
       error: (err) => {
+        this.procesandoImpresion = false;
         console.error('Error marcando conduce:', err);
         Swal.fire('Error', this.extraerMensajeError(err), 'error');
       },
@@ -2657,6 +2682,7 @@ export class CobroFact implements OnInit {
     }
     if (!this.validarFormaEntregaObligatoria()) return;
     if (!this.validarOrigenPagoSiAplica()) return;
+    const itemsImpresion = this.deduplicarItemsImpresion([...this.items]);
 
     // Guardar estado antes de imprimir:
     // - fa_impresa siempre 'S'
@@ -2722,7 +2748,7 @@ export class CobroFact implements OnInit {
             );
             this.sincronizarSalidaCaja(facturaCobro, () => {
               this.buscarFacturasNoImpresas();
-              this.imprimirFactura(facturaCobro);
+              this.imprimirFactura(facturaCobro, itemsImpresion);
             }, false);
           },
           error: (err) => {

@@ -7,7 +7,7 @@ import { ServicioContFactura } from 'src/app/core/services/mantenimientos/contfa
 import { ServicioSucursal } from 'src/app/core/services/mantenimientos/sucursal/sucursal.service';
 import Swal from 'sweetalert2';
 import { Subject, Subscription, forkJoin, firstValueFrom } from 'rxjs';
-import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { debounceTime, distinctUntilChanged, finalize } from 'rxjs/operators';
 import { PrintingService } from 'src/app/core/services/utils/printing.service';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -61,6 +61,8 @@ export class SalidafacturaComponent implements OnInit {
   zonaSucursalActual: string = '';
   esEdicion: boolean = false;
   salidaPendienteId: number | null = null;
+  procesandoSalida: boolean = false;
+  cargandoSalidaPendiente: boolean = false;
 
   private searchTerms = new Subject<string>();
 
@@ -309,7 +311,10 @@ private pickContFacturaRow(rows: any[], idsucursal: number): any | null {
       this.bloquearChofer = true;
       
       // Consultar si hay salida pendiente (status = ' ')
-      this.servicioSalida.obtenerPorChoferYStatus(this.codChofer, 'P', this.sucursalUsuarioActual()).subscribe({
+      this.cargandoSalidaPendiente = true;
+      this.servicioSalida.obtenerPorChoferYStatus(this.codChofer, 'P', this.sucursalUsuarioActual())
+      .pipe(finalize(() => this.cargandoSalidaPendiente = false))
+      .subscribe({
         next: (resp: any) => {
            const salidas = Array.isArray(resp) ? resp : (resp.data || []);
            if (salidas && salidas.length > 0) {
@@ -640,6 +645,7 @@ private pickContFacturaRow(rows: any[], idsucursal: number): any | null {
 // }
 
 agregarFactura() {
+  if (this.cargandoSalidaPendiente || this.procesandoSalida) return;
   const codFact = this.txtcodFact.trim();
   if (!codFact) return;
 
@@ -746,8 +752,11 @@ agregarFactura() {
   }
 
   guardarSalida() {
+    if (this.procesandoSalida || this.cargandoSalidaPendiente) return;
     const cerrarControlVacio = this.esEdicion && this.detallesSalida.length === 0;
     if (!this.bloquearChofer || (!cerrarControlVacio && this.detallesSalida.length === 0)) return;
+
+    this.procesandoSalida = true;
 
     Swal.fire({
       title: cerrarControlVacio ? '¿Cerrar control sin facturas?' : '¿Procesar Salida?',
@@ -761,12 +770,15 @@ agregarFactura() {
     }).then((result) => {
       if (result.isConfirmed) {
         this.procesarGuardado();
+      } else {
+        this.procesandoSalida = false;
       }
     });
   }
 
   async procesarGuardado() {
     if (this.esEdicion && (!this.salidaPendienteId || !Number.isFinite(this.salidaPendienteId))) {
+      this.procesandoSalida = false;
       this.mostrarError('No se encontró el id de la salida pendiente para editar. Vuelva a seleccionar el chofer.');
       return;
     }
@@ -776,6 +788,7 @@ agregarFactura() {
     }
 
     if (!this.codSalida) {
+      this.procesandoSalida = false;
       const idSucursal = localStorage.getItem('idSucursal') || '(sin idSucursal)';
       this.mostrarError(
         `No se pudo generar el código de salida. Verifique contfactura para la sucursal ${idSucursal} (campos: ano y contsalida).`
@@ -785,6 +798,7 @@ agregarFactura() {
 
     const idSucursal = localStorage.getItem('idSucursal');
     if (!idSucursal) {
+      this.procesandoSalida = false;
       this.mostrarError('No se encontró idSucursal en localStorage');
       return;
     }
@@ -800,6 +814,7 @@ agregarFactura() {
 
     const codChoferNum = Number(this.codChofer);
     if (!Number.isFinite(codChoferNum) || codChoferNum <= 0) {
+      this.procesandoSalida = false;
       this.mostrarError('Código de chofer inválido.');
       return;
     }
@@ -913,6 +928,7 @@ agregarFactura() {
         if (actualizaciones.length > 0) {
             forkJoin(actualizaciones).subscribe({
                 next: () => {
+                    this.procesandoSalida = false;
                     Swal.fire('Éxito', 'Salida registrada y facturas actualizadas correctamente', 'success');
                     
                     // Guardar datos para impresión y habilitar botón
@@ -922,6 +938,7 @@ agregarFactura() {
                     this.limpiarTodo(false); // No limpiar completamente para permitir imprimir
                 },
                 error: (err) => {
+                    this.procesandoSalida = false;
                     console.error('Error al actualizar estados de facturas', err);
                     Swal.fire('Atención', 'Salida registrada pero hubo error actualizando algunas facturas', 'warning');
                     
@@ -935,9 +952,11 @@ agregarFactura() {
         } else {
              const controlCerradoVacio = this.esEdicion && this.detallesSalida.length === 0;
              if (controlCerradoVacio) {
+               this.procesandoSalida = false;
                Swal.fire('Éxito', 'El control fue cerrado sin facturas.', 'success');
                this.limpiarTodo();
              } else {
+               this.procesandoSalida = false;
                Swal.fire('Éxito', 'Salida registrada correctamente', 'success');
                this.datosUltimaSalida = { ...payloadGuardado, detalles: [...this.detallesSalida] };
                this.mostrarBotonImprimir = true;
@@ -946,6 +965,7 @@ agregarFactura() {
         }
       },
       error: (err) => {
+        this.procesandoSalida = false;
         console.error(err);
         if (!this.esEdicion && err.status === 409) {
            Swal.fire({

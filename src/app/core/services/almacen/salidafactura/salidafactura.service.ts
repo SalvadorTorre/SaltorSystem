@@ -417,33 +417,14 @@ export class ServicioSalidafactura {
         }
       });
 
-      let salidaInsert: any = null;
-      let salidaError: any = null;
-      for (let intento = 0; intento < 5; intento += 1) {
-        const result = await this.db
-          .from('salida')
-          .insert(salidaRow)
-          .select('*')
-          .single();
+      const result = await this.db
+        .from('salida')
+        .insert(salidaRow)
+        .select('*')
+        .single();
 
-        salidaInsert = result.data;
-        salidaError = result.error;
-        if (!salidaError) break;
-
-        const duplicateCodSalida = String(salidaError?.code || '') === '23505'
-          || String(salidaError?.message || '').includes('salida_codsalida_unique');
-        if (!duplicateCodSalida) break;
-
-        codsalida = await this.resolverCodSalidaDisponible(
-          idsucursal,
-          this.buildCodSalida(
-            this.anoDesdeCodSalida(codsalida),
-            Number(idsucursal),
-            this.contadorDesdeCodSalida(codsalida, idsucursal) + 1,
-          ),
-        );
-        salidaRow.codsalida = codsalida;
-      }
+      const salidaInsert = result.data;
+      const salidaError = result.error;
       if (salidaError) throw salidaError;
 
       const idsalida = this.toNumber(salidaInsert?.id);

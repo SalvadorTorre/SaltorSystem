@@ -2485,11 +2485,18 @@ items.forEach((it: any) => {
       doc.text(`No.: ${numero}`, leftMargin, yPos);
       yPos += 4.5;
       doc.text(`Fecha: ${fecha ? formatDate(fecha) : formatDate(new Date())}`, leftMargin, yPos);
-      yPos += 4.5;
       if (vendedor) {
-        doc.text(`Vendedor: ${vendedor}`, leftMargin, yPos);
-        yPos += 4.5;
+        const textoVendedor = `Vendedor: ${vendedor}`;
+        let tamanoVendedor = 7.5;
+        doc.setFontSize(tamanoVendedor);
+        while (doc.getTextWidth(textoVendedor) > 39 && tamanoVendedor > 5.5) {
+          tamanoVendedor -= 0.25;
+          doc.setFontSize(tamanoVendedor);
+        }
+        doc.text(textoVendedor, pageWidth - rightMargin, yPos, { align: 'right' });
+        doc.setFontSize(8.5);
       }
+      yPos += 4.5;
 
       drawDashedLine(yPos);
       yPos += 5;

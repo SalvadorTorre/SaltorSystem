@@ -256,11 +256,12 @@
             </button>
             <button
               class="btn btn-warning btn-sm"
-              [disabled]="!puedeImprimirConduceFactura"
+              [disabled]="!puedeImprimirConduceFactura || procesandoImpresion"
               [title]="facturaEstaImpresa && !facturaSeleccionadaReimpresa && !(tipoNcfFacturaSeleccionada() === '32' && chekPagado) ? 'La factura ya esta impresa' : ''"
               (click)="imprimirConduceFactura()"
             >
-              <i class="bi bi-printer me-1"></i>Imprimir conduce
+              <i class="bi" [ngClass]="procesandoImpresion ? 'bi-hourglass-split me-1' : 'bi-printer me-1'"></i>
+              {{ procesandoImpresion ? 'Imprimiendo...' : 'Imprimir conduce' }}
             </button>
             <button class="btn btn-outline-secondary btn-sm" (click)="limpia()">
               <i class="bi bi-arrow-counterclockwise me-1"></i>Deshacer

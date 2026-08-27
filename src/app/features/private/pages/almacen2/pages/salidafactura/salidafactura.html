@@ -263,8 +263,8 @@
           </button>
           <button class="btn btn-success btn-lg px-5" 
                   (click)="guardarSalida()" 
-                  [disabled]="!bloquearChofer || (detallesSalida.length === 0 && !esEdicion)">
-            <i class="bi bi-save me-2"></i>{{ esEdicion && detallesSalida.length === 0 ? 'Cerrar Control' : 'Procesar Salida' }}
+                  [disabled]="!bloquearChofer || cargandoSalidaPendiente || procesandoSalida || (detallesSalida.length === 0 && !esEdicion)">
+            <i class="bi me-2" [ngClass]="procesandoSalida || cargandoSalidaPendiente ? 'bi-hourglass-split' : 'bi-save'"></i>{{ cargandoSalidaPendiente ? 'Consultando control...' : procesandoSalida ? 'Guardando...' : (esEdicion && detallesSalida.length === 0 ? 'Cerrar Control' : 'Procesar Salida') }}
           </button>
         </div>
       </div>
