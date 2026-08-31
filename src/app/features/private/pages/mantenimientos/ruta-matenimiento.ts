@@ -254,6 +254,15 @@ const routes: Routes = [
             (m) => m.ColaDgiiModulo,
           ),
       },
+      {
+        path: 'recuperar-factura',
+        canActivate: [permissionGuard],
+        data: { accessPath: '/private/mantenimientos/configuracion-global' },
+        loadChildren: () =>
+          import('./pages/configuracion/recuperar-factura/recuperar-factura-modulo').then(
+            (m) => m.RecuperarFacturaModulo,
+          ),
+      },
     ],
   },
 ];

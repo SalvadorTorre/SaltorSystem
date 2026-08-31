@@ -1,0 +1,42 @@
+<div class="recovery-page">
+  <div class="recovery-header">
+    <div>
+      <span class="eyebrow">Configuración</span>
+      <h2><i class="bi bi-receipt-cutoff me-2"></i>Recuperar factura eliminada</h2>
+      <p>Recupera una factura por su número en la empresa y sucursal conectadas.</p>
+    </div>
+    <span class="branch-badge">Sucursal {{ sucursalActual() }}</span>
+  </div>
+
+  <form #form="ngForm" (ngSubmit)="guardar(form)" class="recovery-card" autocomplete="off">
+    <div class="alert alert-warning mb-4">
+      <i class="bi bi-exclamation-triangle-fill me-2"></i>
+      Se conservarán los datos anteriores de la factura. Si no existen, se creará el encabezado básico.
+    </div>
+
+    <div class="row g-3">
+      <div class="col-12">
+        <label class="form-label">Número de factura</label>
+        <input #numeroInput class="form-control" name="numero" [(ngModel)]="factura.numero" required maxlength="12" />
+      </div>
+    </div>
+
+    <div class="fixed-values mt-4">
+      <span><b>fa_fpago:</b> S</span>
+      <span><b>fa_status:</b> U</span>
+      <span><b>fa_impresa:</b> S</span>
+      <span><b>fa_tiponcf:</b> 32</span>
+    </div>
+
+    <div class="actions mt-4">
+      <button class="btn btn-outline-secondary" type="button" (click)="limpiar(form)" [disabled]="guardando">
+        <i class="bi bi-eraser me-1"></i>Limpiar
+      </button>
+      <button class="btn btn-primary px-4" type="submit" [disabled]="guardando">
+        <span *ngIf="guardando" class="spinner-border spinner-border-sm me-2"></span>
+        <i *ngIf="!guardando" class="bi bi-save me-1"></i>
+        Guardar factura
+      </button>
+    </div>
+  </form>
+</div>
