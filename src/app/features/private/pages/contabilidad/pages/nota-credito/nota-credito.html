@@ -317,6 +317,20 @@
             <td><span class="status-chip">{{ nota.estado_dgii || 'Sin enviar' }}</span></td>
             <td class="text-end">
               <button
+                class="btn btn-outline-warning btn-sm me-1"
+                type="button"
+                title="Editar nota de crédito"
+                aria-label="Editar nota de crédito"
+                [disabled]="!!notaEditando"
+                (click)="editarNota(nota)"
+              >
+                <i
+                  class="bi"
+                  [class.bi-pencil-square]="notaEditando !== nota.nc_numero"
+                  [class.bi-arrow-clockwise]="notaEditando === nota.nc_numero"
+                ></i>
+              </button>
+              <button
                 *ngIf="esEstadoRechazado(nota)"
                 class="btn btn-outline-danger btn-sm me-1"
                 type="button"

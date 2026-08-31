@@ -49,18 +49,19 @@
                   <th class="text-center">Doc.</th>
                   <th class="text-end">Valor</th>
                   <th class="text-center">Status</th>
+                  <th>Vendedor</th>
                   <th class="text-center">Opc.</th>
                 </tr>
               </thead>
               <tbody>
                 <tr *ngIf="cargandoFacturasCaja">
-                  <td colspan="8" class="text-center text-muted py-3">
+                  <td colspan="9" class="text-center text-muted py-3">
                     <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
                     Cargando facturas...
                   </td>
                 </tr>
                 <tr *ngIf="!cargandoFacturasCaja && facturacionList.length === 0">
-                  <td colspan="8" class="text-center text-muted py-3">
+                  <td colspan="9" class="text-center text-muted py-3">
                     No hay facturas abiertas sin cierre.
                   </td>
                 </tr>
@@ -76,15 +77,13 @@
                 >
                   <td><div class="fw-bold factura-numero-cell">{{ factura.fa_codFact }}</div></td>
                   <td>
-                    <div class="cliente-cell">
-                      <span class="fw-semibold" *ngFor="let linea of nombreClienteGridLineas(factura.fa_nomClie)">
-                        {{ linea }}
+                    <div class="cliente-cell" [title]="factura.fa_nomClie">
+                      <span class="fw-semibold cliente-nombre">{{ factura.fa_nomClie }}</span>
+                      <span class="badge rounded-pill" [ngClass]="{'bg-success': factura.fa_envio === 'Envio', 'bg-danger': factura.fa_envio === 'Retiro'}">
+                        <i class="bi" [ngClass]="{'bi-truck': factura.fa_envio === 'Envio', 'bi-box-arrow-down': factura.fa_envio === 'Retiro'}"></i>
+                        {{ factura.fa_envio }}
                       </span>
                     </div>
-                    <span class="badge rounded-pill" [ngClass]="{'bg-success': factura.fa_envio === 'Envio', 'bg-danger': factura.fa_envio === 'Retiro'}">
-                      <i class="bi" [ngClass]="{'bi-truck': factura.fa_envio === 'Envio', 'bi-box-arrow-down': factura.fa_envio === 'Retiro'}"></i>
-                      {{ factura.fa_envio }}
-                    </span>
                   </td>
                   <td class="text-center">{{ factura.fa_fecFact }}</td>
                   <td class="text-center">
@@ -102,6 +101,7 @@
                       {{ statusCajaGrid(factura) }}
                     </span>
                   </td>
+                  <td class="vendedor-cell fw-semibold" [title]="factura.fa_nomVend || ''">{{ factura.fa_nomVend || '-' }}</td>
                   <td class="text-center">
                     <div class="btn-group btn-group-sm">
                       <button

@@ -1,5 +1,6 @@
 .cobrofact-page {
   color: #0f172a;
+  font-size: 1rem;
 }
 
 .cobrofact-page .cobrofact-card {
@@ -19,7 +20,7 @@
 }
 
 .cobrofact-page .card-title {
-  font-size: 0.9rem;
+  font-size: 1rem;
   letter-spacing: 0;
 }
 
@@ -32,7 +33,7 @@
   height: 1.6rem;
   padding-top: 0.1rem;
   padding-bottom: 0.1rem;
-  font-size: 0.75rem;
+  font-size: 0.84rem;
   font-weight: 700;
 }
 
@@ -75,7 +76,7 @@
 }
 
 .cobrofact-page .facturas-table-wrap table {
-  font-size: 0.76rem;
+  font-size: 0.84rem;
   table-layout: fixed;
   width: 100%;
 }
@@ -87,14 +88,15 @@
   vertical-align: middle;
 }
 
-.cobrofact-page .facturas-table-wrap th:nth-child(1) { width: 13.5%; }
-.cobrofact-page .facturas-table-wrap th:nth-child(2) { width: 33.5%; }
-.cobrofact-page .facturas-table-wrap th:nth-child(3) { width: 12%; }
+.cobrofact-page .facturas-table-wrap th:nth-child(1) { width: 12%; }
+.cobrofact-page .facturas-table-wrap th:nth-child(2) { width: 29%; }
+.cobrofact-page .facturas-table-wrap th:nth-child(3) { width: 10%; }
 .cobrofact-page .facturas-table-wrap th:nth-child(4) { width: 7%; }
-.cobrofact-page .facturas-table-wrap th:nth-child(5) { width: 6.5%; }
-.cobrofact-page .facturas-table-wrap th:nth-child(6) { width: 12%; }
-.cobrofact-page .facturas-table-wrap th:nth-child(7) { width: 8.5%; }
-.cobrofact-page .facturas-table-wrap th:nth-child(8) { width: 7%; }
+.cobrofact-page .facturas-table-wrap th:nth-child(5) { width: 6%; }
+.cobrofact-page .facturas-table-wrap th:nth-child(6) { width: 11%; }
+.cobrofact-page .facturas-table-wrap th:nth-child(7) { width: 8%; }
+.cobrofact-page .facturas-table-wrap th:nth-child(8) { width: 9%; }
+.cobrofact-page .facturas-table-wrap th:nth-child(9) { width: 8%; }
 
 .cobrofact-page .facturas-table-wrap th:nth-child(1),
 .cobrofact-page .facturas-table-wrap td:nth-child(1) {
@@ -106,12 +108,19 @@
   padding-left: 0.35rem;
 }
 
+.cobrofact-page .vendedor-cell {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap !important;
+  line-height: 1.15;
+}
+
 .cobrofact-page .facturas-table-wrap .fs-5 {
   font-size: 0.86rem !important;
 }
 
 .cobrofact-page .detalle-table-wrap table {
-  font-size: 0.84rem;
+  font-size: 0.92rem;
 }
 
 .cobrofact-page .detalle-table-wrap th,
@@ -205,22 +214,32 @@
 
 .cobrofact-page .cliente-cell {
   display: flex;
-  flex-direction: column;
-  gap: 0;
-  line-height: 1.08;
-  max-height: 2.2rem;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.3rem;
+  min-width: 0;
+  line-height: 1.15;
   overflow: hidden;
-  word-break: normal;
-  overflow-wrap: break-word;
 }
 
 .cobrofact-page .cliente-cell span {
-  display: block;
+  display: inline-block;
+}
+
+.cobrofact-page .cliente-cell .cliente-nombre {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cobrofact-page .cliente-cell .badge {
+  flex: 0 0 auto;
 }
 
 .cobrofact-page .factura-numero-cell {
   white-space: nowrap;
-  font-size: 0.78rem;
+  font-size: 0.84rem;
 }
 
 .cobrofact-page .btn-icon {
@@ -232,6 +251,70 @@
 
 .cobrofact-page .cobro-panel {
   min-height: 0;
+}
+
+@media (min-width: 992px) {
+  .cobrofact-page .cobro-panel {
+    position: sticky;
+    top: 4.75rem;
+    z-index: 20;
+    max-height: calc(100vh - 5.25rem);
+    overflow-y: auto;
+  }
+}
+
+.cobrofact-page .cobro-panel .card-title {
+  font-size: 1.12rem;
+}
+
+.cobrofact-page .cobro-panel .card-header .badge {
+  font-size: 0.88rem;
+}
+
+.cobrofact-page .cobro-panel .form-check-label {
+  font-size: 1rem;
+}
+
+.cobrofact-page .cobro-panel .form-label {
+  font-size: 0.94rem;
+}
+
+.cobrofact-page .cobro-panel .form-control,
+.cobrofact-page .cobro-panel .form-select,
+.cobrofact-page .cobro-panel .input-group-text {
+  min-height: 2.25rem;
+  font-size: 1rem;
+}
+
+.cobrofact-page .cobro-panel input[type='number'],
+.cobrofact-page .cobro-panel input[readonly] {
+  font-size: 1.12rem;
+}
+
+.cobrofact-page .cobro-panel .alert,
+.cobrofact-page .cobro-panel .invalid-feedback {
+  font-size: 0.9rem;
+}
+
+.cobrofact-page .cobro-panel .total-line span {
+  font-size: 0.9rem;
+}
+
+.cobrofact-page .cobro-panel .total-line strong {
+  font-size: 1.12rem;
+}
+
+.cobrofact-page .cobro-panel .total-line-main span {
+  font-size: 1rem;
+}
+
+.cobrofact-page .cobro-panel .total-line-main strong {
+  font-size: 1.3rem;
+}
+
+.cobrofact-page .cobro-panel .action-bar .btn {
+  min-height: 2.2rem;
+  font-size: 0.98rem;
 }
 
 .cobrofact-page .badge {
@@ -370,6 +453,83 @@
   .cobrofact-page .cobro-totales {
     grid-template-columns: 1fr;
   }
+}
+
+/* Aumento general solicitado: +2px sobre la tipografía anterior. */
+.cobrofact-page {
+  font-size: 18px;
+}
+
+.cobrofact-page .card-title {
+  font-size: 18px;
+}
+
+.cobrofact-page .page-size-control .form-select,
+.cobrofact-page .facturas-table-wrap table,
+.cobrofact-page .factura-numero-cell {
+  font-size: 15.44px;
+}
+
+.cobrofact-page .detalle-table-wrap table {
+  font-size: 16.72px;
+}
+
+.cobrofact-page .badge {
+  font-size: 12.56px;
+}
+
+.compact-form .form-label {
+  font-size: 14.16px;
+}
+
+.compact-form .form-control,
+.compact-form .form-select,
+.compact-form .input-group-text,
+.compact-form .form-floating > label {
+  font-size: 15.12px;
+}
+
+.cobrofact-page .cobro-panel .card-title {
+  font-size: 19.92px;
+}
+
+.cobrofact-page .cobro-panel .card-header .badge {
+  font-size: 16.08px;
+}
+
+.cobrofact-page .cobro-panel .form-check-label,
+.cobrofact-page .cobro-panel .form-control,
+.cobrofact-page .cobro-panel .form-select,
+.cobrofact-page .cobro-panel .input-group-text {
+  font-size: 18px;
+}
+
+.cobrofact-page .cobro-panel .form-label {
+  font-size: 17.04px;
+}
+
+.cobrofact-page .cobro-panel input[type='number'],
+.cobrofact-page .cobro-panel input[readonly],
+.cobrofact-page .cobro-panel .total-line strong {
+  font-size: 19.92px;
+}
+
+.cobrofact-page .cobro-panel .alert,
+.cobrofact-page .cobro-panel .invalid-feedback,
+.cobrofact-page .cobro-panel .total-line span {
+  font-size: 16.4px;
+}
+
+.cobrofact-page .cobro-panel .total-line-main span {
+  font-size: 18px;
+}
+
+.cobrofact-page .cobro-panel .total-line-main strong {
+  font-size: 22.8px;
+}
+
+.cobrofact-page .cobro-panel .action-bar .btn {
+  font-size: 17.68px;
 }
 
 @media print {

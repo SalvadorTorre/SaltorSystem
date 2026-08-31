@@ -78,6 +78,7 @@ export class ServicioFacturacion {
     'fa_ncffact',
     'fa_tiponcf',
     'fa_nomclie',
+    'fa_nomvend',
     'fa_fecfact',
     'fa_envio',
     'fa_status',
@@ -1911,48 +1912,33 @@ export class ServicioFacturacion {
 
     const sucursal = this.toNumberOrNull(sucursalId);
     return from((async () => {
-      try {
-        const { data: rpcData, error: rpcError } = await this.db.rpc(
-          'listar_facturas_pendientes_cierre',
-          {
-            p_limit: 10000,
-            p_filtrar_sucursal: filtrarSucursal,
-            p_sucursal_id: sucursal,
-          },
-        );
-        if (!rpcError && Array.isArray(rpcData)) {
-          return {
-            status: 'success',
-            code: 200,
-            data: rpcData.map((row: any) => this.mapFacturaDbToUi(row)),
-          };
-        }
-        if (rpcError) {
-          console.warn('RPC listar_facturas_pendientes_cierre no disponible, usando consulta paginada.', rpcError);
-        }
-      } catch (error) {
-        console.warn('RPC listar_facturas_pendientes_cierre no disponible, usando consulta paginada.', error);
+      if (!sucursal || sucursal <= 0) {
+        return { status: 'success', code: 200, data: [] };
       }
-
       const rows: any[] = [];
-      const batchSize = 1000;
-      for (let offset = 0; ; offset += batchSize) {
+      const batchSize = 100;
+      let ultimoCodigo = '';
+      for (;;) {
         let query = this.db
           .from('factura')
-          .select('fa_codfact,fa_valfact,fa_fpago,fa_codfpago,fa_tipopago,fa_status,fa_codsucu,fa_cierre')
-          .or('fa_status.is.null,fa_status.neq.N')
+          .select('fa_codfact,fa_ncffact,fa_rncfact,fa_tiponcf,fa_fecfact,fa_valfact,fa_itbifact,fa_subfact,fa_desfact,fa_codclie,fa_nomclie,fa_codvend,fa_nomvend,fa_fpago,fa_codfpago,fa_tipopago,fa_status,fa_codsucu,fa_codempr,fa_cierre,fa_entrega,fa_impresa,fa_facturada')
+          .eq('fa_codsucu', sucursal)
+          .is('fa_cierre', null)
+          .neq('fa_status', 'N')
           .order('fa_codfact', { ascending: true })
-          .range(offset, offset + batchSize - 1);
-        query = this.applySinCierreCajaFilter(query);
-        query = sucursal && sucursal > 0
-          ? this.applyTenantCompanyFilter(query).eq('fa_codsucu', sucursal)
-          : filtrarSucursal
-            ? this.applyTenantFilter(query)
-            : this.applyTenantCompanyFilter(query);
+          .limit(batchSize);
+        if (ultimoCodigo) {
+          query = query.gt('fa_codfact', ultimoCodigo);
+        }
         const { data, error } = await query;
         if (error) throw error;
-        rows.push(...(data || []));
-        if ((data || []).length < batchSize) break;
+        const pageRows = data || [];
+        rows.push(...pageRows);
+        if (pageRows.length < batchSize) break;
+
+        const siguienteCodigo = String(pageRows[pageRows.length - 1]?.fa_codfact || '').trim();
+        if (!siguienteCodigo || siguienteCodigo === ultimoCodigo) break;
+        ultimoCodigo = siguienteCodigo;
       }
       return { status: 'success', code: 200, data: rows.map(row => this.mapFacturaDbToUi(row)) };
     })());
@@ -3334,18 +3320,18 @@ export class ServicioFacturacion {
           .from('factura')
           .update({ fa_cierre: Number(idCierre) })
           .in('fa_codfact', lote)
-          .eq('fa_fpago', 'S');
+          .is('fa_cierre', null)
+          .neq('fa_status', 'N')
+          .eq('fa_fpago', 'S')
+          .select('fa_codfact');
 
-        // La sucursal recibida y applyTenantFilter agregaban dos veces el mismo
-        // filtro. Aplicamos empresa una sola vez y luego la sucursal explícita.
-        query = this.applyTenantCompanyFilter(query);
         if (sucursal && sucursal > 0) {
           query = query.eq('fa_codsucu', sucursal);
         }
 
-        const { error } = await query;
+        const { data, error } = await query;
         if (error) throw error;
-        updated += lote.length;
+        updated += (data || []).length;
       }
 
       return { status: 'success', code: 200, data: { updated } };

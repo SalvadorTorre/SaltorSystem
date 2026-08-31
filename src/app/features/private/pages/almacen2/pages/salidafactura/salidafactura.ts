@@ -1274,6 +1274,11 @@ agregarFactura() {
     // terminaba en 74 mm y dejaba demasiado espacio libre a la derecha.
     const left = 1.5;
     const right = 78.5;
+    // Valores numéricos desplazados 3 mm adicionales hacia la izquierda.
+    const valueRight = right - 9;
+    // Orden del detalle: factura, fecha, valor y status.
+    const detailDateX = left + 24;
+    const detailValueRight = right - 16;
     const center = (left + right) / 2;
     const contentWidth = right - left;
     let y = 8;
@@ -1302,10 +1307,11 @@ agregarFactura() {
       return `${shortened.trim()}...`;
     };
     const imprimirEncabezadoDetalle = () => {
-      doc.setFontSize(9);
+      doc.setFontSize(7);
       doc.setFont('helvetica', 'bold');
       doc.text('Factura', left, y);
-      doc.text('Fecha', left + 30, y);
+      doc.text('Fecha', detailDateX, y);
+      doc.text('Valor', detailValueRight, y, { align: 'right' });
       doc.text('Status', right, y, { align: 'right' });
       y += 4;
       doc.line(left, y, right, y);
@@ -1316,7 +1322,7 @@ agregarFactura() {
     if (this.zonaSucursalActual) {
       centerText(this.zonaSucursalActual, 9);
     }
-    centerText('REPORTE DE CONTROL DE SALIDA', 11, true);
+    centerText('CONTROL DE SALIDA FACT.', 9, true);
     centerText(`Salida: ${data?.codSalida || data?.codsalida || ''}`, 9.5);
     centerText(`Fecha: ${formatDate(data?.fecSalida || data?.fecsalida || new Date())}`, 9.5);
     line();
@@ -1333,43 +1339,43 @@ agregarFactura() {
 
     doc.setFont('helvetica', 'bold');
     doc.text('Total valor:', left, y);
-    doc.text(fmt(totalGeneralReporte), right, y, { align: 'right' });
+    doc.text(fmt(totalGeneralReporte), valueRight, y, { align: 'right' });
     y += 5;
     doc.text('Factura pagada:', left, y);
-    doc.text(fmt(totalPagadoReporte), right, y, { align: 'right' });
+    doc.text(fmt(totalPagadoReporte), valueRight, y, { align: 'right' });
     y += 5;
-    doc.text('Total Fact. pendiente de pago:', left, y);
+    doc.text('Pend. pago:', left, y);
     doc.setFontSize(9);
-    doc.text(`(${fmt(totalPendienteReporte)})`, right, y, { align: 'right' });
+    doc.text(`(${fmt(totalPendienteReporte)})`, valueRight, y, { align: 'right' });
     y += 6;
     line();
 
-    doc.setFontSize(9);
+    doc.setFontSize(7);
     imprimirEncabezadoDetalle();
 
-    doc.setFontSize(10);
+    doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
     detalles.forEach((d: any) => {
       if (y > 273) {
         doc.addPage([80, 297], 'portrait');
         y = 8;
         imprimirEncabezadoDetalle();
-        doc.setFontSize(10);
+        doc.setFontSize(8);
         doc.setFont('helvetica', 'normal');
       }
       const pendientePago = !esPagada(d);
       const codFact = String(d.codFact || d.codfact || '');
+      const valFact = fmt(d.valFact || d.valfact);
       doc.setFont('helvetica', pendientePago ? 'bold' : 'normal');
       doc.text(pendientePago ? `(${codFact})` : codFact, left, y);
-      doc.text(formatDate(d.fecFact || d.fecfact), left + 30, y);
+      doc.text(formatDate(d.fecFact || d.fecfact), detailDateX, y);
+      doc.text(pendientePago ? `(${valFact})` : valFact, detailValueRight, y, { align: 'right' });
       doc.setFont('helvetica', 'bold');
       doc.text(esPagada(d) ? 'Pagada' : '', right, y, { align: 'right' });
-      y += 5;
+      y += 4;
       doc.setFont('helvetica', pendientePago ? 'bold' : 'normal');
-      doc.text(fitText(d.nomClie || d.nomclie, contentWidth - 24), left, y);
-      const valFact = fmt(d.valFact || d.valfact);
-      doc.text(pendientePago ? `(${valFact})` : valFact, right, y, { align: 'right' });
-      y += 6;
+      doc.text(fitText(d.nomClie || d.nomclie, contentWidth), left, y);
+      y += 5;
       doc.setFont('helvetica', 'normal');
     });
 

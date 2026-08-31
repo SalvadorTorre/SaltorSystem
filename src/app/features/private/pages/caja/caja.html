@@ -1,18 +1,47 @@
 <div class="container-fluid caja-layout px-2 px-lg-3 py-2">
   <div class="row g-3 g-lg-4 align-items-start">
-    <div class="col-12 d-block d-lg-none">
+    <div class="col-12 d-block caja-menu-compacto">
+      <div class="dropdown">
       <button
-        class="btn btn-danger btn-menu-mobile"
+        class="btn btn-danger btn-menu-mobile dropdown-toggle"
         type="button"
-        data-bs-toggle="offcanvas"
-        data-bs-target="#cajaSidebar"
-        aria-controls="cajaSidebar"
+        id="cajaMenuDropdown"
+        data-bs-toggle="dropdown"
+        aria-expanded="false"
       >
-        <i class="bi bi-list"></i> Menú Caja
+        <i class="bi bi-cash-coin me-2"></i>Caja
       </button>
+      <ul class="dropdown-menu caja-dropdown shadow" aria-labelledby="cajaMenuDropdown">
+        <li *ngIf="canView('/private/caja/CobroFact')">
+          <a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" [routerLink]="['CobroFact']">
+            <i class="bi bi-receipt me-2"></i>Cobro Factura
+          </a>
+        </li>
+        <li *ngIf="canView('/private/caja/cuadrecaja')">
+          <a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" [routerLink]="['cuadrecaja']">
+            <i class="bi bi-calculator me-2"></i>Cuadre Caja
+          </a>
+        </li>
+        <li *ngIf="canView('/private/caja/reciboingreso')">
+          <a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" [routerLink]="['reciboingreso']">
+            <i class="bi bi-journal-check me-2"></i>Recibo de Ingreso
+          </a>
+        </li>
+        <li *ngIf="canView('/private/caja/cajaenvio')">
+          <a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" [routerLink]="['cajaenvio']">
+            <i class="bi bi-send me-2"></i>Caja Envío
+          </a>
+        </li>
+        <li *ngIf="canView('/private/caja/ControlSalida')">
+          <a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" [routerLink]="['ControlSalida']">
+            <i class="bi bi-truck me-2"></i>Control Cobro Factura Choferes
+          </a>
+        </li>
+      </ul>
+      </div>
     </div>
 
-    <div class="col-lg-3 col-xl-2 d-none d-lg-block caja-sidebar-col">
+    <div class="d-none caja-sidebar-col">
       <aside class="caja-sidebar shadow-sm">
         <div class="caja-sidebar__header text-white p-3 d-flex align-items-center">
           <i class="bi bi-cash-coin me-2"></i>
@@ -159,7 +188,7 @@
       </div>
     </div>
 
-    <div class="col-12 col-lg-9 col-xl-10">
+    <div class="col-12">
       <div class="caja-main-content">
         <router-outlet></router-outlet>
       </div>

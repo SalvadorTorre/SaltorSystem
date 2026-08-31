@@ -201,7 +201,12 @@ export class CuadreCaja implements OnInit {
     try {
       this.facturas = await this.cargarDetalleCompleto();
       this.totalFacturas = this.facturas.length;
+      // La misma lista completa sirve para el resumen. Así evitamos ejecutar
+      // una segunda RPC que puede no estar instalada en Supabase.
+      this.facturasResumen = [...this.facturas];
+      this.totalFacturasPendientesSucursal = this.facturas.length;
       this.aplicarFiltros();
+      this.calcularTotales();
     } catch (err) {
       console.error(err);
       Swal.fire('Error', 'No se pudieron cargar las facturas', 'error');
@@ -345,22 +350,13 @@ export class CuadreCaja implements OnInit {
   }
 
   private async cargarDetalleCompleto(): Promise<any[]> {
-    const detalleCompleto: any[] = [];
-    const maxPaginasSeguridad = 500;
-
-    for (let pagina = 1; pagina <= maxPaginasSeguridad; pagina++) {
-      const res: any = await firstValueFrom(
-        this.facturaService.buscarFacturasPendientesCierre(pagina, this.tamanoLote, true, this.sucursalUsuarioActual())
-      );
-      const rows = res?.data || [];
-      detalleCompleto.push(...rows);
-
-      if (!res?.hasMore || rows.length < this.tamanoLote) {
-        break;
-      }
-    }
-
-    return detalleCompleto;
+    const res: any = await firstValueFrom(
+      this.facturaService.buscarResumenFacturasPendientesCierre(
+        true,
+        this.sucursalUsuarioActual(),
+      ),
+    );
+    return Array.isArray(res?.data) ? res.data : [];
   }
 
   async generarReporte(facturasReporte?: any[]) {
@@ -432,16 +428,14 @@ export class CuadreCaja implements OnInit {
     const facturasDelCierre = detalleCompleto;
     const primeraDeEsteCierre = facturasDelCierre[0]?.fa_codFact || this.inicioFactura;
     const ultimaDeEsteCierre = facturasDelCierre[facturasDelCierre.length - 1]?.fa_codFact || this.finFactura;
-    const facturasCobradas = facturasDelCierre.filter(
-      f => String(f?.fa_fpago || '').trim().toUpperCase() === 'S'
-    );
-    const codigosFacturasCobradas = facturasCobradas
+    const codigosFacturasCierre = facturasDelCierre
+      .filter(f => String(f?.fa_fpago || '').trim().toUpperCase() === 'S')
       .map(f => String(f.fa_codFact || '').trim())
       .filter(Boolean);
 
     Swal.fire({
       title: '¿Confirmar Cierre de Caja?',
-      text: `Se cerrarán ${facturasDelCierre.length} facturas, desde ${primeraDeEsteCierre} hasta ${ultimaDeEsteCierre}.`,
+      text: `Se registrará el cierre y se marcarán ${codigosFacturasCierre.length} facturas pagadas, desde ${primeraDeEsteCierre} hasta ${ultimaDeEsteCierre}.`,
       icon: 'warning',
       showCancelButton: true,
       confirmButtonText: 'Sí, cerrar caja'
@@ -463,12 +457,25 @@ export class CuadreCaja implements OnInit {
         this.cierreService.crearCierre(dataCierre).subscribe({
                     next: (res: any) => {
                         const idCierre = res?.data?.idcierre || res?.idcierre;
+                        if (!idCierre) {
+                          Swal.fire('Error', 'El cierre fue creado, pero Supabase no devolvió su número.', 'error');
+                          return;
+                        }
 
-                        this.facturaService.confirmarCierreFacturas(idCierre, codigosFacturasCobradas, {
+                        this.facturaService.confirmarCierreFacturas(idCierre, codigosFacturasCierre, {
                           sucursal: this.sucursalUsuarioActual(),
                         }).subscribe({
                           next: (resp) => {
-                            console.log('Facturas cobradas actualizadas con idcierre', resp);
+                            const actualizadas = Number(resp?.data?.updated || 0);
+                            if (actualizadas !== codigosFacturasCierre.length) {
+                              Swal.fire(
+                                'Cierre incompleto',
+                                `Se marcaron ${actualizadas} de ${codigosFacturasCierre.length} facturas. Revise que todas pertenezcan a la sucursal activa y sigan pendientes de cierre.`,
+                                'warning',
+                              );
+                              return;
+                            }
+                            console.log('Facturas del cierre actualizadas con idcierre', resp);
                             Swal.fire('Cerrado!', 'La caja ha sido cerrada correctamente.', 'success');
                             this.generarReporte(detalleCompleto);
                             this.obtenerUltimoCierreYFacturas(); 

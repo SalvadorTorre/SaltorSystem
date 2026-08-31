@@ -117,8 +117,8 @@ export class CobroFact implements OnInit {
   modoconsultaFacturacion: boolean = false;
   facturacionList: FacturaCajaRow[] = [];
   cargandoFacturasCaja = false;
-  facturasCajaPageSize = 20;
-  facturasCajaPageSizeOptions = [10, 20, 30, 50];
+  facturasCajaPageSize = 17;
+  facturasCajaPageSizeOptions = [17];
   facturasCajaPage = 1;
   facturasCajaHasMore = false;
   totalFacturasCaja = 0;
@@ -1022,7 +1022,7 @@ export class CobroFact implements OnInit {
   }
 
   cambiarCantidadFacturasCaja(): void {
-    this.facturasCajaPageSize = Math.min(Math.max(Number(this.facturasCajaPageSize) || 20, 10), 50);
+    this.facturasCajaPageSize = 17;
     this.selectedFacturaIndex = -1;
     this.buscarFacturasNoImpresas(true, 1);
   }

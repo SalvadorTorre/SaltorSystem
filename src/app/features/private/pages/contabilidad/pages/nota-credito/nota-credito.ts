@@ -55,6 +55,7 @@ export class NotaCreditoComponent implements OnInit {
   consultaFiltro = '';
   consultaCargando = false;
   notaEliminandoEncf = '';
+  notaEditando = '';
   notasCredito: any[] = [];
   notaConsultada: any | null = null;
   detalleConsultado: any[] = [];
@@ -138,6 +139,29 @@ export class NotaCreditoComponent implements OnInit {
         await Swal.fire('Error', String(error?.message || 'No se pudo consultar la nota de credito.'), 'error');
       },
     });
+  }
+
+  async editarNota(nota: any): Promise<void> {
+    const numero = String(nota?.nc_numero || '').trim();
+    if (!numero || this.notaEditando) return;
+
+    this.notaEditando = numero;
+    try {
+      const response = await firstValueFrom(this.notaCreditoService.consultar(numero));
+      const header = response?.data?.header;
+      const lines = Array.isArray(response?.data?.lines) ? response.data.lines : [];
+      if (!header) throw new Error('No se encontro la nota de credito.');
+
+      this.cargarNotaGuardada(header, lines);
+      this.activeSection = 'crear';
+      this.notaConsultada = null;
+      this.detalleConsultado = [];
+      setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 0);
+    } catch (error: any) {
+      await Swal.fire('Error', String(error?.message || 'No se pudo cargar la nota para editar.'), 'error');
+    } finally {
+      this.notaEditando = '';
+    }
   }
 
   async reenviarNotaDgii(nota: any): Promise<void> {

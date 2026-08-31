@@ -389,10 +389,30 @@ export class ServicioSalidafactura {
       if (!codsalida) throw new Error('codsalida requerido');
 
       const idsucursal = this.toNumberOrNull(payload?.idsucursal ?? payload?.idSucursal);
+      const codchofer = this.toNumberOrNull(payload?.codchofer ?? payload?.codChofer);
+
+      // Un chofer solo puede mantener un control pendiente por sucursal.
+      // Esta validación en el servicio también protege contra dos equipos o pestañas.
+      if (codchofer !== null && idsucursal !== null) {
+        const { data: pendienteExistente, error: pendienteError } = await this.db
+          .from('salida')
+          .select('id,codsalida')
+          .eq('codchofer', codchofer)
+          .eq('idsucursal', idsucursal)
+          .eq('status', 'P')
+          .order('id', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (pendienteError) throw pendienteError;
+        if (pendienteExistente) {
+          throw new Error(
+            `El chofer ya tiene el control pendiente ${pendienteExistente.codsalida}. Selecciónelo nuevamente para agregar las facturas al control original.`,
+          );
+        }
+      }
+
       codsalida = await this.resolverCodSalidaDisponible(idsucursal, codsalida);
       await this.validarCodSalidaDisponible(codsalida);
-
-      const codchofer = this.toNumberOrNull(payload?.codchofer ?? payload?.codChofer);
 
       const salidaRow: any = {
         idsucursal,
@@ -460,7 +480,19 @@ export class ServicioSalidafactura {
         const { error: detError } = await this.db
           .from('detsalida')
           .insert(detRows);
-        if (detError) throw detError;
+        if (detError) {
+          // Evitar encabezados huérfanos: si el detalle no pudo guardarse,
+          // revertimos exclusivamente la salida creada en esta solicitud.
+          const { error: rollbackError } = await this.db
+            .from('salida')
+            .delete()
+            .eq('id', idsalida)
+            .eq('codsalida', codsalida);
+          if (rollbackError) {
+            console.error('No se pudo revertir el encabezado de salida:', rollbackError);
+          }
+          throw detError;
+        }
 
         // Vincular facturas con la salida (para que en Caja aparezca idsalida)
         await this.syncFacturasSalidaSupabase({
