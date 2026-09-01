@@ -341,6 +341,10 @@ export class CobroFact implements OnInit {
     return 'ecf-badge ecf-other';
   }
 
+  esFacturaCredito(factura: any): boolean {
+    return Number(factura?.fa_tipopago ?? factura?.fa_tipoPago ?? 0) === 2;
+  }
+
   nombreClienteGridLineas(nombre: any): string[] {
     const limpio = String(nombre || 'Sin nombre').replace(/\s+/g, ' ').trim();
     if (limpio.length <= 24) return [limpio];

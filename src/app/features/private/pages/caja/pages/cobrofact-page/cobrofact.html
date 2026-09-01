@@ -87,13 +87,18 @@
                   </td>
                   <td class="text-center">{{ factura.fa_fecFact }}</td>
                   <td class="text-center">
-                    <span class="badge" [ngClass]="claseTipoComprobanteGrid(factura)">
-                      {{ tipoComprobanteGrid(factura) }}
-                    </span>
+                    <div class="d-inline-flex align-items-center justify-content-center gap-1">
+                      <span class="badge" [ngClass]="claseTipoComprobanteGrid(factura)">
+                        {{ tipoComprobanteGrid(factura) }}
+                      </span>
+                      <span class="badge bg-danger" *ngIf="esFacturaCredito(factura)" title="Tipo de pago: crédito">Crédito</span>
+                    </div>
                   </td>
                   <td class="text-center">
-                    <span class="badge bg-secondary" *ngIf="factura.fa_status === 'C'" title="Conduce">Cond.</span>
-                    <span class="badge bg-info text-dark" *ngIf="factura.fa_status === 'F'" title="Factura">Fact.</span>
+                    <div class="d-inline-flex align-items-center justify-content-center gap-1">
+                      <span class="badge bg-secondary" *ngIf="factura.fa_status === 'C'" title="Conduce">Cond.</span>
+                      <span class="badge bg-info text-dark" *ngIf="factura.fa_status === 'F'" title="Factura">Fact.</span>
+                    </div>
                   </td>
                   <td class="text-end fw-bold text-success">${{ factura.fa_valFact | number: '1.2-2' }}</td>
                   <td class="text-center">

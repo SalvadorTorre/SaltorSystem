@@ -1,5 +1,5 @@
 import { Injectable } from "@angular/core";
-import { Observable, from } from "rxjs";
+import { Observable, catchError, defer, from, throwError } from "rxjs";
 import { map } from "rxjs/operators";
 import { shareReplay } from "rxjs/operators";
 import { ModeloFpago, ModeloFpagoData } from ".";
@@ -143,21 +143,26 @@ export class ServicioFpago {
       return this.fpagoCache$;
     }
 
-    this.fpagoCache$ = from((async () => {
+    this.fpagoCache$ = defer(() => from((async () => {
       const { data, error } = await this.db
         .from("fpago")
         .select("fp_codfpago,fp_descfpago,dgii_codigo,es_dgii,activo")
         .order("fp_codfpago", { ascending: true });
       if (error) throw error;
       return data || [];
-    })()).pipe(
+    })())).pipe(
       map((rows: any[]) => ({
         status: "success",
         code: 200,
         message: "Formas de pago cargadas",
         data: rows.map((row: any) => this.mapRow(row))
       })),
-      shareReplay(1)
+      catchError((error) => {
+        // No conservar en memoria una consulta fallida o interrumpida.
+        this.fpagoCache$ = undefined;
+        return throwError(() => error);
+      }),
+      shareReplay({ bufferSize: 1, refCount: false })
     );
 
     return this.fpagoCache$;

@@ -391,3 +391,11 @@ i {
 .detalle-table-container tbody td:nth-child(5) {
   font-weight: 700;
 }
+.factura-search-empty-row {
+  height: 48px;
+}
+
+.factura-search-empty-row td {
+  border-bottom: 1px solid #dee2e6;
+  padding: 0;
+}

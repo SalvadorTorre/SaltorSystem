@@ -1443,6 +1443,32 @@ export class ServicioFacturacion {
     })());
   }
 
+  buscarCreditosPendientesCliente(codigoCliente: string): Observable<any> {
+    const codigo = String(codigoCliente || '').trim();
+    if (!codigo) {
+      return from(Promise.resolve({ status: 'success', code: 200, data: [] }));
+    }
+
+    return from((async () => {
+      let query = this.db
+        .from('factura')
+        .select('fa_codfact,fa_fecfact,fa_expfact,fa_valfact,fa_codclie,fa_tipopago,fa_fpago')
+        .eq('fa_codclie', codigo)
+        .eq('fa_tipopago', 2)
+        .eq('fa_fpago', 'N')
+        .order('fa_fecfact', { ascending: true });
+      query = this.applyTenantFilter(query);
+
+      const { data, error } = await query;
+      if (error) throw error;
+      return {
+        status: 'success',
+        code: 200,
+        data: (data || []).map((row: any) => this.mapFacturaDbToUi(row)),
+      };
+    })());
+  }
+
   buscarMercanciaPorFactura(fa_codFact: string): Observable<any> {
     if (!this.useSupabase) {
       const safe = encodeURIComponent(fa_codFact);

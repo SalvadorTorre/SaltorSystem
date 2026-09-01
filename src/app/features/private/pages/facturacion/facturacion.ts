@@ -20,6 +20,8 @@ import {
   Subscription,
   Subject,
   timeout,
+  retry,
+  finalize,
 } from 'rxjs';
 import Swal from 'sweetalert2';
 // import { ModeloUsuarioData } from 'src/app/core/services/mantenimientos/usuario';
@@ -119,6 +121,13 @@ export class Facturacion implements OnInit, OnDestroy {
   busquedaFacturaModalRealizada = false;
   detFacturaList: detFacturaData[] = [];
   selectedFacturacion: any = null;
+
+  get filasVaciasBusquedaFactura(): number[] {
+    // El mensaje de carga/sin resultados también ocupa una fila visual.
+    const filasOcupadas = this.facturacionList.length > 0 ? this.facturacionList.length : 1;
+    return Array.from({ length: Math.max(0, 7 - filasOcupadas) }, (_, index) => index);
+  }
+
   items: interfaceDetalleModel[] = [];
   ncflist: ModeloNcfData[] = [];
   selectedItem: any = null;
@@ -183,7 +192,10 @@ export class Facturacion implements OnInit, OnDestroy {
   facturaConsultaActual: string = '';
   enviandoFacturaConsultaDgii: boolean = false;
   clientePermiteCredito: boolean = false;
+  esClienteCreditoSeleccionado: boolean = false;
   diasCreditoCliente: number = 0;
+  limiteCreditoCliente: number = 0;
+  saldoCreditoPendienteCliente: number = 0;
 
   habilitarCampos: boolean = false;
 
@@ -242,9 +254,11 @@ export class Facturacion implements OnInit, OnDestroy {
   // Entrega
   buscarEnvio = new FormControl();
   mostrarDropdownFpago = false;
+  cargandoFpago = false;
   mostrarDropdownEnvio = false;
   private blurTimeoutFpago: any = null;
   private blurTimeoutEnvio: any = null;
+  private modalDetalleProtegido = false;
   listaEnvio = [
     { codigo: '1', descripcion: 'Envío' },
     { codigo: '2', descripcion: 'Retiro Cliente' },
@@ -269,6 +283,7 @@ export class Facturacion implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    setTimeout(() => this.protegerModalDetalleDuranteAvisos(), 0);
     this.conectarBusquedaFacturaModal();
     this.buscarcodmerc.valueChanges
       .pipe(
@@ -527,16 +542,20 @@ export class Facturacion implements OnInit, OnDestroy {
     // Estado inicial
     updateState();
   }
-  obtenerfpago() {
-    this.servicioFpago.obtenerTodosFpago().pipe(
-      timeout(5000),
+  obtenerfpago(forceRefresh = false) {
+    if (this.cargandoFpago) return;
+    this.cargandoFpago = true;
+    this.servicioFpago.obtenerTodosFpago(forceRefresh).pipe(
+      timeout(15000),
+      retry({ count: 1, delay: 500 }),
       catchError((error) => {
         console.error('Error cargando formas de pago:', error);
         return of({ data: this.listaFpago || [] } as any);
       }),
+      finalize(() => this.cargandoFpago = false),
     ).subscribe((response) => {
       this.listaFpago = Array.isArray(response?.data) ? response.data : [];
-      this.resultadoFpago = [];
+      this.resultadoFpago = this.mostrarDropdownFpago ? [...this.listaFpago] : [];
       const currentId = this.formularioFacturacion.get('fa_codfpago')?.value;
       if (currentId) {
         const found = this.listaFpago.find(
@@ -673,7 +692,10 @@ export class Facturacion implements OnInit, OnDestroy {
     this.selectedIndexfpago = 0;
     this.selectedIndexEnvio = 0;
     this.clientePermiteCredito = false;
+    this.esClienteCreditoSeleccionado = false;
     this.diasCreditoCliente = 0;
+    this.limiteCreditoCliente = 0;
+    this.saldoCreditoPendienteCliente = 0;
   }
 
   private conectarBusquedaCliente(): void {
@@ -1660,6 +1682,11 @@ export class Facturacion implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.clienteSearchSubscription?.unsubscribe();
     this.busquedaFacturaModalSubscription?.unsubscribe();
+    try {
+      $('#modalDetalleFactura').off('.facturacionDetalle');
+    } catch {
+      // El modal puede no estar montado durante la destrucción del componente.
+    }
   }
 
   convertToUpperCase(event: Event): void {
@@ -2234,6 +2261,13 @@ export class Facturacion implements OnInit, OnDestroy {
     campo?: HTMLInputElement | null,
   ): Promise<void> {
     this.mensagePantalla = true;
+    const confirmarConEnter = (event: KeyboardEvent) => {
+      if (event.key !== 'Enter' || !Swal.isVisible()) return;
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      Swal.clickConfirm();
+    };
     try {
       await Swal.fire({
         icon: 'error',
@@ -2244,11 +2278,22 @@ export class Facturacion implements OnInit, OnDestroy {
         focusConfirm: true,
         allowOutsideClick: false,
         allowEscapeKey: false,
+        allowEnterKey: true,
+        keydownListenerCapture: true,
         stopKeydownPropagation: true,
         returnFocus: false,
-        didOpen: () => Swal.getConfirmButton()?.focus(),
+        didOpen: () => {
+          // Bootstrap también escucha Enter en el modal. SweetAlert debe tomar
+          // el foco y capturar la tecla antes de que llegue al modal de fondo.
+          const enfocarOk = () => Swal.getConfirmButton()?.focus();
+          enfocarOk();
+          setTimeout(enfocarOk, 0);
+          document.addEventListener('keydown', confirmarConEnter, true);
+        },
+        didClose: () => document.removeEventListener('keydown', confirmarConEnter, true),
       });
     } finally {
+      document.removeEventListener('keydown', confirmarConEnter, true);
       this.mensagePantalla = false;
       setTimeout(() => {
         campo?.focus();
@@ -2599,10 +2644,19 @@ export class Facturacion implements OnInit, OnDestroy {
         },
         { emitEvent: false },
       );
-      this.clientePermiteCredito = String(cliente.cl_tipo || '').trim().toUpperCase() === 'C';
+      this.esClienteCreditoSeleccionado = String(cliente.cl_tipo || '').trim().toUpperCase() === 'C';
+      this.clientePermiteCredito = this.esClienteCreditoSeleccionado;
       this.diasCreditoCliente = Math.max(Number(cliente.cl_diasCredito || 0), 0);
+      this.limiteCreditoCliente = Math.max(Number(cliente.cl_limiteCredito || 0), 0);
+      this.saldoCreditoPendienteCliente = 0;
       let tipoVenta = 1;
       if (this.clientePermiteCredito) {
+        const creditoDisponible = await this.validarCreditoPendienteCliente(cliente);
+        if (!creditoDisponible) {
+          this.actualizarTipoVenta(1);
+          this.actualizarTipoNcfPorRnc(cliente.cl_rnc);
+          return;
+        }
         const respuesta = await Swal.fire({
           title: '¿Tipo de venta?',
           text: `El cliente tiene crédito autorizado${this.diasCreditoCliente ? ` por ${this.diasCreditoCliente} días` : ''}.`,
@@ -2619,6 +2673,352 @@ export class Facturacion implements OnInit, OnDestroy {
       this.actualizarTipoNcfPorRnc(cliente.cl_rnc);
       console.log(cliente);
       console.log('Formulario actualizado:', this.formularioFacturacion.value);
+    }
+  }
+
+  async mostrarEstadoCuentaCliente(): Promise<void> {
+    const codigoCliente = String(
+      this.formularioFacturacion.get('fa_codClie')?.value || '',
+    ).trim();
+    const nombreCliente = String(
+      this.formularioFacturacion.get('fa_nomClie')?.value || 'Cliente',
+    ).trim();
+    const nombreEmpresa = this.obtenerNombreEmpresaActiva();
+
+    if (!codigoCliente || !this.esClienteCreditoSeleccionado) return;
+
+    Swal.fire({
+      title: 'Cargando estado de cuenta...',
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+      didOpen: () => Swal.showLoading(),
+    });
+
+    try {
+      const respuesta: any = await firstValueFrom(
+        this.servicioFacturacion.buscarCreditosPendientesCliente(codigoCliente),
+      );
+      const facturas = Array.isArray(respuesta?.data) ? respuesta.data : [];
+      const hoy = this.fechaSinHora(new Date());
+      const totalPendiente = facturas.reduce(
+        (total: number, factura: any) =>
+          total + Math.max(Number(factura?.fa_valFact ?? factura?.fa_valfact ?? 0), 0),
+        0,
+      );
+      this.saldoCreditoPendienteCliente = totalPendiente;
+      const disponible = this.limiteCreditoCliente > 0
+        ? Math.max(this.limiteCreditoCliente - totalPendiente, 0)
+        : 0;
+
+      const filas = facturas.map((factura: any) => {
+        const fecha = this.parseFechaLocal(factura?.fa_fecFact ?? factura?.fa_fecfact);
+        const vencimiento = this.parseFechaLocal(factura?.fa_expFact ?? factura?.fa_expfact);
+        const dias = fecha ? Math.max(0, this.diferenciaDias(fecha, hoy)) : 0;
+        const vencida = vencimiento
+          ? hoy.getTime() > vencimiento.getTime()
+          : this.diasCreditoCliente > 0 && dias > this.diasCreditoCliente;
+        const numero = this.escaparHtml(factura?.fa_codFact ?? factura?.fa_codfact ?? '');
+        const fechaTexto = this.formatearFechaEstadoCuenta(fecha);
+        const vencimientoTexto = this.formatearFechaEstadoCuenta(vencimiento);
+        const valor = Math.max(Number(factura?.fa_valFact ?? factura?.fa_valfact ?? 0), 0);
+        return `<tr>
+          <td>${numero || '-'}</td>
+          <td>${fechaTexto}</td>
+          <td>${vencimientoTexto}</td>
+          <td class="text-end">${dias}</td>
+          <td>${vencida ? '<span class="badge bg-danger">Vencida</span>' : ''}</td>
+          <td class="text-end fw-semibold">RD$${this.formatoImporteCredito(valor)}</td>
+        </tr>`;
+      }).join('');
+
+      const contenido = `
+        <div class="text-start mb-3">
+          <div class="fw-bold text-primary">${this.escaparHtml(nombreEmpresa)}</div>
+          <div class="fw-bold">${this.escaparHtml(nombreCliente)}</div>
+          <small class="text-muted">Código: ${this.escaparHtml(codigoCliente)}</small>
+        </div>
+        <div class="table-responsive" style="max-height: 330px; overflow-y: auto;">
+          <table class="table table-sm table-striped table-bordered align-middle mb-0">
+            <thead class="table-light sticky-top">
+              <tr><th>Factura</th><th>Fecha</th><th>Vence</th><th>Días</th><th>Estado</th><th class="text-end">Pendiente</th></tr>
+            </thead>
+            <tbody>${filas || '<tr><td colspan="6" class="text-center py-4 text-muted">El cliente no tiene facturas a crédito pendientes.</td></tr>'}</tbody>
+          </table>
+        </div>
+        <div class="row g-2 mt-3 text-start">
+          <div class="col-4"><small class="text-muted d-block">Límite</small><strong>RD$${this.formatoImporteCredito(this.limiteCreditoCliente)}</strong></div>
+          <div class="col-4"><small class="text-muted d-block">Pendiente</small><strong class="text-danger">RD$${this.formatoImporteCredito(totalPendiente)}</strong></div>
+          <div class="col-4"><small class="text-muted d-block">Disponible</small><strong class="text-success">RD$${this.formatoImporteCredito(disponible)}</strong></div>
+        </div>`;
+
+      const resultadoModal = await Swal.fire({
+        title: 'Estado de cuenta',
+        html: contenido,
+        width: 900,
+        confirmButtonText: 'Cerrar',
+        showDenyButton: true,
+        denyButtonText: '<i class="bi bi-file-earmark-pdf me-1"></i> Crear PDF',
+        denyButtonColor: '#dc3545',
+        focusConfirm: true,
+      });
+      if (resultadoModal.isDenied) {
+        this.generarPdfEstadoCuenta(
+          nombreEmpresa,
+          nombreCliente,
+          codigoCliente,
+          facturas,
+          totalPendiente,
+          disponible,
+        );
+      }
+    } catch (error) {
+      console.error('No se pudo cargar el estado de cuenta:', error);
+      await Swal.fire('Error', 'No se pudo cargar el estado de cuenta del cliente.', 'error');
+    }
+  }
+
+  private obtenerNombreEmpresaActiva(): string {
+    const nombreGuardado = String(localStorage.getItem('nombre_empresa') || '').trim();
+    if (nombreGuardado) return nombreGuardado;
+    try {
+      const empresa = JSON.parse(localStorage.getItem('empresa') || '{}');
+      return String(
+        empresa?.nom_empre || empresa?.em_nomempre || empresa?.nombre || 'Empresa',
+      ).trim();
+    } catch {
+      return 'Empresa';
+    }
+  }
+
+  private generarPdfEstadoCuenta(
+    nombreEmpresa: string,
+    nombreCliente: string,
+    codigoCliente: string,
+    facturas: any[],
+    totalPendiente: number,
+    disponible: number,
+  ): void {
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'letter' });
+    const hoy = this.fechaSinHora(new Date());
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(16);
+    doc.text(nombreEmpresa || 'Empresa', 14, 16);
+    doc.setFontSize(13);
+    doc.text('Estado de cuenta', 14, 24);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.text(`Cliente: ${nombreCliente}`, 14, 31);
+    doc.text(`Código: ${codigoCliente}`, 14, 37);
+    doc.text(`Fecha: ${this.formatearFechaEstadoCuenta(hoy)}`, 220, 16);
+
+    const cuerpo = facturas.map((factura: any) => {
+      const fecha = this.parseFechaLocal(factura?.fa_fecFact ?? factura?.fa_fecfact);
+      const vencimiento = this.parseFechaLocal(factura?.fa_expFact ?? factura?.fa_expfact);
+      const dias = fecha ? Math.max(0, this.diferenciaDias(fecha, hoy)) : 0;
+      const vencida = vencimiento
+        ? hoy.getTime() > vencimiento.getTime()
+        : this.diasCreditoCliente > 0 && dias > this.diasCreditoCliente;
+      return [
+        String(factura?.fa_codFact ?? factura?.fa_codfact ?? ''),
+        this.formatearFechaEstadoCuenta(fecha),
+        this.formatearFechaEstadoCuenta(vencimiento),
+        String(dias),
+        vencida ? 'Vencida' : '',
+        `RD$${this.formatoImporteCredito(factura?.fa_valFact ?? factura?.fa_valfact ?? 0)}`,
+      ];
+    });
+
+    autoTable(doc, {
+      startY: 43,
+      head: [['Factura', 'Fecha', 'Vence', 'Días', 'Estado', 'Pendiente']],
+      body: cuerpo.length ? cuerpo : [['', '', '', '', 'Sin facturas pendientes', '']],
+      theme: 'grid',
+      styles: { fontSize: 9, cellPadding: 2.5 },
+      headStyles: { fillColor: [13, 110, 253] },
+      columnStyles: { 3: { halign: 'right' }, 5: { halign: 'right' } },
+    });
+
+    const finalY = (doc as any).lastAutoTable?.finalY || 55;
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Límite: RD$${this.formatoImporteCredito(this.limiteCreditoCliente)}`, 14, finalY + 10);
+    doc.text(`Total pendiente: RD$${this.formatoImporteCredito(totalPendiente)}`, 95, finalY + 10);
+    doc.text(`Crédito disponible: RD$${this.formatoImporteCredito(disponible)}`, 185, finalY + 10);
+
+    const nombreArchivo = `estado-cuenta-${codigoCliente || 'cliente'}.pdf`
+      .replace(/[^a-zA-Z0-9._-]/g, '-');
+    doc.save(nombreArchivo);
+  }
+
+  private formatearFechaEstadoCuenta(fecha: Date | null): string {
+    if (!fecha) return '-';
+    return new Intl.DateTimeFormat('es-DO', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    }).format(fecha);
+  }
+
+  private escaparHtml(valor: any): string {
+    return String(valor ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  private async validarCreditoPendienteCliente(cliente: ModeloClienteData): Promise<boolean> {
+    const codigoCliente = String(cliente?.cl_codClie || '').trim();
+    if (!codigoCliente) {
+      this.clientePermiteCredito = false;
+      await Swal.fire('Aviso', 'No se pudo validar el código del cliente para autorizar crédito.', 'warning');
+      return false;
+    }
+
+    try {
+      const respuesta: any = await firstValueFrom(
+        this.servicioFacturacion.buscarCreditosPendientesCliente(codigoCliente),
+      );
+      const facturas = Array.isArray(respuesta?.data) ? respuesta.data : [];
+      this.saldoCreditoPendienteCliente = facturas.reduce(
+        (total: number, factura: any) => total + Math.max(Number(factura?.fa_valFact ?? factura?.fa_valfact ?? 0), 0),
+        0,
+      );
+      const hoy = this.fechaSinHora(new Date());
+      const diasPermitidos = Math.max(Number(cliente?.cl_diasCredito || 0), 0);
+      const vencidas = facturas
+        .map((factura: any) => {
+          const fechaFactura = this.parseFechaLocal(factura?.fa_fecFact ?? factura?.fa_fecfact);
+          const fechaExpira = this.parseFechaLocal(factura?.fa_expFact ?? factura?.fa_expfact);
+          if (!fechaFactura) return null;
+
+          const diasTranscurridos = Math.max(0, this.diferenciaDias(fechaFactura, hoy));
+          const diasEntreFacturaYExpiracion = fechaExpira
+            ? Math.max(0, this.diferenciaDias(fechaFactura, fechaExpira))
+            : diasTranscurridos;
+          const vencioPorFecha = !!fechaExpira && hoy.getTime() > fechaExpira.getTime();
+          const excedeDias = diasEntreFacturaYExpiracion > diasPermitidos;
+          if (!vencioPorFecha && !excedeDias) return null;
+
+          return {
+            numero: String(factura?.fa_codFact ?? factura?.fa_codfact ?? '').trim(),
+            dias: diasTranscurridos,
+          };
+        })
+        .filter(Boolean) as Array<{ numero: string; dias: number }>;
+
+      if (
+        this.limiteCreditoCliente > 0 &&
+        this.saldoCreditoPendienteCliente >= this.limiteCreditoCliente
+      ) {
+        this.clientePermiteCredito = false;
+        await Swal.fire({
+          icon: 'warning',
+          title: 'Límite de crédito alcanzado',
+          text: `El cliente tiene RD$${this.formatoImporteCredito(this.saldoCreditoPendienteCliente)} pendientes y su límite es RD$${this.formatoImporteCredito(this.limiteCreditoCliente)}.`,
+          confirmButtonText: 'OK',
+          focusConfirm: true,
+        });
+        return false;
+      }
+
+      if (!vencidas.length) return true;
+
+      this.clientePermiteCredito = false;
+      const detalle = vencidas
+        .slice(0, 5)
+        .map((factura) => `${factura.numero || 'S/N'} (${factura.dias} días)`)
+        .join(', ');
+      await Swal.fire({
+        icon: 'warning',
+        title: 'Crédito no disponible',
+        text: `El cliente tiene factura(s) a crédito pendiente(s) fuera del plazo de ${diasPermitidos} días: ${detalle}.`,
+        confirmButtonText: 'OK',
+        focusConfirm: true,
+      });
+      return false;
+    } catch (error) {
+      console.error('No se pudo validar el crédito pendiente del cliente:', error);
+      this.clientePermiteCredito = false;
+      await Swal.fire(
+        'Crédito no disponible',
+        'No se pudieron validar las facturas pendientes del cliente. Solo se permitirá venta al contado.',
+        'warning',
+      );
+      return false;
+    }
+  }
+
+  private parseFechaLocal(value: any): Date | null {
+    const texto = String(value || '').trim().slice(0, 10);
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(texto);
+    if (!match) return null;
+    const fecha = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+    return Number.isNaN(fecha.getTime()) ? null : this.fechaSinHora(fecha);
+  }
+
+  private fechaSinHora(fecha: Date): Date {
+    return new Date(fecha.getFullYear(), fecha.getMonth(), fecha.getDate());
+  }
+
+  private diferenciaDias(desde: Date, hasta: Date): number {
+    const milisegundosDia = 24 * 60 * 60 * 1000;
+    return Math.floor((hasta.getTime() - desde.getTime()) / milisegundosDia);
+  }
+
+  private formatoImporteCredito(valor: number): string {
+    return new Intl.NumberFormat('es-DO', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(Number(valor || 0));
+  }
+
+  private async validarLimiteCreditoAntesGuardar(): Promise<boolean> {
+    const codigoCliente = String(this.formularioFacturacion.get('fa_codClie')?.value || '').trim();
+    if (!codigoCliente || this.limiteCreditoCliente <= 0) {
+      await Swal.fire(
+        'Crédito no disponible',
+        'El cliente no tiene un límite de crédito válido configurado.',
+        'warning',
+      );
+      return false;
+    }
+
+    try {
+      const respuesta: any = await firstValueFrom(
+        this.servicioFacturacion.buscarCreditosPendientesCliente(codigoCliente),
+      );
+      const codigoActual = String(this.formularioFacturacion.get('fa_codFact')?.value || '').trim();
+      const facturas = (Array.isArray(respuesta?.data) ? respuesta.data : [])
+        .filter((factura: any) =>
+          !this.modoedicionFacturacion ||
+          String(factura?.fa_codFact ?? factura?.fa_codfact ?? '').trim() !== codigoActual,
+        );
+      const saldoPendiente = facturas.reduce(
+        (total: number, factura: any) => total + Math.max(Number(factura?.fa_valFact ?? factura?.fa_valfact ?? 0), 0),
+        0,
+      );
+      const totalProyectado = saldoPendiente + Math.max(Number(this.totalGral || 0), 0);
+      this.saldoCreditoPendienteCliente = saldoPendiente;
+
+      if (totalProyectado <= this.limiteCreditoCliente) return true;
+
+      await Swal.fire({
+        icon: 'warning',
+        title: 'Límite de crédito excedido',
+        text: `Pendiente: RD$${this.formatoImporteCredito(saldoPendiente)}. Factura actual: RD$${this.formatoImporteCredito(this.totalGral)}. Total: RD$${this.formatoImporteCredito(totalProyectado)}. Límite: RD$${this.formatoImporteCredito(this.limiteCreditoCliente)}.`,
+        confirmButtonText: 'OK',
+        focusConfirm: true,
+      });
+      return false;
+    } catch (error) {
+      console.error('No se pudo validar el límite de crédito antes de guardar:', error);
+      await Swal.fire(
+        'Crédito no disponible',
+        'No se pudo validar el límite de crédito. La factura no fue guardada.',
+        'warning',
+      );
+      return false;
     }
   }
 
@@ -2672,7 +3072,11 @@ export class Facturacion implements OnInit, OnDestroy {
   onFocusFpago(): void {
     if (this.blurTimeoutFpago) clearTimeout(this.blurTimeoutFpago);
     this.mostrarDropdownFpago = true;
-    if (!this.resultadoFpago.length) this.resultadoFpago = this.listaFpago;
+    if (!this.listaFpago.length) {
+      this.obtenerfpago(true);
+    } else if (!this.resultadoFpago.length) {
+      this.resultadoFpago = [...this.listaFpago];
+    }
     this.selectedIndexfpago = 0;
   }
 
@@ -2699,6 +3103,7 @@ export class Facturacion implements OnInit, OnDestroy {
 
   abrirModalDetalle(): void {
     try {
+      this.protegerModalDetalleDuranteAvisos();
       const modalDetalle = $('#modalDetalleFactura');
       modalDetalle.one('shown.bs.modal', () => {
         const inputCodigo = this.codigoInput?.nativeElement;
@@ -2710,6 +3115,24 @@ export class Facturacion implements OnInit, OnDestroy {
       modalDetalle.modal('show');
     } catch (e) {
       console.warn('No se pudo abrir #modalDetalleFactura:', e);
+    }
+  }
+
+  private protegerModalDetalleDuranteAvisos(): void {
+    if (this.modalDetalleProtegido) return;
+    try {
+      const modalDetalle = $('#modalDetalleFactura');
+      if (!modalDetalle?.length) return;
+      modalDetalle.on('hide.bs.modal.facturacionDetalle', (event: any) => {
+        if (Swal.isVisible()) {
+          event.preventDefault();
+          event.stopImmediatePropagation?.();
+          setTimeout(() => Swal.getConfirmButton()?.focus(), 0);
+        }
+      });
+      this.modalDetalleProtegido = true;
+    } catch (error) {
+      console.warn('No se pudo proteger #modalDetalleFactura:', error);
     }
   }
 
@@ -3165,6 +3588,33 @@ export class Facturacion implements OnInit, OnDestroy {
     }
   }
 
+  private async validarIdentificacionConsumidorFinalAltoMonto(): Promise<boolean> {
+    const tipoNcf = Number(
+      String(
+        this.formularioFacturacion.get('fa_tipoNcf')?.value ??
+        this.formularioFacturacion.getRawValue()?.fa_tipoNcf ??
+        '',
+      ).trim(),
+    );
+    const totalFactura = Math.max(Number(this.totalGral || 0), 0);
+    if (tipoNcf !== 32 || totalFactura < 250000) return true;
+
+    const identificacion = String(
+      this.formularioFacturacion.get('fa_rncFact')?.value || '',
+    ).replace(/\D/g, '').trim();
+    if (identificacion && [9, 11].includes(identificacion.length)) return true;
+
+    await Swal.fire({
+      icon: 'warning',
+      title: 'RNC o cédula requerido',
+      text: 'Para continuar con una factura de consumidor final por RD$250,000 o más, debe agregar un RNC o una cédula válida para la DGII.',
+      confirmButtonText: 'Aceptar',
+      focusConfirm: true,
+    });
+    this.enfocarCampoFactura('input1');
+    return false;
+  }
+
   async guardarFacturacion() {
     if (this.isLoading) {
       return;
@@ -3172,6 +3622,10 @@ export class Facturacion implements OnInit, OnDestroy {
 
     if (!(await this.validarCodigoVendedor(false, null))) {
       this.enfocarCampoFactura('input12');
+      return;
+    }
+
+    if (!(await this.validarIdentificacionConsumidorFinalAltoMonto())) {
       return;
     }
 
@@ -3204,6 +3658,13 @@ export class Facturacion implements OnInit, OnDestroy {
         confirmButtonText: 'Aceptar',
       });
       this.enfocarCampoFactura('input11');
+      return;
+    }
+
+    const tipoVentaActual = Number(
+      this.formularioFacturacion.get('fa_tipopago')?.value ?? 1,
+    );
+    if (tipoVentaActual === 2 && !(await this.validarLimiteCreditoAntesGuardar())) {
       return;
     }
 
