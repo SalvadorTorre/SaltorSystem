@@ -266,20 +266,19 @@ export class Reporte607Component implements OnInit {
     this.exportandoXls = true;
 
     try {
-      const filtroFecha = this.filtrosFechaConsulta();
-      const result = await this.servicioFacturacion.exportarReporte607Xlsx({
-        ...filtroFecha,
-        tipoComprobante: this.tipoComprobante,
-        estadoDgii: this.estadoDgii,
-        numeroFactura: this.numeroFactura,
-        encf: this.encf,
-        empresa: this.empresaFiltro,
-        sucursal: this.sucursalFiltro,
+      const rows = await this.cargarFacturasExportacion();
+      if (!rows.length) {
+        await Swal.fire('Sin información', 'No hay facturas para exportar con los filtros seleccionados.', 'info');
+        return;
+      }
+      const html = this.construirHtmlXls(rows);
+      const blob = new Blob([`\ufeff${html}`], {
+        type: 'application/vnd.ms-excel;charset=utf-8',
       });
-      const url = URL.createObjectURL(result.blob);
+      const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = result.filename;
+      link.download = `reporte-607-${this.nombrePeriodoArchivo()}.xls`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -475,8 +474,6 @@ export class Reporte607Component implements OnInit {
   fechaComprobante(factura: any): any {
     return factura?.fa_fecncf ??
       factura?.fa_fecNcf ??
-      factura?.fa_fecfact ??
-      factura?.fa_fecFact ??
       null;
   }
 
@@ -596,7 +593,10 @@ export class Reporte607Component implements OnInit {
   private async cargarFacturasExportacion(): Promise<any[]> {
     // Cada fecha se consulta por separado para evitar que PostgreSQL tenga que
     // filtrar y ordenar todo el mes dentro de una sola sentencia.
-    const pageSize = 10;
+    // La funcion permite lotes grandes. Usar 10 registros provocaba cientos
+    // de solicitudes y daba la impresion de que la exportacion se quedaba
+    // bloqueada sin generar el archivo.
+    const pageSize = 500;
     const rows: any[] = [];
     const fechas = this.fechasExportacion();
     const fechasAConsultar = fechas.length ? fechas : [''];
@@ -611,6 +611,8 @@ export class Reporte607Component implements OnInit {
           fechaHasta: fechaConsulta ? '' : this.fechaHasta,
           tipoComprobante: this.tipoComprobante,
           estadoDgii: this.estadoDgii,
+          numeroFactura: this.numeroFactura,
+          encf: this.encf,
           empresa: this.empresaFiltro,
           sucursal: this.sucursalFiltro,
           exportacion: true,
@@ -622,10 +624,22 @@ export class Reporte607Component implements OnInit {
         const pagination = response?.pagination || {};
         const totalPages = Math.max(1, Number(pagination.totalPages || 1));
         if (pageRows.length < pageSize || page >= totalPages) break;
+        // Proteccion adicional ante un conteo incorrecto devuelto por una
+        // version anterior de la RPC.
+        if (page >= 1000) {
+          throw new Error('La exportación no pudo completar la paginación del reporte.');
+        }
       }
     }
 
-    return rows;
+    const unicas = new Map<string, any>();
+    rows.forEach((factura: any, index: number) => {
+      const codigo = String(factura?.fa_codFact ?? factura?.fa_codfact ?? '').trim();
+      const empresa = String(factura?.fa_codEmpr ?? factura?.fa_codempr ?? '').trim();
+      const sucursal = String(factura?.fa_codSucu ?? factura?.fa_codsucu ?? '').trim();
+      unicas.set(`${empresa}|${sucursal}|${codigo || index}`, factura);
+    });
+    return Array.from(unicas.values());
   }
 
   private fechasExportacion(): string[] {

@@ -250,6 +250,7 @@ export class ServicioCliente {
           .from("rnc")
           .select("rason")
           .eq("rnc", numero)
+          .limit(1)
           .maybeSingle();
         if (error) throw error;
         const nombre = String(data?.rason || "").trim();
@@ -263,17 +264,20 @@ export class ServicioCliente {
 
     return from(
       (async () => {
-        const { data, error } = await this.db
+        let query = this.db
           .from("clientes")
           .update(payload)
-          .eq("cl_codclie", Number(cl_codClie))
-          .select("*")
-          .maybeSingle();
+          .eq("cl_codclie", Number(cl_codClie));
+        query = this.filtrarPorSucursalUsuario(query, true);
+        const { error } = await query;
         if (error) throw error;
-        return data ? this.normalizarCliente(data) : null;
+        return this.normalizarCliente({
+          ...payload,
+          cl_codclie: Number(cl_codClie),
+        });
       })()
     ).pipe(
-      map((row: ModeloClienteData | null) => ({
+      map((row: ModeloClienteData) => ({
         status: "success",
         code: 200,
         message: "Cliente actualizado",
@@ -285,10 +289,12 @@ export class ServicioCliente {
   eliminarCliente(cl_codClie: number): Observable<any> {
     return from(
       (async () => {
-        const { error } = await this.db
+        let query = this.db
           .from("clientes")
           .delete()
           .eq("cl_codclie", Number(cl_codClie));
+        query = this.filtrarPorSucursalUsuario(query, true);
+        const { error } = await query;
         if (error) throw error;
         return true;
       })()
@@ -304,11 +310,13 @@ export class ServicioCliente {
   buscarCliente(cl_codClie: number): Observable<any> {
     return from(
       (async () => {
-        const { data, error } = await this.db
+        let query = this.db
           .from("clientes")
           .select("*")
-          .eq("cl_codclie", Number(cl_codClie))
-          .maybeSingle();
+          .eq("cl_codclie", Number(cl_codClie));
+        query = this.filtrarPorSucursalUsuario(query, true)
+          .limit(1);
+        const { data, error } = await query.maybeSingle();
         if (error) throw error;
         return data ? this.normalizarCliente(data) : null;
       })()

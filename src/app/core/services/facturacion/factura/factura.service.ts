@@ -2803,7 +2803,47 @@ export class ServicioFacturacion {
       });
       if (!rpc.error) {
         const rpcRows = Array.isArray(rpc.data) ? rpc.data : [];
-        const rows = rpcRows.map((row: any) => this.mapFacturaDbToUi(row));
+        let rows = rpcRows.map((row: any) => this.mapFacturaDbToUi(row));
+
+        // Algunas versiones instaladas de listar_reporte_607 no retornan
+        // fa_fecncf. Se completa desde factura para que la tabla siempre use
+        // la fecha fiscal real y nunca fa_fecfact como sustituto.
+        const codigosSinFecha = Array.from(new Set(
+          rows
+            .filter((row: any) => !(row?.fa_fecNcf ?? row?.fa_fecncf))
+            .map((row: any) => String(row?.fa_codFact ?? row?.fa_codfact ?? '').trim())
+            .filter(Boolean),
+        ));
+        if (codigosSinFecha.length) {
+          let fechasQuery = this.db
+            .from('factura')
+            .select('fa_codfact,fa_fecncf,fa_codempr,fa_codsucu')
+            .in('fa_codfact', codigosSinFecha);
+          if (empresa) {
+            fechasQuery = fechasQuery.eq('fa_codempr', empresa);
+          } else {
+            fechasQuery = this.applyTenantCompanyFilter(fechasQuery);
+          }
+          if (sucursal) fechasQuery = fechasQuery.eq('fa_codsucu', sucursal);
+
+          const { data: fechasData, error: fechasError } = await fechasQuery;
+          if (fechasError) {
+            console.warn('[ServicioFacturacion] No se pudo completar fa_fecncf del Rep. 607', fechasError);
+          } else {
+            const fechasPorFactura = new Map<string, any>();
+            for (const facturaFecha of fechasData || []) {
+              const codigo = String(facturaFecha?.fa_codfact || '').trim();
+              if (codigo && facturaFecha?.fa_fecncf) {
+                fechasPorFactura.set(codigo, facturaFecha.fa_fecncf);
+              }
+            }
+            rows = rows.map((row: any) => {
+              const codigo = String(row?.fa_codFact ?? row?.fa_codfact ?? '').trim();
+              const fechaNcf = row?.fa_fecNcf ?? row?.fa_fecncf ?? fechasPorFactura.get(codigo) ?? null;
+              return { ...row, fa_fecncf: fechaNcf, fa_fecNcf: fechaNcf };
+            });
+          }
+        }
         const total = Number(rpcRows[0]?.total_count ?? rows.length ?? 0);
         return {
           status: 'success',
