@@ -3,6 +3,9 @@ import { NavigationEnd, Router } from '@angular/router';
 import { AuthService } from 'src/app/core/services/auth/auth.service';
 import Swal from 'sweetalert2';
 import { filter } from 'rxjs/operators';
+import { firstValueFrom } from 'rxjs';
+import { ServicioFacturacion } from 'src/app/core/services/facturacion/factura/factura.service';
+import { ServicioSucursal } from 'src/app/core/services/mantenimientos/sucursal/sucursal.service';
 
 type DesktopUpdateStage =
   | 'idle'
@@ -51,7 +54,9 @@ export class PrivatePage implements OnInit, OnDestroy {
 
   constructor(
     private readonly router: Router,
-    private authService: AuthService
+    private authService: AuthService,
+    private servicioFacturacion: ServicioFacturacion,
+    private servicioSucursal: ServicioSucursal,
   ) {}
 
   ngOnInit() {
@@ -156,14 +161,42 @@ export class PrivatePage implements OnInit, OnDestroy {
     });
   }
 
-  openMyProfile(): void {
+  async openMyProfile(): Promise<void> {
     const profile = this.buildProfileFromStorage();
     const roleName = this.resolveRoleName();
-    const salesReport = this.buildFakeSalesReport();
+    Swal.fire({
+      title: 'Cargando mi perfil...',
+      text: 'Calculando las ventas del mes en curso.',
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+      didOpen: () => Swal.showLoading(),
+    });
+
+    let salesReport: Awaited<ReturnType<PrivatePage['buildCurrentMonthSalesReport']>>;
+    try {
+      salesReport = await this.buildCurrentMonthSalesReport();
+    } catch (error) {
+      console.error('[Mi perfil] No se pudo calcular el resumen mensual', error);
+      await Swal.fire(
+        'Error',
+        'No se pudo cargar el resumen de ventas del mes. Intente nuevamente.',
+        'error',
+      );
+      return;
+    }
     const lastAccessLabel = new Intl.DateTimeFormat('es-DO', {
       dateStyle: 'medium',
       timeStyle: 'short',
     }).format(new Date());
+    const mesesDisponibles = Array.from({ length: 4 }, (_, index) => {
+      const fecha = new Date();
+      fecha.setDate(1);
+      fecha.setMonth(fecha.getMonth() - index);
+      return {
+        value: `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}`,
+        label: new Intl.DateTimeFormat('es-DO', { month: 'long', year: 'numeric' }).format(fecha),
+      };
+    });
 
     Swal.fire({
       width: 900,
@@ -202,26 +235,85 @@ export class PrivatePage implements OnInit, OnDestroy {
             <div style="border:1px solid #e9ecef;border-radius:12px;padding:12px 14px;background:#f8fbff;">
               <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
                 <div style="font-weight:700;color:#0d6efd;">Reporte de ventas | Hierros y Forjas</div>
-                <div style="font-size:12px;color:#6c757d;">Resumen comercial del mes</div>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <label for="perfilMesConsulta" style="font-size:12px;color:#6c757d;">Mes:</label>
+                  <select id="perfilMesConsulta" class="form-select form-select-sm" style="width:175px;">
+                    ${mesesDisponibles.map((mes, index) => `<option value="${mes.value}"${index === 0 ? ' selected' : ''}>${this.escapeHtml(mes.label)}</option>`).join('')}
+                  </select>
+                  <button id="perfilBuscarMes" type="button" class="btn btn-sm btn-primary" title="Consultar mes" aria-label="Consultar mes">
+                    <i class="bi bi-search"></i>
+                  </button>
+                </div>
               </div>
-              <div style="margin-top:10px;display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;font-size:13px;">
-                <div><div style="color:#6c757d;">Tipo de usuario</div><div style="font-weight:700;">${this.escapeHtml(roleName)}</div></div>
-                <div><div style="color:#6c757d;">Meta a Facturar</div><div style="font-weight:700;">${salesReport.metaFacturarMM.toFixed(2)} MM</div></div>
-                <div><div style="color:#6c757d;">Meta por vendedor</div><div style="font-weight:700;">${salesReport.metaPorVendedorMM.toFixed(2)} MM</div></div>
-                <div><div style="color:#6c757d;">Total de facturas hechas por mí</div><div style="font-weight:700;">${salesReport.totalFactura.toLocaleString('es-DO')}</div></div>
-                <div><div style="color:#6c757d;">Valor facturado (oculto)</div><div style="font-weight:700;">${this.escapeHtml(salesReport.valorFacturadoOculto)} MM</div></div>
-                <div><div style="color:#6c757d;">Margen de venta</div><div style="font-weight:700;">${salesReport.margenVentaPct.toFixed(2)}%</div></div>
-                <div><div style="color:#6c757d;">Porciento facturado</div><div style="font-weight:700;">${salesReport.porcientoFacturado.toFixed(1)}%</div></div>
-                <div><div style="color:#6c757d;">Valor a pagar (aprox.)</div><div style="font-weight:700;">${this.formatMoney(salesReport.valorPagar)}</div></div>
-                <div><div style="color:#6c757d;">Último acceso</div><div style="font-weight:700;">${this.escapeHtml(lastAccessLabel)}</div></div>
+              <div id="perfilMesEstado" style="font-size:12px;color:#6c757d;margin-top:5px;">Resumen de ${this.escapeHtml(mesesDisponibles[0].label)}</div>
+              <div style="margin-top:10px;display:grid;gap:10px;font-size:13px;">
+                <div style="border:1px solid #bfdbfe;border-radius:10px;padding:10px;background:#fff;">
+                  <div style="font-weight:800;color:#0d6efd;margin-bottom:8px;">Sucursal: ${this.escapeHtml(profile.sucursal)}</div>
+                  <div style="display:grid;grid-template-columns:repeat(5,minmax(110px,1fr));gap:10px;">
+                    <div><div style="color:#6c757d;">Meta a facturar</div><div id="perfilMetaSucursal" style="font-weight:700;">${this.formatMoney(salesReport.metaFacturar)}</div></div>
+                    <div><div style="color:#6c757d;">Valor facturado</div><div id="perfilValorSucursal" style="font-weight:700;">${this.formatMoney(salesReport.valorFacturadoSucursal)}</div></div>
+                    <div><div style="color:#6c757d;">Porciento facturado</div><div id="perfilPctSucursal" style="font-weight:700;">${salesReport.porcientoFacturadoSucursal.toFixed(1)}%</div></div>
+                    <div><div style="color:#6c757d;">Margen de venta</div><div id="perfilMargenSucursal" style="font-weight:700;">${salesReport.margenVentaSucursalPct.toFixed(2)}%</div></div>
+                    <div><div style="color:#6c757d;">Número de facturas</div><div id="perfilFacturasSucursal" style="font-weight:700;">${salesReport.totalFacturaSucursal.toLocaleString('es-DO')}</div></div>
+                  </div>
+                </div>
+                <div style="border:1px solid #c7d2fe;border-radius:10px;padding:10px;background:#fff;">
+                  <div style="font-weight:800;color:#2b097b;margin-bottom:8px;">Vendedor: ${this.escapeHtml(profile.username)}</div>
+                  <div style="display:grid;grid-template-columns:repeat(5,minmax(110px,1fr));gap:10px;">
+                    <div><div style="color:#6c757d;">Tipo de usuario</div><div style="font-weight:700;">${this.escapeHtml(roleName)}</div></div>
+                    <div><div style="color:#6c757d;">Número de facturas</div><div id="perfilFacturasVendedor" style="font-weight:700;">${salesReport.totalFactura.toLocaleString('es-DO')}</div></div>
+                    <div><div style="color:#6c757d;">Valor facturado</div><div id="perfilValorVendedor" style="font-weight:700;">${this.formatMoney(salesReport.valorFacturado)}</div></div>
+                    <div><div style="color:#6c757d;">Margen de venta</div><div id="perfilMargenVendedor" style="font-weight:700;">${salesReport.margenVentaPct.toFixed(2)}%</div></div>
+                    <div><div style="color:#6c757d;">Porciento facturado</div><div id="perfilPctVendedor" style="font-weight:700;">${salesReport.porcientoFacturado.toFixed(1)}%</div></div>
+                  </div>
+                </div>
+                <div style="color:#6c757d;font-size:12px;">Último acceso: <strong>${this.escapeHtml(lastAccessLabel)}</strong></div>
               </div>
               <div style="margin-top:10px;padding:8px 10px;border-radius:8px;background:#fff3cd;color:#856404;font-size:12px;">
-                Los valores mostrados son un resumen de seguimiento y no exponen todos los detalles de comisión.
+                Valores calculados para el vendedor conectado durante el mes en curso.
               </div>
             </div>
           </div>
         </div>
       `,
+      didOpen: () => {
+        const selector = document.getElementById('perfilMesConsulta') as HTMLSelectElement | null;
+        const botonBuscar = document.getElementById('perfilBuscarMes') as HTMLButtonElement | null;
+        botonBuscar?.addEventListener('click', async () => {
+          if (!selector) return;
+          const [year, month] = selector.value.split('-').map(Number);
+          const periodo = new Date(year, month - 1, 1);
+          const estado = document.getElementById('perfilMesEstado');
+          selector.disabled = true;
+          botonBuscar.disabled = true;
+          if (estado) estado.textContent = 'Consultando información del mes seleccionado...';
+          try {
+            const reporte = await this.buildCurrentMonthSalesReport(periodo);
+            this.actualizarValorPerfil('perfilMetaSucursal', this.formatMoney(reporte.metaFacturar));
+            this.actualizarValorPerfil('perfilValorSucursal', this.formatMoney(reporte.valorFacturadoSucursal));
+            this.actualizarValorPerfil('perfilPctSucursal', `${reporte.porcientoFacturadoSucursal.toFixed(1)}%`);
+            this.actualizarValorPerfil('perfilMargenSucursal', `${reporte.margenVentaSucursalPct.toFixed(2)}%`);
+            this.actualizarValorPerfil('perfilFacturasSucursal', reporte.totalFacturaSucursal.toLocaleString('es-DO'));
+            this.actualizarValorPerfil('perfilFacturasVendedor', reporte.totalFactura.toLocaleString('es-DO'));
+            this.actualizarValorPerfil('perfilValorVendedor', this.formatMoney(reporte.valorFacturado));
+            this.actualizarValorPerfil('perfilMargenVendedor', `${reporte.margenVentaPct.toFixed(2)}%`);
+            this.actualizarValorPerfil('perfilPctVendedor', `${reporte.porcientoFacturado.toFixed(1)}%`);
+            const mes = mesesDisponibles.find((item) => item.value === selector.value);
+            if (estado) estado.textContent = `Resumen de ${mes?.label || selector.value}`;
+          } catch (error) {
+            console.error('[Mi perfil] Error consultando mes seleccionado', error);
+            const detalle = String(
+              (error as any)?.message ||
+              (error as any)?.details ||
+              'No se pudo consultar el mes seleccionado.',
+            ).trim();
+            if (estado) estado.textContent = detalle;
+          } finally {
+            selector.disabled = false;
+            botonBuscar.disabled = false;
+          }
+        });
+      },
     });
   }
 
@@ -472,6 +564,131 @@ export class PrivatePage implements OnInit, OnDestroy {
     if (raw.includes('root')) return 'Cómputos';
     if (raw.includes('admin')) return 'Administrador';
     return 'Vendedor';
+  }
+
+  private async buildCurrentMonthSalesReport(periodo: Date = new Date()): Promise<{
+    metaFacturar: number;
+    totalFacturaSucursal: number;
+    valorFacturadoSucursal: number;
+    margenVentaSucursalPct: number;
+    porcientoFacturadoSucursal: number;
+    totalFactura: number;
+    valorFacturado: number;
+    margenVentaPct: number;
+    porcientoFacturado: number;
+  }> {
+    const sucursalId = Number(localStorage.getItem('idSucursal') || 0);
+    if (!Number.isFinite(sucursalId) || sucursalId <= 0) {
+      throw new Error('El usuario no tiene una sucursal válida asignada.');
+    }
+
+    const fechaDesde = this.fechaIsoLocal(new Date(periodo.getFullYear(), periodo.getMonth(), 1));
+    const fechaHasta = this.fechaIsoLocal(new Date(periodo.getFullYear(), periodo.getMonth() + 1, 0));
+    const [sucursalResponse, facturasResponse] = await Promise.all([
+      firstValueFrom(this.servicioSucursal.buscarsucursal(String(sucursalId))),
+      firstValueFrom(this.servicioFacturacion.buscarVentasPorVendedor({
+        sucursal: sucursalId,
+        fechaDesde,
+        fechaHasta,
+        pageSize: 0,
+      })),
+    ]);
+
+    const sucursal = sucursalResponse?.data ?? sucursalResponse ?? {};
+    const facturas = Array.isArray(facturasResponse?.data) ? facturasResponse.data : [];
+    const valorFacturadoSucursal = facturas.reduce(
+      (total: number, factura: any) =>
+        total + this.numeroSeguro(factura?.fa_valFact ?? factura?.fa_valfact),
+      0,
+    );
+    const costoFacturadoSucursal = facturas.reduce(
+      (total: number, factura: any) =>
+        total + this.numeroSeguro(factura?.fa_cosFact ?? factura?.fa_cosfact),
+      0,
+    );
+    const vendedorCodigos = [
+      localStorage.getItem('codigousuario'),
+      localStorage.getItem('claveusuario'),
+      localStorage.getItem('idusuario'),
+    ].map((value) => this.normalizarIdentificadorVendedor(value)).filter(Boolean);
+    const vendedorNombre = this.normalizarNombreVendedor(localStorage.getItem('username'));
+    const codigosSet = new Set(vendedorCodigos);
+
+    const facturasVendedor = facturas.filter((factura: any) => {
+      const codigo = this.normalizarIdentificadorVendedor(
+        factura?.fa_codVend ?? factura?.fa_codvend,
+      );
+      const nombre = this.normalizarNombreVendedor(
+        factura?.fa_nomVend ?? factura?.fa_nomvend,
+      );
+      return (!!codigo && codigosSet.has(codigo)) || (!!nombre && nombre === vendedorNombre);
+    });
+
+    const valorFacturado = facturasVendedor.reduce(
+      (total: number, factura: any) =>
+        total + this.numeroSeguro(factura?.fa_valFact ?? factura?.fa_valfact),
+      0,
+    );
+    const costoFacturado = facturasVendedor.reduce(
+      (total: number, factura: any) =>
+        total + this.numeroSeguro(factura?.fa_cosFact ?? factura?.fa_cosfact),
+      0,
+    );
+    const metaFacturar = this.numeroSeguro(
+      sucursal?.meta_ventas ?? sucursal?.meta_vents ?? sucursal?.metaVenta,
+    );
+
+    return {
+      metaFacturar,
+      totalFacturaSucursal: facturas.length,
+      valorFacturadoSucursal,
+      margenVentaSucursalPct: valorFacturadoSucursal
+        ? ((valorFacturadoSucursal - costoFacturadoSucursal) / valorFacturadoSucursal) * 100
+        : 0,
+      porcientoFacturadoSucursal: metaFacturar
+        ? (valorFacturadoSucursal / metaFacturar) * 100
+        : 0,
+      totalFactura: facturasVendedor.length,
+      valorFacturado,
+      margenVentaPct: valorFacturado
+        ? ((valorFacturado - costoFacturado) / valorFacturado) * 100
+        : 0,
+      porcientoFacturado: metaFacturar
+        ? (valorFacturado / metaFacturar) * 100
+        : 0,
+    };
+  }
+
+  private fechaIsoLocal(fecha: Date): string {
+    const year = fecha.getFullYear();
+    const month = String(fecha.getMonth() + 1).padStart(2, '0');
+    const day = String(fecha.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  private actualizarValorPerfil(id: string, valor: string): void {
+    const elemento = document.getElementById(id);
+    if (elemento) elemento.textContent = valor;
+  }
+
+  private normalizarIdentificadorVendedor(value: any): string {
+    const texto = String(value ?? '').trim().toLowerCase();
+    if (/^\d+$/.test(texto)) return String(Number(texto));
+    return texto.replace(/[^a-z0-9]/g, '');
+  }
+
+  private normalizarNombreVendedor(value: any): string {
+    return String(value ?? '')
+      .trim()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/\s+/g, ' ')
+      .toLowerCase();
+  }
+
+  private numeroSeguro(value: any): number {
+    const numero = Number(value);
+    return Number.isFinite(numero) ? numero : 0;
   }
 
   private buildFakeSalesReport(): {

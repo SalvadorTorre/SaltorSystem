@@ -13,6 +13,7 @@ export class SupabaseService {
   private readonly connectionTimeoutMs = 20000;
   private readonly connectionProbeTimeoutMs = 5000;
   private readonly storageUploadTimeoutMs = 10 * 60 * 1000;
+  private readonly edgeFunctionTimeoutMs = 2 * 60 * 1000;
   private clientInstance: ReturnType<typeof createClient> | null = null;
   private authListenerBound = false;
   private keepAliveTimer: ReturnType<typeof setInterval> | null = null;
@@ -169,9 +170,15 @@ export class SupabaseService {
   ): Promise<Response> {
     const controller = new AbortController();
     const isStorageUpload = this.isStorageUploadRequest(input, init);
+    const isEdgeFunction = this.isEdgeFunctionRequest(input);
+    const requestTimeoutMs = isStorageUpload
+      ? this.storageUploadTimeoutMs
+      : isEdgeFunction
+      ? this.edgeFunctionTimeoutMs
+      : this.connectionTimeoutMs;
     const timeout = setTimeout(
       () => controller.abort(),
-      isStorageUpload ? this.storageUploadTimeoutMs : this.connectionTimeoutMs,
+      requestTimeoutMs,
     );
 
     try {
@@ -248,6 +255,16 @@ export class SupabaseService {
       url.includes('/storage/v1/object/') &&
       ['POST', 'PUT', 'PATCH'].includes(method)
     );
+  }
+
+  private isEdgeFunctionRequest(input: RequestInfo | URL): boolean {
+    const url =
+      typeof input === 'string'
+        ? input
+        : input instanceof URL
+        ? input.toString()
+        : String((input as Request)?.url || '');
+    return url.includes('/functions/v1/');
   }
 
   private isConnectionError(error: any): boolean {

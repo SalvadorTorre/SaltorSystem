@@ -3591,7 +3591,10 @@ export class ServicioFacturacion {
 
     const resultados: any[] = [];
     let siguiente = 0;
-    const workers = Array.from({ length: Math.min(6, fechas.length) }, async () => {
+    // Evitar saturar PostgREST al consultar meses históricos. Seis días en
+    // paralelo podían provocar timeout en meses con mucho movimiento y hacía
+    // fallar todo el resumen del perfil.
+    const workers = Array.from({ length: Math.min(2, fechas.length) }, async () => {
       while (siguiente < fechas.length) {
         const indice = siguiente++;
         resultados.push(...await buscarDia(fechas[indice]));
