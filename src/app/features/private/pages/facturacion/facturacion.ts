@@ -3619,17 +3619,24 @@ export class Facturacion implements OnInit, OnDestroy {
     if (this.isLoading) {
       return;
     }
+    // Bloqueo atomico antes de la primera validacion asincrona. Sin esto,
+    // varios clics podian superar el control inicial y generar cada uno un
+    // numero de factura distinto.
+    this.isLoading = true;
 
     if (!(await this.validarCodigoVendedor(false, null))) {
+      this.isLoading = false;
       this.enfocarCampoFactura('input12');
       return;
     }
 
     if (!(await this.validarIdentificacionConsumidorFinalAltoMonto())) {
+      this.isLoading = false;
       return;
     }
 
     if (!(await this.validarRncAntesDeGuardar())) {
+      this.isLoading = false;
       return;
     }
 
@@ -3637,6 +3644,7 @@ export class Facturacion implements OnInit, OnDestroy {
       this.formularioFacturacion.get('fa_codfpago')?.value ?? '',
     ).trim();
     if (!formaPago) {
+      this.isLoading = false;
       await Swal.fire({
         icon: 'warning',
         title: 'Forma de pago requerida',
@@ -3651,6 +3659,7 @@ export class Facturacion implements OnInit, OnDestroy {
       this.formularioFacturacion.get('fa_envio')?.value ?? '',
     ).trim();
     if (!formaEnvio) {
+      this.isLoading = false;
       await Swal.fire({
         icon: 'warning',
         title: 'Forma de envio requerida',
@@ -3665,10 +3674,10 @@ export class Facturacion implements OnInit, OnDestroy {
       this.formularioFacturacion.get('fa_tipopago')?.value ?? 1,
     );
     if (tipoVentaActual === 2 && !(await this.validarLimiteCreditoAntesGuardar())) {
+      this.isLoading = false;
       return;
     }
 
-    this.isLoading = true;
     const date = new Date();
     this.formularioFacturacion.get('fa_valFact')?.patchValue(this.totalGral);
     this.formularioFacturacion.get('fa_itbiFact')?.patchValue(this.totalItbis);

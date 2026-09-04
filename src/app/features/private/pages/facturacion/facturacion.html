@@ -536,7 +536,7 @@
                 >
                   <i class="bi bi-pencil-square me-1"></i>Editar
                 </button>
-                <button class="btn btn-success flex-fill" (click)="guardarFacturacion()" [disabled]="isLoading || modoconsultaFacturacion">
+                <button type="button" class="btn btn-success flex-fill" (click)="guardarFacturacion()" [disabled]="isLoading || modoconsultaFacturacion">
                   <ng-container *ngIf="!isLoading"><i class="bi bi-check-circle me-1"></i>Guardar</ng-container>
                   <ng-container *ngIf="isLoading"><span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Guardando...</ng-container>
                 </button>
