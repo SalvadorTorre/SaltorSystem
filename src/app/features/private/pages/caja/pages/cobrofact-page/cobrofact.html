@@ -112,8 +112,9 @@
                       <button
                         *ngIf="!esFacturaPagadaConsulta(factura)"
                         class="btn btn-outline-primary btn-icon"
+                        [disabled]="facturaCuadrada(factura)"
                         (click)="$event.stopPropagation(); editarFacturacion(factura)"
-                        title="Editar factura"
+                        [title]="facturaCuadrada(factura) ? 'Factura incluida en un cierre de caja' : 'Editar factura'"
                       >
                         <i class="bi bi-pencil-square"></i>
                       </button>

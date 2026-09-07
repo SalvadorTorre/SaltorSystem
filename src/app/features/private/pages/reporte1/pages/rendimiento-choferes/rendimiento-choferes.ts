@@ -14,9 +14,13 @@ interface SalidaControlRow {
 
 interface DetSalidaRow {
   idsalida: number;
+  idsucursal?: number;
   codsalida: string;
   codfact: string;
   valfact: number;
+  fecfact?: string;
+  codchofer?: number | null;
+  nomchofer?: string | null;
 }
 
 interface ResumenChofer {
@@ -47,6 +51,7 @@ export class RendimientoChoferes implements OnInit {
   salidas: SalidaControlRow[] = [];
   detalles: DetSalidaRow[] = [];
   choferes: ResumenChofer[] = [];
+  private controlesAgrupados = 0;
 
   constructor(
     private readonly supabase: SupabaseService,
@@ -101,14 +106,16 @@ export class RendimientoChoferes implements OnInit {
     this.error = '';
 
     try {
-      this.salidas = await this.fetchSalidas();
-      this.detalles = await this.fetchDetalles(this.salidas.map((salida) => salida.id).filter(Boolean));
+      this.salidas = await this.fetchSalidasPorLotes();
+      this.detalles = await this.fetchDetallesPorCodigoSalida(this.salidas);
       this.choferes = this.agruparChoferes(this.salidas, this.detalles);
+      this.controlesAgrupados = new Set(this.salidas.map((salida) => salida.id)).size;
     } catch (err: any) {
       this.error = String(err?.message || 'No se pudo cargar el rendimiento de choferes.');
       this.salidas = [];
       this.detalles = [];
       this.choferes = [];
+      this.controlesAgrupados = 0;
     } finally {
       this.cargando = false;
     }
@@ -123,7 +130,7 @@ export class RendimientoChoferes implements OnInit {
   }
 
   get totalControles(): number {
-    return new Set(this.salidas.map((salida) => salida.id)).size;
+    return this.controlesAgrupados;
   }
 
   get choferLider(): ResumenChofer | null {
@@ -173,21 +180,102 @@ export class RendimientoChoferes implements OnInit {
     return client?.schema ? client.schema(this.supabase.schema) : client;
   }
 
+  private async fetchDetallesFiltrados(): Promise<DetSalidaRow[]> {
+    const rows = await this.fetchAllRows('detsalida', (query: any) => {
+      let q = query
+        .select('idsalida,idsucursal,codsalida,fecfact,codfact,valfact,codchofer,nomchofer')
+        .gte('fecfact', this.filtros.fechaInicio)
+        .lte('fecfact', this.filtros.fechaFin)
+        .order('codsalida', { ascending: false })
+        .order('codfact', { ascending: true });
+
+      if (this.filtros.sucursal) {
+        q = q.eq('idsucursal', Number(this.filtros.sucursal));
+      }
+      return q;
+    });
+
+    return rows.map((row: any) => ({
+      idsalida: Number(row?.idsalida || 0),
+      idsucursal: Number(row?.idsucursal || 0),
+      codsalida: String(row?.codsalida || '').trim(),
+      codfact: String(row?.codfact || '').trim(),
+      valfact: Number(row?.valfact || 0) || 0,
+      fecfact: String(row?.fecfact || '').slice(0, 10),
+      codchofer: this.toNumberOrNull(row?.codchofer),
+      nomchofer: String(row?.nomchofer || '').trim() || null,
+    })).filter((row: DetSalidaRow) => !!row.idsalida);
+  }
+
+  private agruparDetallesFiltrados(detalles: DetSalidaRow[]): ResumenChofer[] {
+    const resumen = new Map<string, ResumenChofer>();
+    const controlesPorChofer = new Map<string, Set<number>>();
+
+    detalles.forEach((detalle) => {
+      const codigo = detalle.codchofer !== null && detalle.codchofer !== undefined
+        ? String(detalle.codchofer)
+        : 'S/C';
+      const nombre = detalle.nomchofer || 'Sin chofer';
+      const key = `${codigo}|${nombre.toUpperCase()}`;
+      const actual = resumen.get(key) || {
+        codchofer: codigo,
+        nomchofer: nombre,
+        facturas: 0,
+        total: 0,
+        controles: 0,
+        sucursales: [],
+        ultimaSalida: detalle.fecfact || '',
+      };
+
+      actual.facturas += 1;
+      actual.total += detalle.valfact;
+      if (detalle.idsucursal && !actual.sucursales.includes(detalle.idsucursal)) {
+        actual.sucursales.push(detalle.idsucursal);
+      }
+      if ((detalle.fecfact || '') > actual.ultimaSalida) {
+        actual.ultimaSalida = detalle.fecfact || '';
+      }
+
+      const controles = controlesPorChofer.get(key) || new Set<number>();
+      controles.add(detalle.idsalida);
+      controlesPorChofer.set(key, controles);
+      resumen.set(key, actual);
+    });
+
+    return Array.from(resumen.entries())
+      .map(([key, chofer]) => ({
+        ...chofer,
+        controles: controlesPorChofer.get(key)?.size || 0,
+        sucursales: chofer.sucursales.sort((a, b) => a - b),
+      }))
+      .sort((a, b) => b.total - a.total);
+  }
+
   private async fetchSalidas(): Promise<SalidaControlRow[]> {
-    const rows = await this.fetchAllRows('salida', (query: any) => {
+    const construirConsulta = (query: any, ordenarPorFecha: boolean) => {
       let q = query
         .select('id,idsucursal,codsalida,fecsalida,codchofer,nomchofer')
         .gte('fecsalida', this.filtros.fechaInicio)
-        .lte('fecsalida', this.filtros.fechaFin)
-        .order('fecsalida', { ascending: false })
-        .order('id', { ascending: false });
+        .lte('fecsalida', this.filtros.fechaFin);
 
       if (this.filtros.sucursal) {
         q = q.eq('idsucursal', Number(this.filtros.sucursal));
       }
 
-      return q;
-    });
+      return ordenarPorFecha
+        ? q.order('fecsalida', { ascending: false }).order('id', { ascending: false })
+        : q.order('id', { ascending: false });
+    };
+
+    let rows: any[];
+    try {
+      rows = await this.fetchAllRows('salida', (query: any) => construirConsulta(query, true));
+    } catch (err: any) {
+      if (!this.esStatementTimeout(err)) throw err;
+      // Alternativa independiente del índice: recorre la clave primaria en
+      // lotes pequeños y aplica fecha/sucursal en memoria.
+      rows = await this.fetchSalidasPorLotes();
+    }
 
     return rows.map((row: any) => ({
       id: Number(row?.id || 0),
@@ -197,6 +285,75 @@ export class RendimientoChoferes implements OnInit {
       codchofer: this.toNumberOrNull(row?.codchofer),
       nomchofer: String(row?.nomchofer || '').trim() || null,
     })).filter((row: SalidaControlRow) => !!row.id);
+  }
+
+  private async fetchSalidasPorLotes(): Promise<any[]> {
+    const db = this.db();
+    const pageSize = 250;
+    const rows: any[] = [];
+    let ultimoId: number | null = null;
+
+    for (;;) {
+      let query = db
+        .from('salida')
+        .select('id,idsucursal,codsalida,fecsalida,codchofer,nomchofer')
+        .gte('fecsalida', this.filtros.fechaInicio)
+        .lte('fecsalida', this.filtros.fechaFin)
+        .order('id', { ascending: false })
+        .limit(pageSize);
+
+      if (this.filtros.sucursal) {
+        query = query.eq('idsucursal', Number(this.filtros.sucursal));
+      }
+
+      if (ultimoId !== null) {
+        query = query.lt('id', ultimoId);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      const page = Array.isArray(data) ? data : [];
+      if (!page.length) break;
+
+      rows.push(...page);
+
+      ultimoId = Number(page[page.length - 1]?.id || 0);
+      if (!ultimoId || page.length < pageSize) break;
+
+    }
+
+    return rows;
+  }
+
+  private async fetchDetallesPorCodigoSalida(salidas: SalidaControlRow[]): Promise<DetSalidaRow[]> {
+    const codigos = Array.from(new Set(
+      salidas.map((salida) => String(salida.codsalida || '').trim()).filter(Boolean),
+    ));
+    if (!codigos.length) return [];
+
+    const rows: any[] = [];
+    const concurrencia = 8;
+    for (let i = 0; i < codigos.length; i += concurrencia) {
+      const grupo = codigos.slice(i, i + concurrencia);
+      const resultados = await Promise.all(grupo.map(async (codigo) => {
+        const { data, error } = await this.db()
+          .from('detsalida')
+          .select('idsalida,codsalida,codfact,valfact')
+          .eq('codsalida', codigo)
+          .order('codfact', { ascending: true });
+        if (error) throw error;
+        return Array.isArray(data) ? data : [];
+      }));
+      resultados.forEach((resultado) => rows.push(...resultado));
+    }
+
+    return rows.map((row: any) => ({
+      idsalida: Number(row?.idsalida || 0),
+      codsalida: String(row?.codsalida || '').trim(),
+      codfact: String(row?.codfact || '').trim(),
+      valfact: Number(row?.valfact || 0) || 0,
+    })).filter((row: DetSalidaRow) => !!row.idsalida);
   }
 
   private async fetchDetalles(idsSalida: number[]): Promise<DetSalidaRow[]> {
@@ -310,6 +467,13 @@ export class RendimientoChoferes implements OnInit {
   private toNumberOrNull(value: any): number | null {
     const n = Number(value);
     return Number.isFinite(n) ? n : null;
+  }
+
+  private esStatementTimeout(error: any): boolean {
+    const texto = String(
+      error?.message || error?.details || error?.hint || error?.error?.message || '',
+    ).toLowerCase();
+    return error?.code === '57014' || texto.includes('statement timeout');
   }
 
   private fechaHoy(): string {

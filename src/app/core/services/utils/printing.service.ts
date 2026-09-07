@@ -1055,7 +1055,6 @@ export class PrintingService {
       yPos += 5;
 
       const e = entradaData;
-      const fecha = e.me_fecEntr ? new Date(e.me_fecEntr) : new Date();
       const formatDate = (date: Date) => {
         const d = new Date(date);
         const day = d.getDate().toString().padStart(2, '0');
@@ -1066,8 +1065,14 @@ export class PrintingService {
         return `${day}/${month}/${year} ${hours}:${minutes}`;
       };
 
-      const formatDateShort = (date: Date) => {
-        const d = new Date(date);
+      const formatDateShort = (value: Date | string | null | undefined) => {
+        const raw = String(value ?? '').trim();
+        const dateOnly = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (dateOnly) {
+          return `${dateOnly[3]}/${dateOnly[2]}/${dateOnly[1]}`;
+        }
+        const d = value ? new Date(value) : new Date();
+        if (Number.isNaN(d.getTime())) return '';
         const day = d.getDate().toString().padStart(2, '0');
         const month = (d.getMonth() + 1).toString().padStart(2, '0');
         const year = d.getFullYear();
@@ -1076,7 +1081,12 @@ export class PrintingService {
       const xLeft = leftMargin;
       const xRight = pageWidth - rightMargin;
       doc.text(`No. Entrada: ${e.me_codEntr || e.me_codentr || ''}`, xLeft, yPos);
-      doc.text(`Fecha: ${formatDateShort(fecha)}`, xRight, yPos, { align: 'right' });
+      doc.text(
+        `Fecha: ${formatDateShort(e.me_fecEntr ?? e.me_fecentr)}`,
+        xRight,
+        yPos,
+        { align: 'right' },
+      );
       yPos += 4;
       doc.text(`Suplidor: ${(e.me_nomSupl || '').toString()}`, xLeft, yPos);
       yPos += 4;

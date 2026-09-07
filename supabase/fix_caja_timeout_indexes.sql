@@ -17,11 +17,20 @@ CREATE INDEX IF NOT EXISTS idx_factura_caja_no_impresa_sucursal_fecha
 CREATE INDEX IF NOT EXISTS idx_salida_chofer_status_sucursal
   ON myappdb.salida (idsucursal, codchofer, status, id DESC);
 
+CREATE INDEX IF NOT EXISTS idx_salida_rendimiento_sucursal_fecha
+  ON myappdb.salida (idsucursal, fecsalida DESC, id DESC);
+
+CREATE INDEX IF NOT EXISTS idx_salida_rendimiento_fecha
+  ON myappdb.salida (fecsalida DESC, id DESC);
+
 CREATE INDEX IF NOT EXISTS idx_detsalida_codsalida_codfact
   ON myappdb.detsalida (codsalida, codfact);
 
 CREATE INDEX IF NOT EXISTS idx_detsalida_idsalida_codfact
   ON myappdb.detsalida (idsalida, codfact);
+
+CREATE INDEX IF NOT EXISTS idx_detsalida_rendimiento_sucursal_fecha
+  ON myappdb.detsalida (idsucursal, fecfact DESC, idsalida DESC);
 
 DO $$
 BEGIN

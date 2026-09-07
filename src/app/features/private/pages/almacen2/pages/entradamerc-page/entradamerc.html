@@ -35,7 +35,7 @@
             <label class="form-label">Nombre Suplidor</label>
             <div class="input-group">
               <span class="input-group-text"><i class="bi bi-search"></i></span>
-               <input #inputNombreSupl type="text" class="form-control enter-next" formControlName="me_nomSupl" (input)="toUpper('me_nomSupl', $event); buscarSuplidor()" (keydown)="onKeyDown($event)" autocomplete="off" placeholder="Buscar suplidor...">
+               <input #inputNombreSupl type="text" class="form-control enter-next" formControlName="me_nomSupl" (input)="onNombreSuplidorInput($event)" (keydown)="onKeyDown($event)" autocomplete="off" placeholder="Buscar o escribir suplidor...">
             </div>
             
             <ul class="list-group position-absolute w-100 shadow" style="z-index: 1000; top: 100%;" *ngIf="suplidoresBusqueda.length > 0">

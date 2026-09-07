@@ -735,6 +735,7 @@ export class ControlFact implements OnInit, OnDestroy {
       fa_entrega: [{ value: '', disabled: true }],
       fa_impresa: [{ value: '', disabled: true }],
       fa_facturada: [{ value: '', disabled: true }],
+      fa_cierre: [{ value: null, disabled: true }],
     });
   }
   limpia(): void {
@@ -874,7 +875,9 @@ export class ControlFact implements OnInit, OnDestroy {
     this.codFacturaselecte = factura.fa_codFact;
     console.log('ff', factura);
     this.habilitarIcono = false;
-    this.botonEditar = this.normalizarStatusFactura((factura as any)?.fa_status) !== 'C';
+    this.botonEditar =
+      this.normalizarStatusFactura((factura as any)?.fa_status) !== 'C' ||
+      this.facturaCuadrada(factura);
     this.botonGuardar = true; // Habilita el botón
     this.botonaddItems = true;
     const inputs = document.querySelectorAll('.seccion-productos input');
@@ -1023,6 +1026,15 @@ export class ControlFact implements OnInit, OnDestroy {
       this.normalizarFlagFactura(facturaActual?.fa_impresa) === 'S' &&
       this.normalizarFlagFactura(facturaActual?.fa_despacho) === 'N';
 
+    if (this.facturaCuadrada(facturaActual)) {
+      void Swal.fire(
+        'Factura cerrada',
+        `Esta factura pertenece al cierre ${facturaActual.fa_cierre} y no se puede editar.`,
+        'warning',
+      );
+      return;
+    }
+
     if (this.normalizarStatusFactura(this.formularioFacturacion.get('fa_status')?.value) !== 'C') {
       Swal.fire('Aviso', 'Solo puede editar facturas con status C.', 'warning');
       return;
@@ -1043,6 +1055,7 @@ export class ControlFact implements OnInit, OnDestroy {
     this.formularioFacturacion.get('fa_entrega')?.disable();
     this.formularioFacturacion.get('fa_impresa')?.disable();
     this.formularioFacturacion.get('fa_facturada')?.disable();
+    this.formularioFacturacion.get('fa_cierre')?.disable();
 
     this.limpiarCampos();
     this.habilitarCampos = !soloEncabezado;
@@ -1061,6 +1074,10 @@ export class ControlFact implements OnInit, OnDestroy {
     }
 
     //this.codMercselecte = detactura.fa_codFact;
+  }
+
+  facturaCuadrada(factura: any): boolean {
+    return Number(factura?.fa_cierre ?? factura?.faCierre ?? 0) > 0;
   }
   formatofecha(date: Date): string {
     const year = date.getFullYear();

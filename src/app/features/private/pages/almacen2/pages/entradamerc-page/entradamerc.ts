@@ -275,6 +275,14 @@ export class EntradaMercComponent implements OnInit, AfterViewInit {
     }
   }
 
+  onNombreSuplidorInput(event: Event): void {
+    // Si el usuario cambia el nombre manualmente, ya no se debe conservar el
+    // código de un suplidor seleccionado anteriormente.
+    this.entradaForm.patchValue({ me_codSupl: '' }, { emitEvent: false });
+    this.toUpper('me_nomSupl', event);
+    this.buscarSuplidor();
+  }
+
   seleccionarSuplidor(suplidor: any) {
     this.entradaForm.patchValue({
       me_codSupl: suplidor.su_codSupl,
@@ -428,7 +436,7 @@ guardarEntrada() {
     me_codEntr: this.entradaEditandoCodigo || null,
     me_fecEntr: this.toIsoDate(formValue.me_fecEntr),
     me_valEntr: this.calcularTotal(),
-    me_codSupl: this.toIntOrNull(formValue.me_codSupl),
+    me_codSupl: String(formValue.me_codSupl ?? '').trim() || null,
     me_nomSupl: formValue.me_nomSupl,
     me_facSupl: formValue.me_facSupl,
     me_ordencomp: formValue.me_ordencomp,

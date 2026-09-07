@@ -877,9 +877,29 @@ export class CobroFact implements OnInit {
     this.facturacionid = detFactura.df_codFact;
   }
   editarFacturacion(Factura: FacturacionModelData) {
+    if (this.facturaCuadrada(Factura)) {
+      void Swal.fire(
+        'Factura cerrada',
+        `Esta factura pertenece al cierre ${(Factura as any)?.fa_cierre} y no se puede editar.`,
+        'warning',
+      );
+      return;
+    }
     this.cargarFacturaCompleta(Factura, (facturaCompleta) => {
+      if (this.facturaCuadrada(facturaCompleta)) {
+        void Swal.fire(
+          'Factura cerrada',
+          `Esta factura pertenece al cierre ${(facturaCompleta as any)?.fa_cierre} y no se puede editar.`,
+          'warning',
+        );
+        return;
+      }
       this.editarFacturacionCompleta(facturaCompleta);
     });
+  }
+
+  facturaCuadrada(factura: any): boolean {
+    return Number(factura?.fa_cierre ?? factura?.faCierre ?? 0) > 0;
   }
 
   private editarFacturacionCompleta(Factura: FacturacionModelData) {

@@ -45,6 +45,7 @@ export interface FacturacionModelData {
   fa_imp: string;
   fa_envio: string;
   fa_reimpresa: string;
+  fa_cierre?: string | number | null;
   fa_fecha: string;
   fa_codEmpr: string;
   fa_despacho: string;

@@ -93,6 +93,7 @@ export class ServicioFacturacion {
     'fa_codsucu',
     'fa_codempr',
     'fa_reimpresa',
+    'fa_cierre',
   ].join(',');
   private readonly columnasDetalleFactura = [
     'id',
@@ -1647,6 +1648,11 @@ export class ServicioFacturacion {
         await facturaActualQuery.maybeSingle();
       if (facturaActualError) throw facturaActualError;
       if (!facturaActual) throw new Error(`No se encontrÃ³ la factura ${cod}.`);
+      if (Number(facturaActual.fa_cierre ?? 0) > 0) {
+        throw new Error(
+          `La factura ${cod} pertenece al cierre ${facturaActual.fa_cierre} y no se puede editar.`,
+        );
+      }
       const permitirEditarStatusC =
         payload?.permitirEditarStatusC === true &&
         String(facturaActual.fa_status || '').trim().toUpperCase() === 'C';
