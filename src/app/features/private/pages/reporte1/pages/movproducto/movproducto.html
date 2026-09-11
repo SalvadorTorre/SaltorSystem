@@ -54,10 +54,13 @@
       </select>
     </div>
     <div class="col-md-3 d-flex align-items-end">
-      <button class="btn btn-primary me-2" type="submit">Buscar</button>
+      <button class="btn btn-primary me-2" type="submit" [disabled]="cargando">
+        {{ cargando ? 'Consultando...' : 'Buscar' }}
+      </button>
       <button class="btn btn-secondary" type="button" (click)="limpiar()">Limpiar</button>
     </div>
   </form>
+  <div class="alert alert-danger" *ngIf="mensajeError">{{ mensajeError }}</div>
   <div class="alert alert-info mt-3">
 
 <strong>Existencia actual:</strong>
@@ -85,12 +88,12 @@
         <td>{{ formatFecha(mov.fecha) }}</td>
         <td>{{ mov.cliente }}</td>
         <td>{{ mov.origen }}</td>
-        <td>{{ mov.salida }}</td>
-        <td>{{ mov.entrada }}</td>
-        <td>{{ mov.balance }}</td>
-        <td>{{ mov.precio }}</td>
+        <td>{{ mov.salida | number:'1.0-2' }}</td>
+        <td>{{ mov.entrada | number:'1.0-2' }}</td>
+        <td>{{ mov.balance | number:'1.0-2' }}</td>
+        <td>{{ mov.precio | number:'1.2-2' }}</td>
       </tr>
-      <tr *ngIf="resultados.length === 0">
+      <tr *ngIf="!cargando && resultados.length === 0">
         <td colspan="8" class="text-center">No se encontraron movimientos</td>
       </tr>
     </tbody>

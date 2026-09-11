@@ -30,6 +30,8 @@ export class MovimientoProducto {
   sugerenciasCodigo: any[] = [];
   sugerenciasNombre: any[] = [];
   existenciaActual: number = 0;
+  cargando = false;
+  mensajeError = '';
   idxCodigo = -1;
   idxNombre = -1;
   nombreDeshabilitado = false;
@@ -107,28 +109,36 @@ export class MovimientoProducto {
 //   });
 
 // }
-filtrar() {
-
-  const { fechaInicio, fechaFin, codigo, tipo } = this.filtroForm.value;
-
-  this.reporteSrv.buscarMovimientosPorProducto(
-    codigo,
-    fechaInicio,
-    fechaFin,
-    tipo
-  ).subscribe({
-
-    next:(resp:any)=>{
-
-      this.resultados = resp?.data?.rows || [];
-
-      this.existenciaActual = resp?.data?.existenciaActual || 0;
-
+  filtrar() {
+    const { fechaInicio, fechaFin, codigo, tipo } = this.filtroForm.value;
+    const producto = String(codigo || '').trim();
+    this.mensajeError = '';
+    if (!producto) {
+      this.resultados = [];
+      this.mensajeError = 'Seleccione un producto antes de buscar.';
+      this.codigoInput?.nativeElement?.focus();
+      return;
+    }
+    if (fechaInicio && fechaFin && fechaInicio > fechaFin) {
+      this.mensajeError = 'La fecha inicial no puede ser mayor que la fecha final.';
+      return;
     }
 
-  });
-
-}
+    this.cargando = true;
+    this.reporteSrv.buscarMovimientosPorProducto(producto, fechaInicio, fechaFin, tipo).subscribe({
+      next: (resp: any) => {
+        this.resultados = resp?.data?.rows || [];
+        this.existenciaActual = Number(resp?.data?.existenciaActual || 0);
+        this.cargando = false;
+      },
+      error: (error: any) => {
+        console.error('Error consultando movimientos del producto', error);
+        this.resultados = [];
+        this.cargando = false;
+        this.mensajeError = error?.message || 'No se pudieron cargar los movimientos del producto.';
+      },
+    });
+  }
   limpiar() {
     const hoy = new Date();
     const yyyy = hoy.getFullYear();
@@ -154,6 +164,8 @@ filtrar() {
     this.sugerenciasNombre = [];
     this.idxCodigo = -1;
     this.idxNombre = -1;
+    this.existenciaActual = 0;
+    this.mensajeError = '';
   }
 
   focusNext(desde: 'codigo' | 'nombre' | 'fechaInicio' | 'fechaFin' | 'tipo'): void {

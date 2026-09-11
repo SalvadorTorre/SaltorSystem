@@ -274,7 +274,7 @@
             </button>
             <button
               class="btn btn-primary btn-sm"
-              [disabled]="facturaSoloConsulta || !chekPagado || bloquearCobroDgiiPorEnvioNcfSinPago || bloquearReimpresion || procesandoCobroDgii"
+              [disabled]="!puedeCobrarYEnviarDgii"
               [title]="bloquearReimpresion ? 'Pendiente de pago: impresión deshabilitada' : ''"
               (click)="buscarFactura()"
             >

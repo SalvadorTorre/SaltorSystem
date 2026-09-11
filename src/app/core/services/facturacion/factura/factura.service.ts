@@ -80,6 +80,7 @@ export class ServicioFacturacion {
     'fa_nomclie',
     'fa_nomvend',
     'fa_fecfact',
+    'fa_expfact',
     'fa_envio',
     'fa_status',
     'fa_valfact',

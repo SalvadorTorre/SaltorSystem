@@ -333,6 +333,7 @@ Deno.serve(async (req: Request) => {
           "x-cert-p12-b64": certB64,
           "x-cert-password": certPassword,
           "x-cert-rnc": certRnc,
+          "x-cert-persist": "true",
         },
         body: JSON.stringify(payload),
       });

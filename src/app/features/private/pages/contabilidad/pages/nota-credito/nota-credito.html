@@ -319,9 +319,9 @@
               <button
                 class="btn btn-outline-warning btn-sm me-1"
                 type="button"
-                title="Editar nota de crédito"
+                [title]="puedeEditarNota(nota) ? 'Editar nota de crédito' : 'La nota aceptada por DGII no se puede editar'"
                 aria-label="Editar nota de crédito"
-                [disabled]="!!notaEditando"
+                [disabled]="!!notaEditando || !puedeEditarNota(nota)"
                 (click)="editarNota(nota)"
               >
                 <i
@@ -345,8 +345,8 @@
                 *ngIf="esEstadoRechazado(nota)"
                 class="btn btn-warning btn-sm me-1"
                 type="button"
-                title="Editar y eliminar e-NCF"
-                aria-label="Editar y eliminar e-NCF"
+                title="Eliminar e-NCF y editar la nota completa"
+                aria-label="Eliminar e-NCF y editar la nota completa"
                 [disabled]="!!notaEliminandoEncf"
                 (click)="abrirEliminarEncf(nota)"
               >

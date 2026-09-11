@@ -145,12 +145,24 @@ export class NotaCreditoComponent implements OnInit {
     const numero = String(nota?.nc_numero || '').trim();
     if (!numero || this.notaEditando) return;
 
+    if (!this.puedeEditarNota(nota)) {
+      await Swal.fire(
+        'Edicion bloqueada',
+        `La nota de credito ${numero} ya fue aceptada por la DGII y no puede modificarse.`,
+        'warning',
+      );
+      return;
+    }
+
     this.notaEditando = numero;
     try {
       const response = await firstValueFrom(this.notaCreditoService.consultar(numero));
       const header = response?.data?.header;
       const lines = Array.isArray(response?.data?.lines) ? response.data.lines : [];
       if (!header) throw new Error('No se encontro la nota de credito.');
+      if (!this.puedeEditarNota(header)) {
+        throw new Error(`La nota de credito ${numero} ya fue aceptada por la DGII y no puede modificarse.`);
+      }
 
       this.cargarNotaGuardada(header, lines);
       this.activeSection = 'crear';
@@ -386,6 +398,11 @@ export class NotaCreditoComponent implements OnInit {
     return estado.includes('rechaz') || estado.includes('error');
   }
 
+  puedeEditarNota(nota: any): boolean {
+    const estado = String(nota?.estado_dgii || '').trim().toLowerCase();
+    return !estado.includes('acept');
+  }
+
   async abrirEliminarEncf(nota: any): Promise<void> {
     if (!this.esEstadoRechazado(nota) || this.notaEliminandoEncf) return;
     const numero = String(nota?.nc_numero || '').trim();
@@ -405,7 +422,7 @@ export class NotaCreditoComponent implements OnInit {
         </div>`,
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonText: 'Eliminar e-NCF',
+      confirmButtonText: 'Eliminar e-NCF y editar',
       cancelButtonText: 'Cancelar',
       confirmButtonColor: '#dc3545',
       reverseButtons: true,
@@ -416,7 +433,21 @@ export class NotaCreditoComponent implements OnInit {
     try {
       const response = await firstValueFrom(this.notaCreditoService.eliminarEncfRechazado(numero));
       Object.assign(nota, response?.data || {}, { nc_encf: null });
-      await Swal.fire('Actualizado', `Se elimino el e-NCF de la nota ${numero}.`, 'success');
+      const consulta = await firstValueFrom(this.notaCreditoService.consultar(numero));
+      const header = consulta?.data?.header;
+      const lines = Array.isArray(consulta?.data?.lines) ? consulta.data.lines : [];
+      if (!header) throw new Error(`No se pudo cargar la nota de credito ${numero} para editar.`);
+
+      this.cargarNotaGuardada(header, lines);
+      this.activeSection = 'crear';
+      this.notaConsultada = null;
+      this.detalleConsultado = [];
+      await Swal.fire(
+        'Lista para editar',
+        `Se elimino el e-NCF y se cargaron los detalles de la nota ${numero}.`,
+        'success',
+      );
+      setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 0);
     } catch (error: any) {
       await Swal.fire('Error', String(error?.message || 'No se pudo eliminar el e-NCF.'), 'error');
     } finally {

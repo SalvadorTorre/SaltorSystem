@@ -277,6 +277,19 @@ export class NotaCreditoService {
         throw new Error('Debe indicar el numero de nota de credito.');
       }
 
+      const { data: notaExistente, error: estadoError } = await this.db
+        .from('nota_credito')
+        .select('nc_numero,estado_dgii')
+        .eq('nc_numero', ncNumero)
+        .eq('fa_codempr', tenant.codempr)
+        .eq('fa_codsucu', tenant.codsucu)
+        .maybeSingle();
+      if (estadoError) throw estadoError;
+      const estadoActual = String(notaExistente?.estado_dgii || '').trim().toLowerCase();
+      if (estadoActual.includes('acept')) {
+        throw new Error(`La nota de credito ${ncNumero} ya fue aceptada por la DGII y no puede modificarse.`);
+      }
+
       const { data: savedHeader, error: headerError } = await this.db
         .from('nota_credito')
         .upsert(header, { onConflict: 'nc_numero' })

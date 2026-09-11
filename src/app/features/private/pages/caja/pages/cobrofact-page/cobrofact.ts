@@ -345,6 +345,23 @@ export class CobroFact implements OnInit {
     return Number(factura?.fa_tipopago ?? factura?.fa_tipoPago ?? 0) === 2;
   }
 
+  get facturaSeleccionadaEsCredito(): boolean {
+    return this.hayFacturaSeleccionada && this.esFacturaCredito({
+      ...(this.DatosSeleccionado || {}),
+      ...(this.facturaSelecionada || {}),
+    });
+  }
+
+  get puedeCobrarYEnviarDgii(): boolean {
+    return (
+      !this.facturaSoloConsulta &&
+      (this.chekPagado || this.facturaSeleccionadaEsCredito) &&
+      !this.bloquearCobroDgiiPorEnvioNcfSinPago &&
+      !this.bloquearReimpresion &&
+      !this.procesandoCobroDgii
+    );
+  }
+
   nombreClienteGridLineas(nombre: any): string[] {
     const limpio = String(nombre || 'Sin nombre').replace(/\s+/g, ' ').trim();
     if (limpio.length <= 24) return [limpio];
@@ -403,7 +420,8 @@ export class CobroFact implements OnInit {
       this.hayFacturaSeleccionada &&
       this.esEntregaEnvio &&
       tipoNcf !== '32' &&
-      !this.chekPagado
+      !this.chekPagado &&
+      !this.facturaSeleccionadaEsCredito
     );
   }
 
@@ -2690,10 +2708,15 @@ export class CobroFact implements OnInit {
     if (this.facturaSoloConsulta) return;
     if (this.bloquearReimpresion) return;
     if (this.procesandoCobroDgii) return;
+    const tipoPagoFiscal = this.facturaSeleccionadaEsCredito ? 2 : Number(
+      (this.DatosSeleccionado as any)?.fa_tipopago ??
+      (this.facturaSelecionada as any)?.fa_tipopago ??
+      1,
+    );
     if (this.bloquearCobroDgiiPorEnvioNcfSinPago) {
       Swal.fire(
         'Aviso',
-        'Para enviar a DGII una factura de envio con tipo NCF diferente a 32 debe marcarla como pagada.',
+        'Para enviar a DGII una factura de envio con tipo NCF diferente a 32 debe marcarla como pagada, excepto cuando sea una venta a credito.',
         'warning',
       );
       return;
@@ -2717,6 +2740,7 @@ export class CobroFact implements OnInit {
       fa_fpago: this.chekPagado ? 'S' : 'N',
       fa_envio: this.fentrega,
       fa_codfpago: this.ftipoPago,
+      fa_tipopago: tipoPagoFiscal,
       fa_origenpago: this.chekPagado ? this.origenPagoSeleccionado : '',
       fa_confirpago: this.chekPagado ? this.confirmacionPago : '',
       fa_notapago: this.chekPagado ? this.notaPago : '',
@@ -2749,6 +2773,7 @@ export class CobroFact implements OnInit {
               ...(resp?.data || {}),
               fa_envio: this.fentrega,
               fa_codfpago: this.ftipoPago,
+              fa_tipopago: tipoPagoFiscal,
               fa_fpago: payload.fa_fpago,
               fa_origenpago: payload.fa_origenpago,
               fa_confirpago: payload.fa_confirpago,

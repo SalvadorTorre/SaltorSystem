@@ -221,8 +221,18 @@ export class FacturaDgiiService {
     if (['U', 'N'].includes(status)) return 'La factura está anulada o no es válida para enviar.';
     const pago = String(factura?.fa_fpago ?? '').trim().toUpperCase();
     const pagada = pago === 'S' || pago === 'P';
+    const tipoPago = Number(factura?.fa_tipopago ?? factura?.fa_tipoPago ?? 0);
+    const impresa = String(factura?.fa_impresa ?? factura?.faImpresa ?? '')
+      .trim()
+      .toUpperCase();
+    const creditoImpresaPendiente =
+      tipoPago === 2 &&
+      pago === 'N' &&
+      ['S', '1', 'TRUE', 'SI', 'Y'].includes(impresa);
 
-    if (!pagada) return 'La factura debe estar pagada para enviarse a DGII.';
+    if (!pagada && !creditoImpresaPendiente) {
+      return 'La factura debe estar pagada, o ser una factura a crédito impresa y pendiente de pago, para enviarse a DGII.';
+    }
     return '';
   }
 
