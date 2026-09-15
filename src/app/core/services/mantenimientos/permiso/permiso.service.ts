@@ -361,6 +361,7 @@ export class ServicioPermiso {
           ],
           recursos: modulos || [],
           filas,
+          personalizado: (permisos || []).length > 0,
           modo: "legacy" as const
         };
       }
@@ -421,6 +422,7 @@ export class ServicioPermiso {
         acciones: acciones || [],
         recursos: recursos || [],
         filas,
+        personalizado: (asignaciones || []).length > 0,
         modo: "v2" as const
       };
     })()).pipe(
@@ -607,12 +609,11 @@ export class ServicioPermiso {
         const recursoKey = String(f.recurso_key || "").trim();
         if (!recursoKey) return;
         Object.entries(f.acciones || {}).forEach(([accionKey, permitido]) => {
-          if (!permitido) return;
           rowsToInsert.push({
             codusuario: userId,
             recurso_key: recursoKey,
             accion_key: accionKey,
-            permitido: true,
+            permitido: !!permitido,
             cod_empre: emp,
             sucursalid: suc,
             activo: true,

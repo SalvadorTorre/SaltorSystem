@@ -20,6 +20,7 @@ interface DefaultPermissionTemplate {
 export class AccessControlService {
   private readonly loaded$ = new BehaviorSubject<boolean>(false);
   private permisos: PermisoMatrizFila[] = [];
+  private tienePermisosPersonalizados = false;
   private loadingPromise: Promise<void> | null = null;
 
   constructor(private readonly permisoSrv: ServicioPermiso) {}
@@ -42,6 +43,7 @@ export class AccessControlService {
 
   reset(): void {
     this.permisos = [];
+    this.tienePermisosPersonalizados = false;
     this.loaded$.next(false);
     this.loadingPromise = null;
   }
@@ -84,16 +86,15 @@ export class AccessControlService {
       return true;
     }
 
-    const allowed = this.getAllowedPermisos();
-    if (!allowed.length) {
-      return this.canViewByDefaultRole(normalizedPath);
+    const permisoEspecifico = this.findPermisoForPath(normalizedPath);
+    if (permisoEspecifico) {
+      return this.hasViewAccess(permisoEspecifico);
     }
 
-    return allowed.some((permiso) => {
-      const ruta = this.resolveRouteForPermiso(permiso);
-      if (!ruta) return false;
-      return this.pathMatchesRoute(normalizedPath, ruta);
-    });
+    if (!this.permisos.length) {
+      return this.canViewByDefaultRole(normalizedPath);
+    }
+    return false;
   }
 
   canViewModule(modulePrefix: string): boolean {
@@ -107,7 +108,9 @@ export class AccessControlService {
 
     const allowed = this.getAllowedPermisos();
     if (!allowed.length) {
-      return this.canViewByDefaultRole(normalizedPrefix, true);
+      return this.tienePermisosPersonalizados
+        ? false
+        : this.canViewByDefaultRole(normalizedPrefix, true);
     }
 
     return allowed.some((permiso) => {
@@ -160,6 +163,7 @@ export class AccessControlService {
   private async loadPermisos(force: boolean): Promise<void> {
     if (force) {
       this.permisos = [];
+      this.tienePermisosPersonalizados = false;
       this.loaded$.next(false);
     }
 
@@ -172,12 +176,6 @@ export class AccessControlService {
           '',
       ).trim() || null;
     const sucursalid = Number(localStorage.getItem('idSucursal') || 0) || null;
-
-    if (this.shouldBypassByRole()) {
-      this.permisos = [];
-      this.loaded$.next(true);
-      return;
-    }
 
     if (!codusuario) {
       this.permisos = [];
@@ -196,8 +194,12 @@ export class AccessControlService {
       const userRows = Array.isArray(userResponse?.data?.filas)
         ? userResponse.data.filas
         : [];
+      this.tienePermisosPersonalizados =
+        typeof userResponse?.data?.personalizado === 'boolean'
+          ? userResponse.data.personalizado
+          : this.hasAnyConfiguredAction(userRows);
 
-      if (this.hasAnyConfiguredAction(userRows) || !idtipousuario) {
+      if (this.tienePermisosPersonalizados || !idtipousuario) {
         this.permisos = userRows;
       } else {
         const typeResponse: any = await firstValueFrom(
@@ -210,6 +212,7 @@ export class AccessControlService {
     } catch (error) {
       console.error('No se pudieron cargar los permisos del usuario actual', error);
       this.permisos = [];
+      this.tienePermisosPersonalizados = false;
     } finally {
       this.loaded$.next(true);
     }
@@ -260,7 +263,7 @@ export class AccessControlService {
 
   private shouldBypassByRole(): boolean {
     const template = this.getDefaultTemplate(this.currentRoleLabel());
-    return !!template?.allowAll;
+    return !!template?.allowAll && !this.tienePermisosPersonalizados;
   }
 
   private canViewByDefaultRole(path: string, treatAsPrefix = false): boolean {
@@ -276,11 +279,19 @@ export class AccessControlService {
     const normalizedPath = this.normalizePath(path);
     if (!normalizedPath) return null;
 
-    return this.getAllowedPermisos().find((permiso) => {
-      const ruta = this.resolveRouteForPermiso(permiso);
-      if (!ruta) return false;
-      return this.pathMatchesRoute(normalizedPath, ruta);
-    }) || null;
+    const coincidencias = this.permisos
+      .map((permiso) => ({
+        permiso,
+        ruta: this.resolveRouteForPermiso(permiso),
+      }))
+      .filter(
+        (item): item is { permiso: PermisoMatrizFila; ruta: string } =>
+          !!item.ruta && this.pathMatchesRoute(normalizedPath, item.ruta),
+      )
+      .sort((a, b) => b.ruta.length - a.ruta.length);
+
+    // La pantalla más específica prevalece sobre un permiso general del módulo.
+    return coincidencias[0]?.permiso || null;
   }
 
   private currentRole(): KnownRole {
