@@ -61,6 +61,7 @@ import { ModeloNcfData } from 'src/app/core/services/mantenimientos/ncf';
 import { ServicioSalidafactura } from 'src/app/core/services/almacen/salidafactura/salidafactura.service';
 import { ItbisData, ServicioItbis } from 'src/app/core/services/mantenimientos/itbis/itbis.service';
 import { FacturaDgiiService } from 'src/app/core/services/facturacion/factura/factura-dgii.service';
+import { ServicioSucursal } from 'src/app/core/services/mantenimientos/sucursal/sucursal.service';
 declare var $: any;
 
 interface ResumenConsultaFactura {
@@ -232,6 +233,7 @@ export class Facturacion implements OnInit, OnDestroy {
     private servicioSalidaFactura: ServicioSalidafactura,
     private servicioItbis: ServicioItbis,
     private facturaDgiiService: FacturaDgiiService,
+    private servicioSucursal: ServicioSucursal,
   ) {
     this.form = this.fb.group({
       fa_codVend: ['', Validators.required], // El campo es requerido
@@ -4119,6 +4121,34 @@ export class Facturacion implements OnInit, OnDestroy {
         empresa = {};
       }
 
+      const codigoSucursalFactura = Number(
+        factura.fa_codSucu ?? factura.fa_codsucu ?? localStorage.getItem('idSucursal') ?? 0,
+      );
+      const codigoEmpresaFactura = String(
+        factura.fa_codEmpr ??
+        factura.fa_codempr ??
+        localStorage.getItem('codigoempresa') ??
+        localStorage.getItem('cod_empre') ??
+        '',
+      ).trim();
+      let sucursal: any = {};
+      if (codigoSucursalFactura > 0) {
+        try {
+          const respuestaSucursal = await firstValueFrom(
+            this.servicioSucursal.buscarsucursal(
+              String(codigoSucursalFactura),
+              codigoEmpresaFactura,
+            ),
+          );
+          sucursal = respuestaSucursal?.data ?? respuestaSucursal ?? {};
+        } catch (errorSucursal) {
+          console.warn('No se pudieron consultar los datos de la sucursal para el PDF:', errorSucursal);
+        }
+      }
+
+      const esSucursalSesion =
+        codigoSucursalFactura === Number(localStorage.getItem('idSucursal') || 0);
+
       const nombreEmpresa = texto(
         empresa?.nom_empre || empresa?.em_nomempre || empresa?.nombre,
         'CENTRO HIERRO MARCOS SRL',
@@ -4127,12 +4157,16 @@ export class Facturacion implements OnInit, OnDestroy {
         empresa?.rnc_empre || empresa?.em_rnc || empresa?.rnc || localStorage.getItem('rnc_empresa'),
         '',
       );
-      const direccionEmpresa = texto(
-        empresa?.dir_empre || empresa?.em_direccion || empresa?.direccion || localStorage.getItem('direccion_empresa'),
+      const direccionSucursal = texto(
+        sucursal?.dir_sucursal ||
+        sucursal?.direccion ||
+        (esSucursalSesion ? localStorage.getItem('direccion_sucursal') : ''),
         '',
       );
-      const telefonoEmpresa = texto(
-        empresa?.tel_empre || empresa?.em_telefono || empresa?.telefono || localStorage.getItem('telefono_empresa'),
+      const telefonoSucursal = texto(
+        sucursal?.tel_sucursal ||
+        sucursal?.telefono ||
+        (esSucursalSesion ? localStorage.getItem('telefono_sucursal') : ''),
         '',
       );
       const estadoDgii = texto(factura.estado_dgii || factura.estado_envio_dgii, 'Enviada');
@@ -4152,8 +4186,8 @@ export class Facturacion implements OnInit, OnDestroy {
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(9);
       if (rncEmpresa) doc.text(`RNC: ${rncEmpresa}`, 44, 24);
-      if (direccionEmpresa) doc.text(doc.splitTextToSize(direccionEmpresa, 100), 44, 29);
-      if (telefonoEmpresa) doc.text(`Tel.: ${telefonoEmpresa}`, 44, 38);
+      if (direccionSucursal) doc.text(doc.splitTextToSize(direccionSucursal, 100), 44, 29);
+      if (telefonoSucursal) doc.text(`Tel.: ${telefonoSucursal}`, 44, 38);
 
       doc.setFillColor(15, 118, 110);
       doc.roundedRect(145, 12, 50, 25, 2, 2, 'F');

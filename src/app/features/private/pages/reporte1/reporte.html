@@ -18,21 +18,21 @@
 
     <nav class="reports-nav">
       <p class="reports-section-title">Ventas</p>
-      <a class="reports-link reports-link--featured" routerLinkActive="active" [routerLink]="['consulta-ventas']">
+      <a class="reports-link reports-link--featured" routerLinkActive="active" [routerLink]="['/private/reporte/consulta-ventas']">
         <i class="bi bi-speedometer2"></i>
         <span>
           Dashboard de ventas
           <small>KPIs, sucursales y exportación</small>
         </span>
       </a>
-      <a class="reports-link" routerLinkActive="active" [routerLink]="['ventas-vendedor']">
+      <a class="reports-link" routerLinkActive="active" [routerLink]="['/private/reporte/ventas-vendedor']">
         <i class="bi bi-person-lines-fill"></i>
         <span>
           Ventas por vendedor
           <small>Rendimiento comercial</small>
         </span>
       </a>
-      <a class="reports-link" routerLinkActive="active" [routerLink]="['rendimiento-choferes']">
+      <a class="reports-link" routerLinkActive="active" [routerLink]="['/private/reporte/rendimiento-choferes']">
         <i class="bi bi-truck"></i>
         <span>
           Rendimientos choferes
@@ -41,7 +41,7 @@
       </a>
 
       <p class="reports-section-title">Inventario</p>
-      <a class="reports-link" routerLinkActive="active" [routerLink]="['movproducto']">
+      <a class="reports-link" routerLinkActive="active" [routerLink]="['/private/reporte/movproducto']">
         <i class="bi bi-box-seam"></i>
         <span>
           Mov. por productos
@@ -89,21 +89,21 @@
     <div class="offcanvas-body">
       <nav class="reports-nav">
         <p class="reports-section-title">Ventas</p>
-        <a class="reports-link reports-link--featured" routerLinkActive="active" [routerLink]="['consulta-ventas']" data-bs-dismiss="offcanvas">
+        <a class="reports-link reports-link--featured" routerLinkActive="active" [routerLink]="['/private/reporte/consulta-ventas']" data-bs-dismiss="offcanvas">
           <i class="bi bi-speedometer2"></i>
           <span>Dashboard de ventas<small>KPIs y exportación</small></span>
         </a>
-        <a class="reports-link" routerLinkActive="active" [routerLink]="['ventas-vendedor']" data-bs-dismiss="offcanvas">
+        <a class="reports-link" routerLinkActive="active" [routerLink]="['/private/reporte/ventas-vendedor']" data-bs-dismiss="offcanvas">
           <i class="bi bi-person-lines-fill"></i>
           <span>Ventas por vendedor<small>Rendimiento comercial</small></span>
         </a>
-        <a class="reports-link" routerLinkActive="active" [routerLink]="['rendimiento-choferes']" data-bs-dismiss="offcanvas">
+        <a class="reports-link" routerLinkActive="active" [routerLink]="['/private/reporte/rendimiento-choferes']" data-bs-dismiss="offcanvas">
           <i class="bi bi-truck"></i>
           <span>Rendimientos choferes<small>Facturas asignadas</small></span>
         </a>
 
         <p class="reports-section-title">Inventario</p>
-        <a class="reports-link" routerLinkActive="active" [routerLink]="['movproducto']" data-bs-dismiss="offcanvas">
+        <a class="reports-link" routerLinkActive="active" [routerLink]="['/private/reporte/movproducto']" data-bs-dismiss="offcanvas">
           <i class="bi bi-box-seam"></i>
           <span>Mov. por productos<small>Trazabilidad</small></span>
         </a>

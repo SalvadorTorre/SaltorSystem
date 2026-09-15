@@ -203,10 +203,7 @@
   aria-labelledby="tituloModalCotizacion"
   aria-hidden="true"
   data-bs-backdrop="static"
-  data-bs-keyboard="false"
->
-
-
+  data-bs-keyboard="false">
   <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
     <div class="modal-content shadow-lg border-0">
       <div class="modal-header text-white cotizacion-header">
@@ -238,7 +235,7 @@
                 </div>
                 <div class="card-body">
                   <div class="row g-1">
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                       <label class="form-label small text-muted fw-semibold"
                         >RNC / Cédula</label
                       >
@@ -295,13 +292,24 @@
                         </div>
                       </div>
                     </div>
-                      <div class="col-3">
+                    <div class="col-2">
                       <label class="form-label small text-muted fw-semibold"
                         >No. Cotización</label
                       >
                       <input
                         type="text"
                         formControlName="ct_codcoti"
+                        class="form-control"
+                        readonly
+                      />
+                    </div>
+                    <div class="col-2">
+                      <label class="form-label small text-muted fw-semibold"
+                        >Fecha</label
+                      >
+                      <input
+                        formControlName="ct_feccoti"
+                        type="text"
                         class="form-control"
                         readonly
                       />
@@ -320,7 +328,7 @@
                         placeholder="Dirección del cliente"
                       />
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                       <label class="form-label small text-muted fw-semibold"
                         >Teléfono</label
                       >
@@ -333,7 +341,7 @@
                         placeholder="(000) 000-0000"
                       />
                     </div>
-                    <div class="col-3">
+                    <!-- <div class="col-3">
                       <label class="form-label small text-muted fw-semibold"
                         >Fecha</label
                       >
@@ -343,10 +351,10 @@
                         class="form-control"
                         readonly
                       />
-                    </div>
-                    <div class="col-3">
+                    </div> -->
+                    <div class="col-1">
                       <label class="form-label small text-muted fw-semibold"
-                        >Código Vendedor</label
+                        >Cód. Vendedor</label
                       >
                       <input
                         type="password"
@@ -367,7 +375,7 @@
                         es obligatorio
                       </div>
                     </div>
-                    <div class="col-6">
+                    <div class="col-3">
                       <label class="form-label small text-muted fw-semibold"
                         >Nombre Vendedor</label
                       >
@@ -452,6 +460,8 @@
                       type="text"
                       #codigoInput
                       autocomplete="off"
+                      (focus)="reactivarBusquedaCodigo()"
+                      (input)="reactivarBusquedaCodigo()"
                       (ngModelChange)="codmerc = $event?.toUpperCase()"
                       (keydown)="handleKeydownInventario($event)"
                       (keydown)="moveFocuscodmerc($event, input7)"
@@ -501,6 +511,8 @@
                       type="text"
                       #descripcionInput
                       autocomplete="off"
+                      (focus)="reactivarBusquedaDescripcion()"
+                      (input)="reactivarBusquedaDescripcion()"
                       (ngModelChange)="descripcionmerc = $event?.toUpperCase()"
                       (keydown)="moveFocusdesc($event, input8)"
                       (keydown)="handleKeydownInventariosdesc($event)"
@@ -560,7 +572,6 @@
                       [formControl]="precioform"
                     id="input9"
                     #input9
-                    (keydown)="moveFocus($event, input6)"
                     class="form-control"
                     [class.is-invalid]="precioMenorIgualCosto"
                     (keydown.enter)="agregaItem($event)"
@@ -677,7 +688,7 @@
           <section class="info-producto-cotizacion card border-0 shadow-sm bg-light mt-3">
             <div class="card-body p-3">
               <h6 class="text-primary fw-bold mb-3 small text-uppercase info-producto-titulo">
-                <i class="bi bi-info-circle me-2"></i>Información del Producto
+                <i class="bi bi-info-circle me-2"></i>Información y precios sugeridos del Producto
               </h6>
 
               <div class="row g-3 mb-4">
@@ -716,9 +727,9 @@
                 </div>
               </div>
 
-              <h6 class="text-secondary fw-bold mb-3 small text-uppercase border-top pt-3 info-producto-titulo">
+              <!-- <h6 class="text-secondary fw-bold mb-3 small text-uppercase border-top pt-3 info-producto-titulo">
                 <i class="bi bi-graph-up-arrow me-2"></i>Precios Sugeridos
-              </h6>
+              </h6> -->
               <div class="precios-sugeridos-grid">
                 <div class="precio-sugerido"><span>5%</span><strong>{{ formatNumber(atxt) }}</strong></div>
                 <div class="precio-sugerido"><span>7%</span><strong>{{ formatNumber(btxt) }}</strong></div>

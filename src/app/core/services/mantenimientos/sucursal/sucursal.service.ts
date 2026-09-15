@@ -165,13 +165,16 @@ export class ServicioSucursal {
     );
   }
 
-  buscarsucursal(cod_sucursal: string): Observable<any> {
+  buscarsucursal(cod_sucursal: string, cod_empre?: string | null): Observable<any> {
     return from((async () => {
-      const { data, error } = await this.db
+      let query = this.db
         .from('sucursales')
         .select('*')
-        .eq('cod_sucursal', Number(cod_sucursal))
-        .maybeSingle();
+        .eq('cod_sucursal', Number(cod_sucursal));
+      const empresa = String(cod_empre || '').trim();
+      if (empresa) query = query.eq('cod_empre', empresa);
+
+      const { data, error } = await query.limit(1).maybeSingle();
       if (error) throw error;
       return data;
     })()).pipe(

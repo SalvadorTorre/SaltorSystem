@@ -55,6 +55,8 @@ export class Cotizacion implements OnInit {
   @ViewChild('descripcionInput') descripcionInput!: ElementRef; // Para manejar el foco
   @ViewChild('Tabladetalle') Tabladetalle!: ElementRef;
   @ViewChild('input5') vendedorInput!: ElementRef<HTMLInputElement>; // Referencia al input de ct_codvend
+  @ViewChild('input6') codigoProductoInput!: ElementRef<HTMLInputElement>;
+  @ViewChild('input9') precioInput!: ElementRef<HTMLInputElement>;
   totalItems = 0;
   pageSize = 10;
   currentPage = 1;
@@ -975,13 +977,25 @@ export class Cotizacion implements OnInit {
   // Array para almacenar los datos de la tabla
 
   // Función para agregar un nuevo item a la tabla
-  agregaItem(event: Event) {
+  async agregaItem(event: Event) {
     event.preventDefault();
+    event.stopPropagation();
     if (!this.validarPrecioMayorAlCosto()) {
-      Swal.fire({
+      this.mensagePantalla = true;
+      await Swal.fire({
         icon: 'warning',
         title: 'Precio no válido',
         text: `El precio debe ser mayor al costo (${this.formatNumber(this.costotxt)}).`,
+        focusConfirm: true,
+        returnFocus: false,
+        stopKeydownPropagation: true,
+        keydownListenerCapture: true,
+        didOpen: () => Swal.getConfirmButton()?.focus(),
+      });
+      this.mensagePantalla = false;
+      setTimeout(() => {
+        this.precioInput?.nativeElement.focus();
+        this.precioInput?.nativeElement.select();
       });
       return;
     }
@@ -1034,9 +1048,12 @@ export class Cotizacion implements OnInit {
       this.cancelarBusquedaCodigo = false;
     }
     this.limpiarCampos();
+    setTimeout(() => this.codigoProductoInput?.nativeElement.focus());
   }
 
   limpiarCampos() {
+    this.buscarcodmerc.enable({ emitEvent: false });
+    this.buscardescripcionmerc.enable({ emitEvent: false });
     this.productoselect = undefined as any;
     this.codmerc = '';
     this.descripcionmerc = '';
@@ -1091,8 +1108,17 @@ export class Cotizacion implements OnInit {
     this.descripcionmerc = item.producto.in_desmerc;
     this.preciomerc = item.precio;
     this.cantidadmerc = item.cantidad;
+    this.resultadoCodmerc = [];
+    this.resultadodescripcionmerc = [];
+    this.buscarcodmerc.disable({ emitEvent: false });
+    this.buscardescripcionmerc.disable({ emitEvent: false });
     this.actualizarInformacionProducto(item.producto);
     this.actualizarPrecioProducto(item.precio);
+    setTimeout(() => {
+      const cantidadInput = document.getElementById('input8') as HTMLInputElement | null;
+      cantidadInput?.focus();
+      cantidadInput?.select();
+    });
   }
   actualizarTotales() {
     this.totalGral = this.items.reduce((sum, item) => sum + item.total, 0);
@@ -1252,6 +1278,18 @@ export class Cotizacion implements OnInit {
 
   cancelarBusquedaDescripcion: boolean = false;
   cancelarBusquedaCodigo: boolean = false;
+
+  reactivarBusquedaCodigo(): void {
+    if (this.isEditing) return;
+    this.cancelarBusquedaCodigo = false;
+    this.codnotfound = false;
+  }
+
+  reactivarBusquedaDescripcion(): void {
+    if (this.isEditing) return;
+    this.cancelarBusquedaDescripcion = false;
+    this.desnotfound = false;
+  }
 
   cargarDatosInventario(inventario: ModeloInventarioData) {
     console.log(inventario);
@@ -1625,14 +1663,10 @@ export class Cotizacion implements OnInit {
   }
 
   submitForm(): void {
-    if (this.mensagePantalla && this.form.invalid) {
-      console.log(this.mensagePantalla);
-      console.log(this.form.invalid);
-    } else {
-      console.log(this.mensagePantalla);
-      console.log(this.form.invalid);
-      this.cerrarModalCotizacion();
-    }
+    // Un Enter dirigido a un aviso nunca debe cerrar ni limpiar la cotización.
+    if (this.mensagePantalla || Swal.isVisible()) return;
+
+    this.cerrarModalCotizacion();
   }
 
   async generatePDF(cotizacion: CotizacionModelData) {
