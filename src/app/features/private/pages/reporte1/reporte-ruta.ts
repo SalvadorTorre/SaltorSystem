@@ -11,7 +11,7 @@ const routes: Routes = [
       {
         path: 'movproducto',
         canActivate: [permissionGuard],
-        data: { accessPath: '/private/reporte/movproducto' },
+        data: { modulePrefix: '/private/reporte' },
         loadChildren: () =>
           import('./pages/movproducto/movproducto-modulo')
             .then(m => m.MovimientoProductoModule),
@@ -19,7 +19,7 @@ const routes: Routes = [
       {
         path: 'consulta-ventas',
         canActivate: [permissionGuard],
-        data: { accessPath: '/private/reporte/consulta-ventas' },
+        data: { modulePrefix: '/private/reporte' },
         loadChildren: () =>
           import('./pages/consulta-ventas/consulta-ventas-modulo')
             .then(m => m.ConsultaVentasModulo),
@@ -27,7 +27,7 @@ const routes: Routes = [
       {
         path: 'ventas-vendedor',
         canActivate: [permissionGuard],
-        data: { accessPath: '/private/reporte/ventas-vendedor' },
+        data: { modulePrefix: '/private/reporte' },
         loadChildren: () =>
           import('./pages/ventas-vendedor/ventas-vendedor-modulo')
             .then(m => m.VentasVendedorModulo),
@@ -35,7 +35,7 @@ const routes: Routes = [
       {
         path: 'rendimiento-choferes',
         canActivate: [permissionGuard],
-        data: { accessPath: '/private/reporte/rendimiento-choferes' },
+        data: { modulePrefix: '/private/reporte' },
         loadChildren: () =>
           import('./pages/rendimiento-choferes/rendimiento-choferes-modulo')
             .then(m => m.RendimientoChoferesModulo),
