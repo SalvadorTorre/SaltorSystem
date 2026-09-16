@@ -94,6 +94,15 @@ export class AccessControlService {
     if (!this.permisos.length) {
       return this.canViewByDefaultRole(normalizedPath);
     }
+
+    // Algunos formularios existentes todavía no figuran en el catálogo nuevo
+    // de permisos. Un Root/Admin conserva acceso a esos formularios; cuando el
+    // recurso sí existe, el permiso específico evaluado arriba sigue mandando.
+    const roleTemplate = this.getDefaultTemplate(this.currentRoleLabel());
+    if (roleTemplate?.allowAll) {
+      return true;
+    }
+
     return false;
   }
 
@@ -147,7 +156,10 @@ export class AccessControlService {
   canWritePath(path: string): boolean {
     if (this.isSellerBillingPath(path)) return true;
     const permiso = this.findPermisoForPath(path);
-    if (!permiso) return this.shouldBypassByRole();
+    if (!permiso) {
+      const roleTemplate = this.getDefaultTemplate(this.currentRoleLabel());
+      return !!roleTemplate?.allowAll;
+    }
     const acciones = permiso?.acciones || {};
     return !!acciones['acceso'] && this.hasWriteAction(acciones);
   }
