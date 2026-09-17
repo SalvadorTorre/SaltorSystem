@@ -73,6 +73,12 @@ export class EntradaMercComponent implements OnInit, AfterViewInit {
   @ViewChild('inputPdfEntrada') inputPdfEntrada!: ElementRef<HTMLInputElement>;
   productosBusquedaCodigo: any[] = [];
   productosBusquedaDesc: any[] = [];
+  productoCodigoSeleccionado = 0;
+  productoDescripcionSeleccionado = 0;
+  suplidorSeleccionado = 0;
+  private busquedaCodigoSecuencia = 0;
+  private busquedaDescripcionSecuencia = 0;
+  private busquedaSuplidorSecuencia = 0;
   Toast = (Swal as any).mixin({
     toast: false,
     position: 'center',
@@ -108,6 +114,8 @@ export class EntradaMercComponent implements OnInit, AfterViewInit {
   tituloModalEntradamerc: string = '';
   entradaSeleccionada: any = null;
   detalleConsulta: any[] = [];
+  archivoEntradaUrl: string | null = null;
+  cargandoArchivoEntrada = false;
   private ultimoRncBuscado: string = '';
   archivoPdfEntrada: File | null = null;
   nombrePdfEntrada: string = '';
@@ -146,7 +154,7 @@ export class EntradaMercComponent implements OnInit, AfterViewInit {
       det_codMerc: [''],
       det_desMerc: ['', [Validators.required, this.noWhitespaceValidator]],
       det_canEntr: [0, [Validators.required, Validators.min(0.01)]],
-      det_preMerc: [0, [Validators.required, Validators.min(0.01)]]
+      det_preMerc: [0, [Validators.required, Validators.min(0)]]
     });
     this.consultaForm = this.fb.group({
       codigo: [''],
@@ -257,11 +265,14 @@ export class EntradaMercComponent implements OnInit, AfterViewInit {
 
   buscarSuplidor(force: boolean = false) {
     const nombre = (this.entradaForm.get('me_nomSupl')?.value || '').trim();
-    if (nombre && (force ? nombre.length > 0 : nombre.length > 2)) {
+    const secuencia = ++this.busquedaSuplidorSecuencia;
+    if (nombre && nombre.length > 0) {
       this.servicioSuplidor.buscarporNombre(nombre).subscribe({
         next: (response: any) => {
+          if (secuencia !== this.busquedaSuplidorSecuencia) return;
           if (response && response.data) {
             this.suplidoresBusqueda = response.data;
+            this.suplidorSeleccionado = 0;
           } else {
             this.suplidoresBusqueda = [];
           }
@@ -290,6 +301,7 @@ export class EntradaMercComponent implements OnInit, AfterViewInit {
       me_rncSupl: suplidor.su_rncSupl
     });
     this.suplidoresBusqueda = [];
+    this.suplidorSeleccionado = 0;
   }
 
   onEnter(event: Event) {
@@ -298,6 +310,16 @@ export class EntradaMercComponent implements OnInit, AfterViewInit {
   }
 
   onKeyDown(event: KeyboardEvent) {
+    if (event.key === 'ArrowDown' && this.suplidoresBusqueda.length) {
+      event.preventDefault();
+      this.suplidorSeleccionado = Math.min(this.suplidorSeleccionado + 1, this.suplidoresBusqueda.length - 1);
+      return;
+    }
+    if (event.key === 'ArrowUp' && this.suplidoresBusqueda.length) {
+      event.preventDefault();
+      this.suplidorSeleccionado = Math.max(this.suplidorSeleccionado - 1, 0);
+      return;
+    }
     if (event.key === 'Enter') {
       event.preventDefault();
       const nombreCtrl = this.entradaForm.get('me_nomSupl');
@@ -308,29 +330,30 @@ export class EntradaMercComponent implements OnInit, AfterViewInit {
         this.inputNombreSupl?.nativeElement.focus();
         return;
       }
+      const suplidorVisible = this.suplidoresBusqueda[this.suplidorSeleccionado];
+      if (suplidorVisible) {
+        this.seleccionarSuplidor(suplidorVisible);
+        this.focusNextFrom(this.inputNombreSupl?.nativeElement || null);
+        return;
+      }
+      // Si la búsqueda progresiva aún no respondió, resolver con este mismo Enter.
       this.servicioSuplidor.buscarporNombre(nombre).subscribe({
         next: (response: any) => {
-          const lista = (response && response.data) ? response.data : [];
-          this.suplidoresBusqueda = lista;
-          if (lista.length === 1) {
-            this.seleccionarSuplidor(lista[0]);
-            this.focusNextFrom(this.inputNombreSupl?.nativeElement || null);
-          } else if (lista.length > 1) {
-            const exact = lista.find((s: any) => String(s.su_nomSupl).toLowerCase() === nombre.toLowerCase());
-            if (exact) {
-              this.seleccionarSuplidor(exact);
-              this.focusNextFrom(this.inputNombreSupl?.nativeElement || null);
-            }
-            // si no hay coincidencia exacta, se deja la lista abierta para selecciÃ³n manual
+          const lista = Array.isArray(response?.data) ? response.data : [];
+          if (lista.length > 0) {
+            const exacto = lista.find(
+              (s: any) => String(s.su_nomSupl || '').trim().toLowerCase() === nombre.toLowerCase(),
+            );
+            this.seleccionarSuplidor(exacto || lista[0]);
+          } else {
+            this.suplidoresBusqueda = [];
           }
-          // si no hubo selecciÃ³n automÃ¡tica, igualmente avanzamos y limpiamos sugerencias
-          this.suplidoresBusqueda = [];
           this.focusNextFrom(this.inputNombreSupl?.nativeElement || null);
         },
         error: () => {
           this.suplidoresBusqueda = [];
           this.focusNextFrom(this.inputNombreSupl?.nativeElement || null);
-        }
+        },
       });
     }
   }
@@ -365,7 +388,7 @@ export class EntradaMercComponent implements OnInit, AfterViewInit {
 
   agregarDetalle() {
     if (this.entradaForm.get('det_desMerc')?.invalid || this.entradaForm.get('det_canEntr')?.invalid || this.entradaForm.get('det_preMerc')?.invalid) {
-      this.Toast.fire({ title: 'Descripcion no puede ser vacia o espacios. Cantidad y Precio deben ser > 0', icon: 'warning' });
+      this.Toast.fire({ title: 'Descripción no puede estar vacía. Cantidad debe ser mayor que 0 y Precio puede ser 0.', icon: 'warning' });
       if (this.entradaForm.get('det_desMerc')?.invalid) {
         this.inputDescripcion?.nativeElement.focus();
       } else if (this.entradaForm.get('det_canEntr')?.invalid) {
@@ -386,7 +409,27 @@ export class EntradaMercComponent implements OnInit, AfterViewInit {
     };
 
     if (detalle.de_codMerc) {
-      this.detalles.push(detalle);
+      const codigo = String(detalle.de_codMerc).trim();
+      const indiceExistente = this.detalles.findIndex(
+        (item) => String(item.de_codMerc || '').trim() === codigo,
+      );
+
+      if (indiceExistente >= 0) {
+        const existente = this.detalles[indiceExistente];
+        const cantidad = Number(existente.de_canEntr || 0) + Number(detalle.de_canEntr || 0);
+        const valor = Number(existente.de_valEntr || 0) + Number(detalle.de_valEntr || 0);
+        const actualizado: DetEntradaMerc = {
+          ...existente,
+          ...detalle,
+          de_canEntr: cantidad,
+          de_preMerc: cantidad > 0 ? valor / cantidad : Number(detalle.de_preMerc || 0),
+          de_valEntr: valor,
+        };
+        this.detalles.splice(indiceExistente, 1);
+        this.detalles.unshift(actualizado);
+      } else {
+        this.detalles.unshift(detalle);
+      }
       // Limpiar campos de detalle
       this.entradaForm.patchValue({
         det_codMerc: '',
@@ -535,9 +578,11 @@ guardarEntrada() {
 
               this.lastSavedDetalle = detalle;
 
+              const avisoArchivo = String(res?.data?.avisoArchivo || '').trim();
               this.Toast.fire({
                 title: this.entradaEditandoCodigo ? 'Entrada actualizada correctamente' : 'Entrada guardada correctamente',
-                icon: 'success'
+                text: avisoArchivo || undefined,
+                icon: avisoArchivo ? 'warning' : 'success'
               });
               this.entradaEditandoCodigo = null;
             },
@@ -586,7 +631,19 @@ guardarEntrada() {
   }
 
   private getFocusableElements(): HTMLElement[] {
-    return Array.from(document.querySelectorAll<HTMLElement>('input.enter-next, textarea.enter-next, select.enter-next, button.enter-next'));
+    return Array.from(
+      document.querySelectorAll<HTMLElement>('input.enter-next, textarea.enter-next, select.enter-next, button.enter-next'),
+    ).filter((element) => {
+      const control = element as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | HTMLButtonElement;
+      const soloLectura = 'readOnly' in control && Boolean((control as HTMLInputElement | HTMLTextAreaElement).readOnly);
+      return !control.disabled && !soloLectura && element.offsetParent !== null;
+    });
+  }
+
+  seleccionarContenido(event: Event): void {
+    const input = event.target as HTMLInputElement | null;
+    if (!input) return;
+    setTimeout(() => input.select(), 0);
   }
 
   focusNext(event: Event) {
@@ -609,6 +666,19 @@ guardarEntrada() {
   }
 
   onKeyDownCodigo(event: KeyboardEvent) {
+    if (event.key === 'ArrowDown' && this.productosBusquedaCodigo.length) {
+      event.preventDefault();
+      this.productoCodigoSeleccionado = Math.min(
+        this.productoCodigoSeleccionado + 1,
+        this.productosBusquedaCodigo.length - 1,
+      );
+      return;
+    }
+    if (event.key === 'ArrowUp' && this.productosBusquedaCodigo.length) {
+      event.preventDefault();
+      this.productoCodigoSeleccionado = Math.max(this.productoCodigoSeleccionado - 1, 0);
+      return;
+    }
     if (event.key === 'Enter') {
       event.preventDefault();
       const codigo = (this.entradaForm.get('det_codMerc')?.value || '').trim();
@@ -616,6 +686,11 @@ guardarEntrada() {
         this.productosBusquedaCodigo = [];
         this.entradaForm.get('det_desMerc')?.enable();
         this.focusNext(event);
+        return;
+      }
+      const seleccionado = this.productosBusquedaCodigo[this.productoCodigoSeleccionado];
+      if (seleccionado) {
+        this.seleccionarProducto(seleccionado, 'codigo');
         return;
       }
       this.servicioProducto.buscarProductosPorCodigo(codigo).subscribe({
@@ -628,18 +703,8 @@ guardarEntrada() {
             this.inputCodigo?.nativeElement.focus();
             return;
           }
-          if (lista.length === 1) {
-            this.seleccionarProducto(lista[0], 'codigo');
-            this.productosBusquedaCodigo = [];
-            this.inputCantidad?.nativeElement.focus();
-          } else {
-            const exact = lista.find((p: any) => String(p.in_codmerc).toLowerCase() === codigo.toLowerCase());
-            if (exact) {
-              this.seleccionarProducto(exact, 'codigo');
-              this.productosBusquedaCodigo = [];
-              this.inputCantidad?.nativeElement.focus();
-            }
-          }
+          this.productoCodigoSeleccionado = 0;
+          this.seleccionarProducto(lista[0], 'codigo');
         },
         error: () => {
           this.productosBusquedaCodigo = [];
@@ -651,6 +716,19 @@ guardarEntrada() {
   }
 
   onKeyDownDescripcion(event: KeyboardEvent) {
+    if (event.key === 'ArrowDown' && this.productosBusquedaDesc.length) {
+      event.preventDefault();
+      this.productoDescripcionSeleccionado = Math.min(
+        this.productoDescripcionSeleccionado + 1,
+        this.productosBusquedaDesc.length - 1,
+      );
+      return;
+    }
+    if (event.key === 'ArrowUp' && this.productosBusquedaDesc.length) {
+      event.preventDefault();
+      this.productoDescripcionSeleccionado = Math.max(this.productoDescripcionSeleccionado - 1, 0);
+      return;
+    }
     if (event.key === 'Enter') {
       event.preventDefault();
       const desc = (this.entradaForm.get('det_desMerc')?.value || '').trim();
@@ -659,18 +737,18 @@ guardarEntrada() {
         this.focusNext(event);
         return;
       }
+      const seleccionado = this.productosBusquedaDesc[this.productoDescripcionSeleccionado];
+      if (seleccionado) {
+        this.seleccionarProducto(seleccionado, 'descripcion');
+        return;
+      }
       this.servicioProducto.buscarProductosPorDescripcion(desc).subscribe({
         next: (response: any) => {
           const lista = (response && response.data) ? response.data : [];
           this.productosBusquedaDesc = lista;
           if (lista.length > 0) {
-            const lower = desc.toLowerCase();
-            const exact = lista.find((p: any) => String(p.in_desmerc).toLowerCase() === lower);
-            const starts = lista.find((p: any) => String(p.in_desmerc).toLowerCase().startsWith(lower));
-            const elegido = exact || starts || lista[0];
-            this.seleccionarProducto(elegido, 'descripcion');
-            this.productosBusquedaDesc = [];
-            this.inputCantidad?.nativeElement.focus();
+            this.productoDescripcionSeleccionado = 0;
+            this.seleccionarProducto(lista[0], 'descripcion');
           }
         },
         error: () => {
@@ -683,11 +761,14 @@ guardarEntrada() {
 
   buscarProductoPorCodigo() {
     const codigo = (this.entradaForm.get('det_codMerc')?.value || '').trim();
-    if (codigo.length > 1) {
+    const secuencia = ++this.busquedaCodigoSecuencia;
+    if (codigo.length > 0) {
       this.servicioProducto.buscarProductosPorCodigo(codigo).subscribe({
         next: (response: any) => {
+          if (secuencia !== this.busquedaCodigoSecuencia) return;
           const lista = (response && response.data) ? response.data : [];
           this.productosBusquedaCodigo = lista;
+          this.productoCodigoSeleccionado = 0;
         },
         error: () => {
           this.productosBusquedaCodigo = [];
@@ -701,11 +782,14 @@ guardarEntrada() {
 
   buscarProductoPorDescripcion() {
     const desc = (this.entradaForm.get('det_desMerc')?.value || '').trim();
-    if (desc.length > 2) {
+    const secuencia = ++this.busquedaDescripcionSecuencia;
+    if (desc.length > 0) {
       this.servicioProducto.buscarProductosPorDescripcion(desc).subscribe({
         next: (response: any) => {
+          if (secuencia !== this.busquedaDescripcionSecuencia) return;
           const lista = (response && response.data) ? response.data : [];
           this.productosBusquedaDesc = lista;
+          this.productoDescripcionSeleccionado = 0;
         },
         error: () => {
           this.productosBusquedaDesc = [];
@@ -725,6 +809,8 @@ guardarEntrada() {
     this.selectedProducto = producto;
     this.productosBusquedaCodigo = [];
     this.productosBusquedaDesc = [];
+    this.productoCodigoSeleccionado = 0;
+    this.productoDescripcionSeleccionado = 0;
     if (source === 'codigo') {
       this.entradaForm.get('det_desMerc')?.disable();
     }
@@ -734,6 +820,10 @@ guardarEntrada() {
   onEnterPrecio(event: Event) {
     event.preventDefault();
     this.agregarDetalle();
+  }
+
+  filasVaciasDetalle(): number[] {
+    return Array.from({ length: Math.max(0, 9 - this.detalles.length) }, (_, index) => index);
   }
  
   private toIsoDate(d: string | Date | null | undefined): string | null {
@@ -905,14 +995,29 @@ guardarEntrada() {
     const file = input.files?.[0] || null;
     if (!file) return;
 
-    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+    const extension = file.name.toLowerCase().split('.').pop() || '';
+    const extensionesPermitidas = new Set(['pdf', 'png', 'jpg', 'jpeg', 'webp', 'gif', 'doc', 'docx', 'xls', 'xlsx', 'txt']);
+    if (!extensionesPermitidas.has(extension)) {
       this.archivoPdfEntrada = null;
       this.nombrePdfEntrada = '';
       this.entradaForm.patchValue({ imgfactura: '' });
       input.value = '';
       this.Toast.fire({
         title: 'Archivo invalido',
-        text: 'Solo puede seleccionar archivos PDF.',
+        text: 'Puede seleccionar imágenes, PDF, Word, Excel o archivos de texto.',
+        icon: 'warning'
+      });
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      this.archivoPdfEntrada = null;
+      this.nombrePdfEntrada = '';
+      this.entradaForm.patchValue({ imgfactura: '' });
+      input.value = '';
+      this.Toast.fire({
+        title: 'Archivo demasiado grande',
+        text: 'El tamaño máximo permitido es de 10 MB.',
         icon: 'warning'
       });
       return;
@@ -980,10 +1085,11 @@ guardarEntrada() {
         this.totalItems =
           response?.pagination?.total ?? this.entradamercList.length;
       },
-      error: () => {
-        // â›” nunca romper la UI
+      error: (error: any) => {
+        console.error('Error consultando entradas filtradas:', error);
         this.entradamercList = [];
         this.totalItems = 0;
+        this.Toast.fire({ title: 'No se pudieron consultar las entradas', text: this.getErrorMessage(error), icon: 'error' });
       }
     });
 }
@@ -1026,9 +1132,11 @@ guardarEntrada() {
         this.entradamercList = response.data || [];
         this.totalItems = response.pagination?.total ?? 0; // âœ… FIX
       },
-      () => {
+      (error: any) => {
+        console.error('Error cargando listado de entradas:', error);
         this.entradamercList = [];
         this.totalItems = 0;
+        this.Toast.fire({ title: 'No se pudieron cargar las entradas', text: this.getErrorMessage(error), icon: 'error' });
       }
     );
 }
@@ -1181,11 +1289,32 @@ get totalPages(): number {
 
   verDetalleEntrada(entrada: any) {
     this.entradaSeleccionada = entrada;
+    this.detalleConsulta = [];
+    this.archivoEntradaUrl = null;
+    this.cargandoArchivoEntrada = false;
     const codigo = entrada?.me_codEntr || entrada?.me_codentr || '';
     if (!codigo) {
       this.detalleConsulta = [];
       return;
     }
+
+    const rutaArchivo = String(entrada?.imgfactura || '').trim();
+    if (rutaArchivo) {
+      this.cargandoArchivoEntrada = true;
+      this.servicioEntradamerc.crearUrlArchivoEntrada(rutaArchivo).subscribe({
+        next: (url: string) => {
+          this.archivoEntradaUrl = url;
+          this.cargandoArchivoEntrada = false;
+        },
+        error: (err: any) => {
+          this.cargandoArchivoEntrada = false;
+          console.error('Error abriendo archivo de entrada', err);
+        }
+      });
+    }
+
+    $('#modalEntradamerc').modal('hide');
+    setTimeout(() => $('#modalDetalleEntrada').modal('show'), 180);
     this.servicioEntradamerc.buscarEntradamercDetalle(`${codigo}?limit=9999`).subscribe((res: any) => {
       const raw = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : (Array.isArray(res?.detalle) ? res.detalle : []));
       this.detalleConsulta = raw.map((d: any) => ({
@@ -1200,6 +1329,25 @@ get totalPages(): number {
     });
   }
 
+  verArchivoEntrada(): void {
+    if (!this.archivoEntradaUrl) {
+      this.Toast.fire({
+        title: 'Archivo no disponible',
+        text: this.cargandoArchivoEntrada
+          ? 'El archivo todavía se está preparando.'
+          : 'Esta entrada no tiene un archivo guardado o no se pudo abrir.',
+        icon: 'warning'
+      });
+      return;
+    }
+    window.open(this.archivoEntradaUrl, '_blank', 'noopener,noreferrer');
+  }
+
+  cerrarDetalleEntrada(): void {
+    $('#modalDetalleEntrada').modal('hide');
+    setTimeout(() => $('#modalEntradamerc').modal('show'), 180);
+  }
+
   editarEntradaConsulta(entrada: any): void {
     const codigo = String(entrada?.me_codEntr || entrada?.me_codentr || '').trim();
     if (!codigo) {
@@ -1211,6 +1359,13 @@ get totalPages(): number {
     this.canPrint = false;
     this.lastSavedEntrada = null;
     this.lastSavedDetalle = [];
+    this.archivoPdfEntrada = null;
+    this.nombrePdfEntrada = entrada?.imgfactura
+      ? String(entrada.imgfactura).split('/').pop() || 'Archivo guardado'
+      : '';
+    if (this.inputPdfEntrada?.nativeElement) {
+      this.inputPdfEntrada.nativeElement.value = '';
+    }
     this.entradaForm.patchValue({
       me_codEntr: codigo,
       me_fecEntr: this.fechaInput(entrada?.me_fecEntr ?? entrada?.me_fecentr),

@@ -9,6 +9,8 @@ import { SupabaseService } from "../../supabase/supabase.service";
   providedIn: "root"
 })
 export class ServicioEntradamerc {
+  private avisoArchivoEntrada: string | null = null;
+
   constructor(
     private http: HttpInvokeService,
     private supabase: SupabaseService,
@@ -108,10 +110,19 @@ export class ServicioEntradamerc {
       .slice(0, 80) || "factura.pdf";
   }
 
-  private async subirPdfEntrada(file: File, codigoEntrada: string): Promise<string> {
+  private async subirPdfEntrada(file: File, codigoEntrada: string): Promise<string | null> {
     const client = this.supabase.client as any;
     if (!client?.storage?.from) {
-      throw new Error("Supabase Storage no esta configurado.");
+      throw new Error("Supabase Storage no esta configurado para guardar archivos.");
+    }
+
+    let { data: sessionData } = await client.auth.getSession();
+    if (!sessionData?.session?.access_token) {
+      const { data: refreshed, error: refreshError } = await client.auth.refreshSession();
+      if (refreshError || !refreshed?.session?.access_token) {
+        throw new Error("La sesión de Supabase venció. Inicie sesión nuevamente antes de guardar el archivo.");
+      }
+      sessionData = refreshed;
     }
 
     const bucket = "entradamerc";
@@ -126,8 +137,46 @@ export class ServicioEntradamerc {
         upsert: false,
       });
 
-    if (error) this.throwStep("Subir PDF entrada", error);
+    if (error) {
+      const mensaje = this.formatDbError(error);
+      const bucketNoExiste = /bucket\s+not\s+found|bucket.*not.*exist/i.test(mensaje);
+      if (bucketNoExiste) {
+        this.avisoArchivoEntrada =
+          'La entrada fue guardada sin el archivo adjunto porque no existe el bucket privado "entradamerc" en Supabase Storage.';
+        console.warn('[Entradamerc/Supabase] Bucket entradamerc no disponible; se continuará sin adjunto.', error);
+        return null;
+      }
+      if (/row-level security|rls|unauthorized|forbidden/i.test(mensaje)) {
+        throw new Error(
+          'Supabase bloqueó el archivo por políticas de Storage. Ejecute configure_entradamerc_storage_policies.sql en el SQL Editor y vuelva a iniciar sesión.',
+        );
+      }
+      this.throwStep("Subir archivo de entrada", error);
+    }
     return `${bucket}/${path}`;
+  }
+
+  crearUrlArchivoEntrada(rutaGuardada: string): Observable<string> {
+    return from((async () => {
+      const client = this.supabase.client as any;
+      if (!client?.storage?.from) {
+        throw new Error("Supabase Storage no esta configurado.");
+      }
+
+      const ruta = String(rutaGuardada || '').trim();
+      if (!ruta) throw new Error('Esta entrada no tiene un archivo guardado.');
+
+      const prefijo = 'entradamerc/';
+      const path = ruta.startsWith(prefijo) ? ruta.slice(prefijo.length) : ruta;
+      const { data, error } = await client.storage
+        .from('entradamerc')
+        .createSignedUrl(path, 3600);
+
+      if (error) this.throwStep('Crear enlace temporal del archivo de entrada', error);
+      const url = String(data?.signedUrl || data?.signedURL || '').trim();
+      if (!url) throw new Error('Supabase no devolvió el enlace del archivo.');
+      return url;
+    })());
   }
 
   private async getOrPickContFacturaRow(idsucursal: number): Promise<any | null> {
@@ -207,6 +256,7 @@ export class ServicioEntradamerc {
 
     return from((async () => {
       try {
+        this.avisoArchivoEntrada = null;
         const header = entradamerc?.entradamercancias ?? entradamerc?.entradamercancia ?? entradamerc?.entradamerc ?? {};
         const detalle = Array.isArray(entradamerc?.detalle) ? entradamerc.detalle : [];
 
@@ -383,6 +433,7 @@ export class ServicioEntradamerc {
           data: {
             nuevoCodigo,
             entrada: this.mapEntradaDbToUi(entradaIns),
+            avisoArchivo: this.avisoArchivoEntrada,
           },
         };
       } catch (error: any) {
@@ -428,6 +479,13 @@ export class ServicioEntradamerc {
     });
 
     return from((async () => {
+      const archivoAdjunto = (header as any)?.archivoPdfEntrada instanceof File
+        ? (header as any).archivoPdfEntrada as File
+        : null;
+      if (archivoAdjunto) {
+        payload.imgfactura = await this.subirPdfEntrada(archivoAdjunto, codigo);
+      }
+
       const { data: detalleAnterior, error: detalleAnteriorErr } = await this.db
         .from("detentradamerc")
         .select("*")
@@ -460,7 +518,7 @@ export class ServicioEntradamerc {
         }
 
         const nuevoPorProducto = new Map<string, number>();
-        const detRows = detalle.map((it: any) => {
+        const detRowsSinAgrupar = detalle.map((it: any) => {
           const prod = it?.producto || {};
           const cod = this.toStringMax(prod?.in_codmerc ?? it?.de_codMerc ?? it?.de_codmerc, 15) ?? "";
           const cantidad = this.toNumber(it?.cantidad ?? it?.de_canEntr ?? it?.de_canentr);
@@ -487,6 +545,28 @@ export class ServicioEntradamerc {
           });
           return row;
         });
+
+        // La clave primaria es (de_codentr, de_codmerc). Al editar, un producto
+        // repetido debe consolidarse en una sola línea antes de insertar.
+        const detalleAgrupado = new Map<string, any>();
+        for (const row of detRowsSinAgrupar) {
+          const cod = String(row.de_codmerc || '').trim();
+          const existente = detalleAgrupado.get(cod);
+          if (!existente) {
+            detalleAgrupado.set(cod, { ...row });
+            continue;
+          }
+          const cantidad = this.toNumber(existente.de_canentr) + this.toNumber(row.de_canentr);
+          const valor = this.toNumber(existente.de_valentr) + this.toNumber(row.de_valentr);
+          detalleAgrupado.set(cod, {
+            ...existente,
+            ...row,
+            de_canentr: cantidad,
+            de_premerc: cantidad > 0 ? valor / cantidad : this.toNumber(row.de_premerc),
+            de_valentr: valor,
+          });
+        }
+        const detRows = Array.from(detalleAgrupado.values());
 
         const codigos = new Set<string>([
           ...Array.from(anteriorPorProducto.keys()),
@@ -551,7 +631,9 @@ export class ServicioEntradamerc {
         .order("me_codentr", { ascending: false })
         .range(offset, offset + pageSize - 1);
 
-      if (idsucursal) query = query.eq("me_codsucu", Number(idsucursal));
+      if (idsucursal) {
+        query = query.or(`me_codsucu.eq.${Number(idsucursal)},me_codsucu.is.null`);
+      }
 
       const { data, error, count } = await query;
       if (error) this.throwStep("Listar entradamerc", error);
@@ -726,7 +808,9 @@ export class ServicioEntradamerc {
       if (cod) query = query.ilike("me_codentr", `%${cod}%`);
       if (nom) query = query.ilike("me_nomsupl", `%${nom}%`);
       if (fec) query = query.gte("me_fecentr", fec).lte("me_fecentr", fec);
-      if (idsucursal) query = query.eq("me_codsucu", Number(idsucursal));
+      if (idsucursal) {
+        query = query.or(`me_codsucu.eq.${Number(idsucursal)},me_codsucu.is.null`);
+      }
 
       const { data, error, count } = await query;
       if (error) this.throwStep("Buscar entradamerc", error);

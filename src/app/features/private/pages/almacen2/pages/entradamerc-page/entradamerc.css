@@ -4,3 +4,31 @@
 .table th {
     font-weight: 600;
 }
+
+.producto-sugerencia.active,
+.producto-sugerencia.active:hover,
+.list-group-item.active {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+    color: #fff;
+}
+
+.tabla-scroll-9 {
+    max-height: 380px;
+    overflow-y: auto;
+}
+
+.tabla-detalle thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+
+.tabla-detalle tbody tr,
+.tabla-detalle tbody .fila-vacia {
+    height: 34px;
+}
+
+.tabla-detalle tbody td {
+    vertical-align: middle;
+}

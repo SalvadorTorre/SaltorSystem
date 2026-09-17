@@ -17,17 +17,6 @@
         <!-- Encabezado -->
         <div class="row g-3 mb-1">
           <div class="col-md-2">
-            <label class="form-label">Código Entrada</label>
-            <input type="text" class="form-control" formControlName="me_codEntr" readonly>
-          </div>
-          <div class="col-md-2">
-            <label class="form-label">Fecha Entrada</label>
-            <input type="date" class="form-control" formControlName="me_fecEntr" readonly>
-          </div>
-          
-          <input type="hidden" formControlName="me_codSupl">
-
-          <div class="col-md-2">
             <label class="form-label">RNC Suplidor</label>
             <input #inputRncSupl type="text" inputmode="numeric" class="form-control enter-next" formControlName="me_rncSupl" (keydown.enter)="buscarRncSuplidor($event)" (blur)="buscarRncSuplidor()">
           </div>
@@ -35,17 +24,26 @@
             <label class="form-label">Nombre Suplidor</label>
             <div class="input-group">
               <span class="input-group-text"><i class="bi bi-search"></i></span>
-               <input #inputNombreSupl type="text" class="form-control enter-next" formControlName="me_nomSupl" (input)="onNombreSuplidorInput($event)" (keydown)="onKeyDown($event)" autocomplete="off" placeholder="Buscar o escribir suplidor...">
+              <input #inputNombreSupl type="text" class="form-control enter-next" formControlName="me_nomSupl" (input)="onNombreSuplidorInput($event)" (keydown)="onKeyDown($event)" autocomplete="off" placeholder="Buscar o escribir suplidor...">
             </div>
-            
+            <input type="hidden" formControlName="me_codSupl">
             <ul class="list-group position-absolute w-100 shadow" style="z-index: 1000; top: 100%;" *ngIf="suplidoresBusqueda.length > 0">
               <li class="list-group-item list-group-item-action" style="cursor: pointer;"
-                  *ngFor="let suplidor of suplidoresBusqueda" 
-                  (click)="seleccionarSuplidor(suplidor)">
+                *ngFor="let suplidor of suplidoresBusqueda; let i = index"
+                [class.active]="i === suplidorSeleccionado"
+                (click)="seleccionarSuplidor(suplidor)">
                 {{ suplidor.su_nomSupl }}
               </li>
             </ul>
           </div>
+            <div class="col-md-2 position-relative">
+              <label class="form-label">Código Entrada</label>
+              <input type="text" class="form-control" formControlName="me_codEntr" readonly>
+            </div> 
+            <div class="col-md-2 position-relative">
+              <label class="form-label">Fecha Entrada</label>
+              <input type="date" class="form-control" formControlName="me_fecEntr" readonly>
+            </div> 
           <div class="col-md-2">
             <label class="form-label">Factura Suplidor</label>
             <input type="text" class="form-control enter-next" formControlName="me_facSupl" (input)="toUpper('me_facSupl', $event)" (keydown.enter)="focusNext($event)">
@@ -59,18 +57,18 @@
             <input type="date" class="form-control enter-next" formControlName="me_fecSupl" (keydown.enter)="focusNext($event)">
           </div>
           
-           <div class="col-md-2">
+           <!-- <div class="col-md-2">
             <label class="form-label">Vendedor</label>
             <input type="text" class="form-control enter-next" formControlName="vendedor" (input)="toUpper('vendedor', $event)" (keydown.enter)="focusNext($event)">
-          </div>
+          </div> -->
            <div class="col-md-2">
-            <label class="form-label">Despachado Por</label>
+            <label class="form-label">Recibido Por</label>
             <input type="text" class="form-control enter-next" formControlName="despachado" (input)="toUpper('despachado', $event)" (keydown.enter)="focusNext($event)">
           </div>
-           <div class="col-md-2">
+           <!-- <div class="col-md-2">
             <label class="form-label">Chofer</label>
             <input type="text" class="form-control enter-next" formControlName="chofer" (input)="toUpper('chofer', $event)" (keydown.enter)="focusNext($event)">
-          </div>
+          </div> -->
           <div class="col-md-1">
             <label class="form-label">Código Usuario</label>
             <input type="password" class="form-control enter-next" formControlName="me_codVend" (keydown.enter)="buscarVendedorPorCodigo($event)" autocomplete="off">
@@ -79,15 +77,14 @@
             <label class="form-label">Nombre Usuario</label>
             <div class="input-group">
               <input type="text" class="form-control" formControlName="me_nomVend" [disabled]="true">
-              <button
-                type="button"
-                class="btn btn-outline-danger"
-                title="Seleccionar PDF"
-                (click)="abrirSelectorPdfEntrada()"
-              >
-                <i class="bi bi-file-earmark-pdf"></i>
-              </button>
             </div>
+            <!-- <button
+              type="button"
+              class="btn btn-outline-danger"
+              title="Seleccionar PDF"
+              (click)="abrirSelectorPdfEntrada()">
+              <i class="bi bi-file-earmark-pdf"></i>
+            </button>
             <input
               #inputPdfEntrada
               type="file"
@@ -97,15 +94,33 @@
             >
             <div class="form-text text-truncate" *ngIf="nombrePdfEntrada">
               {{ nombrePdfEntrada }}
-            </div>
+            </div> -->
           </div>
         </div>
-
         <div class="row mb-3">
-             <div class="col-12">
+          <div class="col-8">
             <label class="form-label">Nota</label>
             <textarea class="form-control enter-next" formControlName="nota" rows="2" (input)="toUpper('nota', $event)" (keydown.enter)="focusNext($event)"></textarea>
           </div>
+          <div class="col-4">
+            <button
+              type="button"
+              class="btn btn-outline-danger"
+              title="Insertar imagen o documento"
+              (click)="abrirSelectorPdfEntrada()">
+              <i class="bi bi-paperclip me-1"></i>
+              Insertar archivo
+            </button>
+            <input
+              #inputPdfEntrada
+              type="file"
+              class="d-none"
+              accept="image/*,application/pdf,.pdf,.doc,.docx,.xls,.xlsx,.txt"
+              (change)="seleccionarPdfEntrada($event)"
+            >
+            <div class="form-text text-truncate" *ngIf="nombrePdfEntrada">
+              {{ nombrePdfEntrada }}
+            </div>          </div>
         </div>
 
         <!-- <hr> -->
@@ -118,21 +133,25 @@
             <div class="position-relative">
               <input #inputCodigo type="text" class="form-control enter-next" formControlName="det_codMerc" (input)="toUpper('det_codMerc', $event); buscarProductoPorCodigo()" (keydown)="onKeyDownCodigo($event)" placeholder="Código producto">
               <ul class="list-group position-absolute w-100 shadow" style="z-index: 1000; top: 100%;" *ngIf="productosBusquedaCodigo.length > 0">
-                <li class="list-group-item list-group-item-action" style="cursor: pointer;"
-                    *ngFor="let p of productosBusquedaCodigo"
+                <li class="list-group-item list-group-item-action producto-sugerencia" style="cursor: pointer;"
+                    *ngFor="let p of productosBusquedaCodigo; let i = index"
+                    [class.active]="i === productoCodigoSeleccionado"
+                    (mouseenter)="productoCodigoSeleccionado = i"
                     (click)="$event.stopPropagation(); seleccionarProducto(p, 'codigo')">
                   {{ p.in_codmerc }} - {{ p.in_desmerc }}
                 </li>
               </ul>
             </div>
           </div>
-          <div class="col-md-4">
+          <div class="col-md-5">
             <label class="form-label">Descripción</label>
             <div class="position-relative">
               <input #inputDescripcion type="text" class="form-control enter-next" formControlName="det_desMerc" (input)="toUpper('det_desMerc', $event); buscarProductoPorDescripcion()" (keydown)="onKeyDownDescripcion($event)" placeholder="Descripción producto">
               <ul class="list-group position-absolute w-100 shadow" style="z-index: 1000; top: 100%;" *ngIf="productosBusquedaDesc.length > 0">
-                <li class="list-group-item list-group-item-action" style="cursor: pointer;"
-                    *ngFor="let p of productosBusquedaDesc"
+                <li class="list-group-item list-group-item-action producto-sugerencia" style="cursor: pointer;"
+                    *ngFor="let p of productosBusquedaDesc; let i = index"
+                    [class.active]="i === productoDescripcionSeleccionado"
+                    (mouseenter)="productoDescripcionSeleccionado = i"
                     (click)="$event.stopPropagation(); seleccionarProducto(p, 'descripcion')">
                   {{ p.in_desmerc }} ({{ p.in_codmerc }})
                 </li>
@@ -141,21 +160,16 @@
           </div>
           <div class="col-md-2">
             <label class="form-label">Cantidad</label>
-            <input #inputCantidad type="number" class="form-control enter-next" formControlName="det_canEntr" (keydown.enter)="focusNext($event)">
+            <input #inputCantidad type="number" class="form-control enter-next" formControlName="det_canEntr" (focus)="seleccionarContenido($event)" (keydown.enter)="focusNext($event)">
           </div>
-          <div class="col-md-2">
+          <div class="col-md-3">
             <label class="form-label">Precio</label>
-            <input #inputPrecio type="number" class="form-control enter-next" formControlName="det_preMerc" (keydown.enter)="onEnterPrecio($event)">
-          </div>
-          <div class="col-md-2">
-            <button type="button" class="btn btn-success w-100" (click)="agregarDetalle()">
-              <i class="bi bi-plus-lg"></i> Agregar
-            </button>
+            <input #inputPrecio type="number" min="0" class="form-control enter-next" formControlName="det_preMerc" (focus)="seleccionarContenido($event)" (keydown.enter)="onEnterPrecio($event)">
           </div>
         </div>
 
         <!-- Tabla de Detalles -->
-        <div class="table-responsive mb-2 tabla-scroll-6">
+        <div class="table-responsive mb-2 tabla-scroll-9">
           <table class="table table-bordered table-hover table-sm tabla-detalle">
             <thead class="table-light">
               <tr>
@@ -183,8 +197,10 @@
                   </button>
                 </td>
               </tr>
-               <tr *ngIf="detalles.length === 0">
-                  <td colspan="6" class="text-center text-muted">No hay productos agregados</td>
+              <tr class="fila-vacia" *ngFor="let fila of filasVaciasDetalle(); let vaciaIndex = index">
+                <td colspan="6" class="text-center text-muted">
+                  <span *ngIf="detalles.length === 0 && vaciaIndex === 0">No hay productos agregados</span>&nbsp;
+                </td>
               </tr>
             </tbody>
             <tfoot *ngIf="detalles.length > 0">
@@ -293,39 +309,6 @@
 </button>
 
         <!--  -->
-        <div *ngIf="entradaSeleccionada">
-          <div class="d-flex justify-content-between align-items-center mb-2">
-            <h6 class="m-0">Detalle de {{ entradaSeleccionada.me_codentr || entradaSeleccionada.me_codEntr }}</h6>
-            <button type="button" class="btn btn-outline-primary btn-sm" (click)="imprimirEntradaConsulta()">
-              <i class="bi bi-printer me-1"></i> Imprimir 80mm
-            </button>
-          </div>
-          <div class="table-responsive tabla-scroll-6">
-            <table class="table table-bordered table-hover table-sm tabla-detalle">
-              <thead class="table-light">
-                <tr>
-                  <th>Código</th>
-                  <th>Descripción</th>
-                  <th class="text-end">Cantidad</th>
-                  <th class="text-end">Precio</th>
-                  <th class="text-end">Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let d of detalleConsulta">
-                  <td>{{ d.de_codMerc }}</td>
-                  <td>{{ d.de_desMerc }}</td>
-                  <td class="text-end">{{ d.de_canEntr }}</td>
-                  <td class="text-end">{{ d.de_preMerc | currency }}</td>
-                  <td class="text-end">{{ d.de_valEntr | currency }}</td>
-                </tr>
-                <tr *ngIf="detalleConsulta.length === 0">
-                  <td colspan="5" class="text-center text-muted">Sin detalle</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
         <!-- <div class="d-flex justify-content-between align-items-center mt-2">
           <div class="small text-muted">
             Mostrando {{ (currentPage - 1) * pageSize + (entradamercList.length ? 1 : 0) }}–{{ (currentPage - 1) * pageSize + entradamercList.length }} de {{ totalItems }}
@@ -351,3 +334,110 @@
     </div>
   </div>
  </div>
+
+<div class="modal fade" id="modalDetalleEntrada" tabindex="-1" aria-labelledby="modalDetalleEntradaLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content" *ngIf="entradaSeleccionada">
+      <div class="modal-header bg-primary text-white">
+        <h1 class="modal-title fs-5" id="modalDetalleEntradaLabel">
+          Consulta de entrada {{ entradaSeleccionada.me_codentr || entradaSeleccionada.me_codEntr }}
+        </h1>
+        <button type="button" class="btn-close btn-close-white" aria-label="Cerrar" (click)="cerrarDetalleEntrada()"></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="row g-3 mb-3">
+          <div class="col-md-3">
+            <label class="form-label">Número de entrada</label>
+            <input class="form-control" readonly [value]="entradaSeleccionada.me_codentr || entradaSeleccionada.me_codEntr || ''">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Fecha de entrada</label>
+            <input class="form-control" readonly [value]="(entradaSeleccionada.me_fecentr || entradaSeleccionada.me_fecEntr) | date:'dd/MM/yyyy'">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Factura del suplidor</label>
+            <input class="form-control" readonly [value]="entradaSeleccionada.me_facsupl || entradaSeleccionada.me_facSupl || ''">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Fecha factura</label>
+            <input class="form-control" readonly [value]="(entradaSeleccionada.me_fecsupl || entradaSeleccionada.me_fecSupl) | date:'dd/MM/yyyy'">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Código suplidor</label>
+            <input class="form-control" readonly [value]="entradaSeleccionada.me_codsupl || entradaSeleccionada.me_codSupl || ''">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Nombre del suplidor</label>
+            <input class="form-control" readonly [value]="entradaSeleccionada.me_nomsupl || entradaSeleccionada.me_nomSupl || ''">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">RNC suplidor</label>
+            <input class="form-control" readonly [value]="entradaSeleccionada.me_rncsupl || entradaSeleccionada.me_rncSupl || ''">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Orden de compra</label>
+            <input class="form-control" readonly [value]="entradaSeleccionada.me_ordencomp || ''">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Usuario</label>
+            <input class="form-control" readonly [value]="entradaSeleccionada.me_nomvend || entradaSeleccionada.me_nomVend || ''">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Total de entrada</label>
+            <input class="form-control text-end fw-bold" readonly [value]="(entradaSeleccionada.me_valentr || entradaSeleccionada.me_valEntr || 0) | currency">
+          </div>
+          <div class="col-md-9">
+            <label class="form-label">Nota</label>
+            <textarea class="form-control" rows="2" readonly [value]="entradaSeleccionada.nota || ''"></textarea>
+          </div>
+          <div class="col-md-3 d-flex align-items-end">
+            <button
+              type="button"
+              class="btn btn-outline-danger w-100"
+              [disabled]="!entradaSeleccionada.imgfactura || cargandoArchivoEntrada"
+              (click)="verArchivoEntrada()">
+              <span *ngIf="cargandoArchivoEntrada" class="spinner-border spinner-border-sm me-1"></span>
+              <i *ngIf="!cargandoArchivoEntrada" class="bi bi-file-earmark-image me-1"></i>
+              {{ cargandoArchivoEntrada ? 'Preparando archivo...' : 'Ver imagen/documento' }}
+            </button>
+          </div>
+        </div>
+
+        <h6 class="mb-2">Artículos de la entrada</h6>
+        <div class="table-responsive tabla-scroll-6">
+          <table class="table table-bordered table-hover table-sm tabla-detalle">
+            <thead class="table-light">
+              <tr>
+                <th>Código</th>
+                <th>Descripción</th>
+                <th class="text-end">Cantidad</th>
+                <th class="text-end">Precio</th>
+                <th class="text-end">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let d of detalleConsulta">
+                <td>{{ d.de_codMerc }}</td>
+                <td>{{ d.de_desMerc }}</td>
+                <td class="text-end">{{ d.de_canEntr }}</td>
+                <td class="text-end">{{ d.de_preMerc | currency }}</td>
+                <td class="text-end">{{ d.de_valEntr | currency }}</td>
+              </tr>
+              <tr *ngIf="detalleConsulta.length === 0">
+                <td colspan="5" class="text-center text-muted">Sin detalle</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-primary" (click)="imprimirEntradaConsulta()">
+          <i class="bi bi-printer me-1"></i> Imprimir 80mm
+        </button>
+        <button type="button" class="btn btn-secondary" (click)="cerrarDetalleEntrada()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
