@@ -399,6 +399,14 @@ export class ServicioCotizacion {
     return count || 0;
   }
 
+  private async insertarDetallesEnLotes(detalles: any[], tamanoLote = 100): Promise<void> {
+    for (let inicio = 0; inicio < detalles.length; inicio += tamanoLote) {
+      const lote = detalles.slice(inicio, inicio + tamanoLote);
+      const { error } = await this.db.from("detcotizacion").insert(lote);
+      if (error) throw error;
+    }
+  }
+
   guardarCotizacion(cotizacion: any): Observable<any> {
     if (this.useSupabase) {
       return from((async () => {
@@ -426,12 +434,10 @@ export class ServicioCotizacion {
         try {
           const detallePayload = this.mapDetallePayload(detalleRaw, codigo, cotizacionRaw, codEmpre, idsucursal);
           if (detallePayload.length > 0) {
-            const { error: detalleError } = await this.db
-              .from("detcotizacion")
-              .insert(detallePayload);
-            if (detalleError) throw detalleError;
+            await this.insertarDetallesEnLotes(detallePayload);
           }
         } catch (error) {
+          await this.db.from("detcotizacion").delete().eq("dc_codcoti", codigo);
           await this.db.from("cotizacion").delete().eq("ct_codcoti", codigo);
           throw error;
         }
@@ -498,10 +504,7 @@ export class ServicioCotizacion {
 
         const detallePayload = this.mapDetallePayload(detalleRaw, codigo, cotizacionRaw, codEmpre, idsucursal);
         if (detallePayload.length > 0) {
-          const { error: detalleError } = await this.db
-            .from("detcotizacion")
-            .insert(detallePayload);
-          if (detalleError) throw detalleError;
+          await this.insertarDetallesEnLotes(detallePayload);
         }
 
         return {

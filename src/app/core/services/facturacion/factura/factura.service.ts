@@ -1956,10 +1956,11 @@ export class ServicioFacturacion {
           .from('factura')
           .select('fa_codfact,fa_ncffact,fa_rncfact,fa_tiponcf,fa_fecfact,fa_valfact,fa_itbifact,fa_subfact,fa_desfact,fa_codclie,fa_nomclie,fa_codvend,fa_nomvend,fa_fpago,fa_codfpago,fa_tipopago,fa_status,fa_codsucu,fa_codempr,fa_cierre,fa_entrega,fa_impresa,fa_facturada')
           .eq('fa_codsucu', sucursal)
-          .is('fa_cierre', null)
-          .neq('fa_status', 'N')
+          .or('fa_status.is.null,fa_status.neq.N')
           .order('fa_codfact', { ascending: true })
           .limit(batchSize);
+        query = this.applyTenantCompanyFilter(query);
+        query = this.applySinCierreCajaFilter(query);
         if (ultimoCodigo) {
           query = query.gt('fa_codfact', ultimoCodigo);
         }
@@ -2041,8 +2042,8 @@ export class ServicioFacturacion {
       const codPago = Number(f?.fa_codfpago);
       const credito = Number(f?.fa_tipopago ?? 1) === 2;
 
-      if (credito || !pagada) resumen.valoresNoCobrados += monto;
-      else resumen.valoresCobrados += monto;
+      if (pagada) resumen.valoresCobrados += monto;
+      else resumen.valoresNoCobrados += monto;
 
       if (codPago === 3) {
         if (pagada) resumen.tarjeta += monto;

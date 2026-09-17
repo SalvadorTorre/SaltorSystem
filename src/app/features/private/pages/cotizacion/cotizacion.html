@@ -433,10 +433,10 @@
                 <button
                   type="submit"
                   class="btn btn-success"
-                  [disabled]="items.length === 0"
+                  [disabled]="items.length === 0 || guardandoCotizacion"
                   *ngIf="!modoconsultaCotizacion"
                 >
-                  <i class="bi bi-save me-2"></i>Guardar Cotización
+                  <i class="bi bi-save me-2"></i>{{ guardandoCotizacion ? 'Guardando...' : 'Guardar Cotización' }}
                 </button>
               </div>
             </div>
@@ -619,7 +619,16 @@
                 </thead>
 
                 <tbody>
-                  <tr *ngFor="let item of items" class="border-bottom">
+                  <tr
+                    *ngFor="let item of items; let i = index"
+                    class="border-bottom fila-item-cotizacion"
+                    tabindex="0"
+                    [attr.data-cotizacion-item]="i"
+                    [class.fila-item-seleccionada]="selectedItemIndex === i"
+                    (click)="seleccionarFilaItem(i)"
+                    (focus)="seleccionarFilaItem(i)"
+                    (keydown)="navegarTablaItems($event, i)"
+                  >
                     <td class="fw-semibold text-primary">
                       {{ item.producto?.in_codmerc }}
                     </td>
@@ -660,8 +669,19 @@
                 </tbody>
               </table>
             </div>
-<!-- Bloque de totales fijo abajo -->
-  <div class="totales-fijos resumen-cotizacion">
+            <div class="detalle-footer-cotizacion">
+              <div class="contador-items-cotizacion">
+                <label for="cantidadItemsCotizacion">Cantidad de ítems</label>
+                <input
+                  id="cantidadItemsCotizacion"
+                  type="text"
+                  class="form-control"
+                  [value]="items.length"
+                  readonly
+                />
+              </div>
+              <!-- Bloque de totales fijo abajo -->
+              <div class="totales-fijos resumen-cotizacion">
     <div class="row g-2">
       <div class="col-md-8"></div>
       <div class="col-md-4">
@@ -681,7 +701,8 @@
         </div>
       </div>
     </div>
-  </div>
+              </div>
+            </div>
           </div>
 
           <!-- Botones de Acción -->
@@ -754,10 +775,10 @@
             <button
               type="submit"
               class="btn btn-success"
-              [disabled]="items.length === 0"
+              [disabled]="items.length === 0 || guardandoCotizacion"
               *ngIf="!modoconsultaCotizacion"
             >
-              <i class="bi bi-save me-1"></i>Guardar Cotización
+              <i class="bi bi-save me-1"></i>{{ guardandoCotizacion ? 'Guardando...' : 'Guardar Cotización' }}
             </button>
           </div>
         </form>

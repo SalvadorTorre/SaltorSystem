@@ -6,6 +6,7 @@ import { ServicioFpago } from 'src/app/core/services/mantenimientos/fpago/fpago.
 import Swal from 'sweetalert2';
 import { ReporteCierreBuilder } from './reporte-builder';
 import { firstValueFrom } from 'rxjs';
+import { PrintingService } from 'src/app/core/services/utils/printing.service';
 
 @Component({
   selector: 'app-cuadrecaja',
@@ -44,7 +45,8 @@ export class CuadreCaja implements OnInit {
   constructor(
     private facturaService: ServicioFacturacion,
     private cierreService: ServicioCierreCaja,
-    private fpagoService: ServicioFpago
+    private fpagoService: ServicioFpago,
+    private printingService: PrintingService,
   ) { }
 
   ngOnInit(): void {
@@ -303,10 +305,10 @@ export class CuadreCaja implements OnInit {
       const monto = Number(f.fa_valFact) || 0;
       const codigoFormaPago = Number(f.fa_codfpago);
 
-      if (this.esFacturaCredito(f) || !this.facturaEstaPagada(f)) {
-        this.totales.valoresNoCobrados += monto;
-      } else {
+      if (this.facturaEstaPagada(f)) {
         this.totales.valoresCobrados += monto;
+      } else {
+        this.totales.valoresNoCobrados += monto;
       }
 
       if (codigoFormaPago === 3) {
@@ -407,10 +409,128 @@ export class CuadreCaja implements OnInit {
     return Number.isFinite(id) && id > 0 ? id : null;
   }
 
+  private obtenerNombreSucursal(): string {
+    try {
+      const raw = localStorage.getItem('sucursal');
+      const sucursal = raw ? JSON.parse(raw) : null;
+      return String(
+        sucursal?.nom_sucursal || sucursal?.descripcion || sucursal?.nombre ||
+        `Sucursal ${this.sucursalUsuarioActual() || ''}`,
+      ).trim();
+    } catch {
+      return `Sucursal ${this.sucursalUsuarioActual() || ''}`.trim();
+    }
+  }
+
+  private escapeHtml(value: any): string {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  private detalleModalCierre(datos: { primera: string; ultima: string; cantidad: number; cantidadCobradas: number }): string {
+    const fila = (titulo: string, valor: string) => `
+      <div style="display:flex;justify-content:space-between;gap:16px;padding:5px 0;border-bottom:1px solid #edf1f5;">
+        <span style="color:#64748b;">${this.escapeHtml(titulo)}</span>
+        <strong style="text-align:right;">${this.escapeHtml(valor)}</strong>
+      </div>`;
+    const dinero = (valor: number) => `RD$${this.formatoMoneda(Number(valor) || 0)}`;
+
+    return `
+      <div style="text-align:left;font-size:14px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 22px;margin-bottom:12px;">
+          <div>
+            ${fila('Empresa', localStorage.getItem('nombre_empresa') || '-')}
+            ${fila('Sucursal', this.obtenerNombreSucursal())}
+            ${fila('Código sucursal', String(this.sucursalUsuarioActual() || '-'))}
+            ${fila('Cajero', localStorage.getItem('nombreusuario') || '-')}
+          </div>
+          <div>
+            ${fila('Fecha', new Date().toLocaleString('es-DO'))}
+            ${fila('Factura inicial', datos.primera || '-')}
+            ${fila('Factura final', datos.ultima || '-')}
+            ${fila('Facturas', String(datos.cantidad))}
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 22px;margin-bottom:14px;">
+          <div>
+            ${fila('Efectivo', dinero(this.totales.efectivo))}
+            ${fila('Tarjetas', dinero(this.totales.tarjeta))}
+            ${fila('Depósito/transferencia', dinero(this.totales.deposito))}
+            ${fila('Cheques', dinero(this.totales.cheque))}
+          </div>
+          <div>
+            ${fila('Crédito pendiente', dinero(this.totales.credito))}
+            ${fila('Pendiente de pago', dinero(this.totales.pendiente))}
+            ${fila('Valores cobrados', dinero(this.totales.valoresCobrados))}
+            ${fila('Valores no cobrados', dinero(this.totales.valoresNoCobrados))}
+          </div>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:10px;background:#eef6ff;border-radius:6px;font-size:17px;">
+          <strong>TOTAL DEL CIERRE</strong><strong>${this.escapeHtml(dinero(this.totales.total))}</strong>
+        </div>
+        <div style="margin-top:12px;color:#475569;">Se marcarán ${datos.cantidadCobradas} facturas cobradas.</div>
+        <label for="nota-cierre" style="display:block;margin-top:14px;font-weight:700;">Nota del cierre</label>
+        <textarea id="nota-cierre" class="swal2-textarea" maxlength="255" placeholder="Escriba una nota (opcional)" style="width:100%;margin:6px 0 0;resize:vertical;"></textarea>
+        <div style="text-align:right;color:#64748b;font-size:12px;">Máximo 255 caracteres</div>
+      </div>`;
+  }
+
+  private construirTicketCierre(cierre: any): string {
+    const valor = (numero: any) => this.formatoMoneda(Number(numero) || 0);
+    const linea = (titulo: string, numero: any) => `
+      <div class="row"><span>${this.escapeHtml(titulo)}</span><strong>${this.escapeHtml(valor(numero))}</strong></div>`;
+    const nota = String(cierre?.nota || '').trim();
+
+    return `<!doctype html><html><head><meta charset="utf-8"><title>Cierre de caja</title>
+      <style>
+        @page { size: 80mm auto; margin: 3mm; }
+        * { box-sizing: border-box; }
+        body { width: 74mm; margin: 0; color: #000; font-family: Arial, sans-serif; font-size: 11px; }
+        h1 { margin: 0; text-align: center; font-size: 15px; }
+        h2 { margin: 3px 0 8px; text-align: center; font-size: 13px; }
+        .center { text-align: center; }
+        .sep { border-top: 1px dashed #000; margin: 7px 0; }
+        .row { display: flex; justify-content: space-between; gap: 8px; padding: 2px 0; }
+        .row strong { text-align: right; }
+        .total { font-size: 14px; font-weight: 700; }
+        .nota { white-space: pre-wrap; overflow-wrap: anywhere; }
+        .firma { margin-top: 28px; border-top: 1px solid #000; padding-top: 3px; text-align: center; }
+      </style></head><body>
+        <h1>${this.escapeHtml(localStorage.getItem('nombre_empresa') || '')}</h1>
+        <h2>CIERRE DE CAJA</h2>
+        <div class="center">${this.escapeHtml(this.obtenerNombreSucursal())}</div>
+        <div class="sep"></div>
+        <div class="row"><span>Cierre:</span><strong>${this.escapeHtml(cierre?.idcierre || '')}</strong></div>
+        <div class="row"><span>Fecha:</span><strong>${this.escapeHtml(new Date().toLocaleString('es-DO'))}</strong></div>
+        <div class="row"><span>Cajero:</span><strong>${this.escapeHtml(cierre?.cajera || '')}</strong></div>
+        <div class="row"><span>Sucursal:</span><strong>${this.escapeHtml(cierre?.codsucursal || '')}</strong></div>
+        <div class="row"><span>Factura inicial:</span><strong>${this.escapeHtml(cierre?.factini || '')}</strong></div>
+        <div class="row"><span>Factura final:</span><strong>${this.escapeHtml(cierre?.factfin || '')}</strong></div>
+        <div class="row"><span>Cant. facturas:</span><strong>${this.escapeHtml(cierre?.cantidadFacturas || 0)}</strong></div>
+        <div class="sep"></div>
+        ${linea('Efectivo', cierre?.tefectivo)}
+        ${linea('Tarjetas', cierre?.ttarjeta)}
+        ${linea('Depósito/Transf.', cierre?.tdeposito)}
+        ${linea('Cheques', cierre?.tcheque)}
+        ${linea('Crédito pendiente', cierre?.credito)}
+        ${linea('Pendiente de pago', cierre?.pendiente)}
+        ${linea('Total cobrado', cierre?.valoresCobrados)}
+        ${linea('Total no cobrado', cierre?.valoresNoCobrados)}
+        <div class="sep"></div>
+        <div class="row total"><span>TOTAL:</span><strong>${this.escapeHtml(valor(cierre?.totalcierre))}</strong></div>
+        ${nota ? `<div class="sep"></div><strong>NOTA:</strong><div class="nota">${this.escapeHtml(nota)}</div>` : ''}
+        <div class="firma">Firma del cajero</div>
+      </body></html>`;
+  }
+
   async realizarCierre() {
     if (this.cantidadFacturasPendientesVisible() === 0) {
-        Swal.fire('Atención', 'No hay facturas para cerrar en este periodo.', 'warning');
-        return;
+      Swal.fire('Atención', 'No hay facturas para cerrar en este periodo.', 'warning');
+      return;
     }
 
     let detalleCompleto: any[];
@@ -433,67 +553,96 @@ export class CuadreCaja implements OnInit {
       .map(f => String(f.fa_codFact || '').trim())
       .filter(Boolean);
 
-    Swal.fire({
-      title: '¿Confirmar Cierre de Caja?',
-      text: `Se registrará el cierre y se marcarán ${codigosFacturasCierre.length} facturas pagadas, desde ${primeraDeEsteCierre} hasta ${ultimaDeEsteCierre}.`,
+    const confirmacion = await Swal.fire({
+      title: 'Confirmar cierre de caja',
+      html: this.detalleModalCierre({
+        primera: String(primeraDeEsteCierre || ''),
+        ultima: String(ultimaDeEsteCierre || ''),
+        cantidad: facturasDelCierre.length,
+        cantidadCobradas: codigosFacturasCierre.length,
+      }),
       icon: 'warning',
+      width: 760,
       showCancelButton: true,
-      confirmButtonText: 'Sí, cerrar caja'
-    }).then((result) => {
-      if (result.isConfirmed) {
-        const dataCierre = {
-            feccierre: new Date().toISOString(),
-            factini: String(primeraDeEsteCierre || '').trim(),
-            factfin: String(ultimaDeEsteCierre || '').trim(), // Guardamos la última factura procesada, forzando String
-            montocierre: this.totales.total,
-            efectivo: this.totales.efectivo,
-            tarjeta: this.totales.tarjeta,
-            cheque: this.totales.cheque,
-            deposito: this.totales.deposito,
-            codsucursal: this.sucursalUsuarioActual(),
-            nota: 'Cierre generado desde frontend'
-        };
-
-        this.cierreService.crearCierre(dataCierre).subscribe({
-                    next: (res: any) => {
-                        const idCierre = res?.data?.idcierre || res?.idcierre;
-                        if (!idCierre) {
-                          Swal.fire('Error', 'El cierre fue creado, pero Supabase no devolvió su número.', 'error');
-                          return;
-                        }
-
-                        this.facturaService.confirmarCierreFacturas(idCierre, codigosFacturasCierre, {
-                          sucursal: this.sucursalUsuarioActual(),
-                        }).subscribe({
-                          next: (resp) => {
-                            const actualizadas = Number(resp?.data?.updated || 0);
-                            if (actualizadas !== codigosFacturasCierre.length) {
-                              Swal.fire(
-                                'Cierre incompleto',
-                                `Se marcaron ${actualizadas} de ${codigosFacturasCierre.length} facturas. Revise que todas pertenezcan a la sucursal activa y sigan pendientes de cierre.`,
-                                'warning',
-                              );
-                              return;
-                            }
-                            console.log('Facturas del cierre actualizadas con idcierre', resp);
-                            Swal.fire('Cerrado!', 'La caja ha sido cerrada correctamente.', 'success');
-                            this.generarReporte(detalleCompleto);
-                            this.obtenerUltimoCierreYFacturas(); 
-                          },
-                          error: (err) => {
-                            console.error('Error actualizando facturas cierre', err);
-                            const detalle = err?.message || err?.details || err?.hint || 'El cierre fue creado, pero no se pudo marcar el idcierre en las facturas cobradas.';
-                            Swal.fire('Error', detalle, 'error');
-                          }
-                        });
-                    },
-                    error: (err: any) => {
-                console.error(err);
-                const detalle = err?.message || err?.details || err?.hint || 'No se pudo registrar el cierre en base de datos';
-                Swal.fire('Error', detalle, 'error');
-            }
-        });
-      }
+      confirmButtonText: '<i class="fas fa-print"></i> Confirmar e imprimir 80 mm',
+      cancelButtonText: 'Cancelar',
+      focusConfirm: false,
+      preConfirm: () => {
+        const textarea = document.getElementById('nota-cierre') as HTMLTextAreaElement | null;
+        return String(textarea?.value || '').trim().slice(0, 255);
+      },
     });
+
+    if (!confirmacion.isConfirmed) return;
+
+    const notaCierre = String(confirmacion.value || '').trim();
+    const dataCierre = {
+      feccierre: new Date().toISOString(),
+      factini: String(primeraDeEsteCierre || '').trim(),
+      factfin: String(ultimaDeEsteCierre || '').trim(),
+      montocierre: this.totales.total,
+      efectivo: this.totales.efectivo,
+      tarjeta: this.totales.tarjeta,
+      cheque: this.totales.cheque,
+      deposito: this.totales.deposito,
+      codsucursal: this.sucursalUsuarioActual(),
+      nota: notaCierre || null,
+    };
+
+    this.isLoading = true;
+    try {
+      const res: any = await firstValueFrom(this.cierreService.crearCierre(dataCierre));
+      const idCierre = res?.data?.idcierre || res?.idcierre;
+      if (!idCierre) {
+        throw new Error('El cierre fue creado, pero Supabase no devolvió su número.');
+      }
+
+      const resp: any = await firstValueFrom(
+        this.facturaService.confirmarCierreFacturas(idCierre, codigosFacturasCierre, {
+          sucursal: this.sucursalUsuarioActual(),
+        }),
+      );
+      const actualizadas = Number(resp?.data?.updated || 0);
+      if (actualizadas !== codigosFacturasCierre.length) {
+        await Swal.fire(
+          'Cierre incompleto',
+          `Se marcaron ${actualizadas} de ${codigosFacturasCierre.length} facturas. Revise que todas pertenezcan a la sucursal activa y sigan pendientes de cierre.`,
+          'warning',
+        );
+        return;
+      }
+
+      const cierreImpresion = {
+        ...(res?.data || dataCierre),
+        idcierre: idCierre,
+        cantidadFacturas: facturasDelCierre.length,
+        credito: this.totales.credito,
+        pendiente: this.totales.pendiente,
+        valoresCobrados: this.totales.valoresCobrados,
+        valoresNoCobrados: this.totales.valoresNoCobrados,
+        nota: notaCierre,
+      };
+
+      try {
+        await this.printingService.printHtmlContent(this.construirTicketCierre(cierreImpresion), 'ticket');
+        await Swal.fire('Cerrado', 'El cierre y la nota se guardaron y se enviaron a impresión.', 'success');
+      } catch (printError: any) {
+        console.error('Error imprimiendo cierre', printError);
+        await Swal.fire(
+          'Cierre guardado',
+          printError?.message || 'El cierre y la nota se guardaron, pero no se pudo abrir la impresión.',
+          'warning',
+        );
+      }
+
+      await this.generarReporte(detalleCompleto);
+      this.obtenerUltimoCierreYFacturas();
+    } catch (err: any) {
+      console.error('Error realizando cierre', err);
+      const detalle = err?.message || err?.details || err?.hint || 'No se pudo registrar el cierre en base de datos';
+      await Swal.fire('Error', detalle, 'error');
+    } finally {
+      this.isLoading = false;
+    }
   }
 }

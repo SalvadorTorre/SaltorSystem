@@ -139,6 +139,11 @@
   color: white;
 }
 
+.dropdown-item.active .text-muted,
+.dropdown-item:hover .text-muted {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
 .dropdown-item i {
   font-size: 1.1rem;
 }
@@ -633,6 +638,72 @@ input.text-uppercase {
   height: 270px;
   border: 0;
   border-radius: 0;
+}
+
+#modalcotizacion .tabla-detalle-sm th,
+#modalcotizacion .tabla-detalle-sm td {
+  padding: 0.32rem 0.5rem;
+  line-height: 1.15;
+}
+
+#modalcotizacion .tabla-detalle-sm .btn-sm {
+  padding: 0.2rem 0.42rem;
+}
+
+#modalcotizacion .fila-item-cotizacion {
+  cursor: pointer;
+  outline: none;
+}
+
+#modalcotizacion .fila-item-cotizacion.fila-item-seleccionada > td {
+  background: #dbeafe;
+  box-shadow: inset 0 1px 0 #93c5fd, inset 0 -1px 0 #93c5fd;
+}
+
+#modalcotizacion .contador-items-cotizacion {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.45rem 0.75rem;
+  background: #f8f9fa;
+}
+
+#modalcotizacion .detalle-footer-cotizacion {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 0.5rem 0.75rem;
+  background: #f8f9fa;
+  border-top: 1px solid #dee2e6;
+}
+
+#modalcotizacion .detalle-footer-cotizacion .resumen-cotizacion {
+  margin-left: auto;
+}
+
+#modalcotizacion .contador-items-cotizacion label {
+  margin: 0;
+  color: #475569;
+  font-size: 0.85rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+#modalcotizacion .contador-items-cotizacion .form-control {
+  width: 76px;
+  min-height: 32px;
+  padding: 0.25rem 0.5rem;
+  text-align: center;
+}
+
+@media (max-width: 575.98px) {
+  #modalcotizacion .detalle-footer-cotizacion {
+    flex-wrap: wrap;
+  }
+
+  #modalcotizacion .detalle-footer-cotizacion .resumen-cotizacion {
+    width: 100%;
+  }
 }
 
 #modalcotizacion .resumen-cotizacion {

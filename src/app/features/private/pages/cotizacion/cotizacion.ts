@@ -113,6 +113,8 @@ export class Cotizacion implements OnInit {
   cantidadform = new FormControl();
   isEditing: boolean = false;
   itemToEdit: any = null;
+  selectedItemIndex: number = -1;
+  guardandoCotizacion: boolean = false;
   index_item!: number;
   codnotfound: boolean = false;
   desnotfound: boolean = false;
@@ -379,6 +381,12 @@ export class Cotizacion implements OnInit {
   }
 
   nuevaCotizacion() {
+    this.formularioCotizacion.reset();
+    this.crearFormularioCotizacion();
+    this.limpiarTabla();
+    this.limpiarCampos();
+    this.selectedItemIndex = -1;
+    this.guardandoCotizacion = false;
     this.modoedicionCotizacion = false;
     this.tituloModalCotizacion = 'Nueva Cotizacion';
     $('#modalcotizacion').modal('show');
@@ -402,6 +410,8 @@ export class Cotizacion implements OnInit {
     // this.buscarTodasCotizacion(1);
     this.limpiarTabla();
     this.limpiarCampos();
+    this.selectedItemIndex = -1;
+    this.guardandoCotizacion = false;
     this.habilitarIcono = true;
     const inputs = document.querySelectorAll('.seccion-productos input');
     inputs.forEach((input) => {
@@ -793,6 +803,7 @@ export class Cotizacion implements OnInit {
   }
 
   guardarCotizacion() {
+    if (this.guardandoCotizacion) return;
     const date = new Date();
     this.formularioCotizacion.get('ct_valcoti')?.patchValue(this.totalGral);
     this.formularioCotizacion.get('ct_itbis')?.patchValue(this.totalItbis);
@@ -815,10 +826,12 @@ export class Cotizacion implements OnInit {
           detalle: this.detalleCotizacionPayload(cotizacionEdit),
           idCotizacion: this.cotizacionid,
         };
+        this.guardandoCotizacion = true;
         this.servicioCotizacion
           .editarCotizacion(this.cotizacionid, payloadEdit as any)
           .subscribe({
             next: (response) => {
+              this.guardandoCotizacion = false;
               Swal.fire({
                 title: 'Excelente!',
                 text: 'Cotizacion editada correctamente.',
@@ -827,11 +840,10 @@ export class Cotizacion implements OnInit {
                 showConfirmButton: false,
               });
               this.buscarCotizacion(this.currentPage);
-              this.formularioCotizacion.reset();
-              this.crearFormularioCotizacion();
-              $('#modalcotizacion').modal('hide');
+              this.cerrarModalCotizacion();
             },
             error: (err) => {
+              this.guardandoCotizacion = false;
               console.error('Error editando cotizacion:', err);
               Swal.fire({
                 icon: 'error',
@@ -842,8 +854,10 @@ export class Cotizacion implements OnInit {
           });
       } else {
         if (this.formularioCotizacion.valid) {
+          this.guardandoCotizacion = true;
           this.servicioCotizacion.guardarCotizacion(payload).subscribe({
             next: (response) => {
+              this.guardandoCotizacion = false;
               Swal.fire({
                 title: 'Excelente!',
                 text: 'Cotizacion creada correctamente.',
@@ -852,12 +866,10 @@ export class Cotizacion implements OnInit {
                 showConfirmButton: false,
               });
               this.buscarCotizacion(this.currentPage);
-              this.formularioCotizacion.reset();
-              this.crearFormularioCotizacion();
-              this.formularioCotizacion.enable();
-              $('#modalcotizacion').modal('hide');
+              this.cerrarModalCotizacion();
             },
             error: (err) => {
+              this.guardandoCotizacion = false;
               console.error('Error creando cotizacion:', err);
               Swal.fire({
                 icon: 'error',
@@ -1037,12 +1049,13 @@ export class Cotizacion implements OnInit {
       const itbis = total * 0.18;
       this.totalItbis += itbis;
       this.subTotal += total - itbis;
-      this.items.push({
+      this.items.unshift({
         producto: this.productoselect,
         cantidad: this.cantidadmerc,
         precio: this.preciomerc,
         total,
       });
+      this.selectedItemIndex = 0;
 
       this.cancelarBusquedaDescripcion = false;
       this.cancelarBusquedaCodigo = false;
@@ -1078,6 +1091,30 @@ export class Cotizacion implements OnInit {
     this.totalGral = 0; // Reiniciar el total general
     this.totalItbis = 0; // Reiniciar el total del ITBIS
     this.subTotal = 0; // Reiniciar el subtotal
+    this.selectedItemIndex = -1;
+  }
+
+  seleccionarFilaItem(index: number): void {
+    this.selectedItemIndex = index;
+  }
+
+  navegarTablaItems(event: KeyboardEvent, index: number): void {
+    if (!this.items.length || !['ArrowUp', 'ArrowDown'].includes(event.key)) return;
+
+    event.preventDefault();
+    const desplazamiento = event.key === 'ArrowDown' ? 1 : -1;
+    this.selectedItemIndex = Math.min(
+      this.items.length - 1,
+      Math.max(0, index + desplazamiento),
+    );
+
+    setTimeout(() => {
+      const fila = document.querySelector<HTMLElement>(
+        `[data-cotizacion-item="${this.selectedItemIndex}"]`,
+      );
+      fila?.focus();
+      fila?.scrollIntoView({ block: 'nearest' });
+    });
   }
   // (Opcional) Función para eliminar un ítem de la tabla
   borarItem(item: any) {
@@ -1447,7 +1484,8 @@ export class Cotizacion implements OnInit {
     const itbis = total * 0.18;
     this.totalItbis += itbis;
     this.subTotal += total - itbis;
-    this.items.push({ producto: this.productoselect, cantidad, precio, total });
+    this.items.unshift({ producto: this.productoselect, cantidad, precio, total });
+    this.selectedItemIndex = 0;
     this.productoselect;
   }
 
