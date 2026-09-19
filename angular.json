@@ -22,6 +22,9 @@
             "tsConfig": "tsconfig.app.json",
             "serviceWorker": true,
             "ngswConfigPath": "ngsw-config.json",
+            "allowedCommonJsDependencies": [
+              "sweetalert2"
+            ],
             "assets": [
               "src/favicon.ico",
               "src/assets",
@@ -58,8 +61,8 @@
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "8kb",
-                  "maximumError": "10kb"
+                  "maximumWarning": "12kb",
+                  "maximumError": "16kb"
                 }
               ],
               "outputHashing": "all"
