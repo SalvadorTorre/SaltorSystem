@@ -2,6 +2,7 @@ import {
   Component,
   NgModule,
   OnInit,
+  OnDestroy,
   ViewChild,
   ElementRef,
   ɵNG_COMP_DEF,
@@ -21,7 +22,12 @@ import {
   switchMap,
   tap,
 } from 'rxjs';
-import Swal from 'sweetalert2';
+import SweetAlert from 'sweetalert2';
+const Swal = SweetAlert.mixin({
+  focusConfirm: true,
+  keydownListenerCapture: true,
+  returnFocus: false,
+});
 import { ModeloUsuarioData } from 'src/app/core/services/mantenimientos/usuario';
 import { ServicioUsuario } from 'src/app/core/services/mantenimientos/usuario/usuario.service';
 import { ServicioVentainterna } from 'src/app/core/services/almacen/ventainterna/ventainterna.service';
@@ -32,6 +38,8 @@ import {
 //import { ServiciodetVentainterna } from 'src/app/core/services/almacen/detventainterna/detventainterna.service';
 import { SucursalesData } from 'src/app/core/services/mantenimientos/sucursal';
 import { ServicioSucursal } from 'src/app/core/services/mantenimientos/sucursal/sucursal.service';
+import { EmpresaModelData } from 'src/app/core/services/mantenimientos/empresas';
+import { ServicioEmpresa } from 'src/app/core/services/mantenimientos/empresas/empresas.service';
 import {
   VentainternaDetalleModel,
   interfaceDetalleModel,
@@ -50,7 +58,7 @@ declare var $: any;
   templateUrl: './ventainterna.html',
   styleUrls: ['./ventainterna.css'],
 })
-export class Ventainterna implements OnInit {
+export class Ventainterna implements OnInit, OnDestroy {
   @ViewChild('inputCodmerc') inputCodmerc!: ElementRef; // Para manejar el foco
   @ViewChild('descripcionInput') descripcionInput!: ElementRef; // Para manejar el foco
   @ViewChild('Tabladetalle') Tabladetalle!: ElementRef;
@@ -112,6 +120,7 @@ export class Ventainterna implements OnInit {
     private fb: FormBuilder,
     private servicioVentainterna: ServicioVentainterna,
     private servicioSucursal: ServicioSucursal,
+    private servicioEmpresa: ServicioEmpresa,
     private servicioInventario: ServicioInventario,
     private ServicioUsuario: ServicioUsuario,
     private printing: PrintingService,
@@ -222,7 +231,10 @@ export class Ventainterna implements OnInit {
       });
   }
   imprimirVentainterna(ventainterna: VentainternaModelData): void {
-    const fa = ventainterna;
+    const fa: any = {
+      ...ventainterna,
+      fa_empresaCliente: this.empresaDeSucursalVenta(ventainterna),
+    };
     this.servicioVentainterna.buscarVentainternaDetalle(fa.fa_codFact).subscribe((response) => {
       const raw = Array.isArray(response?.data) ? response.data : (Array.isArray(response) ? response : (Array.isArray(response?.detalle) ? response.detalle : []));
       const items = raw.map((d: any) => {
@@ -264,6 +276,8 @@ export class Ventainterna implements OnInit {
   resultadoSolicitud: any[] = [];
   sucursalesCliente: SucursalesData[] = [];
   sucursalesEmpresa: SucursalesData[] = [];
+  empresasCatalogo: EmpresaModelData[] = [];
+  nombreEmpresaPropietaria = '';
   mostrarSucursalCliente = false;
   empresaClienteSeleccionada: SucursalesData | null = null;
   selectedIndex = 1;
@@ -280,6 +294,7 @@ export class Ventainterna implements OnInit {
   }
 
   ngOnInit(): void {
+    document.addEventListener('keydown', this.capturarEnterMensaje, true);
     this.buscarTodasVentainterna(1);
     this.cargarSucursalesEmpresa();
     this.buscarcodmerc.valueChanges
@@ -385,6 +400,7 @@ export class Ventainterna implements OnInit {
               .includes(q)
           )
           .slice(0, 50);
+        this.selectedIndex = 0;
       });
     this.buscarSucursalCliente.valueChanges
       .pipe(
@@ -411,6 +427,23 @@ export class Ventainterna implements OnInit {
       .subscribe((query: string) => this.buscarSolicitudesVentaInterna(query));
   }
 
+  ngOnDestroy(): void {
+    document.removeEventListener('keydown', this.capturarEnterMensaje, true);
+  }
+
+  private readonly capturarEnterMensaje = (event: KeyboardEvent): void => {
+    if (event.key !== 'Enter' || !SweetAlert.isVisible()) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+    const botonAceptar = SweetAlert.getConfirmButton();
+    if (botonAceptar) {
+      botonAceptar.focus();
+      SweetAlert.clickConfirm();
+    }
+  };
+
   crearFormularioVentainterna() {
     const fechaActual = new Date();
     const fechaActualStr = this.formatofecha(fechaActual);
@@ -434,12 +467,16 @@ export class Ventainterna implements OnInit {
 
   nuevaVentainterna() {
     this.modoedicionVentainterna = false;
+    this.modoconsultaVentainterna = false;
+    this.ventainternaid = '';
+    this.originalVentainterna = null;
     this.tituloModalVentainterna = 'Nueva Ventainterna';
     this.resultadoNombre = [];
     this.resultadoSucursalCliente = [];
     this.sucursalesCliente = [];
     this.mostrarSucursalCliente = false;
     this.empresaClienteSeleccionada = null;
+    this.nombreEmpresaPropietaria = '';
     this.buscarNombre.setValue('', { emitEvent: false });
     this.buscarSucursalCliente.setValue('', { emitEvent: false });
     $('#modalventainterna').modal('show');
@@ -483,6 +520,7 @@ export class Ventainterna implements OnInit {
   editarVentainterna(Ventainterna: VentainternaModelData) {
     this.ventainternaid = Ventainterna.fa_codFact;
     this.modoedicionVentainterna = true;
+    this.modoconsultaVentainterna = false;
     this.originalVentainterna = Ventainterna;
     this.formularioVentainterna.patchValue(Ventainterna);
     this.buscarNombre.setValue(Ventainterna.fa_nomClie || '', { emitEvent: false });
@@ -590,16 +628,41 @@ export class Ventainterna implements OnInit {
   buscarTodasVentainterna(page: number) {
     this.servicioVentainterna
       .buscarTodasVentainterna(page, this.pageSize)
-      .subscribe((response) => {
-        console.log(response);
-        this.ventainternaList = response.data;
-        this.initTooltips();
+      .subscribe({
+        next: (response) => {
+          const data = Array.isArray(response?.data) ? response.data : [];
+          this.ventainternaList = data;
+          this.totalItems = Number(response?.pagination?.total ?? data.length);
+          this.currentPage = Number(response?.pagination?.page ?? page);
+          this.initTooltips();
+        },
+        error: (error) => {
+          console.error('[Ventainterna] No se pudo cargar el listado', error);
+          this.ventainternaList = [];
+          this.totalItems = 0;
+          Swal.fire({
+            title: 'Error cargando ventas internas',
+            text: error?.message || error?.error?.message || 'No se pudo consultar la tabla de ventas internas.',
+            icon: 'error',
+            confirmButtonText: 'Aceptar',
+          });
+        },
       });
   }
   consultarVentainterna(Ventainterna: VentainternaModelData) {
+    this.modoedicionVentainterna = false;
     this.modoconsultaVentainterna = true;
+    this.ventainternaid = Ventainterna.fa_codFact;
     this.originalVentainterna = Ventainterna;
+    this.formularioVentainterna.enable({ emitEvent: false });
     this.formularioVentainterna.patchValue(Ventainterna);
+    this.buscarNombre.setValue(Ventainterna.fa_nomClie || '', { emitEvent: false });
+    this.buscarSucursalCliente.setValue(Ventainterna.suculsar_clie || '', { emitEvent: false });
+    const sucursalDestino = this.sucursalesEmpresa.find(
+      (sucursal) => Number(sucursal.cod_sucursal) === Number(Ventainterna.fa_codClie)
+    );
+    this.empresaClienteSeleccionada = sucursalDestino || null;
+    this.nombreEmpresaPropietaria = this.empresaDeSucursalVenta(Ventainterna);
     this.tituloModalVentainterna = 'Consulta Ventainterna';
     $('#modalventainterna').modal('show');
     this.habilitarFormulario = true;
@@ -766,8 +829,29 @@ export class Ventainterna implements OnInit {
       });
     }
 
+    const nombreEmpresaDigitada = String(
+      this.buscarNombre.value || this.formularioVentainterna.get('fa_nomClie')?.value || ''
+    ).trim();
+    const empresaCliente = this.empresaClienteSeleccionada || this.sucursalesEmpresa.find((sucursal) => {
+      const nombre = String(sucursal?.nom_sucursal || '').trim().toUpperCase();
+      const codigo = String(sucursal?.cod_sucursal || '').trim().toUpperCase();
+      const buscado = nombreEmpresaDigitada.toUpperCase();
+      return !!buscado && (nombre === buscado || codigo === buscado);
+    });
+    if (empresaCliente) {
+      this.cargarDatosEmpresaCliente(empresaCliente);
+    } else if (nombreEmpresaDigitada) {
+      this.empresaClienteSeleccionada = null;
+      this.mostrarSucursalCliente = false;
+      this.formularioVentainterna.patchValue({
+        fa_codClie: 0,
+        fa_nomClie: nombreEmpresaDigitada.toUpperCase(),
+        suculsar_clie: '',
+      });
+    }
+
     const base = this.formularioVentainterna.getRawValue();
-    if (!base.fa_codClie || !base.fa_nomClie) {
+    if (!String(base.fa_nomClie || '').trim()) {
       Swal.fire({
         title: 'Empresa requerida',
         text: 'Seleccione la empresa antes de guardar.',
@@ -788,6 +872,7 @@ export class Ventainterna implements OnInit {
 
     const ventainternaExtendida: any = {
       ...base,
+      fa_solicitud: String(base.fa_solicitud || '').trim() || null,
       fa_codVend: codVendedor || base.fa_codVend,
       fa_nomVend: nomVendedor || base.fa_nomVend,
       fa_codSucu: sucursalId,
@@ -799,8 +884,12 @@ export class Ventainterna implements OnInit {
       idVentainterna: this.formularioVentainterna.get('fa_codFact')?.value,
     };
 
+    const codigoOriginal = String(this.originalVentainterna?.fa_codFact || '').trim();
+    const esEdicion = !this.modoconsultaVentainterna && !!codigoOriginal &&
+      String(this.ventainternaid || '').trim() === codigoOriginal;
+
     if (this.formularioVentainterna.valid) {
-      if (this.modoedicionVentainterna) {
+      if (esEdicion) {
         const detallePayload = (this.items || []).map((it: any) => {
           const p: any = { ...(it?.producto || {}) };
           p.in_unidad = p?.in_unidad == null ? null : String(p.in_unidad);
@@ -813,7 +902,7 @@ export class Ventainterna implements OnInit {
           };
         });
         this.servicioVentainterna
-          .editarVentainterna(this.ventainternaid, { ventainterna: ventainternaExtendida, detalle: detallePayload })
+          .editarVentainterna(codigoOriginal, { ventainterna: ventainternaExtendida, detalle: detallePayload })
           .subscribe({
             next: (response) => {
               Swal.fire({
@@ -1044,6 +1133,17 @@ export class Ventainterna implements OnInit {
   buscarClienteporNombre() {}
 
   cargarSucursalesEmpresa() {
+    this.servicioEmpresa.buscarTodasEmpresa(1, 1000).subscribe({
+      next: (response: any) => {
+        this.empresasCatalogo = Array.isArray(response?.data) ? response.data : [];
+        if (this.empresaClienteSeleccionada) {
+          this.nombreEmpresaPropietaria = this.obtenerNombreEmpresa(this.empresaClienteSeleccionada);
+        }
+      },
+      error: () => {
+        this.empresasCatalogo = [];
+      },
+    });
     this.servicioSucursal.buscarTodasSucursal().subscribe({
       next: (response: any) => {
         const data = response?.data;
@@ -1053,6 +1153,22 @@ export class Ventainterna implements OnInit {
         this.sucursalesEmpresa = [];
       },
     });
+  }
+
+  obtenerNombreEmpresa(sucursal: SucursalesData | null | undefined): string {
+    const codigo = String(sucursal?.cod_empre || '').trim().toUpperCase();
+    if (!codigo) return '';
+    const empresa = this.empresasCatalogo.find(
+      (item) => String(item?.cod_empre || '').trim().toUpperCase() === codigo
+    );
+    return String(empresa?.nom_empre || codigo).trim();
+  }
+
+  private empresaDeSucursalVenta(venta: VentainternaModelData): string {
+    const sucursal = this.sucursalesEmpresa.find(
+      (item) => Number(item?.cod_sucursal) === Number(venta?.fa_codClie)
+    );
+    return this.obtenerNombreEmpresa(sucursal);
   }
 
   buscarSolicitudesVentaInterna(query: string) {
@@ -1125,6 +1241,7 @@ export class Ventainterna implements OnInit {
     this.sucursalesCliente = [];
     this.mostrarSucursalCliente = false;
     this.empresaClienteSeleccionada = sucursal || null;
+    this.nombreEmpresaPropietaria = this.obtenerNombreEmpresa(sucursal);
 
     if (sucursal?.nom_sucursal !== '') {
       this.formularioVentainterna.patchValue({
@@ -1431,9 +1548,9 @@ export class Ventainterna implements OnInit {
 
   moveFocusnomclie(event: Event, nextInput: HTMLInputElement) {
     event.preventDefault();
-    console.log(nextInput);
     if (event.target instanceof HTMLInputElement) {
-      if (!event.target.value) {
+      const valor = String(event.target.value || '').trim();
+      if (!valor) {
         this.mensagePantalla = true;
         Swal.fire({
           icon: 'error',
@@ -1442,8 +1559,36 @@ export class Ventainterna implements OnInit {
         }).then(() => {
           this.mensagePantalla = false;
         });
+        return;
+      }
+
+      const indice = this.selectedIndex >= 0 && this.selectedIndex < this.resultadoNombre.length
+        ? this.selectedIndex
+        : 0;
+      const seleccionada = this.resultadoNombre[indice] || this.sucursalesEmpresa.find((sucursal) => {
+        const buscado = valor.toUpperCase();
+        return String(sucursal?.nom_sucursal || '').trim().toUpperCase() === buscado ||
+          String(sucursal?.cod_sucursal || '').trim().toUpperCase() === buscado;
+      });
+
+      if (seleccionada) {
+        this.cargarDatosEmpresaCliente(seleccionada);
+        nextInput.focus();
+        nextInput.select();
       } else {
-        nextInput.focus(); // Si es válido, mueve el foco al siguiente input
+        this.empresaClienteSeleccionada = null;
+        this.nombreEmpresaPropietaria = '';
+        this.resultadoNombre = [];
+        this.mostrarSucursalCliente = false;
+        this.formularioVentainterna.patchValue({
+          fa_codClie: 0,
+          fa_nomClie: valor.toUpperCase(),
+          suculsar_clie: '',
+          fa_solicitud: '',
+        });
+        this.buscarNombre.setValue(valor.toUpperCase(), { emitEvent: false });
+        nextInput.focus();
+        nextInput.select();
       }
     }
   }
@@ -1460,11 +1605,11 @@ export class Ventainterna implements OnInit {
   }
 
   onBlur(event: any): void {
-    const value = event.target.value;
+    const value = String(event?.target?.value || '').trim();
 
     // Si el valor no está vacío, lo asignamos al formControl
-    if (value && value.trim() !== '') {
-      this.formularioVentainterna.get('fae_nomClie')!.setValue(value.trim());
+    if (value) {
+      this.formularioVentainterna.get('fa_nomClie')?.setValue(value, { emitEvent: false });
     }
   }
 }

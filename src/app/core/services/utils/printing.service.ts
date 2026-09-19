@@ -1251,6 +1251,12 @@ export class PrintingService {
       yPos += 6;
       drawDashedLine(yPos);
       yPos += 5;
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10);
+      centerText('CONDUCE INTERNO', yPos);
+      yPos += 6;
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
       const v = ventaData || {};
       const fechaTxt = v.fa_fecFact ? new Date(v.fa_fecFact) : new Date();
       const formatDateShort = (date: Date) => {
@@ -1266,6 +1272,9 @@ export class PrintingService {
       yPos += 4;
       doc.setFont('helvetica', 'bold');
       doc.text(`Cliente: ${String(v.fa_nomClie || '')}`, xLeft, yPos);
+      yPos += 4;
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Empresa: ${String(v.fa_empresaCliente || '')}`, xLeft, yPos);
       yPos += 4;
       doc.setFont('helvetica', 'normal');
       drawDashedLine(yPos);

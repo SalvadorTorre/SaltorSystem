@@ -7,7 +7,10 @@ export const environment = {
   backendUrl: 'https://grupohierro.duckdns.org/api',
   supabase: {
     enabled: true,
-    url: 'https://saltor-supabase.tail67c2f6.ts.net',
+    // Configuración anterior conservada para reutilizarla:
+    // url: 'https://saltor-supabase.tail67c2f6.ts.net',
+    // anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzgyMjM0NDk3LCJleHAiOjE5Mzk5MTQ0OTd9.vQu_EW7kPFdos5-QwjdDDni4KppSLeFgKrvBCZSc4n8',
+    url: 'https://grupohierro.tail67c2f6.ts.net',
     anonKey:
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzgyMjM0NDk3LCJleHAiOjE5Mzk5MTQ0OTd9.vQu_EW7kPFdos5-QwjdDDni4KppSLeFgKrvBCZSc4n8',
     schema: 'myappdb',

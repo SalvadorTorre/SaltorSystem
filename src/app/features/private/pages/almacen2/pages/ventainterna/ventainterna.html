@@ -207,6 +207,7 @@
         </h1>
         <div class="ms-auto">
           <button
+            *ngIf="!modoconsultaVentainterna"
             type="button"
             class="btn btn-outline-secondary btn-sm"
             (click)="submitForm()"
@@ -274,7 +275,6 @@
                           #input1
                           id="input2"
                           [formControl]="buscarNombre"
-                          formControlName="fa_nomClie"
                         />
                         <div
                           [ngClass]="{ 'show': resultadoNombre.length > 0 }"
@@ -305,10 +305,24 @@
                               class="px-3 cp"
                             >
                               <i class="far fa-building mr-5"></i>&nbsp;&nbsp;{{ result.nom_sucursal }} - {{ result.cod_sucursal }}
+                              — {{ obtenerNombreEmpresa(result) }}
                             </a>
                           </div>
                         </div>
                       </div>
+                    </div>
+                  </div>
+                  <div class="mb-1 row" *ngIf="nombreEmpresaPropietaria">
+                    <div class="col-2">
+                      <label>Empresa propietaria</label>
+                    </div>
+                    <div class="col-10">
+                      <input
+                        type="text"
+                        class="form-control form-control-sm"
+                        [value]="nombreEmpresaPropietaria"
+                        readonly
+                      />
                     </div>
                   </div>
                   <div class="mb-1 row mt-1" *ngIf="mostrarSucursalCliente">
@@ -374,6 +388,7 @@
                           #input2
                           class="form-control form-control-sm"
                           autocomplete="off"
+                          placeholder="Opcional"
                         />
                         <div
                           [ngClass]="{ 'show': resultadoSolicitud.length > 0 }"
@@ -750,17 +765,27 @@
           <div class="row mt-2">
             <div class="col d-flex justify-content-end">
               <button
+                *ngIf="!modoconsultaVentainterna"
                 class="btn btn-primary btn-xs"
                 type="submit"
               >
                 Guardar
               </button>
               <button
+                *ngIf="!modoconsultaVentainterna"
                 class="btn btn-secondary btn-xs ms-2"
                 type="button"
                 (click)="refrescarVentainterna()"
               >
                 Refrescar
+              </button>
+              <button
+                *ngIf="modoconsultaVentainterna"
+                class="btn btn-secondary btn-sm"
+                type="button"
+                (click)="cerrarModalVentainterna()"
+              >
+                Cerrar
               </button>
             </div>
           </div>

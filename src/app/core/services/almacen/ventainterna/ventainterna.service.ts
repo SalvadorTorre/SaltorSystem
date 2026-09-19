@@ -55,6 +55,32 @@ export class ServicioVentainterna {
     return s.length > maxLen ? s.slice(0, maxLen) : s;
   }
 
+  private sucursalLogueada(): number {
+    const directos = [
+      localStorage.getItem("idSucursal"),
+      localStorage.getItem("sucursalid"),
+      localStorage.getItem("cod_sucursal"),
+    ];
+    for (const valor of directos) {
+      const id = Number(valor);
+      if (Number.isFinite(id) && id > 0) return id;
+    }
+
+    const raw = localStorage.getItem("sucursal");
+    if (raw && raw !== "[object Object]") {
+      try {
+        const parsed = JSON.parse(raw);
+        const sucursal = Array.isArray(parsed) ? parsed[0] : parsed;
+        const id = Number(sucursal?.cod_sucursal ?? sucursal?.id ?? sucursal?.sucursalid);
+        if (Number.isFinite(id) && id > 0) return id;
+      } catch {
+        const id = Number(raw);
+        if (Number.isFinite(id) && id > 0) return id;
+      }
+    }
+    throw new Error("No se pudo identificar la sucursal del usuario conectado.");
+  }
+
   private normalizeDateOnly(value: any): string | null {
     if (!value) return null;
     const s = String(value).trim();
@@ -355,7 +381,8 @@ export class ServicioVentainterna {
   }
 
   buscarTodasVentainterna(pageIndex: number, pageSize: number, ): Observable<any> {
-    let url = `/ventainterna?page=${pageIndex}&limit=${pageSize}`;
+    const sucursal = this.sucursalLogueada();
+    let url = `/ventainterna?page=${pageIndex}&limit=${pageSize}&sucursal=${sucursal}`;
 
     console.log(url);
     if (!this.useSupabase) {
@@ -367,6 +394,7 @@ export class ServicioVentainterna {
       const { data, error, count } = await this.db
         .from("ventainterna")
         .select("*", { count: "exact" })
+        .eq("fa_codsucu", sucursal)
         .order("fa_codfact", { ascending: false })
         .range(offset, offset + pageSize - 1);
       if (error) this.throwStep("Listar ventainterna", error);
@@ -385,11 +413,13 @@ export class ServicioVentainterna {
       return this.http.GetRequest<any>(`/ventainterna/${fa_codFact}`);
     }
     const codigo = String(fa_codFact || "").trim();
+    const sucursal = this.sucursalLogueada();
     return from((async () => {
       const { data, error } = await this.db
         .from("ventainterna")
         .select("*")
         .eq("fa_codfact", codigo)
+        .eq("fa_codsucu", sucursal)
         .maybeSingle();
       if (error) this.throwStep("Buscar ventainterna por numero", error);
       return { status: "success", code: 200, data: data ? this.mapHeaderDbToUi(data) : null };
@@ -423,8 +453,9 @@ export class ServicioVentainterna {
 
 
   buscarVentainterna(pageIndex: number, pageSize: number, codigo?: string, nomcliente?: string, fecha?:string,): Observable<any> {
+    const sucursal = this.sucursalLogueada();
     // Alinear con las rutas del backend: GET /api/ventainterna
-    let url = `/ventainterna?page=${pageIndex}&limit=${pageSize}`;
+    let url = `/ventainterna?page=${pageIndex}&limit=${pageSize}&sucursal=${sucursal}`;
 
     if (codigo) {
       url += `&codigo=${codigo}`;
@@ -447,6 +478,7 @@ export class ServicioVentainterna {
       let query = this.db
         .from("ventainterna")
         .select("*", { count: "exact" })
+        .eq("fa_codsucu", sucursal)
         .order("fa_codfact", { ascending: false })
         .range(offset, offset + pageSize - 1);
       if (cod) query = query.ilike("fa_codfact", `%${cod}%`);
