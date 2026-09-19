@@ -2096,7 +2096,7 @@ export class Facturacion implements OnInit, OnDestroy {
     this.servicioCliente.buscarPorRnc(rnc, true).subscribe({
       next: (clienteResp) => {
         const cliente = clienteResp?.data as ModeloClienteData | null;
-        if (cliente) {
+        if (cliente && Number(cliente.cl_codClie || 0) > 0) {
           this.clienteRncNoExiste = false;
           this.cargarDatosCliente(cliente);
           this.formularioFacturacion.patchValue(

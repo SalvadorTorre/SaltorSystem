@@ -1,13 +1,42 @@
 import { Injectable } from '@angular/core';
 import { ModeloRnc, ModeloRncData } from '.';
-import { Observable } from 'rxjs';
+import { Observable, from, of, throwError } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { HttpInvokeService } from '../../http-invoke.service';
+import { SupabaseService } from '../../supabase/supabase.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class ServicioRnc {
-  constructor(private http: HttpInvokeService) {}
+  constructor(
+    private http: HttpInvokeService,
+    private supabase: SupabaseService,
+  ) {}
+
+  consultarRncMegaplus(rnc: string): Observable<any> {
+    const limpio = String(rnc || '').replace(/[^0-9]/g, '');
+    if (!limpio) return of({ error: true, mensaje: 'Parametro rnc requerido' });
+    const client = this.supabase.client;
+    if (!client) return throwError(() => new Error('Supabase no está configurado'));
+    return from(client.functions.invoke('consulta-rnc-megaplus', {
+      body: { rnc: limpio },
+    })).pipe(
+      map(({ data, error }: any) => {
+        if (error) throw error;
+        const normalizar = (row: any): any => row && typeof row === 'object'
+          ? {
+              ...row,
+              rason: row.rason ?? row.razon ?? row.razonSocial ?? row.nombre_razon_social ?? row.nombre,
+            }
+          : row;
+        const normalizado = Array.isArray(data)
+          ? data.map(normalizar)
+          : normalizar(data);
+        return { status: 'success', code: 200, data: normalizado };
+      }),
+    );
+  }
 
   buscarTodosRnc(
     pageIndex: number,
@@ -42,11 +71,11 @@ export class ServicioRnc {
   }
 
   buscarRncPorId(rnc: string): Observable<any> {
-    return this.http.GetRequest<any>(`/rnc-id/${rnc}`, false);
+    return this.consultarRncMegaplus(rnc);
   }
 
   buscarRncPorrncId(rnc: string): Observable<any> {
-    return this.http.GetRequest<any>(`/rncid/${rnc}`, false);
+    return this.consultarRncMegaplus(rnc);
   }
 
   importarDgii(): Observable<any> {

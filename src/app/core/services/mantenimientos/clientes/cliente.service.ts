@@ -3,6 +3,7 @@ import { Observable, from, of } from "rxjs";
 import { map } from "rxjs/operators";
 import { ModeloCliente, ModeloClienteData } from ".";
 import { SupabaseService } from "../../supabase/supabase.service";
+import { ServicioRnc } from "../rnc/rnc.service";
 
 @Injectable({
   providedIn: "root"
@@ -24,7 +25,10 @@ export class ServicioCliente {
     "cl_codsucursal",
   ].join(",");
 
-  constructor(private supabase: SupabaseService) {}
+  constructor(
+    private supabase: SupabaseService,
+    private servicioRnc: ServicioRnc,
+  ) {}
 
   private get db(): any {
     const client = this.supabase.client;
@@ -244,18 +248,15 @@ export class ServicioCliente {
     const numero = String(rnc || "").replace(/\D/g, "").trim();
     if (!numero) return of(null);
 
-    return from(
-      (async () => {
-        const { data, error } = await this.db
-          .from("rnc")
-          .select("rason")
-          .eq("rnc", numero)
-          .limit(1)
-          .maybeSingle();
-        if (error) throw error;
-        const nombre = String(data?.rason || "").trim();
+    return this.servicioRnc.consultarRncMegaplus(numero).pipe(
+      map((response: any) => {
+        const data = response?.data ?? response;
+        const row = Array.isArray(data) ? data[0] : data;
+        const nombre = String(
+          row?.rason ?? row?.razon ?? row?.razonSocial ?? row?.nombre ?? row?.name ?? "",
+        ).trim();
         return nombre || null;
-      })()
+      }),
     );
   }
 
@@ -379,7 +380,15 @@ export class ServicioCliente {
       });
     }
 
-    return from(
+    return this.servicioRnc.consultarRncMegaplus(limpio).pipe(
+      map((response: any) => ({
+        status: 'success',
+        code: 200,
+        message: 'RNC consultado en Megaplus',
+        data: response?.data ?? response,
+      })),
+    );
+    /* return from(
       (async () => {
         const rncNumero = Number(limpio);
         if (Number.isNaN(rncNumero)) return null;
@@ -405,6 +414,6 @@ export class ServicioCliente {
         message: "Cliente por RNC",
         data: row,
       }))
-    );
+    ); */
   }
 }
