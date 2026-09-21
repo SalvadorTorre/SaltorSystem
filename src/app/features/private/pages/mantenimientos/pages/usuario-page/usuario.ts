@@ -194,7 +194,14 @@ export class Usuario implements OnInit {
     // posteriores quedarían fuera del filtro local y parecerían inexistentes.
     this.usuarioSrv.buscarTodosUsuario(1, 1000).subscribe({
       next: (res) => { this.usuarios = this.unwrapList(res); },
-      error: () => { this.usuarios = []; }
+      error: (error) => {
+        console.error('Error cargando usuarios', error);
+        this.usuarios = [];
+        this.fireToast({
+          title: 'No se pudieron cargar los usuarios. Intenta nuevamente.',
+          icon: 'error',
+        });
+      }
     });
   }
 

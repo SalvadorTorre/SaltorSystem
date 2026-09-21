@@ -350,27 +350,38 @@ export class ServicioUsuario {
     const offset = Math.max(pageIndex - 1, 0) * pageSize;
 
     return from((async () => {
-      let query = this.db
-        .from("usuario")
-        .select("*")
-        .order("codusuario", { ascending: true })
-        .range(offset, offset + pageSize - 1);
+      const ejecutarConsulta = async (): Promise<any[]> => {
+        let query = this.db
+          .from("usuario")
+          .select("codusuario,idusuario,claveusuario,nombreusuario,nivel,metaventa,correo,clavecorreo,sucursalid,idtipousuario,idpermiso,cod_empre,auth_user_id")
+          .order("codusuario", { ascending: true })
+          .range(offset, offset + pageSize - 1);
 
-      if (codigo) {
-        const cod = Number(codigo);
-        if (!Number.isNaN(cod)) {
-          query = query.eq("codusuario", cod);
+        if (codigo) {
+          const cod = Number(codigo);
+          if (!Number.isNaN(cod)) {
+            query = query.eq("codusuario", cod);
+          }
         }
-      }
 
-      if (descripcion) {
-        const q = `%${descripcion}%`;
-        query = query.or(`idusuario.ilike.${q},nombreusuario.ilike.${q}`);
-      }
+        if (descripcion) {
+          const q = `%${descripcion}%`;
+          query = query.or(`idusuario.ilike.${q},nombreusuario.ilike.${q}`);
+        }
 
-      const { data, error } = await query;
-      if (error) throw error;
-      return data || [];
+        const { data, error } = await query;
+        if (error) throw error;
+        return data || [];
+      };
+
+      try {
+        return await ejecutarConsulta();
+      } catch (error: any) {
+        const code = String(error?.code || '');
+        if (code !== '57014' && code !== 'PGRST003') throw error;
+        await new Promise((resolve) => setTimeout(resolve, 400));
+        return ejecutarConsulta();
+      }
     })()).pipe(
       map((rows: any[]) => ({
         status: "success",
