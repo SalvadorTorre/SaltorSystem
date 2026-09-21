@@ -1,6 +1,6 @@
 export const environment = {
   production: false,
-  appVersion: '1.0.160',
+  appVersion: '1.0.161',
   bypassAuth: false,
   // backendUrl: 'http://localhost:3390/api',
 
@@ -11,7 +11,7 @@ export const environment = {
     // url: 'https://saltor-supabase.tail67c2f6.ts.net',
     url: 'https://grupohierro.tail67c2f6.ts.net',
     anonKey:
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzgyMjM0NDk3LCJleHAiOjE5Mzk5MTQ0OTd9.vQu_EW7kPFdos5-QwjdDDni4KppSLeFgKrvBCZSc4n8',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzgyMjM0NDk3LCJleHAiOjE5Mzk5MTQ0OTd9.vQu_EW7kPFdos5-QwjdDDni4KppSLeFgKrvBCZSc4n8',
     schema: 'myappdb',
   },
   // backendUrl:"http://190.166.82.95:3390/api"
