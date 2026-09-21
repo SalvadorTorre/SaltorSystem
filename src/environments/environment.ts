@@ -1,6 +1,6 @@
 export const environment = {
   production: false,
-  appVersion: '1.0.164',
+  appVersion: '1.0.165',
   bypassAuth: false,
   // backendUrl: 'http://localhost:3390/api',
   backendUrl: 'https://grupohierro.duckdns.org/api',
@@ -8,8 +8,8 @@ export const environment = {
   supabase: {
     enabled: true,
     // URL anterior conservada para reutilizarla:
-    // url: 'https://saltor-supabase.tail67c2f6.ts.net',
-    url: 'https://grupohierro.tail67c2f6.ts.net',
+     url: 'https://saltor-supabase.tail67c2f6.ts.net',
+    // url: 'https://grupohierro.tail67c2f6.ts.net',
     anonKey:
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzgyMjM0NDk3LCJleHAiOjE5Mzk5MTQ0OTd9.vQu_EW7kPFdos5-QwjdDDni4KppSLeFgKrvBCZSc4n8',
     schema: 'myappdb',
