@@ -24,7 +24,7 @@ export class ServicioRnc {
     })).pipe(
       map(({ data, error }: any) => {
         if (error) throw error;
-        const normalizar = (row: any): any => row && typeof row === 'object'
+        const normalizar = (row: any) => row && typeof row === 'object'
           ? {
               ...row,
               rason: row.rason ?? row.razon ?? row.razonSocial ?? row.nombre_razon_social ?? row.nombre,
@@ -63,11 +63,11 @@ export class ServicioRnc {
   }
 
   buscarrnc(rnc: number): Observable<any> {
-    return this.http.GetRequest<any>(`/rnc/${rnc}`);
+    return this.consultarRncMegaplus(String(rnc));
   }
 
   buscartodoRnc(rnc: number): Observable<ModeloRnc> {
-    return this.http.GetRequest<ModeloRnc>('/rnc/${rnc}');
+    return this.consultarRncMegaplus(String(rnc)) as Observable<ModeloRnc>;
   }
 
   buscarRncPorId(rnc: string): Observable<any> {

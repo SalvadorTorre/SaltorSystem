@@ -1610,7 +1610,9 @@ export class ControlFact implements OnInit, OnDestroy {
   }
   buscarRnc(event: Event, nextElement: HTMLInputElement | null): void {
     event.preventDefault();
-    const rnc = this.formularioFacturacion.get('fa_rncFact')?.value;
+    const rnc = String(this.formularioFacturacion.get('fa_rncFact')?.value || '')
+      .replace(/\D/g, '')
+      .trim();
     if (!rnc) {
       this.obtenerNcf();
       this.formularioFacturacion.patchValue({
@@ -1625,16 +1627,17 @@ export class ControlFact implements OnInit, OnDestroy {
     }
 
     // Validar longitud del RNC
-    if (rnc.length !== 9 && rnc.length !== 11) {
+    if (rnc.length !== 9 && rnc.length !== 11 && rnc.length !== 8 && rnc.length !== 10) {
       this.mostrarMensajeError('RNC inválido.');
       console.log(rnc.length);
       return;
     }
     // Buscar RNC en el servicio
     this.ServicioRnc.buscarRncPorId(rnc).subscribe((response) => {
-      if (response?.data?.length) {
+      const row = Array.isArray(response?.data) ? response.data[0] : response?.data;
+      if (row) {
         // Si se encuentra el RNC, asignar el nombre del cliente
-        const nombreEmpresa = response.data[0]?.rason;
+        const nombreEmpresa = row?.rason;
         this.formularioFacturacion.patchValue({ fa_nomClie: nombreEmpresa });
         this.formularioFacturacion.patchValue({
           fa_tipoNcf: this.codigoTipoNcfPorTipo('E31', '31'),
