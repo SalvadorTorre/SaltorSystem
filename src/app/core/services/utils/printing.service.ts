@@ -2765,6 +2765,12 @@ items.forEach((it: any) => {
       }
     }
 
+    // En navegador, usa QZ Tray si está instalado y activo. Si no responde,
+    // continúa con el diálogo de impresión normal sin bloquear el proceso.
+    if (await this.tryPrintWithQzTray(blob)) {
+      return;
+    }
+
     const pdfUrl = URL.createObjectURL(blob);
     try {
       await this.printPdf(pdfUrl, profileKey);
@@ -2773,6 +2779,52 @@ items.forEach((it: any) => {
         URL.revokeObjectURL(pdfUrl);
       } catch {}
       throw error;
+    }
+  }
+
+  private async tryPrintWithQzTray(blob: Blob): Promise<boolean> {
+    if (typeof window === 'undefined') return false;
+
+    let qz: any;
+    try {
+      const module = await import('qz-tray');
+      qz = (module as any).default || module;
+    } catch {
+      return false;
+    }
+
+    if (!qz?.websocket?.connect || !qz?.print || !qz?.configs?.create) {
+      return false;
+    }
+
+    const wasActive = !!qz.websocket.isActive?.();
+    try {
+      if (!wasActive) {
+        await Promise.race([
+          qz.websocket.connect(),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('QZ Tray no disponible')), 1500)),
+        ]);
+      }
+
+      const printer = await Promise.race([
+        qz.printers?.getDefault?.(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('No se encontró impresora')), 1500)),
+      ]);
+      if (!printer) return false;
+
+      const base64Data = await this.blobToBase64(blob);
+      const config = qz.configs.create(printer);
+      await qz.print(config, [{ type: 'pixel', format: 'pdf', flavor: 'base64', data: base64Data }]);
+      return true;
+    } catch (error) {
+      console.warn('[PrintingService] QZ Tray no está disponible; se usará impresión normal.', error);
+      return false;
+    } finally {
+      if (!wasActive && qz.websocket.isActive?.()) {
+        try {
+          await qz.websocket.disconnect();
+        } catch {}
+      }
     }
   }
 
