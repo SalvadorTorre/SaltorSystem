@@ -263,7 +263,7 @@ export class Cliente implements OnInit {
         });
       },
       error: (error) => {
-        console.warn('No se pudo buscar el RNC en la tabla rnc:', error);
+        console.warn('No se pudo consultar el RNC en Megaplus:', error);
       },
     });
   }

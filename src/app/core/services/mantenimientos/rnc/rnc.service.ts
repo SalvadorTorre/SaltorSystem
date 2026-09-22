@@ -19,11 +19,15 @@ export class ServicioRnc {
     if (!limpio) return of({ error: true, mensaje: 'Parametro rnc requerido' });
     const client = this.supabase.client;
     if (!client) return throwError(() => new Error('Supabase no está configurado'));
-    return from(client.functions.invoke('consulta-rnc-megaplus', {
-      body: { rnc: limpio },
-    })).pipe(
+    return from(client.functions.invoke(
+      `consulta-rnc-megaplus?rnc=${encodeURIComponent(limpio)}`,
+      { method: 'GET' },
+    )).pipe(
       map(({ data, error }: any) => {
         if (error) throw error;
+        if (!data || data?.error === true) {
+          return { status: 'success', code: 200, data: null };
+        }
         const normalizar = (row: any) => row && typeof row === 'object'
           ? {
               ...row,

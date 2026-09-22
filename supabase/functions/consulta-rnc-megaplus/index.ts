@@ -1,4 +1,14 @@
 const MEGAPLUS_ENDPOINT = "https://rnc.megaplus.com.do/api/consulta";
+const MAX_ATTEMPTS = 3;
+const REQUEST_TIMEOUT_MS = 8_000;
+const CACHE_TTL_MS = 24 * 60 * 60 * 1_000;
+
+type CachedResponse = {
+  body: string;
+  expiresAt: number;
+};
+
+const responseCache = new Map<string, CachedResponse>();
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -12,6 +22,25 @@ function jsonResponse(status: number, payload: unknown): Response {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
+}
+
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isSuccessfulLookup(status: number, body: string): boolean {
+  if (status < 200 || status >= 300) return false;
+  try {
+    const parsed = JSON.parse(body);
+    return parsed?.error !== true && !!(
+      parsed?.nombre_razon_social ||
+      parsed?.razon_social ||
+      parsed?.nombre ||
+      parsed?.cedula_rnc
+    );
+  } catch {
+    return false;
+  }
 }
 
 Deno.serve(async (req: Request) => {
@@ -35,20 +64,69 @@ Deno.serve(async (req: Request) => {
     return jsonResponse(400, { error: true, mensaje: "Parametro rnc requerido" });
   }
 
-  try {
-    const upstream = await fetch(
-      `${MEGAPLUS_ENDPOINT}?rnc=${encodeURIComponent(rnc)}`,
-      { headers: { Accept: "application/json" } },
-    );
-    const body = await upstream.text();
-    return new Response(body, {
-      status: upstream.status,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  } catch {
-    return jsonResponse(502, {
-      error: true,
-      mensaje: "No se pudo consultar el registro de RNC",
+  const cached = responseCache.get(rnc);
+  if (cached && cached.expiresAt > Date.now()) {
+    return new Response(cached.body, {
+      status: 200,
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "application/json",
+        "X-RNC-Cache": "HIT",
+      },
     });
   }
+
+  let lastStatus = 502;
+  let lastBody = "";
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+    try {
+      const upstream = await fetch(
+        `${MEGAPLUS_ENDPOINT}?rnc=${encodeURIComponent(rnc)}`,
+        {
+          headers: { Accept: "application/json" },
+          signal: controller.signal,
+        },
+      );
+      const body = await upstream.text();
+      lastStatus = upstream.status;
+      lastBody = body;
+
+      if (isSuccessfulLookup(upstream.status, body)) {
+        responseCache.set(rnc, {
+          body,
+          expiresAt: Date.now() + CACHE_TTL_MS,
+        });
+        return new Response(body, {
+          status: 200,
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+            "X-RNC-Attempt": String(attempt),
+          },
+        });
+      }
+    } catch {
+      lastStatus = 502;
+    } finally {
+      clearTimeout(timeoutId);
+    }
+
+    if (attempt < MAX_ATTEMPTS) {
+      await wait(250 * attempt);
+    }
+  }
+
+  if (lastBody) {
+    return new Response(lastBody, {
+      status: lastStatus,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  return jsonResponse(502, {
+    error: true,
+    mensaje: "No se pudo consultar el registro de RNC despues de varios intentos",
+  });
 });

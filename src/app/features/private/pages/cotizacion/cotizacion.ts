@@ -1538,14 +1538,15 @@ export class Cotizacion implements OnInit {
     const rnc = this.formularioCotizacion.get('ct_rnc')?.value;
     if (rnc) {
       if (rnc.length === 9 || rnc.length === 11) {
-        this.ServicioRnc.buscarRncPorrncId(rnc).subscribe((rnc) => {
-          console.log(rnc.data);
-          if (rnc.data) {
+        this.ServicioRnc.buscarRncPorrncId(rnc).subscribe((response) => {
+          const registro = Array.isArray(response?.data)
+            ? response.data[0]
+            : response?.data;
+          if (registro) {
             this.formularioCotizacion.patchValue({
-              ct_nomclie: rnc.data.rason,
+              ct_nomclie: registro.rason,
             });
             nextElement?.focus();
-            console.log(rnc.data[0].rason);
           } else {
             this.mensagePantalla = true;
 
