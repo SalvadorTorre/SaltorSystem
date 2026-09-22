@@ -546,37 +546,12 @@ export class ServicioUsuario {
       const raw = String(codigo || '').trim();
       if (!raw) return null;
 
-      // 1) Prioridad: claveusuario (código corto del vendedor)
-      const { data: byClaveRows, error: errClave } = await this.db
-        .from("usuario")
-        .select("*")
-        .eq("claveusuario", raw)
-        .limit(1);
-      if (errClave) throw errClave;
-      const byClave = this.firstRow(byClaveRows);
-      if (byClave) return byClave;
-
-      // 2) Fallback: codusuario numérico
-      if (/^\d+$/.test(raw)) {
-        const { data: byCodRows, error: errCod } = await this.db
-          .from("usuario")
-          .select("*")
-          .eq("codusuario", Number(raw))
-          .limit(1);
-        if (errCod) throw errCod;
-        const byCod = this.firstRow(byCodRows);
-        if (byCod) return byCod;
-      }
-
-      // 3) Fallback: idusuario
-      const { data: byIdUsuarioRows, error: errIdUsuario } = await this.db
-        .from("usuario")
-        .select("*")
-        .ilike("idusuario", raw)
-        .limit(1);
-      if (errIdUsuario) throw errIdUsuario;
-      const byIdUsuario = this.firstRow(byIdUsuarioRows);
-      return byIdUsuario || null;
+      const { data: rows, error } = await this.db.rpc(
+        'buscar_usuario_vendedor',
+        { p_codigo: raw },
+      );
+      if (error) throw error;
+      return this.firstRow(rows);
     })()).pipe(
       map((row: any) => ({
         status: "success",

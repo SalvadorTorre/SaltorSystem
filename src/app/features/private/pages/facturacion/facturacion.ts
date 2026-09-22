@@ -1964,6 +1964,27 @@ export class Facturacion implements OnInit, OnDestroy {
     void this.validarCodigoVendedor(false, null);
   }
 
+  private obtenerVendedorDeSesion(codigo: string): string | null {
+    const normalizar = (valor: unknown): string => String(valor ?? '').trim().toLocaleLowerCase();
+    const codigoIngresado = normalizar(codigo);
+    if (!codigoIngresado) return null;
+
+    const codigosSesion = [
+      localStorage.getItem('claveusuario'),
+      localStorage.getItem('codigousuario'),
+      localStorage.getItem('idusuario'),
+    ].map(normalizar).filter(Boolean);
+
+    if (!codigosSesion.includes(codigoIngresado)) return null;
+
+    return String(
+      localStorage.getItem('username') ||
+      localStorage.getItem('nombreusuario') ||
+      localStorage.getItem('idusuario') ||
+      codigo,
+    ).trim();
+  }
+
   private async validarCodigoVendedor(
     abrirDetalle: boolean,
     nextElement: HTMLInputElement | null,
@@ -1988,6 +2009,19 @@ export class Facturacion implements OnInit, OnDestroy {
       { fa_codVend: claveUsuario },
       { emitEvent: false },
     );
+
+    // El código con el que se inició sesión siempre es un vendedor válido.
+    // Evita rechazar al usuario actual si la búsqueda remota está restringida.
+    const nombreSesion = this.obtenerVendedorDeSesion(claveUsuario);
+    if (nombreSesion) {
+      this.codigoVendedorValidado = claveUsuario;
+      this.formularioFacturacion.patchValue({ fa_nomVend: nombreSesion });
+      if (abrirDetalle) {
+        this.abrirModalDetalle();
+        nextElement?.focus();
+      }
+      return true;
+    }
 
     this.validandoVendedor = true;
     try {

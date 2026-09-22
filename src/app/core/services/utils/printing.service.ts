@@ -2739,6 +2739,13 @@ items.forEach((it: any) => {
   }
 
   async printBlob(blob: Blob, profileKey: DesktopPrintProfileKey): Promise<void> {
+    // QZ Tray tiene prioridad cuando está instalado y activo. Si no responde,
+    // se conserva exactamente el flujo de impresión existente.
+    if (await this.tryPrintWithQzTray(blob, profileKey)) {
+      this.cancelarVentanaImpresionReservada();
+      return;
+    }
+
     const isDesktop = typeof window !== 'undefined' && !!window.electronAPI?.isDesktop;
     if (isDesktop && window.electronAPI?.printPdfSilently) {
       try {
@@ -2765,12 +2772,6 @@ items.forEach((it: any) => {
       }
     }
 
-    // En navegador, usa QZ Tray si está instalado y activo. Si no responde,
-    // continúa con el diálogo de impresión normal sin bloquear el proceso.
-    if (await this.tryPrintWithQzTray(blob)) {
-      return;
-    }
-
     const pdfUrl = URL.createObjectURL(blob);
     try {
       await this.printPdf(pdfUrl, profileKey);
@@ -2782,7 +2783,10 @@ items.forEach((it: any) => {
     }
   }
 
-  private async tryPrintWithQzTray(blob: Blob): Promise<boolean> {
+  private async tryPrintWithQzTray(
+    blob: Blob,
+    profileKey: DesktopPrintProfileKey,
+  ): Promise<boolean> {
     if (typeof window === 'undefined') return false;
 
     let qz: any;
@@ -2806,7 +2810,10 @@ items.forEach((it: any) => {
         ]);
       }
 
-      const printer = await Promise.race([
+      const configuredPrinter = String(
+        await this.desktopPrintSettings.getProfileDeviceName(profileKey),
+      ).trim();
+      const printer = configuredPrinter || await Promise.race([
         qz.printers?.getDefault?.(),
         new Promise((_, reject) => setTimeout(() => reject(new Error('No se encontró impresora')), 1500)),
       ]);
@@ -2854,6 +2861,10 @@ items.forEach((it: any) => {
   }
 
   async printHtmlContent(html: string, profileKey: DesktopPrintProfileKey): Promise<void> {
+    if (await this.tryPrintHtmlWithQzTray(html, profileKey)) {
+      return;
+    }
+
     const silentPrinted = await this.trySilentPrintHtmlDesktop(html, profileKey);
     if (silentPrinted) return;
 
@@ -2879,6 +2890,62 @@ items.forEach((it: any) => {
         win.print();
       } catch {}
     }, 500);
+  }
+
+  private async tryPrintHtmlWithQzTray(
+    html: string,
+    profileKey: DesktopPrintProfileKey,
+  ): Promise<boolean> {
+    if (typeof window === 'undefined' || !String(html || '').trim()) return false;
+
+    let qz: any;
+    try {
+      const module = await import('qz-tray');
+      qz = (module as any).default || module;
+    } catch {
+      return false;
+    }
+
+    if (!qz?.websocket?.connect || !qz?.print || !qz?.configs?.create) {
+      return false;
+    }
+
+    const wasActive = !!qz.websocket.isActive?.();
+    try {
+      if (!wasActive) {
+        await Promise.race([
+          qz.websocket.connect(),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('QZ Tray no disponible')), 1500)),
+        ]);
+      }
+
+      const configuredPrinter = String(
+        await this.desktopPrintSettings.getProfileDeviceName(profileKey),
+      ).trim();
+      const printer = configuredPrinter || await Promise.race([
+        qz.printers?.getDefault?.(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('No se encontró impresora')), 1500)),
+      ]);
+      if (!printer) return false;
+
+      const config = qz.configs.create(printer);
+      await qz.print(config, [{
+        type: 'pixel',
+        format: 'html',
+        flavor: 'plain',
+        data: html,
+      }]);
+      return true;
+    } catch (error) {
+      console.warn('[PrintingService] QZ Tray no está disponible para HTML; se usará impresión normal.', error);
+      return false;
+    } finally {
+      if (!wasActive && qz.websocket.isActive?.()) {
+        try {
+          await qz.websocket.disconnect();
+        } catch {}
+      }
+    }
   }
 
   private async trySilentPrintDesktop(

@@ -1013,8 +1013,12 @@ export class Usuario implements OnInit {
               },
             });
           },
-          error: () => {
-            this.fireToast({ title: 'Error al actualizar usuario', icon: 'error' });
+          error: (error) => {
+            console.error('Error al actualizar usuario', error);
+            this.fireToast({
+              title: String(error?.message || 'Error al actualizar usuario'),
+              icon: 'error',
+            });
           }
         });
       },
