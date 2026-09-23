@@ -506,7 +506,7 @@ export class ServicioConfiguracionGlobal {
           throw new Error('No se pudo invocar la función send-dgii-direct-cert.');
         }
 
-        const { data, error } = await client.functions.invoke(
+        const { data, error, response } = await client.functions.invoke(
           'send-dgii-direct-cert',
           {
             body: {
@@ -522,13 +522,17 @@ export class ServicioConfiguracionGlobal {
             e?.context?.statusText || e?.message || 'Error enviando a DGII';
           let parsedBody: any = null;
 
-          const ctx = e?.context;
-          if (ctx && typeof ctx?.json === 'function') {
+          const ctx = e?.context || response;
+          if (ctx) {
             try {
-              const body = await ctx.json();
+              const readable = typeof ctx?.clone === 'function' ? ctx.clone() : ctx;
+              const body = typeof readable?.json === 'function'
+                ? await readable.json()
+                : null;
               parsedBody = body;
               const bodyMsg =
                 body?.message ||
+                body?.msg ||
                 body?.error?.message ||
                 body?.details ||
                 null;
@@ -536,8 +540,20 @@ export class ServicioConfiguracionGlobal {
                 details = String(bodyMsg);
               }
             } catch {
-              // Ignorar parse del body; se conserva details por defecto.
+              try {
+                const readable = typeof ctx?.clone === 'function' ? ctx.clone() : ctx;
+                const raw = typeof readable?.text === 'function'
+                  ? await readable.text()
+                  : '';
+                if (raw) details = raw;
+              } catch {
+                // Se conserva el mensaje original del cliente Supabase.
+              }
             }
+          }
+
+          if (/WorkerRequestCancelled|request has been cancelled by supervisor/i.test(String(details))) {
+            details = 'El servidor DGII tardó demasiado en responder. Verifique el estado de la factura antes de reenviarla para evitar duplicados.';
           }
 
           const enriched = new Error(String(details)) as any;

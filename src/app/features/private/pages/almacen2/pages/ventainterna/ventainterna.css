@@ -48,6 +48,83 @@ tfoot {
   /* Ajusta el margen según sea necesario */
 }
 
+.vi-empresa-selected,
+.vi-sucursal-selected {
+  background-color: #165DFF !important;
+  color: #ffffff !important;
+}
+
+.searchReturnItem.active {
+  background-color: #165DFF !important;
+  color: #ffffff !important;
+}
+
+.searchReturnItem.vi-empresa-selected > a,
+.searchReturnItem.vi-empresa-selected > a:link,
+.searchReturnItem.vi-empresa-selected > a:visited,
+.searchReturnItem.vi-empresa-selected > a:hover,
+.searchReturnItem.vi-empresa-selected > a:active,
+.searchReturnItem.vi-sucursal-selected > a,
+.searchReturnItem.vi-sucursal-selected > a:link,
+.searchReturnItem.vi-sucursal-selected > a:visited,
+.searchReturnItem.vi-sucursal-selected > a:hover,
+.searchReturnItem.vi-sucursal-selected > a:active,
+.searchReturnItem.active > a,
+.searchReturnItem.active > a:link,
+.searchReturnItem.active > a:visited,
+.searchReturnItem.active > a:hover,
+.searchReturnItem.active > a:active {
+  color: #ffffff !important;
+  background-color: transparent !important;
+  text-decoration: none !important;
+}
+
+.searchReturnItem.vi-empresa-selected > a *,
+.searchReturnItem.vi-sucursal-selected > a *,
+.searchReturnItem.active > a * {
+  color: #ffffff !important;
+}
+
+.searchReturnItem.vi-empresa-selected > a .vi-suc-count,
+.searchReturnItem.active > a .vi-suc-count {
+  color: rgba(255,255,255,.85) !important;
+}
+
+.dropdown-menu > .vi-empresa-selected:hover,
+.dropdown-menu > .vi-sucursal-selected:hover,
+.dropdown-menu > .searchReturnItem.active:hover,
+.dropdown-menu > .vi-solicitud-selected:hover {
+  background-color: #0F4ADB !important;
+  color: #ffffff !important;
+}
+
+.vi-solicitud-selected {
+  background-color: #165DFF !important;
+  color: #ffffff !important;
+}
+
+.searchReturnItem.vi-solicitud-selected > a,
+.searchReturnItem.vi-solicitud-selected > a:link,
+.searchReturnItem.vi-solicitud-selected > a:visited,
+.searchReturnItem.vi-solicitud-selected > a:hover,
+.searchReturnItem.vi-solicitud-selected > a:active,
+.searchReturnItem.vi-solicitud-selected > a *,
+.searchReturnItem.active.vi-solicitud-selected > a {
+  color: #ffffff !important;
+  background-color: transparent !important;
+  text-decoration: none !important;
+}
+
+.searchReturnItem.vi-solicitud-selected > a .vi-solic-count,
+.searchReturnItem.active > a .vi-solic-count {
+  color: rgba(255,255,255,.85) !important;
+}
+
+.dropdown-menu > .vi-solicitud-selected:hover > a,
+.dropdown-menu > .vi-solicitud-selected:hover > a * {
+  color: #ffffff !important;
+}
+
 .form-check-label {
   margin-left: 5x;
   /* Espacio entre el input y el label */

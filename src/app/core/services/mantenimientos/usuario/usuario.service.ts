@@ -561,6 +561,28 @@ export class ServicioUsuario {
     );
   }
 
+  buscarUsuarioPorClaveUsuario(clave: string): Observable<any> {
+    return from((async () => {
+      const raw = String(clave || '').trim();
+      if (!raw) return null;
+
+      const { data: rows, error } = await this.db
+        .from('usuario')
+        .select('*')
+        .eq('claveusuario', raw)
+        .limit(1);
+
+      if (error) throw error;
+      return this.firstRow(rows);
+    })()).pipe(
+      map((row: any) => ({
+        status: 'success',
+        code: 200,
+        data: row ? this.normalizarUsuario(row) : null,
+      }))
+    );
+  }
+
   buscarUsuariosChoferes(pageIndex: number, pageSize: number, termino?: string, sucursalId?: number | string | null): Observable<any> {
     const offset = Math.max(pageIndex - 1, 0) * pageSize;
     const q = String(termino || '').trim();

@@ -1,5 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.50.0";
 
+const DGII_REQUEST_TIMEOUT_MS = 150_000;
+
 const corsHeaders: Record<string, string> = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -29,14 +31,39 @@ function buildEndpointCandidates(
   if (!base) return [];
 
   const endpoints: string[] = [];
-  endpoints.push(`${base}/${ambiente}/api/test-body-direct-cert`);
-
-  // Compatibilidad: algunos servidores esperan /ecf/api/<ambiente>/api/...
-  if (!/\/api$/i.test(base)) {
-    endpoints.push(`${base}/api/${ambiente}/api/test-body-direct-cert`);
+  // El proxy actual publica PROD/TEST en /api/<ambiente>/<ruta>.
+  // Se elimina el antiguo sufijo /ecf para usar primero la ruta canónica
+  // anunciada por /api/health y /openapi.json.
+  const canonicalBase = base.replace(/\/ecf$/i, "");
+  if (/\/api$/i.test(canonicalBase)) {
+    endpoints.push(`${canonicalBase}/${ambiente}/test-body-direct-cert`);
+  } else {
+    endpoints.push(`${canonicalBase}/api/${ambiente}/test-body-direct-cert`);
   }
 
+  // Compatibilidad con aliases de instalaciones anteriores.
+  endpoints.push(`${base}/api/${ambiente}/api/test-body-direct-cert`);
+  endpoints.push(`${base}/${ambiente}/api/test-body-direct-cert`);
+
   return Array.from(new Set(endpoints));
+}
+
+function proxyErrorMessage(payload: any, status: number): string {
+  const details = payload?.details;
+  const raw = [
+    details?.errors,
+    details?.message,
+    payload?.errors,
+    payload?.message,
+    payload?.raw,
+  ].find((value) => typeof value === "string" && value.trim());
+  const message = String(raw || "").trim();
+
+  if (/fetch failed|dns error|failed to lookup|connect/i.test(message)) {
+    return "El servicio e-CF no pudo conectarse con DGII. No reenvíe la factura hasta verificar su estado para evitar duplicados.";
+  }
+
+  return message || `DGII proxy respondió HTTP ${status}`;
 }
 
 function normalizeAmbiente(value: unknown): "test" | "prod" {
@@ -326,20 +353,44 @@ Deno.serve(async (req: Request) => {
 
     for (const candidate of endpointCandidates) {
       endpoint = candidate;
-      const upstream = await fetch(candidate, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-cert-p12-b64": certB64,
-          "x-cert-password": certPassword,
-          "x-cert-rnc": certRnc,
-          "x-cert-persist": "true",
-        },
-        body: JSON.stringify(payload),
-      });
+      const controller = new AbortController();
+      const timeoutId = setTimeout(
+        () => controller.abort(),
+        DGII_REQUEST_TIMEOUT_MS,
+      );
+      let upstream: Response;
+      let rawText = "";
+      try {
+        upstream = await fetch(candidate, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-cert-p12-b64": certB64,
+            "x-cert-password": certPassword,
+            "x-cert-rnc": certRnc,
+            "x-cert-persist": "true",
+          },
+          body: JSON.stringify(payload),
+          signal: controller.signal,
+        });
+        rawText = await upstream.text();
+      } catch (error) {
+        const timeout = error instanceof DOMException && error.name === "AbortError";
+        return jsonResponse(timeout ? 504 : 502, {
+          ok: false,
+          message: timeout
+            ? "El servicio DGII tardó más de 150 segundos en responder. Verifique el estado antes de reenviar para evitar duplicados."
+            : "No se pudo conectar con el servicio de facturación electrónica DGII.",
+          details: error instanceof Error ? error.message : String(error),
+          endpoint,
+          ambiente: dgiiAmbiente,
+          empresa: empresa?.cod_empre || null,
+        });
+      } finally {
+        clearTimeout(timeoutId);
+      }
 
       finalStatus = upstream.status;
-      const rawText = await upstream.text();
       try {
         upstreamBody = rawText ? JSON.parse(rawText) : {};
       } catch {
@@ -366,7 +417,7 @@ Deno.serve(async (req: Request) => {
     if (!ok) {
       return jsonResponse(502, {
         ok: false,
-        message: `DGII proxy respondió HTTP ${finalStatus}`,
+        message: proxyErrorMessage(upstreamBody, finalStatus),
         details: upstreamBody,
         endpoint,
         ambiente: dgiiAmbiente,

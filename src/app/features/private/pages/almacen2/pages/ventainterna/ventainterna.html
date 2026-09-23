@@ -269,15 +269,14 @@
                           style="height: 30px"
                           autocomplete="off"
                           (input)="convertToUpperCase($event)"
-                          (keydown.enter)="moveFocusnomclie($event, input2)"
                           (keydown)="handleKeydown($event)"
                           (blur)="onBlur($event)"
                           #input1
-                          id="input2"
+                          id="inputEmpresa"
                           [formControl]="buscarNombre"
                         />
                         <div
-                          [ngClass]="{ 'show': resultadoNombre.length > 0 }"
+                          [ngClass]="{ 'show': resultadoEmpresas.length > 0 }"
                           class="dropdown-menu"
                           style="
                             margin-right: 30px;
@@ -290,44 +289,37 @@
                         >
                           <div
                             class="searchReturnItem name-find"
-                            *ngFor="let result of resultadoNombre; let i = index"
-                            [class.active]="i === selectedIndex"
+                            *ngFor="let result of resultadoEmpresas; let i = index"
+                            [class.active]="i === selectedIndexEmpresa"
+                            [class.vi-empresa-selected]="empresaClienteSeleccionada && (empresaClienteSeleccionada.cod_empre === result.cod_empre)"
                           >
                             <a
                               (click)="cargarDatosEmpresaCliente(result)"
+                              [style.color]="((empresaClienteSeleccionada && (empresaClienteSeleccionada.cod_empre === result.cod_empre)) || (i === selectedIndexEmpresa)) ? '#ffffff' : '#222222'"
                               style="
-                                color: #222222 !important;
                                 font-size: 10pt;
                                 padding: 20px 0px;
                                 text-decoration: none !important;
                                 cursor: pointer;
+                                display: block;
                               "
-                              class="px-3 cp"
+                              class="px-3 cp vi-empresa-link"
+                              [style.font-weight]="((empresaClienteSeleccionada && (empresaClienteSeleccionada.cod_empre === result.cod_empre)) || (i === selectedIndexEmpresa)) ? 600 : 400"
                             >
-                              <i class="far fa-building mr-5"></i>&nbsp;&nbsp;{{ result.nom_sucursal }} - {{ result.cod_sucursal }}
-                              — {{ obtenerNombreEmpresa(result) }}
+                              <i class="far fa-building mr-5"></i>&nbsp;&nbsp;{{ result.nom_empre }} ({{ result.cod_empre }})
+                              <span
+                                *ngIf="result.sucursales?.length" class="vi-suc-count"
+                                [style.color]="((empresaClienteSeleccionada && (empresaClienteSeleccionada.cod_empre === result.cod_empre)) || (i === selectedIndexEmpresa)) ? 'rgba(255,255,255,.85)' : '#6c757d'"
+                              >&nbsp;· {{ result.sucursales.length }} sucursal(es)</span>
                             </a>
                           </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                  <div class="mb-1 row" *ngIf="nombreEmpresaPropietaria">
+                  <div class="mb-1 row mt-1">
                     <div class="col-2">
-                      <label>Empresa propietaria</label>
-                    </div>
-                    <div class="col-10">
-                      <input
-                        type="text"
-                        class="form-control form-control-sm"
-                        [value]="nombreEmpresaPropietaria"
-                        readonly
-                      />
-                    </div>
-                  </div>
-                  <div class="mb-1 row mt-1" *ngIf="mostrarSucursalCliente">
-                    <div class="col-2">
-                      <label for=" ">Sucursal Cliente</label>
+                      <label for=" ">Sucursal</label>
                     </div>
                     <div class="col-10">
                       <div class="input-group show">
@@ -337,8 +329,13 @@
                           style="height: 30px"
                           autocomplete="off"
                           (input)="convertToUpperCase($event)"
+                          (keydown)="handleKeydownSucursalCliente($event)"
+                          id="inputSucursalCliente"
+                          #inputSucursalClienteRef
                           [formControl]="buscarSucursalCliente"
                           formControlName="suculsar_clie"
+                          [disabled]="!empresaClienteSeleccionada && !mostrarSucursalCliente"
+                          placeholder="{{ empresaClienteSeleccionada ? 'Busque o seleccione la sucursal…' : 'Primero seleccione la empresa' }}"
                         />
                         <div
                           [ngClass]="{ 'show': resultadoSucursalCliente.length > 0 }"
@@ -354,18 +351,22 @@
                         >
                           <div
                             class="searchReturnItem name-find"
-                            *ngFor="let sucursal of resultadoSucursalCliente"
+                            *ngFor="let sucursal of resultadoSucursalCliente; let i = index"
+                            [class.active]="i === selectedIndexSucursalCliente"
+                            [class.vi-sucursal-selected]="sucursalClienteSeleccionada && (sucursalClienteSeleccionada.cod_sucursal === sucursal.cod_sucursal)"
                           >
                             <a
                               (click)="cargarSucursalCliente(sucursal)"
+                              [style.color]="((sucursalClienteSeleccionada && (sucursalClienteSeleccionada.cod_sucursal === sucursal.cod_sucursal)) || (i === selectedIndexSucursalCliente)) ? '#ffffff' : '#222222'"
                               style="
-                                color: #222222 !important;
                                 font-size: 10pt;
                                 padding: 20px 0px;
                                 text-decoration: none !important;
                                 cursor: pointer;
+                                display: block;
                               "
-                              class="px-3 cp"
+                              class="px-3 cp vi-sucursal-link"
+                              [style.font-weight]="((sucursalClienteSeleccionada && (sucursalClienteSeleccionada.cod_sucursal === sucursal.cod_sucursal)) || (i === selectedIndexSucursalCliente)) ? 600 : 400"
                             >
                               <i class="far fa-building mr-5"></i>&nbsp;&nbsp;{{ sucursal.nom_sucursal }} - {{ sucursal.cod_sucursal }}
                             </a>
@@ -384,11 +385,12 @@
                           type="text"
                           formControlName="fa_solicitud"
                           (input)="convertToUpperCase($event)"
-                          (keydown.enter)="seleccionarSolicitudEnter($event, input3)"
+                          (keydown)="handleKeydownSolicitud($event)"
                           #input2
+                          id="inputNoSolicitud"
                           class="form-control form-control-sm"
                           autocomplete="off"
-                          placeholder="Opcional"
+                          placeholder="Selecciona la solicitud de la sucursal"
                         />
                         <div
                           [ngClass]="{ 'show': resultadoSolicitud.length > 0 }"
@@ -396,27 +398,39 @@
                           style="
                             margin-top: 32px;
                             z-index: 300;
-                            width: 360px;
+                            width: 420px;
                             position: absolute;
                             will-change: transform;
                           "
                         >
                           <div
                             class="searchReturnItem name-find"
-                            *ngFor="let solicitud of resultadoSolicitud"
+                            *ngFor="let solicitud of resultadoSolicitud; let i = index"
+                            [class.active]="i === selectedIndexSolicitud"
+                            [class.vi-solicitud-selected]="solicitudSeleccionadaCargada && (solicitudSeleccionadaCargada.so_codsoli === solicitud.so_codsoli)"
                           >
                             <a
                               (click)="cargarSolicitudVentaInterna(solicitud)"
+                              [style.color]="((solicitudSeleccionadaCargada && solicitudSeleccionadaCargada.so_codsoli === solicitud.so_codsoli) || (i === selectedIndexSolicitud)) ? '#ffffff' : '#222222'"
                               style="
-                                color: #222222 !important;
                                 font-size: 10pt;
                                 padding: 12px 0px;
                                 text-decoration: none !important;
                                 cursor: pointer;
+                                display: block;
                               "
                               class="px-3 cp d-block"
+                              [style.font-weight]="((solicitudSeleccionadaCargada && solicitudSeleccionadaCargada.so_codsoli === solicitud.so_codsoli) || (i === selectedIndexSolicitud)) ? 600 : 400"
                             >
-                              <i class="far fa-file-alt mr-5"></i>&nbsp;&nbsp;{{ solicitud.so_codsoli }} - {{ solicitud.so_fecha | date:'dd/MM/yyyy' }}
+                              <i class="far fa-file-alt mr-5"></i>&nbsp;
+                              <strong>{{ solicitud.so_codsoli }}</strong>
+                              <span class="vi-solic-count"
+                                [style.color]="((solicitudSeleccionadaCargada && solicitudSeleccionadaCargada.so_codsoli === solicitud.so_codsoli) || (i === selectedIndexSolicitud)) ? 'rgba(255,255,255,.85)' : '#6c757d'">
+                                &nbsp;· {{ solicitud.so_fecha | date:'dd/MM/yyyy' }}
+                                <ng-container *ngIf="solicitud.so_nomclie">
+                                  &nbsp;· {{ solicitud.so_nomclie }}
+                                </ng-container>
+                              </span>
                             </a>
                           </div>
                         </div>
@@ -454,7 +468,10 @@
                       <input
                         type="text"
                         formControlName="fa_codFact"
+                        tabindex="-1"
+                        readonly
                         class="form-control form-control-sm"
+                        [attr.disabled]="'disabled'"
                       />
                     </div>
                     <div class="col-2">
@@ -464,7 +481,10 @@
                       <input
                         formControlName="fa_fecFact"
                         type="text"
+                        tabindex="-1"
+                        readonly
                         class="form-control form-control-sm"
+                        [attr.disabled]="'disabled'"
                       />
                     </div>
                   </div>
@@ -477,7 +497,6 @@
                         type="password"
                         (input)="convertToUpperCase($event)"
                         (keydown)="moveFocus($event, input4)"
-                        (keydown.enter)="buscarUsuario($event, input4)"
                         formControlName="fa_codVend"
                         #input3
                         class="form-control form-control-sm"
@@ -638,7 +657,6 @@
                   #input7
                   (keydown)="moveFocus($event, input4)"
                   class="form-control"
-                  (keydown.enter)="agregaItem($event)"
                 />
               </div>
             </div>

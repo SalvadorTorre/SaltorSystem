@@ -52,6 +52,7 @@ import {
 import { Inventario } from '../../../mantenimientos/pages/inventario-page/inventario';
 import { PrintingService } from 'src/app/core/services/utils/printing.service';
 import { SolicitudPrestamoService } from 'src/app/core/services/almacen/solicitudprestamo/solicitudprestamo.service';
+import { ServicioProducto } from 'src/app/core/services/mantenimientos/producto/producto.service';
 declare var $: any;
 @Component({
   selector: 'Ventainterna',
@@ -124,7 +125,8 @@ export class Ventainterna implements OnInit, OnDestroy {
     private servicioInventario: ServicioInventario,
     private ServicioUsuario: ServicioUsuario,
     private printing: PrintingService,
-    private solicitudPrestamoService: SolicitudPrestamoService
+    private solicitudPrestamoService: SolicitudPrestamoService,
+    private servicioProducto: ServicioProducto
   ) {
     this.form = this.fb.group({
       fa_codvend: ['', Validators.required], // El campo es requerido
@@ -272,15 +274,25 @@ export class Ventainterna implements OnInit, OnDestroy {
   buscarNombre = new FormControl();
   buscarSucursalCliente = new FormControl();
   resultadoNombre: SucursalesData[] = [];
+  resultadoEmpresas: any[] = [];
   resultadoSucursalCliente: SucursalesData[] = [];
   resultadoSolicitud: any[] = [];
+  selectedIndexSolicitud: number = 0;
+  solicitudSeleccionadaCargada: any = null;
+  private _cargandoSolicitudDetalle: boolean = false;
+  private solicitudSearchSequence = 0;
+  private _enterManejandoFoco: boolean = false;
   sucursalesCliente: SucursalesData[] = [];
   sucursalesEmpresa: SucursalesData[] = [];
   empresasCatalogo: EmpresaModelData[] = [];
+  empresasAgrupadas: Array<{ cod_empre: string; nom_empre: string; sucursales: SucursalesData[] }> = [];
   nombreEmpresaPropietaria = '';
   mostrarSucursalCliente = false;
-  empresaClienteSeleccionada: SucursalesData | null = null;
+  empresaClienteSeleccionada: { cod_empre: string; nom_empre: string; sucursales: SucursalesData[] } | null = null;
+  sucursalClienteSeleccionada: SucursalesData | null = null;
   selectedIndex = 1;
+  selectedIndexEmpresa = 0;
+  selectedIndexSucursalCliente = 0;
   buscarcodmerc = new FormControl();
   buscardescripcionmerc = new FormControl();
   // buscarcodmercElement = new FormControl();
@@ -295,6 +307,7 @@ export class Ventainterna implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     document.addEventListener('keydown', this.capturarEnterMensaje, true);
+    document.addEventListener('keydown', this.capturarEnterModalVentaInterna, true);
     this.buscarTodasVentainterna(1);
     this.cargarSucursalesEmpresa();
     this.buscarcodmerc.valueChanges
@@ -388,36 +401,40 @@ export class Ventainterna implements OnInit, OnDestroy {
         distinctUntilChanged(),
         tap(() => {
           this.resultadoNombre = [];
+          this.resultadoEmpresas = [];
         }),
         filter((query: string) => String(query || '').trim() !== '')
       )
       .subscribe((query: string) => {
         const q = String(query || '').trim().toUpperCase();
-        this.resultadoNombre = this.sucursalesEmpresa
-          .filter((sucursal) =>
-            `${sucursal.nom_sucursal || ''} ${sucursal.cod_sucursal || ''}`
-              .toUpperCase()
-              .includes(q)
+        this.resultadoEmpresas = this.empresasAgrupadas
+          .filter((emp) =>
+            `${emp.nom_empre || ''} ${emp.cod_empre || ''}`.toUpperCase().includes(q)
           )
           .slice(0, 50);
-        this.selectedIndex = 0;
+        this.selectedIndexEmpresa = 0;
       });
     this.buscarSucursalCliente.valueChanges
       .pipe(
-        debounceTime(250),
+        debounceTime(150),
         distinctUntilChanged(),
         tap(() => {
           this.resultadoSucursalCliente = [];
-        }),
-        filter((query: string) => query !== '' && this.mostrarSucursalCliente)
+        })
       )
       .subscribe((query: string) => {
         const q = String(query || '').trim().toUpperCase();
-        this.resultadoSucursalCliente = this.sucursalesCliente.filter((sucursal) =>
-          `${sucursal.nom_sucursal || ''} ${sucursal.cod_sucursal || ''}`
-            .toUpperCase()
-            .includes(q)
-        );
+        const base = this.sucursalesCliente.slice();
+        if (!q || !this.mostrarSucursalCliente) {
+          this.resultadoSucursalCliente = base.slice(0, 200);
+        } else {
+          this.resultadoSucursalCliente = base.filter((sucursal) =>
+            `${sucursal.nom_sucursal || ''} ${sucursal.cod_sucursal || ''}`
+              .toUpperCase()
+              .includes(q)
+          );
+        }
+        this.selectedIndexSucursalCliente = 0;
       });
     this.formularioVentainterna.get('fa_solicitud')?.valueChanges
       .pipe(
@@ -429,6 +446,7 @@ export class Ventainterna implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     document.removeEventListener('keydown', this.capturarEnterMensaje, true);
+    document.removeEventListener('keydown', this.capturarEnterModalVentaInterna, true);
   }
 
   private readonly capturarEnterMensaje = (event: KeyboardEvent): void => {
@@ -444,12 +462,218 @@ export class Ventainterna implements OnInit, OnDestroy {
     }
   };
 
+  private readonly capturarEnterModalVentaInterna = (event: KeyboardEvent): void => {
+    if (event.key !== 'Enter') return;
+    const target = event.target as HTMLElement | null;
+    if (!target) return;
+    const modal = target.closest('#modalventainterna') as HTMLElement | null;
+    if (!modal) return;
+
+    const isInput =
+      target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT';
+    if (!isInput) return;
+
+    const tipo = (target as HTMLInputElement).type?.toLowerCase() || '';
+    if (tipo === 'submit' || tipo === 'button' || tipo === 'reset') return;
+
+    if (target.tagName === 'TEXTAREA') return;
+
+    event.preventDefault();
+    const idInput = String(target.getAttribute('id') || '').trim();
+
+    const focoInicial = document.activeElement;
+    this._enterManejandoFoco = true;
+
+    const ejecutarAntesDeSaltar = (): boolean | Promise<boolean> => {
+      if (idInput === 'inputEmpresa' || idInput === 'input1') {
+        const proxNombre = String(this.buscarNombre.value || '').trim();
+        if (proxNombre) {
+          const resultado = this.resultadoEmpresas?.[this.selectedIndexEmpresa] ?? null;
+          if (resultado) {
+            this.cargarDatosEmpresaCliente(resultado);
+            return false;
+          }
+          const porNom = this.empresasAgrupadas.find(e =>
+            String(e?.nom_empre || '').trim().toUpperCase() === proxNombre.toUpperCase() ||
+            String(e?.cod_empre || '').trim().toUpperCase() === proxNombre.toUpperCase()
+          );
+          if (porNom) {
+            this.cargarDatosEmpresaCliente(porNom);
+            return false;
+          }
+        }
+        return true;
+      }
+      if (idInput === 'inputSucursalCliente') {
+        const q = String(this.buscarSucursalCliente.value || '').trim();
+        if (q) {
+          const resultado = this.resultadoSucursalCliente?.[this.selectedIndexSucursalCliente] ?? null;
+          if (resultado) {
+            this.cargarSucursalCliente(resultado as any);
+            return false;
+          }
+          const porNom = this.sucursalesCliente.find(s =>
+            String(s?.nom_sucursal || '').trim().toUpperCase() === q.toUpperCase() ||
+            String(s?.cod_sucursal || '').trim() === q
+          );
+          if (porNom) {
+            this.cargarSucursalCliente(porNom as any);
+            return false;
+          }
+          if (this.sucursalesCliente.length === 1) {
+            this.cargarSucursalCliente(this.sucursalesCliente[0] as any);
+            return false;
+          }
+        }
+        return true;
+      }
+      if (idInput === 'inputNoSolicitud' || idInput === 'input2') {
+        const q = String(this.formularioVentainterna.get('fa_solicitud')?.value || '').trim();
+        if (q && this.resultadoSolicitud?.length) {
+          const idx = Number.isFinite(this.selectedIndexSolicitud) ? this.selectedIndexSolicitud : 0;
+          const sel = this.resultadoSolicitud[idx] ?? this.resultadoSolicitud[0];
+          if (sel) {
+            this.cargarSolicitudVentaInterna(sel);
+            return false;
+          }
+        }
+        return true;
+      }
+      if (idInput === 'input3') {
+        const siguiente = document.getElementById('input5') as HTMLInputElement | null;
+        this.buscarUsuario(event, siguiente);
+        return false;
+      }
+      if (idInput === 'input4') {
+        const q = String(this.buscarcodmerc.value || this.codmerc || '').trim();
+        const idx = Number.isFinite(this.selectedIndexcodmerc) ? this.selectedIndexcodmerc : 0;
+        const sel = this.resultadoCodmerc?.[idx] ?? null;
+        if (sel) {
+          this.cargarDatosInventario(sel);
+          return false;
+        }
+        const buscoDesc = this.resultadodescripcionmerc?.find(p =>
+          String(p?.in_codmerc || '').trim().toUpperCase() === q.toUpperCase() ||
+          String(p?.in_desmerc || '').trim().toUpperCase() === q.toUpperCase()
+        );
+        if (buscoDesc) {
+          this.cargarDatosInventario(buscoDesc);
+          return false;
+        }
+        if (q) {
+          const porCod = (this.resultadoCodmerc || []).find(p =>
+            String(p?.in_codmerc || '').trim().toUpperCase() === q.toUpperCase()
+          );
+          if (porCod) {
+            this.cargarDatosInventario(porCod);
+            return false;
+          }
+        }
+        return true;
+      }
+      if (idInput === 'input5') {
+        const q = String(this.buscardescripcionmerc.value || this.descripcionmerc || '').trim();
+        const idx = Number.isFinite(this.selectedIndexcoddescripcionmerc) ? this.selectedIndexcoddescripcionmerc : 0;
+        const sel = this.resultadodescripcionmerc?.[idx] ?? null;
+        if (sel) {
+          this.cargarDatosInventario(sel);
+          return false;
+        }
+        if (q) {
+          const busco = (this.resultadodescripcionmerc || this.resultadoCodmerc || []).find(p =>
+            String(p?.in_desmerc || '').trim().toUpperCase() === q.toUpperCase() ||
+            String(p?.in_codmerc || '').trim().toUpperCase() === q.toUpperCase()
+          );
+          if (busco) {
+            this.cargarDatosInventario(busco);
+            return false;
+          }
+        }
+        return true;
+      }
+      if (idInput === 'input6') {
+        return true;
+      }
+      if (idInput === 'input7') {
+        this.agregaItem(event);
+        return true;
+      }
+      return true;
+    };
+
+    const saltar = () => {
+      setTimeout(() => {
+        try {
+          const focoCambio = document.activeElement;
+          const elInicial = (focoInicial as HTMLElement | null)?.getAttribute('id') ||
+            (focoInicial as HTMLElement | null)?.tagName || '__none__';
+          const elAhora = (focoCambio as HTMLElement | null)?.getAttribute('id') ||
+            (focoCambio as HTMLElement | null)?.tagName || '__none__';
+          if (focoCambio && focoCambio !== focoInicial && elInicial !== elAhora) {
+            return;
+          }
+          this.enfocarSiguienteEnModal(modal, target as HTMLElement);
+        } finally {
+          this._enterManejandoFoco = false;
+        }
+      }, 30);
+    };
+
+    try {
+      const r = ejecutarAntesDeSaltar();
+      if (typeof r === 'object' && r != null && typeof (r as any).then === 'function') {
+        (r as Promise<boolean>).then(() => saltar(), () => saltar());
+      } else {
+        saltar();
+      }
+    } catch {
+      saltar();
+    }
+  };
+
+  private enfocarSiguienteEnModal(root: HTMLElement, current: HTMLElement): void {
+    const SELECTOR = [
+      'input:not([disabled]):not([type="hidden"]):not([readonly])',
+      'select:not([disabled])',
+      'textarea:not([disabled]):not([readonly])',
+      'button:not([disabled])',
+      '[tabindex]:not([tabindex="-1"])',
+    ].join(', ');
+
+    const candidatos = Array.from(root.querySelectorAll<HTMLElement>(SELECTOR)).filter((el) => {
+      if (!el.offsetParent && el !== document.activeElement) {
+        if (el.style.display === 'none' || (el as HTMLElement).hidden) return false;
+      }
+      return !el.hasAttribute('disabled');
+    });
+
+    const pos = candidatos.indexOf(current);
+    if (pos < 0) {
+      const primero = candidatos[0];
+      if (primero) this.enfocarElemento(primero);
+      return;
+    }
+    const siguiente = candidatos[pos + 1] || candidatos[0];
+    if (siguiente) this.enfocarElemento(siguiente);
+  }
+
+  private enfocarElemento(el: HTMLElement): void {
+    setTimeout(() => {
+      try {
+        el.focus({ preventScroll: false });
+        if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+          (el as HTMLInputElement).select();
+        }
+      } catch {}
+    }, 0);
+  }
+
   crearFormularioVentainterna() {
     const fechaActual = new Date();
     const fechaActualStr = this.formatofecha(fechaActual);
     this.formularioVentainterna = this.fb.group({
-      fa_codFact: [''],
-      fa_fecFact: [fechaActualStr],
+      fa_codFact: [{ value: '', disabled: true }],
+      fa_fecFact: [{ value: fechaActualStr, disabled: true }],
       fa_valFact: [''],
       fa_codClie: [''],
       fa_nomClie: [''],
@@ -476,17 +700,32 @@ export class Ventainterna implements OnInit, OnDestroy {
     this.sucursalesCliente = [];
     this.mostrarSucursalCliente = false;
     this.empresaClienteSeleccionada = null;
+    this.sucursalClienteSeleccionada = null;
+    this.solicitudSeleccionadaCargada = null;
+    this.resultadoSolicitud = [];
     this.nombreEmpresaPropietaria = '';
     this.buscarNombre.setValue('', { emitEvent: false });
     this.buscarSucursalCliente.setValue('', { emitEvent: false });
+
+    this.crearFormularioVentainterna();
+
     $('#modalventainterna').modal('show');
     this.habilitarFormulario = true;
     this.formularioVentainterna.get('fa_codFact')!.disable();
     this.formularioVentainterna.get('fa_fecFact')!.disable();
-    this.formularioVentainterna.get('fa_nomVend')!.disable();
+    this.formularioVentainterna.get('fa_codVend')!.enable({ emitEvent: false });
+    this.formularioVentainterna.get('fa_nomVend')!.disable({ emitEvent: false });
     setTimeout(() => {
-      $('#input1').focus();
-    }, 500); // Asegúrate de que el tiempo sea suficiente para que el modal se abra completamente
+      this.resultadoSolicitud = [];
+      this.selectedIndexSolicitud = 0;
+      const codVendInput = document.getElementById('input3') as HTMLInputElement | null;
+      if (codVendInput) { codVendInput.focus(); codVendInput.select(); }
+      else {
+        const empresaInput = document.getElementById('input2') as HTMLInputElement | null;
+        if (empresaInput) { empresaInput.focus(); empresaInput.select(); }
+        else { $('#input1').focus(); }
+      }
+    }, 500);
   }
 
   cerrarModalVentainterna() {
@@ -525,7 +764,24 @@ export class Ventainterna implements OnInit, OnDestroy {
     this.formularioVentainterna.patchValue(Ventainterna);
     this.buscarNombre.setValue(Ventainterna.fa_nomClie || '', { emitEvent: false });
     this.buscarSucursalCliente.setValue(Ventainterna.suculsar_clie || '', { emitEvent: false });
-    this.mostrarSucursalCliente = !!Ventainterna.suculsar_clie;
+    const { empresa, sucursal } = this._restaurarSeleccionPorSucursalId(Ventainterna.fa_codClie);
+    if (empresa) {
+      this.empresaClienteSeleccionada = empresa;
+      this.sucursalesCliente = (empresa.sucursales || []).slice().sort((a, b) =>
+        String(a.nom_sucursal || '').localeCompare(String(b.nom_sucursal || ''), undefined, { numeric: true, sensitivity: 'base' })
+      );
+      this.sucursalClienteSeleccionada = sucursal;
+      this.mostrarSucursalCliente = this.sucursalesCliente.length > 1;
+      this.nombreEmpresaPropietaria = empresa.nom_empre || '';
+      this.buscarNombre.setValue(empresa.nom_empre || '', { emitEvent: false });
+      this.buscarSucursalCliente.setValue(Ventainterna.suculsar_clie || sucursal?.nom_sucursal || '', { emitEvent: false });
+    } else {
+      this.empresaClienteSeleccionada = null;
+      this.sucursalClienteSeleccionada = null;
+      this.sucursalesCliente = [];
+      this.mostrarSucursalCliente = !!Ventainterna.suculsar_clie;
+      this.nombreEmpresaPropietaria = this.empresaDeSucursalVenta(Ventainterna);
+    }
     this.tituloModalVentainterna = 'Editando Ventainterna';
     $('#modalventainterna').modal('show');
     this.habilitarFormulario = true;
@@ -585,37 +841,134 @@ export class Ventainterna implements OnInit, OnDestroy {
   }
  
   refrescarVentainterna(): void {
+    this.limpiarTabla();
+    this.totalItbis = 0;
+    this.limpiarCampos();
+
+    this.codnotfound = false;
+    this.desnotfound = false;
+    this.codmerVacio = false;
+    this.desmerVacio = false;
+    this.mensagePantalla = false;
+
+    this.resultadoCodmerc = [];
+    this.resultadodescripcionmerc = [];
+    this.resultadoNombre = [];
+    this.resultadoEmpresas = [];
+    this.resultadoSucursalCliente = [];
+    this.resultadoSolicitud = [];
+    this.buscarcodmerc.setValue('', { emitEvent: false });
+    this.buscardescripcionmerc.setValue('', { emitEvent: false });
+    this.buscarNombre.setValue('', { emitEvent: false });
+    this.buscarSucursalCliente.setValue('', { emitEvent: false });
+
+    this.sucursalesCliente = [];
+    this.mostrarSucursalCliente = false;
+    this.empresaClienteSeleccionada = null;
+    this.sucursalClienteSeleccionada = null;
+    this.nombreEmpresaPropietaria = '';
+    this.cancelarBusquedaCodigo = false;
+    this.cancelarBusquedaDescripcion = false;
+
+    this.selectedIndex = 1;
+    this.selectedIndexEmpresa = 0;
+    this.selectedIndexSucursalCliente = 0;
+    this.selectedIndexcodmerc = 1;
+    this.selectedIndexcoddescripcionmerc = 1;
+    this.isEditing = false;
+    this.itemToEdit = null;
+    this.productoselect = null as any;
+
+    this.crearFormularioVentainterna();
+    this.formularioVentainterna.get('fa_codFact')?.disable();
+    this.formularioVentainterna.get('fa_fecFact')?.disable();
+
     const base = this.originalVentainterna;
-    if (!base) { return; }
-    this.formularioVentainterna.patchValue(base);
-    if (this.modoedicionVentainterna) {
-      this.formularioVentainterna.get('fa_codFact')?.disable();
-      this.formularioVentainterna.get('fa_fecFact')?.disable();
-      this.formularioVentainterna.get('fa_codVend')?.disable();
-    } else {
-      this.formularioVentainterna.disable();
-    }
-    this.items = [];
-    this.servicioVentainterna.buscarVentainternaDetalle(base.fa_codFact).subscribe((response) => {
-      let subtotal = 0;
-      const data = Array.isArray(response?.data)
-        ? response.data
-        : (Array.isArray(response) ? response : (Array.isArray(response?.detalle) ? response.detalle : []));
-      data.forEach((d: any) => {
-        const cod = d.df_codMerc ?? d.df_codmerc ?? d.DF_CODMERC ?? d.dc_codmerc ?? d.DC_CODMERC ?? d.in_codmerc ?? '';
-        const des = d.df_desMerc ?? d.df_desmerc ?? d.DF_DESMERC ?? d.dc_descrip ?? d.DC_DESCRIP ?? d.in_desmerc ?? '';
-        const cantidad = Number(d.df_canMerc ?? d.df_canmerc ?? d.DF_CANMERC ?? d.dc_canmerc ?? d.DC_CANMERC ?? d.cantidad ?? 0);
-        const precio = Number(d.df_preMerc ?? d.df_premerc ?? d.DF_PREMERC ?? d.dc_premerc ?? d.DC_PREMERC ?? d.precio ?? 0);
-        const totalItem = Number(d.df_valMerc ?? d.df_valmerc ?? d.DF_VALMERC ?? d.dc_total ?? d.DC_TOTAL ?? (cantidad * precio));
-        const producto: ModeloInventarioData = { in_codmerc: cod, in_desmerc: des, in_grumerc: '', in_tipoproduct: '', in_canmerc: 0, in_caninve: 0, in_fecinve: null, in_eximini: 0, in_cosmerc: 0, in_premerc: 0, in_precmin: 0, in_costpro: 0, in_ucosto: 0, in_porgana: 0, in_peso: 0, in_longitud: 0, in_unidad: 0, in_medida: 0, in_longitu: 0, in_fecmodif: null, in_amacen: 0, in_imagen: '', in_status: '', in_itbis: false, in_minvent: 0 };
-        this.items.push({ producto, cantidad, precio, total: totalItem });
-        subtotal += totalItem;
+    if (base) {
+      this.formularioVentainterna.patchValue(base, { emitEvent: false });
+      this.buscarNombre.setValue(base.fa_nomClie || '', { emitEvent: false });
+      this.buscarSucursalCliente.setValue(base.suculsar_clie || '', { emitEvent: false });
+      const { empresa, sucursal } = this._restaurarSeleccionPorSucursalId(base.fa_codClie);
+      if (empresa) {
+        this.empresaClienteSeleccionada = empresa;
+        this.sucursalesCliente = (empresa.sucursales || []).slice().sort((a, b) =>
+          String(a.nom_sucursal || '').localeCompare(String(b.nom_sucursal || ''), undefined, { numeric: true, sensitivity: 'base' })
+        );
+        this.sucursalClienteSeleccionada = sucursal;
+        this.mostrarSucursalCliente = this.sucursalesCliente.length > 1;
+        this.nombreEmpresaPropietaria = empresa.nom_empre || '';
+        this.buscarNombre.setValue(empresa.nom_empre || '', { emitEvent: false });
+        this.buscarSucursalCliente.setValue(base.suculsar_clie || sucursal?.nom_sucursal || '', { emitEvent: false });
+      } else {
+        this.mostrarSucursalCliente = !!base.suculsar_clie;
+      }
+
+      if (this.modoedicionVentainterna) {
+        this.formularioVentainterna.get('fa_codFact')?.disable();
+        this.formularioVentainterna.get('fa_fecFact')?.disable();
+        this.formularioVentainterna.get('fa_codVend')?.disable();
+      } else if (this.modoconsultaVentainterna) {
+        this.formularioVentainterna.disable({ emitEvent: false });
+      } else {
+        this.formularioVentainterna.get('fa_nomVend')?.disable();
+      }
+
+      this.servicioVentainterna.buscarVentainternaDetalle(base.fa_codFact).subscribe((response) => {
+        let subtotal = 0;
+        const data = Array.isArray(response?.data)
+          ? response.data
+          : (Array.isArray(response) ? response : (Array.isArray(response?.detalle) ? response.detalle : []));
+        data.forEach((d: any) => {
+          const cod = d.df_codMerc ?? d.df_codmerc ?? d.DF_CODMERC ?? d.dc_codmerc ?? d.DC_CODMERC ?? d.in_codmerc ?? '';
+          const des = d.df_desMerc ?? d.df_desmerc ?? d.DF_DESMERC ?? d.dc_descrip ?? d.DC_DESCRIP ?? d.in_desmerc ?? '';
+          const cantidad = Number(d.df_canMerc ?? d.df_canmerc ?? d.DF_CANMERC ?? d.dc_canmerc ?? d.DC_CANMERC ?? d.cantidad ?? 0);
+          const precio = Number(d.df_preMerc ?? d.df_premerc ?? d.DF_PREMERC ?? d.dc_premerc ?? d.DC_PREMERC ?? d.precio ?? 0);
+          const totalItem = Number(d.df_valMerc ?? d.df_valmerc ?? d.DF_VALMERC ?? d.dc_total ?? d.DC_TOTAL ?? (cantidad * precio));
+          const producto: ModeloInventarioData = {
+            in_codmerc: cod, in_desmerc: des, in_grumerc: '', in_tipoproduct: '', in_canmerc: 0,
+            in_caninve: 0, in_fecinve: null, in_eximini: 0, in_cosmerc: 0, in_premerc: 0,
+            in_precmin: 0, in_costpro: 0, in_ucosto: 0, in_porgana: 0, in_peso: 0, in_longitud: 0,
+            in_unidad: 0, in_medida: 0, in_longitu: 0, in_fecmodif: null, in_amacen: 0, in_imagen: '',
+            in_status: '', in_itbis: false, in_minvent: 0,
+          };
+          this.items.push({ producto, cantidad, precio, total: totalItem });
+          subtotal += totalItem;
+        });
+        this.subTotal = subtotal;
+        this.totalGral = subtotal;
+        this.initTooltips();
       });
-      this.subTotal = subtotal;
-      this.totalGral = subtotal;
-      this.initTooltips();
-    });
-    setTimeout(() => { $('#input1').focus(); }, 300);
+    } else {
+      this.formularioVentainterna.patchValue({
+        fa_codVend: '',
+        fa_nomVend: '',
+      }, { emitEvent: false });
+      this.formularioVentainterna.get('fa_codVend')?.enable({ emitEvent: false });
+      this.formularioVentainterna.get('fa_nomVend')?.disable({ emitEvent: false });
+      this.tituloModalVentainterna = 'Nueva Ventainterna';
+      this.modoedicionVentainterna = false;
+      this.modoconsultaVentainterna = false;
+      this.habilitarIcono = true;
+      this.solicitudSeleccionadaCargada = null;
+      this.resultadoSolicitud = [];
+      this.selectedIndexSolicitud = 0;
+    }
+
+    setTimeout(() => {
+      const modal = document.getElementById('modalventainterna');
+      const inputs = modal?.querySelectorAll('.seccion-productos input') as NodeListOf<HTMLInputElement> | undefined;
+      inputs?.forEach((input) => { input.disabled = this.modoconsultaVentainterna; });
+      try {
+        const empresaInput = document.getElementById('input2') as HTMLInputElement | null;
+        if (empresaInput) {
+          empresaInput.scrollIntoView({ block: 'nearest' });
+          empresaInput.focus({ preventScroll: false });
+          empresaInput.select();
+        } else {
+          $('#input1').focus();
+        }
+      } catch {}
+    }, 280);
   }
   private initTooltips(): void {
     const elements = Array.prototype.slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
@@ -658,11 +1011,24 @@ export class Ventainterna implements OnInit, OnDestroy {
     this.formularioVentainterna.patchValue(Ventainterna);
     this.buscarNombre.setValue(Ventainterna.fa_nomClie || '', { emitEvent: false });
     this.buscarSucursalCliente.setValue(Ventainterna.suculsar_clie || '', { emitEvent: false });
-    const sucursalDestino = this.sucursalesEmpresa.find(
-      (sucursal) => Number(sucursal.cod_sucursal) === Number(Ventainterna.fa_codClie)
-    );
-    this.empresaClienteSeleccionada = sucursalDestino || null;
-    this.nombreEmpresaPropietaria = this.empresaDeSucursalVenta(Ventainterna);
+    const { empresa, sucursal } = this._restaurarSeleccionPorSucursalId(Ventainterna.fa_codClie);
+    if (empresa) {
+      this.empresaClienteSeleccionada = empresa;
+      this.sucursalesCliente = (empresa.sucursales || []).slice().sort((a, b) =>
+        String(a.nom_sucursal || '').localeCompare(String(b.nom_sucursal || ''), undefined, { numeric: true, sensitivity: 'base' })
+      );
+      this.sucursalClienteSeleccionada = sucursal;
+      this.mostrarSucursalCliente = this.sucursalesCliente.length > 1;
+      this.nombreEmpresaPropietaria = empresa.nom_empre || '';
+      this.buscarNombre.setValue(empresa.nom_empre || '', { emitEvent: false });
+      this.buscarSucursalCliente.setValue(Ventainterna.suculsar_clie || sucursal?.nom_sucursal || '', { emitEvent: false });
+    } else {
+      this.empresaClienteSeleccionada = null;
+      this.sucursalClienteSeleccionada = null;
+      this.sucursalesCliente = [];
+      this.mostrarSucursalCliente = !!Ventainterna.suculsar_clie;
+      this.nombreEmpresaPropietaria = this.empresaDeSucursalVenta(Ventainterna);
+    }
     this.tituloModalVentainterna = 'Consulta Ventainterna';
     $('#modalventainterna').modal('show');
     this.habilitarFormulario = true;
@@ -781,9 +1147,23 @@ export class Ventainterna implements OnInit, OnDestroy {
   guardarVentainterna() {
     const date = new Date();
     this.formularioVentainterna.get('fa_valFact')?.patchValue(this.totalGral);
-    this.formularioVentainterna.get('fa_codFact')!.enable();
-    this.formularioVentainterna.get('fa_fecFact')!.enable();
     this.formularioVentainterna.get('fa_nomVend')!.enable();
+    if (!this.modoedicionVentainterna) {
+      const codigoActual = String(this.formularioVentainterna.getRawValue().fa_codFact || '').trim();
+      const fechaActual = String(this.formularioVentainterna.getRawValue().fa_fecFact || '').trim();
+      if (!fechaActual) {
+        this.formularioVentainterna.patchValue(
+          { fa_fecFact: this.formatofecha(date) },
+          { emitEvent: false, onlySelf: true }
+        );
+      }
+      if (!codigoActual) {
+        this.formularioVentainterna.patchValue(
+          { fa_codFact: '' },
+          { emitEvent: false, onlySelf: true }
+        );
+      }
+    }
 
     if (!this.items.length) {
       Swal.fire({
@@ -820,33 +1200,80 @@ export class Ventainterna implements OnInit, OnDestroy {
     if (!codEmpresa) {
       codEmpresa = (localStorage.getItem('codigoempresa') || localStorage.getItem('cod_empre') || '').trim() || undefined;
     }
-    const codVendedor = (this.formularioVentainterna.get('fa_codVend')?.value || localStorage.getItem('codigousuario') || '').toString().trim();
-    const nomVendedor = (this.formularioVentainterna.get('fa_nomVend')?.value || localStorage.getItem('username') || '').toString().trim();
-    if (codVendedor) {
-      this.formularioVentainterna.patchValue({
-        fa_codVend: codVendedor,
-        fa_nomVend: nomVendedor,
-      });
-    }
+    const codVendedor = String(this.formularioVentainterna.get('fa_codVend')?.value || '').trim();
+    const nomVendedor = String(this.formularioVentainterna.get('fa_nomVend')?.value || '').trim();
+    this.formularioVentainterna.patchValue({
+      fa_codVend: codVendedor,
+      fa_nomVend: nomVendedor,
+    });
 
     const nombreEmpresaDigitada = String(
       this.buscarNombre.value || this.formularioVentainterna.get('fa_nomClie')?.value || ''
     ).trim();
-    const empresaCliente = this.empresaClienteSeleccionada || this.sucursalesEmpresa.find((sucursal) => {
-      const nombre = String(sucursal?.nom_sucursal || '').trim().toUpperCase();
-      const codigo = String(sucursal?.cod_sucursal || '').trim().toUpperCase();
-      const buscado = nombreEmpresaDigitada.toUpperCase();
-      return !!buscado && (nombre === buscado || codigo === buscado);
-    });
-    if (empresaCliente) {
-      this.cargarDatosEmpresaCliente(empresaCliente);
+    const sucursalClienteDigitada = String(
+      this.buscarSucursalCliente.value || this.formularioVentainterna.get('suculsar_clie')?.value || ''
+    ).trim();
+
+    let empresaGrupo = this.empresaClienteSeleccionada;
+    if (!empresaGrupo && nombreEmpresaDigitada) {
+      const buscado = nombreEmpresaDigitada.trim().toUpperCase();
+      empresaGrupo = this.empresasAgrupadas.find((emp) =>
+        String(emp?.nom_empre || '').trim().toUpperCase() === buscado ||
+        String(emp?.cod_empre || '').trim().toUpperCase() === buscado
+      ) || null;
+    }
+    let sucursalParaGuardar: SucursalesData | null = this.sucursalClienteSeleccionada;
+    if (empresaGrupo && !sucursalParaGuardar) {
+      const buscado = sucursalClienteDigitada.trim().toUpperCase();
+      if (buscado) {
+        sucursalParaGuardar = empresaGrupo.sucursales.find((s) =>
+          String(s?.nom_sucursal || '').trim().toUpperCase() === buscado ||
+          String(s?.cod_sucursal || '').trim().toUpperCase() === buscado
+        ) || null;
+      }
+      if (!sucursalParaGuardar && empresaGrupo.sucursales.length === 1) {
+        sucursalParaGuardar = empresaGrupo.sucursales[0];
+      }
+      if (!sucursalParaGuardar) {
+        const idGuardado = Number(this.formularioVentainterna.get('fa_codClie')?.value);
+        if (isFinite(idGuardado) && idGuardado > 0) {
+          sucursalParaGuardar =
+            empresaGrupo.sucursales.find((s) => Number(s?.cod_sucursal) === idGuardado) ||
+            this.sucursalesEmpresa.find((s) => Number(s?.cod_sucursal) === idGuardado) || null;
+        }
+      }
+    }
+
+    if (empresaGrupo) {
+      this.empresaClienteSeleccionada = empresaGrupo;
+      this.sucursalesCliente = empresaGrupo.sucursales;
+      this.mostrarSucursalCliente = empresaGrupo.sucursales.length > 1;
+      this.nombreEmpresaPropietaria = empresaGrupo.nom_empre || '';
+      this.buscarNombre.setValue(empresaGrupo.nom_empre || '', { emitEvent: false });
+      if (sucursalParaGuardar) {
+        this.sucursalClienteSeleccionada = sucursalParaGuardar;
+        this.formularioVentainterna.patchValue({
+          fa_codClie: sucursalParaGuardar.cod_sucursal,
+          fa_nomClie: sucursalParaGuardar.nom_sucursal,
+          suculsar_clie: sucursalClienteDigitada || sucursalParaGuardar.nom_sucursal || '',
+        });
+        this.buscarSucursalCliente.setValue(sucursalClienteDigitada || sucursalParaGuardar.nom_sucursal || '', { emitEvent: false });
+      } else {
+        this.formularioVentainterna.patchValue({
+          fa_codClie: empresaGrupo.sucursales[0]?.cod_sucursal || 0,
+          fa_nomClie: empresaGrupo.sucursales[0]?.nom_sucursal || nombreEmpresaDigitada.toUpperCase(),
+          suculsar_clie: sucursalClienteDigitada,
+        });
+      }
     } else if (nombreEmpresaDigitada) {
       this.empresaClienteSeleccionada = null;
+      this.sucursalClienteSeleccionada = null;
+      this.sucursalesCliente = [];
       this.mostrarSucursalCliente = false;
       this.formularioVentainterna.patchValue({
         fa_codClie: 0,
         fa_nomClie: nombreEmpresaDigitada.toUpperCase(),
-        suculsar_clie: '',
+        suculsar_clie: sucursalClienteDigitada || '',
       });
     }
 
@@ -901,23 +1328,40 @@ export class Ventainterna implements OnInit, OnDestroy {
             producto: p,
           };
         });
+        const baseEdit = this.formularioVentainterna.getRawValue();
+        const ventainternaEditada: any = {
+          ...baseEdit,
+          fa_solicitud: String(baseEdit.fa_solicitud || '').trim() || null,
+          fa_codVend: codVendedor || baseEdit.fa_codVend,
+          fa_nomVend: nomVendedor || baseEdit.fa_nomVend,
+          fa_codSucu: sucursalId,
+          fa_codEmpr: codEmpresa,
+        };
+        const payloadEdit = {
+          ventainterna: ventainternaEditada,
+          detalle: detallePayload,
+          idVentainterna: String(baseEdit.fa_codFact || ''),
+        };
         this.servicioVentainterna
-          .editarVentainterna(codigoOriginal, { ventainterna: ventainternaExtendida, detalle: detallePayload })
+          .editarVentainterna(codigoOriginal, payloadEdit)
           .subscribe({
             next: (response) => {
               Swal.fire({
                 title: 'Excelente!',
                 text: 'Ventainterna Editada correctamente.',
                 icon: 'success',
-                timer: 5000,
+                timer: 2200,
                 showConfirmButton: false,
               });
+              this.formularioVentainterna.get('fa_codFact')?.disable({ emitEvent: false });
+              this.formularioVentainterna.get('fa_fecFact')?.disable({ emitEvent: false });
               this.buscarTodasVentainterna(1);
-              this.formularioVentainterna.reset();
-              this.crearFormularioVentainterna();
-              $('#modalventainterna').modal('hide');
+              this.formularioVentainterna.disable({ emitEvent: false });
+              setTimeout(() => this.cerrarModalVentainterna(), 250);
             },
             error: (err) => {
+              this.formularioVentainterna.get('fa_codFact')?.disable({ emitEvent: false });
+              this.formularioVentainterna.get('fa_fecFact')?.disable({ emitEvent: false });
               Swal.fire({
                 title: 'Error guardando',
                 text: err?.message || err?.error?.message || 'No se pudo guardar la venta interna.',
@@ -928,24 +1372,44 @@ export class Ventainterna implements OnInit, OnDestroy {
           });
       } else {
         if (this.formularioVentainterna.valid) {
+          const baseCreate = this.formularioVentainterna.getRawValue();
+          const ventainternaNueva: any = {
+            ...baseCreate,
+            fa_solicitud: String(baseCreate.fa_solicitud || '').trim() || null,
+            fa_codVend: codVendedor || baseCreate.fa_codVend,
+            fa_nomVend: nomVendedor || baseCreate.fa_nomVend,
+            fa_codSucu: sucursalId,
+            fa_codEmpr: codEmpresa,
+          };
+          const payloadNuevo = {
+            ventainterna: ventainternaNueva,
+            detalle: this.items,
+            idVentainterna: String(baseCreate.fa_codFact || ''),
+          };
           this.servicioVentainterna
-            .guardarVentainterna(payload)
+            .guardarVentainterna(payloadNuevo)
             .subscribe({
               next: (response) => {
                 Swal.fire({
                   title: 'Excelente!',
                   text: 'Ventainterna creada correctamente.',
                   icon: 'success',
-                  timer: 1000,
+                  timer: 1400,
                   showConfirmButton: false,
                 });
+                this.formularioVentainterna.get('fa_codFact')?.disable({ emitEvent: false });
+                this.formularioVentainterna.get('fa_fecFact')?.disable({ emitEvent: false });
                 this.buscarTodasVentainterna(1);
-                this.formularioVentainterna.reset();
-                this.crearFormularioVentainterna();
-                this.formularioVentainterna.enable();
-                $('#modalventainterna').modal('hide');
+                this.formularioVentainterna.disable({ emitEvent: false });
+                setTimeout(() => {
+                  this.originalVentainterna = null;
+                  this.ventainternaid = '';
+                  this.refrescarVentainterna();
+                }, 200);
               },
               error: (err) => {
+                this.formularioVentainterna.get('fa_codFact')?.disable({ emitEvent: false });
+                this.formularioVentainterna.get('fa_fecFact')?.disable({ emitEvent: false });
                 Swal.fire({
                   title: 'Error guardando',
                   text: err?.message || err?.error?.message || 'No se pudo guardar la venta interna.',
@@ -1136,23 +1600,82 @@ export class Ventainterna implements OnInit, OnDestroy {
     this.servicioEmpresa.buscarTodasEmpresa(1, 1000).subscribe({
       next: (response: any) => {
         this.empresasCatalogo = Array.isArray(response?.data) ? response.data : [];
+        this._reconstruirEmpresasAgrupadas();
         if (this.empresaClienteSeleccionada) {
-          this.nombreEmpresaPropietaria = this.obtenerNombreEmpresa(this.empresaClienteSeleccionada);
+          this.nombreEmpresaPropietaria = this.empresaClienteSeleccionada.nom_empre || '';
         }
       },
       error: () => {
         this.empresasCatalogo = [];
+        this._reconstruirEmpresasAgrupadas();
       },
     });
     this.servicioSucursal.buscarTodasSucursal().subscribe({
       next: (response: any) => {
         const data = response?.data;
         this.sucursalesEmpresa = Array.isArray(data) ? data : [];
+        this._reconstruirEmpresasAgrupadas();
       },
       error: () => {
         this.sucursalesEmpresa = [];
+        this._reconstruirEmpresasAgrupadas();
       },
     });
+  }
+
+  private _reconstruirEmpresasAgrupadas() {
+    const mapCodEmpresa = new Map<string, { cod_empre: string; nom_empre: string; sucursales: SucursalesData[] }>();
+    this.empresasCatalogo.forEach((emp) => {
+      const cod = String((emp as any)?.cod_empre || '').trim().toUpperCase();
+      if (!cod) return;
+      if (!mapCodEmpresa.has(cod)) {
+        mapCodEmpresa.set(cod, {
+          cod_empre: String((emp as any)?.cod_empre || '').trim(),
+          nom_empre: String((emp as any)?.nom_empre || cod).trim(),
+          sucursales: [],
+        });
+      }
+    });
+    this.sucursalesEmpresa.forEach((suc) => {
+      const cod = String(suc?.cod_empre || '').trim().toUpperCase();
+      if (!cod) return;
+      if (!mapCodEmpresa.has(cod)) {
+        const nombreFallback = String((suc as any)?.nom_empre || this.obtenerNombreEmpresa(suc) || cod).trim();
+        mapCodEmpresa.set(cod, {
+          cod_empre: String(suc?.cod_empre || '').trim(),
+          nom_empre: nombreFallback || cod,
+          sucursales: [],
+        });
+      }
+      mapCodEmpresa.get(cod)!.sucursales.push(suc);
+    });
+    this.empresasAgrupadas = Array.from(mapCodEmpresa.values()).sort((a, b) =>
+      a.nom_empre.localeCompare(b.nom_empre, undefined, { numeric: true, sensitivity: 'base' })
+    );
+  }
+
+  private _restaurarSeleccionPorSucursalId(codSucursal: any): {
+    empresa: { cod_empre: string; nom_empre: string; sucursales: SucursalesData[] } | null;
+    sucursal: SucursalesData | null;
+  } {
+    const id = Number(codSucursal);
+    if (!isFinite(id) || !id) {
+      return { empresa: null, sucursal: null };
+    }
+    const suc = this.sucursalesEmpresa.find((s) => Number(s?.cod_sucursal) === id) || null;
+    if (!suc) {
+      return { empresa: null, sucursal: null };
+    }
+    const codEmp = String(suc.cod_empre || '').trim().toUpperCase();
+    let agrupada = this.empresasAgrupadas.find((e) => String(e.cod_empre || '').trim().toUpperCase() === codEmp);
+    if (!agrupada) {
+      agrupada = {
+        cod_empre: String(suc.cod_empre || '').trim(),
+        nom_empre: this.obtenerNombreEmpresa(suc) || String(suc.cod_empre || '').trim(),
+        sucursales: [suc],
+      };
+    }
+    return { empresa: agrupada, sucursal: suc };
   }
 
   obtenerNombreEmpresa(sucursal: SucursalesData | null | undefined): string {
@@ -1172,37 +1695,259 @@ export class Ventainterna implements OnInit, OnDestroy {
   }
 
   buscarSolicitudesVentaInterna(query: string) {
+    const searchSequence = ++this.solicitudSearchSequence;
     const filtro = String(query || '').trim().toUpperCase();
-    const sucursalOrigen = this.formularioVentainterna.get('fa_codClie')?.value || this.empresaClienteSeleccionada?.cod_sucursal;
-    const sucursalLogueada = this.sucursalLogueada();
+    const sucursalLog = this.sucursalLogueada();
+    const idSucursalLogueada = Number(sucursalLog?.id || 0);
+    const idSucursalSeleccionada = this._obtenerIdSucursalClienteSeleccionada();
 
-    if (!sucursalOrigen || (!sucursalLogueada.id && !sucursalLogueada.nombre)) {
+    if (
+      !idSucursalLogueada || !Number.isFinite(idSucursalLogueada) || idSucursalLogueada <= 0 ||
+      !idSucursalSeleccionada || !Number.isFinite(idSucursalSeleccionada) || idSucursalSeleccionada <= 0
+    ) {
       this.resultadoSolicitud = [];
+      this.selectedIndexSolicitud = 0;
       return;
     }
 
+    const nombreSucursalSeleccionada = String(
+      this.sucursalClienteSeleccionada?.nom_sucursal ||
+      this.formularioVentainterna.get('suculsar_clie')?.value ||
+      ''
+    ).trim();
+
     this.solicitudPrestamoService
-      .listarParaVentaInterna(sucursalOrigen, sucursalLogueada.id, sucursalLogueada.nombre, filtro)
+      .listarParaVentaInterna(
+        idSucursalSeleccionada,
+        idSucursalLogueada,
+        nombreSucursalSeleccionada,
+        filtro
+      )
       .subscribe({
         next: (response: any) => {
+          if (searchSequence !== this.solicitudSearchSequence) return;
           this.resultadoSolicitud = Array.isArray(response?.data) ? response.data : [];
+          this.selectedIndexSolicitud = 0;
         },
         error: () => {
+          if (searchSequence !== this.solicitudSearchSequence) return;
           this.resultadoSolicitud = [];
+          this.selectedIndexSolicitud = 0;
         },
       });
+  }
+
+  private _obtenerIdSucursalClienteSeleccionada(): number | null {
+    const porObj = Number(this.sucursalClienteSeleccionada?.cod_sucursal || 0);
+    if (Number.isFinite(porObj) && porObj > 0) return porObj;
+    if (this.empresaClienteSeleccionada?.sucursales?.length === 1) {
+      const unico = Number(this.empresaClienteSeleccionada.sucursales[0].cod_sucursal || 0);
+      return Number.isFinite(unico) && unico > 0 ? unico : null;
+    }
+    if ((this.empresaClienteSeleccionada?.sucursales?.length || 0) > 1) {
+      return null;
+    }
+    const directo = Number(this.formularioVentainterna.get('fa_codClie')?.value || 0);
+    if (Number.isFinite(directo) && directo > 0) return directo;
+    return null;
+  }
+
+  private _obtenerSucursalOrigenParaSolicitudes(): number | null {
+    return this._obtenerIdSucursalClienteSeleccionada();
   }
 
   cargarSolicitudVentaInterna(solicitud: any) {
     const numero = String(solicitud?.so_codsoli ?? solicitud?.so_numero ?? '').trim();
     this.resultadoSolicitud = [];
+    this.solicitudSeleccionadaCargada = solicitud;
     this.formularioVentainterna.patchValue({ fa_solicitud: numero }, { emitEvent: false });
+    this._cargarDetalleSolicitudYAgregarATabla(numero);
+  }
+
+  private _cargarDetalleSolicitudYAgregarATabla(numero: string): void {
+    if (!numero || this._cargandoSolicitudDetalle) return;
+    this._cargandoSolicitudDetalle = true;
+    this.solicitudPrestamoService.buscar(numero).subscribe({
+      next: (resp: any) => {
+        try {
+          const data = resp?.data;
+          if (!data) return;
+          const detalle: any[] = Array.isArray(data?.detsolicitud) ? data.detsolicitud : [];
+          if (!detalle.length) {
+            Swal.fire({
+              icon: 'warning',
+              title: 'Solicitud sin detalles',
+              text: `La solicitud ${numero} no tiene líneas de productos que insertar.`,
+              toast: true,
+              position: 'top-end',
+              timer: 1400,
+              showConfirmButton: false,
+            });
+            return;
+          }
+          this._insertarDetalleSolicitudEnItems(detalle);
+        } finally {
+          this._cargandoSolicitudDetalle = false;
+        }
+      },
+      error: (err: any) => {
+        this._cargandoSolicitudDetalle = false;
+        Swal.fire({
+          icon: 'error',
+          title: 'No se pudo cargar el detalle de la solicitud.',
+          text: String(err?.message || err || ''),
+        });
+      },
+    });
+  }
+
+  private _insertarDetalleSolicitudEnItems(detalleSolicitud: any[]): void {
+    const codigosUnicos = Array.from(
+      new Set(
+        detalleSolicitud
+          .map((d: any) => String(d?.ds_codmerc || '').trim())
+          .filter((c: string) => !!c)
+      )
+    );
+
+    const fallback = () => {
+      this._agregarSolicitudItemsSinPrecio(detalleSolicitud);
+    };
+
+    if (!codigosUnicos.length) {
+      fallback();
+      return;
+    }
+
+    const productoPorCodigo = new Map<string, ModeloInventarioData>();
+    let pendientes = codigosUnicos.length;
+    let huboErrores = false;
+
+    codigosUnicos.forEach((cod) => {
+      this.servicioProducto.buscarProductosPorCodigo(cod).subscribe({
+        next: (resp: any) => {
+          try {
+            const lista: any[] = Array.isArray(resp?.data) ? resp.data : [];
+            const exacto = lista.find((p) => String(p?.in_codmerc || '').trim().toUpperCase() === cod.toUpperCase()) || lista[0];
+            if (exacto) productoPorCodigo.set(cod.toUpperCase(), exacto as ModeloInventarioData);
+          } finally {
+            pendientes -= 1;
+            if (pendientes <= 0) {
+              if (huboErrores || !productoPorCodigo.size) {
+                fallback();
+              } else {
+                this._agregarSolicitudItemsConPrecio(detalleSolicitud, productoPorCodigo);
+              }
+            }
+          }
+        },
+        error: () => {
+          huboErrores = true;
+          pendientes -= 1;
+          if (pendientes <= 0) fallback();
+        },
+      });
+    });
+  }
+
+  private _agregarSolicitudItemsConPrecio(detalleSolicitud: any[], productoPorCodigo: Map<string, ModeloInventarioData>): void {
+    const hayAntes = this.items.length;
+    if (!hayAntes) { this.limpiarTabla(); }
+    detalleSolicitud.forEach((d: any) => {
+      const cod = String(d?.ds_codmerc || '').trim();
+      if (!cod) return;
+      const producto = productoPorCodigo.get(cod.toUpperCase()) || null;
+      const cantidad = Number(d?.ds_canmerc ?? 0);
+      if (!Number.isFinite(cantidad) || cantidad <= 0) return;
+      const precio = Number(producto?.in_premerc ?? 0) || 0;
+      if (!producto) {
+        this._agregarSolicitudLineaFallback(d, cantidad, precio || 0);
+        return;
+      }
+      const total = cantidad * precio;
+      this.totalGral += total;
+      this.totalItbis += total * 0.18;
+      this.subTotal += total;
+      this.items.push({ producto, cantidad, precio, total });
+    });
+    this.formularioVentainterna.get('fa_valFact')?.patchValue(this.totalGral);
+    this._mostrarConfirmacionAgregadas(detalleSolicitud.length, this.items.length - hayAntes);
+  }
+
+  private _agregarSolicitudItemsSinPrecio(detalleSolicitud: any[]): void {
+    const hayAntes = this.items.length;
+    if (!hayAntes) { this.limpiarTabla(); }
+    detalleSolicitud.forEach((d: any) => {
+      const cantidad = Number(d?.ds_canmerc ?? 0);
+      if (!Number.isFinite(cantidad) || cantidad <= 0) return;
+      this._agregarSolicitudLineaFallback(d, cantidad, 0);
+    });
+    this.formularioVentainterna.get('fa_valFact')?.patchValue(this.totalGral);
+    this._mostrarConfirmacionAgregadas(detalleSolicitud.length, this.items.length - hayAntes);
+  }
+
+  private _agregarSolicitudLineaFallback(d: any, cantidad: number, precio: number): void {
+    const cod = String(d?.ds_codmerc || '').trim();
+    const des = String(d?.ds_desmerc || '').trim();
+    const unidadRaw = (d?.ds_unidad ?? 0) || '';
+    const unidad = String(unidadRaw).trim() || '0';
+    const producto: ModeloInventarioData = {
+      in_codmerc: cod,
+      in_desmerc: des,
+      in_grumerc: '',
+      in_tipoproduct: '',
+      in_canmerc: 0,
+      in_caninve: 0,
+      in_fecinve: null,
+      in_eximini: 0,
+      in_cosmerc: 0,
+      in_premerc: precio,
+      in_precmin: 0,
+      in_costpro: 0,
+      in_ucosto: 0,
+      in_porgana: 0,
+      in_peso: 0,
+      in_longitud: 0,
+      in_unidad: isNaN(Number(unidad)) ? 0 : Number(unidad),
+      in_medida: 0,
+      in_longitu: 0,
+      in_fecmodif: null,
+      in_amacen: 0,
+      in_imagen: '',
+      in_status: '',
+      in_itbis: false,
+      in_minvent: 0,
+    };
+    const total = cantidad * precio;
+    this.totalGral += total;
+    this.totalItbis += total * 0.18;
+    this.subTotal += total;
+    this.items.push({ producto, cantidad, precio, total });
+  }
+
+  private _mostrarConfirmacionAgregadas(totalLineas: number, agregadas: number): void {
+    Swal.fire({
+      icon: 'success',
+      title: `Solicitud importada`,
+      text: `Se agregaron ${agregadas} de ${totalLineas} líneas a la venta interna.`,
+      toast: true,
+      position: 'top-end',
+      timer: 1500,
+      showConfirmButton: false,
+    });
   }
 
   seleccionarSolicitudEnter(event: Event, nextElement: HTMLInputElement | null) {
     if (this.resultadoSolicitud.length > 0) {
       event.preventDefault();
-      this.cargarSolicitudVentaInterna(this.resultadoSolicitud[0]);
+      const idx = this.selectedIndexSolicitud >= 0 && this.selectedIndexSolicitud < this.resultadoSolicitud.length
+        ? this.selectedIndexSolicitud
+        : 0;
+      this.cargarSolicitudVentaInterna(this.resultadoSolicitud[idx]);
+      // Si hay algo después de No. Solicitud (input3 es Cod. Vend., que ya está en la
+      // parte superior) mejor enfocar el siguiente input lógico: buscarcodmerc (input4)
+      const codmercInput = document.getElementById('input4') as HTMLInputElement | null;
+      if (codmercInput) { codmercInput.focus(); codmercInput.select(); return; }
       if (nextElement) {
         nextElement.focus();
         nextElement.select();
@@ -1212,6 +1957,33 @@ export class Ventainterna implements OnInit, OnDestroy {
     if (nextElement) {
       nextElement.focus();
       nextElement.select();
+    }
+  }
+
+  handleKeydownSolicitud(event: KeyboardEvent): void {
+    const key = event.key;
+    const maxIndex = this.resultadoSolicitud.length;
+    if (key === 'ArrowDown') {
+      this.selectedIndexSolicitud = maxIndex
+        ? (this.selectedIndexSolicitud + 1) % maxIndex
+        : 0;
+      event.preventDefault();
+    } else if (key === 'ArrowUp') {
+      if (maxIndex) {
+        this.selectedIndexSolicitud = (this.selectedIndexSolicitud - 1 + maxIndex) % maxIndex;
+      } else {
+        this.selectedIndexSolicitud = 0;
+      }
+      event.preventDefault();
+    } else if (key === 'Enter') {
+      if (this.resultadoSolicitud.length > 0) {
+        event.preventDefault();
+        event.stopPropagation();
+        const idx = this.selectedIndexSolicitud >= 0 && this.selectedIndexSolicitud < this.resultadoSolicitud.length
+          ? this.selectedIndexSolicitud
+          : 0;
+        this.cargarSolicitudVentaInterna(this.resultadoSolicitud[idx]);
+      }
     }
   }
 
@@ -1235,67 +2007,141 @@ export class Ventainterna implements OnInit, OnDestroy {
     return `${day}/${month}/${year}`;
   }
 
-  cargarDatosEmpresaCliente(sucursal: SucursalesData) {
+  cargarDatosEmpresaCliente(empresa: any) {
     this.resultadoNombre = [];
+    this.resultadoEmpresas = [];
     this.resultadoSucursalCliente = [];
     this.sucursalesCliente = [];
     this.mostrarSucursalCliente = false;
-    this.empresaClienteSeleccionada = sucursal || null;
-    this.nombreEmpresaPropietaria = this.obtenerNombreEmpresa(sucursal);
+    this.sucursalClienteSeleccionada = null;
+    this.formularioVentainterna.patchValue({
+      suculsar_clie: '',
+      fa_solicitud: '',
+    });
+    this.resultadoSolicitud = [];
 
-    if (sucursal?.nom_sucursal !== '') {
-      this.formularioVentainterna.patchValue({
-        fa_codClie: sucursal.cod_sucursal,
-        fa_nomClie: sucursal.nom_sucursal,
-        suculsar_clie: '',
-        fa_solicitud: '',
-      });
-      this.resultadoSolicitud = [];
-      this.buscarNombre.setValue(sucursal.nom_sucursal, { emitEvent: false });
-      this.buscarSucursalCliente.setValue('', { emitEvent: false });
+    const cod = String(empresa?.cod_empre || '').trim();
+    const nom = String(empresa?.nom_empre || '').trim();
+    if (!cod || !nom) return;
+
+    const agrupada = this.empresasAgrupadas.find((e) => String(e.cod_empre || '').trim().toUpperCase() === cod.toUpperCase());
+    this.empresaClienteSeleccionada = agrupada || { cod_empre: cod, nom_empre: nom, sucursales: [] };
+    this.sucursalesCliente = (agrupada?.sucursales || [])
+      .slice()
+      .sort((a, b) => String(a.nom_sucursal || '').localeCompare(String(b.nom_sucursal || ''), undefined, { numeric: true, sensitivity: 'base' }));
+    this.nombreEmpresaPropietaria = nom;
+
+    this.formularioVentainterna.patchValue({
+      fa_codClie: this.sucursalesCliente[0]?.cod_sucursal || 0,
+      fa_nomClie: this.sucursalesCliente[0]?.nom_sucursal || nom,
+      suculsar_clie: '',
+      fa_solicitud: '',
+    });
+    this.buscarNombre.setValue(nom, { emitEvent: false });
+    this.buscarSucursalCliente.setValue('', { emitEvent: false });
+    this.resultadoSucursalCliente = this.sucursalesCliente.slice(0, 200);
+    this.mostrarSucursalCliente = this.sucursalesCliente.length > 0;
+
+    if (this.sucursalesCliente.length === 1) {
+      this.cargarSucursalCliente(this.sucursalesCliente[0]);
+      return;
+    }
+    if (this.mostrarSucursalCliente) {
+      setTimeout(() => {
+        const inputSuc = document.getElementById('inputSucursalCliente') as HTMLInputElement | null;
+        if (inputSuc) { inputSuc.focus(); inputSuc.select(); }
+      }, 50);
     }
   }
 
   cargarSucursalCliente(sucursal: SucursalesData) {
+    const sucursalAnterior = Number(this.sucursalClienteSeleccionada?.cod_sucursal || 0);
+    const sucursalNueva = Number(sucursal?.cod_sucursal || 0);
     this.resultadoSucursalCliente = [];
+    this.sucursalClienteSeleccionada = sucursal || null;
+    if (sucursalAnterior !== sucursalNueva) {
+      this.solicitudSeleccionadaCargada = null;
+      this.resultadoSolicitud = [];
+      this.formularioVentainterna.patchValue({ fa_solicitud: '' }, { emitEvent: false });
+    }
     if (sucursal?.nom_sucursal !== '') {
       this.formularioVentainterna.patchValue({
-        suculsar_clie: sucursal.nom_sucursal,
+        fa_codClie: sucursal?.cod_sucursal ?? this.formularioVentainterna.get('fa_codClie')?.value,
+        fa_nomClie: sucursal?.nom_sucursal ?? this.formularioVentainterna.get('fa_nomClie')?.value,
+        suculsar_clie: sucursal?.nom_sucursal ?? '',
       });
-      this.buscarSucursalCliente.setValue(sucursal.nom_sucursal, { emitEvent: false });
+      this.buscarSucursalCliente.setValue(sucursal?.nom_sucursal || '', { emitEvent: false });
     }
+    // La sucursal ya está seleccionada: pre-cargar la lista de solicitudes
+    // de ESA sucursal, para que al entrar al input No. Solicitud ya vea el dropdown.
+    setTimeout(() => {
+      this.buscarSolicitudesVentaInterna(this.formularioVentainterna.get('fa_solicitud')?.value || '');
+      const solicitudInput = document.getElementById('inputNoSolicitud') as HTMLInputElement | null;
+      if (solicitudInput) { solicitudInput.focus(); solicitudInput.select(); }
+    }, 50);
   }
 
   handleKeydown(event: KeyboardEvent): void {
     const key = event.key;
-    const maxIndex = this.resultadoNombre.length - 1; // Ajustamos el límite máximo
+    const maxIndex = Math.max(this.resultadoEmpresas.length - 1, this.resultadoNombre.length - 1);
 
     if (key === 'ArrowDown') {
-      console.log('paso 56');
-
-      // Mueve la selección hacia abajo
-      if (this.selectedIndex < maxIndex) {
-        this.selectedIndex++;
+      if (this.selectedIndexEmpresa < maxIndex) {
+        this.selectedIndexEmpresa++;
       } else {
-        this.selectedIndex = 0; // Vuelve al primer ítem
+        this.selectedIndexEmpresa = 0;
       }
       event.preventDefault();
     } else if (key === 'ArrowUp') {
-      console.log('paso 677');
-
-      // Mueve la selección hacia arriba
-      if (this.selectedIndex > 0) {
-        this.selectedIndex--;
+      if (this.selectedIndexEmpresa > 0) {
+        this.selectedIndexEmpresa--;
       } else {
-        this.selectedIndex = maxIndex; // Vuelve al último ítem
+        this.selectedIndexEmpresa = maxIndex >= 0 ? maxIndex : 0;
       }
       event.preventDefault();
     } else if (key === 'Enter') {
-      // Selecciona el ítem actual
-      if (this.selectedIndex >= 0 && this.selectedIndex <= maxIndex) {
-        this.cargarDatosEmpresaCliente(this.resultadoNombre[this.selectedIndex]);
+      const resultado = this.resultadoEmpresas[this.selectedIndexEmpresa] ?? this.resultadoNombre[this.selectedIndexEmpresa];
+      if (resultado) {
+        this.cargarDatosEmpresaCliente(resultado);
       }
       event.preventDefault();
+    }
+  }
+
+  handleKeydownSucursalCliente(event: KeyboardEvent) {
+    const key = event.key;
+    const maxIndex = this.resultadoSucursalCliente.length ? this.resultadoSucursalCliente.length - 1 : -1;
+
+    if (key === 'ArrowDown') {
+      if (maxIndex < 0) return;
+      this.selectedIndexSucursalCliente =
+        this.selectedIndexSucursalCliente < maxIndex ? this.selectedIndexSucursalCliente + 1 : 0;
+      event.preventDefault();
+    } else if (key === 'ArrowUp') {
+      if (maxIndex < 0) return;
+      this.selectedIndexSucursalCliente =
+        this.selectedIndexSucursalCliente > 0 ? this.selectedIndexSucursalCliente - 1 : maxIndex;
+      event.preventDefault();
+    } else if (key === 'Enter') {
+      event.preventDefault();
+      if (this.resultadoSucursalCliente[this.selectedIndexSucursalCliente]) {
+        this.cargarSucursalCliente(this.resultadoSucursalCliente[this.selectedIndexSucursalCliente]);
+        return;
+      }
+      const texto = String((event?.target as HTMLInputElement)?.value || '').trim().toUpperCase();
+      const porNombre = texto
+        ? this.sucursalesCliente.find((s) => String(s?.nom_sucursal || '').trim().toUpperCase() === texto)
+        : undefined;
+      const porCodigo = texto
+        ? this.sucursalesCliente.find((s) => String(s?.cod_sucursal || '').trim().toUpperCase() === texto)
+        : undefined;
+      if (porNombre || porCodigo) {
+        this.cargarSucursalCliente((porNombre || porCodigo) as SucursalesData);
+        return;
+      }
+      if (this.sucursalesCliente.length >= 1) {
+        this.cargarSucursalCliente(this.sucursalesCliente[0]);
+      }
     }
   }
 
@@ -1395,51 +2241,161 @@ export class Ventainterna implements OnInit, OnDestroy {
 
   buscarUsuario(event: Event, nextElement: HTMLInputElement | null): void {
     event.preventDefault();
-    const claveUsuario = this.formularioVentainterna.get('fa_codVend')?.value;
-    if (claveUsuario) {
-      this.ServicioUsuario.buscarUsuarioPorCodigoVendedor(String(claveUsuario)).subscribe(
-        (res: any) => {
-          const usuario = res?.data ?? null;
-          const nombre = usuario?.idUsuario || usuario?.nombreUsuario || '';
-          if (nombre) {
-            this.formularioVentainterna.patchValue({
-              fa_nomVend: nombre,
-            });
-            nextElement?.focus();
-            return;
-          }
-
-          this.mensagePantalla = true;
-          Swal.fire({
-            icon: 'error',
-            title: 'A V I S O',
-            text: 'Codigo de usuario invalido.',
-          }).then(() => {
-            this.mensagePantalla = false;
-          });
-        },
-        () => {
-          this.mensagePantalla = true;
-          Swal.fire({
-            icon: 'error',
-            title: 'A V I S O',
-            text: 'No se pudo buscar el vendedor.',
-          }).then(() => {
-            this.mensagePantalla = false;
-          });
-        },
-      );
-    } else {
+    const claveUsuario = String(this.formularioVentainterna.get('fa_codVend')?.value || '').trim();
+    if (!claveUsuario) {
       this.mensagePantalla = true;
       Swal.fire({
         icon: 'error',
         title: 'A V I S O',
-        text: 'Codigo de usuario invalido.',
+        text: 'Código de usuario inválido.',
       }).then(() => {
         this.mensagePantalla = false;
       });
       return;
     }
+
+    const idsLogueados = this._idsUsuarioLogueadoNormalizados();
+    const claveNorm = this._normalizarIdUsuario(claveUsuario);
+
+    const coincideLogueado = idsLogueados.texto.has(claveNorm.texto) ||
+      idsLogueados.numeros.has(claveNorm.numero);
+
+    const setYSeguir = (cod: string, nom: string) => {
+      this.formularioVentainterna.patchValue({
+        fa_codVend: cod || claveUsuario,
+        fa_nomVend: nom || idsLogueados.username || claveUsuario,
+      });
+      if (nextElement) {
+        nextElement.focus();
+        if (nextElement.tagName === 'INPUT') { try { (nextElement as HTMLInputElement).select(); } catch {} }
+      }
+    };
+
+    if (coincideLogueado) {
+      setYSeguir(idsLogueados.codVend || idsLogueados.codigoUsuario || idsLogueados.idUsuario || claveUsuario,
+                 idsLogueados.username || idsLogueados.nombre || claveUsuario);
+      return;
+    }
+
+    this.ServicioUsuario.buscarUsuarioPorClaveUsuario(String(claveUsuario)).subscribe(
+      (res: any) => {
+        const data = res?.data ?? null;
+        const arr = Array.isArray(data) ? data : (data ? [data] : []);
+        const usuario = arr[0] ?? data ?? null;
+
+        const cod =
+          String(usuario?.claveUsuario ?? usuario?.claveusuario ?? '').trim() ||
+          String(usuario?.codVendedor ?? usuario?.cod_vendedor ?? usuario?.cod_vend ?? '').trim() ||
+          String(usuario?.codigoUsuario ?? usuario?.codigo_usuario ?? '').trim() ||
+          String(usuario?.idUsuario ?? usuario?.id_usuario ?? usuario?.id ?? '').trim();
+        const nombre =
+          String(usuario?.nombreUsuario ?? usuario?.nombre_usuario ?? '').trim() ||
+          String(usuario?.nombre ?? usuario?.nomUsuario ?? usuario?.nom_usuario ?? '').trim() ||
+          String(usuario?.idUsuario ?? usuario?.user ?? '').trim();
+
+        if (cod || nombre) {
+          setYSeguir(cod || claveUsuario, nombre || claveUsuario);
+          return;
+        }
+
+        this.mensagePantalla = true;
+        Swal.fire({
+          icon: 'error',
+          title: 'A V I S O',
+          text: 'Código de usuario inválido.',
+        }).then(() => {
+          this.mensagePantalla = false;
+        });
+      },
+      (_err) => {
+        // Fallback final: si la API falla pero el código coincide con el usuario logueado, aceptarlo sin error
+        if (coincideLogueado) {
+          setYSeguir(idsLogueados.codVend || idsLogueados.codigoUsuario || idsLogueados.idUsuario || claveUsuario,
+                     idsLogueados.username || idsLogueados.nombre || claveUsuario);
+          return;
+        }
+        this.mensagePantalla = true;
+        Swal.fire({
+          icon: 'error',
+          title: 'A V I S O',
+          text: 'No se pudo buscar el vendedor.',
+        }).then(() => {
+          this.mensagePantalla = false;
+        });
+      },
+    );
+  }
+
+  private _normalizarIdUsuario(v: any): { texto: string; numero: string } {
+    const texto = String(v || '').trim().toUpperCase();
+    const n = Number(String(v || '').trim());
+    const numero = (isFinite(n) && texto !== '') ? String(n) : '';
+    return { texto, numero };
+  }
+
+  private _idsUsuarioLogueadoNormalizados(): {
+    texto: Set<string>; numeros: Set<string>;
+    username: string; nombre: string; codVend: string; codigoUsuario: string; idUsuario: string;
+  } {
+    const texto = new Set<string>();
+    const numeros = new Set<string>();
+    let username = '';
+    let nombre = '';
+    let codVend = '';
+    let codigoUsuario = '';
+    let idUsuario = '';
+
+    const agregar = (v: any) => {
+      if (v == null) return;
+      const s = String(v);
+      if (!s.trim()) return;
+      const n = this._normalizarIdUsuario(s);
+      texto.add(n.texto);
+      if (n.numero) numeros.add(n.numero);
+    };
+
+    const storageKeysPlanas = [
+      'claveusuario', 'claveUsuario', 'clave_usuario',
+      'codigousuario', 'codigoUsuario', 'cod_usuario',
+      'codVendedor', 'codvendedor', 'cod_vendedor', 'cod_vend', 'codvend',
+      'idusuario', 'idUsuario', 'id_usuario', 'userId', 'user_id',
+      'username', 'usuario', 'user', 'name', 'nombre', 'nombreUsuario', 'nom_usuario',
+    ];
+    storageKeysPlanas.forEach((k) => {
+      try { agregar(localStorage.getItem(k)); } catch {}
+    });
+    username = String(localStorage.getItem('username') || '').trim() ||
+               String(localStorage.getItem('user') || '').trim() ||
+               String(localStorage.getItem('nombre') || '').trim() ||
+               String(localStorage.getItem('nombreUsuario') || '').trim();
+    nombre = username;
+    codigoUsuario = String(localStorage.getItem('codigousuario') || localStorage.getItem('codigoUsuario') || '').trim();
+    codVend = String(localStorage.getItem('codVendedor') || localStorage.getItem('cod_vendedor') || '').trim() || codigoUsuario;
+    idUsuario = String(localStorage.getItem('idusuario') || localStorage.getItem('idUsuario') || localStorage.getItem('userId') || '').trim();
+
+    const jsonKeys = ['usuario', 'user', 'currentUser', 'sesion', 'session', 'auth', 'authUser'];
+    jsonKeys.forEach((k) => {
+      try {
+        const raw = localStorage.getItem(k);
+        if (!raw || raw === '[object Object]') return;
+        const obj = JSON.parse(raw);
+        if (!obj || typeof obj !== 'object') return;
+        const fields = [
+          'claveusuario', 'claveUsuario', 'clave_usuario',
+          'codVendedor', 'cod_vendedor', 'cod_vend', 'codvend',
+          'codigousuario', 'codigoUsuario', 'cod_usuario', 'codigo',
+          'idusuario', 'idUsuario', 'id_usuario', 'userId', 'user_id', 'id',
+          'username', 'user', 'usuario',
+          'nombre', 'nombreUsuario', 'nomUsuario', 'nom_usuario', 'name',
+        ];
+        fields.forEach((f) => {
+          const val = (obj as any)[f];
+          agregar(val);
+        });
+      } catch {}
+    });
+
+    return { texto, numeros, username, nombre, codVend, codigoUsuario, idUsuario };
   }
 
   moveFocuscodmerc(event: KeyboardEvent, nextInput: HTMLInputElement) {
@@ -1555,38 +2511,50 @@ export class Ventainterna implements OnInit, OnDestroy {
         Swal.fire({
           icon: 'error',
           title: 'A V I S O',
-          text: 'Por favor complete el campo Nombre del Cliente Para Poder continual.',
+          text: 'Por favor complete el campo Empresa para poder continuar.',
         }).then(() => {
           this.mensagePantalla = false;
         });
         return;
       }
+      const valorNorm = valor.toUpperCase();
 
-      const indice = this.selectedIndex >= 0 && this.selectedIndex < this.resultadoNombre.length
-        ? this.selectedIndex
+      const indice = this.selectedIndexEmpresa >= 0 && this.selectedIndexEmpresa < this.resultadoEmpresas.length
+        ? this.selectedIndexEmpresa
         : 0;
-      const seleccionada = this.resultadoNombre[indice] || this.sucursalesEmpresa.find((sucursal) => {
-        const buscado = valor.toUpperCase();
-        return String(sucursal?.nom_sucursal || '').trim().toUpperCase() === buscado ||
-          String(sucursal?.cod_sucursal || '').trim().toUpperCase() === buscado;
+
+      const porResultado = this.resultadoEmpresas[indice];
+      const porNombreCodigo = this.empresasAgrupadas.find((emp) => {
+        return String(emp?.nom_empre || '').trim().toUpperCase() === valorNorm ||
+          String(emp?.cod_empre || '').trim().toUpperCase() === valorNorm;
       });
+      const seleccionada = porResultado || porNombreCodigo;
 
       if (seleccionada) {
         this.cargarDatosEmpresaCliente(seleccionada);
-        nextInput.focus();
-        nextInput.select();
-      } else {
-        this.empresaClienteSeleccionada = null;
-        this.nombreEmpresaPropietaria = '';
-        this.resultadoNombre = [];
-        this.mostrarSucursalCliente = false;
-        this.formularioVentainterna.patchValue({
-          fa_codClie: 0,
-          fa_nomClie: valor.toUpperCase(),
-          suculsar_clie: '',
-          fa_solicitud: '',
-        });
-        this.buscarNombre.setValue(valor.toUpperCase(), { emitEvent: false });
+        return;
+      }
+
+      this.empresaClienteSeleccionada = null;
+      this.sucursalClienteSeleccionada = null;
+      this.sucursalesCliente = [];
+      this.nombreEmpresaPropietaria = '';
+      this.resultadoEmpresas = [];
+      this.resultadoSucursalCliente = [];
+      this.mostrarSucursalCliente = false;
+      this.formularioVentainterna.patchValue({
+        fa_codClie: 0,
+        fa_nomClie: valor.toUpperCase(),
+        suculsar_clie: '',
+        fa_solicitud: '',
+      });
+      this.buscarNombre.setValue(valor.toUpperCase(), { emitEvent: false });
+
+      const inputSuc = document.getElementById('inputSucursalCliente') as HTMLInputElement | null;
+      if (inputSuc && this.mostrarSucursalCliente) {
+        inputSuc.focus();
+        inputSuc.select();
+      } else if (nextInput) {
         nextInput.focus();
         nextInput.select();
       }

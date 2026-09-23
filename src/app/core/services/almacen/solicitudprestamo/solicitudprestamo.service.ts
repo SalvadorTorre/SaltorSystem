@@ -46,6 +46,11 @@ export class SolicitudPrestamoService {
     return str ? str.slice(0, max) : null;
   }
 
+  private toNumberOrNull(value: any): number | null {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : null;
+  }
+
   private toNumber(value: any): number {
     const n = Number(value);
     return Number.isFinite(n) ? n : 0;
@@ -61,12 +66,42 @@ export class SolicitudPrestamoService {
     return Number.isNaN(date.getTime()) ? new Date().toISOString().slice(0, 10) : date.toISOString().slice(0, 10);
   }
 
-  private generarNumero(): string {
-    const now = new Date();
-    const yy = String(now.getFullYear()).slice(-2);
-    const mm = String(now.getMonth() + 1).padStart(2, '0');
-    const tail = String(Date.now()).slice(-6);
-    return `SP${yy}${mm}${tail}`;
+  private generarNumeroSolicitud(idsucursal: number, secuencia: number): string {
+    const anio = new Date().getFullYear().toString();
+    const sucStrFull = String(idsucursal);
+    const sucStr = sucStrFull.length > 2 ? sucStrFull.slice(-2) : sucStrFull.padStart(2, '0');
+    const seqStr = String(secuencia).padStart(5, '0');
+    return `${anio}${sucStr}${seqStr}`;
+  }
+
+  private async getOrPickContFacturaRow(idsucursal: number): Promise<any | null> {
+    const year = new Date().getFullYear();
+    const { data, error } = await this.db
+      .from('contfactura')
+      .select('*')
+      .order('id', { ascending: false })
+      .limit(200);
+    if (error) throw error;
+    const rows = Array.isArray(data) ? data : [];
+    return (
+      rows.find((r: any) => this.toNumber(r?.idsucursal) === idsucursal && this.toNumber(r?.ano) === year) ||
+      rows.find((r: any) => this.toNumber(r?.idsucursal) === idsucursal) ||
+      rows.find((r: any) => !r?.idsucursal || this.toNumber(r?.idsucursal) === 0) ||
+      rows[0] ||
+      null
+    );
+  }
+
+  private contfacturaIdField(row: any): string {
+    if (row == null) return '';
+    const candidates = ['id', 'cod', 'codigo', 'contid'];
+    for (const c of candidates) {
+      if (Object.prototype.hasOwnProperty.call(row, c) && (this.toNumberOrNull(row[c]) != null || typeof row[c] === 'string')) {
+        return c;
+      }
+    }
+    const numericKeys = Object.keys(row).filter((k) => this.toNumberOrNull(row[k]) != null);
+    return numericKeys[0] || '';
   }
 
   private mapSolicitud(row: any): any {
@@ -145,27 +180,30 @@ export class SolicitudPrestamoService {
   }
 
   listarParaVentaInterna(
-    sucursalOrigenId: number | string,
-    clienteSucursalId: number | string,
-    clienteSucursalNombre: string,
+    sucursalSeleccionadaId: number | string,
+    sucursalLogueadaId: number | string,
+    _clienteSucursalNombre: string,
     filtro = ''
   ): Observable<any> {
-    const sucursalId = Number(sucursalOrigenId);
-    const clienteId = String(clienteSucursalId || '').trim();
-    const clienteNombre = String(clienteSucursalNombre || '').trim().toUpperCase();
+    const sucursalSeleccionada = Number(sucursalSeleccionadaId);
+    const sucursalLogueada = Number(sucursalLogueadaId);
     const q = String(filtro || '').trim();
 
     return from(this.retryAfterExpiredJwt(async () => {
-      if (!Number.isFinite(sucursalId) || sucursalId <= 0 || (!clienteId && !clienteNombre)) {
+      if (
+        !Number.isFinite(sucursalSeleccionada) || sucursalSeleccionada <= 0 ||
+        !Number.isFinite(sucursalLogueada) || sucursalLogueada <= 0
+      ) {
         return [];
       }
 
       let query = this.db
         .from('solicitud')
         .select('*')
-        .eq('so_codsucu', sucursalId)
+        .eq('so_codsucuclie', sucursalLogueada)
+        .eq('so_codsucu', sucursalSeleccionada)
         .order('so_fecha', { ascending: false })
-        .limit(100);
+        .limit(150);
 
       if (q) {
         query = query.or(`so_codsoli.ilike.%${q}%,so_nomclie.ilike.%${q}%,so_codclie.ilike.%${q}%`);
@@ -174,15 +212,7 @@ export class SolicitudPrestamoService {
       const { data, error } = await query;
       if (error) throw error;
 
-      return (data || [])
-        .map((row: any) => this.mapSolicitud(row))
-        .filter((solicitud: any) => {
-          const codCliente = String(solicitud?.so_codclie || '').trim();
-          const nomCliente = String(solicitud?.so_nomclie || '').trim().toUpperCase();
-          const sucCliente = String(solicitud?.so_sucursal_clie || '').trim().toUpperCase();
-          return (clienteId && codCliente === clienteId)
-            || (clienteNombre && (nomCliente === clienteNombre || sucCliente === clienteNombre));
-        });
+      return (data || []).map((row: any) => this.mapSolicitud(row));
     })).pipe(
       map((rows: any[]) => ({
         status: 'success',
@@ -195,7 +225,40 @@ export class SolicitudPrestamoService {
 
   guardar(solicitud: any, detalle: any[]): Observable<any> {
     return from(this.retryAfterExpiredJwt(async () => {
-      const numero = this.toStringMax(solicitud?.so_codsoli ?? solicitud?.so_numero, 12) || this.generarNumero();
+      const idsucursal = this.toNumber(
+        solicitud?.so_codsucu ?? localStorage.getItem('idSucursal')
+      );
+      if (!idsucursal) throw new Error('Sucursal inválida para registrar la solicitud.');
+
+      const contRow = await this.getOrPickContFacturaRow(idsucursal);
+      if (!contRow) throw new Error(`No existe contfactura para la sucursal ${idsucursal}.`);
+
+      const idField = this.contfacturaIdField(contRow);
+      const contId = this.toNumberOrNull(contRow?.[idField]);
+      if (!idField || contId == null) throw new Error('contfactura sin id.');
+
+      const tieneCampo = Object.prototype.hasOwnProperty.call(contRow, 'contpedido');
+      if (!tieneCampo) {
+        throw new Error("El registro de contfactura no tiene el campo 'contpedido'. Agregue la columna para poder generar el numero de solicitud.");
+      }
+
+      const codProvided = this.toStringMax(solicitud?.so_codsoli ?? solicitud?.so_numero, 12);
+      const contActual = this.toNumber(contRow?.contpedido ?? 0);
+      const next = codProvided ? contActual : contActual + 1;
+      const numero = codProvided ?? this.generarNumeroSolicitud(idsucursal, next);
+
+      if (!codProvided) {
+        const contUpdate: any = { contpedido: next };
+        if (Object.prototype.hasOwnProperty.call(contRow, 'ano')) {
+          contUpdate.ano = this.toNumber(contRow?.ano) || new Date().getFullYear();
+        }
+        const { error: contErr } = await this.db
+          .from('contfactura')
+          .update(contUpdate)
+          .eq(idField, contId);
+        if (contErr) throw new Error(`contfactura actualizar secuencia contpedido: ${String(contErr?.message || contErr)}`);
+      }
+
       const header: any = {
         so_codsoli: numero,
         so_fecha: this.normalizeDate(solicitud?.so_fecha),
@@ -204,8 +267,10 @@ export class SolicitudPrestamoService {
         so_codsucuclie: this.toNumber(solicitud?.so_codsucuclie) || null,
         so_sucursal_clie: this.toStringMax(solicitud?.so_sucursal_clie, 80),
         so_nomvend: this.toStringMax(solicitud?.so_nomvend ?? solicitud?.so_solicitante, 60),
+        so_observacion: this.toStringMax(solicitud?.so_observacion ?? solicitud?.observacion, 255),
+        so_status: this.toStringMax(solicitud?.so_status, 3) || 'A',
         so_codempr: this.toStringMax(solicitud?.so_codempr, 10),
-        so_codsucu: this.toNumber(solicitud?.so_codsucu) || null,
+        so_codsucu: idsucursal,
       };
       Object.keys(header).forEach((key) => {
         if (header[key] === null || header[key] === undefined || header[key] === '') delete header[key];
@@ -220,10 +285,10 @@ export class SolicitudPrestamoService {
 
       const rows = (detalle || []).map((item: any) => ({
         ds_codsoli: numero,
-        ds_codmerc: this.toStringMax(item?.ds_codmerc, 15) || '',
-        ds_desmerc: this.toStringMax(item?.ds_desmerc, 80) || '',
-        ds_canmerc: this.toNumber(item?.ds_canmerc),
-        ds_unidad: this.toStringMax(item?.ds_unidad, 12),
+        ds_codmerc: this.toStringMax(item?.ds_codmerc ?? item?.producto?.in_codmerc, 15) || '',
+        ds_desmerc: this.toStringMax(item?.ds_desmerc ?? item?.producto?.in_desmerc, 80) || '',
+        ds_canmerc: this.toNumber(item?.ds_canmerc ?? item?.cantidad),
+        ds_unidad: this.toStringMax(item?.ds_unidad ?? item?.producto?.in_unidad ?? item?.unidad, 12),
       })).filter((item: any) => item.ds_codmerc && item.ds_canmerc > 0);
 
       if (rows.length) {
