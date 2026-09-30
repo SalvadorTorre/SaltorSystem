@@ -127,16 +127,46 @@
             <td>{{ gasto.gm_track_id || '-' }}</td>
             <td>{{ gasto.gm_usuario || '-' }}</td>
             <td class="text-center">
+              <div class="gm-row-actions">
+              <button
+                type="button"
+                class="btn btn-outline-info btn-sm"
+                title="Ver mensaje devuelto por DGII"
+                (click)="verMensajeDgii(gasto)"
+              >
+                <i class="bi bi-chat-left-text"></i>
+              </button>
               <button
                 type="button"
                 class="btn btn-outline-success btn-sm"
-                title="Reenviar a DGII"
+                [title]="esEstadoAceptado(gasto) ? 'Documento aceptado por DGII' : 'Enviar o reenviar a DGII'"
                 (click)="reenviarDgii(gasto)"
                 [disabled]="!puedeReenviar(gasto) || !!reenviandoNumero"
               >
                 <span *ngIf="reenviandoNumero === gasto.gm_numero" class="spinner-border spinner-border-sm"></span>
                 <i *ngIf="reenviandoNumero !== gasto.gm_numero" class="bi bi-send"></i>
               </button>
+              <button
+                *ngIf="puedeEditarEncf(gasto)"
+                type="button"
+                class="btn btn-outline-primary btn-sm"
+                title="Editar e-NCF"
+                (click)="editarEncf(gasto)"
+                [disabled]="!!editandoEncfNumero || !!reenviandoNumero"
+              >
+                <i class="bi bi-pencil-square"></i>
+              </button>
+              <button
+                *ngIf="puedeEditarEncf(gasto) && gasto.gm_encf"
+                type="button"
+                class="btn btn-outline-danger btn-sm"
+                title="Eliminar e-NCF para generar uno nuevo"
+                (click)="eliminarEncf(gasto)"
+                [disabled]="!!editandoEncfNumero || !!reenviandoNumero"
+              >
+                <i class="bi bi-trash"></i>
+              </button>
+              </div>
             </td>
           </tr>
           <tr *ngIf="gastosFiltrados.length === 0">

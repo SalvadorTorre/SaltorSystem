@@ -24,6 +24,7 @@ export class GastosMenoresComponent implements OnInit {
   enviando = false;
   cargandoConsulta = false;
   reenviandoNumero = '';
+  editandoEncfNumero = '';
   filtroConsulta = '';
   gastosConsulta: any[] = [];
   estado = 'Sin enviar';
@@ -84,8 +85,16 @@ export class GastosMenoresComponent implements OnInit {
   }
 
   puedeReenviar(gasto: any): boolean {
-    const estado = String(gasto?.gm_estado_dgii || '').trim().toLowerCase();
-    return !estado.includes('acept') && !!gasto?.gm_request_json;
+    return !this.esEstadoAceptado(gasto) && !!gasto?.gm_request_json;
+  }
+
+  esEstadoAceptado(gasto: any): boolean {
+    const estado = String(gasto?.gm_estado_dgii || gasto || '').trim().toLowerCase();
+    return estado.includes('acept');
+  }
+
+  puedeEditarEncf(gasto: any): boolean {
+    return !this.esEstadoAceptado(gasto);
   }
 
   claseEstadoConsulta(estadoValue: any): string {
@@ -98,6 +107,10 @@ export class GastosMenoresComponent implements OnInit {
 
   async reenviarDgii(gasto: any): Promise<void> {
     const numero = String(gasto?.gm_numero || '').trim();
+    if (this.esEstadoAceptado(gasto)) {
+      await Swal.fire('Documento aceptado', 'Este gasto menor ya fue aceptado por la DGII y no puede reenviarse.', 'info');
+      return;
+    }
     let escenario = gasto?.gm_request_json;
     if (typeof escenario === 'string') {
       try { escenario = JSON.parse(escenario); } catch { escenario = null; }
@@ -119,8 +132,17 @@ export class GastosMenoresComponent implements OnInit {
 
     this.reenviandoNumero = numero;
     try {
+      let encf = String(gasto?.gm_encf || '').trim().toUpperCase();
+      if (!encf) {
+        const reserva = await firstValueFrom(this.facturacion.reservarEncf('43'));
+        encf = String(reserva?.data?.ncf || reserva?.ncf || '').trim().toUpperCase();
+        if (!encf) throw new Error('No se pudo reservar una nueva secuencia E43.');
+      }
+      escenario = { ...escenario, ENCF: encf };
+      gasto.gm_encf = encf;
+      gasto.gm_request_json = escenario;
       await firstValueFrom(this.gastosMenores.actualizarResultado(numero, {
-        encf: gasto?.gm_encf,
+        encf,
         estado: 'PENDIENTE',
         requestJson: escenario,
       }));
@@ -129,11 +151,11 @@ export class GastosMenoresComponent implements OnInit {
         this.configuracion.enviarDgiiDirectCert([escenario], rnc),
       );
       const raw = response?.data ?? response;
-      const data = raw?.data?.resultados?.[0] || raw?.resultados?.[0] || raw?.data || raw;
-      const estado = String(data?.estado || data?.status || 'Enviado');
-      const trackId = String(data?.trackId || data?.track_id || '');
+      const resultadoDgii = this.extraerResultadoDgii(raw);
+      const estado = resultadoDgii.estado;
+      const trackId = resultadoDgii.trackId;
       await firstValueFrom(this.gastosMenores.actualizarResultado(numero, {
-        encf: gasto?.gm_encf,
+        encf,
         estado,
         trackId,
         requestJson: escenario,
@@ -157,6 +179,106 @@ export class GastosMenoresComponent implements OnInit {
       this.reenviandoNumero = '';
       this.cargarConsulta();
     }
+  }
+
+  verMensajeDgii(gasto: any): void {
+    const respuesta = this.parseJson(gasto?.gm_response_json);
+    const mensajes = this.extraerMensajesDgii(respuesta);
+    const lista = mensajes.length
+      ? `<ul class="gm-dgii-messages">${mensajes.map((mensaje) => `<li>${this.escapeHtml(mensaje)}</li>`).join('')}</ul>`
+      : '<p class="text-muted text-start mb-0">DGII no devolvio un mensaje descriptivo.</p>';
+    const completo = this.escapeHtml(JSON.stringify(respuesta || {}, null, 2));
+    void Swal.fire({
+      title: `Respuesta DGII - ${this.escapeHtml(String(gasto?.gm_numero || ''))}`,
+      html: `${lista}<details class="gm-dgii-details"><summary>Ver respuesta completa</summary><pre>${completo}</pre></details>`,
+      width: '52rem',
+      confirmButtonText: 'Cerrar',
+      customClass: { popup: 'gm-dgii-popup' },
+    });
+  }
+
+  async editarEncf(gasto: any): Promise<void> {
+    if (!this.puedeEditarEncf(gasto) || this.editandoEncfNumero) return;
+    const numero = String(gasto?.gm_numero || '').trim();
+    const actual = String(gasto?.gm_encf || '').trim().toUpperCase();
+    const resultado = await Swal.fire({
+      title: 'Editar e-NCF',
+      html: `<p class="text-start">Gasto menor <strong>${this.escapeHtml(numero)}</strong></p>`,
+      input: 'text',
+      inputValue: actual,
+      inputPlaceholder: 'Ejemplo: E430000000001',
+      showCancelButton: true,
+      confirmButtonText: 'Guardar',
+      cancelButtonText: 'Cancelar',
+      inputAttributes: { maxlength: '13', autocapitalize: 'characters' },
+      preConfirm: (value) => {
+        const encf = String(value || '').trim().toUpperCase();
+        if (!/^E43\d{10}$/.test(encf)) {
+          Swal.showValidationMessage('Digite un e-NCF E43 valido de 13 caracteres.');
+          return false;
+        }
+        return encf;
+      },
+    });
+    if (!resultado.isConfirmed) return;
+    await this.guardarCambioEncf(gasto, String(resultado.value || '').trim().toUpperCase());
+  }
+
+  async eliminarEncf(gasto: any): Promise<void> {
+    if (!this.puedeEditarEncf(gasto) || this.editandoEncfNumero) return;
+    const numero = String(gasto?.gm_numero || '').trim();
+    const confirmacion = await Swal.fire({
+      title: 'Quitar e-NCF',
+      html: `Se quitara el e-NCF <strong>${this.escapeHtml(String(gasto?.gm_encf || '-'))}</strong> del gasto ${this.escapeHtml(numero)}.<br>Al reenviar se reservara uno nuevo.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Si, quitar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#dc3545',
+    });
+    if (!confirmacion.isConfirmed) return;
+    await this.guardarCambioEncf(gasto, null);
+  }
+
+  private async guardarCambioEncf(gasto: any, encf: string | null): Promise<void> {
+    const numero = String(gasto?.gm_numero || '').trim();
+    this.editandoEncfNumero = numero;
+    try {
+      const response = await firstValueFrom(this.gastosMenores.actualizarEncfParaReenvio(numero, encf));
+      Object.assign(gasto, response?.data || {});
+      await Swal.fire('Actualizado', encf ? 'El e-NCF fue actualizado.' : 'El e-NCF fue eliminado. Al reenviar se generara uno nuevo.', 'success');
+    } catch (error: any) {
+      await Swal.fire('Error', String(error?.message || 'No se pudo actualizar el e-NCF.'), 'error');
+    } finally {
+      this.editandoEncfNumero = '';
+    }
+  }
+
+  private parseJson(value: any): any {
+    if (typeof value !== 'string') return value || {};
+    try { return JSON.parse(value); } catch { return { message: value }; }
+  }
+
+  private extraerMensajesDgii(value: any): string[] {
+    const mensajes: string[] = [];
+    const visitar = (nodo: any, clave = ''): void => {
+      if (nodo === null || nodo === undefined) return;
+      if (typeof nodo === 'string' || typeof nodo === 'number') {
+        const texto = String(nodo).trim();
+        if (texto && /mensaje|message|error|errors|detalle|detail|descripcion|motivo/i.test(clave) && !mensajes.includes(texto)) mensajes.push(texto);
+        return;
+      }
+      if (Array.isArray(nodo)) nodo.forEach((item) => visitar(item, clave));
+      else if (typeof nodo === 'object') Object.entries(nodo).forEach(([key, item]) => visitar(item, key));
+    };
+    visitar(value);
+    return mensajes;
+  }
+
+  private escapeHtml(value: any): string {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
   }
 
   agregarLinea(): void {
@@ -216,9 +338,9 @@ export class GastosMenoresComponent implements OnInit {
       );
       const raw = response?.data ?? response;
       this.respuesta = JSON.stringify(raw, null, 2);
-      const data = raw?.data?.resultados?.[0] || raw?.resultados?.[0] || raw?.data || raw;
-      this.estado = String(data?.estado || data?.status || 'Enviado');
-      this.trackId = String(data?.trackId || data?.track_id || '');
+      const resultadoDgii = this.extraerResultadoDgii(raw);
+      this.estado = resultadoDgii.estado;
+      this.trackId = resultadoDgii.trackId;
       await firstValueFrom(this.gastosMenores.actualizarResultado(this.form.numero, {
         encf: this.form.encf,
         estado: this.estado,
@@ -262,6 +384,50 @@ export class GastosMenoresComponent implements OnInit {
     this.trackId = '';
     this.respuesta = '';
     void this.generarNumeroControl();
+  }
+
+  private extraerResultadoDgii(raw: any): { estado: string; trackId: string } {
+    const resultado = raw?.data?.data?.results?.[0]
+      || raw?.data?.results?.[0]
+      || raw?.data?.data?.resultados?.[0]
+      || raw?.data?.resultados?.[0]
+      || raw?.results?.[0]
+      || raw?.resultados?.[0]
+      || raw;
+    const respuestaDgii = resultado?.responseXML?.dgiiResponse
+      || resultado?.responseRFCE?.dgiiResponse
+      || resultado?.dgiiResponse
+      || resultado?.ecfDgii
+      || resultado?.rfceDgii
+      || {};
+
+    const estado = this.primerTexto(
+      respuestaDgii?.estado,
+      resultado?.ecfDgii?.estado,
+      resultado?.rfceDgii?.estado,
+      resultado?.ecfEstado,
+      resultado?.rfceEstado,
+      resultado?.estado,
+      raw?.estado,
+    ) || 'Enviado';
+    const trackId = this.primerTexto(
+      respuestaDgii?.trackId,
+      respuestaDgii?.track_id,
+      resultado?.trackId,
+      resultado?.track_id,
+      raw?.trackId,
+      raw?.track_id,
+    );
+
+    return { estado, trackId };
+  }
+
+  private primerTexto(...valores: any[]): string {
+    for (const valor of valores) {
+      const texto = String(valor ?? '').trim();
+      if (texto) return texto;
+    }
+    return '';
   }
 
   private async generarNumeroControl(): Promise<void> {

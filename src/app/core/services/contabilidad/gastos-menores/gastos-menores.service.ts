@@ -181,6 +181,60 @@ export class GastosMenoresService {
     })()).pipe(map((data) => ({ status: 'success', code: 200, data })));
   }
 
+  actualizarEncfParaReenvio(numero: string, encf: string | null): Observable<any> {
+    return from((async () => {
+      const tenant = this.tenant();
+      if (!tenant.empresa || !tenant.sucursal) {
+        throw new Error('No se encontro la empresa o sucursal del usuario logiado.');
+      }
+
+      const codigo = String(numero || '').trim();
+      const { data: actual, error: readError } = await this.db
+        .from('gasto_menor')
+        .select('gm_numero,gm_encf,gm_estado_dgii,gm_request_json')
+        .eq('gm_numero', codigo)
+        .eq('gm_codempr', tenant.empresa)
+        .eq('gm_codsucu', tenant.sucursal)
+        .maybeSingle();
+      if (readError) throw readError;
+      if (!actual) throw new Error(`No se encontro el gasto menor ${codigo}.`);
+
+      const estado = String(actual.gm_estado_dgii || '').trim().toLowerCase();
+      if (estado.includes('acept')) {
+        throw new Error('No se puede modificar el e-NCF de un gasto aceptado por la DGII.');
+      }
+
+      let requestJson: any = actual.gm_request_json;
+      if (typeof requestJson === 'string') {
+        try { requestJson = JSON.parse(requestJson); } catch { requestJson = {}; }
+      }
+      requestJson = requestJson && typeof requestJson === 'object' ? { ...requestJson } : {};
+
+      const nuevoEncf = String(encf || '').trim().toUpperCase();
+      if (nuevoEncf) requestJson.ENCF = nuevoEncf;
+      else delete requestJson.ENCF;
+
+      const { data, error } = await this.db
+        .from('gasto_menor')
+        .update({
+          gm_encf: nuevoEncf || null,
+          gm_estado_dgii: 'BORRADOR',
+          gm_track_id: null,
+          gm_request_json: requestJson,
+          gm_response_json: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('gm_numero', codigo)
+        .eq('gm_codempr', tenant.empresa)
+        .eq('gm_codsucu', tenant.sucursal)
+        .select('gm_numero,gm_encf,gm_estado_dgii,gm_track_id,gm_request_json,gm_response_json')
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) throw new Error(`No se pudo actualizar el gasto menor ${codigo}.`);
+      return data;
+    })()).pipe(map((data) => ({ status: 'success', code: 200, data })));
+  }
+
   obtenerUno(numero: string): Observable<any> {
     return from((async () => {
       const tenant = this.tenant();
