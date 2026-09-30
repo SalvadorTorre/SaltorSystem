@@ -303,6 +303,7 @@ export class GastosMenoresComponent implements OnInit {
     }
 
     this.enviando = true;
+    let gastoGuardado = false;
     try {
       if (!this.form.encf) {
         const reserva = await firstValueFrom(this.facturacion.reservarEncf('43'));
@@ -332,6 +333,7 @@ export class GastosMenoresComponent implements OnInit {
         requestJson: escenario,
         lineas: lineasValidas,
       }));
+      gastoGuardado = true;
       const rnc = this.limpiarRnc(localStorage.getItem('rnc_empresa'));
       const response = await firstValueFrom(
         this.configuracion.enviarDgiiDirectCert([escenario], rnc),
@@ -357,7 +359,7 @@ export class GastosMenoresComponent implements OnInit {
       this.estado = 'Error';
       const details = error?.dgiiResponse || error?.details || error?.error || error;
       this.respuesta = JSON.stringify(details, null, 2);
-      if (this.form.numero) {
+      if (this.form.numero && gastoGuardado) {
         try {
           await firstValueFrom(this.gastosMenores.actualizarResultado(this.form.numero, {
             encf: this.form.encf,
