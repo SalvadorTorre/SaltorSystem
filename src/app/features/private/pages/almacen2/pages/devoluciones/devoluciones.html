@@ -1,152 +1,102 @@
 <div class="container-fluid devoluciones-page">
-  <div class="d-flex align-items-center mb-3">
-    <h4 class="mb-0">Devoluciones</h4>
+  <div class="devoluciones-header">
+    <div>
+      <h4 class="mb-0">Devoluciones</h4>
+      <span>Registro y seguimiento de mercancía devuelta</span>
+    </div>
+    <div class="devoluciones-tabs" role="tablist">
+      <button type="button" [class.active]="pestanaActiva === 'nueva'" (click)="cambiarPestana('nueva')">
+        <i class="bi bi-plus-circle"></i> Nueva devolución
+      </button>
+      <button type="button" [class.active]="pestanaActiva === 'consulta'" (click)="cambiarPestana('consulta')">
+        <i class="bi bi-search"></i> Consulta
+      </button>
+    </div>
   </div>
-  <div class="card consulta-devolucion-card mb-2">
-    <div class="card-body">
-      <div class="row g-2 align-items-end">
-        <div class="col-md-2">
-          <label class="form-label">No. Devolucion</label>
-          <input
-            type="text"
-            class="form-control"
-            [(ngModel)]="consultaNumeroDevolucion"
-            (keyup.enter)="consultarPorNumeroDevolucion()"
-            placeholder="ID"
-          />
-        </div>
-        <div class="col-md-2">
-          <button
-            type="button"
-            class="btn btn-outline-primary w-100"
-            (click)="consultarPorNumeroDevolucion()"
-            [disabled]="cargandoConsultaDevolucion || !consultaNumeroDevolucion.trim()"
-          >
-            <i class="bi bi-search"></i> Buscar devol.
-          </button>
-        </div>
-        <div class="col-md-2">
-          <label class="form-label">Control de salida</label>
-          <input
-            type="text"
-            class="form-control"
-            [(ngModel)]="consultaControlSalida"
-            (keyup.enter)="consultarPorControlSalida()"
-            placeholder="Salida"
-          />
-        </div>
-        <div class="col-md-2">
-          <button
-            type="button"
-            class="btn btn-outline-success w-100"
-            (click)="consultarPorControlSalida()"
-            [disabled]="cargandoConsultaDevolucion || !consultaControlSalida.trim()"
-          >
-            <i class="bi bi-search"></i> Buscar salida
-          </button>
-        </div>
-        <div class="col-md-2">
-          <button
-            type="button"
-            class="btn btn-outline-secondary w-100"
-            (click)="limpiarConsultaDevolucion()"
-            [disabled]="cargandoConsultaDevolucion && !consultaDevolucion"
-          >
-            <i class="bi bi-x-circle"></i> Limpiar
-          </button>
-        </div>
-        <div class="col-md-2 text-muted" *ngIf="cargandoConsultaDevolucion">
-          <span class="spinner-border spinner-border-sm me-1"></span>
-          Consultando...
-        </div>
+
+  <section *ngIf="pestanaActiva === 'consulta'" class="consulta-workspace">
+    <div class="consulta-filtros">
+      <div class="filtro-texto">
+        <label class="form-label">Buscar devolución</label>
+        <input type="text" class="form-control" [(ngModel)]="filtroConsulta"
+          (keyup.enter)="cargarDevoluciones()" placeholder="Número, entrada o control de salida" />
       </div>
+      <div>
+        <label class="form-label">Desde</label>
+        <input type="date" class="form-control" [(ngModel)]="filtroDesde" />
+      </div>
+      <div>
+        <label class="form-label">Hasta</label>
+        <input type="date" class="form-control" [(ngModel)]="filtroHasta" />
+      </div>
+      <button type="button" class="btn btn-primary" (click)="cargarDevoluciones()" [disabled]="cargandoLista">
+        <span *ngIf="cargandoLista" class="spinner-border spinner-border-sm me-1"></span>
+        <i *ngIf="!cargandoLista" class="bi bi-search me-1"></i>Consultar
+      </button>
+      <button type="button" class="btn btn-outline-secondary" (click)="limpiarFiltrosConsulta()">
+        <i class="bi bi-eraser me-1"></i>Limpiar
+      </button>
+    </div>
 
-      <div class="consulta-devolucion-resultado mt-2" *ngIf="consultaDevolucion">
-        <div class="row g-2 mb-2">
-          <div class="col-md-2">
-            <div class="small text-muted">Devolucion</div>
-            <div class="fw-bold text-primary">{{ consultaDevolucion.id }}</div>
-          </div>
-          <div class="col-md-2">
-            <div class="small text-muted">Fecha</div>
-            <div>{{ consultaDevolucion.fecha | date:'dd/MM/yyyy' }}</div>
-          </div>
-          <div class="col-md-2">
-            <div class="small text-muted">Sucursal</div>
-            <div>{{ consultaDevolucion.idsucursal || '-' }}</div>
-          </div>
-          <div class="col-md-3">
-            <div class="small text-muted">Entrada</div>
-            <div class="fw-bold">{{ consultaDevolucion.codentrada }}</div>
-          </div>
-          <div class="col-md-3">
-            <div class="small text-muted">Control salida</div>
-            <div class="fw-bold">{{ consultaDevolucion.codsalida }}</div>
-          </div>
+    <div class="consulta-listado">
+      <table class="table table-hover align-middle mb-0">
+        <thead>
+          <tr>
+            <th>No.</th><th>Fecha</th><th>Factura</th><th>Cliente</th><th>Entrada</th><th>Salida</th>
+            <th class="text-end">Recibido</th><th class="text-end">Entregado</th><th class="text-center">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let row of devolucionesConsulta">
+            <td class="fw-semibold">{{ row.id }}</td>
+            <td>{{ row.fecha | date:'dd/MM/yyyy HH:mm' }}</td>
+            <td>{{ row.entrada?.me_facsupl || '-' }}</td>
+            <td class="cliente-cell" [title]="row.entrada?.me_nomsupl || ''">{{ row.entrada?.me_nomsupl || '-' }}</td>
+            <td>{{ row.codentrada }}</td><td>{{ row.codsalida }}</td>
+            <td class="text-end">{{ row.entrada?.me_valentr | currency }}</td>
+            <td class="text-end">{{ row.salida?.fa_valfact | currency }}</td>
+            <td class="text-center acciones-cell">
+              <button type="button" class="btn btn-sm btn-outline-primary" title="Ver" (click)="verDevolucion(row)"><i class="bi bi-eye"></i></button>
+              <button type="button" class="btn btn-sm btn-outline-warning" title="Editar" (click)="editarDevolucion(row)"><i class="bi bi-pencil"></i></button>
+              <button type="button" class="btn btn-sm btn-outline-danger" title="Eliminar" (click)="eliminarDevolucion(row)" [disabled]="eliminandoId === row.id"><i class="bi bi-trash"></i></button>
+            </td>
+          </tr>
+          <tr *ngIf="!cargandoLista && devolucionesConsulta.length === 0"><td colspan="9" class="empty-state">No hay devoluciones para los filtros seleccionados.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="consulta-devolucion-resultado" *ngIf="consultaDevolucion">
+      <div class="detalle-heading">
+        <div><strong>Devolución {{ consultaDevolucion.id }}</strong><span>{{ consultaDevolucion.fecha | date:'dd/MM/yyyy HH:mm' }}</span></div>
+        <button type="button" class="btn-close" aria-label="Cerrar" (click)="limpiarResultadoConsultaDevolucion()"></button>
+      </div>
+      <div class="detalle-resumen">
+        <span><small>Factura</small>{{ consultaEntrada?.me_facsupl || '-' }}</span>
+        <span><small>Cliente</small>{{ consultaEntrada?.me_nomsupl || '-' }}</span>
+        <span><small>Entrada</small>{{ consultaDevolucion.codentrada }}</span>
+        <span><small>Salida</small>{{ consultaDevolucion.codsalida }}</span>
+      </div>
+      <div class="row g-3">
+        <div class="col-md-6">
+          <h6>Productos recibidos</h6>
+          <div class="consulta-tabla"><table class="table table-sm mb-0"><thead><tr><th>Código</th><th>Descripción</th><th class="text-end">Cantidad</th><th class="text-end">Total</th></tr></thead>
+            <tbody><tr *ngFor="let d of consultaDetalleEntrada"><td>{{d.cod}}</td><td>{{d.des}}</td><td class="text-end">{{d.cantidad | number:'1.2-2'}}</td><td class="text-end">{{d.total | currency}}</td></tr></tbody></table></div>
         </div>
-
-        <div class="row g-2">
-          <div class="col-md-6">
-            <h6 class="mb-1">Productos recibidos</h6>
-            <div class="consulta-tabla">
-              <table class="table table-sm table-bordered mb-0">
-                <thead class="table-light">
-                  <tr>
-                    <th>Codigo</th>
-                    <th>Descripcion</th>
-                    <th class="text-end">Cant.</th>
-                    <th class="text-end">Precio</th>
-                    <th class="text-end">Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr *ngFor="let d of consultaDetalleEntrada">
-                    <td>{{ d.cod }}</td>
-                    <td>{{ d.des }}</td>
-                    <td class="text-end">{{ d.cantidad }}</td>
-                    <td class="text-end">{{ d.precio | currency }}</td>
-                    <td class="text-end">{{ d.total | currency }}</td>
-                  </tr>
-                  <tr *ngIf="consultaDetalleEntrada.length === 0">
-                    <td colspan="5" class="text-center text-muted">Sin detalle</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-          <div class="col-md-6">
-            <h6 class="mb-1">Productos salientes</h6>
-            <div class="consulta-tabla">
-              <table class="table table-sm table-bordered mb-0">
-                <thead class="table-light">
-                  <tr>
-                    <th>Codigo</th>
-                    <th>Descripcion</th>
-                    <th class="text-end">Cant.</th>
-                    <th class="text-end">Precio</th>
-                    <th class="text-end">Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr *ngFor="let d of consultaDetalleSalida">
-                    <td>{{ d.cod }}</td>
-                    <td>{{ d.des }}</td>
-                    <td class="text-end">{{ d.cantidad }}</td>
-                    <td class="text-end">{{ d.precio | currency }}</td>
-                    <td class="text-end">{{ d.total | currency }}</td>
-                  </tr>
-                  <tr *ngIf="consultaDetalleSalida.length === 0">
-                    <td colspan="5" class="text-center text-muted">Sin detalle</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
+        <div class="col-md-6">
+          <h6>Productos salientes</h6>
+          <div class="consulta-tabla"><table class="table table-sm mb-0"><thead><tr><th>Código</th><th>Descripción</th><th class="text-end">Cantidad</th><th class="text-end">Total</th></tr></thead>
+            <tbody><tr *ngFor="let d of consultaDetalleSalida"><td>{{d.cod}}</td><td>{{d.des}}</td><td class="text-end">{{d.cantidad | number:'1.2-2'}}</td><td class="text-end">{{d.total | currency}}</td></tr></tbody></table></div>
         </div>
       </div>
     </div>
-  </div>
-  <div>
+  </section>
+
+  <div *ngIf="pestanaActiva === 'nueva'">
+    <div class="edicion-banner" *ngIf="editandoId">
+      <span><i class="bi bi-pencil-square"></i> Editando devolución <strong>{{ editandoId }}</strong></span>
+      <button type="button" class="btn btn-sm btn-outline-secondary" (click)="cancelarEdicion()">Cancelar edición</button>
+    </div>
     <form [formGroup]="facturaForm" (ngSubmit)="buscarFactura()">
       <div class="card mb-3">
         <div class="card-body">
@@ -183,7 +133,7 @@
                 <button type="button"
                         class="btn btn-primary"
                         (click)="guardarDevolucionFactura()">
-                  <i class="bi bi-save"></i> Guardar
+                  <i class="bi bi-save"></i> {{ editandoId ? 'Actualizar' : 'Guardar' }}
                 </button>
               </div>
               <div class="col-md-2 d-flex align-items-end " *ngIf="imprimirDisponible">
@@ -225,7 +175,7 @@
               <tr *ngFor="let it of resultadoFactura">
                 <td>{{it.cod}}</td>
                 <td>{{it.des}}</td>
-                <td class="text-end">{{it.cantidad}}</td>
+                <td class="text-end">{{it.cantidad | number:'1.2-2'}}</td>
                 <td class="text-end">{{it.precio | currency}}</td>
                 <td class="text-end">{{it.total | currency}}</td>
                 <td class="text-center">
@@ -256,7 +206,7 @@
               </div>
               <div class="col-md-2">
                 <label class="form-label">Cantidad</label>
-                <input id="pf-cantidad" type="number" class="form-control text-end" 
+                <input id="pf-cantidad" type="number" step="0.01" class="form-control text-end"
                   formControlName="cantidad" 
                   [attr.max]="disponibleActualParaCodigo()" [attr.min]="0.01" (focus)="selectInput($event)" 
                   (keydown.enter)="focusNext('pf-precio')" />
@@ -291,7 +241,7 @@
                 <td>{{it.cod}}</td>
                 <td>{{it.des}}</td>
                 <td class="text-end">
-                  <input type="number" class="form-control form-control-sm text-end" [value]="it.cantidad" [attr.min]="0.01" (input)="actualizarLineaFactura(i,'cantidad',$any($event.target).value)" />
+                  <input type="number" step="0.01" class="form-control form-control-sm text-end" [value]="it.cantidad" [attr.min]="0.01" (input)="actualizarLineaFactura(i,'cantidad',$any($event.target).value)" />
                 </td>
                 <td class="text-end">
                   <input type="number" class="form-control form-control-sm text-end" [value]="it.precio" [attr.min]="0" (input)="actualizarLineaFactura(i,'precio',$any($event.target).value)" />
@@ -372,6 +322,7 @@
                 <input
                   #cantidadInput
                   type="number"
+                  step="0.01"
                   class="form-control"
                   formControlName="cantidad"
                   (keydown)="onEnterCantidad($event)"
@@ -414,7 +365,7 @@
                 <tr *ngFor="let item of detalle; let i = index">
                   <td>{{ item.codigo }}</td>
                   <td>{{ item.descripcion }}</td>
-                  <td class="text-end">{{ item.cantidad }}</td>
+                  <td class="text-end">{{ item.cantidad | number:'1.2-2' }}</td>
                   <td class="text-end">{{ item.precio | number:'1.2-2' }}</td>
                   <td class="text-end">{{ item.total | number:'1.2-2' }}</td>
 
@@ -452,7 +403,7 @@
                   <tr *ngFor="let item of seleccionDestino; let i = index">
                     <td>{{ item.cod }}</td>
                     <td>{{ item.des }}</td>
-                    <td class="text-end">{{ item.cantidad }}</td>
+                    <td class="text-end">{{ item.cantidad | number:'1.2-2' }}</td>
                     <td class="text-end">{{ item.precio }}</td>
                     <td class="text-end">{{ item.total }}</td>
                     <td class="text-center">
@@ -463,7 +414,7 @@
                       </button>
                     </td>
                   </tr>
-                   <tr *ngIf="detalle.length===0">
+                   <tr *ngIf="seleccionDestino.length===0">
                       <td colspan="6" class="text-center text-muted">Sin registro</td>
                     </tr>
                 </tbody>

@@ -111,6 +111,41 @@ export class DevolucionService {
     return `${anio}${sucStr}${seqStr}`;
   }
 
+  private sucursalActual(): number {
+    return this.toNumber(localStorage.getItem('idSucursal'));
+  }
+
+  private acumularCantidades(items: any[], codigoKey: string, cantidadKey: string, signo: number, destino: Map<string, number>): void {
+    (items || []).forEach((item: any) => {
+      const codigo = String(item?.[codigoKey] || '').trim();
+      if (!codigo) return;
+      destino.set(codigo, (destino.get(codigo) || 0) + (this.toNumber(item?.[cantidadKey]) * signo));
+    });
+  }
+
+  private async ajustarInventario(idsucursal: number, cambios: Map<string, number>): Promise<void> {
+    for (const [codigo, delta] of cambios.entries()) {
+      if (!delta) continue;
+      const { data: actual, error: readError } = await this.db
+        .from('inventario')
+        .select('id,inv_existencia')
+        .eq('inv_codsucu', idsucursal)
+        .eq('inv_codprod', codigo)
+        .limit(1)
+        .maybeSingle();
+      if (readError) this.throwStep(`Leer inventario (${codigo})`, readError);
+      if (!actual) continue;
+      const { error: updateError } = await this.db
+        .from('inventario')
+        .update({
+          inv_existencia: this.toNumber(actual.inv_existencia) + delta,
+          inv_fechamov: new Date().toISOString(),
+        })
+        .eq('id', actual.id);
+      if (updateError) this.throwStep(`Actualizar inventario (${codigo})`, updateError);
+    }
+  }
+
   private async getOrPickContFacturaRow(idsucursal: number): Promise<any | null> {
     const year = new Date().getFullYear();
     const { data, error } = await this.db
@@ -546,6 +581,170 @@ export class DevolucionService {
           detalleSalida: detSalidaResp.data || [],
         },
       };
+    })());
+  }
+
+  listarDevoluciones(filtros?: { texto?: string; desde?: string; hasta?: string }, limit = 300): Observable<any> {
+    return from((async () => {
+      const idsucursal = this.sucursalActual();
+      if (!idsucursal) throw new Error('No se encontró la sucursal del usuario conectado.');
+
+      let query = this.db
+        .from('devolucion')
+        .select('id,fecha,codentrada,codsalida,idsucursal')
+        .eq('idsucursal', idsucursal)
+        .order('fecha', { ascending: false })
+        .limit(Math.max(1, Math.min(Number(limit) || 300, 1000)));
+      if (filtros?.desde) query = query.gte('fecha', `${filtros.desde}T00:00:00`);
+      if (filtros?.hasta) query = query.lte('fecha', `${filtros.hasta}T23:59:59.999`);
+
+      const { data, error } = await query;
+      if (error) this.throwStep('Listar devoluciones', error);
+      let devoluciones = Array.isArray(data) ? data : [];
+      const texto = String(filtros?.texto || '').trim().toLowerCase();
+      if (texto) {
+        devoluciones = devoluciones.filter((row: any) => [row.id, row.codentrada, row.codsalida]
+          .some((value) => String(value || '').toLowerCase().includes(texto)));
+      }
+      if (!devoluciones.length) return { status: 'success', code: 200, data: [] };
+
+      const entradas = devoluciones.map((row: any) => String(row.codentrada || '')).filter(Boolean);
+      const salidas = devoluciones.map((row: any) => String(row.codsalida || '')).filter(Boolean);
+      const [entradaResp, salidaResp] = await Promise.all([
+        entradas.length
+          ? this.db.from('entradamerc').select('me_codentr,me_facsupl,me_nomsupl,me_valentr').in('me_codentr', entradas)
+          : Promise.resolve({ data: [], error: null }),
+        salidas.length
+          ? this.db.from('ventainterna').select('fa_codfact,fa_valfact').in('fa_codfact', salidas)
+          : Promise.resolve({ data: [], error: null }),
+      ]);
+      if (entradaResp.error) this.throwStep('Listar entradas de devoluciones', entradaResp.error);
+      if (salidaResp.error) this.throwStep('Listar salidas de devoluciones', salidaResp.error);
+      const porEntrada = new Map((entradaResp.data || []).map((row: any) => [String(row.me_codentr), row]));
+      const porSalida = new Map((salidaResp.data || []).map((row: any) => [String(row.fa_codfact), row]));
+      return {
+        status: 'success', code: 200,
+        data: devoluciones.map((row: any) => ({
+          ...row,
+          entrada: porEntrada.get(String(row.codentrada)) || null,
+          salida: porSalida.get(String(row.codsalida)) || null,
+        })),
+      };
+    })());
+  }
+
+  actualizarDevolucion(id: number, payload: any): Observable<any> {
+    return from((async () => {
+      const idsucursal = this.sucursalActual();
+      const { data: devolucion, error: devError } = await this.db
+        .from('devolucion').select('*').eq('id', id).eq('idsucursal', idsucursal).maybeSingle();
+      if (devError) this.throwStep('Buscar devolución para editar', devError);
+      if (!devolucion) throw new Error('No se encontró la devolución en la sucursal conectada.');
+
+      const codentrada = String(devolucion.codentrada || '');
+      const codsalida = String(devolucion.codsalida || '');
+      const [oldEntrada, oldSalida] = await Promise.all([
+        this.db.from('detentradamerc').select('*').eq('de_codentr', codentrada),
+        this.db.from('detventainterna').select('*').eq('df_codfact', codsalida),
+      ]);
+      if (oldEntrada.error) this.throwStep('Leer detalle de entrada', oldEntrada.error);
+      if (oldSalida.error) this.throwStep('Leer detalle de salida', oldSalida.error);
+
+      const entr = payload?.entradamercancia || {};
+      const vin = payload?.ventainterna || {};
+      const detEntrada = Array.isArray(payload?.detalleEntrada) ? payload.detalleEntrada : [];
+      const detSalida = Array.isArray(payload?.detalleSalida) ? payload.detalleSalida : [];
+      const cambios = new Map<string, number>();
+      this.acumularCantidades(oldEntrada.data || [], 'de_codmerc', 'de_canentr', -1, cambios);
+      this.acumularCantidades(oldSalida.data || [], 'df_codmerc', 'df_canmerc', 1, cambios);
+      detEntrada.forEach((item: any) => {
+        const codigo = String(item?.producto?.in_codmerc || '').trim();
+        if (codigo) cambios.set(codigo, (cambios.get(codigo) || 0) + this.toNumber(item.cantidad));
+      });
+      detSalida.forEach((item: any) => {
+        const codigo = String(item?.producto?.in_codmerc || '').trim();
+        if (codigo) cambios.set(codigo, (cambios.get(codigo) || 0) - this.toNumber(item.cantidad));
+      });
+
+      const entradaRow = {
+        me_fecentr: this.normalizeDateOnly(entr.me_fecEntr) || new Date().toISOString().slice(0, 10),
+        me_valentr: this.toNumber(entr.me_valEntr),
+        me_nomsupl: this.toStringMax(entr.me_nomSupl, 39),
+        me_facsupl: this.toStringMax(entr.me_facSupl, 30),
+      };
+      const salidaRow = {
+        fa_fecfact: this.normalizeDateOnly(vin.fa_fecFact) || new Date().toISOString().slice(0, 10),
+        fa_valfact: this.toNumber(vin.fa_valFact),
+        fa_nomclie: this.toStringMax(vin.fa_nomClie, 39),
+        fa_nomvend: this.toStringMax(vin.fa_nomVend, 15),
+      };
+      const { error: entradaError } = await this.db.from('entradamerc').update(entradaRow).eq('me_codentr', codentrada);
+      if (entradaError) this.throwStep('Actualizar entrada', entradaError);
+      const { error: salidaError } = await this.db.from('ventainterna').update(salidaRow).eq('fa_codfact', codsalida);
+      if (salidaError) this.throwStep('Actualizar salida', salidaError);
+
+      const deleteEntrada = await this.db.from('detentradamerc').delete().eq('de_codentr', codentrada);
+      if (deleteEntrada.error) this.throwStep('Reemplazar detalle de entrada', deleteEntrada.error);
+      const deleteSalida = await this.db.from('detventainterna').delete().eq('df_codfact', codsalida);
+      if (deleteSalida.error) this.throwStep('Reemplazar detalle de salida', deleteSalida.error);
+      if (detEntrada.length) {
+        const rows = detEntrada.map((item: any) => ({
+          de_codentr: codentrada, de_codmerc: String(item?.producto?.in_codmerc || ''),
+          de_desmerc: String(item?.producto?.in_desmerc || ''), de_canentr: this.toNumber(item.cantidad),
+          de_premerc: this.toNumber(item.precio), de_valentr: this.toNumber(item.total),
+          de_fecentr: entradaRow.me_fecentr, de_codsucu: idsucursal,
+          de_codempr: this.toStringMax(entr.me_codEmpr, 6), de_tipo: 'DEVOLUCION',
+        }));
+        const inserted = await this.db.from('detentradamerc').insert(rows);
+        if (inserted.error) this.throwStep('Insertar detalle de entrada editado', inserted.error);
+      }
+      if (detSalida.length) {
+        const rows = detSalida.map((item: any) => ({
+          df_codfact: codsalida, df_fecfact: salidaRow.fa_fecfact,
+          df_codmerc: String(item?.producto?.in_codmerc || ''), df_desmerc: String(item?.producto?.in_desmerc || ''),
+          df_canmerc: this.toNumber(item.cantidad), df_premerc: this.toNumber(item.precio),
+          df_valmerc: this.toNumber(item.total ?? item.valor), df_status: 'A',
+          df_codsucu: idsucursal, df_codempr: this.toStringMax(vin.fa_codEmpr, 6),
+        }));
+        const inserted = await this.db.from('detventainterna').insert(rows);
+        if (inserted.error) this.throwStep('Insertar detalle de salida editado', inserted.error);
+      }
+      await this.ajustarInventario(idsucursal, cambios);
+      return { status: 'success', code: 200, data: { id, codentrada, codsalida } };
+    })());
+  }
+
+  eliminarDevolucion(id: number): Observable<any> {
+    return from((async () => {
+      const idsucursal = this.sucursalActual();
+      const { data: devolucion, error } = await this.db
+        .from('devolucion').select('*').eq('id', id).eq('idsucursal', idsucursal).maybeSingle();
+      if (error) this.throwStep('Buscar devolución para eliminar', error);
+      if (!devolucion) throw new Error('No se encontró la devolución en la sucursal conectada.');
+      const codentrada = String(devolucion.codentrada || '');
+      const codsalida = String(devolucion.codsalida || '');
+      const [entrada, salida] = await Promise.all([
+        this.db.from('detentradamerc').select('de_codmerc,de_canentr').eq('de_codentr', codentrada),
+        this.db.from('detventainterna').select('df_codmerc,df_canmerc').eq('df_codfact', codsalida),
+      ]);
+      if (entrada.error) this.throwStep('Leer entrada a eliminar', entrada.error);
+      if (salida.error) this.throwStep('Leer salida a eliminar', salida.error);
+      const cambios = new Map<string, number>();
+      this.acumularCantidades(entrada.data || [], 'de_codmerc', 'de_canentr', -1, cambios);
+      this.acumularCantidades(salida.data || [], 'df_codmerc', 'df_canmerc', 1, cambios);
+
+      for (const [tabla, campo, valor] of [
+        ['detentradamerc', 'de_codentr', codentrada], ['detventainterna', 'df_codfact', codsalida],
+        ['entradamerc', 'me_codentr', codentrada], ['ventainterna', 'fa_codfact', codsalida],
+      ] as Array<[string, string, string]>) {
+        if (!valor) continue;
+        const result = await this.db.from(tabla).delete().eq(campo, valor);
+        if (result.error) this.throwStep(`Eliminar ${tabla}`, result.error);
+      }
+      const deleted = await this.db.from('devolucion').delete().eq('id', id).eq('idsucursal', idsucursal);
+      if (deleted.error) this.throwStep('Eliminar devolución', deleted.error);
+      await this.ajustarInventario(idsucursal, cambios);
+      return { status: 'success', code: 200, data: { id } };
     })());
   }
 }

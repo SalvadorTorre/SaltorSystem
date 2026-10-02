@@ -276,10 +276,18 @@ export class NotaCreditoService {
       if (!ncNumero) {
         throw new Error('Debe indicar el numero de nota de credito.');
       }
+      const ncFactura = String(header['nc_factura'] || '').trim();
+      if (!ncFactura) {
+        throw new Error('Debe indicar la factura afectada por la nota de credito.');
+      }
+      const valorNotaCredito = this.toNumber(header['total']);
+      if (valorNotaCredito <= 0) {
+        throw new Error('El valor de la nota de credito debe ser mayor que cero.');
+      }
 
       const { data: notaExistente, error: estadoError } = await this.db
         .from('nota_credito')
-        .select('nc_numero,estado_dgii')
+        .select('nc_numero,nc_factura,estado_dgii')
         .eq('nc_numero', ncNumero)
         .eq('fa_codempr', tenant.codempr)
         .eq('fa_codsucu', tenant.codsucu)
@@ -288,6 +296,25 @@ export class NotaCreditoService {
       const estadoActual = String(notaExistente?.estado_dgii || '').trim().toLowerCase();
       if (estadoActual.includes('acept')) {
         throw new Error(`La nota de credito ${ncNumero} ya fue aceptada por la DGII y no puede modificarse.`);
+      }
+
+      const facturaAnterior = String(notaExistente?.nc_factura || '').trim();
+      const esMismaNotaDeFactura = !!notaExistente && facturaAnterior === ncFactura;
+      const { data: factura, error: facturaError } = await this.db
+        .from('factura')
+        .select('fa_codfact,fa_valnotacredit')
+        .eq('fa_codfact', ncFactura)
+        .eq('fa_codempr', tenant.codempr)
+        .eq('fa_codsucu', tenant.codsucu)
+        .maybeSingle();
+      if (facturaError) throw facturaError;
+      if (!factura) {
+        throw new Error(`No se encontro la factura ${ncFactura} en la empresa y sucursal activas.`);
+      }
+
+      const valorNotaAnterior = this.toNumber(factura.fa_valnotacredit);
+      if (!esMismaNotaDeFactura && valorNotaAnterior > 0) {
+        throw new Error(`La factura ${ncFactura} ya tiene una nota de credito realizada.`);
       }
 
       const { data: savedHeader, error: headerError } = await this.db
@@ -321,6 +348,29 @@ export class NotaCreditoService {
           .from('det_nota_credito')
           .insert(lines);
         if (linesError) throw linesError;
+      }
+
+      const { data: facturaActualizada, error: actualizarFacturaError } = await this.db
+        .from('factura')
+        .update({ fa_valnotacredit: valorNotaCredito })
+        .eq('fa_codfact', ncFactura)
+        .eq('fa_codempr', tenant.codempr)
+        .eq('fa_codsucu', tenant.codsucu)
+        .select('fa_codfact')
+        .maybeSingle();
+      if (actualizarFacturaError) throw actualizarFacturaError;
+      if (!facturaActualizada) {
+        throw new Error(`No se pudo registrar el valor de la nota de credito en la factura ${ncFactura}.`);
+      }
+
+      if (facturaAnterior && facturaAnterior !== ncFactura) {
+        const { error: limpiarFacturaAnteriorError } = await this.db
+          .from('factura')
+          .update({ fa_valnotacredit: 0 })
+          .eq('fa_codfact', facturaAnterior)
+          .eq('fa_codempr', tenant.codempr)
+          .eq('fa_codsucu', tenant.codsucu);
+        if (limpiarFacturaAnteriorError) throw limpiarFacturaAnteriorError;
       }
 
       return { header: savedHeader, lines };

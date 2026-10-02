@@ -2,6 +2,78 @@
 .table td, .table th { padding: 0.4rem; }
 .btn-group .btn.active { background-color: #0d6efd; color: #fff; }
 
+.devoluciones-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.35rem 0 0.75rem;
+  border-bottom: 1px solid #dbe4f0;
+  margin-bottom: 0.75rem;
+}
+.devoluciones-header span { color: #64748b; font-size: 0.82rem; }
+.devoluciones-tabs { display: flex; gap: 0.25rem; }
+.devoluciones-tabs button {
+  border: 0;
+  border-radius: 0.4rem;
+  background: transparent;
+  color: #475569;
+  padding: 0.45rem 0.8rem;
+  font-weight: 600;
+}
+.devoluciones-tabs button.active { background: #0d6efd; color: #fff; }
+.consulta-workspace { animation: devolucionFade 160ms ease-out; }
+.consulta-filtros {
+  display: grid;
+  grid-template-columns: minmax(230px, 1fr) 155px 155px auto auto;
+  gap: 0.5rem;
+  align-items: end;
+  margin-bottom: 0.65rem;
+}
+.consulta-listado {
+  border: 1px solid #dbe4f0;
+  border-radius: 0.45rem;
+  overflow: auto;
+  max-height: 52vh;
+  background: #fff;
+}
+.consulta-listado thead th,
+.consulta-tabla thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #174f8a;
+  color: #fff;
+  white-space: nowrap;
+}
+.cliente-cell { max-width: 230px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.acciones-cell { white-space: nowrap; }
+.acciones-cell .btn + .btn { margin-left: 0.25rem; }
+.empty-state { padding: 2rem !important; text-align: center; color: #64748b; }
+.detalle-heading { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
+.detalle-heading strong, .detalle-heading span { display: block; }
+.detalle-resumen { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin-bottom: 0.75rem; }
+.detalle-resumen span { font-weight: 600; color: #1e293b; }
+.detalle-resumen small { display: block; color: #64748b; font-weight: 400; }
+.edicion-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.7rem;
+  margin-bottom: 0.55rem;
+  border-left: 4px solid #f59e0b;
+  background: #fffbeb;
+  color: #78350f;
+}
+@keyframes devolucionFade { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
+@media (max-width: 900px) {
+  .devoluciones-header { align-items: stretch; flex-direction: column; }
+  .devoluciones-tabs button { flex: 1; }
+  .consulta-filtros { grid-template-columns: 1fr 1fr; }
+  .filtro-texto { grid-column: 1 / -1; }
+  .detalle-resumen { grid-template-columns: 1fr 1fr; }
+}
+
 /* Compactar la pantalla para reducir scroll */
 .devoluciones-page .card { margin-bottom: 0.5rem; }
 .devoluciones-page .card-body { padding: 0.6rem; }
@@ -21,6 +93,7 @@
   border: 1px solid #e2e8f0;
   border-radius: 0.35rem;
   padding: 0.5rem;
+  margin-top: 0.75rem;
 }
 .consulta-tabla {
   max-height: 160px;

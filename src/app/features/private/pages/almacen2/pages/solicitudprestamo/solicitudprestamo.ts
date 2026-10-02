@@ -647,6 +647,10 @@ export class SolicitudPrestamo implements OnInit {
   }
 
   private mostrarError(titulo: string, err: any): void {
+    const activeElement = document.activeElement;
+    if (activeElement instanceof HTMLElement) {
+      activeElement.blur();
+    }
     Swal.fire({
       title: titulo,
       text: err?.message || err?.error?.message || 'Ocurrió un error en Supabase.',

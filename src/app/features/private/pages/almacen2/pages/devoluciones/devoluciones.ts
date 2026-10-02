@@ -18,6 +18,14 @@ import Swal from 'sweetalert2';
   styleUrls: ['./devoluciones.css'],
 })
 export class DevolucionesComponent implements OnInit {
+  pestanaActiva: 'nueva' | 'consulta' = 'nueva';
+  devolucionesConsulta: any[] = [];
+  filtroConsulta = '';
+  filtroDesde = '';
+  filtroHasta = '';
+  cargandoLista = false;
+  eliminandoId: number | null = null;
+  editandoId: number | null = null;
   modo: 'factura' | 'productos' = 'factura';
   facturaForm!: FormGroup;
   entraForm!: FormGroup;
@@ -107,7 +115,7 @@ export class DevolucionesComponent implements OnInit {
     this.entraForm = this.fb.group({
       codigo: ['', Validators.required],
       descripcion: ['', Validators.required],
-      cantidad: [0, [Validators.required, Validators.min(0.5)]],
+      cantidad: [0, [Validators.required, Validators.min(0.01)]],
       precio: [0, Validators.required],
       costo:[0]
       });
@@ -142,6 +150,38 @@ export class DevolucionesComponent implements OnInit {
       }
     });
     setTimeout(() => this.focusNext('fa-codFact'), 0);
+  }
+
+  cambiarPestana(pestana: 'nueva' | 'consulta'): void {
+    this.pestanaActiva = pestana;
+    if (pestana === 'consulta') this.cargarDevoluciones();
+    else setTimeout(() => this.focusNext('fa-codFact'), 0);
+  }
+
+  cargarDevoluciones(): void {
+    this.cargandoLista = true;
+    this.devolucionSrv.listarDevoluciones({
+      texto: this.filtroConsulta,
+      desde: this.filtroDesde,
+      hasta: this.filtroHasta,
+    }).subscribe({
+      next: (resp: any) => {
+        this.devolucionesConsulta = Array.isArray(resp?.data) ? resp.data : [];
+      },
+      error: (err) => {
+        this.cargandoLista = false;
+        Swal.fire('Error', this.extraerMensajeError(err), 'error');
+      },
+      complete: () => { this.cargandoLista = false; },
+    });
+  }
+
+  limpiarFiltrosConsulta(): void {
+    this.filtroConsulta = '';
+    this.filtroDesde = '';
+    this.filtroHasta = '';
+    this.limpiarResultadoConsultaDevolucion();
+    this.cargarDevoluciones();
   }
 
 
@@ -568,7 +608,10 @@ fa_codClie: this.facturaForm.get('fa_codClie')?.value
     detalleSalida
   };
   console.log("Payload que estoy enviando:", payload);
-  this.devolucionSrv.guardarDevolucion(payload).subscribe({
+  const operacion = this.editandoId
+    ? this.devolucionSrv.actualizarDevolucion(this.editandoId, payload)
+    : this.devolucionSrv.guardarDevolucion(payload);
+  operacion.subscribe({
     next: (res: any) => {
       const entradaCodigo =
         res?.data?.entrada?.me_codEntr ||
@@ -581,6 +624,8 @@ fa_codClie: this.facturaForm.get('fa_codClie')?.value
         res?.nuevoCodigoEntr ||
         res?.data?.nuevoCodigo ||
         res?.nuevoCodigo ||
+        res?.data?.codentrada ||
+        res?.codentrada ||
         '';
       const salidaCodigo =
         res?.data?.vinterna?.fa_codFact ||
@@ -591,6 +636,8 @@ fa_codClie: this.facturaForm.get('fa_codClie')?.value
         res?.salidaCodigo ||
         res?.data?.nuevoCodigoSalida ||
         res?.nuevoCodigoSalida ||
+        res?.data?.codsalida ||
+        res?.codsalida ||
         '';
       this.ultimoCodigoEntrada = String(entradaCodigo || '');
       this.ultimoCodigoSalida = String(salidaCodigo || '');
@@ -599,11 +646,13 @@ fa_codClie: this.facturaForm.get('fa_codClie')?.value
       this.ultimaEntradaDet = detalleEntrada;
       this.ultimaSalidaDet = detalleSalida;
       this.imprimirDisponible = true;
+      const fueEdicion = this.editandoId !== null;
       Swal.fire({
-        title: 'Devolución guardada correctamente',
+        title: fueEdicion ? 'Devolución actualizada correctamente' : 'Devolución guardada correctamente',
         html: [this.ultimoCodigoEntrada ? `Entrada: ${this.ultimoCodigoEntrada}` : '', this.ultimoCodigoSalida ? `Salida: ${this.ultimoCodigoSalida}` : ''].filter(Boolean).join(' | '),
         icon: 'success'
       });
+      this.editandoId = null;
  
       // this.facturaForm.get('fa_codFact')?.enable();
       // this.facturaForm.get('fa_codFact')?.reset();
@@ -776,25 +825,7 @@ fa_codClie: this.facturaForm.get('fa_codClie')?.value
           return;
         }
 
-        this.consultaDevolucion = data.devolucion || null;
-        this.consultaEntrada = data.entrada || null;
-        this.consultaSalida = data.salida || null;
-        this.consultaDetalleEntrada = (data.detalleEntrada || []).map((d: any) => ({
-          cod: d.de_codmerc || '',
-          des: d.de_desmerc || '',
-          cantidad: Number(d.de_canentr || 0),
-          precio: Number(d.de_premerc || 0),
-          total: Number(d.de_valentr || 0),
-        }));
-        this.consultaDetalleSalida = (data.detalleSalida || []).map((d: any) => ({
-          cod: d.df_codmerc || '',
-          des: d.df_desmerc || '',
-          cantidad: Number(d.df_canmerc || 0),
-          precio: Number(d.df_premerc || 0),
-          total: Number(d.df_valmerc || 0),
-        }));
-        this.consultaNumeroDevolucion = String(this.consultaDevolucion?.id || this.consultaNumeroDevolucion || '');
-        this.consultaControlSalida = String(this.consultaDevolucion?.codsalida || this.consultaControlSalida || '');
+        this.aplicarConsultaDevolucion(data);
       },
       error: (err) => {
         Swal.fire({
@@ -809,12 +840,93 @@ fa_codClie: this.facturaForm.get('fa_codClie')?.value
     });
   }
 
-  private limpiarResultadoConsultaDevolucion(): void {
+  limpiarResultadoConsultaDevolucion(): void {
     this.consultaDevolucion = null;
     this.consultaEntrada = null;
     this.consultaSalida = null;
     this.consultaDetalleEntrada = [];
     this.consultaDetalleSalida = [];
+  }
+
+  verDevolucion(row: any): void {
+    this.consultarDevolucion({ id: String(row?.id || '') });
+  }
+
+  editarDevolucion(row: any): void {
+    this.cargandoConsultaDevolucion = true;
+    this.devolucionSrv.consultarDevolucion({ id: row?.id }).subscribe({
+      next: (resp: any) => {
+        const data = resp?.data || resp;
+        if (!data?.devolucion) {
+          void Swal.fire('Sin resultados', 'No se encontró la devolución.', 'info');
+          return;
+        }
+        this.aplicarConsultaDevolucion(data);
+        this.editandoId = Number(data.devolucion.id);
+        this.facturaForm.get('fa_codFact')?.enable({ emitEvent: false });
+        this.facturaForm.patchValue({ fa_codFact: data.entrada?.me_facsupl || '' }, { emitEvent: false });
+        this.facturaForm.get('fa_codFact')?.disable({ emitEvent: false });
+        this.clienteNombre = String(data.entrada?.me_nomsupl || data.salida?.fa_nomclie || '');
+        this.fechaFactura = this.formatearFecha(data.entrada?.me_fecentr || data.devolucion.fecha);
+        this.resultadoFactura = this.consultaDetalleEntrada.map((item) => ({ ...item }));
+        this.seleccionFactura = this.consultaDetalleEntrada.map((item) => ({ ...item }));
+        this.seleccionDestino = this.consultaDetalleSalida.map((item) => ({ ...item, valor: item.total }));
+        this.recalcularTotalFactura();
+        this.recalcularTotalDestino();
+        this.pestanaActiva = 'nueva';
+      },
+      error: (err) => {
+        this.cargandoConsultaDevolucion = false;
+        Swal.fire('Error', this.extraerMensajeError(err), 'error');
+      },
+      complete: () => { this.cargandoConsultaDevolucion = false; },
+    });
+  }
+
+  async eliminarDevolucion(row: any): Promise<void> {
+    const id = Number(row?.id || 0);
+    if (!id || this.eliminandoId !== null) return;
+    const confirmacion = await Swal.fire({
+      title: `¿Eliminar devolución ${id}?`,
+      text: 'Se eliminarán la entrada, la salida y sus detalles; el inventario será revertido.',
+      icon: 'warning', showCancelButton: true,
+      confirmButtonText: 'Sí, eliminar', cancelButtonText: 'Cancelar', confirmButtonColor: '#dc3545',
+    });
+    if (!confirmacion.isConfirmed) return;
+    this.eliminandoId = id;
+    this.devolucionSrv.eliminarDevolucion(id).subscribe({
+      next: () => {
+        if (Number(this.consultaDevolucion?.id) === id) this.limpiarResultadoConsultaDevolucion();
+        void Swal.fire('Eliminada', 'La devolución y sus movimientos fueron eliminados.', 'success');
+        this.cargarDevoluciones();
+      },
+      error: (err) => {
+        this.eliminandoId = null;
+        Swal.fire('Error', this.extraerMensajeError(err), 'error');
+      },
+      complete: () => { this.eliminandoId = null; },
+    });
+  }
+
+  cancelarEdicion(): void {
+    this.editandoId = null;
+    this.deshacerFactura();
+  }
+
+  private aplicarConsultaDevolucion(data: any): void {
+    this.consultaDevolucion = data.devolucion || null;
+    this.consultaEntrada = data.entrada || null;
+    this.consultaSalida = data.salida || null;
+    this.consultaDetalleEntrada = (data.detalleEntrada || []).map((d: any) => ({
+      cod: d.de_codmerc || '', des: d.de_desmerc || '', cantidad: Number(d.de_canentr || 0),
+      precio: Number(d.de_premerc || 0), total: Number(d.de_valentr || 0),
+    }));
+    this.consultaDetalleSalida = (data.detalleSalida || []).map((d: any) => ({
+      cod: d.df_codmerc || '', des: d.df_desmerc || '', cantidad: Number(d.df_canmerc || 0),
+      precio: Number(d.df_premerc || 0), total: Number(d.df_valmerc || 0),
+    }));
+    this.consultaNumeroDevolucion = String(this.consultaDevolucion?.id || '');
+    this.consultaControlSalida = String(this.consultaDevolucion?.codsalida || '');
   }
   guardarDevolucionProductos() {
     if (!this.seleccionProductos.length) {

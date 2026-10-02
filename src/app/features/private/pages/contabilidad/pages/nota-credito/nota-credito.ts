@@ -648,6 +648,7 @@ export class NotaCreditoComponent implements OnInit {
     }
 
     this.isSending = true;
+    let notaGuardada = false;
     try {
       if (!this.form.encf.trim()) {
         this.lastStatus = 'Generando e-NCF...';
@@ -658,6 +659,7 @@ export class NotaCreditoComponent implements OnInit {
       this.lastRequestJson = JSON.stringify(scenario, null, 2);
       this.lastResponseJson = '';
       await this.saveCreditNote('Pendiente DGII');
+      notaGuardada = true;
       this.lastStatus = 'Enviando...';
       Swal.fire({
         title: 'Enviando nota de credito',
@@ -687,7 +689,9 @@ export class NotaCreditoComponent implements OnInit {
       };
       this.lastResponseJson = JSON.stringify(rawError, null, 2);
       this.lastStatus = 'Error';
-      await this.saveCreditNote('Error');
+      if (notaGuardada) {
+        await this.saveCreditNote('Error');
+      }
       console.error('[NotaCreditoComponent] Error enviando nota de credito a DGII', error);
       Swal.fire(
         'Error DGII',
