@@ -496,6 +496,8 @@ export class AccessControlService {
       ['salida factura', '/private/almacen/salidafactura'],
       ['devoluciones', '/private/almacen/devoluciones'],
       ['solicitud prestamo', '/private/almacen/solicitudprestamo'],
+      ['nota credito almacen', '/private/almacen/nota-credito'],
+      ['nota de credito almacen', '/private/almacen/nota-credito'],
       ['almacen', '/private/almacen'],
       ['despacho', '/private/despacho'],
       ['facturas pendientes', '/private/contabilidad/facturas-pendientes'],

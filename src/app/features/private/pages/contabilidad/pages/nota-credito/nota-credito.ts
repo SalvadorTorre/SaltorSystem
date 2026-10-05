@@ -51,6 +51,7 @@ interface CreditNoteForm {
 })
 export class NotaCreditoComponent implements OnInit {
   private nextLineId = 1;
+  soloConsulta = false;
   activeSection: 'crear' | 'consultar' = 'crear';
   consultaFiltro = '';
   consultaCargando = false;
@@ -102,6 +103,11 @@ export class NotaCreditoComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    if (this.soloConsulta) {
+      this.activeSection = 'consultar';
+      this.consultarNotas();
+      return;
+    }
     void this.ensureCreditNoteNumber();
   }
 

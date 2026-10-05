@@ -63,6 +63,12 @@
               <span>Solicitud Préstamo</span>
             </a>
           </li>
+          <li class="nav-item" *ngIf="canView('/private/almacen/nota-credito')">
+            <a class="nav-link d-flex align-items-center" routerLinkActive="active" [routerLink]="['nota-credito']">
+              <i class="bi bi-receipt-cutoff me-2"></i>
+              <span>Nota de Crédito</span>
+            </a>
+          </li>
           <li class="nav-item" *ngIf="canView('/private/almacen/controlgasoil')">
             <a class="nav-link d-flex align-items-center" routerLinkActive="active" [routerLink]="['controlgasoil']">
               <i class="bi bi-fuel-pump me-2"></i>
@@ -127,6 +133,12 @@
             <a class="nav-link d-flex align-items-center" routerLinkActive="active" [routerLink]="['solicitudprestamo']" data-bs-dismiss="offcanvas">
               <i class="bi bi-clipboard-check me-2"></i>
               <span>Solicitud Préstamo</span>
+            </a>
+          </li>
+          <li class="nav-item" *ngIf="canView('/private/almacen/nota-credito')">
+            <a class="nav-link d-flex align-items-center" routerLinkActive="active" [routerLink]="['nota-credito']" data-bs-dismiss="offcanvas">
+              <i class="bi bi-receipt-cutoff me-2"></i>
+              <span>Nota de Crédito</span>
             </a>
           </li>
           <li class="nav-item" *ngIf="canView('/private/almacen/controlgasoil')">

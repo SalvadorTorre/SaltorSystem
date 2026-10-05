@@ -39,6 +39,7 @@ export interface PermisoMatrizFila {
 })
 export class ServicioPermiso {
   private permisoV2Enabled: boolean | null = null;
+  private recursoNotaCreditoAlmacenSincronizado = false;
 
   constructor(private supabase: SupabaseService) {}
 
@@ -87,6 +88,42 @@ export class ServicioPermiso {
     }
 
     return row;
+  }
+
+  /**
+   * Mantiene disponible el permiso agregado a Almacén en instalaciones donde
+   * la aplicación se actualizó antes de ejecutar la migración del catálogo.
+   * Un usuario sin privilegios simplemente continúa con el catálogo existente.
+   */
+  private async asegurarRecursoNotaCreditoAlmacen(): Promise<void> {
+    if (this.recursoNotaCreditoAlmacenSincronizado) return;
+
+    const recurso = {
+      modulo_key: "almacen",
+      modulo_nombre: "Almacén",
+      recurso_key: "almacen.nota_credito",
+      pantalla_nombre: "Nota de Crédito",
+      ruta: "/private/almacen/nota-credito",
+      activo: true,
+      requiere_tenant: true,
+      orden: 89,
+    };
+
+    const { error: recursoError } = await this.db
+      .from("permiso_recurso_catalogo")
+      .upsert(recurso, { onConflict: "recurso_key" });
+    if (recursoError) return;
+
+    const { error: accionesError } = await this.db
+      .from("permiso_recurso_accion_catalogo")
+      .upsert([
+        { recurso_key: "almacen.nota_credito", accion_key: "ver", activo: true },
+        { recurso_key: "almacen.nota_credito", accion_key: "imprimir", activo: true },
+      ], { onConflict: "recurso_key,accion_key" });
+
+    if (!accionesError) {
+      this.recursoNotaCreditoAlmacenSincronizado = true;
+    }
   }
 
   private async isPermisoV2Disponible(): Promise<boolean> {
@@ -304,6 +341,8 @@ export class ServicioPermiso {
         }));
       }
 
+      await this.asegurarRecursoNotaCreditoAlmacen();
+
       const { data, error } = await this.db
         .from("permiso_recurso_catalogo")
         .select("recurso_key,modulo_key,modulo_nombre,pantalla_nombre,ruta,requiere_tenant")
@@ -365,6 +404,9 @@ export class ServicioPermiso {
           modo: "legacy" as const
         };
       }
+
+
+      await this.asegurarRecursoNotaCreditoAlmacen();
 
       const [{ data: acciones, error: errA }, { data: recursos, error: errR }] = await Promise.all([
         this.db
@@ -443,6 +485,7 @@ export class ServicioPermiso {
 
       const v2 = await this.isPermisoV2Disponible();
       if (v2) {
+        await this.asegurarRecursoNotaCreditoAlmacen();
         const [{ data: acciones, error: errA }, { data: recursos, error: errR }, { data: asignaciones, error: errT }] = await Promise.all([
           this.db
             .from("permiso_accion_catalogo")

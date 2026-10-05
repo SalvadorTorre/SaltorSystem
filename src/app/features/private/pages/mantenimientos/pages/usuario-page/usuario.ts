@@ -256,6 +256,10 @@ export class Usuario implements OnInit {
             modo: recurso?.recurso_key ? 'v2' : 'legacy',
           } as PermisoMatrizFila;
         });
+        this.asegurarNotaCreditoAlmacenEnMatriz(
+          this.permisosMatrizNuevoUsuario,
+          this.accionesPermisosCatalogo,
+        );
         this.reAplicarTipoActualEnMatrizNuevoUsuario();
         this.actualizarGruposPermisosNuevo();
       },
@@ -374,6 +378,32 @@ export class Usuario implements OnInit {
     }
 
     return recurso;
+  }
+
+  private asegurarNotaCreditoAlmacenEnMatriz(
+    filas: PermisoMatrizFila[],
+    accionesCatalogo: AccionCatalogoPermiso[],
+  ): void {
+    const recursoKey = 'almacen.nota_credito';
+    if ((filas || []).some((fila) => String(fila?.recurso_key || '').trim() === recursoKey)) {
+      return;
+    }
+
+    const acciones: Record<string, boolean> = {};
+    (accionesCatalogo || []).forEach((accion) => {
+      acciones[String(accion?.accion_key || '').trim()] = false;
+    });
+
+    filas.push({
+      codusuario: null,
+      recurso_key: recursoKey,
+      modulo_key: 'almacen',
+      modulo_nombre: 'Almacén',
+      pantalla_nombre: 'Nota de Crédito',
+      ruta: '/private/almacen/nota-credito',
+      acciones,
+      modo: 'v2',
+    });
   }
 
   private get permisosMatrizNuevoFiltrados(): PermisoMatrizFila[] {
@@ -718,6 +748,10 @@ export class Usuario implements OnInit {
         this.permisosMatrizEdicionUsuario = Array.isArray(data?.filas)
           ? data.filas.map((fila: PermisoMatrizFila) => this.normalizarRecursoPermiso(fila))
           : [];
+        this.asegurarNotaCreditoAlmacenEnMatriz(
+          this.permisosMatrizEdicionUsuario,
+          this.accionesPermisosCatalogoEdicion,
+        );
         if (!this.hayPermisosSeleccionados(this.permisosMatrizEdicionUsuario)) {
           this.reAplicarPlantillaTipoEdicionUsuario();
           this.plantillaAutoAplicadaEdicion = this.hayPermisosSeleccionados(this.permisosMatrizEdicionUsuario);

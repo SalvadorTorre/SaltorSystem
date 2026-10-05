@@ -87,6 +87,15 @@ const routes: Routes = [
             (m) => m.ModuloSolicitudPrestamo
           ),
       },
+      {
+        path: 'nota-credito',
+        canActivate: [permissionGuard],
+        data: { accessPath: '/private/almacen/nota-credito' },
+        loadChildren: () =>
+          import('./pages/nota-credito-consulta/nota-credito-consulta-modulo').then(
+            (m) => m.ModuloNotaCreditoConsulta
+          ),
+      },
       //   {
       //     path:"Conduce",
       //     loadChildren: () => import('./pages/usuario-page/usuario-modulo').then(m => m.ModuloUsuario)

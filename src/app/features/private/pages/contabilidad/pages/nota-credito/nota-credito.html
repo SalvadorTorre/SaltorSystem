@@ -6,7 +6,7 @@
       <!-- <p>Completa la factura afectada, valida los datos del cliente y envia la nota de credito E34 a DGII.</p> -->
     </div>
 
-    <div class="hero-actions" *ngIf="activeSection === 'crear'">
+    <div class="hero-actions" *ngIf="!soloConsulta && activeSection === 'crear'">
       <span class="status-chip" [class.status-chip--error]="lastStatus === 'Error'" [class.status-chip--ok]="lastStatus !== 'Sin enviar' && lastStatus !== 'Error'">
         {{ lastStatus }}
       </span>
@@ -25,7 +25,7 @@
     </div>
   </header>
 
-  <nav class="section-tabs" aria-label="Secciones de nota de credito">
+  <nav *ngIf="!soloConsulta" class="section-tabs" aria-label="Secciones de nota de credito">
     <button
       class="section-tab"
       [class.section-tab--active]="activeSection === 'crear'"
@@ -46,7 +46,7 @@
     </button>
   </nav>
 
-  <form *ngIf="activeSection === 'crear'" class="credit-note-grid" #creditNoteForm="ngForm" (ngSubmit)="sendToDgii()">
+  <form *ngIf="!soloConsulta && activeSection === 'crear'" class="credit-note-grid" #creditNoteForm="ngForm" (ngSubmit)="sendToDgii()">
     <section class="panel-card invoice-card">
       <div class="panel-card__header">
         <div>
@@ -317,6 +317,7 @@
             <td><span class="status-chip">{{ nota.estado_dgii || 'Sin enviar' }}</span></td>
             <td class="text-end">
               <button
+                *ngIf="!soloConsulta"
                 class="btn btn-outline-warning btn-sm me-1"
                 type="button"
                 [title]="puedeEditarNota(nota) ? 'Editar nota de crédito' : 'La nota aceptada por DGII no se puede editar'"
@@ -331,18 +332,18 @@
                 ></i>
               </button>
               <button
-                *ngIf="esEstadoRechazado(nota)"
+                *ngIf="!soloConsulta && esEstadoRechazado(nota)"
                 class="btn btn-outline-danger btn-sm me-1"
                 type="button"
                 (click)="verMensajeDgii(nota)"
               >
                 <i class="bi bi-chat-left-text-fill"></i>
               </button>
-              <button *ngIf="puedeEnviarNotaDgii(nota)" class="btn btn-outline-success btn-sm me-1" type="button" [title]="esEstadoRechazado(nota) ? 'Reenviar a DGII' : 'Enviar a DGII'" [attr.aria-label]="esEstadoRechazado(nota) ? 'Reenviar a DGII' : 'Enviar a DGII'" (click)="reenviarNotaDgii(nota)">
+              <button *ngIf="!soloConsulta && puedeEnviarNotaDgii(nota)" class="btn btn-outline-success btn-sm me-1" type="button" [title]="esEstadoRechazado(nota) ? 'Reenviar a DGII' : 'Enviar a DGII'" [attr.aria-label]="esEstadoRechazado(nota) ? 'Reenviar a DGII' : 'Enviar a DGII'" (click)="reenviarNotaDgii(nota)">
                 <i class="bi bi-send-arrow-up-fill"></i>
               </button>
               <button
-                *ngIf="esEstadoRechazado(nota)"
+                *ngIf="!soloConsulta && esEstadoRechazado(nota)"
                 class="btn btn-warning btn-sm me-1"
                 type="button"
                 title="Eliminar e-NCF y editar la nota completa"
