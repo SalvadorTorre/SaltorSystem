@@ -3464,6 +3464,49 @@ export class ServicioFacturacion {
     });
   }
 
+  /**
+   * Resumen de ventas para "Mi perfil": totales de la sucursal y del vendedor
+   * conectado, calculados en la base de datos en una sola llamada.
+   * Evita el timeout de RLS que ocurria al descargar todas las facturas del mes.
+   */
+  async resumenVentasPerfil(params: {
+    fechaDesde: string;
+    fechaHasta: string;
+    sucursal?: number | null;
+    empresa?: string | null;
+  }): Promise<{
+    metaFacturar: number;
+    totalFacturaSucursal: number;
+    valorFacturadoSucursal: number;
+    costoFacturadoSucursal: number;
+    totalFacturaVendedor: number;
+    valorFacturadoVendedor: number;
+    costoFacturadoVendedor: number;
+  }> {
+    const { data, error } = await this.db.rpc('resumen_ventas_perfil', {
+      p_fecha_desde: params.fechaDesde,
+      p_fecha_hasta: params.fechaHasta,
+      p_sucursal_id: params.sucursal ?? null,
+      p_empresa: params.empresa || null,
+    });
+    if (error) throw error;
+
+    const row: any = (Array.isArray(data) ? data[0] : data) || {};
+    const num = (value: any) => {
+      const n = Number(value);
+      return Number.isFinite(n) ? n : 0;
+    };
+    return {
+      metaFacturar: num(row.meta_facturar),
+      totalFacturaSucursal: num(row.total_factura_sucursal),
+      valorFacturadoSucursal: num(row.valor_facturado_sucursal),
+      costoFacturadoSucursal: num(row.costo_facturado_sucursal),
+      totalFacturaVendedor: num(row.total_factura_vendedor),
+      valorFacturadoVendedor: num(row.valor_facturado_vendedor),
+      costoFacturadoVendedor: num(row.costo_facturado_vendedor),
+    };
+  }
+
   private async buscarConsultaVentasPaginadas(params: {
     limit: number;
     empresa: string;

@@ -584,78 +584,33 @@ export class PrivatePage implements OnInit, OnDestroy {
 
     const fechaDesde = this.fechaIsoLocal(new Date(periodo.getFullYear(), periodo.getMonth(), 1));
     const fechaHasta = this.fechaIsoLocal(new Date(periodo.getFullYear(), periodo.getMonth() + 1, 0));
-    const [sucursalResponse, facturasResponse] = await Promise.all([
-      firstValueFrom(this.servicioSucursal.buscarsucursal(String(sucursalId))),
-      firstValueFrom(this.servicioFacturacion.buscarVentasPorVendedor({
-        sucursal: sucursalId,
-        fechaDesde,
-        fechaHasta,
-        pageSize: 0,
-      })),
-    ]);
+    const empresa = (localStorage.getItem('cod_empre') || localStorage.getItem('codigoempresa') || '').trim();
 
-    const sucursal = sucursalResponse?.data ?? sucursalResponse ?? {};
-    const facturas = Array.isArray(facturasResponse?.data) ? facturasResponse.data : [];
-    const valorFacturadoSucursal = facturas.reduce(
-      (total: number, factura: any) =>
-        total + this.numeroSeguro(factura?.fa_valFact ?? factura?.fa_valfact),
-      0,
-    );
-    const costoFacturadoSucursal = facturas.reduce(
-      (total: number, factura: any) =>
-        total + this.numeroSeguro(factura?.fa_cosFact ?? factura?.fa_cosfact),
-      0,
-    );
-    const vendedorCodigos = [
-      localStorage.getItem('codigousuario'),
-      localStorage.getItem('claveusuario'),
-      localStorage.getItem('idusuario'),
-    ].map((value) => this.normalizarIdentificadorVendedor(value)).filter(Boolean);
-    const vendedorNombre = this.normalizarNombreVendedor(localStorage.getItem('username'));
-    const codigosSet = new Set(vendedorCodigos);
-
-    const facturasVendedor = facturas.filter((factura: any) => {
-      const codigo = this.normalizarIdentificadorVendedor(
-        factura?.fa_codVend ?? factura?.fa_codvend,
-      );
-      const nombre = this.normalizarNombreVendedor(
-        factura?.fa_nomVend ?? factura?.fa_nomvend,
-      );
-      return (!!codigo && codigosSet.has(codigo)) || (!!nombre && nombre === vendedorNombre);
+    // Todo el calculo se hace en la base de datos (RPC resumen_ventas_perfil):
+    // una sola llamada en lugar de descargar las facturas del mes dia por dia,
+    // que provocaba timeout por RLS en usuarios que no son root.
+    const r = await this.servicioFacturacion.resumenVentasPerfil({
+      fechaDesde,
+      fechaHasta,
+      sucursal: sucursalId,
+      empresa: empresa || null,
     });
 
-    const valorFacturado = facturasVendedor.reduce(
-      (total: number, factura: any) =>
-        total + this.numeroSeguro(factura?.fa_valFact ?? factura?.fa_valfact),
-      0,
-    );
-    const costoFacturado = facturasVendedor.reduce(
-      (total: number, factura: any) =>
-        total + this.numeroSeguro(factura?.fa_cosFact ?? factura?.fa_cosfact),
-      0,
-    );
-    const metaFacturar = this.numeroSeguro(
-      sucursal?.meta_ventas ?? sucursal?.meta_vents ?? sucursal?.metaVenta,
-    );
+    const margen = (valor: number, costo: number) =>
+      valor ? ((valor - costo) / valor) * 100 : 0;
+    const porciento = (valor: number) =>
+      r.metaFacturar ? (valor / r.metaFacturar) * 100 : 0;
 
     return {
-      metaFacturar,
-      totalFacturaSucursal: facturas.length,
-      valorFacturadoSucursal,
-      margenVentaSucursalPct: valorFacturadoSucursal
-        ? ((valorFacturadoSucursal - costoFacturadoSucursal) / valorFacturadoSucursal) * 100
-        : 0,
-      porcientoFacturadoSucursal: metaFacturar
-        ? (valorFacturadoSucursal / metaFacturar) * 100
-        : 0,
-      totalFactura: facturasVendedor.length,
-      valorFacturado,
-      margenVentaPct: valorFacturado
-        ? ((valorFacturado - costoFacturado) / valorFacturado) * 100
-        : 0,
-      porcientoFacturado: metaFacturar
-        ? (valorFacturado / metaFacturar) * 100
-        : 0,
+      metaFacturar: r.metaFacturar,
+      totalFacturaSucursal: r.totalFacturaSucursal,
+      valorFacturadoSucursal: r.valorFacturadoSucursal,
+      margenVentaSucursalPct: margen(r.valorFacturadoSucursal, r.costoFacturadoSucursal),
+      porcientoFacturadoSucursal: porciento(r.valorFacturadoSucursal),
+      totalFactura: r.totalFacturaVendedor,
+      valorFacturado: r.valorFacturadoVendedor,
+      margenVentaPct: margen(r.valorFacturadoVendedor, r.costoFacturadoVendedor),
+      porcientoFacturado: porciento(r.valorFacturadoVendedor),
     };
   }
 
@@ -669,21 +624,6 @@ export class PrivatePage implements OnInit, OnDestroy {
   private actualizarValorPerfil(id: string, valor: string): void {
     const elemento = document.getElementById(id);
     if (elemento) elemento.textContent = valor;
-  }
-
-  private normalizarIdentificadorVendedor(value: any): string {
-    const texto = String(value ?? '').trim().toLowerCase();
-    if (/^\d+$/.test(texto)) return String(Number(texto));
-    return texto.replace(/[^a-z0-9]/g, '');
-  }
-
-  private normalizarNombreVendedor(value: any): string {
-    return String(value ?? '')
-      .trim()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/\s+/g, ' ')
-      .toLowerCase();
   }
 
   private numeroSeguro(value: any): number {
