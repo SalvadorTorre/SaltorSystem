@@ -74,46 +74,13 @@ export class FacturaDgiiService {
     const rnc = this.rnc(localStorage.getItem('rnc_empresa'));
     if (!rnc) throw new Error('No se encontro el RNC emisor activo.');
 
-    let envioResp: any;
-    try {
-      envioResp = await firstValueFrom(
-        this.configuracion.enviarDgiiDirectCert([escenario], rnc),
-      );
-    } catch (error: any) {
-      const rawError = error?.dgiiResponse || error?.details || {
-        message: error?.message || String(error),
-      };
-      const datosError = {
-        ...this.normalizarRespuesta(rawError),
-        dgii_request_json: escenario,
-        dgii_response_raw: rawError,
-        estado_envio_dgii: this.normalizarRespuesta(rawError)?.estado_envio_dgii || 'Error',
-        estado_dgii: this.normalizarRespuesta(rawError)?.estado_dgii || 'Error',
-      };
-      try {
-        await firstValueFrom(this.facturacion.actualizarDatosDgii(codigo, datosError, scope));
-      } catch (saveError) {
-        console.warn('No se pudo guardar el error DGII en la factura:', saveError);
-      }
-      throw error;
-    }
-    const datosDgii = {
-      ...this.normalizarRespuesta(envioResp?.data ?? envioResp),
-      dgii_request_json: escenario,
-      dgii_response_raw: envioResp?.data ?? envioResp,
-      fa_status: 'F',
-    };
-
-    progreso?.('Guardando respuesta de DGII...');
-    const actualizadaResp = await firstValueFrom(
-      this.facturacion.actualizarDatosDgii(codigo, datosDgii, scope),
+    const actualizada = await this.despacharEscenario(
+      lista,
+      escenario,
+      rnc,
+      'ENVIO',
+      progreso,
     );
-    const actualizada = {
-      ...lista,
-      ...(actualizadaResp?.data || {}),
-      ...datosDgii,
-      barcodeValue: codigo,
-    };
 
     if (opciones.imprimir !== false) {
       progreso?.('Imprimiendo factura...');
@@ -164,49 +131,13 @@ export class FacturaDgiiService {
     const rnc = this.rnc(localStorage.getItem('rnc_empresa'));
     if (!rnc) throw new Error('No se encontro el RNC emisor activo.');
 
-    let envioResp: any;
-    try {
-      progreso?.('Reenviando factura a DGII...');
-      envioResp = await firstValueFrom(
-        this.configuracion.enviarDgiiDirectCert([escenario], rnc),
-      );
-    } catch (error: any) {
-      const rawError = error?.dgiiResponse || error?.details || {
-        message: error?.message || String(error),
-      };
-      const normalizada = this.normalizarRespuesta(rawError);
-      const datosError = {
-        ...normalizada,
-        dgii_request_json: escenario,
-        dgii_response_raw: rawError,
-        estado_envio_dgii: normalizada?.estado_envio_dgii || 'Error',
-        estado_dgii: normalizada?.estado_dgii || 'Error',
-      };
-      try {
-        await firstValueFrom(this.facturacion.actualizarDatosDgii(codigo, datosError, scope));
-      } catch (saveError) {
-        console.warn('No se pudo guardar el error DGII del reenvio:', saveError);
-      }
-      throw error;
-    }
-
-    const datosDgii = {
-      ...this.normalizarRespuesta(envioResp?.data ?? envioResp),
-      dgii_request_json: escenario,
-      dgii_response_raw: envioResp?.data ?? envioResp,
-      fa_status: 'F',
-    };
-
-    progreso?.('Guardando nueva respuesta de DGII...');
-    const actualizadaResp = await firstValueFrom(
-      this.facturacion.actualizarDatosDgii(codigo, datosDgii, scope),
+    return this.despacharEscenario(
+      completa,
+      escenario,
+      rnc,
+      'REENVIO',
+      progreso,
     );
-    return {
-      ...completa,
-      ...(actualizadaResp?.data || {}),
-      ...datosDgii,
-      barcodeValue: codigo,
-    };
   }
 
   private validar(factura: any): void {
@@ -246,6 +177,148 @@ export class FacturaDgiiService {
     return typeof client.schema === 'function'
       ? client.schema(this.supabase.schema)
       : client;
+  }
+
+  async despacharEscenario(
+    factura: any,
+    escenario: any,
+    rncEmisor: string,
+    tipoOperacion: 'ENVIO' | 'REENVIO' = 'ENVIO',
+    progreso?: (mensaje: string) => void,
+  ): Promise<any> {
+    const codigo = String(factura?.fa_codFact || factura?.fa_codfact || '').trim();
+    const empresa = String(
+      factura?.fa_codEmpr || factura?.fa_codempr || this.empresaActiva(),
+    ).trim();
+    const sucursal = Number(
+      factura?.fa_codSucu || factura?.fa_codsucu || this.sucursalActiva(),
+    );
+    const configuracion = await firstValueFrom(
+      this.configuracion.obtenerConfiguracionGlobal(),
+    );
+    const modo = String(configuracion?.data?.dgiiModoEnvio || 'COLA').toUpperCase();
+
+    if (modo !== 'DIRECTO') {
+      progreso?.(
+        tipoOperacion === 'REENVIO'
+          ? 'Agregando reenvío a la cola DGII...'
+          : 'Agregando factura a la cola DGII...',
+      );
+      const cola = await this.encolarEscenario(
+        factura,
+        escenario,
+        rncEmisor,
+        tipoOperacion,
+      );
+      return {
+        ...factura,
+        modo_envio_dgii: 'COLA',
+        estado_envio_dgii: cola?.estado || 'PENDIENTE',
+        dgii_request_json: escenario,
+        cola_dgii_id: cola?.id,
+        barcodeValue: codigo,
+      };
+    }
+
+    progreso?.(
+      tipoOperacion === 'REENVIO'
+        ? 'Reenviando factura directamente a DGII...'
+        : 'Enviando factura directamente a DGII...',
+    );
+    let envioResp: any;
+    try {
+      envioResp = await firstValueFrom(
+        this.configuracion.enviarDgiiDirectCert([escenario], rncEmisor),
+      );
+    } catch (error: any) {
+      const rawError = error?.dgiiResponse || error?.details || {
+        message: error?.message || String(error),
+      };
+      const normalizada = this.normalizarRespuesta(rawError);
+      try {
+        await firstValueFrom(
+          this.facturacion.actualizarDatosDgii(
+            codigo,
+            {
+              ...normalizada,
+              dgii_request_json: escenario,
+              dgii_response_raw: rawError,
+              estado_envio_dgii: normalizada?.estado_envio_dgii || 'Error',
+              estado_dgii: normalizada?.estado_dgii || 'Error',
+            },
+            { empresa, sucursal },
+          ),
+        );
+      } catch (saveError) {
+        console.warn('No se pudo guardar el error DGII en la factura:', saveError);
+      }
+      throw error;
+    }
+
+    const datosDgii = {
+      ...this.normalizarRespuesta(envioResp?.data ?? envioResp),
+      dgii_request_json: escenario,
+      dgii_response_raw: envioResp?.data ?? envioResp,
+      fa_status: 'F',
+    };
+    progreso?.('Guardando respuesta de DGII...');
+    const actualizadaResp = await firstValueFrom(
+      this.facturacion.actualizarDatosDgii(
+        codigo,
+        datosDgii,
+        { empresa, sucursal },
+      ),
+    );
+    return {
+      ...factura,
+      ...(actualizadaResp?.data || {}),
+      ...datosDgii,
+      modo_envio_dgii: 'DIRECTO',
+      barcodeValue: codigo,
+    };
+  }
+
+  async encolarEscenario(
+    factura: any,
+    escenario: any,
+    rncEmisor: string,
+    tipoOperacion: 'ENVIO' | 'REENVIO',
+  ): Promise<any> {
+    const empresa = String(
+      factura?.fa_codEmpr || factura?.fa_codempr || this.empresaActiva(),
+    ).trim();
+    const sucursal = Number(
+      factura?.fa_codSucu || factura?.fa_codsucu || this.sucursalActiva(),
+    );
+    const codigo = String(factura?.fa_codFact || factura?.fa_codfact || '').trim();
+    const encf = String(factura?.fa_ncfFact || factura?.fa_ncffact || '').trim();
+    if (!empresa || !Number.isFinite(sucursal) || sucursal <= 0) {
+      throw new Error('No se pudo determinar la empresa y sucursal de la factura.');
+    }
+
+    const { data, error } = await this.db.rpc('encolar_factura_dgii', {
+      p_empresa: empresa,
+      p_sucursal: sucursal,
+      p_factura: codigo,
+      p_encf: encf,
+      p_rnc_emisor: rncEmisor,
+      p_payload: { scenarios: [escenario], rncEmisor },
+      p_tipo_operacion: tipoOperacion,
+    });
+    if (error) throw error;
+    return Array.isArray(data) ? data[0] : data;
+  }
+
+  private sucursalActiva(): number {
+    const sucursal = this.storageJson(localStorage.getItem('sucursal'));
+    return Number(
+      sucursal?.id_sucursal ||
+      sucursal?.sucursalid ||
+      sucursal?.cod_sucu ||
+      localStorage.getItem('sucursalid') ||
+      localStorage.getItem('cod_sucu') ||
+      0,
+    );
   }
 
   private rnc(value: any): string {

@@ -2,6 +2,7 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { FacturaDgiiService } from 'src/app/core/services/facturacion/factura/factura-dgii.service';
 import { ServicioFacturacion } from 'src/app/core/services/facturacion/factura/factura.service';
+import { SupabaseService } from 'src/app/core/services/supabase/supabase.service';
 import Swal from 'sweetalert2';
 
 interface LogColaDgii {
@@ -9,6 +10,20 @@ interface LogColaDgii {
   factura: string;
   estado: 'OK' | 'ERROR' | 'INFO';
   mensaje: string;
+}
+
+interface ColaDgiiPersistente {
+  id: number;
+  fa_codfact: string;
+  fa_ncffact?: string | null;
+  fa_codsucu: number;
+  tipo_operacion: string;
+  estado: string;
+  intentos: number;
+  max_intentos: number;
+  ultimo_error?: string | null;
+  creado_en: string;
+  actualizado_en: string;
 }
 
 @Component({
@@ -32,6 +47,8 @@ export class ColaDgiiPage implements OnInit, OnDestroy {
   procesadasOk = 0;
   procesadasError = 0;
   logs: LogColaDgii[] = [];
+  colaPersistente: ColaDgiiPersistente[] = [];
+  cargandoCola = false;
 
   private timer: ReturnType<typeof setInterval> | null = null;
   private readonly storageKey = 'cola_dgii_auto_config';
@@ -39,11 +56,13 @@ export class ColaDgiiPage implements OnInit, OnDestroy {
   constructor(
     private readonly facturacion: ServicioFacturacion,
     private readonly facturaDgii: FacturaDgiiService,
+    private readonly supabase: SupabaseService,
   ) {}
 
   ngOnInit(): void {
     this.cargarConfiguracion();
     if (this.usarDiaAnterior) this.fechaProceso = this.fechaAyer();
+    void this.cargarCola();
   }
 
   ngOnDestroy(): void {
@@ -140,7 +159,7 @@ export class ColaDgiiPage implements OnInit, OnDestroy {
             { imprimir: false },
           );
           this.procesadasOk += 1;
-          this.agregarLog('OK', codigo, 'Enviada correctamente a DGII.');
+          this.agregarLog('OK', codigo, 'Agregada correctamente a la cola DGII.');
         } catch (error: any) {
           this.procesadasError += 1;
           this.agregarLog('ERROR', codigo, this.mensajeError(error));
@@ -148,8 +167,50 @@ export class ColaDgiiPage implements OnInit, OnDestroy {
       }
     } finally {
       this.procesando = false;
+      await this.cargarCola();
       if (this.activo) this.guardarConfiguracion();
     }
+  }
+
+  async cargarCola(): Promise<void> {
+    if (this.cargandoCola) return;
+    this.cargandoCola = true;
+    try {
+      const { data, error } = await this.db
+        .from('cola_dgii')
+        .select('id,fa_codfact,fa_ncffact,fa_codsucu,tipo_operacion,estado,intentos,max_intentos,ultimo_error,creado_en,actualizado_en')
+        .order('id', { ascending: false })
+        .limit(100);
+      if (error) throw error;
+      this.colaPersistente = Array.isArray(data) ? data : [];
+      this.procesadasOk = this.colaPersistente.filter((fila) =>
+        ['ACEPTADO', 'ACEPTADO_CONDICIONAL'].includes(String(fila.estado).toUpperCase()),
+      ).length;
+      this.procesadasError = this.colaPersistente.filter((fila) =>
+        ['RECHAZADO', 'ERROR', 'VERIFICAR'].includes(String(fila.estado).toUpperCase()),
+      ).length;
+    } catch (error: any) {
+      this.agregarLog('ERROR', '', `No se pudo consultar la cola: ${this.mensajeError(error)}`);
+    } finally {
+      this.cargandoCola = false;
+    }
+  }
+
+  claseEstadoCola(estado: string): string {
+    const valor = String(estado || '').toUpperCase();
+    if (['ACEPTADO', 'ACEPTADO_CONDICIONAL'].includes(valor)) return 'bg-success';
+    if (['RECHAZADO', 'ERROR'].includes(valor)) return 'bg-danger';
+    if (valor === 'VERIFICAR') return 'bg-warning text-dark';
+    if (valor === 'PROCESANDO') return 'bg-primary';
+    return 'bg-secondary';
+  }
+
+  private get db(): any {
+    const client: any = this.supabase.client;
+    if (!client) throw new Error('Supabase no está configurado.');
+    return typeof client.schema === 'function'
+      ? client.schema(this.supabase.schema)
+      : client;
   }
 
   private async obtenerFacturasElegibles(): Promise<any[]> {

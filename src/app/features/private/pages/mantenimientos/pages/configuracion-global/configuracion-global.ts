@@ -118,6 +118,7 @@ export class ConfiguracionGlobal implements OnInit {
         [Validators.required, Validators.pattern(/^https?:\/\/.+/i)],
       ],
       dgiiAmbiente: ['test', Validators.required],
+      dgiiModoEnvio: ['COLA', Validators.required],
       logoNombre: [{ value: '', disabled: true }],
       certificadoNombre: [{ value: '', disabled: true }],
       certificadoPassword: [''],
@@ -146,6 +147,9 @@ export class ConfiguracionGlobal implements OnInit {
         dgiiBaseUrl:
           config?.dgiiBaseUrl || DEFAULT_DGII_BASE_URL,
         dgiiAmbiente: String(config?.dgiiAmbiente || 'test').toLowerCase() === 'prod' ? 'prod' : 'test',
+        dgiiModoEnvio: String(config?.dgiiModoEnvio || 'COLA').toUpperCase() === 'DIRECTO'
+          ? 'DIRECTO'
+          : 'COLA',
         logoNombre: config?.logoNombre || (logoDataUrl ? 'Logo personalizado' : 'Logo por defecto'),
         certificadoNombre: config?.certificadoNombre || '',
         certificadoPassword: config?.certificadoPassword || '',
@@ -605,6 +609,10 @@ export class ConfiguracionGlobal implements OnInit {
         String(raw.dgiiAmbiente || 'test').trim().toLowerCase() === 'prod'
           ? 'prod'
           : 'test',
+      dgiiModoEnvio:
+        String(raw.dgiiModoEnvio || 'COLA').trim().toUpperCase() === 'DIRECTO'
+          ? 'DIRECTO'
+          : 'COLA',
       certificadoSubjectCn: String(raw.subjectCn || '').trim() || null,
       certificadoIssuerCn: String(raw.issuerCn || '').trim() || null,
       updatedBy: this.usuarioActual(),

@@ -18,6 +18,7 @@ import Swal from 'sweetalert2';
 import { ServicioRnc } from 'src/app/core/services/mantenimientos/rnc/rnc.service';
 import { ServicioUsuario } from 'src/app/core/services/mantenimientos/usuario/usuario.service';
 import { ServicioFacturacion } from 'src/app/core/services/facturacion/factura/factura.service';
+import { FacturaDgiiService } from 'src/app/core/services/facturacion/factura/factura-dgii.service';
 import {
   FacturacionModelData,
   detFacturaData,
@@ -37,7 +38,6 @@ import { ModeloInventarioData } from 'src/app/core/services/mantenimientos/inven
 import { ServicioNcf } from 'src/app/core/services/mantenimientos/ncf/ncf.service';
 import { ModeloNcfData } from 'src/app/core/services/mantenimientos/ncf';
 import { PrintingService } from 'src/app/core/services/utils/printing.service';
-import { ServicioConfiguracionGlobal } from 'src/app/core/services/mantenimientos/configuracion-global/configuracion-global.service';
 import { ServicioSalidafactura } from 'src/app/core/services/almacen/salidafactura/salidafactura.service';
 import { CuentaBancariaData } from 'src/app/core/services/mantenimientos/cuenta-bancaria';
 import { ServicioCuentaBancaria } from 'src/app/core/services/mantenimientos/cuenta-bancaria/cuenta-bancaria.service';
@@ -588,6 +588,7 @@ export class CobroFact implements OnInit {
   constructor(
     private fb: FormBuilder,
     private servicioFacturacion: ServicioFacturacion,
+    private facturaDgiiService: FacturaDgiiService,
     private servicioCliente: ServicioCliente,
     private ServicioInventario: ServicioInventario,
     private ServicioUsuario: ServicioUsuario,
@@ -596,7 +597,6 @@ export class CobroFact implements OnInit {
     private servicioFpago: ServicioFpago,
     private servicioFentrega: ServicioFentrega,
     private servicioNcf: ServicioNcf,
-    private servicioConfiguracionGlobal: ServicioConfiguracionGlobal,
     private printingService: PrintingService,
     private servicioSalidaFactura: ServicioSalidafactura,
     private servicioCuentaBancaria: ServicioCuentaBancaria,
@@ -2009,119 +2009,46 @@ export class CobroFact implements OnInit {
 
     this.actualizarProcesamientoCobroDgii('Generando comprobante electrónico...');
 
-    // Envío server-side (Edge Function) para evitar CORS en navegador.
-    this.servicioConfiguracionGlobal.enviarDgiiDirectCert([dgiiData], rncEmisor).subscribe(
-      async (response: any) => {
-        console.log('Respuesta DGII:', response);
-        const payloadDgii = this.normalizarRespuestaDgii(
-          response?.data ?? response
-        );
-        payloadDgii.dgii_request_json = dgiiData;
-        payloadDgii.dgii_response_raw = response?.data ?? response;
-        payloadDgii.fa_status = 'F';
-
-        if (!this.tieneRespuestaDgiiParaImprimir(payloadDgii)) {
-          this.finalizarProcesamientoCobroDgii();
-          Swal.fire(
-            'DGII incompleto',
-            'El comprobante fue enviado, pero no se recibieron todos los datos DGII. Se imprimirá con los datos locales de la factura.',
-            'warning',
-          );
-          await this.imprimirFacturaConDatosDisponibles(
-            facturaData,
-            datosLocalesImpresion,
-            payloadDgii,
-            itemsImpresion,
-          );
-          return;
-        }
-
-        // Actualizar mensaje de loading
-        this.actualizarProcesamientoCobroDgii('Actualizando datos de factura...');
-
-        // Llamar a nuestro backend para guardar los datos DGII
-        this.servicioFacturacion
-          .actualizarDatosDgii(facturaData.fa_codFact, payloadDgii)
-          .subscribe({
-            next: async (res) => {
-              console.log('Datos DGII guardados correctamente', res);
-              this.DatosSeleccionado = {
-                ...(this.DatosSeleccionado || {}),
-                ...(res?.data || {}),
-                fa_status: payloadDgii.fa_status,
-              };
-              this.formularioFacturacion.patchValue(
-                { fa_status: payloadDgii.fa_status },
-                { emitEvent: false },
-              );
-              Swal.close();
-              this.finalizarProcesamientoCobroDgii();
-              this.buscarFacturasNoImpresas();
-
-              await this.imprimirFacturaConDatosDisponibles(
-                facturaData,
-                datosLocalesImpresion,
-                {
-                  ...(res?.data || {}),
-                  ...payloadDgii,
-                },
-                itemsImpresion,
-              );
-            },
-            error: async (err) => {
-              console.error('Error guardando datos DGII', err);
-              this.finalizarProcesamientoCobroDgii();
-              Swal.fire(
-                'Error',
-                'Se generó el comprobante pero falló al guardar los datos en el sistema. Se imprimirá con los datos disponibles.',
-                'warning',
-              );
-              await this.imprimirFacturaConDatosDisponibles(
-                facturaData,
-                datosLocalesImpresion,
-                payloadDgii,
-                itemsImpresion,
-              );
-            },
-          });
-      },
-      async (error) => {
-        console.error('Error obteniendo datos DGII:', error);
-        const rawError = (error as any)?.dgiiResponse || (error as any)?.details || {
-          message: this.extraerMensajeError(error),
-        };
-        const payloadError = {
-          ...this.normalizarRespuestaDgii(rawError),
-          dgii_request_json: dgiiData,
-          dgii_response_raw: rawError,
-          estado_dgii: this.normalizarRespuestaDgii(rawError)?.estado_dgii || 'Error',
-          estado_envio_dgii:
-            this.normalizarRespuestaDgii(rawError)?.estado_envio_dgii || 'Error',
-        };
-        try {
-          await firstValueFrom(
-            this.servicioFacturacion.actualizarDatosDgii(
-              facturaData.fa_codFact,
-              payloadError,
-            ),
-          );
-        } catch (saveError) {
-          console.warn('No se pudo guardar el error DGII en la factura:', saveError);
-        }
-        this.finalizarProcesamientoCobroDgii();
-        Swal.fire({
-          title: 'DGII no respondió',
-          text: `${this.extraerMensajeError(error)}. Se imprimirá con los datos locales de la factura.`,
-          icon: 'warning',
-        });
-        await this.imprimirFacturaConDatosDisponibles(
-          facturaData,
-          datosLocalesImpresion,
-          payloadError,
-          itemsImpresion,
-        );
-      },
-    );
+    try {
+      const resultadoDgii = await this.facturaDgiiService.despacharEscenario(
+        facturaData,
+        dgiiData,
+        rncEmisor,
+        'ENVIO',
+        (mensaje) => this.actualizarProcesamientoCobroDgii(mensaje),
+      );
+      const datosEnvio = {
+        ...resultadoDgii,
+        dgii_request_json: dgiiData,
+      };
+      this.DatosSeleccionado = {
+        ...(this.DatosSeleccionado || {}),
+        ...datosEnvio,
+      };
+      Swal.close();
+      this.finalizarProcesamientoCobroDgii();
+      this.buscarFacturasNoImpresas();
+      await this.imprimirFacturaConDatosDisponibles(
+        facturaData,
+        datosLocalesImpresion,
+        datosEnvio,
+        itemsImpresion,
+      );
+    } catch (error) {
+      console.error('Error enviando factura a DGII:', error);
+      this.finalizarProcesamientoCobroDgii();
+      await Swal.fire({
+        title: 'No se pudo enviar a DGII',
+        text: this.extraerMensajeError(error),
+        icon: 'error',
+      });
+      await this.imprimirFacturaConDatosDisponibles(
+        facturaData,
+        datosLocalesImpresion,
+        {},
+        itemsImpresion,
+      );
+    }
   }
 
   private async imprimirFacturaConDatosDisponibles(

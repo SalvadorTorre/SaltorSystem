@@ -1,6 +1,9 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.50.0";
 
-const DGII_REQUEST_TIMEOUT_MS = 150_000;
+// Mantener este límite por debajo del tiempo máximo del supervisor de Edge
+// evita que la función termine como WorkerRequestCancelled sin una respuesta
+// útil para el usuario.
+const DGII_REQUEST_TIMEOUT_MS = 60_000;
 
 const corsHeaders: Record<string, string> = {
   "Access-Control-Allow-Origin": "*",
@@ -379,7 +382,7 @@ Deno.serve(async (req: Request) => {
         return jsonResponse(timeout ? 504 : 502, {
           ok: false,
           message: timeout
-            ? "El servicio DGII tardó más de 150 segundos en responder. Verifique el estado antes de reenviar para evitar duplicados."
+            ? "El servicio DGII tardó más de 60 segundos en responder. Verifique el estado antes de reenviar para evitar duplicados."
             : "No se pudo conectar con el servicio de facturación electrónica DGII.",
           details: error instanceof Error ? error.message : String(error),
           endpoint,

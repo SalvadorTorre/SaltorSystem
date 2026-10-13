@@ -1,6 +1,6 @@
 export const environment = {
   production: false,
-  appVersion: '1.0.173',
+  appVersion: '1.0.174',
   bypassAuth: false,
   // backendUrl: 'http://localhost:3390/api',
   backendUrl: 'https://grupohierro.duckdns.org/api',

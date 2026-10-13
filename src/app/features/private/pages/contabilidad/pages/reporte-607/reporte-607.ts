@@ -51,6 +51,7 @@ export class Reporte607Component implements OnInit {
   readonly estadosDgii = [
     'Aceptado',
     'Aceptado Condicional',
+    'success',
     'Rechazado',
     'En Proceso',
     'Error',
@@ -426,22 +427,26 @@ export class Reporte607Component implements OnInit {
     if (!confirmacion.isConfirmed) return;
 
     this.facturaReenviando = codigo;
+    void Swal.fire({
+      title: 'Reenviando...',
+      text: 'Preparando factura para DGII...',
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+      showConfirmButton: false,
+      didOpen: () => Swal.showLoading(),
+    });
     try {
       await this.facturaDgiiService.reenviar(factura, (text) => {
-        if (Swal.isVisible()) {
+        const popup = Swal.getPopup();
+        const popupActivo = !!popup &&
+          popup.isConnected &&
+          !popup.classList.contains('swal2-hide');
+        if (popupActivo) {
           Swal.update({ title: 'Reenviando...', text });
-          return;
         }
-        Swal.fire({
-          title: 'Reenviando...',
-          text,
-          allowOutsideClick: false,
-          allowEscapeKey: false,
-          didOpen: () => Swal.showLoading(),
-        });
       });
       Swal.close();
-      await Swal.fire('Completado', `La factura ${codigo} fue reenviada a DGII.`, 'success');
+      await Swal.fire('Agregada a la cola', `La factura ${codigo} quedó pendiente para envío automático a DGII.`, 'success');
       this.cargarReporte();
     } catch (error: any) {
       console.error('[Reporte607Component] Error reenviando factura a DGII', error);

@@ -140,7 +140,7 @@
               </h2>
 
               <div class="row g-3">
-                <div class="col-12">
+                <div class="col-12 col-lg-8">
                   <label class="form-label small fw-semibold text-muted">Base URL para envío de e-CF</label>
                   <input
                     type="url"
@@ -152,6 +152,21 @@
                   <div class="invalid-note" *ngIf="formulario.get('dgiiBaseUrl')?.invalid && formulario.get('dgiiBaseUrl')?.touched">
                     Debes colocar una URL válida (http:// o https://).
                   </div>
+                </div>
+                <div class="col-12 col-lg-4">
+                  <label class="form-label small fw-semibold text-muted">Modo de envío de facturas</label>
+                  <select
+                    class="form-select"
+                    formControlName="dgiiModoEnvio"
+                    [disabled]="isLoading || isSaving"
+                    (change)="activarEdicion()"
+                  >
+                    <option value="COLA">Envío por cola</option>
+                    <option value="DIRECTO">Envío directo</option>
+                  </select>
+                  <small class="text-muted d-block mt-1">
+                    Cola continúa en segundo plano. Directo espera la respuesta de DGII en pantalla.
+                  </small>
                 </div>
                 <div class="col-12">
                   <label class="form-label small fw-semibold text-muted">Ruta de envío usada por el sistema</label>

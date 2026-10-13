@@ -1230,7 +1230,7 @@ export class Facturacion implements OnInit, OnDestroy {
     const codigo = String(factura.fa_codFact || factura.fa_codfact || '').trim();
     const confirmacion = await Swal.fire({
       title: 'Enviar factura a DGII',
-      text: `Se enviará la factura ${codigo} y luego se imprimirá.`,
+      text: `La factura ${codigo} se agregará a la cola DGII y luego se imprimirá.`,
       icon: 'question',
       showCancelButton: true,
       confirmButtonText: 'Enviar e imprimir',
@@ -1240,7 +1240,7 @@ export class Facturacion implements OnInit, OnDestroy {
 
     this.enviandoFacturaConsultaDgii = true;
     Swal.fire({
-      title: 'Enviando factura a DGII',
+      title: 'Preparando factura para DGII',
       text: `Factura ${codigo}`,
       allowOutsideClick: false,
       allowEscapeKey: false,
@@ -1258,8 +1258,8 @@ export class Facturacion implements OnInit, OnDestroy {
       this.facturaConsultaSeleccionada = actualizada as FacturacionModelData;
       this.resumenConsultaFactura = this.crearResumenConsultaFactura(actualizada);
       await Swal.fire({
-        title: 'Factura enviada',
-        text: `La factura ${codigo} fue enviada a DGII e impresa.`,
+        title: 'Factura agregada a la cola',
+        text: `La factura ${codigo} quedó pendiente para envío automático a DGII y fue impresa.`,
         icon: 'success',
       });
     } catch (error: any) {

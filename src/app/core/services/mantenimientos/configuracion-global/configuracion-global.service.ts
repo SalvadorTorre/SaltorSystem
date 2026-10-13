@@ -81,6 +81,9 @@ export class ServicioConfiguracionGlobal {
       certificadoIssuerCn: row?.certificado_issuer_cn ?? null,
       dgiiBaseUrl: row?.dgii_base_url ?? null,
       dgiiAmbiente: row?.dgii_ambiente ?? 'test',
+      dgiiModoEnvio: String(row?.dgii_modo_envio || 'COLA').toUpperCase() === 'DIRECTO'
+        ? 'DIRECTO'
+        : 'COLA',
       updatedAt: row?.updated_at ?? null,
       updatedBy: row?.updated_by ?? null,
     };
@@ -124,6 +127,11 @@ export class ServicioConfiguracionGlobal {
     }
     if (has('dgiiAmbiente')) {
       payload.dgii_ambiente = this.toStringOrNull(data?.dgiiAmbiente) || 'test';
+    }
+    if (has('dgiiModoEnvio')) {
+      payload.dgii_modo_envio = String(data?.dgiiModoEnvio || 'COLA').toUpperCase() === 'DIRECTO'
+        ? 'DIRECTO'
+        : 'COLA';
     }
     if (has('updatedBy')) {
       payload.updated_by = this.toStringOrNull(data?.updatedBy);

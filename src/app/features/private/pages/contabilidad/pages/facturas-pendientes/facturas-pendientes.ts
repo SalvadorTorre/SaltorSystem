@@ -366,8 +366,8 @@ export class FacturasPendientesComponent implements OnInit {
     this.enviandoLote = false;
     this.facturasSeleccionadas.clear();
     await Swal.fire({
-      title: errores.length ? 'Proceso completado con observaciones' : 'Facturas enviadas',
-      html: `<p>Enviadas: <strong>${enviadas}</strong></p><p>No enviadas: <strong>${errores.length}</strong></p>${
+      title: errores.length ? 'Proceso completado con observaciones' : 'Facturas agregadas a la cola',
+      html: `<p>Agregadas a la cola: <strong>${enviadas}</strong></p><p>No agregadas: <strong>${errores.length}</strong></p>${
         errores.length ? `<div class="text-start small">${errores.map((error) => this.escapeHtml(error)).join('<br>')}</div>` : ''
       }`,
       icon: errores.length ? 'warning' : 'success',
@@ -510,7 +510,7 @@ export class FacturasPendientesComponent implements OnInit {
       Swal.close();
       await Swal.fire(
         'Completado',
-        `La factura ${codigo} fue enviada a DGII.`,
+        `La factura ${codigo} quedó pendiente para envío automático a DGII.`,
         'success',
       );
       this.cargarFacturas();

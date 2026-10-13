@@ -10,6 +10,7 @@ export interface ConfiguracionGlobalData {
   certificadoIssuerCn?: string | null;
   dgiiBaseUrl?: string | null;
   dgiiAmbiente?: 'test' | 'prod' | string | null;
+  dgiiModoEnvio?: 'COLA' | 'DIRECTO' | string | null;
   updatedAt?: string | null;
   updatedBy?: string | null;
 }

@@ -4,26 +4,16 @@
       <h2>Envio automatico DGII</h2>
       <p>Procesamiento por lote de facturas listas para enviar.</p>
     </div>
-    <span class="status-pill" [class.status-pill--active]="activo">
-      <i class="bi" [ngClass]="activo ? 'bi-play-circle-fill' : 'bi-pause-circle'"></i>
-      {{ activo ? 'Activo' : 'Detenido' }}
+    <span class="status-pill status-pill--active">
+      <i class="bi bi-play-circle-fill"></i>
+      Servidor activo
     </span>
   </div>
 
   <div class="config-panel">
     <div class="row g-3 align-items-end">
-      <div class="col-12 col-md-3">
-        <label class="form-label">Tiempo entre lotes (minutos)</label>
-        <input
-          type="number"
-          min="1"
-          class="form-control"
-          [(ngModel)]="intervaloMinutos"
-          [disabled]="activo || procesando"
-        >
-      </div>
-      <div class="col-12 col-md-3">
-        <label class="form-label">Cantidad por lote</label>
+      <div class="col-12 col-md-4">
+        <label class="form-label">Cantidad para agregar a la cola</label>
         <input
           type="number"
           min="1"
@@ -32,7 +22,7 @@
           [disabled]="activo || procesando"
         >
       </div>
-      <div class="col-12 col-md-3">
+      <div class="col-12 col-md-4">
         <label class="form-label">Fecha de factura</label>
         <input
           type="date"
@@ -42,7 +32,7 @@
         >
         <small class="fecha-vista">Vista: {{ formatoFechaVista(fechaProceso) }}</small>
       </div>
-      <div class="col-12 col-md-3">
+      <div class="col-12 col-md-4">
         <div class="form-check form-switch mb-2">
           <input
             class="form-check-input"
@@ -78,20 +68,14 @@
     </div>
 
     <div class="actions">
-      <button class="btn btn-success" type="button" (click)="iniciar()" [disabled]="activo || procesando">
-        <i class="bi bi-play-fill"></i> Iniciar
-      </button>
-      <button class="btn btn-outline-danger" type="button" (click)="detener()" [disabled]="!activo && !procesando">
-        <i class="bi bi-stop-fill"></i> Parar
-      </button>
-      <button class="btn btn-outline-primary" type="button" (click)="continuar()" [disabled]="activo || procesando">
-        <i class="bi bi-arrow-clockwise"></i> Continuar
-      </button>
       <button class="btn btn-primary" type="button" (click)="procesarAhora()" [disabled]="procesando">
-        <i class="bi bi-send-check"></i> Procesar ahora
+        <i class="bi bi-send-check"></i> Agregar lote ahora
       </button>
       <button class="btn btn-outline-secondary" type="button" (click)="consultarPendientes()" [disabled]="procesando">
         <i class="bi bi-search"></i> Consultar pendientes
+      </button>
+      <button class="btn btn-outline-dark" type="button" (click)="cargarCola()" [disabled]="cargandoCola">
+        <i class="bi bi-arrow-repeat"></i> Actualizar estados
       </button>
     </div>
   </div>
@@ -110,22 +94,22 @@
       <strong>{{ formatoFechaVista(fechaUltimaConsulta || fechaProceso) }}</strong>
     </div>
     <div class="summary-item">
-      <span>Enviadas OK</span>
+      <span>Aceptadas DGII</span>
       <strong class="text-success">{{ procesadasOk }}</strong>
     </div>
     <div class="summary-item">
-      <span>Con error</span>
+      <span>Revisar / error</span>
       <strong class="text-danger">{{ procesadasError }}</strong>
     </div>
     <div class="summary-item">
-      <span>Proxima ejecucion</span>
-      <strong>{{ proximaEjecucion || '-' }}</strong>
+      <span>Trabajador automático</span>
+      <strong>Cada minuto</strong>
     </div>
   </div>
 
   <div class="work-panel">
     <div class="d-flex justify-content-between align-items-center mb-2">
-      <h5 class="m-0">Actividad</h5>
+      <h5 class="m-0">Cola persistente DGII</h5>
       <span class="text-muted" *ngIf="procesando">
         <span class="spinner-border spinner-border-sm me-1"></span>
         {{ ultimoMensaje }}
@@ -136,33 +120,32 @@
       <table class="table table-sm align-middle mb-0">
         <thead>
           <tr>
-            <th style="width: 160px">Hora</th>
+            <th style="width: 150px">Fecha</th>
             <th style="width: 140px">Factura</th>
-            <th style="width: 90px">Estado</th>
-            <th>Mensaje</th>
+            <th style="width: 150px">e-NCF</th>
+            <th style="width: 90px">Sucursal</th>
+            <th style="width: 100px">Operación</th>
+            <th style="width: 130px">Estado</th>
+            <th style="width: 90px">Intentos</th>
+            <th>Último mensaje</th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let log of logs">
-            <td>{{ log.fecha | date:'dd/MM/yyyy hh:mm a' }}</td>
-            <td class="fw-bold">{{ log.factura || '-' }}</td>
+          <tr *ngFor="let fila of colaPersistente">
+            <td>{{ fila.creado_en | date:'dd/MM/yyyy hh:mm a' }}</td>
+            <td class="fw-bold">{{ fila.fa_codfact || '-' }}</td>
+            <td>{{ fila.fa_ncffact || '-' }}</td>
+            <td>{{ fila.fa_codsucu }}</td>
+            <td>{{ fila.tipo_operacion }}</td>
             <td>
-              <span
-                class="badge"
-                [ngClass]="{
-                  'bg-success': log.estado === 'OK',
-                  'bg-danger': log.estado === 'ERROR',
-                  'bg-secondary': log.estado === 'INFO'
-                }"
-              >
-                {{ log.estado }}
-              </span>
+              <span class="badge" [ngClass]="claseEstadoCola(fila.estado)">{{ fila.estado }}</span>
             </td>
-            <td>{{ log.mensaje }}</td>
+            <td>{{ fila.intentos }}/{{ fila.max_intentos }}</td>
+            <td>{{ fila.ultimo_error || '-' }}</td>
           </tr>
-          <tr *ngIf="logs.length === 0">
-            <td colspan="4" class="text-center text-muted py-4">
-              No hay actividad registrada todavia.
+          <tr *ngIf="colaPersistente.length === 0">
+            <td colspan="8" class="text-center text-muted py-4">
+              No hay facturas registradas en la cola todavía.
             </td>
           </tr>
         </tbody>
