@@ -95,7 +95,8 @@ export class Facturacion implements OnInit, OnDestroy {
   pageSize = 5;
   readonly limiteFacturasInicial = 20;
   readonly limiteFacturasModalInicial = 10;
-  readonly limiteFacturasBusqueda = 20;
+  // Al buscar se traen todas las coincidencias (1000 es el máximo que devuelve Supabase por consulta).
+  readonly limiteFacturasBusqueda = 1000;
   readonly minimoLetrasBusquedaNombreFactura = 4;
   currentPage = 1;
   maxPagesToShow = 5;
@@ -1445,28 +1446,20 @@ export class Facturacion implements OnInit, OnDestroy {
     this.txtFactura = '';
     this.txtdescripcion = '';
     this.txtFecha = '';
+    this.cargarFacturasRecientesModal();
+  }
+
+  /** Muestra las facturas más recientes (al abrir el modal o al salir de una consulta). */
+  private cargarFacturasRecientesModal(): void {
     this.facturacionListBase = [];
     this.facturacionList = [];
     this.cargandoFacturasModal = true;
     this.busquedaFacturaModalRealizada = true;
-    this.servicioFacturacion.buscarFacturacion(
-      1,
-      this.limiteFacturasModalInicial,
-      undefined,
-      undefined,
-      undefined,
-      true,
-      true,
-    ).pipe(
-      catchError((error) => {
-        console.error('Error cargando facturas iniciales del modal:', error);
-        return of({ data: [] } as any);
-      }),
-    ).subscribe((response) => {
-      const rows = Array.isArray(response?.data) ? response.data : [];
-      this.facturacionListBase = rows;
-      this.facturacionList = [...rows];
-      this.cargandoFacturasModal = false;
+    this.busquedaFacturaModal$.next({
+      codigo: '',
+      nombre: '',
+      fecha: '',
+      mostrarAvisoNoEncontrado: false,
     });
   }
 
@@ -1590,17 +1583,8 @@ export class Facturacion implements OnInit, OnDestroy {
     const fecha = this.normalizarFechaBusquedaFactura(this.txtFecha);
 
     if (!codigo && !nombre && !fecha) {
-      this.facturacionListBase = [];
-      this.facturacionList = [];
-      this.cargandoFacturasModal = false;
-      this.busquedaFacturaModalRealizada = false;
-      if (mostrarAvisoNoEncontrado) {
-        Swal.fire(
-          'Aviso',
-          'Digite un numero, cliente o fecha para buscar la factura.',
-          'info',
-        );
-      }
+      // Se salió de la consulta: se vuelven a mostrar las facturas más recientes.
+      this.cargarFacturasRecientesModal();
       return;
     }
 
@@ -1628,14 +1612,11 @@ export class Facturacion implements OnInit, OnDestroy {
     this.busquedaFacturaModalSubscription?.unsubscribe();
     this.busquedaFacturaModalSubscription = this.busquedaFacturaModal$
       .pipe(
+        // Sin distinctUntilChanged: al borrar y volver a escribir lo mismo debe consultar otra vez.
+        // switchMap cancela la consulta anterior si llega una nueva.
         debounceTime(250),
-        distinctUntilChanged((prev, curr) =>
-          prev.codigo === curr.codigo &&
-          prev.nombre === curr.nombre &&
-          prev.fecha === curr.fecha &&
-          prev.mostrarAvisoNoEncontrado === curr.mostrarAvisoNoEncontrado,
-        ),
         switchMap((filtros) => {
+          const sinFiltros = !filtros.codigo && !filtros.nombre && !filtros.fecha;
           const nombreMuyCorto =
             !filtros.codigo &&
             !filtros.fecha &&
@@ -1650,7 +1631,7 @@ export class Facturacion implements OnInit, OnDestroy {
           }
           return this.servicioFacturacion.buscarFacturacion(
             1,
-            this.limiteFacturasBusqueda,
+            sinFiltros ? this.limiteFacturasModalInicial : this.limiteFacturasBusqueda,
             filtros.codigo || undefined,
             filtros.nombre || undefined,
             filtros.fecha || undefined,

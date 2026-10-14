@@ -257,6 +257,16 @@ export class NotaCreditoService {
     );
   }
 
+  /** Fecha local (YYYY-MM-DD) de hoy mas `dias` dias. */
+  private fechaMasDias(dias: number): string {
+    const fecha = new Date();
+    fecha.setDate(fecha.getDate() + dias);
+    const y = fecha.getFullYear();
+    const m = String(fecha.getMonth() + 1).padStart(2, '0');
+    const d = String(fecha.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+
   guardar(payload: NotaCreditoPayload): Observable<any> {
     return from((async () => {
       const tenant = this.tenant();
@@ -287,7 +297,7 @@ export class NotaCreditoService {
 
       const { data: notaExistente, error: estadoError } = await this.db
         .from('nota_credito')
-        .select('nc_numero,nc_factura,estado_dgii')
+        .select('nc_numero,nc_factura,estado_dgii,nc_vencimiento')
         .eq('nc_numero', ncNumero)
         .eq('fa_codempr', tenant.codempr)
         .eq('fa_codsucu', tenant.codsucu)
@@ -297,6 +307,10 @@ export class NotaCreditoService {
       if (estadoActual.includes('acept')) {
         throw new Error(`La nota de credito ${ncNumero} ya fue aceptada por la DGII y no puede modificarse.`);
       }
+
+      // Vencimiento: 30 dias despues de la fecha en que se guarda la nota por primera vez.
+      // Si la nota ya existe y tiene vencimiento, se conserva para que no cambie en cada guardado.
+      header['nc_vencimiento'] = notaExistente?.nc_vencimiento || this.fechaMasDias(30);
 
       const facturaAnterior = String(notaExistente?.nc_factura || '').trim();
       const esMismaNotaDeFactura = !!notaExistente && facturaAnterior === ncFactura;
