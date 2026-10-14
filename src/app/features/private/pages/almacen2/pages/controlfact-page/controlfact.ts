@@ -833,7 +833,8 @@ export class ControlFact implements OnInit, OnDestroy {
             precio: precio,
             total: totalItem,
             fecfactActual: new Date(),
-            costo: this.costotxt,
+            // Costo total de la linea tal como se guardo en detfactura.
+            costo: Number(item.df_cosMerc ?? item.df_cosmerc ?? 0) || 0,
           });
           //fecfactActual: new Date(),
           // Calcular el subtotal
@@ -1998,7 +1999,7 @@ export class ControlFact implements OnInit, OnDestroy {
       this.itemToEdit.precio = this.preciomerc;
       this.itemToEdit.cantidad = this.cantidadmerc;
       this.itemToEdit.total = this.cantidadmerc * this.preciomerc;
-      this.itemToEdit.totalcosto += this.costotxt * this.cantidadmerc;
+      this.itemToEdit.costo = this.costoUnitarioEdicion() * this.cantidadmerc;
       this.itemToEdit.fecfactActual = fechaActual; // Actualiza la fecha del ítem existente
       // Actualizar los totales
       this.actualizarTotales();
@@ -2104,6 +2105,20 @@ export class ControlFact implements OnInit, OnDestroy {
     }
   }
 
+  /**
+   * Costo unitario para la linea que se esta editando. Las lineas cargadas de
+   * una factura existente no traen in_cosmerc, asi que se usa el costo guardado
+   * de la linea dividido entre su cantidad original.
+   */
+  private costoUnitarioEdicion(): number {
+    const costo = Number(this.costotxt) || 0;
+    if (costo > 0) return costo;
+    const item = this.itemToEdit;
+    const cantidadOriginal = Number(item?.__cantidadOriginalCosto ?? item?.cantidad) || 0;
+    const costoLinea = Number(item?.costo) || 0;
+    return cantidadOriginal > 0 ? costoLinea / cantidadOriginal : 0;
+  }
+
   editarItem(item: any) {
     if (this.edicionSoloEncabezado) return;
     this.habilitarCampos = false;
@@ -2111,6 +2126,7 @@ export class ControlFact implements OnInit, OnDestroy {
     this.index_item = this.items.indexOf(item);
     this.isEditing = true;
     this.itemToEdit = item;
+    item.__cantidadOriginalCosto = item.cantidad;
 
     this.productoselect = item.producto;
     this.codmerc = item.producto.in_codmerc;
@@ -2145,7 +2161,7 @@ export class ControlFact implements OnInit, OnDestroy {
       0
     );
     this.totalcosto = this.items.reduce(
-      (sum, item) => sum + this.costotxt * item.cantidad,
+      (sum, item) => sum + (Number(item.costo) || 0),
       0
     );
     const formatCurrency = (value: number) =>
