@@ -1342,12 +1342,9 @@ export class Cotizacion implements OnInit {
     this.productoselect = inventario;
     this.actualizarInformacionProducto(inventario);
 
-    const precioRegistrado = Number(
-      dato('in_premerc') ?? dato('in_precio') ?? dato('in_prevta'),
-    );
-    this.preciomerc = Number.isFinite(precioRegistrado) && precioRegistrado > 0
-      ? precioRegistrado
-      : this.costotxt * (1 + this.margenVentatxt / 100);
+    const costo = Number(this.costotxt) || 0;
+    const margenVenta = Number(this.margenVentatxt) || 0;
+    this.preciomerc = costo + (costo * margenVenta) / 100;
     this.precioform.setValue(this.preciomerc, { emitEvent: false });
     this.actualizarPrecioProducto(this.preciomerc);
     this.cancelarBusquedaDescripcion = true;
