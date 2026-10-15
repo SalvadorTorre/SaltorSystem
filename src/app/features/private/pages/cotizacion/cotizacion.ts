@@ -500,12 +500,8 @@ export class Cotizacion implements OnInit {
           this.totalItbis += totalItem * itbisRate;
           // }
         });
-        // Calcular el total general (subtotal + ITBIS)
-        totalGeneral = subtotal + this.totalItbis;
-        // Asignar los totales a variables o mostrarlos en la interfaz
-        this.subTotal = subtotal;
-        this.totalItbis = this.totalItbis;
-        this.totalGral = totalGeneral;
+        // El precio ya incluye ITBIS: el total es la suma de las lineas (igual que al crear).
+        this.actualizarTotales();
       });
   }
 
@@ -592,13 +588,8 @@ export class Cotizacion implements OnInit {
           // }
         });
 
-        // Calcular el total general (subtotal + ITBIS)
-        totalGeneral = subtotal + this.totalItbis;
-
-        // Asignar los totales a variables o mostrarlos en la interfaz
-        this.subTotal = subtotal;
-        this.totalItbis = this.totalItbis;
-        this.totalGral = totalGeneral;
+        // El precio ya incluye ITBIS: el total es la suma de las lineas (igual que al crear).
+        this.actualizarTotales();
       });
   }
 
@@ -805,6 +796,8 @@ export class Cotizacion implements OnInit {
   guardarCotizacion() {
     if (this.guardandoCotizacion) return;
     const date = new Date();
+    // Recalcular desde las lineas para que el valor guardado refleje lo editado.
+    this.actualizarTotales();
     this.formularioCotizacion.get('ct_valcoti')?.patchValue(this.totalGral);
     this.formularioCotizacion.get('ct_itbis')?.patchValue(this.totalItbis);
     // Refrescar estado de validación
@@ -1759,12 +1752,8 @@ export class Cotizacion implements OnInit {
           this.totalItbis += totalItem * itbisRate;
           // }
         });
-        // Calcular el total general (subtotal + ITBIS)
-        totalGeneral = subtotal + this.totalItbis;
-        // Asignar los totales a variables o mostrarlos en la interfaz
-        this.subTotal = subtotal;
-        this.totalItbis = this.totalItbis;
-        this.totalGral = totalGeneral;
+        // El precio ya incluye ITBIS: el total es la suma de las lineas (igual que al crear).
+        this.actualizarTotales();
 
         const formatCurrency = (value: number) =>
           value.toLocaleString('es-DO', {

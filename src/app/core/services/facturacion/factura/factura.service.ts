@@ -3584,6 +3584,45 @@ export class ServicioFacturacion {
     return rows;
   }
 
+  /**
+   * Devuelve las ventas del rango usando myappdb.consulta_ventas_rango, o null
+   * si la funcion aun no existe en la base (migracion sin aplicar), para que el
+   * llamador use la consulta directa como respaldo.
+   */
+  private async consultaVentasRangoRpc(params: {
+    empresa: string;
+    sucursal: number | null;
+    fechaDesde: string | null;
+    fechaHasta: string | null;
+    incluirTodasLasEmpresas: boolean;
+  }): Promise<any[] | null> {
+    let empresa: string | null = null;
+    if (params.incluirTodasLasEmpresas) {
+      empresa = params.empresa && params.empresa !== 'todas' ? params.empresa : null;
+    } else {
+      const { codEmpre } = this.currentTenant();
+      // Sin codigo de empresa el filtro original usa tenant_rnc; dejar ese
+      // caso en la ruta anterior para no cambiar su alcance.
+      if (!codEmpre) return null;
+      empresa = codEmpre;
+    }
+
+    const { data, error } = await this.db.rpc('consulta_ventas_rango', {
+      p_fecha_desde: params.fechaDesde,
+      p_fecha_hasta: params.fechaHasta,
+      p_empresa: empresa,
+      p_sucursal_id: params.sucursal && params.sucursal > 0 ? params.sucursal : null,
+    });
+
+    if (error) {
+      const code = String(error?.code || '');
+      if (code === 'PGRST202' || code === '42883') return null;
+      throw error;
+    }
+
+    return Array.isArray(data) ? data : [];
+  }
+
   private async buscarVentasVendedorPorDias(params: {
     limit: number;
     empresa: string;
@@ -3598,6 +3637,14 @@ export class ServicioFacturacion {
     const pageSize = 1000;
 
     if (!params.fechaDesde || !params.fechaHasta) return [];
+
+    // Preferir la RPC que evalua la RLS una vez por empresa/sucursal. Leer
+    // myappdb.factura directo hacia que la politica corriera por cada fila y
+    // terminara en statement timeout (HTTP 500 en /rest/v1/factura).
+    const viaRpc = await this.consultaVentasRangoRpc(params);
+    if (viaRpc) {
+      return params.limit > 0 ? viaRpc.slice(0, params.limit) : viaRpc;
+    }
 
     const inicio = new Date(`${params.fechaDesde}T00:00:00Z`);
     const fin = new Date(`${params.fechaHasta}T00:00:00Z`);

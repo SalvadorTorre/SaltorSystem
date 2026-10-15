@@ -484,6 +484,11 @@ export class ServicioCotizacion {
         updateQuery = this.applyCotizacionScope(updateQuery);
         const { data: updatedCotizacion, error: updateError } = await updateQuery.maybeSingle();
         if (updateError) throw updateError;
+        if (!updatedCotizacion) {
+          throw new Error(
+            "No se pudo actualizar la cotizacion " + codigo + ". Verifique que exista y que tenga permiso para editarla.",
+          );
+        }
 
         const detallesAntes = await this.contarDetallesCotizacion(codigo);
 
