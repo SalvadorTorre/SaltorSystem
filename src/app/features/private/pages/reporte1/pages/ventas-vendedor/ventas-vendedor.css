@@ -190,7 +190,7 @@
 .seller-kpis {
   display: grid;
   gap: 8px;
-  grid-template-columns: repeat(4, minmax(150px, 1fr));
+  grid-template-columns: repeat(5, minmax(140px, 1fr));
   margin-bottom: 10px;
 }
 
@@ -466,4 +466,20 @@
   .seller-stats {
     grid-template-columns: 1fr;
   }
+}
+
+.nc-line {
+  color: var(--seller-muted);
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 750;
+  margin-top: 4px;
+}
+
+.nc-line .nc-monto {
+  color: #b91c1c;
+}
+
+.nc-line strong {
+  color: var(--seller-ink);
 }

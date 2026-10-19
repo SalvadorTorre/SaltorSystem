@@ -42,6 +42,7 @@
       <label>
         <span>Sucursal</span>
         <select class="form-select" [(ngModel)]="filtros.sucursal">
+          <option [ngValue]="null" disabled>Seleccione una sucursal</option>
           <option [ngValue]="0">Todas</option>
           <option *ngFor="let sucursal of sucursales" [ngValue]="sucursal.cod_sucursal">
             {{ sucursal.nom_sucursal }}
@@ -67,7 +68,7 @@
       </label>
 
       <div class="acciones-filtro">
-        <button type="button" class="btn btn-consultar" (click)="consultar()" [disabled]="cargando">
+        <button type="button" class="btn btn-consultar" (click)="consultar()" [disabled]="cargando || filtros.sucursal === null">
           <i class="bi bi-search"></i>
           Consultar
         </button>
@@ -89,6 +90,12 @@
         {{ diferenciaVsAyer >= 0 ? '+' : '' }}{{ formatMoney(diferenciaVsAyer) }}
         · {{ porcentajeVsAyer | number:'1.1-1' }}% vs ayer
       </small>
+    </article>
+
+    <article class="kpi-card">
+      <span>Ventas netas</span>
+      <strong>{{ formatMoney(ventasNetas) }}</strong>
+      <small>Notas de crédito: −{{ formatMoney(totalNotaCredito) }}</small>
     </article>
 
     <article class="kpi-card">
@@ -129,7 +136,11 @@
             <strong>{{ item.nombre }}</strong>
             <small>{{ item.operaciones }} facturas · {{ item.participacion | number:'1.1-1' }}%</small>
           </div>
-          <span>{{ formatMoney(item.total) }}</span>
+          <span class="ranking-montos">
+            {{ formatMoney(item.total) }}
+            <small *ngIf="item.notaCredito > 0" class="nc-monto">NC: −{{ formatMoney(item.notaCredito) }}</small>
+            <small class="neto-monto">Neto: {{ formatMoney(item.neto) }}</small>
+          </span>
         </div>
       </div>
       <ng-template #sinEmpresasTpl>
@@ -152,7 +163,11 @@
             </strong>
             <small>{{ item.operaciones }} facturas · {{ item.participacion | number:'1.1-1' }}%</small>
           </div>
-          <span>{{ formatMoney(item.total) }}</span>
+          <span class="ranking-montos">
+            {{ formatMoney(item.total) }}
+            <small *ngIf="item.notaCredito > 0" class="nc-monto">NC: −{{ formatMoney(item.notaCredito) }}</small>
+            <small class="neto-monto">Neto: {{ formatMoney(item.neto) }}</small>
+          </span>
         </div>
       </div>
       <ng-template #sinSucursalesTpl>
@@ -165,7 +180,10 @@
     <div class="detalle-title">
       <div>
         <h5>Detalle de ventas</h5>
-        <p>Mostrando {{ registroInicialPagina }} - {{ registroFinalPagina }} de {{ resultados.length }} facturas</p>
+        <p>
+          Mostrando {{ registroInicialPagina }} - {{ registroFinalPagina }} de {{ detalleVentas.length }} facturas
+          <span *ngIf="consultado">· últimos 2 días del periodo ({{ formatFecha(fechaInicioDetalle) }} al {{ formatFecha(fechaFinDetalle) }})</span>
+        </p>
       </div>
       <label class="page-size">
         Mostrar
@@ -189,7 +207,9 @@
             <th>Vendedor</th>
             <th>Cliente</th>
             <th class="text-end">Total</th>
+            <th class="text-end">Nota crédito</th>
             <th class="text-end">Margen</th>
+            <th class="text-center">Detalle</th>
           </tr>
         </thead>
         <tbody>
@@ -201,19 +221,27 @@
             <td>{{ venta.vendedor }}</td>
             <td>{{ venta.cliente }}</td>
             <td class="text-end total-cell">{{ formatMoney(venta.total) }}</td>
+            <td class="text-end nc-cell">{{ venta.notaCredito > 0 ? formatMoney(venta.notaCredito) : '' }}</td>
             <td class="text-end margen-cell">{{ margenFactura(venta) | number:'1.2-2' }}%</td>
+            <td class="text-center">
+              <button type="button" class="btn btn-sm btn-outline-primary btn-ver-detalle" (click)="verDetalleFactura(venta)" title="Ver detalle de la factura">
+                <i class="bi bi-eye"></i> Ver detalle
+              </button>
+            </td>
           </tr>
-          <tr *ngIf="!resultados.length && !cargando">
-            <td colspan="8" class="text-center text-muted py-4">No hay ventas para los filtros seleccionados.</td>
+          <tr *ngIf="!detalleVentas.length && !cargando">
+            <td colspan="10" class="text-center text-muted py-4">
+              {{ consultado ? 'No hay ventas para los filtros seleccionados.' : 'Seleccione una sucursal y pulse Consultar.' }}
+            </td>
           </tr>
           <tr *ngIf="cargando">
-            <td colspan="8" class="text-center text-muted py-4">Cargando ventas...</td>
+            <td colspan="10" class="text-center text-muted py-4">Cargando ventas...</td>
           </tr>
         </tbody>
       </table>
     </div>
 
-    <div class="tabla-paginacion" *ngIf="resultados.length">
+    <div class="tabla-paginacion" *ngIf="detalleVentas.length">
       <div class="paginacion-info">
         Página {{ currentPage }} de {{ totalPaginas }}
       </div>
@@ -239,3 +267,64 @@
     </div>
   </div>
 </section>
+
+<div *ngIf="mostrarDetalleFactura" class="modal fade show detalle-factura-modal" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="tituloDetalleFactura">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <div>
+          <h5 class="modal-title" id="tituloDetalleFactura">
+            Factura {{ facturaDetalleSeleccionada?.documento }}
+          </h5>
+          <small>
+            {{ formatFecha(facturaDetalleSeleccionada?.fecha || '') }} · {{ facturaDetalleSeleccionada?.cliente }} · {{ facturaDetalleSeleccionada?.vendedor }}
+          </small>
+        </div>
+        <button type="button" class="btn-close btn-close-white" aria-label="Cerrar" (click)="cerrarDetalleFactura()"></button>
+      </div>
+
+      <div class="modal-body p-0">
+        <div *ngIf="cargandoDetalleFactura" class="text-center text-muted py-4">Cargando detalle...</div>
+        <div *ngIf="errorDetalleFactura" class="alert alert-danger m-3 py-2">{{ errorDetalleFactura }}</div>
+
+        <table *ngIf="!cargandoDetalleFactura && !errorDetalleFactura" class="table table-sm align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Descripción</th>
+              <th class="text-end">Cantidad</th>
+              <th class="text-end">Precio</th>
+              <th class="text-end">Valor</th>
+              <th class="text-end">Margen</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let linea of lineasDetalleFactura">
+              <td>{{ lineaValor(linea, 'df_codMerc', 'df_codmerc') }}</td>
+              <td>{{ lineaValor(linea, 'df_desMerc', 'df_desmerc') }}</td>
+              <td class="text-end">{{ (+lineaValor(linea, 'df_canMerc', 'df_canmerc') || 0) | number:'1.0-2' }}</td>
+              <td class="text-end">{{ formatMoney(+lineaValor(linea, 'df_preMerc', 'df_premerc') || 0) }}</td>
+              <td class="text-end">{{ formatMoney(valorLinea(linea)) }}</td>
+              <td class="text-end margen-cell">
+                <ng-container *ngIf="margenLinea(linea) !== null; else sinCosto">{{ margenLinea(linea) | number:'1.2-2' }}%</ng-container>
+                <ng-template #sinCosto><span class="text-muted" title="La línea no tiene costo registrado">—</span></ng-template>
+              </td>
+            </tr>
+            <tr *ngIf="!lineasDetalleFactura.length">
+              <td colspan="6" class="text-center text-muted py-4">Esta factura no tiene líneas de detalle.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="modal-footer justify-content-between">
+        <span *ngIf="lineasDetalleFactura.length">
+          Total: <strong>{{ formatMoney(totalLineasDetalle) }}</strong>
+          <ng-container *ngIf="margenTotalDetalle !== null"> · Margen: <strong>{{ margenTotalDetalle | number:'1.2-2' }}%</strong></ng-container>
+        </span>
+        <button type="button" class="btn btn-secondary" (click)="cerrarDetalleFactura()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div *ngIf="mostrarDetalleFactura" class="modal-backdrop fade show"></div>

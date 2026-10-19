@@ -13,12 +13,14 @@ interface VentaConsulta {
   sucursalId: number;
   total: number;
   costo: number;
+  notaCredito: number;
 }
 
 interface ResumenVendedor {
   vendedor: string;
   total: number;
   costo: number;
+  notaCredito: number;
   facturas: number;
   empresas: string[];
   sucursales: number[];
@@ -131,6 +133,20 @@ export class VentasVendedor implements OnInit {
     return this.vendedores.reduce((total, vendedor) => total + vendedor.costo, 0);
   }
 
+  /** Suma de fa_valnotacredit del periodo. */
+  get totalNotaCredito(): number {
+    return this.vendedores.reduce((total, vendedor) => total + vendedor.notaCredito, 0);
+  }
+
+  /** Ventas menos notas de credito. */
+  get ventasNetas(): number {
+    return this.totalVendido - this.totalNotaCredito;
+  }
+
+  netoVendedor(vendedor: ResumenVendedor): number {
+    return vendedor.total - vendedor.notaCredito;
+  }
+
   get totalFacturas(): number {
     return this.vendedores.reduce((total, vendedor) => total + vendedor.facturas, 0);
   }
@@ -214,6 +230,8 @@ export class VentasVendedor implements OnInit {
       ['Facturas', String(this.totalFacturas)],
       ['Ticket promedio', this.formatMoney(this.ticketPromedio)],
       ['Margen', `${this.margenVentas.toFixed(2)}%`],
+      ['Notas de credito', this.formatMoney(this.totalNotaCredito)],
+      ['Ventas netas', this.formatMoney(this.ventasNetas)],
       ['Vendedores', String(this.vendedores.length)],
       ['Meta sucursal', this.formatMoney(this.metaSucursal)],
     ];
@@ -221,12 +239,14 @@ export class VentasVendedor implements OnInit {
 
     autoTable(doc, {
       startY: 78,
-      head: [['Rank', 'Vendedor', 'Participacion', 'Total vendido', 'Facturas', 'Ticket prom.', 'Margen', 'Empresas', 'Sucursales']],
+      head: [['Rank', 'Vendedor', 'Participacion', 'Total vendido', 'Nota credito', 'Neto', 'Facturas', 'Ticket prom.', 'Margen', 'Empresas', 'Sucursales']],
       body: this.vendedores.map((vendedor, index) => [
         `#${index + 1}`,
         vendedor.vendedor,
         `${this.participacionVendedor(vendedor).toFixed(2)}%`,
         this.formatMoney(vendedor.total),
+        vendedor.notaCredito > 0 ? this.formatMoney(vendedor.notaCredito) : '',
+        this.formatMoney(this.netoVendedor(vendedor)),
         String(vendedor.facturas),
         this.formatMoney(this.ticketPromedioVendedor(vendedor)),
         `${this.margenVendedor(vendedor).toFixed(2)}%`,
@@ -248,15 +268,17 @@ export class VentasVendedor implements OnInit {
         fillColor: [248, 250, 252],
       },
       columnStyles: {
-        0: { halign: 'center', cellWidth: 14 },
-        1: { cellWidth: 54 },
-        2: { halign: 'right', cellWidth: 24 },
-        3: { halign: 'right', cellWidth: 34 },
-        4: { halign: 'right', cellWidth: 20 },
-        5: { halign: 'right', cellWidth: 34 },
-        6: { halign: 'right', cellWidth: 20 },
-        7: { cellWidth: 34 },
-        8: { halign: 'right', cellWidth: 22 },
+        0: { halign: 'center', cellWidth: 12 },
+        1: { cellWidth: 40 },
+        2: { halign: 'right', cellWidth: 20 },
+        3: { halign: 'right', cellWidth: 28 },
+        4: { halign: 'right', cellWidth: 26 },
+        5: { halign: 'right', cellWidth: 28 },
+        6: { halign: 'right', cellWidth: 16 },
+        7: { halign: 'right', cellWidth: 26 },
+        8: { halign: 'right', cellWidth: 18 },
+        9: { cellWidth: 38 },
+        10: { halign: 'right', cellWidth: 16 },
       },
       margin: { left: 14, right: 14 },
       didDrawPage: () => this.dibujarPiePdf(doc),
@@ -324,6 +346,7 @@ export class VentasVendedor implements OnInit {
         vendedor,
         total: 0,
         costo: 0,
+        notaCredito: 0,
         facturas: 0,
         empresas: [],
         sucursales: [],
@@ -331,6 +354,7 @@ export class VentasVendedor implements OnInit {
 
       actual.total += venta.total;
       actual.costo += venta.costo;
+      actual.notaCredito += venta.notaCredito;
       actual.facturas += 1;
       if (venta.empresaCodigo && !actual.empresas.includes(venta.empresaCodigo)) {
         actual.empresas.push(venta.empresaCodigo);
@@ -369,6 +393,7 @@ export class VentasVendedor implements OnInit {
       sucursalId,
       total: Number(row?.fa_valFact ?? row?.fa_valfact ?? row?.fa_total ?? row?.total ?? 0) || 0,
       costo: Number(row?.fa_cosFact ?? row?.fa_cosfact ?? 0) || 0,
+      notaCredito: Number(row?.fa_valNotaCredit ?? row?.fa_valnotacredit ?? 0) || 0,
     };
   }
 

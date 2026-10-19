@@ -1889,6 +1889,66 @@ export class ServicioFacturacion {
     })());
   }
 
+  buscarFacturasPorCierre(idCierre: number | string, sucursalId?: number | string | null): Observable<any> {
+    const cierre = this.toNumberOrNull(idCierre);
+    const sucursal = this.toNumberOrNull(sucursalId);
+    if (!cierre || cierre <= 0) {
+      return throwError(() => new Error('El número de cierre no es válido.'));
+    }
+
+    if (!this.useSupabase) {
+      return this.http.GetRequest<any>('/facturacion?limit=10000').pipe(
+        map((response: any) => ({
+          ...response,
+          data: (response?.data || []).filter((factura: any) =>
+            Number(factura?.fa_cierre) === cierre
+            && (!sucursal || Number(factura?.fa_codSucu ?? factura?.fa_codsucu) === sucursal),
+          ),
+        })),
+      );
+    }
+
+    return from((async () => {
+      const rows: any[] = [];
+      const batchSize = 500;
+      let ultimoCodigo = '';
+
+      for (;;) {
+        let query = this.db
+          .from('factura')
+          .select(this.columnasFacturaCajaResumen)
+          .eq('fa_cierre', cierre)
+          .order('fa_codfact', { ascending: true })
+          .limit(batchSize);
+        query = this.applyTenantCompanyFilter(query);
+        if (sucursal && sucursal > 0) {
+          query = query.eq('fa_codsucu', sucursal);
+        } else {
+          query = this.applyTenantFilter(query);
+        }
+        if (ultimoCodigo) {
+          query = query.gt('fa_codfact', ultimoCodigo);
+        }
+
+        const { data, error } = await query;
+        if (error) throw error;
+        const pageRows = data || [];
+        rows.push(...pageRows);
+        if (pageRows.length < batchSize) break;
+
+        const siguienteCodigo = String(pageRows[pageRows.length - 1]?.fa_codfact || '').trim();
+        if (!siguienteCodigo || siguienteCodigo === ultimoCodigo) break;
+        ultimoCodigo = siguienteCodigo;
+      }
+
+      return {
+        status: 'success',
+        code: 200,
+        data: rows.map((row: any) => this.mapFacturaDbToUi(row)),
+      };
+    })());
+  }
+
   buscarFacturasPendientesCierre(page: number = 1, pageSize: number = 50, filtrarSucursal: boolean = true, sucursalId?: number | string | null): Observable<any> {
     const safePage = Math.max(1, Math.trunc(Number(page) || 1));
     const safePageSize = Math.min(200, Math.max(1, Math.trunc(Number(pageSize) || 50)));
@@ -3526,7 +3586,7 @@ export class ServicioFacturacion {
 
     const pageSize = params.soloResumenVendedor ? 250 : 1000;
     const columnasConsultaVentas =
-      'fa_codfact,fa_nomvend,fa_codvend,fa_codempr,fa_codsucu,fa_valfact,fa_cosfact,fa_fecfact,fa_codclie,fa_nomclie,fa_telclie';
+      'fa_codfact,fa_nomvend,fa_codvend,fa_codempr,fa_codsucu,fa_valfact,fa_cosfact,fa_fecfact,fa_codclie,fa_nomclie,fa_telclie,fa_valnotacredit';
     const rows: any[] = [];
     let offset = 0;
 
@@ -3607,20 +3667,73 @@ export class ServicioFacturacion {
       empresa = codEmpre;
     }
 
-    const { data, error } = await this.db.rpc('consulta_ventas_rango', {
-      p_fecha_desde: params.fechaDesde,
-      p_fecha_hasta: params.fechaHasta,
-      p_empresa: empresa,
-      p_sucursal_id: params.sucursal && params.sucursal > 0 ? params.sucursal : null,
-    });
-
-    if (error) {
-      const code = String(error?.code || '');
-      if (code === 'PGRST202' || code === '42883') return null;
-      throw error;
+    // Partir el rango en tramos cortos: cada llamada a la RPC debe terminar
+    // antes del statement_timeout de la API. Con rangos de mas de ~10 dias
+    // una sola llamada se cortaba con 57014.
+    const DIAS_POR_TRAMO = 3;
+    const tramos: Array<{ desde: string; hasta: string }> = [];
+    const inicio = new Date(`${params.fechaDesde}T00:00:00Z`);
+    const fin = new Date(`${params.fechaHasta}T00:00:00Z`);
+    if (Number.isNaN(inicio.getTime()) || Number.isNaN(fin.getTime())) return [];
+    for (let d = new Date(inicio); d <= fin; d.setUTCDate(d.getUTCDate() + DIAS_POR_TRAMO)) {
+      const hastaTramo = new Date(d);
+      hastaTramo.setUTCDate(hastaTramo.getUTCDate() + DIAS_POR_TRAMO - 1);
+      tramos.push({
+        desde: d.toISOString().slice(0, 10),
+        hasta: (hastaTramo > fin ? fin : hastaTramo).toISOString().slice(0, 10),
+      });
     }
 
-    return Array.isArray(data) ? data : [];
+    const sucursalId = params.sucursal && params.sucursal > 0 ? params.sucursal : null;
+    let funcionNoExiste = false;
+
+    const consultarTramo = async (tramo: { desde: string; hasta: string }): Promise<any[]> => {
+      const { data, error } = await this.db.rpc('consulta_ventas_rango', {
+        p_fecha_desde: tramo.desde,
+        p_fecha_hasta: tramo.hasta,
+        p_empresa: empresa,
+        p_sucursal_id: sucursalId,
+      });
+
+      if (error) {
+        // Solo PGRST202 significa que PostgREST no conoce la funcion. Un 42883
+        // tambien puede venir de DENTRO de la funcion (operador/tipo
+        // incompatible); tratarlo como "no existe" ocultaba el error real y
+        // caia a la lectura directa de factura, que termina en timeout.
+        const code = String(error?.code || '');
+        if (code === 'PGRST202') {
+          funcionNoExiste = true;
+          return [];
+        }
+        console.error('[consulta_ventas_rango] Error en la RPC', tramo, error);
+        throw error;
+      }
+
+      return Array.isArray(data) ? data : [];
+    };
+
+    // Dos tramos en paralelo como maximo para no saturar la base.
+    const resultados: any[][] = new Array(tramos.length);
+    let siguiente = 0;
+    const workers = Array.from({ length: Math.min(2, tramos.length) }, async () => {
+      while (siguiente < tramos.length && !funcionNoExiste) {
+        const indice = siguiente++;
+        resultados[indice] = await consultarTramo(tramos[indice]);
+      }
+    });
+    await Promise.all(workers);
+
+    if (funcionNoExiste) {
+      console.warn('[consulta_ventas_rango] PostgREST no encuentra la funcion; usando consulta directa (lenta).');
+      return null;
+    }
+
+    return resultados
+      .flat()
+      .sort((a: any, b: any) =>
+        String(b?.fa_fecfact || '').localeCompare(String(a?.fa_fecfact || '')) ||
+        String(b?.fa_codfact || '').localeCompare(String(a?.fa_codfact || ''))
+      );
   }
 
   private async buscarVentasVendedorPorDias(params: {
@@ -3663,7 +3776,7 @@ export class ServicioFacturacion {
       while (true) {
         let query = this.db
           .from('factura')
-          .select('fa_codfact,fa_nomvend,fa_codvend,fa_codempr,fa_codsucu,fa_valfact,fa_cosfact,fa_fecfact,fa_codclie,fa_nomclie,fa_telclie')
+          .select('fa_codfact,fa_nomvend,fa_codvend,fa_codempr,fa_codsucu,fa_valfact,fa_cosfact,fa_fecfact,fa_codclie,fa_nomclie,fa_telclie,fa_valnotacredit')
           .eq('fa_fecfact', fechaIso)
           .range(offset, offset + pageSize - 1);
 
