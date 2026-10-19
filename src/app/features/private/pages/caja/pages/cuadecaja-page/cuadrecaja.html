@@ -311,9 +311,13 @@
 
         <div class="modal-body p-0">
           <div class="facturas-cierre-resumen">
-            <span><strong>{{ facturasCierreSeleccionado.length }}</strong> facturas</span>
-            <span>Total: <strong>RD$ {{ totalValorFacturasCierre() | number:'1.2-2' }}</strong></span>
+            <span><strong>{{ facturasCierreCombinadas.length }}</strong> facturas</span>
+            <span>Cobrado: <strong>RD$ {{ totalCobradoCombinadas() | number:'1.2-2' }}</strong></span>
+            <span>Crédito / pendiente: <strong>RD$ {{ totalNoCobradoCombinadas() | number:'1.2-2' }}</strong></span>
+            <span>Total: <strong>RD$ {{ totalValorFacturasCombinadas() | number:'1.2-2' }}</strong></span>
           </div>
+
+          <div *ngIf="errorFacturasPendientesCierre" class="alert alert-warning m-3 py-2">{{ errorFacturasPendientesCierre }}</div>
 
           <div *ngIf="cargandoFacturasCierre" class="text-center py-5">
             <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Cargando...</span></div>
@@ -335,17 +339,17 @@
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let factura of facturasCierreSeleccionado">
-                  <td class="fw-bold text-nowrap">{{ factura.fa_codFact }}</td>
-                  <td class="text-nowrap">{{ factura.fa_fecFact | date:'dd/MM/yyyy' }}</td>
-                  <td>{{ factura.fa_nomClie || '-' }}</td>
-                  <td>{{ factura.fa_nomVend || '-' }}</td>
-                  <td><span class="badge" [ngClass]="obtenerClaseTipoFactura(factura)">{{ obtenerTipoFactura(factura) }}</span></td>
-                  <td>{{ obtenerFormaPagoVisible(factura) || '-' }}</td>
-                  <td>{{ obtenerEtiquetaPago(factura) }}</td>
-                  <td class="text-end text-nowrap fw-bold">RD$ {{ factura.fa_valFact | number:'1.2-2' }}</td>
+                <tr *ngFor="let factura of facturasCierreCombinadas" [class.factura-no-cobrada]="!factura.cobrada">
+                  <td class="fw-bold text-nowrap">{{ factura.factura }}</td>
+                  <td class="text-nowrap">{{ factura.fecha | date:'dd/MM/yyyy':'UTC' }}</td>
+                  <td>{{ factura.cliente || '-' }}</td>
+                  <td>{{ factura.vendedor || '-' }}</td>
+                  <td><span class="badge" [ngClass]="factura.tipo === 'Conduce' ? 'bg-warning text-dark' : 'bg-success'">{{ factura.tipo || '-' }}</span></td>
+                  <td>{{ factura.formaPago || '-' }}</td>
+                  <td>{{ factura.estado || '-' }}</td>
+                  <td class="text-end text-nowrap fw-bold">RD$ {{ factura.valor | number:'1.2-2' }}</td>
                 </tr>
-                <tr *ngIf="facturasCierreSeleccionado.length === 0">
+                <tr *ngIf="facturasCierreCombinadas.length === 0">
                   <td colspan="8" class="text-center py-5 text-muted">
                     <i class="fas fa-inbox fa-2x mb-2"></i>
                     <p class="mb-0">Este cierre no tiene facturas vinculadas.</p>
@@ -354,54 +358,12 @@
               </tbody>
             </table>
           </div>
-
-          <ng-container *ngIf="!cargandoFacturasCierre">
-            <div class="facturas-cierre-resumen facturas-pendientes-resumen">
-              <span><strong>{{ facturasPendientesCierre.length }}</strong> facturas a crédito y pendientes de pago</span>
-              <span>Total: <strong>RD$ {{ totalValorFacturasPendientesCierre() | number:'1.2-2' }}</strong></span>
-            </div>
-            <div *ngIf="errorFacturasPendientesCierre" class="alert alert-warning m-3 py-2">{{ errorFacturasPendientesCierre }}</div>
-            <div class="table-responsive facturas-cierre-tabla-contenedor">
-              <table class="table table-hover align-middle mb-0 facturas-cierre-tabla">
-                <thead>
-                  <tr>
-                    <th>Factura</th>
-                    <th>Fecha factura</th>
-                    <th>Cliente</th>
-                    <th>Vendedor</th>
-                    <th>Tipo</th>
-                    <th>Forma de pago</th>
-                    <th>Estado</th>
-                    <th>Cierre</th>
-                    <th>Fecha cierre</th>
-                    <th class="text-end">Valor</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr *ngFor="let factura of facturasPendientesCierre">
-                    <td class="fw-bold text-nowrap">{{ factura.fa_codfact }}</td>
-                    <td class="text-nowrap">{{ factura.fa_fecfact | date:'dd/MM/yyyy':'UTC' }}</td>
-                    <td>{{ factura.cliente || '-' }}</td>
-                    <td>{{ factura.vendedor || '-' }}</td>
-                    <td><span class="badge" [ngClass]="factura.tipo === 'Conduce' ? 'bg-warning text-dark' : 'bg-success'">{{ factura.tipo || '-' }}</span></td>
-                    <td>{{ factura.forma_pago || '-' }}</td>
-                    <td>{{ factura.estado || '-' }}</td>
-                    <td class="text-nowrap">#{{ factura.idcierre }}</td>
-                    <td class="text-nowrap">{{ factura.feccierre | date:'dd/MM/yyyy':'UTC' }}</td>
-                    <td class="text-end text-nowrap fw-bold">RD$ {{ factura.valor | number:'1.2-2' }}</td>
-                  </tr>
-                  <tr *ngIf="facturasPendientesCierre.length === 0 && !errorFacturasPendientesCierre">
-                    <td colspan="10" class="text-center py-4 text-muted">
-                      Este cierre no tiene facturas a crédito ni pendientes registradas.
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </ng-container>
         </div>
 
         <div class="modal-footer">
+          <button type="button" class="btn btn-primary" (click)="imprimirCierreCarta()" [disabled]="cargandoFacturasCierre">
+            <i class="fas fa-print me-1"></i> Imprimir carta
+          </button>
           <button type="button" class="btn btn-secondary" (click)="cerrarFacturasCierre()">Cerrar</button>
         </div>
       </div>

@@ -380,7 +380,10 @@
     }
 }
 
-.facturas-pendientes-resumen {
-    border-top: 3px solid #f59e0b;
+.facturas-cierre-tabla tr.factura-no-cobrada td {
     background: #fffbeb;
+}
+
+.facturas-cierre-resumen {
+    flex-wrap: wrap;
 }

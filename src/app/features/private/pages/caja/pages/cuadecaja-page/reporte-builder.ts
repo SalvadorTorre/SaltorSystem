@@ -5,8 +5,8 @@ export class ReporteCierreBuilder {
   private doc: jsPDF;
   private yPos: number = 20;
 
-  constructor() {
-    this.doc = new jsPDF();
+  constructor(formato: 'a4' | 'letter' = 'a4') {
+    this.doc = new jsPDF({ format: formato });
   }
 
   public iniciarDocumento(titulo: string, nombreEmpresa?: string): ReporteCierreBuilder {
@@ -29,7 +29,7 @@ export class ReporteCierreBuilder {
     return this;
   }
 
-  public agregarDatosGenerales(rango: string, usuario?: string): ReporteCierreBuilder {
+  public agregarDatosGenerales(rango: string, usuario?: string, extras: string[] = []): ReporteCierreBuilder {
     this.doc.setFontSize(10);
     this.doc.text(`Rango de Fechas: ${rango}`, 14, this.yPos);
     this.yPos += 6;
@@ -37,6 +37,11 @@ export class ReporteCierreBuilder {
       this.doc.text(`Cajero: ${usuario}`, 14, this.yPos);
       this.yPos += 6;
     }
+    extras.forEach((linea) => {
+      const lineas = this.doc.splitTextToSize(linea, this.doc.internal.pageSize.getWidth() - 28);
+      this.doc.text(lineas, 14, this.yPos);
+      this.yPos += 6 * lineas.length;
+    });
     this.yPos += 5;
     return this;
   }
@@ -125,6 +130,37 @@ export class ReporteCierreBuilder {
     return this;
   }
 
+  /** Detalle de facturas del cierre consultado (cobradas, credito y pendientes juntas). */
+  public agregarTablaFacturasCierre(
+    facturas: Array<{ factura: string; fecha: string; cliente: string; vendedor: string; tipo: string; formaPago: string; estado: string; valor: number; codigoPago: string }>,
+    formatoMoneda: (val: number) => string,
+  ): ReporteCierreBuilder {
+    autoTable(this.doc, {
+      startY: this.yPos,
+      head: [['Factura', 'Fecha', 'Cliente', 'Vendedor', 'Tipo', 'Estado', 'Valor', 'Pago']],
+      body: facturas.map((f) => [
+        f.factura,
+        this.formatearFecha(f.fecha),
+        f.cliente || '-',
+        f.vendedor || '-',
+        f.tipo || '-',
+        f.estado || '-',
+        formatoMoneda(Number(f.valor) || 0),
+        f.codigoPago || '',
+      ]),
+      theme: 'grid',
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [66, 66, 66] },
+      columnStyles: {
+        6: { halign: 'right' },
+        7: { halign: 'center', cellWidth: 12 },
+      },
+    });
+
+    this.yPos = (this.doc as any).lastAutoTable.finalY + 10;
+    return this;
+  }
+
   public agregarLeyendaFormasPago(formasPago: any[]): ReporteCierreBuilder {
     const formas = (formasPago || [])
       .filter((forma) => forma?.fp_codfpago !== null && forma?.fp_codfpago !== undefined)
@@ -180,6 +216,11 @@ export class ReporteCierreBuilder {
 
   public build(nombreArchivo: string = 'reporte_cierre.pdf'): void {
     this.doc.save(nombreArchivo);
+  }
+
+  /** PDF como Blob, para enviarlo a imprimir en lugar de descargarlo. */
+  public toBlob(): Blob {
+    return this.doc.output('blob');
   }
 
   private formatearFecha(value: any): string {
