@@ -41,6 +41,9 @@ export class CuadreCaja implements OnInit {
   cargandoFacturasCierre = false;
   cierreDetalleSeleccionado: any = null;
   facturasCierreSeleccionado: any[] = [];
+  /** Facturas a credito / pendientes guardadas en cierrecaja_facturas_pendientes. */
+  facturasPendientesCierre: any[] = [];
+  errorFacturasPendientesCierre = '';
   filtrosCierres = {
     idCierre: '',
     fechaDesde: '',
@@ -152,13 +155,22 @@ export class CuadreCaja implements OnInit {
 
     this.cierreDetalleSeleccionado = cierre;
     this.facturasCierreSeleccionado = [];
+    this.facturasPendientesCierre = [];
+    this.errorFacturasPendientesCierre = '';
     this.mostrarFacturasCierre = true;
     this.cargandoFacturasCierre = true;
     try {
-      const respuesta: any = await firstValueFrom(
-        this.facturaService.buscarFacturasPorCierre(idCierre, this.sucursalUsuarioActual()),
-      );
+      const [respuesta, pendientes]: any[] = await Promise.all([
+        firstValueFrom(this.facturaService.buscarFacturasPorCierre(idCierre, this.sucursalUsuarioActual())),
+        // Si la tabla aun no existe o falla, no se bloquea la consulta de las cobradas.
+        firstValueFrom(this.cierreService.consultarFacturasPendientesCierre(idCierre)).catch((error) => {
+          console.error('Error consultando facturas pendientes del cierre', error);
+          this.errorFacturasPendientesCierre = 'No se pudieron cargar las facturas a crédito y pendientes de este cierre.';
+          return { data: [] };
+        }),
+      ]);
       this.facturasCierreSeleccionado = Array.isArray(respuesta?.data) ? respuesta.data : [];
+      this.facturasPendientesCierre = Array.isArray(pendientes?.data) ? pendientes.data : [];
     } catch (error) {
       console.error('Error consultando facturas del cierre', error);
       this.mostrarFacturasCierre = false;
@@ -172,6 +184,12 @@ export class CuadreCaja implements OnInit {
     this.mostrarFacturasCierre = false;
     this.cierreDetalleSeleccionado = null;
     this.facturasCierreSeleccionado = [];
+    this.facturasPendientesCierre = [];
+    this.errorFacturasPendientesCierre = '';
+  }
+
+  totalValorFacturasPendientesCierre(): number {
+    return this.facturasPendientesCierre.reduce((total, factura) => total + (Number(factura?.valor) || 0), 0);
   }
 
   totalValorFacturasCierre(): number {
@@ -737,6 +755,33 @@ export class CuadreCaja implements OnInit {
         throw new Error('El cierre fue creado, pero Supabase no devolvió su número.');
       }
 
+      // Guardar las facturas a credito y pendientes de pago de este cierre.
+      const facturasPendientes = facturasDelCierre
+        .filter((f) => !this.facturaEstaPagada(f))
+        .map((f) => ({
+          factura: String(f?.fa_codFact || '').trim(),
+          fechaFactura: f?.fa_fecFact ?? null,
+          cliente: f?.fa_nomClie ?? null,
+          vendedor: f?.fa_nomVend ?? null,
+          tipo: this.obtenerTipoFactura(f),
+          formaPago: this.esCreditoPendiente(f)
+            ? 'Crédito'
+            : (this.obtenerDescripcionPago(f?.fa_codfpago || '') || null),
+          estado: this.obtenerEtiquetaPago(f),
+          valor: Number(f?.fa_valFact) || 0,
+        }));
+      let errorPendientes = '';
+      try {
+        await firstValueFrom(
+          this.cierreService.guardarFacturasPendientesCierre(idCierre, facturasPendientes, {
+            feccierre: res?.data?.feccierre || dataCierre.feccierre,
+            codsucursal: this.sucursalUsuarioActual(),
+          }),
+        );
+      } catch (errPendientes: any) {
+        errorPendientes = errPendientes?.message || 'No se pudieron guardar las facturas a crédito y pendientes del cierre.';
+      }
+
       const resp: any = await firstValueFrom(
         this.facturaService.confirmarCierreFacturas(idCierre, codigosFacturasCierre, {
           sucursal: this.sucursalUsuarioActual(),
@@ -771,6 +816,14 @@ export class CuadreCaja implements OnInit {
         await Swal.fire(
           'Cierre guardado',
           printError?.message || 'El cierre y la nota se guardaron, pero no se pudo abrir la impresión.',
+          'warning',
+        );
+      }
+
+      if (errorPendientes) {
+        await Swal.fire(
+          'Aviso',
+          `El cierre #${idCierre} se guardó, pero no se pudieron registrar sus facturas a crédito y pendientes: ${errorPendientes}`,
           'warning',
         );
       }

@@ -379,3 +379,8 @@
         padding-right: 0.55rem;
     }
 }
+
+.facturas-pendientes-resumen {
+    border-top: 3px solid #f59e0b;
+    background: #fffbeb;
+}

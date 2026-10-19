@@ -45,6 +45,9 @@ export class ServicioCierreCaja {
 
   private normalizeDate(value: any): string | null {
     if (!value) return null;
+    // 'YYYY-MM-DD' (o con hora) se toma tal cual: new Date('2026-10-15') es
+    // medianoche UTC y en la zona local caeria en el dia anterior.
+    if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value.trim())) return value.trim();
     const date = value instanceof Date ? value : new Date(value);
     if (isNaN(date.getTime())) return null;
     const year = date.getFullYear();
@@ -138,6 +141,82 @@ export class ServicioCierreCaja {
         status: 'success',
         code: 200,
         data: this.mapRow(inserted),
+      };
+    })());
+  }
+
+  /**
+   * Guarda las facturas a credito y pendientes de pago que entraron en el
+   * cierre (myappdb.cierrecaja_facturas_pendientes). Es idempotente: repetir
+   * la llamada para el mismo cierre no duplica filas.
+   */
+  guardarFacturasPendientesCierre(
+    idCierre: number | string,
+    facturas: Array<{
+      factura: string;
+      fechaFactura?: string | null;
+      cliente?: string | null;
+      vendedor?: string | null;
+      tipo?: string | null;
+      formaPago?: string | null;
+      estado?: string | null;
+      valor?: number | null;
+    }>,
+    datosCierre: { feccierre?: any; codsucursal?: number | string | null } = {},
+  ): Observable<any> {
+    const cierre = Math.trunc(Number(idCierre) || 0);
+    if (!this.useSupabase || cierre <= 0 || !facturas.length) {
+      return from(Promise.resolve({ status: 'success', code: 200, data: { inserted: 0 } }));
+    }
+
+    const feccierre = this.normalizeDate(datosCierre.feccierre) || this.normalizeDate(new Date());
+    const codsucursal = this.toNumber(datosCierre.codsucursal ?? this.sucursalActual());
+    const filas = facturas
+      .filter((f) => String(f?.factura || '').trim())
+      .map((f) => ({
+        idcierre: cierre,
+        feccierre,
+        codsucursal: codsucursal > 0 ? codsucursal : null,
+        fa_codfact: String(f.factura).trim(),
+        fa_fecfact: this.normalizeDate(f.fechaFactura),
+        cliente: f.cliente ? String(f.cliente).slice(0, 255) : null,
+        vendedor: f.vendedor ? String(f.vendedor).slice(0, 255) : null,
+        tipo: f.tipo ? String(f.tipo).slice(0, 30) : null,
+        forma_pago: f.formaPago ? String(f.formaPago).slice(0, 100) : null,
+        estado: f.estado ? String(f.estado).slice(0, 30) : null,
+        valor: this.toNumber(f.valor),
+      }));
+
+    return from((async () => {
+      const { error } = await this.db
+        .from('cierrecaja_facturas_pendientes')
+        .upsert(filas, { onConflict: 'idcierre,fa_codfact' });
+      if (error) {
+        console.error('Error guardando facturas pendientes del cierre', { idCierre: cierre, error });
+        throw error;
+      }
+      return { status: 'success', code: 200, data: { inserted: filas.length } };
+    })());
+  }
+
+  /** Facturas a credito y pendientes de pago guardadas para un cierre. */
+  consultarFacturasPendientesCierre(idCierre: number | string): Observable<any> {
+    const cierre = Math.trunc(Number(idCierre) || 0);
+    if (!this.useSupabase || cierre <= 0) {
+      return from(Promise.resolve({ status: 'success', code: 200, data: [] }));
+    }
+
+    return from((async () => {
+      const { data, error } = await this.db
+        .from('cierrecaja_facturas_pendientes')
+        .select('idcierre,feccierre,codsucursal,fa_codfact,fa_fecfact,cliente,vendedor,tipo,forma_pago,estado,valor')
+        .eq('idcierre', cierre)
+        .order('fa_codfact', { ascending: true });
+      if (error) throw error;
+      return {
+        status: 'success',
+        code: 200,
+        data: (data || []).map((row: any) => ({ ...row, valor: this.toNumber(row.valor) })),
       };
     })());
   }
