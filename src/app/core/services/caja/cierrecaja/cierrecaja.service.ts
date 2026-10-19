@@ -37,6 +37,12 @@ export class ServicioCierreCaja {
     return Number.isFinite(n) ? n : 0;
   }
 
+  private toNullableNumber(value: any): number | null {
+    if (value === null || value === undefined || value === '') return null;
+    const n = Number(value);
+    return Number.isFinite(n) ? n : null;
+  }
+
   private normalizeDate(value: any): string | null {
     if (!value) return null;
     const date = value instanceof Date ? value : new Date(value);
@@ -64,6 +70,8 @@ export class ServicioCierreCaja {
       ttarjeta: this.toNumber(row.ttarjeta),
       tdeposito: this.toNumber(row.tdeposito),
       tcheque: this.toNumber(row.tcheque),
+      tcredito: this.toNumber(row.tcredito),
+      tpendiente: this.toNumber(row.tpendiente),
     };
   }
 
@@ -76,7 +84,7 @@ export class ServicioCierreCaja {
     return from((async () => {
       let query = this.db
         .from('cierrecaja')
-        .select('idcierre,feccierre,tefectivo,ttarjeta,tdeposito,totalcierre,tcheque,factini,factfin,cajera,nota,codsucursal')
+        .select('idcierre,feccierre,tefectivo,ttarjeta,tdeposito,totalcierre,tcheque,tcredito,tpendiente,factini,factfin,cajera,nota,codsucursal')
         .order('idcierre', { ascending: false })
         .limit(1);
 
@@ -107,6 +115,8 @@ export class ServicioCierreCaja {
       tdeposito: this.toNumber(data?.tdeposito ?? data?.deposito),
       totalcierre: this.toNumber(data?.totalcierre ?? data?.montocierre),
       tcheque: this.toNumber(data?.tcheque ?? data?.cheque),
+      tcredito: this.toNumber(data?.tcredito ?? data?.credito),
+      tpendiente: this.toNumber(data?.tpendiente ?? data?.pendiente),
       factini: data?.factini ?? null,
       factfin: data?.factfin ?? null,
       codsucursal: codsucursal > 0 ? codsucursal : null,
@@ -128,6 +138,69 @@ export class ServicioCierreCaja {
         status: 'success',
         code: 200,
         data: this.mapRow(inserted),
+      };
+    })());
+  }
+
+  consultarCierres(filtros: {
+    sucursal?: number | string | null;
+    idCierre?: number | string | null;
+    fechaDesde?: string | null;
+    fechaHasta?: string | null;
+    cajera?: string | null;
+    factura?: string | null;
+    montoDesde?: number | string | null;
+    montoHasta?: number | string | null;
+    pagina?: number;
+    tamanoPagina?: number;
+  } = {}): Observable<any> {
+    if (!this.useSupabase) {
+      return this.http.GetRequest<any>('/cierrecaja');
+    }
+
+    const pagina = Math.max(1, Math.trunc(Number(filtros.pagina) || 1));
+    const tamanoPagina = Math.min(100, Math.max(10, Math.trunc(Number(filtros.tamanoPagina) || 20)));
+    const desde = (pagina - 1) * tamanoPagina;
+    const hasta = desde + tamanoPagina - 1;
+    const sucursal = this.toNumber(filtros.sucursal ?? this.sucursalActual());
+    const idCierre = Math.trunc(Number(filtros.idCierre) || 0);
+    const cajera = String(filtros.cajera || '').trim().replace(/[%_(),]/g, '');
+    const factura = String(filtros.factura || '').trim().replace(/[(),]/g, '');
+    const montoDesde = this.toNullableNumber(filtros.montoDesde);
+    const montoHasta = this.toNullableNumber(filtros.montoHasta);
+
+    return from((async () => {
+      let query = this.db
+        .from('cierrecaja')
+        .select(
+          'idcierre,feccierre,tefectivo,ttarjeta,tdeposito,totalcierre,tcheque,tcredito,tpendiente,factini,factfin,cajera,nota,codsucursal',
+          { count: 'exact' },
+        )
+        .order('idcierre', { ascending: false })
+        .range(desde, hasta);
+
+      if (sucursal > 0) query = query.eq('codsucursal', sucursal);
+      if (idCierre > 0) query = query.eq('idcierre', idCierre);
+      if (filtros.fechaDesde) query = query.gte('feccierre', filtros.fechaDesde);
+      if (filtros.fechaHasta) query = query.lte('feccierre', filtros.fechaHasta);
+      if (cajera) query = query.ilike('cajera', `%${cajera}%`);
+      if (factura) query = query.lte('factini', factura).gte('factfin', factura);
+      if (montoDesde !== null) query = query.gte('totalcierre', montoDesde);
+      if (montoHasta !== null) query = query.lte('totalcierre', montoHasta);
+
+      const { data, error, count } = await query;
+      if (error) throw error;
+
+      return {
+        status: 'success',
+        code: 200,
+        data: (data || []).map((row: any) => this.mapRow(row)),
+        pagination: {
+          pagina,
+          tamanoPagina,
+          total: Number(count) || 0,
+          totalPaginas: Math.max(1, Math.ceil((Number(count) || 0) / tamanoPagina)),
+        },
       };
     })());
   }

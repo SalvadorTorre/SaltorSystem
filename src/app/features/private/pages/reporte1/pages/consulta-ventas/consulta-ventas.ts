@@ -18,12 +18,15 @@ interface VentaConsulta {
   cliente: string;
   total: number;
   costo: number;
+  notaCredito: number;
 }
 
 interface ResumenGrupoVentas {
   codigo: string;
   nombre: string;
   total: number;
+  notaCredito: number;
+  neto: number;
   metaVenta: number;
   operaciones: number;
   participacion: number;
@@ -40,19 +43,37 @@ export class ConsultaVentas implements OnInit {
   empresas = ['todas'];
   vendedores = ['todos'];
 
-  filtros = {
+  filtros: {
+    empresa: string;
+    sucursal: number | null;
+    vendedor: string;
+    fechaInicio: string;
+    fechaFin: string;
+  } = {
     empresa: 'todas',
-    sucursal: 0,
+    // null = sin seleccionar: la pantalla no consulta hasta que el usuario
+    // elija una sucursal (o "Todas") y pulse Consultar.
+    sucursal: null,
     vendedor: 'todos',
     fechaInicio: this.fechaHoy(),
     fechaFin: this.fechaHoy()
   };
 
   cargando = false;
+  consultado = false;
   error = '';
   private ventas: VentaConsulta[] = [];
   private ventasAyer: VentaConsulta[] = [];
   resultados: VentaConsulta[] = [];
+  /** Fecha final del periodo consultado; la tabla de detalle muestra solo sus ultimos 2 dias. */
+  private fechaFinConsultada = '';
+
+  // Detalle (lineas) de una factura: se carga solo al pulsar "Ver detalle".
+  mostrarDetalleFactura = false;
+  facturaDetalleSeleccionada: VentaConsulta | null = null;
+  lineasDetalleFactura: any[] = [];
+  cargandoDetalleFactura = false;
+  errorDetalleFactura = '';
   pageSize = 10;
   currentPage = 1;
 
@@ -77,13 +98,13 @@ export class ConsultaVentas implements OnInit {
       next: ({ sucursales, empresas }: any) => {
         this.sucursales = Array.isArray(sucursales?.data) ? sucursales.data : [];
         this.empresasCatalogo = Array.isArray(empresas?.data) ? empresas.data : [];
-        this.cargarVentas();
+        this.cargando = false;
       },
       error: (err: any) => {
         this.error = String(err?.message || 'No se pudieron cargar las sucursales o empresas.');
         this.sucursales = [];
         this.empresasCatalogo = [];
-        this.cargarVentas();
+        this.cargando = false;
       }
     });
   }
@@ -150,6 +171,12 @@ export class ConsultaVentas implements OnInit {
   }
 
   consultar(): void {
+    if (this.filtros.sucursal === null) {
+      this.error = 'Seleccione una sucursal para consultar.';
+      return;
+    }
+    this.consultado = true;
+    this.fechaFinConsultada = this.filtros.fechaFin;
     this.cargarVentas();
   }
 
@@ -165,12 +192,28 @@ export class ConsultaVentas implements OnInit {
   limpiar(): void {
     this.filtros = {
       empresa: 'todas',
-      sucursal: 0,
+      sucursal: null,
       vendedor: 'todos',
       fechaInicio: this.fechaHoy(),
       fechaFin: this.fechaHoy()
     };
-    this.cargarVentas();
+    this.error = '';
+    this.consultado = false;
+    this.ventas = [];
+    this.ventasAyer = [];
+    this.resultados = [];
+    this.vendedores = ['todos'];
+    this.currentPage = 1;
+  }
+
+  /** Suma de fa_valnotacredit del periodo. */
+  get totalNotaCredito(): number {
+    return this.resultados.reduce((total, venta) => total + venta.notaCredito, 0);
+  }
+
+  /** Ventas menos notas de credito. */
+  get ventasNetas(): number {
+    return this.totalVendido - this.totalNotaCredito;
   }
 
   get totalVendido(): number {
@@ -238,22 +281,118 @@ export class ConsultaVentas implements OnInit {
     }));
   }
 
+  /**
+   * Facturas de la tabla de detalle: solo los ultimos 2 dias del periodo
+   * consultado. Los KPIs y la exportacion siguen usando todo el periodo.
+   */
+  get detalleVentas(): VentaConsulta[] {
+    const fin = this.fechaFinConsultada || this.filtros.fechaFin;
+    if (!fin) return this.resultados;
+    const finDate = new Date(`${fin}T00:00:00Z`);
+    if (Number.isNaN(finDate.getTime())) return this.resultados;
+    finDate.setUTCDate(finDate.getUTCDate() - 1);
+    const desde = finDate.toISOString().slice(0, 10);
+    return this.resultados.filter((venta) => venta.fecha >= desde && venta.fecha <= fin);
+  }
+
+  get fechaInicioDetalle(): string {
+    const fin = this.fechaFinConsultada || this.filtros.fechaFin;
+    const d = new Date(`${fin}T00:00:00Z`);
+    if (Number.isNaN(d.getTime())) return fin;
+    d.setUTCDate(d.getUTCDate() - 1);
+    const inicio = d.toISOString().slice(0, 10);
+    const periodoInicio = this.filtros.fechaInicio;
+    return periodoInicio && periodoInicio > inicio ? periodoInicio : inicio;
+  }
+
+  get fechaFinDetalle(): string {
+    return this.fechaFinConsultada || this.filtros.fechaFin;
+  }
+
+  verDetalleFactura(venta: VentaConsulta): void {
+    this.facturaDetalleSeleccionada = venta;
+    this.lineasDetalleFactura = [];
+    this.errorDetalleFactura = '';
+    this.cargandoDetalleFactura = true;
+    this.mostrarDetalleFactura = true;
+
+    this.facturacionSrv.buscarFacturaDetalle(venta.documento, {
+      empresa: venta.empresaCodigo && venta.empresaCodigo !== 'N/D' ? venta.empresaCodigo : null,
+      sucursal: venta.sucursalId || null,
+    }).subscribe({
+      next: (resp: any) => {
+        this.lineasDetalleFactura = Array.isArray(resp?.data) ? resp.data : [];
+        this.cargandoDetalleFactura = false;
+      },
+      error: (err: any) => {
+        this.errorDetalleFactura = String(err?.message || 'No se pudo cargar el detalle de la factura.');
+        this.cargandoDetalleFactura = false;
+      }
+    });
+  }
+
+  cerrarDetalleFactura(): void {
+    this.mostrarDetalleFactura = false;
+    this.facturaDetalleSeleccionada = null;
+    this.lineasDetalleFactura = [];
+    this.errorDetalleFactura = '';
+  }
+
+  lineaValor(linea: any, ...campos: string[]): any {
+    for (const campo of campos) {
+      const valor = linea?.[campo];
+      if (valor !== undefined && valor !== null && valor !== '') return valor;
+    }
+    return '';
+  }
+
+  valorLinea(linea: any): number {
+    return Number(this.lineaValor(linea, 'df_valMerc', 'df_valmerc')) ||
+      (Number(this.lineaValor(linea, 'df_canMerc', 'df_canmerc')) || 0) * (Number(this.lineaValor(linea, 'df_preMerc', 'df_premerc')) || 0);
+  }
+
+  /** Costo total de la linea, tal como se guarda en detfactura.df_cosmerc. */
+  costoLinea(linea: any): number {
+    return Number(this.lineaValor(linea, 'df_cosMerc', 'df_cosmerc')) || 0;
+  }
+
+  /** Margen sobre costo, con la misma formula que margenFactura(). */
+  margenLinea(linea: any): number | null {
+    const costo = this.costoLinea(linea);
+    if (!costo) return null;
+    return ((this.valorLinea(linea) - costo) / costo) * 100;
+  }
+
+  get margenTotalDetalle(): number | null {
+    const costo = this.lineasDetalleFactura.reduce((t, l) => t + this.costoLinea(l), 0);
+    if (!costo) return null;
+    return ((this.totalLineasDetalle - costo) / costo) * 100;
+  }
+
+  get totalLineasDetalle(): number {
+    return this.lineasDetalleFactura.reduce((total, linea) => {
+      const valor = Number(this.lineaValor(linea, 'df_valMerc', 'df_valmerc')) ||
+        (Number(this.lineaValor(linea, 'df_canMerc', 'df_canmerc')) || 0) * (Number(this.lineaValor(linea, 'df_preMerc', 'df_premerc')) || 0);
+      return total + valor;
+    }, 0);
+  }
+
   get totalPaginas(): number {
-    return Math.max(1, Math.ceil(this.resultados.length / this.pageSize));
+    return Math.max(1, Math.ceil(this.detalleVentas.length / this.pageSize));
   }
 
   get resultadosPagina(): VentaConsulta[] {
     const start = (this.currentPage - 1) * this.pageSize;
-    return this.resultados.slice(start, start + this.pageSize);
+    return this.detalleVentas.slice(start, start + this.pageSize);
   }
 
   get registroInicialPagina(): number {
-    if (!this.resultados.length) return 0;
+    if (!this.detalleVentas.length) return 0;
     return (this.currentPage - 1) * this.pageSize + 1;
   }
 
   get registroFinalPagina(): number {
-    return Math.min(this.currentPage * this.pageSize, this.resultados.length);
+    return Math.min(this.currentPage * this.pageSize, this.detalleVentas.length);
   }
 
   get paginasVisibles(): number[] {
@@ -402,7 +541,8 @@ export class ConsultaVentas implements OnInit {
       vendedor: String(row?.fa_nomVend ?? row?.fa_nomvend ?? row?.fa_codVend ?? row?.fa_codvend ?? 'Sin vendedor').trim() || 'Sin vendedor',
       cliente: String(row?.fa_nomClie ?? row?.fa_nomclie ?? 'Sin cliente').trim() || 'Sin cliente',
       total: Number(row?.fa_valFact ?? row?.fa_valfact ?? row?.fa_total ?? row?.total ?? 0) || 0,
-      costo: Number(row?.fa_cosFact ?? row?.fa_cosfact ?? 0) || 0
+      costo: Number(row?.fa_cosFact ?? row?.fa_cosfact ?? 0) || 0,
+      notaCredito: Number(row?.fa_valNotaCredit ?? row?.fa_valnotacredit ?? 0) || 0
     };
   }
 
@@ -457,11 +597,15 @@ export class ConsultaVentas implements OnInit {
         codigo: group.codigo,
         nombre: group.nombre,
         total: 0,
+        notaCredito: 0,
+        neto: 0,
         metaVenta: Number(group.metaVenta || 0),
         operaciones: 0,
         participacion: 0,
       };
       actual.total += venta.total;
+      actual.notaCredito += venta.notaCredito;
+      actual.neto = actual.total - actual.notaCredito;
       actual.metaVenta = Number(group.metaVenta || actual.metaVenta || 0);
       actual.operaciones += 1;
       map.set(key, actual);

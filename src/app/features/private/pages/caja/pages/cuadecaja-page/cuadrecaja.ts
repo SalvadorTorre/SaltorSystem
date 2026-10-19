@@ -30,6 +30,27 @@ export class CuadreCaja implements OnInit {
   // fechaInicio: string = '';
   // fechaFin: string = '';
 
+  pestanaActiva: 'cierre' | 'consulta' = 'cierre';
+  cierresConsulta: any[] = [];
+  cargandoCierres = false;
+  paginaCierres = 1;
+  tamanoPaginaCierres = 20;
+  totalCierres = 0;
+  totalPaginasCierres = 1;
+  mostrarFacturasCierre = false;
+  cargandoFacturasCierre = false;
+  cierreDetalleSeleccionado: any = null;
+  facturasCierreSeleccionado: any[] = [];
+  filtrosCierres = {
+    idCierre: '',
+    fechaDesde: '',
+    fechaHasta: '',
+    cajera: '',
+    factura: '',
+    montoDesde: null as number | null,
+    montoHasta: null as number | null,
+  };
+
   totales = {
     efectivo: 0,
     tarjeta: 0,
@@ -53,6 +74,111 @@ export class CuadreCaja implements OnInit {
     console.log('CuadreCaja Component Initialized - Version Updated');
     this.cargarFormasPago();
     this.obtenerUltimoCierreYFacturas();
+  }
+
+  cambiarPestana(pestana: 'cierre' | 'consulta'): void {
+    this.pestanaActiva = pestana;
+    if (pestana === 'consulta') {
+      void this.consultarCierres(1);
+    }
+  }
+
+  async consultarCierres(pagina = 1): Promise<void> {
+    this.cargandoCierres = true;
+    try {
+      const respuesta: any = await firstValueFrom(
+        this.cierreService.consultarCierres({
+          ...this.filtrosCierres,
+          sucursal: this.sucursalUsuarioActual(),
+          pagina,
+          tamanoPagina: this.tamanoPaginaCierres,
+        }),
+      );
+      this.cierresConsulta = Array.isArray(respuesta?.data) ? respuesta.data : [];
+      this.paginaCierres = Number(respuesta?.pagination?.pagina) || pagina;
+      this.totalCierres = Number(respuesta?.pagination?.total) || 0;
+      this.totalPaginasCierres = Number(respuesta?.pagination?.totalPaginas) || 1;
+    } catch (error) {
+      console.error('Error consultando cierres de caja', error);
+      this.cierresConsulta = [];
+      this.totalCierres = 0;
+      this.totalPaginasCierres = 1;
+      await Swal.fire('Error', 'No se pudieron consultar los cierres de caja.', 'error');
+    } finally {
+      this.cargandoCierres = false;
+    }
+  }
+
+  limpiarFiltrosCierres(): void {
+    this.filtrosCierres = {
+      idCierre: '',
+      fechaDesde: '',
+      fechaHasta: '',
+      cajera: '',
+      factura: '',
+      montoDesde: null,
+      montoHasta: null,
+    };
+    void this.consultarCierres(1);
+  }
+
+  paginaAnteriorCierres(): void {
+    if (this.paginaCierres > 1 && !this.cargandoCierres) {
+      void this.consultarCierres(this.paginaCierres - 1);
+    }
+  }
+
+  paginaSiguienteCierres(): void {
+    if (this.paginaCierres < this.totalPaginasCierres && !this.cargandoCierres) {
+      void this.consultarCierres(this.paginaCierres + 1);
+    }
+  }
+
+  async imprimirCierreConsultado(cierre: any): Promise<void> {
+    try {
+      await this.printingService.printHtmlContent(this.construirTicketCierre(cierre), 'ticket');
+    } catch (error: any) {
+      console.error('Error imprimiendo cierre consultado', error);
+      await Swal.fire('Error', error?.message || 'No se pudo imprimir el cierre.', 'error');
+    }
+  }
+
+  async verFacturasCierre(cierre: any): Promise<void> {
+    const idCierre = Number(cierre?.idcierre || 0);
+    if (!idCierre) {
+      await Swal.fire('Aviso', 'El cierre seleccionado no tiene un número válido.', 'warning');
+      return;
+    }
+
+    this.cierreDetalleSeleccionado = cierre;
+    this.facturasCierreSeleccionado = [];
+    this.mostrarFacturasCierre = true;
+    this.cargandoFacturasCierre = true;
+    try {
+      const respuesta: any = await firstValueFrom(
+        this.facturaService.buscarFacturasPorCierre(idCierre, this.sucursalUsuarioActual()),
+      );
+      this.facturasCierreSeleccionado = Array.isArray(respuesta?.data) ? respuesta.data : [];
+    } catch (error) {
+      console.error('Error consultando facturas del cierre', error);
+      this.mostrarFacturasCierre = false;
+      await Swal.fire('Error', 'No se pudieron cargar las facturas de este cierre.', 'error');
+    } finally {
+      this.cargandoFacturasCierre = false;
+    }
+  }
+
+  cerrarFacturasCierre(): void {
+    this.mostrarFacturasCierre = false;
+    this.cierreDetalleSeleccionado = null;
+    this.facturasCierreSeleccionado = [];
+  }
+
+  totalValorFacturasCierre(): number {
+    return this.facturasCierreSeleccionado.reduce(
+      (total, factura) => total + (Number(factura?.fa_valFact) || 0),
+      0,
+    );
   }
 
   cargarFormasPago() {
@@ -484,6 +610,14 @@ export class CuadreCaja implements OnInit {
     const linea = (titulo: string, numero: any) => `
       <div class="row"><span>${this.escapeHtml(titulo)}</span><strong>${this.escapeHtml(valor(numero))}</strong></div>`;
     const nota = String(cierre?.nota || '').trim();
+    const totalCobrado =
+      (Number(cierre?.tefectivo) || 0) +
+      (Number(cierre?.ttarjeta) || 0) +
+      (Number(cierre?.tdeposito) || 0) +
+      (Number(cierre?.tcheque) || 0);
+    const totalNoCobrado =
+      (Number(cierre?.tcredito ?? cierre?.credito) || 0) +
+      (Number(cierre?.tpendiente ?? cierre?.pendiente) || 0);
 
     return `<!doctype html><html><head><meta charset="utf-8"><title>Cierre de caja</title>
       <style>
@@ -505,7 +639,11 @@ export class CuadreCaja implements OnInit {
         <div class="center">${this.escapeHtml(this.obtenerNombreSucursal())}</div>
         <div class="sep"></div>
         <div class="row"><span>Cierre:</span><strong>${this.escapeHtml(cierre?.idcierre || '')}</strong></div>
-        <div class="row"><span>Fecha:</span><strong>${this.escapeHtml(new Date().toLocaleString('es-DO'))}</strong></div>
+        <div class="row"><span>Fecha:</span><strong>${this.escapeHtml(
+          cierre?.feccierre
+            ? new Date(`${String(cierre.feccierre).slice(0, 10)}T00:00:00`).toLocaleDateString('es-DO')
+            : new Date().toLocaleString('es-DO')
+        )}</strong></div>
         <div class="row"><span>Cajero:</span><strong>${this.escapeHtml(cierre?.cajera || '')}</strong></div>
         <div class="row"><span>Sucursal:</span><strong>${this.escapeHtml(cierre?.codsucursal || '')}</strong></div>
         <div class="row"><span>Factura inicial:</span><strong>${this.escapeHtml(cierre?.factini || '')}</strong></div>
@@ -516,10 +654,10 @@ export class CuadreCaja implements OnInit {
         ${linea('Tarjetas', cierre?.ttarjeta)}
         ${linea('Depósito/Transf.', cierre?.tdeposito)}
         ${linea('Cheques', cierre?.tcheque)}
-        ${linea('Crédito pendiente', cierre?.credito)}
-        ${linea('Pendiente de pago', cierre?.pendiente)}
-        ${linea('Total cobrado', cierre?.valoresCobrados)}
-        ${linea('Total no cobrado', cierre?.valoresNoCobrados)}
+        ${linea('Crédito pendiente', cierre?.tcredito ?? cierre?.credito)}
+        ${linea('Pendiente de pago', cierre?.tpendiente ?? cierre?.pendiente)}
+        ${linea('Total cobrado', totalCobrado)}
+        ${linea('Total no cobrado', totalNoCobrado)}
         <div class="sep"></div>
         <div class="row total"><span>TOTAL:</span><strong>${this.escapeHtml(valor(cierre?.totalcierre))}</strong></div>
         ${nota ? `<div class="sep"></div><strong>NOTA:</strong><div class="nota">${this.escapeHtml(nota)}</div>` : ''}
@@ -585,6 +723,8 @@ export class CuadreCaja implements OnInit {
       tarjeta: this.totales.tarjeta,
       cheque: this.totales.cheque,
       deposito: this.totales.deposito,
+      tcredito: this.totales.credito,
+      tpendiente: this.totales.pendiente,
       codsucursal: this.sucursalUsuarioActual(),
       nota: notaCierre || null,
     };

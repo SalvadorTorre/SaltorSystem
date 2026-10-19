@@ -73,6 +73,11 @@
       <small>{{ nombreEmpresaSeleccionada() }} · {{ nombreSucursalSeleccionada() }}</small>
     </article>
     <article>
+      <span>Ventas netas</span>
+      <strong>{{ formatMoney(ventasNetas) }}</strong>
+      <small>Notas de crédito: −{{ formatMoney(totalNotaCredito) }}</small>
+    </article>
+    <article>
       <span>Facturas</span>
       <strong>{{ totalFacturas | number }}</strong>
       <small>{{ formatMoney(ticketPromedio) }} ticket promedio</small>
@@ -127,6 +132,10 @@
           <div class="progress-track">
             <span [style.width.%]="barraVendedor(vendedor)"></span>
           </div>
+          <small class="nc-line" *ngIf="vendedor.notaCredito > 0">
+            Nota crédito: <span class="nc-monto">−{{ formatMoney(vendedor.notaCredito) }}</span>
+            · Neto: <strong>{{ formatMoney(netoVendedor(vendedor)) }}</strong>
+          </small>
         </div>
 
         <div class="seller-stats">

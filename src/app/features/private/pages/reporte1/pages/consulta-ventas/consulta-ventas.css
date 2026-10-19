@@ -490,3 +490,34 @@
     flex-wrap: wrap;
   }
 }
+
+.detalle-factura-modal {
+  display: block;
+  z-index: 1060;
+}
+
+.detalle-factura-modal .modal-content {
+  max-height: 88vh;
+  border: 0;
+  border-radius: 10px;
+}
+
+.btn-ver-detalle {
+  white-space: nowrap;
+}
+
+.ranking-montos {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  text-align: right;
+}
+
+.ranking-montos .nc-monto,
+.nc-cell {
+  color: #b91c1c;
+}
+
+.ranking-montos .neto-monto {
+  color: var(--report-ink);
+}

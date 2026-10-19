@@ -1,4 +1,24 @@
 <div class="container-fluid p-3 cuadre-page">
+  <div class="cuadre-tabs mb-3" role="tablist" aria-label="Opciones de cierre de caja">
+    <button
+      type="button"
+      class="cuadre-tab"
+      [class.active]="pestanaActiva === 'cierre'"
+      (click)="cambiarPestana('cierre')"
+    >
+      <i class="fas fa-cash-register me-2"></i>Cierre de caja
+    </button>
+    <button
+      type="button"
+      class="cuadre-tab"
+      [class.active]="pestanaActiva === 'consulta'"
+      (click)="cambiarPestana('consulta')"
+    >
+      <i class="fas fa-search me-2"></i>Consulta de cierres
+    </button>
+  </div>
+
+  <ng-container *ngIf="pestanaActiva === 'cierre'">
   <div class="cuadre-hero mb-3">
     <div>
       <h2 class="text-primary mb-1"><i class="fas fa-cash-register me-2"></i>Cierre de Caja</h2>
@@ -148,8 +168,203 @@
       </div>
     </div>
   </div>
+  </ng-container>
+
+  <ng-container *ngIf="pestanaActiva === 'consulta'">
+    <div class="consulta-header mb-3">
+      <div>
+        <h2 class="text-primary mb-1"><i class="fas fa-clipboard-list me-2"></i>Consulta de cierres</h2>
+        <div class="cuadre-meta">
+          <span>Sucursal: <strong>{{ sucursalUsuarioActual() || 'No definida' }}</strong></span>
+          <span><strong>{{ totalCierres }}</strong> cierres encontrados</span>
+        </div>
+      </div>
+    </div>
+
+    <form class="card shadow-sm border-0 mb-3 filtros-cierres" (ngSubmit)="consultarCierres(1)">
+      <div class="card-body">
+        <div class="row g-2 align-items-end">
+          <div class="col-6 col-md-2">
+            <label class="form-label">Número de cierre</label>
+            <input type="number" min="1" class="form-control" name="idCierre" [(ngModel)]="filtrosCierres.idCierre" />
+          </div>
+          <div class="col-6 col-md-2">
+            <label class="form-label">Desde</label>
+            <input type="date" class="form-control" name="fechaDesde" [(ngModel)]="filtrosCierres.fechaDesde" />
+          </div>
+          <div class="col-6 col-md-2">
+            <label class="form-label">Hasta</label>
+            <input type="date" class="form-control" name="fechaHasta" [(ngModel)]="filtrosCierres.fechaHasta" />
+          </div>
+          <div class="col-6 col-md-2">
+            <label class="form-label">Cajero</label>
+            <input type="text" class="form-control" name="cajera" [(ngModel)]="filtrosCierres.cajera" placeholder="Nombre" />
+          </div>
+          <div class="col-6 col-md-2">
+            <label class="form-label">Factura</label>
+            <input type="text" class="form-control" name="factura" [(ngModel)]="filtrosCierres.factura" placeholder="Número" />
+          </div>
+          <div class="col-6 col-md-1">
+            <label class="form-label">Monto desde</label>
+            <input type="number" min="0" step="0.01" class="form-control" name="montoDesde" [(ngModel)]="filtrosCierres.montoDesde" />
+          </div>
+          <div class="col-6 col-md-1">
+            <label class="form-label">Monto hasta</label>
+            <input type="number" min="0" step="0.01" class="form-control" name="montoHasta" [(ngModel)]="filtrosCierres.montoHasta" />
+          </div>
+          <div class="col-12 d-flex justify-content-end gap-2 mt-3">
+            <button type="button" class="btn btn-outline-secondary" (click)="limpiarFiltrosCierres()" [disabled]="cargandoCierres">
+              <i class="fas fa-eraser me-1"></i>Limpiar
+            </button>
+            <button type="submit" class="btn btn-primary" [disabled]="cargandoCierres">
+              <i class="fas fa-search me-1"></i>Consultar
+            </button>
+          </div>
+        </div>
+      </div>
+    </form>
+
+    <div class="card shadow-sm mb-4 cuadre-table-card">
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0 cierres-table">
+            <thead>
+              <tr>
+                <th>Cierre</th>
+                <th>Fecha</th>
+                <th>Cajero</th>
+                <th>Factura inicial</th>
+                <th>Factura final</th>
+                <th class="text-end">Efectivo</th>
+                <th class="text-end">Tarjeta</th>
+                <th class="text-end">Depósito</th>
+                <th class="text-end">Cheque</th>
+                <th class="text-end">Crédito pendiente</th>
+                <th class="text-end">Pendiente de pago</th>
+                <th class="text-end">Total</th>
+                <th>Nota</th>
+                <th class="text-center">Acción</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let cierre of cierresConsulta">
+                <td class="fw-bold">{{ cierre.idcierre }}</td>
+                <td class="text-nowrap">{{ cierre.feccierre | date:'dd/MM/yyyy' }}</td>
+                <td>{{ cierre.cajera || '-' }}</td>
+                <td class="text-nowrap">{{ cierre.factini || '-' }}</td>
+                <td class="text-nowrap">{{ cierre.factfin || '-' }}</td>
+                <td class="text-end text-nowrap">{{ cierre.tefectivo | number:'1.2-2' }}</td>
+                <td class="text-end text-nowrap">{{ cierre.ttarjeta | number:'1.2-2' }}</td>
+                <td class="text-end text-nowrap">{{ cierre.tdeposito | number:'1.2-2' }}</td>
+                <td class="text-end text-nowrap">{{ cierre.tcheque | number:'1.2-2' }}</td>
+                <td class="text-end text-nowrap text-danger">{{ cierre.tcredito | number:'1.2-2' }}</td>
+                <td class="text-end text-nowrap text-warning-emphasis">{{ cierre.tpendiente | number:'1.2-2' }}</td>
+                <td class="text-end text-nowrap fw-bold">{{ cierre.totalcierre | number:'1.2-2' }}</td>
+                <td class="nota-cierre-cell" [title]="cierre.nota || ''">{{ cierre.nota || '-' }}</td>
+                <td class="text-center">
+                  <div class="acciones-cierre" role="group" aria-label="Acciones del cierre">
+                    <button type="button" class="btn btn-info boton-accion-cierre" (click)="verFacturasCierre(cierre)" title="Ver facturas del cierre" aria-label="Ver facturas del cierre">
+                      <img src="assets/icons/ver-facturas.svg" alt="" aria-hidden="true" />
+                    </button>
+                    <button type="button" class="btn btn-primary boton-accion-cierre" (click)="imprimirCierreConsultado(cierre)" title="Imprimir cierre" aria-label="Imprimir cierre">
+                      <img src="assets/icons/imprimir-cierre.svg" alt="" aria-hidden="true" />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr *ngIf="!cargandoCierres && cierresConsulta.length === 0">
+                <td colspan="14" class="text-center py-5 text-muted">
+                  <i class="fas fa-inbox fa-3x mb-3"></i>
+                  <p class="mb-0">No se encontraron cierres con los filtros seleccionados.</p>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card-footer bg-white d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <span class="text-muted small">Página {{ paginaCierres }} de {{ totalPaginasCierres }} · {{ totalCierres }} registros</span>
+        <div class="btn-group">
+          <button type="button" class="btn btn-sm btn-outline-secondary" (click)="paginaAnteriorCierres()" [disabled]="paginaCierres <= 1 || cargandoCierres">
+            <i class="fas fa-chevron-left me-1"></i>Anterior
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-secondary" (click)="paginaSiguienteCierres()" [disabled]="paginaCierres >= totalPaginasCierres || cargandoCierres">
+            Siguiente<i class="fas fa-chevron-right ms-1"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+
+  <div *ngIf="mostrarFacturasCierre" class="modal fade show cierre-facturas-modal" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="tituloFacturasCierre">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable" role="document">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <div>
+            <h5 class="modal-title" id="tituloFacturasCierre">
+              <i class="fas fa-file-invoice me-2"></i>Facturas del cierre #{{ cierreDetalleSeleccionado?.idcierre }}
+            </h5>
+            <small>Sucursal {{ cierreDetalleSeleccionado?.codsucursal || sucursalUsuarioActual() || '-' }}</small>
+          </div>
+          <button type="button" class="btn-close btn-close-white" aria-label="Cerrar" (click)="cerrarFacturasCierre()"></button>
+        </div>
+
+        <div class="modal-body p-0">
+          <div class="facturas-cierre-resumen">
+            <span><strong>{{ facturasCierreSeleccionado.length }}</strong> facturas</span>
+            <span>Total: <strong>RD$ {{ totalValorFacturasCierre() | number:'1.2-2' }}</strong></span>
+          </div>
+
+          <div *ngIf="cargandoFacturasCierre" class="text-center py-5">
+            <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Cargando...</span></div>
+            <p class="mt-2 mb-0 text-muted">Cargando facturas del cierre...</p>
+          </div>
+
+          <div *ngIf="!cargandoFacturasCierre" class="table-responsive facturas-cierre-tabla-contenedor">
+            <table class="table table-hover align-middle mb-0 facturas-cierre-tabla">
+              <thead>
+                <tr>
+                  <th>Factura</th>
+                  <th>Fecha</th>
+                  <th>Cliente</th>
+                  <th>Vendedor</th>
+                  <th>Tipo</th>
+                  <th>Forma de pago</th>
+                  <th>Estado</th>
+                  <th class="text-end">Valor</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let factura of facturasCierreSeleccionado">
+                  <td class="fw-bold text-nowrap">{{ factura.fa_codFact }}</td>
+                  <td class="text-nowrap">{{ factura.fa_fecFact | date:'dd/MM/yyyy' }}</td>
+                  <td>{{ factura.fa_nomClie || '-' }}</td>
+                  <td>{{ factura.fa_nomVend || '-' }}</td>
+                  <td><span class="badge" [ngClass]="obtenerClaseTipoFactura(factura)">{{ obtenerTipoFactura(factura) }}</span></td>
+                  <td>{{ obtenerFormaPagoVisible(factura) || '-' }}</td>
+                  <td>{{ obtenerEtiquetaPago(factura) }}</td>
+                  <td class="text-end text-nowrap fw-bold">RD$ {{ factura.fa_valFact | number:'1.2-2' }}</td>
+                </tr>
+                <tr *ngIf="facturasCierreSeleccionado.length === 0">
+                  <td colspan="8" class="text-center py-5 text-muted">
+                    <i class="fas fa-inbox fa-2x mb-2"></i>
+                    <p class="mb-0">Este cierre no tiene facturas vinculadas.</p>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="cerrarFacturasCierre()">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div *ngIf="mostrarFacturasCierre" class="modal-backdrop fade show"></div>
   
-  <div *ngIf="isLoading" class="position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center bg-white bg-opacity-75" style="z-index: 1050;">
+  <div *ngIf="isLoading || cargandoCierres" class="position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center bg-white bg-opacity-75" style="z-index: 1050;">
     <div class="spinner-border text-primary" role="status">
       <span class="visually-hidden">Cargando...</span>
     </div>
