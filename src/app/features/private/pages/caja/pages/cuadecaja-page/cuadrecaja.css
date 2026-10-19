@@ -379,3 +379,11 @@
         padding-right: 0.55rem;
     }
 }
+
+.facturas-cierre-tabla tr.factura-no-cobrada td {
+    background: #fffbeb;
+}
+
+.facturas-cierre-resumen {
+    flex-wrap: wrap;
+}
