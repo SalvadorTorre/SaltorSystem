@@ -8,6 +8,19 @@ import { ReporteCierreBuilder } from './reporte-builder';
 import { firstValueFrom } from 'rxjs';
 import { PrintingService } from 'src/app/core/services/utils/printing.service';
 
+export interface FacturaCierreVista {
+  factura: string;
+  fecha: string;
+  cliente: string;
+  vendedor: string;
+  tipo: string;
+  formaPago: string;
+  estado: string;
+  valor: number;
+  cobrada: boolean;
+  codigoPago: string;
+}
+
 @Component({
   selector: 'app-cuadrecaja',
   templateUrl: './cuadrecaja.html',
@@ -41,6 +54,11 @@ export class CuadreCaja implements OnInit {
   cargandoFacturasCierre = false;
   cierreDetalleSeleccionado: any = null;
   facturasCierreSeleccionado: any[] = [];
+  /** Facturas a credito / pendientes guardadas en cierrecaja_facturas_pendientes. */
+  facturasPendientesCierre: any[] = [];
+  errorFacturasPendientesCierre = '';
+  /** Cobradas + credito/pendientes del cierre, juntas y ordenadas por numero de factura. */
+  facturasCierreCombinadas: FacturaCierreVista[] = [];
   filtrosCierres = {
     idCierre: '',
     fechaDesde: '',
@@ -152,13 +170,23 @@ export class CuadreCaja implements OnInit {
 
     this.cierreDetalleSeleccionado = cierre;
     this.facturasCierreSeleccionado = [];
+    this.facturasPendientesCierre = [];
+    this.errorFacturasPendientesCierre = '';
     this.mostrarFacturasCierre = true;
     this.cargandoFacturasCierre = true;
     try {
-      const respuesta: any = await firstValueFrom(
-        this.facturaService.buscarFacturasPorCierre(idCierre, this.sucursalUsuarioActual()),
-      );
+      const [respuesta, pendientes]: any[] = await Promise.all([
+        firstValueFrom(this.facturaService.buscarFacturasPorCierre(idCierre, this.sucursalUsuarioActual())),
+        // Si la tabla aun no existe o falla, no se bloquea la consulta de las cobradas.
+        firstValueFrom(this.cierreService.consultarFacturasPendientesCierre(idCierre)).catch((error) => {
+          console.error('Error consultando facturas pendientes del cierre', error);
+          this.errorFacturasPendientesCierre = 'No se pudieron cargar las facturas a crédito y pendientes de este cierre.';
+          return { data: [] };
+        }),
+      ]);
       this.facturasCierreSeleccionado = Array.isArray(respuesta?.data) ? respuesta.data : [];
+      this.facturasPendientesCierre = Array.isArray(pendientes?.data) ? pendientes.data : [];
+      this.facturasCierreCombinadas = this.combinarFacturasCierre();
     } catch (error) {
       console.error('Error consultando facturas del cierre', error);
       this.mostrarFacturasCierre = false;
@@ -172,6 +200,132 @@ export class CuadreCaja implements OnInit {
     this.mostrarFacturasCierre = false;
     this.cierreDetalleSeleccionado = null;
     this.facturasCierreSeleccionado = [];
+    this.facturasPendientesCierre = [];
+    this.errorFacturasPendientesCierre = '';
+    this.facturasCierreCombinadas = [];
+  }
+
+  private combinarFacturasCierre(): FacturaCierreVista[] {
+    const porFactura = new Map<string, FacturaCierreVista>();
+
+    // Primero las pendientes guardadas al cerrar; si una factura tambien
+    // aparece como cobrada en este cierre, prevalece la cobrada.
+    this.facturasPendientesCierre.forEach((f: any) => {
+      const factura = String(f?.fa_codfact || '').trim();
+      if (!factura) return;
+      porFactura.set(factura, {
+        factura,
+        fecha: f?.fa_fecfact || '',
+        cliente: f?.cliente || '',
+        vendedor: f?.vendedor || '',
+        tipo: f?.tipo || 'Factura',
+        formaPago: f?.forma_pago || '',
+        estado: f?.estado || 'Pendiente Pago',
+        valor: Number(f?.valor) || 0,
+        cobrada: false,
+        codigoPago: String(f?.estado || '').toUpperCase() === 'CREDITO' ? 'C' : 'P',
+      });
+    });
+
+    this.facturasCierreSeleccionado.forEach((f: any) => {
+      const factura = String(f?.fa_codFact || '').trim();
+      if (!factura) return;
+      porFactura.set(factura, {
+        factura,
+        fecha: f?.fa_fecFact || '',
+        cliente: f?.fa_nomClie || '',
+        vendedor: f?.fa_nomVend || '',
+        tipo: this.obtenerTipoFactura(f),
+        formaPago: this.obtenerFormaPagoVisible(f),
+        estado: this.obtenerEtiquetaPago(f),
+        valor: Number(f?.fa_valFact) || 0,
+        cobrada: this.facturaEstaPagada(f),
+        codigoPago: this.obtenerCodigoPagoVisible(f),
+      });
+    });
+
+    return Array.from(porFactura.values()).sort((a, b) => this.compararNumeroFactura(a.factura, b.factura));
+  }
+
+  private compararNumeroFactura(a: string, b: string): number {
+    const na = Number(a);
+    const nb = Number(b);
+    if (Number.isFinite(na) && Number.isFinite(nb) && na !== nb) return na - nb;
+    return a.localeCompare(b, 'es', { numeric: true });
+  }
+
+  totalValorFacturasCombinadas(): number {
+    return this.facturasCierreCombinadas.reduce((total, f) => total + f.valor, 0);
+  }
+
+  totalCobradoCombinadas(): number {
+    return this.facturasCierreCombinadas.filter((f) => f.cobrada).reduce((total, f) => total + f.valor, 0);
+  }
+
+  totalNoCobradoCombinadas(): number {
+    return this.facturasCierreCombinadas.filter((f) => !f.cobrada).reduce((total, f) => total + f.valor, 0);
+  }
+
+  /**
+   * Reporte del cierre consultado en papel carta, con el mismo encabezado y
+   * resumen de valores que el PDF que se genera al confirmar el cierre.
+   */
+  async imprimirCierreCarta(): Promise<void> {
+    const cierre = this.cierreDetalleSeleccionado;
+    if (!cierre) return;
+
+    const num = (v: any) => Number(v) || 0;
+    const efectivo = num(cierre.tefectivo);
+    const tarjeta = num(cierre.ttarjeta);
+    const deposito = num(cierre.tdeposito);
+    const cheque = num(cierre.tcheque);
+    const credito = num(cierre.tcredito);
+    const pendiente = num(cierre.tpendiente);
+    const totales = {
+      efectivo,
+      tarjeta,
+      deposito,
+      cheque,
+      credito,
+      pendiente,
+      valoresCobrados: efectivo + tarjeta + deposito + cheque,
+      valoresNoCobrados: credito + pendiente,
+    };
+
+    const nombreEmpresa = String(localStorage.getItem('nombre_empresa') || '').trim();
+    const fechaCierre = this.formatearFechaCorta(cierre.feccierre);
+    const builder = new ReporteCierreBuilder('letter');
+    builder.iniciarDocumento(`Cierre de Caja #${cierre.idcierre}`, nombreEmpresa)
+      .agregarDatosGenerales(
+        `Desde Factura ${cierre.factini || '-'} hasta ${cierre.factfin || '-'}`,
+        cierre.cajera || undefined,
+        [
+          `Fecha del cierre: ${fechaCierre}`,
+          `Sucursal: ${cierre.codsucursal || this.sucursalUsuarioActual() || '-'}`,
+          ...(cierre.nota ? [`Nota: ${cierre.nota}`] : []),
+        ],
+      )
+      .agregarTotales(totales, this.formatoMoneda)
+      .agregarTablaFacturasCierre(this.facturasCierreCombinadas, this.formatoMoneda)
+      .agregarLeyendaFormasPago(this.formasPago)
+      .agregarFirma();
+
+    try {
+      await this.printingService.printBlob(builder.toBlob(), 'reporte');
+    } catch (error: any) {
+      console.error('Error imprimiendo el cierre en carta', error);
+      await Swal.fire('Error', error?.message || 'No se pudo imprimir el reporte del cierre.', 'error');
+    }
+  }
+
+  private formatearFechaCorta(value: any): string {
+    const texto = String(value || '').trim();
+    const iso = texto.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    return iso ? `${iso[3]}/${iso[2]}/${iso[1]}` : (texto || '-');
+  }
+
+  totalValorFacturasPendientesCierre(): number {
+    return this.facturasPendientesCierre.reduce((total, factura) => total + (Number(factura?.valor) || 0), 0);
   }
 
   totalValorFacturasCierre(): number {
@@ -737,6 +891,33 @@ export class CuadreCaja implements OnInit {
         throw new Error('El cierre fue creado, pero Supabase no devolvió su número.');
       }
 
+      // Guardar las facturas a credito y pendientes de pago de este cierre.
+      const facturasPendientes = facturasDelCierre
+        .filter((f) => !this.facturaEstaPagada(f))
+        .map((f) => ({
+          factura: String(f?.fa_codFact || '').trim(),
+          fechaFactura: f?.fa_fecFact ?? null,
+          cliente: f?.fa_nomClie ?? null,
+          vendedor: f?.fa_nomVend ?? null,
+          tipo: this.obtenerTipoFactura(f),
+          formaPago: this.esCreditoPendiente(f)
+            ? 'Crédito'
+            : (this.obtenerDescripcionPago(f?.fa_codfpago || '') || null),
+          estado: this.obtenerEtiquetaPago(f),
+          valor: Number(f?.fa_valFact) || 0,
+        }));
+      let errorPendientes = '';
+      try {
+        await firstValueFrom(
+          this.cierreService.guardarFacturasPendientesCierre(idCierre, facturasPendientes, {
+            feccierre: res?.data?.feccierre || dataCierre.feccierre,
+            codsucursal: this.sucursalUsuarioActual(),
+          }),
+        );
+      } catch (errPendientes: any) {
+        errorPendientes = errPendientes?.message || 'No se pudieron guardar las facturas a crédito y pendientes del cierre.';
+      }
+
       const resp: any = await firstValueFrom(
         this.facturaService.confirmarCierreFacturas(idCierre, codigosFacturasCierre, {
           sucursal: this.sucursalUsuarioActual(),
@@ -771,6 +952,14 @@ export class CuadreCaja implements OnInit {
         await Swal.fire(
           'Cierre guardado',
           printError?.message || 'El cierre y la nota se guardaron, pero no se pudo abrir la impresión.',
+          'warning',
+        );
+      }
+
+      if (errorPendientes) {
+        await Swal.fire(
+          'Aviso',
+          `El cierre #${idCierre} se guardó, pero no se pudieron registrar sus facturas a crédito y pendientes: ${errorPendientes}`,
           'warning',
         );
       }
