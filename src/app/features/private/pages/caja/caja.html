@@ -37,6 +37,24 @@
             <i class="bi bi-truck me-2"></i>Control Cobro Factura Choferes
           </a>
         </li>
+        <li *ngIf="canView('/private/caja/auditoria/facturas-por-cerrar') || canView('/private/caja/auditoria/historial-cierres')">
+          <a href="#" class="dropdown-item caja-submenu-toggle" (click)="toggleAuditoria($event)" [attr.aria-expanded]="auditoriaAbierta">
+            <i class="bi bi-shield-check me-2"></i>Auditoría de caja
+            <i class="bi ms-auto" [ngClass]="auditoriaAbierta ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+          </a>
+          <ul class="list-unstyled caja-submenu" *ngIf="auditoriaAbierta">
+            <li *ngIf="canView('/private/caja/auditoria/facturas-por-cerrar')">
+              <a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" [routerLink]="['auditoria/facturas-por-cerrar']">
+                <i class="bi bi-hourglass-split me-2"></i>Facturas por cerrar
+              </a>
+            </li>
+            <li *ngIf="canView('/private/caja/auditoria/historial-cierres')">
+              <a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" [routerLink]="['auditoria/historial-cierres']">
+                <i class="bi bi-clock-history me-2"></i>Historial de cierres
+              </a>
+            </li>
+          </ul>
+        </li>
       </ul>
       </div>
     </div>
@@ -182,6 +200,36 @@
             >
               <i class="bi bi-truck me-2"></i>
               <span>Control Cobro Factura Choferes</span>
+            </a>
+          </li>
+          <li class="nav-item" *ngIf="canView('/private/caja/auditoria/facturas-por-cerrar') || canView('/private/caja/auditoria/historial-cierres')">
+            <span class="nav-link d-flex align-items-center caja-submenu-titulo">
+              <i class="bi bi-shield-check me-2"></i>
+              <span>Auditoría de caja</span>
+            </span>
+          </li>
+          <li class="nav-item caja-submenu-item" *ngIf="canView('/private/caja/auditoria/facturas-por-cerrar')">
+            <a
+              class="nav-link d-flex align-items-center"
+              routerLinkActive="active active-link"
+              [routerLinkActiveOptions]="{ exact: true }"
+              [routerLink]="['auditoria/facturas-por-cerrar']"
+              data-bs-dismiss="offcanvas"
+            >
+              <i class="bi bi-hourglass-split me-2"></i>
+              <span>Facturas por cerrar</span>
+            </a>
+          </li>
+          <li class="nav-item caja-submenu-item" *ngIf="canView('/private/caja/auditoria/historial-cierres')">
+            <a
+              class="nav-link d-flex align-items-center"
+              routerLinkActive="active active-link"
+              [routerLinkActiveOptions]="{ exact: true }"
+              [routerLink]="['auditoria/historial-cierres']"
+              data-bs-dismiss="offcanvas"
+            >
+              <i class="bi bi-clock-history me-2"></i>
+              <span>Historial de cierres</span>
             </a>
           </li>
         </ul>

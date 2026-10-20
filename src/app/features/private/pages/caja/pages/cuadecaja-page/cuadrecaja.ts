@@ -1,5 +1,7 @@
 
 import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
+import { ServicioSucursal } from 'src/app/core/services/mantenimientos/sucursal/sucursal.service';
 import { ServicioFacturacion } from 'src/app/core/services/facturacion/factura/factura.service';
 import { ServicioCierreCaja } from 'src/app/core/services/caja/cierrecaja/cierrecaja.service';
 import { ServicioFpago } from 'src/app/core/services/mantenimientos/fpago/fpago.service';
@@ -86,15 +88,63 @@ export class CuadreCaja implements OnInit {
     private cierreService: ServicioCierreCaja,
     private fpagoService: ServicioFpago,
     private printingService: PrintingService,
+    private readonly route: ActivatedRoute,
+    private readonly sucursalService: ServicioSucursal,
   ) { }
+
+  /** Historial: todas las sucursales existentes y la elegida (una a la vez). */
+  sucursalesFiltro: any[] = [];
+  sucursalFiltro = Number(localStorage.getItem('idSucursal') || 0) || 0;
+
+  private cargarSucursalesFiltro(): void {
+    this.sucursalService.buscarTodasSucursal().subscribe({
+      next: (resp: any) => {
+        const lista = Array.isArray(resp?.data) ? resp.data : [];
+        this.sucursalesFiltro = lista
+          .filter((s: any) => Number(s?.cod_sucursal) > 0)
+          .sort((a: any, b: any) => Number(a?.cod_sucursal) - Number(b?.cod_sucursal));
+        const existe = this.sucursalesFiltro.some((s) => Number(s.cod_sucursal) === Number(this.sucursalFiltro));
+        if (!existe && this.sucursalesFiltro.length) {
+          this.sucursalFiltro = Number(this.sucursalesFiltro[0].cod_sucursal);
+          void this.consultarCierres(1);
+        }
+      },
+      error: (err) => console.error('Error cargando sucursales', err),
+    });
+  }
+
+  private empresaDeSucursal(codsucursal: any): string | null {
+    const s = this.sucursalesFiltro.find((x) => Number(x?.cod_sucursal) === Number(codsucursal));
+    return s?.cod_empre ? String(s.cod_empre).trim() : null;
+  }
+
+  nombreSucursalFiltro(): string {
+    if (!this.sucursalFiltro) return '-';
+    const s = this.sucursalesFiltro.find((x) => Number(x?.cod_sucursal) === Number(this.sucursalFiltro));
+    return s ? `${s.cod_sucursal} · ${s.nom_sucursal}` : String(this.sucursalFiltro);
+  }
+
+  /**
+   * Auditoria de caja > Historial de cierres: solo la pestana de consulta
+   * (ruta con data.soloConsulta). No se puede hacer un cierre desde aqui.
+   */
+  get soloConsulta(): boolean {
+    return this.route.snapshot.pathFromRoot.some((r) => !!r.data?.['soloConsulta']);
+  }
 
   ngOnInit(): void {
     console.log('CuadreCaja Component Initialized - Version Updated');
     this.cargarFormasPago();
+    if (this.soloConsulta) {
+      this.cargarSucursalesFiltro();
+      this.cambiarPestana('consulta');
+      return;
+    }
     this.obtenerUltimoCierreYFacturas();
   }
 
   cambiarPestana(pestana: 'cierre' | 'consulta'): void {
+    if (this.soloConsulta && pestana === 'cierre') return;
     this.pestanaActiva = pestana;
     if (pestana === 'consulta') {
       void this.consultarCierres(1);
@@ -107,7 +157,8 @@ export class CuadreCaja implements OnInit {
       const respuesta: any = await firstValueFrom(
         this.cierreService.consultarCierres({
           ...this.filtrosCierres,
-          sucursal: this.sucursalUsuarioActual(),
+          // En el historial (auditoria) manda la sucursal elegida en el filtro.
+          sucursal: this.soloConsulta ? this.sucursalFiltro : this.sucursalUsuarioActual(),
           pagina,
           tamanoPagina: this.tamanoPaginaCierres,
         }),
@@ -176,7 +227,12 @@ export class CuadreCaja implements OnInit {
     this.cargandoFacturasCierre = true;
     try {
       const [respuesta, pendientes]: any[] = await Promise.all([
-        firstValueFrom(this.facturaService.buscarFacturasPorCierre(idCierre, this.sucursalUsuarioActual())),
+        firstValueFrom(this.facturaService.buscarFacturasPorCierre(
+          idCierre,
+          cierre?.codsucursal || this.sucursalUsuarioActual(),
+          // En el historial, el cierre puede ser de una sucursal de otra empresa.
+          this.soloConsulta ? this.empresaDeSucursal(cierre?.codsucursal) : null,
+        )),
         // Si la tabla aun no existe o falla, no se bloquea la consulta de las cobradas.
         firstValueFrom(this.cierreService.consultarFacturasPendientesCierre(idCierre)).catch((error) => {
           console.error('Error consultando facturas pendientes del cierre', error);

@@ -260,6 +260,10 @@ export class Usuario implements OnInit {
           this.permisosMatrizNuevoUsuario,
           this.accionesPermisosCatalogo,
         );
+        this.asegurarAuditoriaCajaEnMatriz(
+          this.permisosMatrizNuevoUsuario,
+          this.accionesPermisosCatalogo,
+        );
         this.reAplicarTipoActualEnMatrizNuevoUsuario();
         this.actualizarGruposPermisosNuevo();
       },
@@ -403,6 +407,43 @@ export class Usuario implements OnInit {
       ruta: '/private/almacen/nota-credito',
       acciones,
       modo: 'v2',
+    });
+  }
+
+  /** Garantiza que Caja > Auditoria de caja aparezca en Accesos por modulo. */
+  private asegurarAuditoriaCajaEnMatriz(
+    filas: PermisoMatrizFila[],
+    accionesCatalogo: AccionCatalogoPermiso[],
+  ): void {
+    const recursos = [
+      {
+        recurso_key: 'caja.auditoria_facturas_por_cerrar',
+        pantalla_nombre: 'Auditoría de caja · Facturas por cerrar',
+        ruta: '/private/caja/auditoria/facturas-por-cerrar',
+      },
+      {
+        recurso_key: 'caja.auditoria_historial_cierres',
+        pantalla_nombre: 'Auditoría de caja · Historial de cierres',
+        ruta: '/private/caja/auditoria/historial-cierres',
+      },
+    ];
+
+    recursos.forEach((recurso) => {
+      if ((filas || []).some((fila) => String(fila?.recurso_key || '').trim() === recurso.recurso_key)) {
+        return;
+      }
+      const acciones: Record<string, boolean> = {};
+      (accionesCatalogo || []).forEach((accion) => {
+        acciones[String(accion?.accion_key || '').trim()] = false;
+      });
+      filas.push({
+        codusuario: null,
+        ...recurso,
+        modulo_key: 'caja',
+        modulo_nombre: 'Caja',
+        acciones,
+        modo: 'v2',
+      });
     });
   }
 
@@ -749,6 +790,10 @@ export class Usuario implements OnInit {
           ? data.filas.map((fila: PermisoMatrizFila) => this.normalizarRecursoPermiso(fila))
           : [];
         this.asegurarNotaCreditoAlmacenEnMatriz(
+          this.permisosMatrizEdicionUsuario,
+          this.accionesPermisosCatalogoEdicion,
+        );
+        this.asegurarAuditoriaCajaEnMatriz(
           this.permisosMatrizEdicionUsuario,
           this.accionesPermisosCatalogoEdicion,
         );

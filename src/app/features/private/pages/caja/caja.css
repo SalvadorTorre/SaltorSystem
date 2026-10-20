@@ -15,9 +15,16 @@
 
 .caja-menu-compacto {
   position: relative;
+  /* Contexto de apilamiento propio por encima del contenido de las paginas
+     (tarjetas, tablas con cabecera sticky, etc.) para que el menu abierto
+     nunca quede detras de los paneles. Queda por debajo de los modales (1055+). */
+  z-index: 1040;
 }
 
 .caja-dropdown {
+  z-index: 1041;
+  max-height: none;
+  overflow: visible;
   min-width: 290px;
   padding: 0.45rem;
   border: 1px solid #e5e7eb;
@@ -139,4 +146,30 @@
     min-height: auto;
     padding: 0.75rem;
   }
+}
+
+.caja-submenu-toggle {
+  cursor: pointer;
+}
+
+.caja-submenu {
+  margin: 0.15rem 0 0.25rem;
+  padding-left: 1.1rem;
+  border-left: 2px solid rgba(220, 53, 69, 0.25);
+  margin-left: 1rem;
+}
+
+.caja-submenu .dropdown-item {
+  font-size: 0.92rem;
+  padding: 0.45rem 0.65rem;
+}
+
+.caja-submenu-titulo {
+  color: #6b7280 !important;
+  font-weight: 700;
+  cursor: default;
+}
+
+.caja-submenu-item .nav-link {
+  padding-left: 2rem;
 }
