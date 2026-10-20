@@ -1,5 +1,10 @@
 <div class="container-fluid p-3 cuadre-page">
-  <div class="cuadre-tabs mb-3" role="tablist" aria-label="Opciones de cierre de caja">
+  <div *ngIf="soloConsulta" class="alert alert-info py-2 mb-3 d-flex align-items-center">
+    <i class="fas fa-history me-2"></i>
+    <span><strong>Auditoría de caja · Historial de cierres.</strong> Solo consulta de los cierres realizados.</span>
+  </div>
+
+  <div class="cuadre-tabs mb-3" role="tablist" aria-label="Opciones de cierre de caja" *ngIf="!soloConsulta">
     <button
       type="button"
       class="cuadre-tab"
@@ -18,7 +23,7 @@
     </button>
   </div>
 
-  <ng-container *ngIf="pestanaActiva === 'cierre'">
+  <ng-container *ngIf="pestanaActiva === 'cierre' && !soloConsulta">
   <div class="cuadre-hero mb-3">
     <div>
       <h2 class="text-primary mb-1"><i class="fas fa-cash-register me-2"></i>Cierre de Caja</h2>
@@ -175,7 +180,7 @@
       <div>
         <h2 class="text-primary mb-1"><i class="fas fa-clipboard-list me-2"></i>Consulta de cierres</h2>
         <div class="cuadre-meta">
-          <span>Sucursal: <strong>{{ sucursalUsuarioActual() || 'No definida' }}</strong></span>
+          <span>Sucursal: <strong>{{ soloConsulta ? nombreSucursalFiltro() : (sucursalUsuarioActual() || 'No definida') }}</strong></span>
           <span><strong>{{ totalCierres }}</strong> cierres encontrados</span>
         </div>
       </div>
@@ -184,6 +189,12 @@
     <form class="card shadow-sm border-0 mb-3 filtros-cierres" (ngSubmit)="consultarCierres(1)">
       <div class="card-body">
         <div class="row g-2 align-items-end">
+          <div class="col-12 col-md-3" *ngIf="soloConsulta">
+            <label class="form-label">Sucursal</label>
+            <select class="form-select" name="sucursalFiltro" [(ngModel)]="sucursalFiltro" (change)="consultarCierres(1)">
+              <option *ngFor="let s of sucursalesFiltro" [ngValue]="+s.cod_sucursal">{{ s.cod_sucursal }} · {{ s.nom_sucursal }}{{ s.cod_empre ? ' (' + s.cod_empre + ')' : '' }}</option>
+            </select>
+          </div>
           <div class="col-6 col-md-2">
             <label class="form-label">Número de cierre</label>
             <input type="number" min="1" class="form-control" name="idCierre" [(ngModel)]="filtrosCierres.idCierre" />

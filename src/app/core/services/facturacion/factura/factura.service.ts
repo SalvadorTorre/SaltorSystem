@@ -1382,7 +1382,16 @@ export class ServicioFacturacion {
     })());
   }
 
-  obtenerFacturasNoImpresas(pageIndex = 1, pageSize = 20, nombreCliente = ''): Observable<any> {
+  /**
+   * @param alcance Solo para Auditoria de caja: sucursal (y su empresa) elegida
+   * por el usuario. Sin valor se usa la sucursal activa.
+   */
+  obtenerFacturasNoImpresas(
+    pageIndex = 1,
+    pageSize = 20,
+    nombreCliente = '',
+    alcance?: { sucursal: number; empresa?: string | null } | null,
+  ): Observable<any> {
     const safePage = Math.max(1, Number(pageIndex) || 1);
     const safePageSize = Math.min(Math.max(10, Number(pageSize) || 20), 50);
     const fromRow = (safePage - 1) * safePageSize;
@@ -1419,7 +1428,13 @@ export class ServicioFacturacion {
         .range(fromRow, toRow);
       query = this.applyPendienteCajaFilter(query);
       query = this.applySinCierreCajaFilter(query);
-      query = this.applyTenantFilter(query);
+      if (!alcance || !(Number(alcance.sucursal) > 0)) {
+        query = this.applyTenantFilter(query);
+      } else {
+        const empresaAlcance = String(alcance.empresa || '').trim();
+        query = empresaAlcance ? query.eq('fa_codempr', empresaAlcance) : this.applyTenantCompanyFilter(query);
+        query = query.eq('fa_codsucu', Number(alcance.sucursal));
+      }
       if (nombre) {
         query = query.ilike('fa_nomclie', `%${nombre}%`);
       }
@@ -1889,7 +1904,12 @@ export class ServicioFacturacion {
     })());
   }
 
-  buscarFacturasPorCierre(idCierre: number | string, sucursalId?: number | string | null): Observable<any> {
+  /**
+   * @param empresa Empresa de la sucursal del cierre. Se usa en Auditoria de
+   * caja cuando el cierre es de una sucursal de otra empresa; sin valor se
+   * filtra por la empresa del usuario conectado.
+   */
+  buscarFacturasPorCierre(idCierre: number | string, sucursalId?: number | string | null, empresa?: string | null): Observable<any> {
     const cierre = this.toNumberOrNull(idCierre);
     const sucursal = this.toNumberOrNull(sucursalId);
     if (!cierre || cierre <= 0) {
@@ -1920,7 +1940,8 @@ export class ServicioFacturacion {
           .eq('fa_cierre', cierre)
           .order('fa_codfact', { ascending: true })
           .limit(batchSize);
-        query = this.applyTenantCompanyFilter(query);
+        const empresaCierre = String(empresa || '').trim();
+        query = empresaCierre ? query.eq('fa_codempr', empresaCierre) : this.applyTenantCompanyFilter(query);
         if (sucursal && sucursal > 0) {
           query = query.eq('fa_codsucu', sucursal);
         } else {

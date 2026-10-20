@@ -44,7 +44,8 @@ import { ServicioCuentaBancaria } from 'src/app/core/services/mantenimientos/cue
 import { ServicioItbis } from 'src/app/core/services/mantenimientos/itbis/itbis.service';
 import { SupabaseService } from 'src/app/core/services/supabase/supabase.service';
 import { AuthService } from 'src/app/core/services/auth/auth.service';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
+import { ServicioSucursal } from 'src/app/core/services/mantenimientos/sucursal/sucursal.service';
 
 declare var $: any;
 
@@ -184,6 +185,9 @@ export class CobroFact implements OnInit {
 
   sucursales = [];
   sucursalSeleccionada: any = null;
+  /** Auditoria: todas las sucursales existentes y la elegida (una a la vez). */
+  sucursalesAuditoria: any[] = [];
+  sucursalAuditoria = Number(localStorage.getItem('idSucursal') || 0) || 0;
   habilitarIcono: boolean = true;
   rncValue: string = '';
   cancelarBusquedaDescripcion: boolean = false;
@@ -604,6 +608,8 @@ export class CobroFact implements OnInit {
     private supabase: SupabaseService,
     private authService: AuthService,
     private router: Router,
+    private readonly route: ActivatedRoute,
+    private readonly servicioSucursal: ServicioSucursal,
   ) {
     this.form = this.fb.group({
       fa_codVend: ['', Validators.required], // El campo es requerido
@@ -634,6 +640,7 @@ export class CobroFact implements OnInit {
   selectedIndexdescripcionmerc = 1;
 
   ngOnInit(): void {
+    if (this.modoAuditoria) this.cargarSucursalesAuditoria();
     this.buscarFacturasNoImpresas();
     this.obtenerNcf();
     this.obtenerfpago();
@@ -1009,6 +1016,7 @@ export class CobroFact implements OnInit {
       safePage,
       this.facturasCajaPageSize,
       this.txtNombre,
+      this.modoAuditoria ? this.alcanceSucursalAuditoria() : undefined,
     ).subscribe({
       next: (resp) => {
         const rows = Array.isArray(resp?.data) ? resp.data : [];
@@ -1050,6 +1058,45 @@ export class CobroFact implements OnInit {
         Swal.fire('Error', this.extraerMensajeError(err), 'error');
       },
     });
+  }
+
+  private cargarSucursalesAuditoria(): void {
+    this.servicioSucursal.buscarTodasSucursal().subscribe({
+      next: (resp: any) => {
+        const lista = Array.isArray(resp?.data) ? resp.data : [];
+        this.sucursalesAuditoria = lista
+          .filter((s: any) => Number(s?.cod_sucursal) > 0)
+          .sort((a: any, b: any) => Number(a?.cod_sucursal) - Number(b?.cod_sucursal));
+        const existe = this.sucursalesAuditoria.some((s) => Number(s.cod_sucursal) === Number(this.sucursalAuditoria));
+        if (!existe && this.sucursalesAuditoria.length) {
+          this.sucursalAuditoria = Number(this.sucursalesAuditoria[0].cod_sucursal);
+          this.buscarFacturasNoImpresas(true, 1);
+        }
+      },
+      error: (err) => console.error('Error cargando sucursales para auditoria', err),
+    });
+  }
+
+  private alcanceSucursalAuditoria(): { sucursal: number; empresa?: string | null } | null {
+    const id = Number(this.sucursalAuditoria) || 0;
+    if (!id) return null;
+    const sucursal = this.sucursalesAuditoria.find((s) => Number(s.cod_sucursal) === id);
+    return { sucursal: id, empresa: sucursal?.cod_empre || null };
+  }
+
+  cambiarSucursalAuditoria(): void {
+    this.selectedFacturaIndex = -1;
+    this.limpia();
+    this.buscarFacturasNoImpresas(true, 1);
+  }
+
+  /** Alcance para cargar una factura de otra sucursal en auditoria. */
+  private scopeAuditoria(factura: any): { empresa?: string | null; sucursal?: number | string | null } | undefined {
+    if (!this.modoAuditoria) return undefined;
+    return {
+      empresa: factura?.fa_codEmpr || factura?.fa_codempr || null,
+      sucursal: factura?.fa_codSucu ?? factura?.fa_codsucu ?? null,
+    };
   }
 
   buscarClienteFacturasCaja(): void {
@@ -1135,7 +1182,7 @@ export class CobroFact implements OnInit {
     const detalleRequestId = ++this.detalleFacturaRequestSeq;
     this.items = [];
     this.servicioFacturacion
-      .buscarFacturaDetalle(factura.fa_codFact)
+      .buscarFacturaDetalle(factura.fa_codFact, this.scopeAuditoria(factura))
       .subscribe((response) => {
         if (!this.cargaDetalleActual(detalleRequestId, factura.fa_codFact)) {
           return;
@@ -1285,6 +1332,15 @@ export class CobroFact implements OnInit {
   }
 
   // --- Funciones para manejar teclas ---
+  /**
+   * Auditoria de caja > Facturas por cerrar: la misma pantalla en modo solo
+   * lectura (ruta con data.soloLectura). Se puede consultar, pero no cobrar,
+   * editar, imprimir ni guardar.
+   */
+  get modoAuditoria(): boolean {
+    return this.route.snapshot.pathFromRoot.some((r) => !!r.data?.['soloLectura']);
+  }
+
   @HostListener('window:keydown', ['$event'])
   handleKeyboardEvent(event: KeyboardEvent) {
     if (
@@ -1307,6 +1363,8 @@ export class CobroFact implements OnInit {
         return;
       }
     }
+    // En auditoria solo se permite navegar la lista con las flechas.
+    if (this.modoAuditoria) return;
     if (event.key === 'F2') {
       this.limpia();
     }
@@ -1610,7 +1668,7 @@ export class CobroFact implements OnInit {
       return;
     }
 
-    this.servicioFacturacion.getByNumero(codigo).subscribe({
+    this.servicioFacturacion.getByNumero(codigo, this.scopeAuditoria(facturaResumen)).subscribe({
       next: (response: any) => {
         const facturaCompleta = response?.data;
         if (!facturaCompleta) {

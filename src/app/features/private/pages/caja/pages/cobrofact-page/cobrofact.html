@@ -1,4 +1,8 @@
 <div class="container-fluid px-1 py-1 compact-form cobrofact-page">
+  <div *ngIf="modoAuditoria" class="alert alert-info py-1 px-2 mb-1 d-flex align-items-center">
+    <i class="bi bi-shield-check me-2"></i>
+    <span><strong>Auditoría de caja · Facturas por cerrar.</strong> Vista de solo lectura: facturas pendientes de cierre y de cobro.</span>
+  </div>
   <div class="row g-1">
     <div class="col-xl-8 col-lg-7 col-md-12">
       <div class="card shadow-sm cobrofact-card">
@@ -22,6 +26,19 @@
         </div>
         <div class="card-body bg-light p-1">
           <div class="cobrofact-toolbar">
+            <div *ngIf="modoAuditoria" class="input-group input-group-sm mb-1">
+              <span class="input-group-text"><i class="bi bi-shop me-1"></i>Sucursal</span>
+              <select
+                class="form-select"
+                [(ngModel)]="sucursalAuditoria"
+                (change)="cambiarSucursalAuditoria()"
+                [disabled]="cargandoFacturasCaja"
+              >
+                <option *ngFor="let s of sucursalesAuditoria" [ngValue]="+s.cod_sucursal">
+                  {{ s.cod_sucursal }} · {{ s.nom_sucursal }}{{ s.cod_empre ? ' (' + s.cod_empre + ')' : '' }}
+                </option>
+              </select>
+            </div>
             <div class="input-group input-group-sm">
               <span class="input-group-text"><i class="bi bi-search"></i></span>
               <input
@@ -110,7 +127,7 @@
                   <td class="text-center">
                     <div class="btn-group btn-group-sm">
                       <button
-                        *ngIf="!esFacturaPagadaConsulta(factura)"
+                        *ngIf="!modoAuditoria && !esFacturaPagadaConsulta(factura)"
                         class="btn btn-outline-primary btn-icon"
                         [disabled]="facturaCuadrada(factura)"
                         (click)="$event.stopPropagation(); editarFacturacion(factura)"
@@ -162,7 +179,7 @@
 
           <div class="form-check form-switch mb-1">
             <input
-              [disabled]="chekpagada"
+              [disabled]="chekpagada || modoAuditoria"
               type="checkbox"
               id="chk1"
               class="form-check-input"
@@ -180,7 +197,7 @@
                 name="formapago"
                 [(ngModel)]="ftipoPago"
                 class="form-select"
-                [disabled]="!hayFacturaSeleccionada || facturaSoloConsulta"
+                [disabled]="!hayFacturaSeleccionada || facturaSoloConsulta || modoAuditoria"
                 (change)="onTipoPagoChange()"
               >
                 <option [value]="fpago.fp_codfpago" *ngFor="let fpago of resultadoFpago">
@@ -194,7 +211,7 @@
                 #formaEntregaSelect
                 class="form-select"
                 [(ngModel)]="fentrega"
-                [disabled]="!hayFacturaSeleccionada || facturaSoloConsulta"
+                [disabled]="!hayFacturaSeleccionada || facturaSoloConsulta || modoAuditoria"
                 (change)="onEntregaChange()"
               >
                 <option [value]="fe.idfentrega" *ngFor="let fe of resultadoFentrega">{{ fe.desentrega }}</option>
@@ -220,7 +237,7 @@
                   class="form-control fw-bold"
                   [ngClass]="{ 'is-invalid': valorPagado < formularioFacturacion.get('fa_valFact')?.value }"
                   [value]="valorPagado"
-                  [disabled]="txtvalPagado"
+                  [disabled]="txtvalPagado || modoAuditoria"
                   (input)="onValorPagadoChange($event)"
                 />
               </div>
@@ -256,7 +273,7 @@
             </div>
           </div>
 
-          <div class="action-bar d-grid gap-1 mt-1">
+          <div class="action-bar d-grid gap-1 mt-1" *ngIf="!modoAuditoria">
             <button class="btn btn-success btn-sm" [disabled]="!puedeActivarGuardarPagoEntrega" (click)="guardarPagoEntrega()">
               <i class="bi bi-save me-1"></i>Guardar
             </button>

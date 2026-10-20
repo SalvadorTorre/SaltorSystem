@@ -33,6 +33,19 @@ const routes: Routes = [
           data: { accessPath: '/private/caja/cuadrecaja' },
           loadChildren: () => import('./pages/cuadecaja-page/cuadrecaja-modulo').then(m => m.ModuloCuadreCaja)
         },
+        // Auditoria de caja: mismas pantallas en modo solo lectura.
+        {
+          path:"auditoria/facturas-por-cerrar",
+          canActivate: [permissionGuard],
+          data: { accessPath: '/private/caja/auditoria/facturas-por-cerrar', soloLectura: true },
+          loadChildren: () => import('./pages/cobrofact-page/cobrofact-modulo').then(m => m.ModuloCobroFact)
+        },
+        {
+          path:"auditoria/historial-cierres",
+          canActivate: [permissionGuard],
+          data: { accessPath: '/private/caja/auditoria/historial-cierres', soloConsulta: true },
+          loadChildren: () => import('./pages/cuadecaja-page/cuadrecaja-modulo').then(m => m.ModuloCuadreCaja)
+        },
         {
           path:"reciboingreso",
           canActivate: [permissionGuard],

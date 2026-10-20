@@ -124,6 +124,56 @@ export class ServicioPermiso {
     if (!accionesError) {
       this.recursoNotaCreditoAlmacenSincronizado = true;
     }
+
+    await this.asegurarRecursosAuditoriaCaja();
+  }
+
+  private recursosAuditoriaCajaSincronizados = false;
+
+  /**
+   * Igual que Nota de Credito: registra en el catalogo las pantallas de
+   * Auditoria de caja si la migracion 20261020140000 aun no se ejecuto.
+   */
+  private async asegurarRecursosAuditoriaCaja(): Promise<void> {
+    if (this.recursosAuditoriaCajaSincronizados) return;
+
+    const { error: recursoError } = await this.db
+      .from("permiso_recurso_catalogo")
+      .upsert([
+        {
+          modulo_key: "caja",
+          modulo_nombre: "Caja",
+          recurso_key: "caja.auditoria_facturas_por_cerrar",
+          pantalla_nombre: "Auditoría de caja · Facturas por cerrar",
+          ruta: "/private/caja/auditoria/facturas-por-cerrar",
+          activo: true,
+          requiere_tenant: true,
+          orden: 74,
+        },
+        {
+          modulo_key: "caja",
+          modulo_nombre: "Caja",
+          recurso_key: "caja.auditoria_historial_cierres",
+          pantalla_nombre: "Auditoría de caja · Historial de cierres",
+          ruta: "/private/caja/auditoria/historial-cierres",
+          activo: true,
+          requiere_tenant: true,
+          orden: 75,
+        },
+      ], { onConflict: "recurso_key" });
+    if (recursoError) return;
+
+    const { error: accionesError } = await this.db
+      .from("permiso_recurso_accion_catalogo")
+      .upsert([
+        { recurso_key: "caja.auditoria_facturas_por_cerrar", accion_key: "ver", activo: true },
+        { recurso_key: "caja.auditoria_historial_cierres", accion_key: "ver", activo: true },
+        { recurso_key: "caja.auditoria_historial_cierres", accion_key: "imprimir", activo: true },
+      ], { onConflict: "recurso_key,accion_key" });
+
+    if (!accionesError) {
+      this.recursosAuditoriaCajaSincronizados = true;
+    }
   }
 
   private async isPermisoV2Disponible(): Promise<boolean> {
