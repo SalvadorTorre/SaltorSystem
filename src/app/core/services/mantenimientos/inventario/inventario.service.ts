@@ -435,6 +435,34 @@ export class ServicioInventario {
     const limite = Math.min(Math.max(Number(params?.limite) || 50, 1), 200);
     return from((async () => {
       if (!suc || (!codigo && !descripcion)) return [];
+
+      // Igual que la pantalla de Inventario por sucursal: la RPC
+      // listar_inventario_sucursal (security definer) evita la RLS fila por
+      // fila de la tabla inventario, que hacia fallar la consulta directa.
+      const { data: rpcData, error: rpcError } = await (this.db as any).rpc('listar_inventario_sucursal', {
+        p_inv_codsucu: suc,
+        p_limit: params?.exacto ? 200 : limite,
+        p_offset: 0,
+        p_codigo: codigo || null,
+        p_descripcion: codigo ? null : descripcion || null,
+      });
+      if (!rpcError) {
+        let filas = (Array.isArray(rpcData) ? rpcData : []).map((row: any) => this.mapInventarioSucursal(row));
+        if (codigo && params?.exacto) {
+          filas = filas.filter((r: any) => String(r.in_codmerc).trim().toUpperCase() === codigo.toUpperCase());
+        } else if (!codigo && descripcion) {
+          // Primero las que empiezan con lo escrito.
+          const d = descripcion.toUpperCase();
+          filas.sort((a: any, b: any) => {
+            const pa = String(a.in_desmerc || '').toUpperCase().startsWith(d) ? 0 : 1;
+            const pb = String(b.in_desmerc || '').toUpperCase().startsWith(d) ? 0 : 1;
+            return pa - pb || String(a.in_desmerc || '').localeCompare(String(b.in_desmerc || ''));
+          });
+        }
+        return filas.slice(0, limite);
+      }
+      console.warn('listar_inventario_sucursal no disponible; consulta directa a inventario.', rpcError);
+
       let query = this.db.from('inventario').select('*').eq('inv_codsucu', suc);
       if (codigo) {
         query = params?.exacto
