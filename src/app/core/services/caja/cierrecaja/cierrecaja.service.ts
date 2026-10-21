@@ -105,6 +105,73 @@ export class ServicioCierreCaja {
     })());
   }
 
+  /**
+   * Cierre atomico (RPC myappdb.realizar_cierre_caja): crea el cierre, marca
+   * las facturas cobradas y guarda las de credito/pendientes en una sola
+   * transaccion con bloqueo por sucursal. Devuelve null si la funcion aun no
+   * existe en la base, para usar el flujo anterior.
+   */
+  realizarCierreAtomico(
+    data: any,
+    facturasCobradas: string[],
+    facturasPendientes: Array<{ factura: string; fechaFactura?: any; cliente?: string | null; vendedor?: string | null; tipo?: string | null; formaPago?: string | null; estado?: string | null; valor?: number | null }>,
+  ): Observable<any> {
+    const codsucursal = this.toNumber(data?.codsucursal ?? data?.idsucursal ?? data?.idSucursal);
+    const cierre = {
+      feccierre: this.normalizeDate(data?.feccierre) || this.normalizeDate(new Date()),
+      tefectivo: this.toNumber(data?.tefectivo ?? data?.efectivo),
+      ttarjeta: this.toNumber(data?.ttarjeta ?? data?.tarjeta),
+      tdeposito: this.toNumber(data?.tdeposito ?? data?.deposito),
+      totalcierre: this.toNumber(data?.totalcierre ?? data?.montocierre),
+      tcheque: this.toNumber(data?.tcheque ?? data?.cheque),
+      tcredito: this.toNumber(data?.tcredito ?? data?.credito),
+      tpendiente: this.toNumber(data?.tpendiente ?? data?.pendiente),
+      factini: data?.factini ?? null,
+      factfin: data?.factfin ?? null,
+      codsucursal: codsucursal > 0 ? codsucursal : null,
+      cajera: data?.cajera ?? localStorage.getItem('nombreusuario') ?? null,
+      nota: data?.nota ?? null,
+    };
+    const pendientes = (facturasPendientes || [])
+      .filter((f) => String(f?.factura || '').trim())
+      .map((f) => ({
+        factura: String(f.factura).trim(),
+        fecha_factura: this.normalizeDate(f.fechaFactura),
+        cliente: f.cliente ?? null,
+        vendedor: f.vendedor ?? null,
+        tipo: f.tipo ?? null,
+        forma_pago: f.formaPago ?? null,
+        estado: f.estado ?? null,
+        valor: this.toNumber(f.valor),
+      }));
+
+    return from((async () => {
+      if (!this.useSupabase) return null;
+      const { data: resultado, error } = await this.db.rpc('realizar_cierre_caja', {
+        p_cierre: cierre,
+        p_facturas_cobradas: (facturasCobradas || []).map((c) => String(c || '').trim()).filter(Boolean),
+        p_facturas_pendientes: pendientes,
+      });
+      if (error) {
+        if (String(error?.code || '') === 'PGRST202') {
+          console.warn('RPC realizar_cierre_caja no instalada; se usa el flujo anterior.', error);
+          return null;
+        }
+        console.error('Error en realizar_cierre_caja', { cierre, error });
+        throw error;
+      }
+      return {
+        status: 'success',
+        code: 200,
+        data: {
+          cierre: this.mapRow(resultado?.cierre),
+          marcadas: this.toNumber(resultado?.marcadas),
+          pendientes: this.toNumber(resultado?.pendientes),
+        },
+      };
+    })());
+  }
+
   crearCierre(data: any): Observable<any> {
     if (!this.useSupabase) {
       return this.http.PostRequest<any, any>('/cierrecaja', data);

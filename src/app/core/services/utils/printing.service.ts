@@ -197,6 +197,45 @@ export class PrintingService {
     return new Promise((resolve) => setTimeout(resolve, 900));
   }
 
+  /**
+   * Alto exacto de una copia termica: se dibuja la copia en un PDF de medicion
+   * (pagina de 5000 mm) y se toma hasta donde llego el contenido. Asi la
+   * factura/conduce sale en una tira continua sin cortar nada, tenga los
+   * items que tenga y aunque las descripciones ocupen varias lineas.
+   * Si la medicion falla, se usa la estimacion anterior.
+   */
+  private async medirAltoTermico(
+    tipo: 'factura' | 'conduce',
+    facturaData: any,
+    items: any[],
+    hideInvoiceDetails: boolean,
+    copyLabel?: string,
+  ): Promise<number> {
+    const estimado = tipo === 'factura'
+      ? this.altoPaginaTermicaFactura(facturaData, items, hideInvoiceDetails, copyLabel)
+      : this.altoPaginaTermicaConduce(facturaData, items, hideInvoiceDetails, copyLabel);
+    try {
+      const medidor = new jsPDF({ orientation: 'p', unit: 'mm', format: [80, 5000] });
+      const datos = {
+        ...facturaData,
+        __singlePrintCopy: true,
+        __copyLabel: copyLabel,
+        __hideInvoiceDetails: hideInvoiceDetails,
+        __sharedDoc: medidor,
+        __deferPrint: true,
+      };
+      const y = tipo === 'factura'
+        ? await this.imprimirFactura80mm(datos, items)
+        : await this.imprimirConduceFactura80mm(datos, items);
+      if (typeof y === 'number' && Number.isFinite(y) && y > 0) {
+        return Math.min(5000, Math.max(120, Math.ceil(y + 6)));
+      }
+    } catch (error) {
+      console.warn('No se pudo medir el alto de la impresion termica; se usa la estimacion.', error);
+    }
+    return estimado;
+  }
+
   private altoPaginaTermicaFactura(
     facturaData: any,
     items: any[],
@@ -253,7 +292,7 @@ export class PrintingService {
    * @param facturaData The invoice header data.
    * @param items The list of items in the invoice.
    */
-  async imprimirFactura80mm(facturaData: any, items: any[]) {
+  async imprimirFactura80mm(facturaData: any, items: any[]): Promise<number | void> {
     try {
       console.log('Iniciando impresión de factura...', facturaData);
       console.log('JsBarcode loaded:', !!JsBarcode);
@@ -307,24 +346,20 @@ export class PrintingService {
           return;
         }
 
+        // Alto real de cada copia (se mide dibujandola), para que ninguna se corte.
+        const altosCopias: number[] = [];
+        for (const copia of copias) {
+          altosCopias.push(await this.medirAltoTermico('factura', facturaData, items, copia.hideDetails, copia.label));
+        }
         const doc = new jsPDF({
           orientation: 'p',
           unit: 'mm',
-          format: [
-            80,
-            this.altoPaginaTermicaFactura(facturaData, items, copias[0].hideDetails, copias[0].label),
-          ],
+          format: [80, altosCopias[0]],
         });
 
         for (const [index, copia] of copias.entries()) {
           if (index > 0) {
-            (doc as any).addPage(
-              [
-                80,
-                this.altoPaginaTermicaFactura(facturaData, items, copia.hideDetails, copia.label),
-              ],
-              'p',
-            );
+            (doc as any).addPage([80, altosCopias[index]], 'p');
           }
           await this.imprimirFactura80mm(
             {
@@ -354,12 +389,7 @@ export class PrintingService {
           unit: 'mm',
           format: [
             80,
-            this.altoPaginaTermicaFactura(
-              facturaData,
-              items,
-              hideInvoiceDetails,
-              copyLabel,
-            ),
+            await this.medirAltoTermico('factura', facturaData, items, hideInvoiceDetails, copyLabel),
           ],
         });
 
@@ -971,6 +1001,7 @@ export class PrintingService {
         const pdfBlob = doc.output('blob');
         await this.printBlob(pdfBlob, 'factura');
       }
+      return yPos;
     } catch (error) {
       console.error('Error fatal al generar factura:', error);
     }
@@ -1844,7 +1875,7 @@ items.forEach((it: any) => {
     } catch {}
   }
 
-  async imprimirConduceFactura80mm(facturaData: any, items: any[]) {
+  async imprimirConduceFactura80mm(facturaData: any, items: any[]): Promise<number | void> {
     try {
       const facturaRoot = this.datosFacturaImpresion(facturaData);
       const fpago = String(
@@ -1896,24 +1927,20 @@ items.forEach((it: any) => {
           return;
         }
 
+        // Alto real de cada copia (se mide dibujandola), para que ninguna se corte.
+        const altosCopias: number[] = [];
+        for (const copia of copias) {
+          altosCopias.push(await this.medirAltoTermico('conduce', facturaData, items, copia.hideDetails, copia.label));
+        }
         const doc = new jsPDF({
           orientation: 'p',
           unit: 'mm',
-          format: [
-            80,
-            this.altoPaginaTermicaConduce(facturaData, items, copias[0].hideDetails, copias[0].label),
-          ],
+          format: [80, altosCopias[0]],
         });
 
         for (const [index, copia] of copias.entries()) {
           if (index > 0) {
-            (doc as any).addPage(
-              [
-                80,
-                this.altoPaginaTermicaConduce(facturaData, items, copia.hideDetails, copia.label),
-              ],
-              'p',
-            );
+            (doc as any).addPage([80, altosCopias[index]], 'p');
           }
           await this.imprimirConduceFactura80mm(
             {
@@ -1943,12 +1970,7 @@ items.forEach((it: any) => {
           unit: 'mm',
           format: [
             80,
-            this.altoPaginaTermicaConduce(
-              facturaData,
-              items,
-              hideInvoiceDetails,
-              copyLabel,
-            ),
+            await this.medirAltoTermico('conduce', facturaData, items, hideInvoiceDetails, copyLabel),
           ],
         });
       const pageWidth = 78;
@@ -2356,6 +2378,7 @@ items.forEach((it: any) => {
         const pdfBlob = doc.output('blob');
         await this.printBlob(pdfBlob, 'reporte');
       }
+      return yPos;
     } catch (error) {
       console.error('Error al generar conduce:', error);
     }
@@ -2363,275 +2386,285 @@ items.forEach((it: any) => {
 
   async imprimirCotizacion80mm(cotizacionData: any, items: any[], itbisGeneral?: any) {
     try {
-      const doc = new jsPDF({
-        orientation: 'p',
-        unit: 'mm',
-        format: [80, 297],
-      });
-      const pageWidth = 74;
-      const leftMargin = 3;
-      const rightMargin = 7;
-      const centerX = (leftMargin + (pageWidth - rightMargin)) / 2;
-      let yPos = 5;
+      // El rollo de 80 mm se imprime en UNA sola pagina continua del alto
+      // exacto del contenido. Antes la pagina medía 297 mm fijos y, con muchos
+      // items, todo lo que pasaba de ese alto se cortaba.
+      const dibujar = (doc: jsPDF): number => {
+        const pageWidth = 74;
+        const leftMargin = 3;
+        const rightMargin = 7;
+        const centerX = (leftMargin + (pageWidth - rightMargin)) / 2;
+        let yPos = 5;
 
-      const formatoMoneda = new Intl.NumberFormat('es-DO', {
-        style: 'decimal',
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      });
-      const formatDate = (value: any): string => {
-        const date = this.parseInvoiceDateTime(value);
-        const day = String(date.getDate()).padStart(2, '0');
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const year = date.getFullYear();
-        return `${day}/${month}/${year}`;
-      };
-      const centerText = (text: string | string[], y: number, options?: any) => {
-        doc.text(text, centerX, y, { align: 'center', ...options });
-      };
-      const drawDashedLine = (y: number) => {
-        (doc as any).setLineDash([1, 1], 0);
-        doc.line(leftMargin, y, pageWidth - rightMargin, y);
-        (doc as any).setLineDash([], 0);
-      };
-      const pick = (...values: any[]): string => {
-        for (const value of values) {
-          const text = String(value ?? '').trim();
-          if (text) return text;
-        }
-        return '';
-      };
-      const porcentajeItbis = Number(
-        itbisGeneral?.porcentaje ??
-          itbisGeneral?.itebis ??
-          itbisGeneral?.itbis ??
-          18,
-      ) || 0;
-      const porcentajeMenos = Number(
-        itbisGeneral?.porcentaje_menos ??
-          itbisGeneral?.itbismeno ??
-          itbisGeneral?.itbis_menos ??
-          itbisGeneral?.porcentajemenos ??
-          (porcentajeItbis ? porcentajeItbis / (1 + porcentajeItbis / 100) : 0),
-      ) || 0;
-      const tasaMenos = porcentajeMenos / 100;
+        const formatoMoneda = new Intl.NumberFormat('es-DO', {
+          style: 'decimal',
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        });
+        const formatDate = (value: any): string => {
+          const date = this.parseInvoiceDateTime(value);
+          const day = String(date.getDate()).padStart(2, '0');
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const year = date.getFullYear();
+          return `${day}/${month}/${year}`;
+        };
+        const centerText = (text: string | string[], y: number, options?: any) => {
+          doc.text(text, centerX, y, { align: 'center', ...options });
+        };
+        const drawDashedLine = (y: number) => {
+          (doc as any).setLineDash([1, 1], 0);
+          doc.line(leftMargin, y, pageWidth - rightMargin, y);
+          (doc as any).setLineDash([], 0);
+        };
+        const pick = (...values: any[]): string => {
+          for (const value of values) {
+            const text = String(value ?? '').trim();
+            if (text) return text;
+          }
+          return '';
+        };
+        const porcentajeItbis = Number(
+          itbisGeneral?.porcentaje ??
+            itbisGeneral?.itebis ??
+            itbisGeneral?.itbis ??
+            18,
+        ) || 0;
+        const porcentajeMenos = Number(
+          itbisGeneral?.porcentaje_menos ??
+            itbisGeneral?.itbismeno ??
+            itbisGeneral?.itbis_menos ??
+            itbisGeneral?.porcentajemenos ??
+            (porcentajeItbis ? porcentajeItbis / (1 + porcentajeItbis / 100) : 0),
+        ) || 0;
+        const tasaMenos = porcentajeMenos / 100;
 
-      let empresa = 'CENTRO HIERRO MARCOS SRL';
-      let direccion = 'CALLE 30 DE MARZO NO. 54';
-      let telefono = '809-547-0022';
-      let rncEmpresa = '101-66762-2';
+        let empresa = 'CENTRO HIERRO MARCOS SRL';
+        let direccion = 'CALLE 30 DE MARZO NO. 54';
+        let telefono = '809-547-0022';
+        let rncEmpresa = '101-66762-2';
 
-      try {
-        const empresaStorage = localStorage.getItem('empresa');
-        if (empresaStorage && empresaStorage !== '[object Object]') {
-          let parsedEmpresa = JSON.parse(empresaStorage);
-          if (Array.isArray(parsedEmpresa)) parsedEmpresa = parsedEmpresa[0];
-          if (parsedEmpresa) {
-            if (typeof parsedEmpresa === 'string') {
-              empresa = parsedEmpresa;
-              direccion = localStorage.getItem('direccion_empresa') || direccion;
-              telefono = localStorage.getItem('telefono_empresa') || telefono;
-              rncEmpresa = localStorage.getItem('rnc_empresa') || rncEmpresa;
-            } else {
-              empresa = parsedEmpresa.nom_empre || empresa;
-              direccion = this.direccionSucursalImpresion(direccion);
-              telefono = this.telefonoSucursalImpresion(telefono);
-              rncEmpresa = parsedEmpresa.rnc_empre || rncEmpresa;
+        try {
+          const empresaStorage = localStorage.getItem('empresa');
+          if (empresaStorage && empresaStorage !== '[object Object]') {
+            let parsedEmpresa = JSON.parse(empresaStorage);
+            if (Array.isArray(parsedEmpresa)) parsedEmpresa = parsedEmpresa[0];
+            if (parsedEmpresa) {
+              if (typeof parsedEmpresa === 'string') {
+                empresa = parsedEmpresa;
+                direccion = localStorage.getItem('direccion_empresa') || direccion;
+                telefono = localStorage.getItem('telefono_empresa') || telefono;
+                rncEmpresa = localStorage.getItem('rnc_empresa') || rncEmpresa;
+              } else {
+                empresa = parsedEmpresa.nom_empre || empresa;
+                direccion = this.direccionSucursalImpresion(direccion);
+                telefono = this.telefonoSucursalImpresion(telefono);
+                rncEmpresa = parsedEmpresa.rnc_empre || rncEmpresa;
+              }
             }
           }
+        } catch (error) {
+          console.warn('Error recuperando datos de empresa para cotizacion', error);
         }
-      } catch (error) {
-        console.warn('Error recuperando datos de empresa para cotizacion', error);
-      }
-      empresa = String(
-        localStorage.getItem('nombre_empresa') || empresa,
-      ).trim();
-      rncEmpresa = String(
-        localStorage.getItem('rnc_empresa') || rncEmpresa,
-      ).trim();
-      direccion = this.direccionSucursalImpresion(direccion);
-      telefono = this.telefonoSucursalImpresion(telefono);
+        empresa = String(
+          localStorage.getItem('nombre_empresa') || empresa,
+        ).trim();
+        rncEmpresa = String(
+          localStorage.getItem('rnc_empresa') || rncEmpresa,
+        ).trim();
+        direccion = this.direccionSucursalImpresion(direccion);
+        telefono = this.telefonoSucursalImpresion(telefono);
 
-      try {
-        const imgData = 'assets/logo2.png';
-        const imgWidth = 20;
-        const imgHeight = 20;
-        doc.addImage(imgData, 'PNG', centerX - imgWidth / 2, yPos, imgWidth, imgHeight);
-        yPos += imgHeight + 4;
-      } catch {
-        yPos += 3;
-      }
-
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(10);
-      centerText(empresa, yPos);
-      yPos += 4.5;
-
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(8);
-      const dirSplit = doc.splitTextToSize(direccion, pageWidth - leftMargin - rightMargin);
-      centerText(dirSplit, yPos);
-      yPos += dirSplit.length * 4;
-      centerText(`Tel: ${telefono}`, yPos);
-      yPos += 4;
-      centerText(`RNC: ${rncEmpresa}`, yPos);
-      yPos += 5;
-
-      drawDashedLine(yPos);
-      yPos += 5;
-
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(12);
-      centerText('COTIZACION', yPos);
-      yPos += 5.5;
-
-      const numero = pick(cotizacionData?.ct_codcoti, cotizacionData?.numero);
-      const fecha = pick(cotizacionData?.ct_feccoti, cotizacionData?.fecha);
-      const vendedor = pick(
-        cotizacionData?.ct_nomvend,
-        cotizacionData?.nombreVendedor,
-        cotizacionData?.nombreusuario,
-        cotizacionData?.nombreUsuario,
-        cotizacionData?.ct_codvend
-      );
-      const cliente = pick(cotizacionData?.ct_nomclie, 'CLIENTE GENERICO');
-      const rncCliente = pick(cotizacionData?.ct_rnc);
-      const telefonoCliente = pick(cotizacionData?.ct_telclie);
-      const direccionCliente = pick(cotizacionData?.ct_dirclie);
-
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(8.5);
-      doc.text(`No.: ${numero}`, leftMargin, yPos);
-      yPos += 4.5;
-      doc.text(`Fecha: ${fecha ? formatDate(fecha) : formatDate(new Date())}`, leftMargin, yPos);
-      if (vendedor) {
-        const textoVendedor = `Vendedor: ${vendedor}`;
-        let tamanoVendedor = 7.5;
-        doc.setFontSize(tamanoVendedor);
-        while (doc.getTextWidth(textoVendedor) > 39 && tamanoVendedor > 5.5) {
-          tamanoVendedor -= 0.25;
-          doc.setFontSize(tamanoVendedor);
+        try {
+          const imgData = 'assets/logo2.png';
+          const imgWidth = 20;
+          const imgHeight = 20;
+          doc.addImage(imgData, 'PNG', centerX - imgWidth / 2, yPos, imgWidth, imgHeight);
+          yPos += imgHeight + 4;
+        } catch {
+          yPos += 3;
         }
-        doc.text(textoVendedor, pageWidth - rightMargin, yPos, { align: 'right' });
-        doc.setFontSize(8.5);
-      }
-      yPos += 4.5;
 
-      drawDashedLine(yPos);
-      yPos += 5;
-
-      doc.setFont('helvetica', 'bold');
-      doc.text('CLIENTE', leftMargin, yPos);
-      yPos += 4.5;
-      doc.setFont('helvetica', 'bold');
-      const clienteSplit = doc.splitTextToSize(cliente, pageWidth - leftMargin - rightMargin);
-      doc.text(clienteSplit, leftMargin, yPos);
-      yPos += clienteSplit.length * 4;
-      if (rncCliente) {
-        doc.text(`RNC/Cedula: ${rncCliente}`, leftMargin, yPos);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(10);
+        centerText(empresa, yPos);
         yPos += 4.5;
-      }
-      if (telefonoCliente) {
-        doc.text(`Tel.: ${telefonoCliente}`, leftMargin, yPos);
-        yPos += 4.5;
-      }
-      if (direccionCliente) {
-        const direccionSplit = doc.splitTextToSize(`Dir.: ${direccionCliente}`, pageWidth - leftMargin - rightMargin);
-        doc.text(direccionSplit, leftMargin, yPos);
-        yPos += direccionSplit.length * 4;
-      }
 
-      drawDashedLine(yPos);
-      yPos += 5;
-
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(7.2);
-      const xCant = leftMargin;
-      const xDesc = leftMargin;
-      const xPrecio = 24;
-      const xItbis = 45;
-      const xTotal = pageWidth - rightMargin;
-      doc.text('DESC', xDesc, yPos);
-      doc.text('CANT', xTotal, yPos, { align: 'right' });
-      yPos += 4;
-      doc.text('PRECIO', xPrecio, yPos, { align: 'right' });
-      doc.text('ITBIS', xItbis, yPos, { align: 'right' });
-      doc.text('TOTAL', xTotal, yPos, { align: 'right' });
-      yPos += 3;
-      drawDashedLine(yPos);
-      yPos += 4;
-
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(7.2);
-      let subtotal = 0;
-      let totalItbis = 0;
-      let totalIncluido = 0;
-
-      (items || []).forEach((item: any) => {
-        const cantidad = Number(item?.dc_canmerc ?? item?.cantidad ?? 0) || 0;
-        const precio = Number(item?.dc_premerc ?? item?.precio ?? 0) || 0;
-        const total = Number(item?.dc_valmerc ?? item?.total ?? cantidad * precio) || 0;
-        const itbisItem = total * tasaMenos;
-        const subtotalItem = total - itbisItem;
-        const precioSinItbis = cantidad ? subtotalItem / cantidad : subtotalItem;
-        const descripcion = pick(
-          item?.dc_descrip,
-          item?.descripcion,
-          item?.producto?.in_desmerc,
-        );
-        subtotal += subtotalItem;
-        totalItbis += itbisItem;
-        totalIncluido += total;
-
-        let descripcionCorta = descripcion;
-        const anchoDescripcion = xTotal - xDesc - 13;
-        while (descripcionCorta && doc.getTextWidth(descripcionCorta) > anchoDescripcion) {
-          descripcionCorta = descripcionCorta.slice(0, -1);
-        }
-        doc.text(descripcionCorta, xDesc, yPos);
-        doc.text(formatoMoneda.format(cantidad), xTotal, yPos, { align: 'right' });
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        const dirSplit = doc.splitTextToSize(direccion, pageWidth - leftMargin - rightMargin);
+        centerText(dirSplit, yPos);
+        yPos += dirSplit.length * 4;
+        centerText(`Tel: ${telefono}`, yPos);
         yPos += 4;
-        doc.text(formatoMoneda.format(precioSinItbis), xPrecio, yPos, { align: 'right' });
-        doc.text(formatoMoneda.format(itbisItem), xItbis, yPos, { align: 'right' });
-        doc.text(formatoMoneda.format(total), xTotal, yPos, { align: 'right' });
+        centerText(`RNC: ${rncEmpresa}`, yPos);
         yPos += 5;
-      });
 
-      const itbis = totalItbis || Number(cotizacionData?.ct_itbis ?? 0) || 0;
-      const totalGeneral = totalIncluido || Number(cotizacionData?.ct_valcoti ?? 0) || subtotal + itbis;
+        drawDashedLine(yPos);
+        yPos += 5;
 
-      drawDashedLine(yPos);
-      yPos += 5;
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(9);
-      const labelX = 43;
-      doc.text('Subtotal', labelX, yPos, { align: 'right' });
-      doc.text(formatoMoneda.format(subtotal), xTotal, yPos, { align: 'right' });
-      yPos += 4;
-      doc.text('ITBIS', labelX, yPos, { align: 'right' });
-      doc.text(formatoMoneda.format(itbis), xTotal, yPos, { align: 'right' });
-      yPos += 4;
-      doc.setFont('helvetica', 'bold');
-      doc.text('TOTAL', labelX, yPos, { align: 'right' });
-      doc.text(formatoMoneda.format(totalGeneral), xTotal, yPos, { align: 'right' });
-      yPos += 6;
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(12);
+        centerText('COTIZACION', yPos);
+        yPos += 5.5;
 
-      drawDashedLine(yPos);
-      yPos += 5;
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(8);
-      centerText('Estos precios estan sujetos a cambio', yPos);
-      yPos += 4;
-      centerText('sin previo aviso.', yPos);
-      yPos += 5;
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(9);
-      centerText('WWW.GRUPOHIERRO.COM', yPos);
-      yPos += 5;
-      doc.setFont('helvetica', 'bold');
-      centerText('*** Gracias por preferirnos ***', yPos);
-      yPos += 8;
-      doc.text('.', leftMargin, yPos);
+        const numero = pick(cotizacionData?.ct_codcoti, cotizacionData?.numero);
+        const fecha = pick(cotizacionData?.ct_feccoti, cotizacionData?.fecha);
+        const vendedor = pick(
+          cotizacionData?.ct_nomvend,
+          cotizacionData?.nombreVendedor,
+          cotizacionData?.nombreusuario,
+          cotizacionData?.nombreUsuario,
+          cotizacionData?.ct_codvend
+        );
+        const cliente = pick(cotizacionData?.ct_nomclie, 'CLIENTE GENERICO');
+        const rncCliente = pick(cotizacionData?.ct_rnc);
+        const telefonoCliente = pick(cotizacionData?.ct_telclie);
+        const direccionCliente = pick(cotizacionData?.ct_dirclie);
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8.5);
+        doc.text(`No.: ${numero}`, leftMargin, yPos);
+        yPos += 4.5;
+        doc.text(`Fecha: ${fecha ? formatDate(fecha) : formatDate(new Date())}`, leftMargin, yPos);
+        if (vendedor) {
+          const textoVendedor = `Vendedor: ${vendedor}`;
+          let tamanoVendedor = 7.5;
+          doc.setFontSize(tamanoVendedor);
+          while (doc.getTextWidth(textoVendedor) > 39 && tamanoVendedor > 5.5) {
+            tamanoVendedor -= 0.25;
+            doc.setFontSize(tamanoVendedor);
+          }
+          doc.text(textoVendedor, pageWidth - rightMargin, yPos, { align: 'right' });
+          doc.setFontSize(8.5);
+        }
+        yPos += 4.5;
+
+        drawDashedLine(yPos);
+        yPos += 5;
+
+        doc.setFont('helvetica', 'bold');
+        doc.text('CLIENTE', leftMargin, yPos);
+        yPos += 4.5;
+        doc.setFont('helvetica', 'bold');
+        const clienteSplit = doc.splitTextToSize(cliente, pageWidth - leftMargin - rightMargin);
+        doc.text(clienteSplit, leftMargin, yPos);
+        yPos += clienteSplit.length * 4;
+        if (rncCliente) {
+          doc.text(`RNC/Cedula: ${rncCliente}`, leftMargin, yPos);
+          yPos += 4.5;
+        }
+        if (telefonoCliente) {
+          doc.text(`Tel.: ${telefonoCliente}`, leftMargin, yPos);
+          yPos += 4.5;
+        }
+        if (direccionCliente) {
+          const direccionSplit = doc.splitTextToSize(`Dir.: ${direccionCliente}`, pageWidth - leftMargin - rightMargin);
+          doc.text(direccionSplit, leftMargin, yPos);
+          yPos += direccionSplit.length * 4;
+        }
+
+        drawDashedLine(yPos);
+        yPos += 5;
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(7.2);
+        const xCant = leftMargin;
+        const xDesc = leftMargin;
+        const xPrecio = 24;
+        const xItbis = 45;
+        const xTotal = pageWidth - rightMargin;
+        doc.text('DESC', xDesc, yPos);
+        doc.text('CANT', xTotal, yPos, { align: 'right' });
+        yPos += 4;
+        doc.text('PRECIO', xPrecio, yPos, { align: 'right' });
+        doc.text('ITBIS', xItbis, yPos, { align: 'right' });
+        doc.text('TOTAL', xTotal, yPos, { align: 'right' });
+        yPos += 3;
+        drawDashedLine(yPos);
+        yPos += 4;
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(7.2);
+        let subtotal = 0;
+        let totalItbis = 0;
+        let totalIncluido = 0;
+
+        (items || []).forEach((item: any) => {
+          const cantidad = Number(item?.dc_canmerc ?? item?.cantidad ?? 0) || 0;
+          const precio = Number(item?.dc_premerc ?? item?.precio ?? 0) || 0;
+          const total = Number(item?.dc_valmerc ?? item?.total ?? cantidad * precio) || 0;
+          const itbisItem = total * tasaMenos;
+          const subtotalItem = total - itbisItem;
+          const precioSinItbis = cantidad ? subtotalItem / cantidad : subtotalItem;
+          const descripcion = pick(
+            item?.dc_descrip,
+            item?.descripcion,
+            item?.producto?.in_desmerc,
+          );
+          subtotal += subtotalItem;
+          totalItbis += itbisItem;
+          totalIncluido += total;
+
+          let descripcionCorta = descripcion;
+          const anchoDescripcion = xTotal - xDesc - 13;
+          while (descripcionCorta && doc.getTextWidth(descripcionCorta) > anchoDescripcion) {
+            descripcionCorta = descripcionCorta.slice(0, -1);
+          }
+          doc.text(descripcionCorta, xDesc, yPos);
+          doc.text(formatoMoneda.format(cantidad), xTotal, yPos, { align: 'right' });
+          yPos += 4;
+          doc.text(formatoMoneda.format(precioSinItbis), xPrecio, yPos, { align: 'right' });
+          doc.text(formatoMoneda.format(itbisItem), xItbis, yPos, { align: 'right' });
+          doc.text(formatoMoneda.format(total), xTotal, yPos, { align: 'right' });
+          yPos += 5;
+        });
+
+        const itbis = totalItbis || Number(cotizacionData?.ct_itbis ?? 0) || 0;
+        const totalGeneral = totalIncluido || Number(cotizacionData?.ct_valcoti ?? 0) || subtotal + itbis;
+
+        drawDashedLine(yPos);
+        yPos += 5;
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        const labelX = 43;
+        doc.text('Subtotal', labelX, yPos, { align: 'right' });
+        doc.text(formatoMoneda.format(subtotal), xTotal, yPos, { align: 'right' });
+        yPos += 4;
+        doc.text('ITBIS', labelX, yPos, { align: 'right' });
+        doc.text(formatoMoneda.format(itbis), xTotal, yPos, { align: 'right' });
+        yPos += 4;
+        doc.setFont('helvetica', 'bold');
+        doc.text('TOTAL', labelX, yPos, { align: 'right' });
+        doc.text(formatoMoneda.format(totalGeneral), xTotal, yPos, { align: 'right' });
+        yPos += 6;
+
+        drawDashedLine(yPos);
+        yPos += 5;
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8);
+        centerText('Estos precios estan sujetos a cambio', yPos);
+        yPos += 4;
+        centerText('sin previo aviso.', yPos);
+        yPos += 5;
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        centerText('WWW.GRUPOHIERRO.COM', yPos);
+        yPos += 5;
+        doc.setFont('helvetica', 'bold');
+        centerText('*** Gracias por preferirnos ***', yPos);
+        yPos += 8;
+        doc.text('.', leftMargin, yPos);
+        return yPos;
+      };
+
+      // 1) Medir: dibujar en una pagina muy alta para saber hasta donde llega.
+      const medidor = new jsPDF({ orientation: 'p', unit: 'mm', format: [80, 5000] });
+      const altoContenido = dibujar(medidor);
+      // 2) Dibujar de verdad en una pagina con ese alto (minimo 100 mm).
+      // 5000 mm es el maximo practico de una pagina PDF.
+      const alto = Math.min(5000, Math.max(100, Math.ceil(altoContenido + 6)));
+      const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: [80, alto] });
+      dibujar(doc);
 
       doc.autoPrint();
       const pdfBlob = doc.output('blob');

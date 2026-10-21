@@ -416,6 +416,60 @@ export class ServicioInventario {
     );
   }
 
+  /**
+   * Busca productos en la tabla inventario de una sucursal (existencia y
+   * precios propios de la sucursal), no en el catalogo productos2. Las filas
+   * se devuelven tambien con los nombres de productos2 (in_codmerc,
+   * in_desmerc, in_premerc, in_cosmerc...) para reutilizar las pantallas.
+   */
+  buscarEnInventarioSucursal(params: {
+    sucursal?: number | string | null;
+    codigo?: string | null;
+    descripcion?: string | null;
+    exacto?: boolean;
+    limite?: number;
+  }): Observable<any> {
+    const suc = Number(params?.sucursal ?? localStorage.getItem('idSucursal') ?? 0) || 0;
+    const codigo = String(params?.codigo || '').trim();
+    const descripcion = String(params?.descripcion || '').trim();
+    const limite = Math.min(Math.max(Number(params?.limite) || 50, 1), 200);
+    return from((async () => {
+      if (!suc || (!codigo && !descripcion)) return [];
+      let query = this.db.from('inventario').select('*').eq('inv_codsucu', suc);
+      if (codigo) {
+        query = params?.exacto
+          ? query.eq('inv_codprod', codigo)
+          : query.ilike('inv_codprod', `%${codigo}%`);
+        query = query.order('inv_codprod', { ascending: true });
+      } else {
+        query = query.ilike('inv_desprod', `${descripcion}%`).order('inv_desprod', { ascending: true });
+      }
+      const { data, error } = await query.limit(limite);
+      if (error) throw error;
+      return (data || []).map((row: any) => this.mapInventarioSucursal(row));
+    })()).pipe(
+      map((rows: any[]) => ({ status: 'success', code: 200, data: rows }))
+    );
+  }
+
+  private mapInventarioSucursal(row: any): any {
+    if (!row) return row;
+    const existencia = this.toNumber(row?.inv_existencia);
+    const costo = this.toNumber(row?.inv_cosprod);
+    return {
+      ...row,
+      in_codmerc: String(row?.inv_codprod ?? '').trim(),
+      in_desmerc: row?.inv_desprod ?? '',
+      in_premerc: this.toNumber(row?.inv_preprod),
+      in_cosmerc: costo,
+      in_costmer: costo,
+      in_canmerc: existencia,
+      in_caninve: existencia,
+      existencia,
+      inv_codsucu: row?.inv_codsucu,
+    };
+  }
+
   ajustarExistencia(payload: { inv_codsucu: number; inv_codprod: string; cantidad: number; tipo_movimiento: 'entrada' | 'salida'; }): Observable<any> {
     return from((async () => {
       const cantidadActual = this.toNumber(payload?.cantidad);
