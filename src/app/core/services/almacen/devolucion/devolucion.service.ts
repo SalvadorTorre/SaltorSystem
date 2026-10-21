@@ -123,7 +123,38 @@ export class DevolucionService {
     });
   }
 
+  /**
+   * Todos los productos deben existir en el inventario de la sucursal. Antes,
+   * si faltaba la fila se saltaba el producto y la existencia no se movia.
+   */
+  private async validarProductosEnInventario(idsucursal: number, codigos: string[]): Promise<void> {
+    const unicos = Array.from(new Set((codigos || []).map((c) => String(c || '').trim()).filter(Boolean)));
+    if (!unicos.length) return;
+    const encontrados = new Set<string>();
+    for (let i = 0; i < unicos.length; i += 100) {
+      const lote = unicos.slice(i, i + 100);
+      const { data, error } = await this.db
+        .from('inventario')
+        .select('inv_codprod')
+        .eq('inv_codsucu', idsucursal)
+        .in('inv_codprod', lote);
+      if (error) this.throwStep('Validar inventario', error);
+      (data || []).forEach((r: any) => encontrados.add(String(r?.inv_codprod || '').trim()));
+    }
+    const faltantes = unicos.filter((c) => !encontrados.has(c));
+    if (faltantes.length) {
+      throw new Error(
+        `Estos productos no existen en el inventario de la sucursal ${idsucursal}: ${faltantes.slice(0, 10).join(', ')}. ` +
+          'Agréguelos al inventario de la sucursal antes de registrar la devolución.',
+      );
+    }
+  }
+
   private async ajustarInventario(idsucursal: number, cambios: Map<string, number>): Promise<void> {
+    await this.validarProductosEnInventario(
+      idsucursal,
+      Array.from(cambios.entries()).filter(([, delta]) => !!delta).map(([codigo]) => codigo),
+    );
     for (const [codigo, delta] of cambios.entries()) {
       if (!delta) continue;
       const { data: actual, error: readError } = await this.db
@@ -134,7 +165,7 @@ export class DevolucionService {
         .limit(1)
         .maybeSingle();
       if (readError) this.throwStep(`Leer inventario (${codigo})`, readError);
-      if (!actual) continue;
+      if (!actual) throw new Error(`El producto ${codigo} no existe en el inventario de la sucursal ${idsucursal}.`);
       const { error: updateError } = await this.db
         .from('inventario')
         .update({
@@ -199,6 +230,13 @@ export class DevolucionService {
           if (!idsucursal) {
             throw new Error('Sucursal inválida para registrar devolución.');
           }
+
+          // Validar antes de escribir nada: entradas y salidas se mueven en
+          // la tabla inventario de esta sucursal.
+          await this.validarProductosEnInventario(idsucursal, [
+            ...detEntrada.map((it: any) => String(it?.producto?.in_codmerc ?? '').trim()),
+            ...detSalida.map((it: any) => String(it?.producto?.in_codmerc ?? '').trim()),
+          ]);
 
           const contRow = await this.getOrPickContFacturaRow(idsucursal);
           if (!contRow) {
@@ -423,7 +461,7 @@ export class DevolucionService {
               .limit(1)
               .maybeSingle();
             if (invErr) this.throwStep(`Leer inventario (${cod})`, invErr);
-            if (!invCur) continue;
+            if (!invCur) throw new Error(`El producto ${cod} no existe en el inventario de la sucursal ${idsucursal}.`);
 
             const nueva = this.toNumber(invCur?.inv_existencia) + cant;
             const { error: invUpErr } = await this.db
@@ -450,7 +488,7 @@ export class DevolucionService {
               .limit(1)
               .maybeSingle();
             if (invErr) this.throwStep(`Leer inventario (${cod})`, invErr);
-            if (!invCur) continue;
+            if (!invCur) throw new Error(`El producto ${cod} no existe en el inventario de la sucursal ${idsucursal}.`);
 
             const nueva = this.toNumber(invCur?.inv_existencia) - cant;
             const { error: invUpErr } = await this.db

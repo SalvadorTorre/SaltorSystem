@@ -303,14 +303,19 @@ buscarFactura() {
     this.productosForm.get('descripcion')?.enable();
     setTimeout(() => this.focusNext('fa-codFact'), 0);
   }
+  /** Sucursal activa: las busquedas, precios y existencias salen de su inventario. */
+  private sucursalActual(): number {
+    return Number(localStorage.getItem('idSucursal') || 0) || 0;
+  }
+
   buscarProductoSalidaCodigo() {
     const cod = String(this.destinoForm.get('codigo')?.value || '').trim();
     if (!cod) return;
-    this.productoSrv.obtenerProductoPorId(cod).subscribe({
+    this.inventarioSrv.buscarEnInventarioSucursal({ sucursal: this.sucursalActual(), codigo: cod, exacto: true }).subscribe({
       next: (resp: any) => {
         const data = resp?.data ?? resp;
         if (!data || (Array.isArray(data) && data.length === 0)) {
-          Swal.fire({ title: 'Producto no encontrado', icon: 'info' });
+          Swal.fire({ title: 'Producto no encontrado', text: 'El producto no existe en el inventario de esta sucursal.', icon: 'info' });
           return;
         }
         const p = Array.isArray(data) ? data[0] : data;
@@ -714,7 +719,7 @@ fa_codClie: this.facturaForm.get('fa_codClie')?.value
     const des = String(this.productosForm.get('descripcion')?.value || '').trim();
     this.resultadoProductos = [];
     if (cod) {
-      this.inventarioSrv.buscarporCodigoMerc(cod).subscribe({
+      this.inventarioSrv.buscarEnInventarioSucursal({ sucursal: this.sucursalActual(), codigo: cod }).subscribe({
         next: (resp: any) => {
           const lista = Array.isArray(resp?.data) ? resp.data : (Array.isArray(resp) ? resp : []);
           this.resultadoProductos = lista;
@@ -722,7 +727,7 @@ fa_codClie: this.facturaForm.get('fa_codClie')?.value
         error: () => (this.resultadoProductos = [])
       });
     } else if (des) {
-      this.inventarioSrv.buscarPorDescripcionMerc(des).subscribe({
+      this.inventarioSrv.buscarEnInventarioSucursal({ sucursal: this.sucursalActual(), descripcion: des }).subscribe({
         next: (resp: any) => {
           const lista = Array.isArray(resp?.data) ? resp.data : (Array.isArray(resp) ? resp : []);
           this.resultadoProductos = lista;
@@ -961,7 +966,7 @@ onInputCodigo() {
     return;
   }
   const busquedaId = ++this.busquedaProductosId;
-  this.productoSrv.buscarProductosPorCodigo(codigo).subscribe({
+  this.inventarioSrv.buscarEnInventarioSucursal({ sucursal: this.sucursalActual(), codigo }).subscribe({
     next: (resp: any) => {
       if (busquedaId !== this.busquedaProductosId || this.productoSeleccionado) return;
       this.productosBusqueda = resp.data ?? [];
@@ -1186,7 +1191,7 @@ onEnterPrecio(event: Event) {
       return;
     }
     const busquedaId = ++this.busquedaProductosId;
-    this.productoSrv.buscarProductosPorDescripcion(descripcion).subscribe({
+    this.inventarioSrv.buscarEnInventarioSucursal({ sucursal: this.sucursalActual(), descripcion }).subscribe({
       next: (resp: any) => {
         if (busquedaId !== this.busquedaProductosId || this.productoSeleccionado) return;
         this.productosBusqueda = resp.data ?? [];

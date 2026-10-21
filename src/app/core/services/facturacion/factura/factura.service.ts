@@ -1350,10 +1350,16 @@ export class ServicioFacturacion {
               };
             });
 
-            const { error: detalleError } = await this.db
-              .from('detfactura')
-              .insert(detallePayload);
-            if (detalleError) throw detalleError;
+            // Insertar el detalle por lotes. Una sola insercion con muchos
+            // items evaluaba la RLS de detfactura fila por fila dentro de la
+            // misma sentencia y terminaba en "statement timeout".
+            const loteDetalle = 15;
+            for (let i = 0; i < detallePayload.length; i += loteDetalle) {
+              const { error: detalleError } = await this.db
+                .from('detfactura')
+                .insert(detallePayload.slice(i, i + loteDetalle));
+              if (detalleError) throw detalleError;
+            }
 
             const idsucursal = this.toNumber(
               facturaRaw?.fa_codSucu ?? tenantSucursal,
@@ -1361,6 +1367,14 @@ export class ServicioFacturacion {
             await this.descontarInventarioFactura(detalleRaw, idsucursal);
           }
         } catch (error) {
+          // Deshacer: primero el detalle ya insertado (lotes anteriores) y luego la factura.
+          try {
+            let rollbackDetalle = this.db.from('detfactura').delete().eq('df_codfact', codigo);
+            rollbackDetalle = this.applyTenantFilterDetalle(rollbackDetalle);
+            await rollbackDetalle;
+          } catch (rollbackError) {
+            console.error('No se pudo deshacer el detalle de la factura', rollbackError);
+          }
           let rollback = this.db.from('factura').delete().eq('fa_codfact', codigo);
           rollback = this.applyTenantFilter(rollback);
           await rollback;
@@ -1796,10 +1810,13 @@ export class ServicioFacturacion {
             df_codsucu: this.toStringMax(idsucursal, 10),
           };
         });
-        const { error: detalleInsertError } = await this.db
-          .from('detfactura')
-          .insert(detallePayload);
-        if (detalleInsertError) throw detalleInsertError;
+        // Por lotes, igual que al crear la factura, para evitar statement timeout.
+        for (let i = 0; i < detallePayload.length; i += 15) {
+          const { error: detalleInsertError } = await this.db
+            .from('detfactura')
+            .insert(detallePayload.slice(i, i + 15));
+          if (detalleInsertError) throw detalleInsertError;
+        }
       }
 
       return { status: 'success', code: 200, data: this.mapFacturaDbToUi(data) };
@@ -3475,9 +3492,13 @@ export class ServicioFacturacion {
           .from('factura')
           .update({ fa_cierre: Number(idCierre) })
           .in('fa_codfact', lote)
-          .is('fa_cierre', null)
+          // Mismo criterio de "sin cierre" con el que se cargaron (null o 0).
+          .or('fa_cierre.is.null,fa_cierre.eq.0')
           .neq('fa_status', 'N')
-          .eq('fa_fpago', 'S')
+          // Cobrada = cualquier estado de pago distinto de pendiente (null, '' o N).
+          .not('fa_fpago', 'is', null)
+          .neq('fa_fpago', '')
+          .neq('fa_fpago', 'N')
           .select('fa_codfact');
 
         if (sucursal && sucursal > 0) {
