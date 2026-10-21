@@ -973,7 +973,8 @@ onInputCodigo() {
       this.highlightedIndex =
       this.productosBusqueda.length > 0 ? 0 : -1;
     },
-    error: () => {
+    error: (err: any) => {
+      console.error('Error buscando productos en inventario de la sucursal', err);
       if (busquedaId === this.busquedaProductosId) this.cerrarListaProductos();
     }
   });
@@ -1198,7 +1199,8 @@ onEnterPrecio(event: Event) {
         this.highlightedIndex =
         this.productosBusqueda.length > 0 ? 0 : -1;
       },
-      error: () => {
+      error: (err: any) => {
+        console.error('Error buscando productos en inventario de la sucursal', err);
         if (busquedaId === this.busquedaProductosId) this.cerrarListaProductos();
       }
     });
