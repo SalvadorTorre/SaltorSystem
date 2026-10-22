@@ -2097,6 +2097,24 @@ export class ServicioFacturacion {
       if (!sucursal || sucursal <= 0) {
         return { status: 'success', code: 200, data: [] };
       }
+
+      // RPC que valida el permiso una sola vez (la lectura directa evalua la
+      // RLS por cada factura y da statement timeout con usuarios de caja).
+      const { codEmpre } = this.currentTenant();
+      const rpc = await this.db.rpc('listar_facturas_pendientes_cierre', {
+        p_sucursal_id: sucursal,
+        p_empresa: codEmpre || null,
+      });
+      if (!rpc.error) {
+        const rpcRows = Array.isArray(rpc.data) ? rpc.data : [];
+        return { status: 'success', code: 200, data: rpcRows.map((row: any) => this.mapFacturaDbToUi(row)) };
+      }
+      const rpcCode = String((rpc.error as any)?.code || '');
+      if (rpcCode !== 'PGRST202' && rpcCode !== '42883') {
+        throw rpc.error;
+      }
+      console.warn('RPC listar_facturas_pendientes_cierre no disponible. Ejecute supabase/migrations/20261022220000_cuadrecaja_sin_timeout.sql.');
+
       const rows: any[] = [];
       const batchSize = 100;
       let ultimoCodigo = '';
