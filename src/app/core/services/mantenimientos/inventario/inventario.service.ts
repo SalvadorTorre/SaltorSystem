@@ -24,6 +24,7 @@ export class ServicioInventario {
     "in_unidad",
     "media",
     "status",
+    "in_fecmodi",
   ].join(",");
 
   constructor(private supabase: SupabaseService) {}
@@ -815,6 +816,16 @@ export class ServicioInventario {
       });
 
       const now = new Date().toISOString();
+      // Fecha del dia (hora local) para in_fecmodi en productos2 e inventario.
+      const hoyLocal = new Date();
+      const fechaModificacion = `${hoyLocal.getFullYear()}-${String(hoyLocal.getMonth() + 1).padStart(2, "0")}-${String(hoyLocal.getDate()).padStart(2, "0")}`;
+      const errorFechaModificacion = (error: any, tabla: string) => {
+        const texto = `${error?.message || ""} ${error?.details || ""}`;
+        if (/in_fecmodi/i.test(texto)) {
+          return new Error(`La tabla ${tabla} no tiene la columna in_fecmodi. Ejecute en Supabase supabase/migrations/20261022200000_inventario_in_fecmodi.sql.`);
+        }
+        return error;
+      };
       const filasInsertar: any[] = [];
       const historialPrecios = productos.map((producto) => ({
         codigo: producto.codigo,
@@ -835,6 +846,7 @@ export class ServicioInventario {
 
         const catalogoPayload: any = {
           in_costmer: precioNuevo,
+          in_fecmodi: fechaModificacion,
         };
         if (productoCatalogo) {
           catalogoPayload.in_ucosto = this.toNullableNumber(productoCatalogo?.in_costmer);
@@ -844,7 +856,7 @@ export class ServicioInventario {
           .from("productos2")
           .update(catalogoPayload, { count: "exact" })
           .eq("in_codmerc", producto.codigo);
-        if (productoUpdateError) throw productoUpdateError;
+        if (productoUpdateError) throw errorFechaModificacion(productoUpdateError, "productos2");
         catalogoActualizados += Number(productoUpdateCount || 0);
 
         for (const sucursal of sucursales) {
@@ -856,11 +868,12 @@ export class ServicioInventario {
                 inv_cosprod: precioNuevo,
                 inv_preprod: precioVenta,
                 inv_fechamov: now,
+                in_fecmodi: fechaModificacion,
               })
               .eq("id", Number(current.id))
               .eq("inv_codsucu", sucursal)
               .eq("inv_codprod", producto.codigo);
-            if (updateError) throw updateError;
+            if (updateError) throw errorFechaModificacion(updateError, "inventario");
             actualizados += 1;
           } else {
             filasInsertar.push({
@@ -871,15 +884,21 @@ export class ServicioInventario {
               inv_cosprod: precioNuevo,
               inv_preprod: precioVenta,
               inv_fechamov: now,
+              in_fecmodi: fechaModificacion,
               activo: true,
             });
           }
         }
       }
 
-      const insertados = filasInsertar.length
-        ? await this.insertInBatches("inventario", filasInsertar)
-        : 0;
+      let insertados = 0;
+      if (filasInsertar.length) {
+        try {
+          insertados = await this.insertInBatches("inventario", filasInsertar);
+        } catch (insertError: any) {
+          throw errorFechaModificacion(insertError, "inventario");
+        }
+      }
 
       if (historialPrecios.length) {
         const { error: historialError } = await this.db

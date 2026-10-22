@@ -1830,6 +1830,17 @@ export class Facturacion implements OnInit, OnDestroy {
       event.preventDefault();
     }
   }
+  /** Fecha de ultima modificacion de precio (productos2.in_fecmodi) como dd/MM/yyyy. */
+  private formatearFechaActualizado(valor: any): string {
+    const texto = String(valor ?? '').trim();
+    if (!texto) return ' ';
+    const m = texto.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (m) return `${m[3]}/${m[2]}/${m[1]}`;
+    const fecha = new Date(texto);
+    if (isNaN(fecha.getTime())) return texto;
+    return `${String(fecha.getDate()).padStart(2, '0')}/${String(fecha.getMonth() + 1).padStart(2, '0')}/${fecha.getFullYear()}`;
+  }
+
   cargarDatosInventario(inventario: any) {
     console.log(inventario);
     this.resultadoCodmerc = [];
@@ -1859,7 +1870,9 @@ export class Facturacion implements OnInit, OnDestroy {
 
     this.existenciatxt = 0;
     this.medidatxt = getProp(inventario, 'in_medida');
-    this.fecacttxt = getProp(inventario, 'in_fecmodif');
+    this.fecacttxt = this.formatearFechaActualizado(
+      getProp(inventario, 'in_fecmodif') ?? getProp(inventario, 'in_fecmodi'),
+    );
 
     this.atxt = costo + (costo * 5) / 100;
     this.btxt = costo + (costo * 7) / 100;
@@ -4194,7 +4207,9 @@ export class Facturacion implements OnInit, OnDestroy {
     this.existenciatxt = Number(producto?.in_canmerc ?? 0) || 0;
     this.medidatxt = producto?.in_medida ?? producto?.media ?? '';
     this.margenVentatxt = Number(producto?.in_porgana ?? 0) || 0;
-    this.fecacttxt = producto?.in_fecmodif ?? producto?.in_fecmodi ?? ' ';
+    this.fecacttxt = this.formatearFechaActualizado(
+      producto?.in_fecmodif ?? producto?.in_fecmodi,
+    );
     this.costotxt = costoUnitario;
     this.protxt =
       costoUnitario > 0
