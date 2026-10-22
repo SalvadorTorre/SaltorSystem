@@ -97,7 +97,9 @@
 
           <div class="row g-3 mb-3" *ngIf="salidaActual">
             <div class="col-md-3">
-              <div class="fw-bold text-secondary small">Código Salida</div>
+              <div class="fw-bold text-secondary small">
+                {{ salidasPendientes.length > 1 ? 'Salidas pendientes (' + salidasPendientes.length + ')' : 'Código Salida' }}
+              </div>
               <div class="fs-5 fw-bold text-primary">{{ salidaActual.codSalida }}</div>
             </div>
             <div class="col-md-3">
@@ -183,7 +185,12 @@
                   </thead>
                   <tbody>
                     <tr *ngFor="let d of detalles; let i = index">
-                      <td class="fw-bold text-primary">{{ d.codFact }}</td>
+                      <td class="fw-bold text-primary">
+                        {{ d.codFact }}
+                        <div class="small text-muted fw-normal" *ngIf="salidasPendientes.length > 1">
+                          Salida {{ d.codSalida }}
+                        </div>
+                      </td>
                       <td>{{ d.nomClie }}</td>
                       <td class="text-center">
                         <span

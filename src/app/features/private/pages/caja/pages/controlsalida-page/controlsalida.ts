@@ -11,6 +11,7 @@ import Swal from 'sweetalert2';
 import { jsPDF } from 'jspdf';
 
 interface DetalleSalidaCaja {
+  codSalida: string;
   codFact: string;
   nomClie: string;
   fecFact: any;
@@ -51,6 +52,8 @@ export class ControlSalidaCajaComponent implements OnInit, OnDestroy {
   private searchSubscription: Subscription | undefined;
 
   salidaActual: any = null;
+  /** Todas las salidas pendientes del chofer que se cobran juntas. */
+  salidasPendientes: any[] = [];
   detalles: DetalleSalidaCaja[] = [];
 
   totalSalida: number = 0;
@@ -302,19 +305,20 @@ export class ControlSalidaCajaComponent implements OnInit, OnDestroy {
     }
     this.cargando = true;
     this.servicioSalida
-      .obtenerPorChoferYStatus(this.codChofer, 'P', this.sucursalLogiada())
+      .obtenerSalidasChoferConDetalle(this.codChofer, 'P', this.sucursalLogiada())
       .subscribe({
       next: (resp: any) => {
         const salidas = Array.isArray(resp) ? resp : resp?.data || [];
         if (!salidas || salidas.length === 0) {
           this.salidaActual = null;
+          this.salidasPendientes = [];
           this.detalles = [];
           this.calcularTotales();
           this.mostrarMensaje('El chofer no tiene control de salida pendiente');
           this.cargando = false;
           return;
         }
-        this.cargarSalidaSeleccionada(salidas[0]);
+        this.cargarSalidasPendientes(salidas);
       },
       error: () => {
         this.mostrarMensaje('Error al cargar control de salida');
@@ -323,10 +327,38 @@ export class ControlSalidaCajaComponent implements OnInit, OnDestroy {
     });
   }
 
-  private cargarSalidaSeleccionada(salida: any) {
-    this.salidaActual = salida;
+  /**
+   * Junta todas las salidas pendientes del chofer en una sola pantalla.
+   * salidaActual es un resumen: codigos de todas las salidas y datos de la
+   * mas reciente.
+   */
+  private cargarSalidasPendientes(salidas: any[]) {
+    const ordenadas = [...salidas].sort(
+      (a, b) => Number(a?.id || 0) - Number(b?.id || 0)
+    );
+    this.salidasPendientes = ordenadas;
+    const ultima = ordenadas[ordenadas.length - 1];
+    const codigos = ordenadas
+      .map((s) => String(s?.codSalida ?? s?.codsalida ?? '').trim())
+      .filter(Boolean);
+    this.salidaActual = {
+      ...ultima,
+      codSalida: codigos.join(', '),
+      fecSalida: ordenadas[0]?.fecSalida ?? ultima?.fecSalida,
+      cantidadSalidas: ordenadas.length,
+    };
 
-    const dets = salida?.detsalida || [];
+    const vistos = new Set<string>();
+    const dets: any[] = [];
+    ordenadas.forEach((salida) => {
+      const codSalida = String(salida?.codSalida ?? salida?.codsalida ?? '').trim();
+      (salida?.detsalida || []).forEach((d: any) => {
+        const codFact = String(d?.codFact ?? d?.codfact ?? '').trim();
+        if (!codFact || vistos.has(codFact)) return;
+        vistos.add(codFact);
+        dets.push({ ...d, codFact, codSalida: String(d?.codSalida ?? d?.codsalida ?? codSalida).trim() });
+      });
+    });
     if (!dets.length) {
       this.detalles = [];
       this.calcularTotales();
@@ -354,6 +386,7 @@ export class ControlSalidaCajaComponent implements OnInit, OnDestroy {
             pagoFactura === 'P' ||
             pagoFactura === 'S';
           return {
+            codSalida: det.codSalida,
             codFact: f?.fa_codFact || det.codFact,
             nomClie: f?.fa_nomClie || det.nomClie || '',
             fecFact: f?.fa_fecFact || det.fecFact,
@@ -512,8 +545,11 @@ export class ControlSalidaCajaComponent implements OnInit, OnDestroy {
   }
 
   guardarCobro() {
-    if (!this.salidaActual || !this.salidaActual.id) {
+    if (!this.salidaActual || !this.salidasPendientes.length) {
       this.mostrarMensaje('No hay control de salida seleccionado');
+      return;
+    }
+    if (this.guardando) {
       return;
     }
 
@@ -540,6 +576,7 @@ export class ControlSalidaCajaComponent implements OnInit, OnDestroy {
     }
 
     this.cargando = true;
+    this.guardando = true;
 
     const valPagado = this.detalles.reduce(
       (sum, d) =>
@@ -547,81 +584,43 @@ export class ControlSalidaCajaComponent implements OnInit, OnDestroy {
       0
     );
 
-    const detallesPayload = this.detalles.map((d) => ({
-      codSalida: this.salidaActual.codSalida,
-      idsucursal: this.salidaActual.idsucursal,
-      codChofer: this.salidaActual.codChofer,
-      nomChofer: this.salidaActual.nomChofer,
-      codFact: d.codFact,
-      valFact: d.valFact,
-      fecFact: d.fecFact,
-      pagado: d.pagado ? 'S' : 'N',
-      status: 'C',
-    }));
-
     const payload = {
       ...this.salidaActual,
       valPagado,
       status: 'C',
-      detalles: detallesPayload,
+      detalles: this.detalles.map((d) => ({
+        codSalida: d.codSalida,
+        codFact: d.codFact,
+        valFact: d.valFact,
+        fecFact: d.fecFact,
+        pagado: d.pagado ? 'S' : 'N',
+        status: 'C',
+      })),
     };
 
-    const cobroObservable = this.servicioSalida.editarSalida(Number(this.salidaActual.id), payload);
-
-    let facturasParaActualizar: any[] = [];
-
-    this.detalles.forEach((d) => {
-      let item: any = { fa_codFact: d.codFact };
-      let changed = false;
-
-      // Verificar cambio en pagado (solo si no estaba pagada originalmente)
-      if (!d.pagadoOriginal) {
-        if (d.pagado !== d.pagadoOriginal) {
-          // Si d.pagado es true, enviamos 'P'. Si es false, restauramos el fpago original.
-          // Nota: d.pagadoOriginal es false aquí.
-          // Si d.pagado es true, cambió a pagado.
-          // Si d.pagado es false, es igual al original (pendiente), pero si venía pagado de control salida
-          // y lo desmarcamos, queremos que en factura siga pendiente (o se asegure).
-          // En este caso, si d.pagado es true, enviamos 'P'.
-          // Si es false, enviamos d.fpago (que debería ser el original, ej: 'CREDITO').
-          item.fa_fpago = d.pagado ? 'P' : d.fpago;
-          changed = true;
-        }
-      }
-
-      // Verificar cambio en entrega
-      if (d.entregada !== d.entregadaOriginal) {
-        item.fa_entrega = d.entregada ? 'S' : 'N';
-        changed = true;
-      }
-
-      if (changed) {
-        facturasParaActualizar.push(item);
-      }
-    });
-
-    facturasParaActualizar = this.detalles.map((d) => ({
-      fa_codFact: d.codFact,
-      ...(d.pagado ? { fa_fpago: 'S' } : {}),
-      fa_entrega: 'S',
+    const salidas = this.salidasPendientes.map((s) => ({
+      id: Number(s?.id),
+      codsalida: String(s?.codSalida ?? s?.codsalida ?? '').trim(),
+    }));
+    const detalles = this.detalles.map((d) => ({
+      codsalida: d.codSalida,
+      codfact: d.codFact,
+      pagado: Boolean(d.pagado),
     }));
 
-    const observables: Observable<any>[] = [cobroObservable];
-
-    if (facturasParaActualizar.length > 0) {
-      observables.push(
-        this.servicioFacturacion.actualizarPagoYEntrega(facturasParaActualizar)
-      );
-    }
-
-    forkJoin(observables).subscribe({
+    // Todo en una sola transaccion: se cierran todas las salidas del chofer
+    // con sus facturas, o no se guarda nada.
+    this.servicioSalida.cobrarSalidasChofer(salidas, detalles).subscribe({
       next: () => {
         this.ultimoControlImpresion = this.crearDatosControlImpresion(payload);
+        const cantidad = salidas.length;
         this.resetChofer();
         this.cargando = false;
         this.guardando = false;
         this.mostrarMensaje(
-          'Cobro guardado correctamente. El chofer quedÃ³ libre para otra salida.',
+          cantidad > 1
+            ? `Cobro guardado correctamente. Se cerraron ${cantidad} salidas y el chofer quedó libre para otra salida.`
+            : 'Cobro guardado correctamente. El chofer quedó libre para otra salida.',
           'success'
         );
       },
@@ -633,10 +632,6 @@ export class ControlSalidaCajaComponent implements OnInit, OnDestroy {
           'error',
           true,
         );
-        this.cargando = false;
-        this.guardando = false;
-      },
-      complete: () => {
         this.cargando = false;
         this.guardando = false;
       },
@@ -652,6 +647,7 @@ export class ControlSalidaCajaComponent implements OnInit, OnDestroy {
     this.mostrarModalChofer = false;
     this.listaChoferesEncontrados = [];
     this.salidaActual = null;
+    this.salidasPendientes = [];
     this.detalles = [];
     this.calcularTotales();
   }

@@ -329,6 +329,11 @@ export class ServicioSalidafactura {
         return { status: 'success', code: 200, data: null };
       }
 
+      // Una salida ya cerrada en Control de salida no se vuelve a abrir.
+      if (salida && String(salida?.status ?? '').trim().toUpperCase() === 'C') {
+        return { status: 'success', code: 200, data: null };
+      }
+
       const fpago = String(factura?.fa_fpago ?? factura?.faFpago ?? '').trim().toUpperCase();
       const pagado = fpago === 'S' || fpago === 'P' ? 'S' : 'N';
       const detallePatch: any = {
@@ -359,11 +364,11 @@ export class ServicioSalidafactura {
         .update({
           canfact: detalles.length,
           valpagado,
-          // CobroFact solo registra el pago. El cierre de la salida corresponde
-          // exclusivamente al modulo /caja/ControlSalida.
-          status: 'P',
+          // CobroFact solo registra el pago; no cambia el estado de la salida.
+          // El cierre corresponde exclusivamente al modulo /caja/ControlSalida.
         })
         .eq('codsalida', codsalida)
+        .neq('status', 'C')
         .select('*');
       const { data: salidaUpdated, error: salidaUpdateErr } = await salidaUpdate.maybeSingle();
       if (salidaUpdateErr) throw salidaUpdateErr;
@@ -673,6 +678,112 @@ export class ServicioSalidafactura {
         detsalida: (dets || []).map((r: any) => this.mapDetSalidaDbToUi(r)),
       };
       return { status: 'success', code: 200, data: [salidaWith] };
+    })());
+  }
+
+  /**
+   * Todas las salidas de un chofer con el estado indicado (por defecto 'P'),
+   * cada una con su detalle. Control de salida cobra todas juntas.
+   */
+  obtenerSalidasChoferConDetalle(
+    codChofer: string,
+    status: string = 'P',
+    sucursalId?: number | string | null,
+  ): Observable<any> {
+    if (!this.useSupabase) {
+      return this.obtenerPorChoferYStatus(codChofer, status, sucursalId);
+    }
+
+    const cod = this.toNumberOrNull(codChofer);
+    const st = String(status || 'P').trim();
+    const sucursal = this.toNumberOrNull(sucursalId);
+    return from((async () => {
+      let q = this.db
+        .from('salida')
+        .select('id,idsucursal,codsalida,fecsalida,horasalida,canfact,valfact,valpagado,valdevolucion,codchofer,nomchofer,cedchofer,status,envia,idusuario')
+        .order('id', { ascending: true });
+
+      if (cod !== null) q = q.eq('codchofer', cod);
+      if (st) q = q.eq('status', st);
+      if (sucursal !== null) q = q.eq('idsucursal', sucursal);
+
+      const { data: salidas, error } = await q;
+      if (error) throw error;
+
+      const list = Array.isArray(salidas) ? salidas : [];
+      if (list.length === 0) {
+        return { status: 'success', code: 200, data: [] };
+      }
+
+      const codsalidas = Array.from(
+        new Set(
+          list
+            .map((s: any) => String(s?.codsalida ?? '').trim())
+            .filter((c: string) => Boolean(c)),
+        ),
+      );
+
+      const dets: any[] = [];
+      for (let i = 0; i < codsalidas.length; i += 50) {
+        const { data: rows, error: detErr } = await this.db
+          .from('detsalida')
+          .select('idsalida,idsucursal,codsalida,codfact,fecfact,nomclie,valfact,codchofer,nomchofer,pagado,status')
+          .in('codsalida', codsalidas.slice(i, i + 50))
+          .order('codfact', { ascending: true });
+        if (detErr) throw detErr;
+        dets.push(...(rows || []));
+      }
+
+      const data = list.map((s: any) => {
+        const codsalida = String(s?.codsalida ?? '').trim();
+        return {
+          ...this.mapSalidaDbToUi(s),
+          detsalida: dets
+            .filter((d: any) => String(d?.codsalida ?? '').trim() === codsalida)
+            .map((r: any) => this.mapDetSalidaDbToUi(r)),
+        };
+      });
+      return { status: 'success', code: 200, data };
+    })());
+  }
+
+  /**
+   * Cobra y cierra varias salidas en una sola transaccion
+   * (RPC myappdb.cobrar_salidas_chofer). Al cerrar, las facturas quedan
+   * liberadas de la salida (fa_salida 'C', idsalida null); el historial
+   * queda en detsalida.
+   */
+  cobrarSalidasChofer(
+    salidas: Array<{ id: number; codsalida: string }>,
+    detalles: Array<{ codsalida: string; codfact: string; pagado: boolean }>,
+  ): Observable<any> {
+    if (!this.useSupabase) {
+      return from(Promise.reject(new Error('El cobro de salidas requiere Supabase.')));
+    }
+
+    return from((async () => {
+      const { data, error } = await this.db.rpc('cobrar_salidas_chofer', {
+        p_salidas: salidas.map((s) => ({
+          id: Number(s.id),
+          codsalida: String(s.codsalida ?? '').trim(),
+        })),
+        p_detalles: detalles.map((d) => ({
+          codsalida: String(d.codsalida ?? '').trim(),
+          codfact: String(d.codfact ?? '').trim(),
+          pagado: Boolean(d.pagado),
+        })),
+      });
+      if (error) {
+        const code = String((error as any)?.code || '');
+        const msg = String((error as any)?.message || '');
+        if (code === 'PGRST202' || /cobrar_salidas_chofer/i.test(msg) && /not find|no se encontr|does not exist/i.test(msg)) {
+          throw new Error(
+            'Falta ejecutar en Supabase la migracion 20261022140000_cobrar_salidas_chofer_atomico.sql. El cobro no fue guardado.',
+          );
+        }
+        throw error;
+      }
+      return { status: 'success', code: 200, data };
     })());
   }
 

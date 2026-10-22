@@ -123,6 +123,14 @@
                         <i class="bi bi-printer"></i>
                       </button>
                       <button
+                        *ngIf="puedeFacturar()"
+                        class="btn btn-outline-success btn-sm"
+                        (click)="crearFacturaDesdeCotizacion(cotizacion)"
+                        title="Crear factura con esta cotización"
+                      >
+                        <i class="bi bi-receipt"></i>
+                      </button>
+                      <button
                         class="btn btn-outline-danger btn-sm"
                         (click)="eliminarCotizacion(cotizacion.ct_codcoti)"
                         title="Eliminar"

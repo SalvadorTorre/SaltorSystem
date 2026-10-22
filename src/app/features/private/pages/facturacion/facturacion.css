@@ -399,3 +399,10 @@ i {
   border-bottom: 1px solid #dee2e6;
   padding: 0;
 }
+
+/* Item de cotizacion con costo igual o mayor que el precio. */
+tr.item-costo-invalido > td {
+  background-color: #fde2e1 !important;
+  color: #b91c1c !important;
+  font-weight: 600;
+}

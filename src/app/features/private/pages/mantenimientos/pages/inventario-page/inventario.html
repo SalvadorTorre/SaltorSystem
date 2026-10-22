@@ -199,7 +199,11 @@
                     id="codigo"
                     class="form-control"
                     formControlName="in_codmerc"
+                    [title]="modoEdicionProducto ? 'El código no se puede cambiar al editar' : ''"
+                    (blur)="verificarCodigoDuplicado()"
+                    (keydown.enter)="$event.preventDefault(); verificarCodigoDuplicado()"
                   />
+                  <small *ngIf="verificandoCodigo" class="form-text text-muted">Verificando código...</small>
                 </div>
                 
                 <div class="col-12 col-md-8 col-xl-6">
