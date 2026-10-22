@@ -1,5 +1,7 @@
 // import { Inventario } from './../mantenimientos/pages/inventario-page/inventario';
 import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
+import { Router } from '@angular/router';
+import { AccessControlService } from 'src/app/core/services/access/access-control.service';
 // import { FormsModule } from '@angular/forms';
 import {
   FormBuilder,
@@ -143,7 +145,10 @@ export class Cotizacion implements OnInit {
     private ServicioRnc: ServicioRnc,
     private printingService: PrintingService,
     private servicioItbis: ServicioItbis,
+    private readonly router: Router,
+    private readonly accessControl: AccessControlService,
   ) {
+    void this.accessControl.ensureLoaded();
     this.form = this.fb.group({
       ct_codvend: ['', Validators.required], // El campo es requerido
       // Otros campos...
@@ -431,6 +436,19 @@ export class Cotizacion implements OnInit {
       ...Cotizacion,
       ...cotizacionCompleta,
     } as CotizacionModelData;
+  }
+
+  /** El boton Crear factura solo se muestra si el usuario puede entrar a Facturacion. */
+  puedeFacturar(): boolean {
+    return this.accessControl.canViewPath('/private/facturacion');
+  }
+
+  /** Abre Facturacion con los datos e items de esta cotizacion. */
+  crearFacturaDesdeCotizacion(cotizacion: CotizacionModelData): void {
+    if (!this.puedeFacturar()) return;
+    const codigo = String(cotizacion?.ct_codcoti || '').trim();
+    if (!codigo) return;
+    void this.router.navigate(['/private/facturacion'], { queryParams: { cotizacion: codigo } });
   }
 
   async editarCotizacion(Cotizacion: CotizacionModelData) {

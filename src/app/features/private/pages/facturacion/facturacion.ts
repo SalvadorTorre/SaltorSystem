@@ -1,4 +1,6 @@
 import { Component, OnDestroy, OnInit, ViewChild, ElementRef } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
+import { ServicioCotizacion } from 'src/app/core/services/cotizaciones/cotizacion/cotizacion.service';
 // import { FormsModule } from '@angular/forms';
 import {
   FormBuilder,
@@ -235,6 +237,9 @@ export class Facturacion implements OnInit, OnDestroy {
     private servicioItbis: ServicioItbis,
     private facturaDgiiService: FacturaDgiiService,
     private servicioSucursal: ServicioSucursal,
+    private readonly route: ActivatedRoute,
+    private readonly router: Router,
+    private readonly servicioCotizacion: ServicioCotizacion,
   ) {
     this.form = this.fb.group({
       fa_codVend: ['', Validators.required], // El campo es requerido
@@ -287,6 +292,7 @@ export class Facturacion implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     setTimeout(() => this.protegerModalDetalleDuranteAvisos(), 0);
+    void this.cargarCotizacionDesdeRuta();
     this.conectarBusquedaFacturaModal();
     this.buscarcodmerc.valueChanges
       .pipe(
@@ -1052,7 +1058,7 @@ export class Facturacion implements OnInit, OnDestroy {
     factura: FacturacionModelData,
   ): ResumenConsultaFactura {
     const salidaRegistrada =
-      this.normalizarBandera(factura.fa_salida) === 'S' ||
+      ['S', 'C'].includes(this.normalizarBandera(factura.fa_salida)) ||
       Boolean(String(factura.idsalida ?? '').trim());
 
     return {
@@ -1895,25 +1901,41 @@ export class Facturacion implements OnInit, OnDestroy {
     qty?.select?.();
   }
 
+  /** Resultado de la consulta de inventario de la sucursal para el producto en captura. */
+  productoInventarioSucursal: { codigo: string; existe: boolean | null } = { codigo: '', existe: null };
+
   private cargarExistenciaProducto(codProducto: string): void {
     const codigo = String(codProducto || '').trim();
     const sucursal = Number(localStorage.getItem('idSucursal') || 0);
 
     if (!codigo || !sucursal) {
       this.existenciatxt = 0;
+      this.productoInventarioSucursal = { codigo, existe: null };
       return;
     }
 
+    this.productoInventarioSucursal = { codigo, existe: null };
     this.ServicioInventario
       .obtenerExistenciaPorProductoSucursal(codigo, sucursal)
       .pipe(
         catchError((error) => {
           console.error('Error consultando existencia del producto:', error);
-          return of({ data: null } as any);
+          return of({ data: undefined } as any);
         }),
       )
       .subscribe((response: any) => {
         if (String(this.codmerc || '').trim() !== codigo) return;
+        // data === null: no hay fila en inventario; undefined: no se pudo consultar.
+        this.productoInventarioSucursal = {
+          codigo,
+          existe: response?.data === undefined ? null : !!response?.data,
+        };
+        if (this.productoInventarioSucursal.existe === false) {
+          void this.mostrarAvisoDetalle(
+            `El producto ${codigo} no está en el inventario de esta sucursal. No se puede facturar.`,
+            this.codigoInput?.nativeElement,
+          );
+        }
 
         const existencia = Number(response?.data?.inv_existencia ?? 0);
         this.existenciatxt = Number.isFinite(existencia) ? existencia : 0;
@@ -3247,6 +3269,17 @@ export class Facturacion implements OnInit, OnDestroy {
       );
       return;
     }
+    const codigoCaptura = String(this.productoselect?.in_codmerc || this.codmerc || '').trim();
+    if (
+      this.productoInventarioSucursal.existe === false &&
+      this.productoInventarioSucursal.codigo === codigoCaptura
+    ) {
+      void this.mostrarAvisoDetalle(
+        `El producto ${codigoCaptura} no está en el inventario de esta sucursal. No se puede facturar.`,
+        this.codigoInput?.nativeElement,
+      );
+      return;
+    }
     if (!this.productoTieneTramoFacturable()) {
       void this.mostrarAvisoDetalle(
         'Solo se pueden agregar productos con tramo F o H.',
@@ -3632,8 +3665,133 @@ export class Facturacion implements OnInit, OnDestroy {
     return false;
   }
 
+  /** Numero de la cotizacion de la que salio esta factura (si aplica). */
+  cotizacionOrigen = '';
+
+  /**
+   * Facturacion > desde Cotizacion (/private/facturacion?cotizacion=XXXX):
+   * copia cliente, vendedor e items. Cada item toma el producto actual del
+   * catalogo para conocer su costo.
+   */
+  private async cargarCotizacionDesdeRuta(): Promise<void> {
+    const codigo = String(this.route.snapshot.queryParamMap.get('cotizacion') || '').trim();
+    if (!codigo) return;
+    // Quitar el parametro para que recargar la pagina no vuelva a copiarla.
+    void this.router.navigate([], { relativeTo: this.route, queryParams: { cotizacion: null }, queryParamsHandling: 'merge', replaceUrl: true });
+
+    this.isLoading = true;
+    try {
+      const [encResp, detResp]: any[] = await Promise.all([
+        firstValueFrom(this.servicioCotizacion.getByNumero(codigo, false)),
+        firstValueFrom(this.servicioCotizacion.buscarCotizacionDetalle(codigo)),
+      ]);
+      const cot = encResp?.data || encResp || {};
+      const detalle: any[] = Array.isArray(detResp?.data) ? detResp.data : [];
+      if (!detalle.length) {
+        await Swal.fire('Aviso', `La cotización ${codigo} no tiene productos.`, 'warning');
+        return;
+      }
+
+      this.limpia();
+      this.formularioFacturacion.patchValue({
+        fa_codClie: cot.ct_codclie ?? '',
+        fa_nomClie: cot.ct_nomclie ?? '',
+        fa_rncFact: cot.ct_rnc || null,
+        fa_telClie: cot.ct_telclie ?? '',
+        fa_dirClie: cot.ct_dirclie ?? '',
+        fa_correo: cot.ct_correo ?? '',
+        fa_codVend: String(cot.ct_codvend ?? '').trim(),
+        fa_nomVend: cot.ct_nomvend ?? '',
+      });
+
+      const items: any[] = [];
+      const noEncontrados: string[] = [];
+      for (const d of detalle) {
+        const cod = String(d?.dc_codmerc ?? '').trim();
+        if (!cod) continue;
+        const prodResp: any = await firstValueFrom(this.ServicioInventario.obtenerProductoPorId(cod)).catch(() => null);
+        const prodCatalogo = prodResp?.data || null;
+        if (!prodCatalogo) noEncontrados.push(cod);
+        const producto: any = {
+          ...(prodCatalogo || {}),
+          in_codmerc: cod,
+          in_desmerc: prodCatalogo?.in_desmerc || d?.dc_descrip || '',
+          in_cosmerc: Number(prodCatalogo?.in_cosmerc ?? 0) || 0,
+        };
+        const cantidad = Number(d?.dc_canmerc) || 0;
+        const precio = Number(d?.dc_premerc) || 0;
+        const tipo = String(producto?.in_tramo ?? producto?.IN_TRAMO ?? '').trim();
+        items.push({
+          producto,
+          df_tipoMerc: tipo,
+          cantidad,
+          precio,
+          total: cantidad * precio,
+          costo: producto.in_cosmerc * cantidad,
+          fecfactActual: new Date(),
+          __desdeCotizacion: true,
+        });
+      }
+
+      this.items = items as any;
+      this.cotizacionOrigen = codigo;
+      this.actualizarTotales();
+
+      const malos = this.itemsCostoInvalido();
+      const avisos: string[] = [];
+      if (malos.length) {
+        avisos.push(`${malos.length} producto(s) tienen el costo igual o mayor que el precio y están marcados en rojo. Corríjalos antes de guardar.`);
+      }
+      if (noEncontrados.length) {
+        avisos.push(`No se encontraron en el catálogo: ${noEncontrados.slice(0, 10).join(', ')}.`);
+      }
+      await Swal.fire({
+        icon: avisos.length ? 'warning' : 'success',
+        title: `Cotización ${codigo} cargada`,
+        html: avisos.length ? avisos.join('<br>') : 'Revise los datos y guarde la factura.',
+      });
+    } catch (error: any) {
+      console.error('Error cargando la cotización en facturación', error);
+      await Swal.fire('Error', error?.message || `No se pudo cargar la cotización ${codigo}.`, 'error');
+    } finally {
+      this.isLoading = false;
+    }
+  }
+
+  /** Costo unitario actual de un item (catalogo; si no, el costo guardado / cantidad). */
+  private costoUnitarioItem(item: any): number {
+    const catalogo = Number(item?.producto?.in_cosmerc) || 0;
+    if (catalogo > 0) return catalogo;
+    const cantidad = Number(item?.cantidad) || 0;
+    return cantidad > 0 ? (Number(item?.costo) || 0) / cantidad : 0;
+  }
+
+  /**
+   * Items venidos de una cotizacion cuyo costo es igual o mayor que el
+   * precio. Se pintan en rojo y bloquean el guardado hasta corregirlos.
+   */
+  itemCostoInvalido(item: any): boolean {
+    if (!item?.__desdeCotizacion) return false;
+    const costo = this.costoUnitarioItem(item);
+    return costo > 0 && costo >= (Number(item?.precio) || 0);
+  }
+
+  itemsCostoInvalido(): any[] {
+    return (this.items || []).filter((item) => this.itemCostoInvalido(item));
+  }
+
   async guardarFacturacion() {
     if (this.isLoading) {
+      return;
+    }
+    const itemsMalos = this.itemsCostoInvalido();
+    if (itemsMalos.length) {
+      await Swal.fire({
+        icon: 'error',
+        title: 'Precio por debajo del costo',
+        html: 'Estos productos tienen el costo igual o mayor que el precio. Edítelos (lápiz) y suba el precio antes de guardar:<br><br>' +
+          itemsMalos.slice(0, 15).map((i: any) => `<b>${i?.producto?.in_codmerc || ''}</b> ${i?.producto?.in_desmerc || ''}`).join('<br>'),
+      });
       return;
     }
     // Bloqueo atomico antes de la primera validacion asincrona. Sin esto,

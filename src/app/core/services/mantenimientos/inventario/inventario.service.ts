@@ -400,6 +400,33 @@ export class ServicioInventario {
     );
   }
  
+  /**
+   * Indica si ya existe un producto con ese codigo en el catalogo
+   * (productos2), sin distinguir mayusculas ni espacios. Devuelve el producto
+   * encontrado o null. excluirId permite ignorar el propio producto al editar.
+   */
+  buscarCodigoDuplicado(codigo: string, excluirId?: number | null): Observable<any> {
+    const cod = String(codigo || '').trim();
+    return from((async () => {
+      if (!cod) return null;
+      // ilike sin comodines = igualdad sin distinguir mayusculas. Se escapan % y _.
+      const patron = cod.replace(/[\\%_]/g, (c) => `\\${c}`);
+      let query = this.db
+        .from('productos2')
+        .select('id,in_codmerc,in_desmerc')
+        .ilike('in_codmerc', patron)
+        .limit(5);
+      const { data, error } = await query;
+      if (error) throw error;
+      const encontrado = (data || []).find((row: any) =>
+        String(row?.in_codmerc || '').trim().toUpperCase() === cod.toUpperCase()
+        && (!excluirId || Number(row?.id) !== Number(excluirId)));
+      return encontrado || null;
+    })()).pipe(
+      map((row: any) => ({ status: 'success', code: 200, data: row }))
+    );
+  }
+
   obtenerProductoPorId(codigo: string): Observable<any> {
     const cod = String(codigo || "").trim();
     return from((async () => {

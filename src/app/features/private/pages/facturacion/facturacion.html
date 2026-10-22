@@ -781,6 +781,8 @@
               <tr
                 *ngFor="let item of items; let i = index"
                 [class.table-active]="i === selectedRow"
+                [class.item-costo-invalido]="itemCostoInvalido(item)"
+                [title]="itemCostoInvalido(item) ? 'El costo es igual o mayor que el precio: edite el precio antes de guardar' : ''"
                 (click)="selectRow(i)"
                 class="border-bottom"
               >

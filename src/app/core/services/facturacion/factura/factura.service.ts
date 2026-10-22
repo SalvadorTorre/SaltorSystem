@@ -427,6 +427,40 @@ export class ServicioFacturacion {
     if (facturaError) throw facturaError;
   }
 
+  private codigoProductoDetalle(item: any): string {
+    const producto = item?.producto || {};
+    return String(producto?.in_codmerc ?? item?.df_codMerc ?? item?.df_codmerc ?? '').trim();
+  }
+
+  /**
+   * No se puede facturar un producto que no exista en el inventario de la
+   * sucursal (tabla inventario). Se valida antes de escribir nada.
+   */
+  private async validarProductosEnInventarioSucursal(idsucursal: number, codigos: string[]): Promise<void> {
+    const unicos = Array.from(new Set((codigos || []).map((c) => String(c || '').trim()).filter(Boolean)));
+    if (!unicos.length) return;
+    if (!Number.isFinite(idsucursal) || idsucursal <= 0) {
+      throw new Error('Sucursal inválida para validar el inventario de la factura.');
+    }
+    const encontrados = new Set<string>();
+    for (let i = 0; i < unicos.length; i += 100) {
+      const { data, error } = await this.db
+        .from('inventario')
+        .select('inv_codprod')
+        .eq('inv_codsucu', idsucursal)
+        .in('inv_codprod', unicos.slice(i, i + 100));
+      if (error) throw error;
+      (data || []).forEach((r: any) => encontrados.add(String(r?.inv_codprod || '').trim()));
+    }
+    const faltantes = unicos.filter((c) => !encontrados.has(c));
+    if (faltantes.length) {
+      throw new Error(
+        `No se puede facturar: estos productos no existen en el inventario de la sucursal ${idsucursal}: ` +
+          `${faltantes.slice(0, 15).join(', ')}${faltantes.length > 15 ? '…' : ''}.`,
+      );
+    }
+  }
+
   private async descontarInventarioFactura(
     detalle: any[],
     idsucursal: number,
@@ -453,7 +487,9 @@ export class ServicioFacturacion {
         .limit(1)
         .maybeSingle();
       if (inventarioError) throw inventarioError;
-      if (!inventario) continue;
+      if (!inventario) {
+        throw new Error(`El producto ${codProducto} no existe en el inventario de la sucursal ${idsucursal}.`);
+      }
 
       const existenciaNueva = this.toNumber(inventario?.inv_existencia) - cantidad;
       const { error: updateError } = await this.db
@@ -1279,6 +1315,12 @@ export class ServicioFacturacion {
         const idsucursalFactura = this.toNumber(
           facturaRaw?.fa_codSucu ?? tenantSucursal,
         );
+        // Antes de tomar numero de factura: todos los productos deben estar
+        // en el inventario de la sucursal.
+        await this.validarProductosEnInventarioSucursal(
+          Number.isFinite(tenantSucursal) && tenantSucursal > 0 ? tenantSucursal : idsucursalFactura,
+          detalleRaw.map((item: any) => this.codigoProductoDetalle(item)),
+        );
         const codigo = await this.nextFacturaCode(idsucursalFactura);
 
         facturaRaw.fa_codFact = codigo;
@@ -1669,6 +1711,15 @@ export class ServicioFacturacion {
         : null;
       const actualizarDetalle = payload?.actualizarDetalle !== false;
       const detalleRaw = Array.isArray(payload?.detalle) ? payload.detalle : [];
+      if (actualizarDetalle) {
+        // Solo las lineas nuevas: las que ya estaban en la factura se respetan.
+        await this.validarProductosEnInventarioSucursal(
+          this.toNumber(facturaRaw?.fa_codSucu ?? this.currentTenant().sucursal),
+          detalleRaw
+            .filter((item: any) => !(item?.__detalleExistente === true || !!item?.df_codFact))
+            .map((item: any) => this.codigoProductoDetalle(item)),
+        );
+      }
       let facturaActualQuery = this.db
         .from('factura')
         .select('*')

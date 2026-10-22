@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
-import { BehaviorSubject, debounceTime, distinctUntilChanged, switchMap } from 'rxjs';
+import { BehaviorSubject, debounceTime, distinctUntilChanged, firstValueFrom, switchMap } from 'rxjs';
 import { ModeloGrupoMercanciasData } from 'src/app/core/services/mantenimientos/grupomerc';
 import { ServicioGrupoMercancias } from 'src/app/core/services/mantenimientos/grupomerc/grupomerc.service';
 import { ModeloInventarioData } from 'src/app/core/services/mantenimientos/inventario';
@@ -175,6 +175,7 @@ export class Inventario implements OnInit {
     this.modoEdicionProducto = false;
     this.modoConsultaProducto = false;
     this.productoEditId = null;
+    this.codigoOriginalEdicion = '';
     this.formularioInventario.enable();
     this.formularioInventario.reset({
       id: null,
@@ -192,6 +193,10 @@ export class Inventario implements OnInit {
     this.formularioInventario.enable();
     this.productoEditId = Number((invetario as any)?.id || 0) || null;
     this.formularioInventario.patchValue(invetario);
+    this.codigoOriginalEdicion = String((invetario as any)?.in_codmerc || '').trim();
+    // El codigo no se puede cambiar al editar: identifica el producto en
+    // facturas, cotizaciones e inventario de las sucursales.
+    this.formularioInventario.get('in_codmerc')?.disable();
     this.updateCharCount();
     $('#modalProducto').modal('show');
   }
@@ -490,13 +495,64 @@ export class Inventario implements OnInit {
     $('#modalProducto').modal('hide');
   }
 
-  onSubmitInventario() {
+  /** Codigo con el que se abrio el producto al editar (para no marcarse a si mismo). */
+  private codigoOriginalEdicion = '';
+  verificandoCodigo = false;
+
+  /**
+   * Comprueba en el catalogo (productos2) que el codigo no exista ya.
+   * Devuelve true si el codigo se puede usar.
+   */
+  async verificarCodigoDuplicado(mostrarAviso = true): Promise<boolean> {
+    if (this.modoConsultaProducto) return true;
+    const control = this.formularioInventario.get('in_codmerc');
+    const codigo = String(control?.value || '').trim();
+    if (!codigo) return true;
+    // Al editar, si no se cambio el codigo no hay nada que verificar.
+    if (this.modoEdicionProducto && codigo.toUpperCase() === this.codigoOriginalEdicion.toUpperCase()) return true;
+
+    this.verificandoCodigo = true;
+    try {
+      const resp: any = await firstValueFrom(
+        this.servicioInventario.buscarCodigoDuplicado(codigo, this.modoEdicionProducto ? this.productoEditId : null),
+      );
+      const existente = resp?.data;
+      if (!existente) return true;
+      if (mostrarAviso) {
+        await Swal.fire({
+          icon: 'warning',
+          title: 'Código duplicado',
+          html: `El código <b>${existente.in_codmerc}</b> ya existe` +
+            (existente.in_desmerc ? `: ${existente.in_desmerc}` : '') +
+            '.<br>Use otro código.',
+        });
+        control?.setValue('');
+        setTimeout(() => (document.getElementById('codigo') as HTMLInputElement | null)?.focus(), 0);
+      }
+      return false;
+    } catch (error) {
+      console.error('Error verificando el código del producto', error);
+      // Si no se pudo verificar, no se bloquea aqui; el guardado lo vuelve a intentar.
+      return true;
+    } finally {
+      this.verificandoCodigo = false;
+    }
+  }
+
+  async onSubmitInventario() {
     if (this.modoConsultaProducto) {
+      return;
+    }
+    if (!(await this.verificarCodigoDuplicado(true))) {
       return;
     }
 
     if (this.formularioInventario.valid) {
       const payload = this.formularioInventario.getRawValue();
+      // Al editar se usa siempre el codigo original (el campo esta bloqueado).
+      if (this.modoEdicionProducto && this.codigoOriginalEdicion) {
+        payload.in_codmerc = this.codigoOriginalEdicion;
+      }
       const codigo = String(payload?.in_codmerc || '').trim();
       if (!codigo) {
         Swal.fire({ title: 'Código requerido', text: 'Debe ingresar el código del producto.', icon: 'warning' });
