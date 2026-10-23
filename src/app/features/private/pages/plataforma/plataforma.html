@@ -1,0 +1,159 @@
+<div class="container-fluid py-3 plataforma">
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+    <div>
+      <h4 class="mb-0 fw-bold"><i class="bi bi-diagram-3-fill me-2 text-primary"></i>Plataforma</h4>
+      <small class="text-muted">Administración de todas las empresas. Solo visible para el dueño del sistema.</small>
+    </div>
+    <div class="d-flex gap-2">
+      <button type="button" class="btn btn-outline-secondary btn-sm" (click)="cargar()" [disabled]="cargando">
+        <i class="bi bi-arrow-clockwise me-1"></i>Actualizar
+      </button>
+      <a class="btn btn-primary btn-sm" [routerLink]="['empresas']">
+        <i class="bi bi-building-gear me-1"></i>Crear / editar empresas
+      </a>
+    </div>
+  </div>
+
+  <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
+
+  <div class="row g-2 mb-3">
+    <div class="col-6 col-lg-3">
+      <div class="card resumen-card"><div class="card-body">
+        <div class="small text-muted">Empresas activas</div>
+        <div class="fs-4 fw-bold text-success">{{ totalActivas }}</div>
+      </div></div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="card resumen-card"><div class="card-body">
+        <div class="small text-muted">Suspendidas</div>
+        <div class="fs-4 fw-bold text-danger">{{ totalSuspendidas }}</div>
+      </div></div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="card resumen-card"><div class="card-body">
+        <div class="small text-muted">Facturas del mes</div>
+        <div class="fs-4 fw-bold">{{ facturasMesTotal | number }}</div>
+      </div></div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="card resumen-card"><div class="card-body">
+        <div class="small text-muted">Ventas del mes (todas)</div>
+        <div class="fs-4 fw-bold text-primary">{{ ventasMesTotal | currency }}</div>
+      </div></div>
+    </div>
+  </div>
+
+  <div class="d-flex flex-wrap gap-2 mb-2">
+    <input type="text" class="form-control form-control-sm buscador" placeholder="Buscar por código, nombre o RNC"
+      [(ngModel)]="filtro" />
+    <select class="form-select form-select-sm estado-select" [(ngModel)]="filtroEstado">
+      <option value="todas">Todas</option>
+      <option value="activas">Activas</option>
+      <option value="suspendidas">Suspendidas</option>
+    </select>
+  </div>
+
+  <div class="table-responsive border rounded bg-white shadow-sm">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-dark">
+        <tr>
+          <th>Código</th>
+          <th>Empresa</th>
+          <th>RNC</th>
+          <th class="text-center">Sucursales</th>
+          <th class="text-center">Usuarios</th>
+          <th class="text-end">Facturas mes</th>
+          <th class="text-end">Ventas mes</th>
+          <th>Última factura</th>
+          <th class="text-center">Estado</th>
+          <th class="text-end">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngIf="cargando"><td colspan="10" class="text-center text-muted py-4">Cargando empresas…</td></tr>
+        <tr *ngIf="!cargando && !empresasFiltradas.length"><td colspan="10" class="text-center text-muted py-4">No hay empresas.</td></tr>
+        <tr *ngFor="let e of empresasFiltradas" [class.table-danger]="!e.activa">
+          <td class="fw-bold">{{ e.cod_empre }}</td>
+          <td>
+            {{ e.nom_empre }}
+            <span *ngIf="esActual(e)" class="badge bg-info text-dark ms-1">Actual</span>
+            <div class="small text-danger" *ngIf="!e.activa && e.motivo_suspension">{{ e.motivo_suspension }}</div>
+          </td>
+          <td>{{ e.rnc_empre }}</td>
+          <td class="text-center">{{ e.sucursales }}</td>
+          <td class="text-center">{{ e.usuarios }}</td>
+          <td class="text-end">{{ e.facturas_mes | number }}</td>
+          <td class="text-end">{{ e.ventas_mes | currency }}</td>
+          <td>{{ e.ultima_factura ? (e.ultima_factura | date: 'dd/MM/yyyy') : '—' }}</td>
+          <td class="text-center">
+            <span class="badge" [ngClass]="e.activa ? 'bg-success' : 'bg-danger'">
+              {{ e.activa ? 'Activa' : 'Suspendida' }}
+            </span>
+          </td>
+          <td class="text-end text-nowrap">
+            <button type="button" class="btn btn-sm btn-outline-primary me-1" title="Entrar como esta empresa"
+              (click)="entrar(e)" [disabled]="procesando === e.cod_empre">
+              <i class="bi bi-box-arrow-in-right"></i>
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary me-1" title="Crear usuario administrador"
+              (click)="abrirAdmin(e)">
+              <i class="bi bi-person-plus"></i>
+            </button>
+            <button type="button" class="btn btn-sm" [ngClass]="e.activa ? 'btn-outline-danger' : 'btn-outline-success'"
+              [title]="e.activa ? 'Suspender' : 'Activar'" (click)="cambiarEstado(e)" [disabled]="procesando === e.cod_empre">
+              <i class="bi" [ngClass]="e.activa ? 'bi-pause-circle' : 'bi-play-circle'"></i>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="plataforma-modal-backdrop" *ngIf="empresaAdmin">
+  <div class="plataforma-modal card shadow">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <strong>Usuario administrador · {{ empresaAdmin.nom_empre }}</strong>
+      <button type="button" class="btn-close" (click)="cerrarAdmin()" [disabled]="guardandoAdmin"></button>
+    </div>
+    <div class="card-body">
+      <div class="row g-2">
+        <div class="col-6">
+          <label class="form-label small mb-0">Usuario</label>
+          <input class="form-control form-control-sm" [(ngModel)]="formAdmin.idUsuario" maxlength="10" />
+        </div>
+        <div class="col-6">
+          <label class="form-label small mb-0">Clave (4 caracteres)</label>
+          <input class="form-control form-control-sm" [(ngModel)]="formAdmin.claveUsuario" maxlength="4" type="password" />
+        </div>
+        <div class="col-12">
+          <label class="form-label small mb-0">Nombre</label>
+          <input class="form-control form-control-sm" [(ngModel)]="formAdmin.nombreUsuario" maxlength="100" />
+        </div>
+        <div class="col-12">
+          <label class="form-label small mb-0">Correo (opcional)</label>
+          <input class="form-control form-control-sm" [(ngModel)]="formAdmin.correo" maxlength="40" type="email" />
+        </div>
+        <div class="col-6">
+          <label class="form-label small mb-0">Sucursal</label>
+          <select class="form-select form-select-sm" [(ngModel)]="formAdmin.sucursalid">
+            <option *ngFor="let s of sucursalesAdmin" [ngValue]="s.cod_sucursal">{{ s.cod_sucursal }} - {{ s.nom_sucursal }}</option>
+          </select>
+          <div class="small text-danger" *ngIf="!sucursalesAdmin.length">La empresa no tiene sucursales.</div>
+        </div>
+        <div class="col-6">
+          <label class="form-label small mb-0">Tipo de usuario</label>
+          <select class="form-select form-select-sm" [(ngModel)]="formAdmin.idtipoUsuario">
+            <option *ngFor="let t of tiposUsuario" [ngValue]="t.id">{{ t.descripcion }}</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="card-footer d-flex justify-content-end gap-2">
+      <button type="button" class="btn btn-sm btn-secondary" (click)="cerrarAdmin()" [disabled]="guardandoAdmin">Cancelar</button>
+      <button type="button" class="btn btn-sm btn-primary" (click)="guardarAdmin()" [disabled]="guardandoAdmin">
+        {{ guardandoAdmin ? 'Creando…' : 'Crear usuario' }}
+      </button>
+    </div>
+  </div>
+</div>

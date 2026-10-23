@@ -27,6 +27,7 @@
         <li class="nav-item" *ngIf="canViewModule('/private/almacen')"><a class="nav-link d-flex align-items-center" [routerLink]="['/private/almacen']" routerLinkActive="active"><i class="bi bi-box-seam me-2"></i><span>Almacén</span></a></li>
         <li class="nav-item" *ngIf="canViewModule('/private/despacho')"><a class="nav-link d-flex align-items-center" [routerLink]="['/private/despacho']" routerLinkActive="active"><i class="bi bi-truck me-2"></i><span>Despacho</span></a></li>
         <li class="nav-item" *ngIf="canViewModule('/private/contabilidad')"><a class="nav-link d-flex align-items-center" [routerLink]="['/private/contabilidad']" routerLinkActive="active"><i class="bi bi-calculator me-2"></i><span>Contabilidad</span></a></li>
+        <li class="nav-item" *ngIf="esDuenoPlataforma"><a class="nav-link d-flex align-items-center" [routerLink]="['/private/plataforma']" routerLinkActive="active"><i class="bi bi-diagram-3-fill me-2"></i><span>Plataforma</span></a></li>
         <li class="nav-item" *ngIf="canViewModule('/private/reporte')"><a class="nav-link d-flex align-items-center" [routerLink]="['/private/reporte']" routerLinkActive="active"><i class="bi bi-graph-up me-2"></i><span>Reportes</span></a></li>
       </ul>
 

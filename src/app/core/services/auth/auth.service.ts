@@ -4,6 +4,7 @@ import { catchError } from 'rxjs/operators';
 import { SupabaseService } from '../supabase/supabase.service';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { AccessControlService } from '../access/access-control.service';
+import { ServicioPlataforma } from '../plataforma/plataforma.service';
 
 type AppRole = 'root' | 'admin' | 'vendedor';
 
@@ -36,7 +37,23 @@ export class AuthService {
   constructor(
     private supabaseService: SupabaseService,
     private accessControl: AccessControlService,
+    private plataforma: ServicioPlataforma,
   ) {}
+
+  /** Empresa suspendida desde Plataforma: cierra la sesion de Supabase y avisa. */
+  private async validarEmpresaActiva(): Promise<void> {
+    const estado = await this.plataforma.estadoAcceso();
+    if (estado.permitido) return;
+    try {
+      await (this.supabaseService.client as any)?.auth?.signOut?.();
+    } catch {
+      // ignorar
+    }
+    this.clearSessionStorage();
+    const empresa = estado.empresa ? ` ${estado.empresa}` : '';
+    const motivo = estado.motivo ? ` Motivo: ${estado.motivo}.` : '';
+    throw new Error(`La empresa${empresa} está suspendida. Comuníquese con el administrador de la plataforma.${motivo}`);
+  }
 
   isLoggedIn(): boolean {
     const token = String(localStorage.getItem('authToken') || '').trim();
@@ -94,6 +111,8 @@ export class AuthService {
       }
 
       const token = authData.session.access_token;
+      this.plataforma.limpiarCache();
+      await this.validarEmpresaActiva();
       const usuarioRaw = await this.fetchSupabaseUsuario(client, authData.email, identifier);
       if (!usuarioRaw) {
         throw new Error('No se encontró el usuario en myappdb.usuario');
@@ -401,6 +420,17 @@ export class AuthService {
     const usuarioRaw = await this.fetchSupabaseUsuario(client, email, identifier);
     if (!usuarioRaw) return;
 
+    try {
+      await this.validarEmpresaActiva();
+    } catch (error: any) {
+      // La empresa fue suspendida con la sesion abierta: volver al inicio de sesion.
+      localStorage.setItem('saltorsystem-login-message', String(error?.message || 'Empresa suspendida'));
+      this.accessControl.reset();
+      this.loggedIn = false;
+      window.location.reload();
+      return;
+    }
+
     const usuario = this.normalizeUsuarioPayload(usuarioRaw);
     const [sucursal, empresa, roleDesc] = await Promise.all([
       this.fetchSupabaseSucursal(client, usuario.sucursalid),
@@ -513,6 +543,7 @@ export class AuthService {
   }
 
   logout(): void {
+    this.plataforma.limpiarCache();
     this.clearSessionStorage();
     this.accessControl.reset();
     this.loggedIn = false;
