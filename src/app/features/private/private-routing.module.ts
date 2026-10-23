@@ -2,6 +2,7 @@ import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { PrivatePage } from './private.page';
 import { permissionGuard } from 'src/app/core/guards/permission/permission.guard';
+import { duenoPlataformaGuard } from 'src/app/core/guards/plataforma/dueno-plataforma.guard';
 
 
 // const routes: Routes = [
@@ -145,6 +146,14 @@ const routes: Routes = [
         loadChildren: () =>
           import('./pages/contabilidad/contabilidad-modulo')
             .then(m => m.ModuloContabilidad),
+      },
+      {
+        // Solo el dueno de la plataforma (myappdb.plataforma_duenos).
+        path: 'plataforma',
+        canActivate: [duenoPlataformaGuard],
+        loadChildren: () =>
+          import('./pages/plataforma/plataforma-modulo')
+            .then(m => m.ModuloPlataforma),
       },
       {
         path: 'reporte',

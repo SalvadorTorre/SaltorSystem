@@ -117,13 +117,10 @@ const routes: Routes = [
           ),
       },
       {
+        // Empresas ahora se administra solo desde Plataforma (dueno del sistema).
         path: 'Empresas',
-        canActivate: [permissionGuard],
-        data: { accessPath: '/private/mantenimientos/Empresas' },
-        loadChildren: () =>
-          import('./pages/empresas-page/empresas-modulo').then(
-            (m) => m.ModuloEmpresas
-          ),
+        redirectTo: '/private/plataforma/empresas',
+        pathMatch: 'full',
       },
       {
         path: 'grupo-mercancias',

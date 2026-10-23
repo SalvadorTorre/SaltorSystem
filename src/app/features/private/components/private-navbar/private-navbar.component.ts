@@ -1,5 +1,6 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { AccessControlService } from 'src/app/core/services/access/access-control.service';
+import { ServicioPlataforma } from 'src/app/core/services/plataforma/plataforma.service';
 import { environment } from '@env/environment';
 
 type NavbarUpdateStage =
@@ -32,10 +33,17 @@ export class PrivateNavbarComponent implements OnInit {
   @Output() logoutRequested = new EventEmitter<void>();
   readonly appVersion = environment.appVersion || '1.0.0';
 
-  constructor(private readonly access: AccessControlService) {}
+  /** Opcion Plataforma: solo el dueno del sistema. */
+  esDuenoPlataforma = localStorage.getItem('esDuenoPlataforma') === 'S';
+
+  constructor(
+    private readonly access: AccessControlService,
+    private readonly plataforma: ServicioPlataforma,
+  ) {}
 
   ngOnInit(): void {
     void this.access.ensureLoaded();
+    void this.plataforma.esDueno(true).then((v) => (this.esDuenoPlataforma = v));
   }
 
   emitProfile(): void {

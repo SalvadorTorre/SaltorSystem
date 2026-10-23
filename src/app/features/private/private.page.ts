@@ -188,15 +188,12 @@ export class PrivatePage implements OnInit, OnDestroy {
       dateStyle: 'medium',
       timeStyle: 'short',
     }).format(new Date());
-    const mesesDisponibles = Array.from({ length: 4 }, (_, index) => {
-      const fecha = new Date();
-      fecha.setDate(1);
-      fecha.setMonth(fecha.getMonth() - index);
-      return {
-        value: `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}`,
-        label: new Intl.DateTimeFormat('es-DO', { month: 'long', year: 'numeric' }).format(fecha),
-      };
-    });
+    // Periodo por defecto: mes en curso (del dia 1 al ultimo dia del mes).
+    const hoy = new Date();
+    const desdeInicial = this.fechaIsoLocal(new Date(hoy.getFullYear(), hoy.getMonth(), 1));
+    const hastaInicial = this.fechaIsoLocal(new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0));
+    const etiquetaPeriodo = (desde: string, hasta: string) =>
+      `Resumen del ${this.formatearFechaCorta(desde)} al ${this.formatearFechaCorta(hasta)}`;
 
     Swal.fire({
       width: 900,
@@ -235,17 +232,17 @@ export class PrivatePage implements OnInit, OnDestroy {
             <div style="border:1px solid #e9ecef;border-radius:12px;padding:12px 14px;background:#f8fbff;">
               <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
                 <div style="font-weight:700;color:#0d6efd;">Reporte de ventas | Hierros y Forjas</div>
-                <div style="display:flex;align-items:center;gap:8px;">
-                  <label for="perfilMesConsulta" style="font-size:12px;color:#6c757d;">Mes:</label>
-                  <select id="perfilMesConsulta" class="form-select form-select-sm" style="width:175px;">
-                    ${mesesDisponibles.map((mes, index) => `<option value="${mes.value}"${index === 0 ? ' selected' : ''}>${this.escapeHtml(mes.label)}</option>`).join('')}
-                  </select>
-                  <button id="perfilBuscarMes" type="button" class="btn btn-sm btn-primary" title="Consultar mes" aria-label="Consultar mes">
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                  <label for="perfilFechaDesde" style="font-size:12px;color:#6c757d;">Desde:</label>
+                  <input id="perfilFechaDesde" type="date" class="form-control form-control-sm" style="width:150px;" value="${desdeInicial}" max="${hastaInicial}">
+                  <label for="perfilFechaHasta" style="font-size:12px;color:#6c757d;">Hasta:</label>
+                  <input id="perfilFechaHasta" type="date" class="form-control form-control-sm" style="width:150px;" value="${hastaInicial}" min="${desdeInicial}">
+                  <button id="perfilBuscarMes" type="button" class="btn btn-sm btn-primary" title="Consultar periodo" aria-label="Consultar periodo">
                     <i class="bi bi-search"></i>
                   </button>
                 </div>
               </div>
-              <div id="perfilMesEstado" style="font-size:12px;color:#6c757d;margin-top:5px;">Resumen de ${this.escapeHtml(mesesDisponibles[0].label)}</div>
+              <div id="perfilMesEstado" style="font-size:12px;color:#6c757d;margin-top:5px;">${this.escapeHtml(etiquetaPeriodo(desdeInicial, hastaInicial))}</div>
               <div style="margin-top:10px;display:grid;gap:10px;font-size:13px;">
                 <div style="border:1px solid #bfdbfe;border-radius:10px;padding:10px;background:#fff;">
                   <div style="font-weight:800;color:#0d6efd;margin-bottom:8px;">Sucursal: ${this.escapeHtml(profile.sucursal)}</div>
@@ -270,25 +267,45 @@ export class PrivatePage implements OnInit, OnDestroy {
                 <div style="color:#6c757d;font-size:12px;">Último acceso: <strong>${this.escapeHtml(lastAccessLabel)}</strong></div>
               </div>
               <div style="margin-top:10px;padding:8px 10px;border-radius:8px;background:#fff3cd;color:#856404;font-size:12px;">
-                Valores calculados para el vendedor conectado durante el mes en curso.
+                Valores calculados para el vendedor conectado durante el periodo seleccionado.
               </div>
             </div>
           </div>
         </div>
       `,
       didOpen: () => {
-        const selector = document.getElementById('perfilMesConsulta') as HTMLSelectElement | null;
+        const inputDesde = document.getElementById('perfilFechaDesde') as HTMLInputElement | null;
+        const inputHasta = document.getElementById('perfilFechaHasta') as HTMLInputElement | null;
         const botonBuscar = document.getElementById('perfilBuscarMes') as HTMLButtonElement | null;
+        const estado = document.getElementById('perfilMesEstado');
+
+        // Evitar que "desde" quede despues de "hasta" en el calendario.
+        inputDesde?.addEventListener('change', () => {
+          if (inputHasta && inputDesde.value) inputHasta.min = inputDesde.value;
+        });
+        inputHasta?.addEventListener('change', () => {
+          if (inputDesde && inputHasta.value) inputDesde.max = inputHasta.value;
+        });
+
         botonBuscar?.addEventListener('click', async () => {
-          if (!selector) return;
-          const [year, month] = selector.value.split('-').map(Number);
-          const periodo = new Date(year, month - 1, 1);
-          const estado = document.getElementById('perfilMesEstado');
-          selector.disabled = true;
+          if (!inputDesde || !inputHasta) return;
+          const desde = String(inputDesde.value || '').trim();
+          const hasta = String(inputHasta.value || '').trim();
+          if (!desde || !hasta) {
+            if (estado) estado.textContent = 'Seleccione la fecha desde y la fecha hasta.';
+            return;
+          }
+          if (desde > hasta) {
+            if (estado) estado.textContent = 'La fecha desde no puede ser mayor que la fecha hasta.';
+            return;
+          }
+
+          inputDesde.disabled = true;
+          inputHasta.disabled = true;
           botonBuscar.disabled = true;
-          if (estado) estado.textContent = 'Consultando información del mes seleccionado...';
+          if (estado) estado.textContent = 'Consultando información del periodo seleccionado...';
           try {
-            const reporte = await this.buildCurrentMonthSalesReport(periodo);
+            const reporte = await this.buildCurrentMonthSalesReport(desde, hasta);
             this.actualizarValorPerfil('perfilMetaSucursal', this.formatMoney(reporte.metaFacturar));
             this.actualizarValorPerfil('perfilValorSucursal', this.formatMoney(reporte.valorFacturadoSucursal));
             this.actualizarValorPerfil('perfilPctSucursal', `${reporte.porcientoFacturadoSucursal.toFixed(1)}%`);
@@ -298,18 +315,18 @@ export class PrivatePage implements OnInit, OnDestroy {
             this.actualizarValorPerfil('perfilValorVendedor', this.formatMoney(reporte.valorFacturado));
             this.actualizarValorPerfil('perfilMargenVendedor', `${reporte.margenVentaPct.toFixed(2)}%`);
             this.actualizarValorPerfil('perfilPctVendedor', `${reporte.porcientoFacturado.toFixed(1)}%`);
-            const mes = mesesDisponibles.find((item) => item.value === selector.value);
-            if (estado) estado.textContent = `Resumen de ${mes?.label || selector.value}`;
+            if (estado) estado.textContent = etiquetaPeriodo(desde, hasta);
           } catch (error) {
-            console.error('[Mi perfil] Error consultando mes seleccionado', error);
+            console.error('[Mi perfil] Error consultando periodo seleccionado', error);
             const detalle = String(
               (error as any)?.message ||
               (error as any)?.details ||
-              'No se pudo consultar el mes seleccionado.',
+              'No se pudo consultar el periodo seleccionado.',
             ).trim();
             if (estado) estado.textContent = detalle;
           } finally {
-            selector.disabled = false;
+            inputDesde.disabled = false;
+            inputHasta.disabled = false;
             botonBuscar.disabled = false;
           }
         });
@@ -566,7 +583,7 @@ export class PrivatePage implements OnInit, OnDestroy {
     return 'Vendedor';
   }
 
-  private async buildCurrentMonthSalesReport(periodo: Date = new Date()): Promise<{
+  private async buildCurrentMonthSalesReport(desde?: string, hasta?: string): Promise<{
     metaFacturar: number;
     totalFacturaSucursal: number;
     valorFacturadoSucursal: number;
@@ -582,8 +599,10 @@ export class PrivatePage implements OnInit, OnDestroy {
       throw new Error('El usuario no tiene una sucursal válida asignada.');
     }
 
-    const fechaDesde = this.fechaIsoLocal(new Date(periodo.getFullYear(), periodo.getMonth(), 1));
-    const fechaHasta = this.fechaIsoLocal(new Date(periodo.getFullYear(), periodo.getMonth() + 1, 0));
+    // Sin fechas: mes en curso. Con fechas: el periodo elegido en Mi perfil.
+    const hoy = new Date();
+    const fechaDesde = desde || this.fechaIsoLocal(new Date(hoy.getFullYear(), hoy.getMonth(), 1));
+    const fechaHasta = hasta || this.fechaIsoLocal(new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0));
     const empresa = (localStorage.getItem('cod_empre') || localStorage.getItem('codigoempresa') || '').trim();
 
     // Todo el calculo se hace en la base de datos (RPC resumen_ventas_perfil):
@@ -612,6 +631,12 @@ export class PrivatePage implements OnInit, OnDestroy {
       margenVentaPct: margen(r.valorFacturadoVendedor, r.costoFacturadoVendedor),
       porcientoFacturado: porciento(r.valorFacturadoVendedor),
     };
+  }
+
+  /** 'YYYY-MM-DD' -> 'dd/MM/yyyy' */
+  private formatearFechaCorta(iso: string): string {
+    const m = String(iso || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+    return m ? `${m[3]}/${m[2]}/${m[1]}` : String(iso || '');
   }
 
   private fechaIsoLocal(fecha: Date): string {
