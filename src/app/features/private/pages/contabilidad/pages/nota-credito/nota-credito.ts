@@ -661,11 +661,14 @@ export class NotaCreditoComponent implements OnInit {
         await this.generateCreditNoteEncf();
       }
 
-      const scenario = this.buildDgiiScenario();
-      this.lastRequestJson = JSON.stringify(scenario, null, 2);
+      // Guardar primero: al guardar se asigna nc_vencimiento (FechaLimitePago).
       this.lastResponseJson = '';
       await this.saveCreditNote('Pendiente DGII');
       notaGuardada = true;
+      await this.cargarVencimientoGuardado();
+
+      const scenario = this.buildDgiiScenario();
+      this.lastRequestJson = JSON.stringify(scenario, null, 2);
       this.lastStatus = 'Enviando...';
       Swal.fire({
         title: 'Enviando nota de credito',
@@ -895,6 +898,8 @@ export class NotaCreditoComponent implements OnInit {
       DireccionEmisor: this.form.issuerAddress.trim(),
       FechaEmision: this.formatDgiiDate(this.form.issueDate),
       FechaVencimientoSecuencia: this.form.sequenceExpiration ? this.formatDgiiDate(this.form.sequenceExpiration) : '',
+      // Fecha limite de pago = nota_credito.nc_vencimiento.
+      FechaLimitePago: this.form.sequenceExpiration ? this.formatDgiiDate(this.form.sequenceExpiration) : '',
       RNCComprador: this.cleanRnc(this.form.buyerRnc),
       RazonSocialComprador: this.form.buyerName.trim(),
       NCFModificado: this.form.modifiedNcf.trim(),
@@ -953,6 +958,21 @@ export class NotaCreditoComponent implements OnInit {
 
     const date = new Date(Number(match[3]), Number(match[2]) - 1, Number(match[1]));
     return Number.isNaN(date.getTime()) ? null : date;
+  }
+
+  /** Lee nc_vencimiento de la nota guardada para enviarlo como FechaLimitePago. */
+  private async cargarVencimientoGuardado(): Promise<void> {
+    const numero = this.form.creditNoteNumber.trim();
+    if (!numero) return;
+    try {
+      const resp: any = await firstValueFrom(this.notaCreditoService.consultar(numero));
+      const vencimiento = resp?.data?.header?.nc_vencimiento;
+      if (vencimiento) {
+        this.form.sequenceExpiration = this.toDateInput(vencimiento);
+      }
+    } catch (error) {
+      console.warn('[Nota credito] No se pudo leer nc_vencimiento', error);
+    }
   }
 
   private async saveCreditNote(status: string): Promise<void> {

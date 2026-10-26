@@ -1,4 +1,19 @@
-<div class="container-fluid py-3 plataforma">
+<div class="plataforma-shell">
+  <aside class="plataforma-sidebar" aria-label="Secciones de Plataforma">
+    <div class="plataforma-sidebar-titulo">GESTIÓN</div>
+    <button type="button" class="plataforma-nav-item" [class.active]="seccionActiva === 'plataforma'" (click)="cambiarSeccion('plataforma')">
+      <i class="bi bi-diagram-3-fill"></i>
+      <span>Plataforma</span>
+    </button>
+    <button type="button" class="plataforma-nav-item" [class.active]="seccionActiva === 'ventas'" (click)="cambiarSeccion('ventas')">
+      <i class="bi bi-graph-up-arrow"></i>
+      <span>Ventas</span>
+    </button>
+  </aside>
+
+  <main class="plataforma-workspace">
+  <ng-container *ngIf="seccionActiva === 'plataforma'">
+  <div class="container-fluid py-3 plataforma">
   <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
     <div>
       <h4 class="mb-0 fw-bold"><i class="bi bi-diagram-3-fill me-2 text-primary"></i>Plataforma</h4>
@@ -107,6 +122,198 @@
         </tr>
       </tbody>
     </table>
+  </div>
+  </div>
+  </ng-container>
+
+  <ng-container *ngIf="seccionActiva === 'ventas'">
+    <section class="ventas-page">
+      <header class="ventas-header">
+        <div>
+          <div class="ventas-kicker">PLATAFORMA · ANÁLISIS</div>
+          <h4>Ventas por período</h4>
+          <p>Compare facturas y conduces por empresa, sucursal y rango de fechas.</p>
+        </div>
+        <div class="ventas-header-acciones">
+          <button type="button" class="btn btn-success btn-sm" (click)="abrirCrearPendiente()">
+            <i class="bi bi-hourglass-split me-1"></i>Crear pendiente
+          </button>
+          <button type="button" class="btn btn-outline-secondary btn-sm" (click)="consultarVentas()" [disabled]="cargandoVentas">
+            <i class="bi bi-arrow-clockwise me-1"></i>Actualizar
+          </button>
+        </div>
+      </header>
+
+      <form class="ventas-filtros" (ngSubmit)="consultarVentas()">
+        <div class="ventas-filtro">
+          <label for="ventasEmpresa">Empresa</label>
+          <select id="ventasEmpresa" class="form-select" name="ventasEmpresa" [(ngModel)]="filtrosVentas.empresa" (ngModelChange)="cambiarEmpresaVentas()">
+            <option value="">Todas las empresas</option>
+            <option *ngFor="let empresa of empresas" [value]="empresa.cod_empre">
+              {{ empresa.cod_empre }} · {{ empresa.nom_empre }}
+            </option>
+          </select>
+        </div>
+        <div class="ventas-filtro">
+          <label for="ventasSucursal">Sucursal</label>
+          <select id="ventasSucursal" class="form-select" name="ventasSucursal" [(ngModel)]="filtrosVentas.sucursal" [disabled]="!filtrosVentas.empresa || cargandoSucursalesVentas">
+            <option [ngValue]="null">Todas las sucursales</option>
+            <option *ngFor="let sucursal of sucursalesVentas" [ngValue]="sucursal.cod_sucursal">
+              {{ sucursal.cod_sucursal }} · {{ sucursal.nom_sucursal }}
+            </option>
+          </select>
+        </div>
+        <div class="ventas-filtro ventas-fecha">
+          <label for="ventasDesde">Desde</label>
+          <input id="ventasDesde" type="date" class="form-control" name="ventasDesde" [(ngModel)]="filtrosVentas.fechaDesde" required />
+        </div>
+        <div class="ventas-filtro ventas-fecha">
+          <label for="ventasHasta">Hasta</label>
+          <input id="ventasHasta" type="date" class="form-control" name="ventasHasta" [(ngModel)]="filtrosVentas.fechaHasta" required />
+        </div>
+        <button type="submit" class="btn btn-primary ventas-consultar" [disabled]="cargandoVentas">
+          <span *ngIf="!cargandoVentas"><i class="bi bi-search me-1"></i>Consultar</span>
+          <span *ngIf="cargandoVentas"><span class="spinner-border spinner-border-sm me-1"></span>Consultando</span>
+        </button>
+      </form>
+
+      <div class="alert alert-danger mt-3 mb-0" *ngIf="errorVentas">{{ errorVentas }}</div>
+
+      <ng-container *ngIf="resumenVentas as resumen">
+        <div class="ventas-resumen">
+          <article class="ventas-metrica principal">
+            <span>Total del período</span>
+            <strong>RD$ {{ resumen.total_general | number:'1.2-2' }}</strong>
+            <small>{{ resumen.documentos | number }} documentos · incluye facturas, conduces y pendientes</small>
+          </article>
+          <article class="ventas-metrica factura">
+            <span>Total facturado</span>
+            <strong>RD$ {{ resumen.total_facturado | number:'1.2-2' }}</strong>
+            <small>{{ resumen.facturas | number }} facturas</small>
+          </article>
+          <article class="ventas-metrica conduce">
+            <span>Total conduce</span>
+            <strong>RD$ {{ resumen.total_conduce | number:'1.2-2' }}</strong>
+            <small>{{ resumen.conduces | number }} conduces</small>
+          </article>
+          <article class="ventas-metrica pendiente">
+            <span>Total pendiente</span>
+            <strong>RD$ {{ resumen.total_pendiente | number:'1.2-2' }}</strong>
+            <small>{{ resumen.pendientes | number }} pendientes</small>
+          </article>
+        </div>
+
+        <section class="ventas-detalle">
+          <div class="ventas-detalle-cabecera">
+            <div>
+              <h5>{{ etiquetaAgrupacion() }}</h5>
+              <p>La agrupación cambia automáticamente según la duración del período seleccionado.</p>
+            </div>
+            <span class="ventas-periodo-badge">{{ fechaVisual(resumen.fecha_desde) }} – {{ fechaVisual(resumen.fecha_hasta) }}</span>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table ventas-table align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>Período</th>
+                  <th class="text-center">Documentos</th>
+                  <th class="text-center">Facturas</th>
+                  <th class="text-end">Total facturado</th>
+                  <th class="text-center">Conduces</th>
+                  <th class="text-end">Total conduce</th>
+                  <th class="text-center">Pendientes</th>
+                  <th class="text-end">Total pendiente</th>
+                  <th class="text-end">Total período</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let fila of resumen.detalle">
+                  <td class="periodo-cell">{{ etiquetaPeriodo(fila) }}</td>
+                  <td class="text-center">{{ fila.documentos | number }}</td>
+                  <td class="text-center"><span class="tipo-cantidad factura">{{ fila.facturas | number }}</span></td>
+                  <td class="text-end text-nowrap">RD$ {{ fila.total_facturado | number:'1.2-2' }}</td>
+                  <td class="text-center"><span class="tipo-cantidad conduce">{{ fila.conduces | number }}</span></td>
+                  <td class="text-end text-nowrap">RD$ {{ fila.total_conduce | number:'1.2-2' }}</td>
+                  <td class="text-center"><span class="tipo-cantidad pendiente">{{ fila.pendientes | number }}</span></td>
+                  <td class="text-end text-nowrap">RD$ {{ fila.total_pendiente | number:'1.2-2' }}</td>
+                  <td class="text-end text-nowrap total-cell">RD$ {{ fila.total_periodo | number:'1.2-2' }}</td>
+                </tr>
+                <tr *ngIf="!resumen.detalle.length">
+                  <td colspan="9" class="text-center text-muted py-5">No hay movimientos en el período seleccionado.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </ng-container>
+
+      <div class="ventas-vacio" *ngIf="ventasConsultadas && !cargandoVentas && !resumenVentas && !errorVentas">
+        No hay datos para los filtros seleccionados.
+      </div>
+    </section>
+  </ng-container>
+  </main>
+</div>
+
+<div class="plataforma-modal-backdrop" *ngIf="mostrarCrearPendiente">
+  <div class="plataforma-modal pendiente-modal" role="dialog" aria-modal="true" aria-labelledby="tituloCrearPendiente">
+    <header class="pendiente-modal-header">
+      <div>
+        <div class="ventas-kicker">CONDUCES EN EFECTIVO</div>
+        <h5 id="tituloCrearPendiente">Crear pendiente</h5>
+        <p>{{ filtrosVentas.empresa }} · Sucursal {{ filtrosVentas.sucursal }}</p>
+      </div>
+      <button type="button" class="btn-close" aria-label="Cerrar" (click)="cerrarCrearPendiente()" [disabled]="confirmandoPendiente"></button>
+    </header>
+
+    <div class="pendiente-modal-body">
+      <label for="montoCrearPendiente" class="pendiente-monto-label">Monto que desea convertir a pendiente</label>
+      <div class="input-group pendiente-monto-input">
+        <span class="input-group-text">RD$</span>
+        <input id="montoCrearPendiente" type="number" class="form-control" min="0.01" step="0.01" placeholder="0.00"
+          [(ngModel)]="montoPendiente" (ngModelChange)="programarPreparacionPendiente()" (keyup.enter)="prepararPendiente()"
+          [disabled]="confirmandoPendiente" autofocus />
+        <button type="button" class="btn btn-outline-primary" (click)="prepararPendiente()" [disabled]="preparandoPendiente || confirmandoPendiente">
+          <span *ngIf="preparandoPendiente" class="spinner-border spinner-border-sm me-1"></span>Calcular
+        </button>
+      </div>
+
+      <div class="alert alert-danger mt-3 mb-0" *ngIf="errorPendiente">{{ errorPendiente }}</div>
+
+      <ng-container *ngIf="preparacionPendiente as preparacion">
+        <div class="pendiente-resumen">
+          <div><span>Monto solicitado</span><strong>RD$ {{ preparacion.monto_solicitado | number:'1.2-2' }}</strong></div>
+          <div><span>Conduces elegidos</span><strong>{{ preparacion.cantidad | number }}</strong></div>
+          <div><span>Suma seleccionada</span><strong>RD$ {{ preparacion.suma_seleccionada | number:'1.2-2' }}</strong></div>
+          <div [class.balance-negativo]="preparacion.balance < 0" [class.balance-positivo]="preparacion.balance >= 0">
+            <span>Balance</span><strong>RD$ {{ preparacion.balance | number:'1.2-2' }}</strong>
+          </div>
+        </div>
+
+        <div class="table-responsive pendiente-tabla-wrap" *ngIf="preparacion.conduces.length; else sinConducesPendientes">
+          <table class="table pendiente-tabla align-middle mb-0">
+            <thead><tr><th>Conduce</th><th>Fecha</th><th>Cliente</th><th class="text-end">Valor</th><th class="text-end">Acumulado</th></tr></thead>
+            <tbody>
+              <tr *ngFor="let conduce of preparacion.conduces">
+                <td class="fw-bold">{{ conduce.factura }}</td><td>{{ fechaVisual(conduce.fecha) }}</td><td>{{ conduce.cliente || '—' }}</td>
+                <td class="text-end text-nowrap">RD$ {{ conduce.valor | number:'1.2-2' }}</td>
+                <td class="text-end text-nowrap fw-bold">RD$ {{ conduce.acumulado | number:'1.2-2' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <ng-template #sinConducesPendientes><div class="pendiente-sin-resultados">No hay conduces en efectivo disponibles para esta empresa y sucursal.</div></ng-template>
+      </ng-container>
+    </div>
+
+    <footer class="pendiente-modal-footer">
+      <button type="button" class="btn btn-outline-secondary" (click)="cerrarCrearPendiente()" [disabled]="confirmandoPendiente">Cerrar</button>
+      <button type="button" class="btn btn-success" (click)="confirmarCreacionPendiente()"
+        [disabled]="confirmandoPendiente || !preparacionPendiente || preparacionPendiente.cantidad === 0">
+        <span *ngIf="confirmandoPendiente" class="spinner-border spinner-border-sm me-1"></span>Cambiar a pendiente
+      </button>
+    </footer>
   </div>
 </div>
 

@@ -395,6 +395,12 @@ export class ServicioConfiguracionGlobal {
       TipoIngresos: limpio.TipoIngresos || '01',
       TipoPago: limpio.TipoPago || '1',
     };
+    // IdDoc: FechaLimitePago va justo despues de TipoPago (nota_credito.nc_vencimiento).
+    const fechaLimitePago = String(limpio.FechaLimitePago ?? '').trim();
+    if (fechaLimitePago) {
+      encabezado.FechaLimitePago = fechaLimitePago;
+    }
+    delete limpio.FechaLimitePago;
 
     delete limpio.Version;
     delete limpio.TipoeCF;
@@ -403,7 +409,7 @@ export class ServicioConfiguracionGlobal {
     delete limpio.IndicadorMontoGravado;
     delete limpio.TipoIngresos;
     delete limpio.TipoPago;
-    delete limpio.FechaLimitePago;
+    // FechaLimitePago se envia (nota_credito.nc_vencimiento); DGII la valida en IdDoc.
     delete limpio.FechaVencimientoSecuencia;
     delete limpio.CorreoComprador;
     delete limpio.DireccionComprador;

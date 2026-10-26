@@ -2,7 +2,10 @@ import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import Swal from 'sweetalert2';
 import {
+  DetalleVentasPlataforma,
   EmpresaPlataforma,
+  PreparacionPendientePlataforma,
+  ResumenVentasPlataforma,
   ServicioPlataforma,
 } from 'src/app/core/services/plataforma/plataforma.service';
 import { AuthService } from 'src/app/core/services/auth/auth.service';
@@ -24,6 +27,7 @@ interface FormAdmin {
   styleUrls: ['./plataforma.css'],
 })
 export class PlataformaComponent implements OnInit {
+  seccionActiva: 'plataforma' | 'ventas' = 'plataforma';
   empresas: EmpresaPlataforma[] = [];
   filtro = '';
   filtroEstado: 'todas' | 'activas' | 'suspendidas' = 'todas';
@@ -39,6 +43,27 @@ export class PlataformaComponent implements OnInit {
   formAdmin: FormAdmin = this.formAdminVacio();
   guardandoAdmin = false;
 
+  sucursalesVentas: any[] = [];
+  cargandoSucursalesVentas = false;
+  cargandoVentas = false;
+  ventasConsultadas = false;
+  errorVentas = '';
+  resumenVentas: ResumenVentasPlataforma | null = null;
+  filtrosVentas = {
+    empresa: '',
+    sucursal: null as number | null,
+    fechaDesde: '',
+    fechaHasta: '',
+  };
+  mostrarCrearPendiente = false;
+  montoPendiente: number | null = null;
+  preparandoPendiente = false;
+  confirmandoPendiente = false;
+  preparacionPendiente: PreparacionPendientePlataforma | null = null;
+  errorPendiente = '';
+  private temporizadorPendiente: ReturnType<typeof setTimeout> | null = null;
+  private secuenciaPendiente = 0;
+
   constructor(
     private readonly plataforma: ServicioPlataforma,
     private readonly auth: AuthService,
@@ -48,7 +73,215 @@ export class PlataformaComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.establecerPeriodoMesActual();
     this.cargar();
+    this.verificarAlertaMesAnterior();
+  }
+
+  cambiarSeccion(seccion: 'plataforma' | 'ventas'): void {
+    this.seccionActiva = seccion;
+    if (seccion === 'ventas' && !this.ventasConsultadas) {
+      this.consultarVentas();
+    }
+  }
+
+  private establecerPeriodoMesActual(): void {
+    const hoy = new Date();
+    const primero = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+    this.filtrosVentas.fechaDesde = this.fechaInput(primero);
+    this.filtrosVentas.fechaHasta = this.fechaInput(hoy);
+  }
+
+  private fechaInput(fecha: Date): string {
+    const ano = fecha.getFullYear();
+    const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+    const dia = String(fecha.getDate()).padStart(2, '0');
+    return `${ano}-${mes}-${dia}`;
+  }
+
+  cambiarEmpresaVentas(): void {
+    this.filtrosVentas.sucursal = null;
+    this.sucursalesVentas = [];
+    const empresa = this.filtrosVentas.empresa;
+    if (!empresa) return;
+
+    this.cargandoSucursalesVentas = true;
+    this.plataforma.listarSucursales(empresa).subscribe({
+      next: (rows) => {
+        this.sucursalesVentas = rows;
+        this.cargandoSucursalesVentas = false;
+      },
+      error: (err) => {
+        this.cargandoSucursalesVentas = false;
+        this.errorVentas = String(err?.message || 'No se pudieron cargar las sucursales.');
+      },
+    });
+  }
+
+  consultarVentas(): void {
+    this.errorVentas = '';
+    const { fechaDesde, fechaHasta } = this.filtrosVentas;
+    if (!fechaDesde || !fechaHasta) {
+      this.errorVentas = 'Seleccione la fecha inicial y la fecha final.';
+      return;
+    }
+    if (fechaDesde > fechaHasta) {
+      this.errorVentas = 'La fecha inicial no puede ser mayor que la fecha final.';
+      return;
+    }
+
+    this.cargandoVentas = true;
+    this.plataforma.consultarVentas(this.filtrosVentas).subscribe({
+      next: (resumen) => {
+        this.resumenVentas = resumen;
+        this.ventasConsultadas = true;
+        this.cargandoVentas = false;
+      },
+      error: (err) => {
+        this.resumenVentas = null;
+        this.ventasConsultadas = true;
+        this.cargandoVentas = false;
+        this.errorVentas = String(err?.message || 'No se pudo consultar el resumen de ventas.');
+      },
+    });
+  }
+
+  abrirCrearPendiente(): void {
+    if (!this.filtrosVentas.empresa || !this.filtrosVentas.sucursal) {
+      Swal.fire(
+        'Empresa y sucursal requeridas',
+        'Seleccione una empresa y una sucursal antes de crear el pendiente.',
+        'warning',
+      );
+      return;
+    }
+    this.montoPendiente = null;
+    this.preparacionPendiente = null;
+    this.errorPendiente = '';
+    this.mostrarCrearPendiente = true;
+  }
+
+  cerrarCrearPendiente(): void {
+    if (this.confirmandoPendiente) return;
+    if (this.temporizadorPendiente) clearTimeout(this.temporizadorPendiente);
+    this.secuenciaPendiente++;
+    this.mostrarCrearPendiente = false;
+    this.preparandoPendiente = false;
+    this.preparacionPendiente = null;
+    this.errorPendiente = '';
+  }
+
+  programarPreparacionPendiente(): void {
+    this.preparacionPendiente = null;
+    this.errorPendiente = '';
+    if (this.temporizadorPendiente) clearTimeout(this.temporizadorPendiente);
+    const monto = Number(this.montoPendiente || 0);
+    if (monto <= 0) {
+      this.preparandoPendiente = false;
+      return;
+    }
+    this.temporizadorPendiente = setTimeout(() => this.prepararPendiente(), 450);
+  }
+
+  prepararPendiente(): void {
+    const empresa = this.filtrosVentas.empresa;
+    const sucursal = Number(this.filtrosVentas.sucursal || 0);
+    const monto = Number(this.montoPendiente || 0);
+    if (!empresa || !sucursal || monto <= 0) return;
+
+    const secuencia = ++this.secuenciaPendiente;
+    this.preparandoPendiente = true;
+    this.errorPendiente = '';
+    this.plataforma.prepararPendiente({ empresa, sucursal, monto }).subscribe({
+      next: (resultado) => {
+        if (secuencia !== this.secuenciaPendiente) return;
+        this.preparacionPendiente = resultado;
+        this.preparandoPendiente = false;
+        if (!resultado.cantidad) {
+          this.errorPendiente = 'No hay conduces en efectivo disponibles para esta sucursal.';
+        }
+      },
+      error: (err) => {
+        if (secuencia !== this.secuenciaPendiente) return;
+        this.preparacionPendiente = null;
+        this.preparandoPendiente = false;
+        this.errorPendiente = String(err?.message || 'No se pudo preparar la selección.');
+      },
+    });
+  }
+
+  async confirmarCreacionPendiente(): Promise<void> {
+    const seleccion = this.preparacionPendiente;
+    const empresa = this.filtrosVentas.empresa;
+    const sucursal = Number(this.filtrosVentas.sucursal || 0);
+    const monto = Number(this.montoPendiente || 0);
+    if (!seleccion?.cantidad || !empresa || !sucursal || monto <= 0) return;
+
+    const confirmacion = await Swal.fire({
+      title: 'Cambiar conduces a pendiente',
+      text: `Se cambiarán ${seleccion.cantidad} conduces por RD$ ${seleccion.suma_seleccionada.toLocaleString('es-DO', { minimumFractionDigits: 2 })}.`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, proceder',
+      cancelButtonText: 'Cancelar',
+    });
+    if (!confirmacion.isConfirmed) return;
+
+    this.confirmandoPendiente = true;
+    this.errorPendiente = '';
+    this.plataforma.confirmarPendiente({ empresa, sucursal, monto }).subscribe({
+      next: async (resultado) => {
+        this.confirmandoPendiente = false;
+        this.mostrarCrearPendiente = false;
+        this.preparacionPendiente = null;
+        await Swal.fire(
+          'Pendiente creado',
+          `${resultado.cantidad} conduces fueron cambiados a pendiente por RD$ ${Number(resultado.suma_seleccionada || 0).toLocaleString('es-DO', { minimumFractionDigits: 2 })}.`,
+          'success',
+        );
+        this.consultarVentas();
+      },
+      error: (err) => {
+        this.confirmandoPendiente = false;
+        this.errorPendiente = String(err?.message || 'No se pudieron cambiar los conduces a pendiente.');
+      },
+    });
+  }
+
+  private verificarAlertaMesAnterior(): void {
+    this.plataforma.consultarAlertaConducesMesAnterior().subscribe({
+      next: (alerta) => {
+        if (!alerta.activa || alerta.cantidad <= 0) return;
+        void Swal.fire({
+          title: 'Conduces del mes anterior',
+          text: `Quedan ${alerta.cantidad} conduces sin facturar ni marcar como pendiente, por un valor de RD$ ${alerta.total.toLocaleString('es-DO', { minimumFractionDigits: 2 })}.`,
+          icon: 'warning',
+          confirmButtonText: 'Revisar',
+        });
+      },
+      error: (err) => console.warn('[Plataforma] No se pudo verificar la alerta mensual.', err),
+    });
+  }
+
+  etiquetaAgrupacion(): string {
+    if (this.resumenVentas?.agrupacion === 'semana') return 'Detalle por semana';
+    if (this.resumenVentas?.agrupacion === 'mes') return 'Detalle por mes';
+    return 'Detalle por día';
+  }
+
+  etiquetaPeriodo(fila: DetalleVentasPlataforma): string {
+    const inicio = this.fechaVisual(fila.periodo_inicio);
+    const fin = this.fechaVisual(fila.periodo_fin);
+    if (this.resumenVentas?.agrupacion === 'dia' || fila.periodo_inicio === fila.periodo_fin) {
+      return inicio;
+    }
+    return `${inicio} – ${fin}`;
+  }
+
+  fechaVisual(valor: string): string {
+    if (!valor) return '—';
+    const [ano, mes, dia] = valor.slice(0, 10).split('-');
+    return ano && mes && dia ? `${dia}/${mes}/${ano}` : valor;
   }
 
   cargar(): void {
