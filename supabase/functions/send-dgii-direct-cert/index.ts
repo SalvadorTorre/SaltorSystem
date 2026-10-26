@@ -121,7 +121,6 @@ function normalizeScenarioForDgii(scenario: Record<string, unknown>) {
       creditNote[key] = value;
     }
 
-    delete creditNote.FechaLimitePago;
     delete creditNote.FechaVencimientoSecuencia;
     delete creditNote.TerminoPago;
     delete creditNote.TipoCuentaPago;
@@ -130,6 +129,17 @@ function normalizeScenarioForDgii(scenario: Record<string, unknown>) {
     for (let index = 1; index <= 3; index += 1) {
       delete creditNote[`FormaPago[${index}]`];
       delete creditNote[`MontoPago[${index}]`];
+    }
+
+    // FechaLimitePago va en IdDoc justo despues de TipoPago (nota_credito.nc_vencimiento).
+    const fechaLimitePago = String(scenario?.FechaLimitePago ?? "").trim();
+    if (fechaLimitePago) {
+      const ordenado: Record<string, unknown> = {};
+      for (const [key, value] of Object.entries(creditNote)) {
+        ordenado[key] = value;
+        if (key === "TipoPago") ordenado.FechaLimitePago = fechaLimitePago;
+      }
+      return ordenado;
     }
     return creditNote;
   }

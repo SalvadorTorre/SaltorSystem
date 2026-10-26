@@ -255,11 +255,16 @@ export class FacturaDgiiService {
       throw error;
     }
 
-    const datosDgii = {
-      ...this.normalizarRespuesta(envioResp?.data ?? envioResp),
+    const respuestaNormalizada = this.normalizarRespuesta(envioResp?.data ?? envioResp);
+    // fa_status = 'F' solo cuando la DGII acepto (incluye "Aceptado condicional").
+    const aceptada = String(respuestaNormalizada?.estado_dgii || '')
+      .toUpperCase()
+      .includes('ACEPT');
+    const datosDgii: any = {
+      ...respuestaNormalizada,
       dgii_request_json: escenario,
       dgii_response_raw: envioResp?.data ?? envioResp,
-      fa_status: 'F',
+      ...(aceptada ? { fa_status: 'F' } : {}),
     };
     progreso?.('Guardando respuesta de DGII...');
     const actualizadaResp = await firstValueFrom(

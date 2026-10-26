@@ -19,6 +19,66 @@ export interface EmpresaPlataforma {
   ultima_factura?: string | null;
 }
 
+export interface DetalleVentasPlataforma {
+  periodo_inicio: string;
+  periodo_fin: string;
+  documentos: number;
+  facturas: number;
+  total_facturado: number;
+  conduces: number;
+  total_conduce: number;
+  pendientes: number;
+  total_pendiente: number;
+  total_periodo: number;
+}
+
+export interface ResumenVentasPlataforma {
+  agrupacion: 'dia' | 'semana' | 'mes';
+  fecha_desde: string;
+  fecha_hasta: string;
+  documentos: number;
+  facturas: number;
+  total_facturado: number;
+  conduces: number;
+  total_conduce: number;
+  pendientes: number;
+  total_pendiente: number;
+  total_general: number;
+  detalle: DetalleVentasPlataforma[];
+}
+
+export interface ConducePendientePlataforma {
+  factura: string;
+  fecha: string;
+  cliente: string;
+  valor: number;
+  acumulado: number;
+}
+
+export interface PreparacionPendientePlataforma {
+  monto_solicitado: number;
+  cantidad: number;
+  suma_seleccionada: number;
+  balance: number;
+  conduces: ConducePendientePlataforma[];
+}
+
+export interface AlertaConducesPlataforma {
+  activa: boolean;
+  fecha_desde: string;
+  fecha_hasta: string;
+  cantidad: number;
+  total: number;
+  detalle: Array<{
+    empresa: string;
+    nombre_empresa: string;
+    sucursal: number;
+    nombre_sucursal: string;
+    cantidad: number;
+    total: number;
+  }>;
+}
+
 /**
  * Opcion Plataforma: solo para el dueno del sistema. Todas las funciones de la
  * base validan que quien llama sea el dueno (myappdb.plataforma_duenos).
@@ -51,7 +111,7 @@ export class ServicioPlataforma {
   private errorPlataforma(error: any): Error {
     if (this.faltaMigracion(error)) {
       return new Error(
-        'Falta ejecutar en Supabase la migración 20261023010000_plataforma_dueno.sql.',
+        'Falta aplicar las migraciones recientes del módulo Plataforma en Supabase.',
       );
     }
     return new Error(String(error?.message || error || 'Error en Plataforma'));
@@ -161,6 +221,130 @@ export class ServicioPlataforma {
       if (error) throw error;
       return data || [];
     })());
+  }
+
+  consultarVentas(params: {
+    empresa?: string | null;
+    sucursal?: number | null;
+    fechaDesde: string;
+    fechaHasta: string;
+  }): Observable<ResumenVentasPlataforma> {
+    return from((async () => {
+      const empresa = String(params?.empresa || '').trim() || null;
+      const sucursal = Number(params?.sucursal || 0) || null;
+      const { data, error } = await this.db.rpc('plataforma_resumen_ventas', {
+        p_empresa: empresa,
+        p_sucursal: sucursal,
+        p_fecha_desde: params.fechaDesde,
+        p_fecha_hasta: params.fechaHasta,
+      });
+      if (error) throw this.errorPlataforma(error);
+
+      const resultado = data || {};
+      return {
+        agrupacion: ['dia', 'semana', 'mes'].includes(resultado?.agrupacion)
+          ? resultado.agrupacion
+          : 'dia',
+        fecha_desde: String(resultado?.fecha_desde || params.fechaDesde),
+        fecha_hasta: String(resultado?.fecha_hasta || params.fechaHasta),
+        documentos: Number(resultado?.documentos || 0),
+        facturas: Number(resultado?.facturas || 0),
+        total_facturado: Number(resultado?.total_facturado || 0),
+        conduces: Number(resultado?.conduces || 0),
+        total_conduce: Number(resultado?.total_conduce || 0),
+        pendientes: Number(resultado?.pendientes || 0),
+        total_pendiente: Number(resultado?.total_pendiente || 0),
+        total_general: Number(resultado?.total_general || 0),
+        detalle: (Array.isArray(resultado?.detalle) ? resultado.detalle : []).map((fila: any) => ({
+          periodo_inicio: String(fila?.periodo_inicio || ''),
+          periodo_fin: String(fila?.periodo_fin || ''),
+          documentos: Number(fila?.documentos || 0),
+          facturas: Number(fila?.facturas || 0),
+          total_facturado: Number(fila?.total_facturado || 0),
+          conduces: Number(fila?.conduces || 0),
+          total_conduce: Number(fila?.total_conduce || 0),
+          pendientes: Number(fila?.pendientes || 0),
+          total_pendiente: Number(fila?.total_pendiente || 0),
+          total_periodo: Number(fila?.total_periodo || 0),
+        })),
+      } as ResumenVentasPlataforma;
+    })());
+  }
+
+  prepararPendiente(params: {
+    empresa: string;
+    sucursal: number;
+    monto: number;
+  }): Observable<PreparacionPendientePlataforma> {
+    return from((async () => {
+      const { data, error } = await this.db.rpc('plataforma_preparar_pendiente', {
+        p_empresa: String(params.empresa || '').trim(),
+        p_sucursal: Number(params.sucursal),
+        p_monto: Number(params.monto),
+      });
+      if (error) throw this.errorPlataforma(error);
+      return this.mapPreparacionPendiente(data);
+    })());
+  }
+
+  confirmarPendiente(params: {
+    empresa: string;
+    sucursal: number;
+    monto: number;
+  }): Observable<any> {
+    return from((async () => {
+      const { data, error } = await this.db.rpc('plataforma_confirmar_pendiente', {
+        p_empresa: String(params.empresa || '').trim(),
+        p_sucursal: Number(params.sucursal),
+        p_monto: Number(params.monto),
+      });
+      if (error) throw this.errorPlataforma(error);
+      return {
+        ...data,
+        cantidad: Number(data?.cantidad || 0),
+        suma_seleccionada: Number(data?.suma_seleccionada || 0),
+        monto_solicitado: Number(data?.monto_solicitado || 0),
+        balance: Number(data?.balance || 0),
+      };
+    })());
+  }
+
+  consultarAlertaConducesMesAnterior(): Observable<AlertaConducesPlataforma> {
+    return from((async () => {
+      const { data, error } = await this.db.rpc('plataforma_alerta_conduces_mes_anterior');
+      if (error) throw this.errorPlataforma(error);
+      return {
+        activa: data?.activa === true,
+        fecha_desde: String(data?.fecha_desde || ''),
+        fecha_hasta: String(data?.fecha_hasta || ''),
+        cantidad: Number(data?.cantidad || 0),
+        total: Number(data?.total || 0),
+        detalle: (Array.isArray(data?.detalle) ? data.detalle : []).map((fila: any) => ({
+          empresa: String(fila?.empresa || ''),
+          nombre_empresa: String(fila?.nombre_empresa || ''),
+          sucursal: Number(fila?.sucursal || 0),
+          nombre_sucursal: String(fila?.nombre_sucursal || ''),
+          cantidad: Number(fila?.cantidad || 0),
+          total: Number(fila?.total || 0),
+        })),
+      };
+    })());
+  }
+
+  private mapPreparacionPendiente(data: any): PreparacionPendientePlataforma {
+    return {
+      monto_solicitado: Number(data?.monto_solicitado || 0),
+      cantidad: Number(data?.cantidad || 0),
+      suma_seleccionada: Number(data?.suma_seleccionada || 0),
+      balance: Number(data?.balance || 0),
+      conduces: (Array.isArray(data?.conduces) ? data.conduces : []).map((fila: any) => ({
+        factura: String(fila?.factura || ''),
+        fecha: String(fila?.fecha || ''),
+        cliente: String(fila?.cliente || ''),
+        valor: Number(fila?.valor || 0),
+        acumulado: Number(fila?.acumulado || 0),
+      })),
+    };
   }
 
   listarTiposUsuario(): Observable<any[]> {
