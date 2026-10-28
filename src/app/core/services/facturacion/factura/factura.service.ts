@@ -3835,8 +3835,11 @@ export class ServicioFacturacion {
     await Promise.all(workers);
 
     if (funcionNoExiste) {
-      console.warn('[consulta_ventas_rango] PostgREST no encuentra la funcion; usando consulta directa (lenta).');
-      return null;
+      // La lectura directa de factura termina en statement timeout con usuarios
+      // que no son root: mejor avisar que falta la migracion.
+      throw new Error(
+        'Falta la función consulta_ventas_rango en Supabase. Ejecute supabase/migrations/20261026190000_consulta_ventas_rpc_v4_timeout.sql.',
+      );
     }
 
     return resultados

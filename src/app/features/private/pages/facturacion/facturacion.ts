@@ -823,7 +823,12 @@ export class Facturacion implements OnInit, OnDestroy {
             in_caninve: 0,
             in_fecinve: null,
             in_eximini: 0,
-            in_cosmerc: 0,
+            // Costo unitario guardado en la factura (antes quedaba en 0 y la
+            // validacion de precio contra costo siempre pasaba al editar).
+            in_cosmerc:
+              Number(item.df_canMerc) > 0
+                ? (Number(item.df_cosMerc) || 0) / Number(item.df_canMerc)
+                : 0,
             in_premerc: 0,
             in_precmin: 0,
             //   in_costpro: 0,
@@ -985,7 +990,12 @@ export class Facturacion implements OnInit, OnDestroy {
             in_caninve: 0,
             in_fecinve: null,
             in_eximini: 0,
-            in_cosmerc: 0,
+            // Costo unitario guardado en la factura (antes quedaba en 0 y la
+            // validacion de precio contra costo siempre pasaba al editar).
+            in_cosmerc:
+              Number(item.df_canMerc) > 0
+                ? (Number(item.df_cosMerc) || 0) / Number(item.df_canMerc)
+                : 0,
             in_premerc: 0,
             in_precmin: 0,
             //  in_costpro: 0,
@@ -3273,11 +3283,25 @@ export class Facturacion implements OnInit, OnDestroy {
     if (
       !this.productoselect ||
       this.cantidadmerc <= 0 ||
-      this.preciomerc <= 0 ||
-      this.preciomerc <= this.productoselect.in_cosmerc
+      this.preciomerc <= 0
     ) {
       void this.mostrarAvisoDetalle(
         'Por favor complete todos los campos requeridos antes de agregar el ítem.',
+        event.target as HTMLInputElement,
+      );
+      return;
+    }
+    // Comparar el precio que realmente se factura (en comprobante 44 sin el
+    // ITBIS incluido) contra el costo unitario que se va a guardar.
+    const costoUnitarioCaptura =
+      Number(this.costotxt) || Number(this.productoselect?.in_cosmerc) || 0;
+    const precioRealCaptura = this.precioFacturableItem({ precio: this.preciomerc } as any);
+    if (costoUnitarioCaptura > 0 && precioRealCaptura <= costoUnitarioCaptura) {
+      const detalle44 = this.esTipoNcf44()
+        ? ` En comprobante 44 se factura sin ITBIS: ${precioRealCaptura.toFixed(2)}.`
+        : '';
+      void this.mostrarAvisoDetalle(
+        `El precio debe ser mayor que el costo (${costoUnitarioCaptura.toFixed(2)}).${detalle44}`,
         event.target as HTMLInputElement,
       );
       return;
@@ -3476,9 +3500,15 @@ export class Facturacion implements OnInit, OnDestroy {
     }
   }
 
+  /**
+   * Margen global sobre el costo, con la misma formula que el margen de cada
+   * producto ((precio - costo) / costo) y que el Dashboard de ventas.
+   * Antes se dividia entre la venta: un producto con 20 % sobre costo salia
+   * como 16.67 % en el margen global.
+   */
   private calcularMargenFactura(): number {
-    return this.totalGral > 0
-      ? ((this.totalGral - this.totalcosto) * 100) / this.totalGral
+    return this.totalcosto > 0
+      ? ((this.totalGral - this.totalcosto) * 100) / this.totalcosto
       : 0;
   }
 
@@ -3772,21 +3802,23 @@ export class Facturacion implements OnInit, OnDestroy {
   }
 
   /** Costo unitario actual de un item (catalogo; si no, el costo guardado / cantidad). */
+  /** Costo unitario que se guarda en la factura (df_cosmerc / cantidad). */
   private costoUnitarioItem(item: any): number {
-    const catalogo = Number(item?.producto?.in_cosmerc) || 0;
-    if (catalogo > 0) return catalogo;
     const cantidad = Number(item?.cantidad) || 0;
-    return cantidad > 0 ? (Number(item?.costo) || 0) / cantidad : 0;
+    const guardado = cantidad > 0 ? (Number(item?.costo) || 0) / cantidad : 0;
+    if (guardado > 0) return guardado;
+    return Number(item?.producto?.in_cosmerc) || 0;
   }
 
   /**
-   * Items venidos de una cotizacion cuyo costo es igual o mayor que el
-   * precio. Se pintan en rojo y bloquean el guardado hasta corregirlos.
+   * Productos cuyo costo es igual o mayor que el precio que realmente se
+   * factura (en comprobante 44, sin el ITBIS incluido). Aplica a todos los
+   * items: nuevos, de cotizacion y de facturas que se editan. Se pintan en
+   * rojo y bloquean el guardado hasta corregirlos.
    */
   itemCostoInvalido(item: any): boolean {
-    if (!item?.__desdeCotizacion) return false;
     const costo = this.costoUnitarioItem(item);
-    return costo > 0 && costo >= (Number(item?.precio) || 0);
+    return costo > 0 && costo >= this.precioFacturableItem(item);
   }
 
   itemsCostoInvalido(): any[] {
@@ -3802,8 +3834,12 @@ export class Facturacion implements OnInit, OnDestroy {
       await Swal.fire({
         icon: 'error',
         title: 'Precio por debajo del costo',
-        html: 'Estos productos tienen el costo igual o mayor que el precio. Edítelos (lápiz) y suba el precio antes de guardar:<br><br>' +
-          itemsMalos.slice(0, 15).map((i: any) => `<b>${i?.producto?.in_codmerc || ''}</b> ${i?.producto?.in_desmerc || ''}`).join('<br>'),
+        html: 'Estos productos tienen el costo igual o mayor que el precio que se factura' +
+          (this.esTipoNcf44() ? ' (en comprobante 44 el precio se factura sin ITBIS)' : '') +
+          '. Edítelos (lápiz) y suba el precio antes de guardar:<br><br>' +
+          itemsMalos.slice(0, 15).map((i: any) =>
+            `<b>${i?.producto?.in_codmerc || ''}</b> ${i?.producto?.in_desmerc || ''} · costo ${this.costoUnitarioItem(i).toFixed(2)} / precio ${this.precioFacturableItem(i).toFixed(2)}`,
+          ).join('<br>'),
       });
       return;
     }
