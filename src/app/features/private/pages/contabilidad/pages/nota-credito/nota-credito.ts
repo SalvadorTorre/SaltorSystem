@@ -898,8 +898,12 @@ export class NotaCreditoComponent implements OnInit {
       DireccionEmisor: this.form.issuerAddress.trim(),
       FechaEmision: this.formatDgiiDate(this.form.issueDate),
       FechaVencimientoSecuencia: this.form.sequenceExpiration ? this.formatDgiiDate(this.form.sequenceExpiration) : '',
-      // Fecha limite de pago = nota_credito.nc_vencimiento.
-      FechaLimitePago: this.form.sequenceExpiration ? this.formatDgiiDate(this.form.sequenceExpiration) : '',
+      // Fecha limite de pago = nota_credito.nc_vencimiento. DGII la exige
+      // cuando TipoPago = 2 (credito); con contado no se envia.
+      FechaLimitePago:
+        String(this.form.paymentType || '').trim() === '2' && this.form.sequenceExpiration
+          ? this.formatDgiiDate(this.form.sequenceExpiration)
+          : '',
       RNCComprador: this.cleanRnc(this.form.buyerRnc),
       RazonSocialComprador: this.form.buyerName.trim(),
       NCFModificado: this.form.modifiedNcf.trim(),
@@ -987,7 +991,9 @@ export class NotaCreditoComponent implements OnInit {
         nc_fecha_modificada: this.form.modifiedDate || null,
         nc_codigo_modificacion: this.form.modificationCode || null,
         nc_motivo: this.form.reason.trim() || null,
-        nc_tipo_pago: 1,
+        // Guardar el tipo de pago real (1 contado, 2 credito). Antes se guardaba
+        // siempre 1 y al reenviar la nota cambiaba de credito a contado.
+        nc_tipo_pago: Number(this.form.paymentType) === 2 ? 2 : 1,
         nc_tipo_ingreso: this.form.incomeType || null,
         emisor_rnc: this.cleanRnc(this.form.issuerRnc) || null,
         emisor_nombre: this.form.issuerName.trim() || null,

@@ -276,7 +276,7 @@ export class NotaCreditoService {
 
       const header = {
         ...(payload.header || {}),
-        nc_tipo_pago: 1,
+        nc_tipo_pago: Number(payload.header?.['nc_tipo_pago']) === 2 ? 2 : 1,
         fa_codempr: tenant.codempr,
         fa_codsucu: tenant.codsucu,
         usuario: tenant.usuario || payload.header?.['usuario'] || null,
