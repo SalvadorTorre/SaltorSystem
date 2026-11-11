@@ -806,7 +806,13 @@ export class ControlFact implements OnInit, OnDestroy {
             in_caninve: 0,
             in_fecinve: null,
             in_eximini: 0,
-            in_cosmerc: 0,
+            // Costo unitario guardado en la factura (antes 0: la validacion
+            // de precio contra costo siempre pasaba al editar).
+            in_cosmerc:
+              Number(item.df_canMerc ?? item.df_canmerc) > 0
+                ? (Number(item.df_cosMerc ?? item.df_cosmerc) || 0) /
+                  Number(item.df_canMerc ?? item.df_canmerc)
+                : 0,
             in_premerc: 0,
             in_precmin: 0,
             //   in_costpro: 0,
@@ -907,7 +913,13 @@ export class ControlFact implements OnInit, OnDestroy {
             in_caninve: 0,
             in_fecinve: null,
             in_eximini: 0,
-            in_cosmerc: 0,
+            // Costo unitario guardado en la factura (antes 0: la validacion
+            // de precio contra costo siempre pasaba al editar).
+            in_cosmerc:
+              Number(item.df_canMerc ?? item.df_canmerc) > 0
+                ? (Number(item.df_cosMerc ?? item.df_cosmerc) || 0) /
+                  Number(item.df_canMerc ?? item.df_canmerc)
+                : 0,
             in_premerc: 0,
             in_precmin: 0,
             //  in_costpro: 0,
@@ -1871,7 +1883,7 @@ export class ControlFact implements OnInit, OnDestroy {
       if (
         !this.productoselect ||
         this.preciomerc <= 0 ||
-        this.preciomerc <= this.productoselect.in_cosmerc
+        this.precioNoSuperaCosto()
       ) {
         this.mensagePantalla = true;
         Swal.fire({
@@ -1978,7 +1990,7 @@ export class ControlFact implements OnInit, OnDestroy {
       !this.productoselect ||
       this.cantidadmerc <= 0 ||
       this.preciomerc <= 0 ||
-      this.preciomerc <= this.productoselect.in_cosmerc
+      this.precioNoSuperaCosto()
     ) {
       this.mensagePantalla = true;
       Swal.fire({
@@ -2110,6 +2122,26 @@ export class ControlFact implements OnInit, OnDestroy {
    * una factura existente no traen in_cosmerc, asi que se usa el costo guardado
    * de la linea dividido entre su cantidad original.
    */
+  /** Precio capturado igual o menor que el costo unitario del producto. */
+  private precioNoSuperaCosto(): boolean {
+    const costo =
+      (this.isEditing ? this.costoUnitarioEdicion() : 0) ||
+      Number(this.costotxt) ||
+      Number(this.productoselect?.in_cosmerc) ||
+      0;
+    return costo > 0 && Number(this.preciomerc) <= costo;
+  }
+
+  /** Lineas cuyo costo unitario es igual o mayor que su precio. */
+  private itemsPorDebajoDelCosto(): any[] {
+    return (this.items || []).filter((item: any) => {
+      const cantidad = Number(item?.cantidad) || 0;
+      const costoUnitario =
+        cantidad > 0 ? (Number(item?.costo) || 0) / cantidad : 0;
+      return costoUnitario > 0 && costoUnitario >= (Number(item?.precio) || 0);
+    });
+  }
+
   private costoUnitarioEdicion(): number {
     const costo = Number(this.costotxt) || 0;
     if (costo > 0) return costo;
@@ -2198,6 +2230,29 @@ export class ControlFact implements OnInit, OnDestroy {
 
   async guardarFacturacion() {
     if (this.guardandoFactura) {
+      return;
+    }
+
+    // Solo cuando la factura es nueva o se cambio el detalle: editar solo el
+    // encabezado de una factura vieja no debe bloquearse.
+    const validarDetalle =
+      !this.formularioFacturacion.get('fa_codFact')?.value || this.detalleFueModificado();
+    const itemsMalos = validarDetalle ? this.itemsPorDebajoDelCosto() : [];
+    if (itemsMalos.length) {
+      await Swal.fire({
+        icon: 'error',
+        title: 'Precio por debajo del costo',
+        html:
+          'Estos productos tienen el costo igual o mayor que el precio. Edítelos y suba el precio antes de guardar:<br><br>' +
+          itemsMalos
+            .slice(0, 15)
+            .map((i: any) => {
+              const cantidad = Number(i?.cantidad) || 0;
+              const costo = cantidad > 0 ? (Number(i?.costo) || 0) / cantidad : 0;
+              return `<b>${i?.producto?.in_codmerc || ''}</b> ${i?.producto?.in_desmerc || ''} · costo ${costo.toFixed(2)} / precio ${(Number(i?.precio) || 0).toFixed(2)}`;
+            })
+            .join('<br>'),
+      });
       return;
     }
 
