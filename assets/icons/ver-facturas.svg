@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title id="title">Ver facturas</title>
+  <rect x="10" y="5" width="37" height="50" rx="5" fill="#ffffff"/>
+  <path d="M18 17h21M18 25h21M18 33h12" fill="none" stroke="#0891b2" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="42" cy="42" r="11" fill="#0e7490" stroke="#ffffff" stroke-width="3"/>
+  <path d="m50 50 8 8" fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round"/>
+</svg>
