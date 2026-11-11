@@ -350,6 +350,17 @@
   color: #334155;
 }
 
+/* Color por tipo de comprobante */
+.type-chip.tipo-31 { background: #dbeafe; color: #1e40af; }   /* Credito fiscal */
+.type-chip.tipo-32 { background: #dcfce7; color: #166534; }   /* Consumo */
+.type-chip.tipo-34 { background: #fee2e2; color: #991b1b; }   /* Nota de credito */
+.type-chip.tipo-41 { background: #fef3c7; color: #92400e; }   /* Compras */
+.type-chip.tipo-43 { background: #ffedd5; color: #9a3412; }   /* Gastos menores */
+.type-chip.tipo-44 { background: #ede9fe; color: #5b21b6; }   /* Regimenes especiales */
+.type-chip.tipo-45 { background: #cffafe; color: #155e75; }   /* Gubernamental */
+.type-chip.tipo-46 { background: #fce7f3; color: #9d174d; }   /* Exportacion */
+.type-chip.tipo-47 { background: #e0e7ff; color: #3730a3; }   /* Exterior */
+
 .security-code {
   background: #fff7ed;
   color: #9a3412;
@@ -604,3 +615,6 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Toolbar con "Ordenar por" y "Mostrar": permitir que baje de linea en pantallas chicas */
+.report-toolbar { flex-wrap: wrap; }

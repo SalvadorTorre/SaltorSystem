@@ -254,6 +254,9 @@ export class Facturacion implements OnInit, OnDestroy {
   buscarNombre = new FormControl();
   resultadoNombre: ModeloClienteData[] = [];
   resultadoSector: ModeloSectorData[] = [];
+  listaSectores: ModeloSectorData[] = [];
+  mostrarListaSectores = false;
+  private temporizadorOcultarSectores: any = null;
   resultadoFpago: ModeloFpagoData[] = [];
   listaFpago: ModeloFpagoData[] = []; // Lista completa de pagos para filtrar
   buscarSector = new FormControl();
@@ -275,7 +278,7 @@ export class Facturacion implements OnInit, OnDestroy {
   selectedIndexEnvio = 0;
 
   selectedIndex = 1;
-  selectedIndexsector = 1;
+  selectedIndexsector = -1;
   buscarcodmerc = new FormControl();
   buscardescripcionmerc = new FormControl();
   // buscarcodmercElement = new FormControl();
@@ -444,33 +447,14 @@ export class Facturacion implements OnInit, OnDestroy {
         }
       });
 
+    this.cargarSectoresParaBusqueda();
     this.buscarSector.valueChanges
       .pipe(
-        debounceTime(500),
+        map((query: any) => String(query || '').trim()),
+        debounceTime(80),
         distinctUntilChanged(),
-        tap(() => {
-          this.resultadoSector = [];
-        }),
-        filter((query: string) => query !== ''),
-        switchMap((query: string) =>
-          this.http.GetRequest<ModeloSector>(`/sector-nombre/${query}`).pipe(
-            catchError((error) => {
-              console.error('Error en búsqueda de sector:', error);
-              return of({ data: [] } as any);
-            }),
-          ),
-        ),
       )
-      .subscribe((results: ModeloSector) => {
-        console.log(results.data);
-        if (results) {
-          if (Array.isArray(results.data)) {
-            this.resultadoSector = results.data;
-          }
-        } else {
-          this.resultadoSector = [];
-        }
-      });
+      .subscribe((query: string) => this.filtrarSectores(query));
 
     // Inicializar los totales visibles en la vista (0.00) al cargar
     this.actualizarTotales();
@@ -2414,33 +2398,90 @@ export class Facturacion implements OnInit, OnDestroy {
       event.preventDefault();
     }
   }
-  handleKeydownSector(event: KeyboardEvent): void {
-    const key = event.key;
-    const maxIndex = this.resultadoSector.length - 1; // Ajustamos el límite máximo
-    if (this.resultadoSector.length === 1) {
-      this.selectedIndexsector = 0;
-      console.log('prueba');
+  private cargarSectoresParaBusqueda(): void {
+    this.ServicioSector.obtenerTodosSector().subscribe({
+      next: (respuesta: ModeloSector) => {
+        this.listaSectores = (Array.isArray(respuesta?.data) ? respuesta.data : [])
+          .slice()
+          .sort((a, b) => String(a.se_desSect || '').localeCompare(
+            String(b.se_desSect || ''),
+            'es',
+            { sensitivity: 'base' },
+          ));
+        this.filtrarSectores(String(this.buscarSector.value || '').trim());
+      },
+      error: (error) => {
+        console.error('Error cargando sectores desde Supabase:', error);
+        this.listaSectores = [];
+        this.resultadoSector = [];
+        this.selectedIndexsector = -1;
+      },
+    });
+  }
+
+  private normalizarBusquedaSector(valor: any): string {
+    return String(valor || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLocaleUpperCase('es-DO')
+      .trim();
+  }
+
+  private filtrarSectores(query: string): void {
+    const termino = this.normalizarBusquedaSector(query);
+    this.resultadoSector = this.listaSectores.slice();
+    this.selectedIndexsector = termino
+      ? this.resultadoSector.findIndex((sector) =>
+          this.normalizarBusquedaSector(sector.se_desSect).includes(termino),
+        )
+      : (this.resultadoSector.length ? 0 : -1);
+    this.desplazarSectorSeleccionado();
+  }
+
+  onFocusSector(): void {
+    if (this.temporizadorOcultarSectores) {
+      clearTimeout(this.temporizadorOcultarSectores);
     }
+    this.mostrarListaSectores = true;
+    this.filtrarSectores(String(this.buscarSector.value || '').trim());
+  }
+
+  onBlurSector(): void {
+    this.temporizadorOcultarSectores = setTimeout(() => {
+      this.mostrarListaSectores = false;
+    }, 180);
+  }
+
+  private desplazarSectorSeleccionado(): void {
+    if (this.selectedIndexsector < 0) return;
+    setTimeout(() => {
+      document
+        .getElementById(`sector-opcion-${this.selectedIndexsector}`)
+        ?.scrollIntoView({ block: 'nearest' });
+    }, 0);
+  }
+
+  handleKeydownSector(
+    event: KeyboardEvent,
+    nextElement?: HTMLInputElement | HTMLSelectElement,
+  ): void {
+    const key = event.key;
+    const maxIndex = this.resultadoSector.length - 1;
     if (key === 'ArrowDown') {
-      // Mueve la selección hacia abajo
-      if (this.selectedIndexsector < maxIndex) {
-        this.selectedIndex++;
-      } else {
-        this.selectedIndexsector = 0; // Vuelve al primer ítem
-      }
+      if (maxIndex < 0) return;
+      this.selectedIndexsector = this.selectedIndexsector < maxIndex
+        ? this.selectedIndexsector + 1
+        : 0;
+      this.desplazarSectorSeleccionado();
       event.preventDefault();
     } else if (key === 'ArrowUp') {
-      console.log('paso 677');
-
-      // Mueve la selección hacia arriba
-      if (this.selectedIndexsector > 0) {
-        this.selectedIndex--;
-      } else {
-        this.selectedIndexsector = maxIndex; // Vuelve al último ítem
-      }
+      if (maxIndex < 0) return;
+      this.selectedIndexsector = this.selectedIndexsector > 0
+        ? this.selectedIndexsector - 1
+        : maxIndex;
+      this.desplazarSectorSeleccionado();
       event.preventDefault();
     } else if (key === 'Enter') {
-      // Selecciona el ítem actual
       if (
         this.selectedIndexsector >= 0 &&
         this.selectedIndexsector <= maxIndex
@@ -2448,6 +2489,7 @@ export class Facturacion implements OnInit, OnDestroy {
         this.cargarDatosSector(this.resultadoSector[this.selectedIndexsector]);
       }
       event.preventDefault();
+      nextElement?.focus();
     }
   }
   handleKeydownFpago(event: KeyboardEvent): void {
@@ -3085,16 +3127,16 @@ export class Facturacion implements OnInit, OnDestroy {
   }
 
   cargarDatosSector(sector: ModeloSectorData) {
-    this.resultadoNombre = [];
-    this.buscarSector.reset();
+    this.resultadoSector = [];
+    this.mostrarListaSectores = false;
+    this.selectedIndexsector = -1;
     if (sector.se_desSect !== '') {
-      console.log(this.resultadoSector);
+      this.buscarSector.setValue(sector.se_desSect, { emitEvent: false });
       this.formularioFacturacion.patchValue({
         fa_codSect: sector.se_codSect,
         fa_sector: sector.se_desSect,
         fa_codZona: sector.se_codZona,
-      });
-      console.log(sector);
+      }, { emitEvent: false });
     }
   }
   cargarDatosFpago(fpago: ModeloFpagoData) {
@@ -3620,9 +3662,8 @@ export class Facturacion implements OnInit, OnDestroy {
   private actualizarTipoVenta(tipo: number): void {
     const esCredito = tipo === 2 && this.clientePermiteCredito;
     const tipoVenta = esCredito ? 2 : 1;
-    const vencimiento = esCredito
-      ? this.calcularFechaExpiracionCredito(new Date(), this.diasCreditoCliente)
-      : null;
+    const fechaFactura = this.formularioFacturacion.get('fa_fecFact')?.value || new Date();
+    const vencimiento = this.calcularFechaExpiracionCredito(fechaFactura, 30);
     this.formularioFacturacion.patchValue(
       { fa_tipopago: tipoVenta, fa_expFact: vencimiento },
       { emitEvent: false },
@@ -3970,21 +4011,40 @@ export class Facturacion implements OnInit, OnDestroy {
     facturaPayload.fa_tipoitbis = itbisFactura.codigo;
     this.formularioFacturacion.patchValue({ fa_tipoitbis: itbisFactura.codigo }, { emitEvent: false });
     facturaPayload.fa_fecFact = this.toPrismaDate(facturaPayload.fa_fecFact);
-    if (Number(facturaPayload.fa_tipopago) === 2 && !this.modoedicionFacturacion) {
-      facturaPayload.fa_expFact = this.calcularFechaExpiracionCredito(
-        new Date(),
-        this.diasCreditoCliente,
-      );
+    facturaPayload.fa_expFact = this.calcularFechaExpiracionCredito(
+      facturaPayload.fa_fecFact,
+      30,
+    );
+    this.formularioFacturacion.patchValue(
+      { fa_expFact: facturaPayload.fa_expFact },
+      { emitEvent: false },
+    );
+
+    const codigoSectorActual = Number(facturaPayload.fa_codSect);
+    const descripcionSectorActual = String(
+      this.buscarSector.value || facturaPayload.fa_sector || '',
+    ).trim();
+    const sectorSeleccionado = this.listaSectores.find((sector) =>
+      (Number.isFinite(codigoSectorActual) && codigoSectorActual > 0 &&
+        Number(sector.se_codSect) === codigoSectorActual) ||
+      this.normalizarBusquedaSector(sector.se_desSect) ===
+        this.normalizarBusquedaSector(descripcionSectorActual),
+    );
+    if (sectorSeleccionado) {
+      facturaPayload.fa_codSect = Number(sectorSeleccionado.se_codSect);
+      facturaPayload.fa_sector = String(sectorSeleccionado.se_desSect || '').trim();
       this.formularioFacturacion.patchValue(
-        { fa_expFact: facturaPayload.fa_expFact },
+        {
+          fa_codSect: facturaPayload.fa_codSect,
+          fa_sector: facturaPayload.fa_sector,
+        },
         { emitEvent: false },
       );
-    } else if (Number(facturaPayload.fa_tipopago) !== 2) {
-      facturaPayload.fa_expFact = null;
-      this.formularioFacturacion.patchValue(
-        { fa_expFact: null },
-        { emitEvent: false },
-      );
+    } else {
+      facturaPayload.fa_codSect = Number.isFinite(codigoSectorActual) && codigoSectorActual > 0
+        ? codigoSectorActual
+        : null;
+      facturaPayload.fa_sector = descripcionSectorActual;
     }
     facturaPayload.fa_rncFact = facturaPayload.fa_rncFact || '';
     const detalleParaGuardar = this.crearDetalleParaGuardar();

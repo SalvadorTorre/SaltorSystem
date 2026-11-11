@@ -135,7 +135,7 @@ export class ServicioSector {
       const { data, error } = await this.db
         .from("sector")
         .select("*")
-        .order("se_codsect", { ascending: true });
+        .order("se_dessect", { ascending: true });
       if (error) throw error;
       return (data || []).map((row: any) => this.mapRow(row));
     })()).pipe(

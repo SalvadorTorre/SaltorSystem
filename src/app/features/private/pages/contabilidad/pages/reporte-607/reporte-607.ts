@@ -4,6 +4,7 @@ import { ServicioFacturacion } from 'src/app/core/services/facturacion/factura/f
 import { ServicioEmpresa } from 'src/app/core/services/mantenimientos/empresas/empresas.service';
 import { ServicioSucursal } from 'src/app/core/services/mantenimientos/sucursal/sucursal.service';
 import { ServicioFpago } from 'src/app/core/services/mantenimientos/fpago/fpago.service';
+import { NotaCreditoService } from 'src/app/core/services/contabilidad/nota-credito/nota-credito.service';
 import { firstValueFrom } from 'rxjs';
 import Swal from 'sweetalert2';
 
@@ -41,6 +42,7 @@ export class Reporte607Component implements OnInit {
   readonly tiposComprobante = [
     { value: '31', label: 'E31 - Crédito Fiscal' },
     { value: '32', label: 'E32 - Consumo' },
+    { value: '34', label: 'E34 - Nota de Crédito' },
     { value: '41', label: 'E41 - Compras' },
     { value: '43', label: 'E43 - Gastos Menores' },
     { value: '44', label: 'E44 - Regímenes Especiales' },
@@ -73,7 +75,81 @@ export class Reporte607Component implements OnInit {
     private servicioEmpresa: ServicioEmpresa,
     private servicioSucursal: ServicioSucursal,
     private servicioFpago: ServicioFpago,
+    private notaCreditoService: NotaCreditoService,
   ) {}
+
+  /** Total de facturas del filtro actual (sin notas de credito). */
+  private totalFacturasFiltro = 0;
+  /** Notas de credito (E34) del filtro actual; se muestran despues de las facturas. */
+  private notasCreditoFiltro: any[] = [];
+
+  private filtrosNotasCredito(filtroFecha: { fecha: string; fechaDesde: string; fechaHasta: string }) {
+    return {
+      fecha: filtroFecha.fecha,
+      fechaDesde: filtroFecha.fechaDesde,
+      fechaHasta: filtroFecha.fechaHasta,
+      estadoDgii: this.estadoDgii,
+      search: this.numeroFactura || this.encf,
+      empresa: this.empresaFiltro,
+      sucursal: this.sucursalFiltro,
+    };
+  }
+
+  // ---- Orden de la lista ----
+  ordenarPor: 'fecha' | 'tipo' | 'ncf' = 'fecha';
+  ordenDescendente = true;
+
+  /** Codigo de tipo (31, 32, 34, ...) de la factura o nota. */
+  tipoCodigo(factura: any): string {
+    const tipo = String(factura?.fa_tipoNcf || factura?.fa_tiponcf || '').trim();
+    if (tipo) return tipo.replace(/^E/i, '');
+    const encf = String(factura?.fa_ncfFact || factura?.fa_ncffact || '').trim().toUpperCase();
+    return encf.startsWith('E') ? encf.substring(1, 3) : '';
+  }
+
+  /** Color de la columna Tipo segun el comprobante. */
+  tipoClase(factura: any): string {
+    const tipo = this.tipoCodigo(factura);
+    return ['31', '32', '34', '41', '43', '44', '45', '46', '47'].includes(tipo)
+      ? `type-chip tipo-${tipo}`
+      : 'type-chip';
+  }
+
+  cambiarOrden(campo: 'fecha' | 'tipo' | 'ncf'): void {
+    if (this.ordenarPor === campo) {
+      this.ordenDescendente = !this.ordenDescendente;
+    } else {
+      this.ordenarPor = campo;
+      this.ordenDescendente = campo === 'fecha';
+    }
+  }
+
+  /** Filas de la pagina actual ordenadas segun el campo elegido. */
+  get facturasOrdenadas(): any[] {
+    const fecha = (f: any) => String(this.fechaComprobante(f) ?? '').slice(0, 10);
+    const ncf = (f: any) => String(f?.fa_ncfFact ?? f?.fa_ncffact ?? '').trim();
+    const tipo = (f: any) => this.tipoCodigo(f).padStart(3, '0');
+    const comparar = (a: any, b: any): number => {
+      let r = 0;
+      if (this.ordenarPor === 'tipo') {
+        r = tipo(a).localeCompare(tipo(b)) || ncf(a).localeCompare(ncf(b));
+      } else if (this.ordenarPor === 'ncf') {
+        r = ncf(a).localeCompare(ncf(b));
+      } else {
+        r = fecha(a).localeCompare(fecha(b)) || ncf(a).localeCompare(ncf(b));
+      }
+      return this.ordenDescendente ? -r : r;
+    };
+    return [...this.facturas].sort(comparar);
+  }
+
+  private incluyeNotasCredito(): boolean {
+    return !this.tipoComprobante || this.tipoComprobante === '34';
+  }
+
+  private incluyeFacturas(): boolean {
+    return this.tipoComprobante !== '34';
+  }
 
   ngOnInit(): void {
     this.empresaFiltro = this.empresaUsuarioActual();
@@ -164,12 +240,29 @@ export class Reporte607Component implements OnInit {
     return { fecha: '', fechaDesde: desde, fechaHasta: hasta };
   }
 
+  /**
+   * Facturas (RPC del 607, paginada en el servidor y ordenada por fecha
+   * descendente) con las notas de credito E34 intercaladas por fecha.
+   * Cada nota va en la pagina cuyas facturas cubren su fecha: la pagina p
+   * recibe las notas con fecha >= ultima fecha de la pagina p y < ultima
+   * fecha de la pagina p-1.
+   */
   cargarReporte(): void {
     if (!this.consultaRealizada) return;
     this.loading = true;
-    const filtroFecha = this.filtrosFechaConsulta();
-    const params = {
-      page: this.page,
+    void this.cargarReporteAsync();
+  }
+
+  /** Fecha mas antigua (YYYY-MM-DD) de cada pagina de facturas ya consultada. */
+  private ultimaFechaPagina = new Map<number, string>();
+
+  private fechaClave(factura: any): string {
+    return String(this.fechaComprobante(factura) ?? '').slice(0, 10);
+  }
+
+  private async consultarPaginaFacturas(page: number, filtroFecha: any): Promise<any[]> {
+    const response: any = await firstValueFrom(this.servicioFacturacion.buscarReporte607Dgii({
+      page,
       pageSize: this.pageSize,
       ...filtroFecha,
       tipoComprobante: this.tipoComprobante,
@@ -178,36 +271,80 @@ export class Reporte607Component implements OnInit {
       encf: this.encf,
       empresa: this.empresaFiltro,
       sucursal: this.sucursalFiltro,
-    };
+    }));
+    const filas = Array.isArray(response?.data) ? response.data : [];
+    const pagination = response?.pagination || {};
+    const total = Number(pagination.total);
+    if (page === 1 || (Number.isFinite(total) && total > 0)) {
+      this.totalFacturasFiltro = Number.isFinite(total) ? total : filas.length;
+    }
+    const fechas = filas.map((f: any) => this.fechaClave(f)).filter(Boolean).sort();
+    if (fechas.length) this.ultimaFechaPagina.set(page, fechas[0]);
+    return filas;
+  }
 
-    this.servicioFacturacion.buscarReporte607Dgii(params).subscribe({
-      next: (response: any) => {
-        this.facturas = [...(response?.data || [])].sort((a: any, b: any) => {
-          const fechaA = String(a?.fa_fecNcf ?? a?.fa_fecncf ?? '');
-          const fechaB = String(b?.fa_fecNcf ?? b?.fa_fecncf ?? '');
-          return fechaB.localeCompare(fechaA) ||
-            String(b?.fa_ncfFact ?? b?.fa_ncffact ?? '').localeCompare(
-              String(a?.fa_ncfFact ?? a?.fa_ncffact ?? ''),
-            );
+  private async cargarReporteAsync(): Promise<void> {
+    const filtroFecha = this.filtrosFechaConsulta();
+    try {
+      if (this.page === 1) {
+        this.ultimaFechaPagina.clear();
+        this.notasCreditoFiltro = this.incluyeNotasCredito()
+          ? await firstValueFrom(
+              this.notaCreditoService.listarParaReporte607(this.filtrosNotasCredito(filtroFecha)),
+            )
+          : [];
+      }
+
+      let facturasPagina: any[] = [];
+      if (this.incluyeFacturas()) {
+        facturasPagina = await this.consultarPaginaFacturas(this.page, filtroFecha);
+        // Limite superior de la pagina: la fecha mas antigua de la anterior.
+        if (this.page > 1 && !this.ultimaFechaPagina.has(this.page - 1)) {
+          await this.consultarPaginaFacturas(this.page - 1, filtroFecha);
+        }
+      } else {
+        this.totalFacturasFiltro = 0;
+      }
+
+      const paginasFact = this.totalFacturasFiltro > 0
+        ? Math.ceil(this.totalFacturasFiltro / this.pageSize)
+        : 0;
+
+      let filas: any[];
+      if (paginasFact > 0) {
+        const superior = this.page > 1 ? this.ultimaFechaPagina.get(this.page - 1) || null : null;
+        const inferior = this.page < paginasFact ? this.ultimaFechaPagina.get(this.page) || null : null;
+        const notasPagina = this.notasCreditoFiltro.filter((nota) => {
+          const fecha = this.fechaClave(nota);
+          return (!inferior || fecha >= inferior) && (!superior || fecha < superior);
         });
-        const pagination = response?.pagination || {};
-        this.total = Number(pagination.total ?? this.facturas.length ?? 0);
-        this.page = Number(pagination.page ?? this.page);
-        this.pageSize = Number(pagination.pageSize ?? this.pageSize);
-        this.totalPages = Math.max(1, Number(pagination.totalPages ?? Math.ceil(this.total / this.pageSize)));
-        this.loading = false;
-      },
-      error: (error) => {
-        console.error('[Reporte607Component] Error cargando Rep. 607', error);
-        this.loading = false;
-        const detalle = String(error?.message || error?.details || '').trim();
-        Swal.fire('Error', detalle || 'No se pudo cargar el Rep. 607', 'error');
-      },
-    });
+        filas = [...facturasPagina, ...notasPagina];
+        this.totalPages = paginasFact;
+      } else {
+        // Sin facturas (o filtro E34): solo notas, paginadas aqui.
+        filas = this.notasCreditoFiltro.slice(
+          (this.page - 1) * this.pageSize,
+          this.page * this.pageSize,
+        );
+        this.totalPages = Math.max(1, Math.ceil(this.notasCreditoFiltro.length / this.pageSize));
+      }
+
+      this.facturas = filas;
+      this.total = this.totalFacturasFiltro + this.notasCreditoFiltro.length;
+      this.totalPages = Math.max(1, this.totalPages);
+      this.loading = false;
+    } catch (error: any) {
+      console.error('[Reporte607Component] Error cargando Rep. 607', error);
+      this.loading = false;
+      const detalle = String(error?.message || error?.details || '').trim();
+      Swal.fire('Error', detalle || 'No se pudo cargar el Rep. 607', 'error');
+    }
   }
 
   aplicarFiltros(): void {
     this.page = 1;
+    this.totalFacturasFiltro = 0;
+    this.notasCreditoFiltro = [];
     this.consultaRealizada = true;
     this.cargarReporte();
   }
@@ -361,6 +498,7 @@ export class Reporte607Component implements OnInit {
   }
 
   puedeEditarEncf(factura: any): boolean {
+    if (factura?.esNotaCredito) return false;
     return this.estadoTexto(factura).toLowerCase().includes('rechaz');
   }
 
@@ -496,6 +634,8 @@ export class Reporte607Component implements OnInit {
   }
 
   puedeReenviar(factura: any): boolean {
+    // Las notas de credito se reenvian desde Contabilidad > Nota de credito.
+    if (factura?.esNotaCredito) return false;
     const estado = this.estadoTexto(factura).toLowerCase();
     return estado.includes('rechaz') ||
       estado.includes('error') ||
@@ -604,7 +744,7 @@ export class Reporte607Component implements OnInit {
     const pageSize = 500;
     const rows: any[] = [];
     const fechas = this.fechasExportacion();
-    const fechasAConsultar = fechas.length ? fechas : [''];
+    const fechasAConsultar = !this.incluyeFacturas() ? [] : fechas.length ? fechas : [''];
 
     for (const fechaConsulta of fechasAConsultar) {
       for (let page = 1; ; page += 1) {
@@ -637,14 +777,30 @@ export class Reporte607Component implements OnInit {
       }
     }
 
+    if (this.incluyeNotasCredito()) {
+      const notas = await firstValueFrom(
+        this.notaCreditoService.listarParaReporte607(
+          this.filtrosNotasCredito(this.filtrosFechaConsulta()),
+        ),
+      );
+      rows.push(...notas);
+    }
+
     const unicas = new Map<string, any>();
     rows.forEach((factura: any, index: number) => {
       const codigo = String(factura?.fa_codFact ?? factura?.fa_codfact ?? '').trim();
       const empresa = String(factura?.fa_codEmpr ?? factura?.fa_codempr ?? '').trim();
       const sucursal = String(factura?.fa_codSucu ?? factura?.fa_codsucu ?? '').trim();
-      unicas.set(`${empresa}|${sucursal}|${codigo || index}`, factura);
+      const tipo = factura?.esNotaCredito ? 'NC' : 'FA';
+      unicas.set(`${tipo}|${empresa}|${sucursal}|${codigo || index}`, factura);
     });
-    return Array.from(unicas.values());
+    // Facturas y notas de credito juntas, de la fecha mas reciente a la mas antigua.
+    return Array.from(unicas.values()).sort((a: any, b: any) =>
+      this.fechaClave(b).localeCompare(this.fechaClave(a)) ||
+      String(b?.fa_ncfFact ?? b?.fa_ncffact ?? '').localeCompare(
+        String(a?.fa_ncfFact ?? a?.fa_ncffact ?? ''),
+      ),
+    );
   }
 
   private fechasExportacion(): string[] {
