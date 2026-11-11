@@ -158,15 +158,16 @@
                   <input
                     type="text"
                     formControlName="fa_sector"
-                    (keydown.enter)="moveFocus($event, input7)"
-                    (keydown)="handleKeydownSector($event)"
+                    (keydown)="handleKeydownSector($event, input7)"
+                    (focus)="onFocusSector()"
+                    (blur)="onBlurSector()"
                     #input6
                     placeholder="Sector"
                     class="form-control text-uppercase"
                     [formControl]="buscarSector"
                   />
                   <div
-                    [style.display]="resultadoSector.length > 0 ? 'block' : 'none'"
+                    [style.display]="mostrarListaSectores && resultadoSector.length > 0 ? 'block' : 'none'"
                     class="dropdown-menu shadow-sm w-100"
                     style="
                       margin-top: 2px;
@@ -179,12 +180,13 @@
                   >
                     <a
                       *ngFor="let result of resultadoSector; let i = index"
+                      [attr.id]="'sector-opcion-' + i"
                       (click)="cargarDatosSector(result)"
                       [class.active]="i === selectedIndexsector"
                       class="dropdown-item d-flex align-items-center py-2"
                       style="cursor: pointer"
                     >
-                      <i class="bi bi-geo-alt me-2 text-success"></i>
+                      <i class="bi bi-geo-alt me-2"></i>
                       <span>{{ result.se_desSect }}</span>
                     </a>
                   </div>

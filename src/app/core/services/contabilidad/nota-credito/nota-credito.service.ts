@@ -257,6 +257,102 @@ export class NotaCreditoService {
     );
   }
 
+  /**
+   * Notas de credito (E34) para el Rep. 607, con los mismos nombres de campo
+   * que usan las facturas en esa pantalla (fa_codFact, fa_ncfFact, ...).
+   */
+  listarParaReporte607(filtros: {
+    fecha?: string | null;
+    fechaDesde?: string | null;
+    fechaHasta?: string | null;
+    estadoDgii?: string | null;
+    search?: string | null;
+    empresa?: string | null;
+    sucursal?: number | string | null;
+  } = {}): Observable<any[]> {
+    return from((async () => {
+      const filas: any[] = [];
+      const lote = 1000;
+      for (let desde = 0; ; desde += lote) {
+        let query = this.db
+          .from('nota_credito')
+          .select(
+            'nc_numero,nc_factura,nc_encf,nc_fecha,nc_ncf_modificado,nc_tipo_pago,' +
+            'comprador_rnc,comprador_nombre,subtotal,itbis_total,total,estado_dgii,' +
+            'track_id,codigo_seguridad,qr_link,response_json,fa_codempr,fa_codsucu,updated_at',
+          )
+          .not('nc_encf', 'is', null)
+          .order('nc_fecha', { ascending: false })
+          .order('nc_numero', { ascending: false })
+          .range(desde, desde + lote - 1);
+
+        const fecha = String(filtros.fecha || '').trim();
+        const fechaDesde = String(filtros.fechaDesde || '').trim();
+        const fechaHasta = String(filtros.fechaHasta || '').trim();
+        if (fecha) {
+          query = query.eq('nc_fecha', fecha);
+        } else {
+          if (fechaDesde) query = query.gte('nc_fecha', fechaDesde);
+          if (fechaHasta) query = query.lte('nc_fecha', fechaHasta);
+        }
+
+        const estado = String(filtros.estadoDgii || '').trim();
+        if (estado) query = query.ilike('estado_dgii', `%${estado}%`);
+
+        const search = String(filtros.search || '').trim().replace(/[,()%]/g, '');
+        if (search) {
+          query = query.or(`nc_numero.ilike.%${search}%,nc_encf.ilike.%${search}%,nc_factura.ilike.%${search}%`);
+        }
+
+        const empresa = String(filtros.empresa || '').trim();
+        if (empresa) {
+          query = query.eq('fa_codempr', empresa);
+        } else {
+          const tenant = this.tenant();
+          if (tenant.codempr) query = query.eq('fa_codempr', tenant.codempr);
+        }
+        const sucursal = Number(filtros.sucursal);
+        if (Number.isFinite(sucursal) && sucursal > 0) query = query.eq('fa_codsucu', sucursal);
+
+        const { data, error } = await query;
+        if (error) throw error;
+        const pagina = data || [];
+        filas.push(...pagina);
+        if (pagina.length < lote) break;
+      }
+
+      return filas.map((nc: any) => ({
+        esNotaCredito: true,
+        fa_codFact: nc.nc_numero,
+        fa_codfact: nc.nc_numero,
+        fa_codEmpr: nc.fa_codempr,
+        fa_codempr: nc.fa_codempr,
+        fa_codSucu: nc.fa_codsucu,
+        fa_codsucu: nc.fa_codsucu,
+        fa_tipoNcf: '34',
+        fa_tiponcf: '34',
+        fa_ncfFact: nc.nc_encf,
+        fa_ncffact: nc.nc_encf,
+        fa_fecNcf: nc.nc_fecha,
+        fa_fecncf: nc.nc_fecha,
+        fa_fecFact: nc.nc_fecha,
+        fa_nomClie: nc.comprador_nombre,
+        fa_rncFact: nc.comprador_rnc,
+        fa_valFact: this.toNumber(nc.total),
+        fa_itbiFact: this.toNumber(nc.itbis_total),
+        fa_subFact: this.toNumber(nc.subtotal),
+        encf_modificado: nc.nc_ncf_modificado,
+        factura_afectada: nc.nc_factura,
+        estado_dgii: nc.estado_dgii,
+        codseguridad: nc.codigo_seguridad,
+        qr_link: nc.qr_link,
+        dgii_track_id: nc.track_id,
+        dgii_response_json: nc.response_json,
+        dgii_updated_at: nc.updated_at,
+      }));
+    })());
+  }
+
   /** Fecha local (YYYY-MM-DD) de hoy mas `dias` dias. */
   private fechaMasDias(dias: number): string {
     const fecha = new Date();

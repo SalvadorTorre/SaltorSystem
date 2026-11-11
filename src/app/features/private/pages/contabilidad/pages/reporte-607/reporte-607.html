@@ -3,7 +3,7 @@
     <div>
       <span class="eyebrow">Contabilidad fiscal</span>
       <h2>Rep. 607</h2>
-      <p>Facturas enviadas a DGII con estado, codigo de seguridad y enlace QR para consulta.</p>
+      <p>Facturas y notas de crédito enviadas a DGII con estado, codigo de seguridad y enlace QR para consulta.</p>
     </div>
     <button class="btn btn-light hero-action" type="button" (click)="cargarReporte()" [disabled]="loading">
       <i class="bi bi-arrow-clockwise me-2" [class.spin]="loading"></i>
@@ -131,6 +131,22 @@
         <p>Solo se muestran comprobantes con informacion DGII registrada.</p>
       </div>
       <label class="page-size">
+        Ordenar por
+        <select class="form-select" [ngModel]="ordenarPor" (ngModelChange)="cambiarOrden($event)">
+          <option value="fecha">Fecha</option>
+          <option value="tipo">Tipo comprobante</option>
+          <option value="ncf">NCF/e-CF</option>
+        </select>
+        <button
+          class="btn btn-sm btn-outline-secondary"
+          type="button"
+          (click)="ordenDescendente = !ordenDescendente"
+          [title]="ordenDescendente ? 'Descendente (clic para ascendente)' : 'Ascendente (clic para descendente)'"
+        >
+          <i class="bi" [class.bi-sort-down]="ordenDescendente" [class.bi-sort-up]="!ordenDescendente"></i>
+        </button>
+      </label>
+      <label class="page-size">
         Mostrar
         <select class="form-select" [(ngModel)]="pageSize" (change)="cambiarTamanoPagina()">
           <option [ngValue]="10">10</option>
@@ -168,19 +184,20 @@
           <tr *ngIf="!loading && facturas.length === 0">
             <td colspan="10" class="empty-cell">
               <i class="bi bi-inbox"></i>
-              <span *ngIf="consultaRealizada">No hay facturas DGII para los filtros seleccionados.</span>
+              <span *ngIf="consultaRealizada">No hay facturas ni notas de crédito DGII para los filtros seleccionados.</span>
               <span *ngIf="!consultaRealizada">Seleccione los filtros y pulse Filtrar para consultar.</span>
             </td>
           </tr>
 
-          <tr *ngFor="let factura of facturas">
+          <tr *ngFor="let factura of facturasOrdenadas">
             <td>
               <div class="invoice-code">{{ factura.fa_codFact || factura.fa_codfact }}</div>
+              <small *ngIf="factura.esNotaCredito" class="d-block text-muted">Factura {{ factura.factura_afectada }} · e-NCF mod. {{ factura.encf_modificado }}</small>
               <small>{{ factura.fa_codEmpr || factura.fa_codempr || 'Sin empresa' }}</small>
             </td>
             <td>{{ formatFecha(fechaComprobante(factura)) }}</td>
             <td>
-              <span class="type-chip">{{ tipoComprobanteTexto(factura) }}</span>
+              <span [class]="tipoClase(factura)">{{ tipoComprobanteTexto(factura) }}</span>
             </td>
             <td>
               <span class="ncf-chip">{{ factura.fa_ncfFact || factura.fa_ncffact || 'N/A' }}</span>

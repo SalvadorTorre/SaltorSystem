@@ -622,7 +622,20 @@ export class ServicioFacturacion {
     return this.toStringMax(telefonos, 26);
   }
 
+  private fechaMasDias(fechaInput: any, dias: number): string | null {
+    const fecha = this.normalizeDate(fechaInput);
+    if (!fecha || !/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return null;
+    const [year, month, day] = fecha.split('-').map(Number);
+    const resultado = new Date(year, month - 1, day);
+    resultado.setDate(resultado.getDate() + dias);
+    const y = resultado.getFullYear();
+    const m = String(resultado.getMonth() + 1).padStart(2, '0');
+    const d = String(resultado.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+
   private mapFacturaUiToDb(input: any): any {
+    const fechaFactura = this.normalizeDate(input?.fa_fecFact);
     const payload: any = {
       fa_codfact: this.toStringMax(input?.fa_codFact, 12),
       fa_ncffact: this.toStringMax(input?.fa_ncfFact, 19),
@@ -630,7 +643,7 @@ export class ServicioFacturacion {
       fa_fecncf: this.normalizeDate(input?.fa_fecNcf),
       fa_tiponcf: this.toNumberOrNull(input?.fa_tipoNcf),
       fa_tipoitbis: this.toStringMax(input?.fa_tipoitbis, 20),
-      fa_fecfact: this.normalizeDate(input?.fa_fecFact),
+      fa_fecfact: fechaFactura,
       fa_fechora: input?.fa_fecHora || null,
       fa_fehora: input?.fa_fehora || new Date().toISOString(),
       fa_valfact: this.toNumberOrNull(input?.fa_valFact),
@@ -639,7 +652,7 @@ export class ServicioFacturacion {
       fa_desfact: this.toNumberOrNull(input?.fa_desFact),
       fa_cosfact: this.toNumberOrNull(input?.fa_cosFact),
       fa_abofact: this.toNumberOrNull(input?.fa_aboFact),
-      fa_expfact: this.normalizeDate(input?.fa_expFact),
+      fa_expfact: this.fechaMasDias(fechaFactura, 30),
       fa_codclie: this.toNumberOrNull(input?.fa_codClie),
       fa_nomclie: this.toStringMax(input?.fa_nomClie, 39),
       fa_telclie: this.telefonoFactura(input),
