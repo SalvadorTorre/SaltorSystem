@@ -372,9 +372,9 @@ export class ConfiguracionGlobal implements OnInit {
     empresa: ConfiguracionDgiiEmpresaData,
     ambiente: 'test' | 'prod' | string,
   ): void {
-    const nuevoAmbiente = String(ambiente || 'test').trim().toLowerCase() === 'prod'
-      ? 'prod'
-      : 'test';
+    const valorAmbiente = String(ambiente || 'test').trim().toLowerCase();
+    const nuevoAmbiente: 'test' | 'prod' | 'simulado' =
+      valorAmbiente === 'prod' ? 'prod' : valorAmbiente === 'simulado' ? 'simulado' : 'test';
 
     if (!empresa?.codEmpre) return;
     if (empresa.dgiiAmbiente === nuevoAmbiente) return;

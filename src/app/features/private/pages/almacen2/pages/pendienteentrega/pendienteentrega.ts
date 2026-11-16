@@ -62,6 +62,127 @@ export class PendienteEntregaComponent implements OnInit {
     this.cargarPendientesListado(1);
   }
 
+  // ---- Panel derecho: detalle pendiente de la factura seleccionada ----
+  facturaSeleccionada: any = null;
+  detalleSeleccionado: any[] = [];
+  cargandoDetalle = false;
+
+  esSeleccionada(item: any): boolean {
+    return !!this.facturaSeleccionada &&
+      String(this.facturaSeleccionada?.fa_codFact || '') === String(item?.fa_codFact || '');
+  }
+
+  private seleccionarPrimero(): void {
+    const sigue = this.listaPendientes.find((i) => this.esSeleccionada(i));
+    if (sigue) {
+      this.seleccionarFactura(sigue);
+    } else if (this.listaPendientes.length) {
+      this.seleccionarFactura(this.listaPendientes[0]);
+    } else {
+      this.facturaSeleccionada = null;
+      this.detalleSeleccionado = [];
+    }
+  }
+
+  /** Carga en la tabla de la derecha las lineas pendientes de la factura. */
+  seleccionarFactura(item: any): void {
+    const cod = String(item?.fa_codFact || '').trim();
+    if (!cod) return;
+    this.facturaSeleccionada = item;
+    this.detalleSeleccionado = [];
+    this.cargandoDetalle = true;
+    this.facturacionSrv.buscarFacturaDetallePendiente(cod).subscribe({
+      next: (resp: any) => {
+        if (!this.esSeleccionada(item)) return;
+        const rows = Array.isArray(resp?.data?.rows) ? resp.data.rows :
+                     Array.isArray(resp?.data) ? resp.data :
+                     (Array.isArray(resp) ? resp : []);
+        this.detalleSeleccionado = rows
+          .map((d: any) => ({
+            cod: d.df_codMerc ?? d.df_codmerc ?? d.dc_codmerc ?? d.in_codmerc ?? '',
+            des: d.df_desMerc ?? d.df_desmerc ?? d.dc_descrip ?? d.in_desmerc ?? '',
+            cantidad: Number(d.df_canMerc ?? d.df_canmerc ?? d.dc_cantida ?? d.cantidad ?? 0),
+            canpend: Number(d.df_canpend ?? d.canpend ?? 0),
+            unidad: String(d.df_unidad ?? d.unidad ?? ''),
+          }))
+          .filter((d: any) => d.canpend > 0);
+        this.cargandoDetalle = false;
+      },
+      error: () => {
+        if (!this.esSeleccionada(item)) return;
+        this.detalleSeleccionado = [];
+        this.cargandoDetalle = false;
+      },
+    });
+  }
+
+  /** Linea que se esta marcando como entregada (para deshabilitar su boton). */
+  itemEntregando = '';
+
+  /**
+   * Marca como entregada una linea del detalle. Pregunta la cantidad que se
+   * entrega (por defecto todo lo pendiente); lo que quede sigue pendiente.
+   */
+  async entregarItem(d: any): Promise<void> {
+    const factura = this.facturaSeleccionada;
+    const codFact = String(factura?.fa_codFact || '').trim();
+    const codMerc = String(d?.cod || '').trim();
+    const pendiente = Number(d?.canpend) || 0;
+    if (!codFact || !codMerc || pendiente <= 0 || this.itemEntregando) return;
+
+    const r = await Swal.fire({
+      title: 'Entregar producto',
+      html: `<div class="text-start"><b>${codMerc}</b> · ${String(d?.des || '')}<br>Pendiente: <b>${pendiente}</b></div>`,
+      input: 'number',
+      inputLabel: 'Cantidad que se entrega',
+      inputValue: String(pendiente),
+      inputAttributes: { min: '0', max: String(pendiente), step: 'any' },
+      showCancelButton: true,
+      confirmButtonText: 'Marcar entregado',
+      cancelButtonText: 'Cancelar',
+      inputValidator: (valor) => {
+        const n = Number(valor);
+        if (!Number.isFinite(n) || n <= 0) return 'Indique una cantidad mayor que cero.';
+        if (n > pendiente) return `No puede entregar más de lo pendiente (${pendiente}).`;
+        return null;
+      },
+    });
+    if (!r.isConfirmed) return;
+
+    const entregada = Number(r.value) || 0;
+    const nuevoPendiente = Math.max(0, Math.round((pendiente - entregada) * 100) / 100);
+    this.itemEntregando = codMerc;
+    this.facturacionSrv.acturalizaDetPendiente({
+      factura: { df_codFact: codFact, df_codMerc: codMerc, df_canpend: nuevoPendiente },
+    }).subscribe({
+      next: () => {
+        this.itemEntregando = '';
+        Swal.fire({
+          icon: 'success',
+          title: nuevoPendiente > 0 ? 'Entrega parcial registrada' : 'Producto entregado',
+          text: nuevoPendiente > 0 ? `Quedan ${nuevoPendiente} pendiente(s).` : `${codMerc} entregado completo.`,
+          timer: 1600,
+          showConfirmButton: false,
+        });
+        // Si ya no queda nada pendiente, la factura sale de la lista.
+        const quedanOtras = this.detalleSeleccionado.some((x) => x !== d && Number(x.canpend) > 0);
+        if (nuevoPendiente <= 0 && !quedanOtras) {
+          this.cargarPendientesListado(this.currentPage);
+        } else {
+          this.seleccionarFactura(factura);
+        }
+      },
+      error: (error: any) => {
+        this.itemEntregando = '';
+        Swal.fire('Error', String(error?.message || 'No se pudo marcar el producto como entregado.'), 'error');
+      },
+    });
+  }
+
+  get totalPendienteSeleccionado(): number {
+    return this.detalleSeleccionado.reduce((s, d) => s + (Number(d.canpend) || 0), 0);
+  }
+
   abrirModalConsulta(item: any): void {
     const cod = String(item?.fa_codFact || '').trim();
     if (!cod) return;
@@ -147,7 +268,7 @@ export class PendienteEntregaComponent implements OnInit {
           const unidad = String(d.df_unidad ?? d.unidad ?? '');
           const canpend = Number(d.df_canpend ?? d.canpend ?? 0);
           const pendienteFlag = String(d.df_pendiente ?? d.pendiente ?? '').toUpperCase();
-          const pendiente = pendienteFlag === 'P' || canpend > 0;
+          const pendiente = pendienteFlag === 'P' || pendienteFlag === 'S' || canpend > 0;
           this.initialPendiente[key] = pendiente;
           this.seleccionPendiente[key] = pendiente;
           this.cantidadPendiente[key] = pendiente ? (canpend > 0 ? canpend : cantidad) : 0;
@@ -282,6 +403,7 @@ crearNuevoPendiente(): void {
           (Array.isArray(resp) ? resp : []);
         const { numero, cliente, fecha } = this.filtroForm.getRawValue();
         this.listaPendientes = this.aplicarFiltroLocal(dataRows, String(numero || ''), String(cliente || ''), String(fecha || ''));
+        this.seleccionarPrimero();
         const total = resp?.data?.pagination?.total ?? resp?.pagination?.total ?? this.listaPendientes.length;
         this.totalItems = Number(total || 0);
       },
@@ -318,6 +440,7 @@ crearNuevoPendiente(): void {
           Array.isArray(resp?.data) ? resp.data :
           (Array.isArray(resp) ? resp : []);
         this.listaPendientes = dataRows;
+        this.seleccionarPrimero();
         const total = resp?.data?.pagination?.total ?? resp?.pagination?.total ?? this.listaPendientes.length;
         this.totalItems = Number(total || 0);
       },
@@ -343,48 +466,43 @@ crearNuevoPendiente(): void {
     });
   }
 
- marcarEntregada(item: any): void {
-
+ /**
+  * Boton de la factura en la lista: confirma y marca TODOS sus productos como
+  * entregados (quita todo lo pendiente de la factura).
+  */
+ async marcarEntregada(item: any): Promise<void> {
   const cod = String(item.fa_codFact || item.codigo || '').trim();
   if (!cod) return;
 
-  Swal.fire({
-    title: '¿Marcar como entregada?',
-    text: `Factura ${cod}`,
-    icon: 'question',
+  const r = await Swal.fire({
+    title: '¿Marcar todo como entregado?',
+    html: `Factura <b>${cod}</b><br>Todos los productos pendientes de esta factura se marcarán como entregados y dejarán de estar pendientes.`,
+    icon: 'warning',
     showCancelButton: true,
-    confirmButtonText: 'Sí, marcar',
-    cancelButtonText: 'Cancelar'
-  }).then((r) => {
-
-    if (r.isConfirmed) {
-
-      this.facturacionSrv.actualizarEntregaFactura(cod).subscribe({
-        next: () => {
-
-          Swal.fire({
-            title: 'Actualizada',
-            text: `Factura ${cod} marcada como entregada`,
-            icon: 'success',
-            timer: 1800,
-            showConfirmButton: false
-          });
-
-          this.cargarPendientesListado(this.currentPage);
-
-        },
-        error: () => Swal.fire({
-          title: 'Error',
-          text: 'No se pudo actualizar',
-          icon: 'error'
-        })
-      });
-
-    }
-
+    confirmButtonText: 'Sí, marcar todo entregado',
+    cancelButtonText: 'Cancelar',
+    confirmButtonColor: '#198754',
   });
+  if (!r.isConfirmed) return;
 
-}
+  this.facturacionSrv.entregarTodoPendiente(cod).subscribe({
+    next: () => {
+      Swal.fire({
+        title: 'Entregada',
+        text: `Factura ${cod}: todos los productos quedaron entregados.`,
+        icon: 'success',
+        timer: 1800,
+        showConfirmButton: false,
+      });
+      this.cargarPendientesListado(this.currentPage);
+    },
+    error: (error: any) => Swal.fire({
+      title: 'Error',
+      text: String(error?.message || 'No se pudo marcar la factura como entregada.'),
+      icon: 'error',
+    }),
+  });
+ }
 
   imprimir(item: any): void {
     const ventaData = {
@@ -406,7 +524,9 @@ crearNuevoPendiente(): void {
                      (Array.isArray(resp) ? resp : []);
         const items = rows
        
-        .filter((d: any) => String(d.df_pendiente ?? d.pendiente ?? '').toUpperCase() === 'P')
+        .filter((d: any) =>
+          ['P', 'S'].includes(String(d.df_pendiente ?? d.pendiente ?? '').toUpperCase()) &&
+          Number(d.df_canpend ?? d.canpend ?? 0) > 0)
           .map((d: any) => {
             const canpend = Number(d.df_canpend ?? d.canpend ?? 0);
             const precio = Number(d.df_preMerc ?? d.df_premerc ?? d.precio ?? 0);
@@ -419,7 +539,10 @@ crearNuevoPendiente(): void {
               df_valMerc: total
             };
           });
-        this.printing.imprimirVentainterna80mm(ventaData, items);
+        this.printing.imprimirVentainterna80mm(ventaData, items, {
+          titulo: 'PENDIENTE DE ENTREGA',
+          etiquetaNumero: 'Factura No.',
+        });
       },
       error: () => {
         Swal.fire({ title: 'Error', text: 'No se pudo cargar el detalle para imprimir', icon: 'error' });

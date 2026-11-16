@@ -156,6 +156,14 @@ const routes: Routes = [
             .then(m => m.ModuloPlataforma),
       },
       {
+        path: 'compras',
+        canActivate: [permissionGuard],
+        data: { modulePrefix: '/private/compras' },
+        loadChildren: () =>
+          import('./pages/compras/compras-modulo')
+            .then(m => m.ModuloCompras),
+      },
+      {
         path: 'reporte',
         canActivate: [permissionGuard],
         data: { modulePrefix: '/private/reporte' },

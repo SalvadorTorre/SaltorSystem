@@ -1,0 +1,26 @@
+<div class="container-fluid compras-layout px-2 px-lg-3 py-2">
+  <div class="row g-3 align-items-start">
+    <div class="col-12 col-lg-2">
+      <aside class="compras-sidebar shadow-sm">
+        <div class="compras-sidebar__header">
+          <i class="bi bi-cart-check me-2"></i>
+          <span>Compras</span>
+        </div>
+        <nav class="compras-sidebar__nav">
+          <a
+            *ngIf="canView('/private/compras/orden-compra')"
+            class="compras-link"
+            routerLinkActive="active"
+            [routerLink]="['orden-compra']"
+          >
+            <i class="bi bi-clipboard-check"></i>
+            <span>Orden de compra</span>
+          </a>
+        </nav>
+      </aside>
+    </div>
+    <div class="col-12 col-lg-10">
+      <router-outlet></router-outlet>
+    </div>
+  </div>
+</div>

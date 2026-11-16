@@ -1,0 +1,147 @@
+.orden-compra { display: flex; flex-direction: column; gap: 12px; }
+.oc-header {
+  align-items: center;
+  background: linear-gradient(120deg, #0f766e 0%, #0e7490 45%, #1d4ed8 100%);
+  border-radius: 16px;
+  box-shadow: 0 10px 24px rgba(14, 116, 144, 0.25);
+  color: #ffffff;
+  display: flex;
+  gap: 14px;
+  padding: 16px 20px;
+}
+.oc-header h4 { font-weight: 900; color: #ffffff; letter-spacing: 0.01em; }
+.oc-header small { color: rgba(255, 255, 255, 0.85); }
+.oc-header__icon {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 12px;
+  display: flex;
+  font-size: 1.5rem;
+  height: 48px;
+  justify-content: center;
+  width: 48px;
+}
+.oc-tabs .nav-link { font-weight: 700; color: #475569; }
+.oc-tabs .nav-link.active { color: #0f766e; }
+.oc-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+.form-label { font-size: 0.8rem; font-weight: 700; color: #475569; margin-bottom: 4px; }
+.oc-captura {
+  margin-top: 16px;
+  padding: 12px;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+}
+.oc-dropdown {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  z-index: 50;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+  max-height: 280px;
+  overflow-y: auto;
+}
+.oc-dropdown button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  padding: 8px 12px;
+  border-bottom: 1px solid #f1f5f9;
+}
+.oc-dropdown button:hover { background: #f0fdfa; }
+.oc-table thead th {
+  background: #0f172a;
+  color: #ffffff;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+.oc-num { width: 120px; }
+.oc-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-top: 8px;
+}
+.oc-totales { min-width: 260px; }
+.oc-totales div { display: flex; justify-content: space-between; gap: 24px; padding: 2px 0; }
+.oc-totales .total { border-top: 1px solid #e2e8f0; margin-top: 4px; padding-top: 6px; font-size: 1.1rem; color: #0f766e; }
+.oc-acciones { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.oc-encabezado {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.oc-fila { display: grid; gap: 12px; }
+/* Empresa 40% · Sucursal 30% · No. orden 15% · Fecha 15% */
+.oc-fila-1 { grid-template-columns: 40fr 30fr 15fr 15fr; }
+/* Suplidor 40% · RNC 15% · Condicion 15% · Usuario 30% */
+.oc-fila-2 { grid-template-columns: 40fr 15fr 15fr 30fr; }
+.oc-fila-3 { grid-template-columns: 1fr; }
+@media (max-width: 768px) {
+  .oc-fila-1, .oc-fila-2 { grid-template-columns: 1fr 1fr; }
+}
+.oc-deshabilitado { opacity: 0.55; }
+
+/* Fila resaltada con las flechas en las listas */
+.oc-dropdown button.activo { background: #ccfbf1; }
+
+/* Letra 3 puntos mas grande en toda la pantalla */
+.orden-compra { font-size: calc(1rem + 3px); }
+.orden-compra .form-control,
+.orden-compra .form-select,
+.orden-compra .btn,
+.orden-compra .nav-link { font-size: calc(1rem + 3px); }
+.orden-compra .form-label { font-size: calc(0.8rem + 3px); }
+.orden-compra .table { font-size: calc(0.875rem + 3px); }
+.orden-compra .oc-table thead th { font-size: calc(0.78rem + 3px); }
+.orden-compra .form-control-sm,
+.orden-compra .btn-sm { font-size: calc(0.875rem + 3px); }
+.orden-compra small,
+.orden-compra .badge { font-size: calc(0.8rem + 3px); }
+.orden-compra .oc-header h4 { font-size: calc(1.5rem + 3px); }
+
+/* La lista del campo Codigo es mas ancha que el campo para leer la descripcion */
+.oc-dropdown--ancho { min-width: 460px; right: auto; }
+
+/* Item que se esta editando */
+.oc-table tr.oc-editando td { background: #fef9c3; }
+.oc-editando-aviso {
+  align-items: center;
+  color: #854d0e;
+  display: flex;
+  font-weight: 600;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+/* Tabla de items fija para 9 filas: el recuadro no crece, se desplaza */
+.oc-lineas {
+  --oc-fila: 44px;
+  height: calc(var(--oc-fila) * 9 + 46px);
+  overflow-y: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+}
+.oc-lineas .oc-table { margin-bottom: 0; }
+.oc-lineas .oc-table tbody tr { height: var(--oc-fila); }
+.oc-lineas .oc-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}

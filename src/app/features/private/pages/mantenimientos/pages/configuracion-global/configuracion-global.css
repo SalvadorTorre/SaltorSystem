@@ -145,3 +145,8 @@
     padding: 0.85rem;
   }
 }
+
+.dgii-env-pill.simulado {
+  background: #fef3c7;
+  color: #92400e;
+}

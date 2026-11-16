@@ -250,8 +250,13 @@
                       </td>
                       <td>{{ empresa.rncEmpresa || '-' }}</td>
                       <td>
-                        <span class="dgii-env-pill" [class.prod]="empresa.dgiiAmbiente === 'prod'">
-                          {{ empresa.dgiiAmbiente === 'prod' ? 'PROD' : 'TEST' }}
+                        <span
+                          class="dgii-env-pill"
+                          [class.prod]="empresa.dgiiAmbiente === 'prod'"
+                          [class.simulado]="empresa.dgiiAmbiente === 'simulado'"
+                          [title]="empresa.dgiiAmbiente === 'simulado' ? 'No envía a la DGII: responde aceptado con datos de simulación' : ''"
+                        >
+                          {{ empresa.dgiiAmbiente === 'prod' ? 'PROD' : empresa.dgiiAmbiente === 'simulado' ? 'SIMULADO' : 'TEST' }}
                         </span>
                       </td>
                       <td>
@@ -265,6 +270,7 @@
                           >
                             <option value="test">TEST</option>
                             <option value="prod">PROD</option>
+                            <option value="simulado">SIMULADO (no envía a DGII)</option>
                           </select>
                           <span
                             *ngIf="savingAmbienteEmpresa === empresa.codEmpre"

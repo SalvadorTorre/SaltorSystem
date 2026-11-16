@@ -1219,7 +1219,11 @@ export class PrintingService {
       console.error('Error al generar entrada:', error);
     }
   }
-  async imprimirVentainterna80mm(ventaData: any, items: any[]) {
+  async imprimirVentainterna80mm(
+    ventaData: any,
+    items: any[],
+    opciones: { titulo?: string; etiquetaNumero?: string } = {},
+  ) {
     try {
       const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: [80, 297] });
       const pageWidth = 74;
@@ -1284,7 +1288,7 @@ export class PrintingService {
       yPos += 5;
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(10);
-      centerText('CONDUCE INTERNO', yPos);
+      centerText(opciones.titulo || 'CONDUCE INTERNO', yPos);
       yPos += 6;
       doc.setFontSize(8);
       doc.setFont('helvetica', 'normal');
@@ -1298,7 +1302,9 @@ export class PrintingService {
       };
       const xLeft = leftMargin;
       const xRight = pageWidth - rightMargin;
-      doc.text(`No.: ${v.fa_codFact || ''}`, xLeft, yPos);
+      if (opciones.etiquetaNumero) doc.setFont('helvetica', 'bold');
+      doc.text(`${opciones.etiquetaNumero || 'No.'}: ${v.fa_codFact || ''}`, xLeft, yPos);
+      doc.setFont('helvetica', 'normal');
       doc.text(formatDateShort(fechaTxt), xRight, yPos, { align: 'right' });
       yPos += 4;
       doc.setFont('helvetica', 'bold');

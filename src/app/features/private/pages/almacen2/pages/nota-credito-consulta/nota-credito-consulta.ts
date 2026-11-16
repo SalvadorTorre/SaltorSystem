@@ -4,6 +4,7 @@ import { NotaCreditoService } from 'src/app/core/services/contabilidad/nota-cred
 import { ServicioFacturacion } from 'src/app/core/services/facturacion/factura/factura.service';
 import { ServicioConfiguracionGlobal } from 'src/app/core/services/mantenimientos/configuracion-global/configuracion-global.service';
 import { ServicioItbis } from 'src/app/core/services/mantenimientos/itbis/itbis.service';
+import { ServicioFpago } from 'src/app/core/services/mantenimientos/fpago/fpago.service';
 
 @Component({
   selector: 'app-nota-credito-consulta-almacen',
@@ -18,7 +19,8 @@ export class NotaCreditoConsultaAlmacenComponent extends NotaCreditoComponent {
     servicioFacturacion: ServicioFacturacion,
     notaCreditoService: NotaCreditoService,
     servicioItbis: ServicioItbis,
+    servicioFpago: ServicioFpago,
   ) {
-    super(configuracionGlobal, servicioFacturacion, notaCreditoService, servicioItbis);
+    super(configuracionGlobal, servicioFacturacion, notaCreditoService, servicioItbis, servicioFpago);
   }
 }

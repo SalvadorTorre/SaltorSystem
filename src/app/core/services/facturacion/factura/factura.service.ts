@@ -1600,9 +1600,24 @@ export class ServicioFacturacion {
     const empresa = String(scope?.empresa || '').trim();
     const sucursal = this.toNumberOrNull(scope?.sucursal);
     return from((async () => {
+      // Primera impresion (factura o conduce): queda pendiente de entrega.
+      // En una reimpresion no se toca, para no reiniciar lo ya despachado.
+      let previaQuery = this.db
+        .from('factura')
+        .select('fa_impresa,fa_codempr,fa_codsucu')
+        .eq('fa_codfact', cod)
+        .limit(1);
+      if (empresa) previaQuery = previaQuery.eq('fa_codempr', empresa);
+      if (sucursal) previaQuery = previaQuery.eq('fa_codsucu', sucursal);
+      if (!empresa && !sucursal) previaQuery = this.applyTenantFilter(previaQuery);
+      const { data: previa } = await previaQuery.maybeSingle();
+      const primeraImpresion =
+        !!previa && !['S', '1', 'TRUE', 'SI', 'Y'].includes(String(previa?.fa_impresa ?? '').trim().toUpperCase());
+
       const patch: any = {
         fa_impresa: 'S',
       };
+      if (primeraImpresion) patch.fa_pendiente = 'S';
       if (payloadActualizado?.fa_reimpresa !== undefined) patch.fa_reimpresa = this.toDbFlag(payloadActualizado.fa_reimpresa);
       if (payloadActualizado?.fa_fpago !== undefined) patch.fa_fpago = this.toStringOrNull(payloadActualizado.fa_fpago);
       if (payloadActualizado?.fa_tipopago !== undefined) patch.fa_tipopago = this.toNumberOrNull(payloadActualizado.fa_tipopago);
@@ -1624,8 +1639,45 @@ export class ServicioFacturacion {
       if (!empresa && !sucursal) updateQuery = this.applyTenantFilter(updateQuery);
       const { data, error } = await updateQuery.maybeSingle();
       if (error) throw error;
+
+      if (primeraImpresion && data) {
+        await this.marcarDetallePendienteImpresion(
+          cod,
+          String(data?.fa_codempr || previa?.fa_codempr || '').trim(),
+        );
+      }
       return { status: 'success', code: 200, data: this.mapFacturaDbToUi(data) };
     })());
+  }
+
+  /**
+   * Al imprimir por primera vez: cada linea de detfactura queda pendiente de
+   * entrega por toda la cantidad facturada (df_pendiente = 'S',
+   * df_canpend = df_canmerc).
+   */
+  private async marcarDetallePendienteImpresion(codFact: string, empresa: string): Promise<void> {
+    let detalleQuery = this.db
+      .from('detfactura')
+      .select('id,df_canmerc')
+      .eq('df_codfact', codFact);
+    if (empresa) detalleQuery = detalleQuery.eq('df_codepr', empresa);
+    const { data: lineas, error } = await detalleQuery;
+    if (error) throw error;
+
+    const filas = (lineas || []).filter((l: any) => l?.id !== null && l?.id !== undefined);
+    for (let i = 0; i < filas.length; i += 10) {
+      const lote = filas.slice(i, i + 10);
+      const resultados = await Promise.all(
+        lote.map((l: any) =>
+          this.db
+            .from('detfactura')
+            .update({ df_pendiente: 'S', df_canpend: this.toNumber(l?.df_canmerc) })
+            .eq('id', l.id),
+        ),
+      );
+      const fallo = resultados.find((r: any) => r?.error);
+      if (fallo?.error) throw fallo.error;
+    }
   }
 
   actualizarPagoEntregaCaja(payload: any) {
@@ -1783,8 +1835,10 @@ export class ServicioFacturacion {
         }
       }
 
-      let data: any = facturaActual;
-      if (Object.keys(facturaDbPayload).length > 0) {
+      // El encabezado (monto nuevo) se guarda AL FINAL, despues de reemplazar
+      // el detalle: si el detalle falla, la factura queda como estaba.
+      const actualizarEncabezado = async (): Promise<any> => {
+        if (Object.keys(facturaDbPayload).length === 0) return facturaActual;
         let updateQuery = this.db
           .from('factura')
           .update(facturaDbPayload)
@@ -1796,20 +1850,18 @@ export class ServicioFacturacion {
         if (!updatedData) {
           throw new Error(`No tiene permiso para editar la factura ${cod} desde Control de Facturas.`);
         }
-        data = updatedData;
-      }
+        return updatedData;
+      };
 
       if (!actualizarDetalle) {
+        const data = await actualizarEncabezado();
         return { status: 'success', code: 200, data: this.mapFacturaDbToUi(data) };
       }
 
-      let detalleAnteriorQuery = this.db
+      const { data: detalleAnterior, error: detalleAnteriorError } = await this.db
         .from('detfactura')
         .select('df_codmerc,df_canmerc')
         .eq('df_codfact', cod);
-      detalleAnteriorQuery = this.applyTenantFilterDetalle(detalleAnteriorQuery);
-      const { data: detalleAnterior, error: detalleAnteriorError } =
-        await detalleAnteriorQuery;
       if (detalleAnteriorError) throw detalleAnteriorError;
 
       const idsucursal = this.toNumber(facturaRaw?.fa_codSucu ?? facturaActual.fa_codsucu);
@@ -1823,35 +1875,8 @@ export class ServicioFacturacion {
         const codigo = String(producto?.in_codmerc ?? item?.df_codMerc ?? '').trim();
         cantidades.set(codigo, (cantidades.get(codigo) || 0) + this.toNumber(item?.cantidad ?? item?.df_canMerc));
       }
-      for (const [codigoProducto, diferencia] of cantidades) {
-        if (!codigoProducto || !diferencia) continue;
-        const { data: inventario, error: inventarioError } = await this.db
-          .from('inventario')
-          .select('id,inv_existencia')
-          .eq('inv_codsucu', idsucursal)
-          .eq('inv_codprod', codigoProducto)
-          .limit(1)
-          .maybeSingle();
-        if (inventarioError) throw inventarioError;
-        if (!inventario) continue;
-        const { error: inventarioUpdateError } = await this.db
-          .from('inventario')
-          .update({
-            inv_existencia: this.toNumber(inventario.inv_existencia) - diferencia,
-            inv_fechamov: new Date().toISOString(),
-          })
-          .eq('id', Number(inventario.id));
-        if (inventarioUpdateError) throw inventarioUpdateError;
-      }
-
-      let detalleDelete = this.db.from('detfactura').delete().eq('df_codfact', cod);
-      detalleDelete = this.applyTenantFilterDetalle(detalleDelete);
-      const { error: detalleDeleteError } = await detalleDelete;
-      if (detalleDeleteError) throw detalleDeleteError;
-
-      if (detalleRaw.length > 0) {
-        const tenant = this.currentTenant();
-        const detallePayload = detalleRaw.map((item: any) => {
+      const tenant = this.currentTenant();
+      const detallePayload = detalleRaw.map((item: any) => {
           const producto = item?.producto || {};
           const cantidad = this.toNumber(item?.cantidad ?? item?.df_canMerc);
           const precio = this.toNumber(item?.precio ?? item?.df_preMerc);
@@ -1874,6 +1899,33 @@ export class ServicioFacturacion {
             df_codsucu: this.toStringMax(idsucursal, 10),
           };
         });
+
+      // 1) Reemplazar el detalle en una sola transaccion (RPC).
+      const rpc = await this.db.rpc('reemplazar_detalle_factura', {
+        p_codfact: cod,
+        p_detalle: detallePayload,
+      });
+      if (rpc.error) {
+        if (String(rpc.error?.code || '') !== 'PGRST202') throw rpc.error;
+
+        // Sin la migracion 20261116150000: borrar e insertar desde aqui,
+        // verificando que el borrado de verdad quito las lineas anteriores.
+        const { error: detalleDeleteError } = await this.db
+          .from('detfactura')
+          .delete()
+          .eq('df_codfact', cod);
+        if (detalleDeleteError) throw detalleDeleteError;
+        const { count: restantes, error: restantesError } = await this.db
+          .from('detfactura')
+          .select('id', { count: 'exact', head: true })
+          .eq('df_codfact', cod);
+        if (restantesError) throw restantesError;
+        if (Number(restantes || 0) > 0) {
+          throw new Error(
+            `No se pudieron quitar los productos anteriores de la factura ${cod} (permiso de borrado). ` +
+            'Ejecute la migracion 20261116150000_reemplazar_detalle_factura.sql. La factura no se modifico.',
+          );
+        }
         // Por lotes, igual que al crear la factura, para evitar statement timeout.
         for (let i = 0; i < detallePayload.length; i += 15) {
           const { error: detalleInsertError } = await this.db
@@ -1883,6 +1935,31 @@ export class ServicioFacturacion {
         }
       }
 
+      // 2) Ajustar inventario por la diferencia de cantidades.
+      for (const [codigoProducto, diferencia] of cantidades) {
+        if (!codigoProducto || !diferencia) continue;
+        const { data: inventario, error: inventarioError } = await this.db
+          .from('inventario')
+          .select('id,inv_existencia')
+          .eq('inv_codsucu', idsucursal)
+          .eq('inv_codprod', codigoProducto)
+          .limit(1)
+          .maybeSingle();
+        if (inventarioError) throw inventarioError;
+        if (!inventario) continue;
+        const { error: inventarioUpdateError } = await this.db
+          .from('inventario')
+          .update({
+            inv_existencia: this.toNumber(inventario.inv_existencia) - diferencia,
+            inv_fechamov: new Date().toISOString(),
+          })
+          .eq('id', Number(inventario.id));
+        if (inventarioUpdateError) throw inventarioUpdateError;
+      }
+
+
+      // 3) Por ultimo el encabezado (monto, ITBIS, etc.).
+      const data = await actualizarEncabezado();
       return { status: 'success', code: 200, data: this.mapFacturaDbToUi(data) };
     })());
   }
@@ -3428,6 +3505,39 @@ export class ServicioFacturacion {
         code: 200,
         data: this.mapFacturaDbToUi(data),
       };
+    })());
+  }
+
+  /**
+   * Pendiente de entrega: marca TODA la factura como entregada. Cada linea
+   * queda sin pendiente (df_pendiente = 'N', df_canpend = 0) y la factura
+   * con fa_pendiente = 'N' y fa_entrega = 'S'.
+   */
+  entregarTodoPendiente(cod: string) {
+    const codigo = String(cod || '').trim();
+    return from((async () => {
+      if (!codigo) throw new Error('Debe indicar la factura.');
+
+      let detUpdate = this.db
+        .from('detfactura')
+        .update({ df_pendiente: 'N', df_canpend: 0 })
+        .eq('df_codfact', codigo);
+      detUpdate = this.applyTenantFilterDetalle(detUpdate);
+      const { error: detError } = await detUpdate;
+      if (detError) throw detError;
+
+      let facturaUpdate = this.db
+        .from('factura')
+        .update({ fa_pendiente: 'N', fa_entrega: 'S' })
+        .eq('fa_codfact', codigo)
+        .select('*');
+      facturaUpdate = this.applyTenantFilter(facturaUpdate);
+      const { data, error } = await facturaUpdate.maybeSingle();
+      if (error) throw error;
+      if (!data) {
+        throw new Error(`No se encontro la factura ${codigo} para marcar entrega.`);
+      }
+      return { status: 'success', code: 200, data: this.mapFacturaDbToUi(data) };
     })());
   }
 

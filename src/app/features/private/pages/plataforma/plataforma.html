@@ -260,14 +260,36 @@
   <div class="plataforma-modal pendiente-modal" role="dialog" aria-modal="true" aria-labelledby="tituloCrearPendiente">
     <header class="pendiente-modal-header">
       <div>
-        <div class="ventas-kicker">CONDUCES EN EFECTIVO</div>
+        <div class="ventas-kicker">CONDUCES NCF 32 EN EFECTIVO</div>
         <h5 id="tituloCrearPendiente">Crear pendiente</h5>
-        <p>{{ filtrosVentas.empresa }} · Sucursal {{ filtrosVentas.sucursal }}</p>
+        <p>
+          {{ filtrosVentas.empresa }} · Sucursal {{ filtrosVentas.sucursal }} ·
+          {{ fechaVisual(filtrosVentas.fechaDesde) }} – {{ fechaVisual(filtrosVentas.fechaHasta) }}
+        </p>
       </div>
       <button type="button" class="btn-close" aria-label="Cerrar" (click)="cerrarCrearPendiente()" [disabled]="confirmandoPendiente"></button>
     </header>
 
     <div class="pendiente-modal-body">
+      <section class="pendiente-disponibilidad" aria-live="polite">
+        <div *ngIf="cargandoDisponibilidadPendiente" class="pendiente-disponibilidad-cargando">
+          <span class="spinner-border spinner-border-sm me-2"></span>Calculando disponibilidad...
+        </div>
+        <ng-container *ngIf="!cargandoDisponibilidadPendiente && disponibilidadPendiente as disponibilidad">
+          <div>
+            <span>Conduces disponibles</span>
+            <strong>{{ disponibilidad.cantidad_disponible | number }}</strong>
+          </div>
+          <div>
+            <span>Monto disponible</span>
+            <strong>RD$ {{ disponibilidad.monto_disponible | number:'1.2-2' }}</strong>
+          </div>
+        </ng-container>
+        <div *ngIf="!cargandoDisponibilidadPendiente && errorDisponibilidadPendiente" class="pendiente-disponibilidad-error">
+          {{ errorDisponibilidadPendiente }}
+        </div>
+      </section>
+
       <label for="montoCrearPendiente" class="pendiente-monto-label">Monto que desea convertir a pendiente</label>
       <div class="input-group pendiente-monto-input">
         <span class="input-group-text">RD$</span>

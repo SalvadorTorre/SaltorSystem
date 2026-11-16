@@ -125,6 +125,12 @@
 .pendiente-modal-header h5 { margin: 0.18rem 0 0.08rem; color: #17324a; font-size: 1.25rem; font-weight: 800; }
 .pendiente-modal-header p { margin: 0; color: #6f8292; font-size: 0.8rem; }
 .pendiente-modal-body { max-height: calc(100vh - 220px); overflow-y: auto; padding: 1.2rem 1.25rem; }
+.pendiente-disponibilidad { display: flex; align-items: stretch; gap: 0.75rem; max-width: 620px; margin-bottom: 1rem; }
+.pendiente-disponibilidad > div { min-width: 190px; padding: 0.72rem 0.9rem; border: 1px solid #bfd8cb; border-radius: 9px; background: #eef8f2; }
+.pendiente-disponibilidad span { display: block; color: #4e6f5d; font-size: 0.68rem; font-weight: 800; text-transform: uppercase; }
+.pendiente-disponibilidad strong { display: block; margin-top: 0.16rem; color: #12663e; font-size: 1.08rem; }
+.pendiente-disponibilidad .pendiente-disponibilidad-cargando { min-width: 280px; color: #4e6f5d; font-size: 0.82rem; font-weight: 700; }
+.pendiente-disponibilidad .pendiente-disponibilidad-error { min-width: 100%; border-color: #f1b8be; background: #fff0f1; color: #a22c38; font-size: 0.82rem; }
 .pendiente-monto-label { display: block; margin-bottom: 0.35rem; color: #40596c; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; }
 .pendiente-monto-input { max-width: 470px; }
 .pendiente-monto-input .form-control { min-height: 44px; font-size: 1.05rem; font-weight: 750; }
@@ -163,6 +169,8 @@
   .ventas-metrica { border-top: 1px solid #e1e7ed; border-left: 0; }
   .ventas-metrica:first-child { border-top: 0; }
   .ventas-detalle-cabecera { align-items: flex-start; flex-direction: column; }
+  .pendiente-disponibilidad { flex-direction: column; }
+  .pendiente-disponibilidad > div { min-width: 100%; }
   .pendiente-resumen { grid-template-columns: 1fr 1fr; }
   .pendiente-resumen > div:nth-child(3) { border-left: 0; border-top: 1px solid #e2e9ef; }
   .pendiente-resumen > div:nth-child(4) { border-top: 1px solid #e2e9ef; }

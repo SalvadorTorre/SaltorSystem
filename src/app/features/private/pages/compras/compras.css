@@ -1,0 +1,43 @@
+.compras-sidebar {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.compras-sidebar__header {
+  align-items: center;
+  background: linear-gradient(135deg, #0f766e, #155e75);
+  color: #ffffff;
+  display: flex;
+  font-weight: 800;
+  padding: 14px 16px;
+}
+
+.compras-sidebar__nav {
+  display: flex;
+  flex-direction: column;
+  padding: 8px;
+  gap: 4px;
+}
+
+.compras-link {
+  align-items: center;
+  border-radius: 10px;
+  color: #334155;
+  display: flex;
+  font-weight: 600;
+  gap: 10px;
+  padding: 10px 12px;
+  text-decoration: none;
+}
+
+.compras-link:hover {
+  background: #f1f5f9;
+  color: #0f766e;
+}
+
+.compras-link.active {
+  background: #ccfbf1;
+  color: #0f766e;
+}

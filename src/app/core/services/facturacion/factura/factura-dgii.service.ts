@@ -23,7 +23,10 @@ export class FacturaDgiiService {
   ): Promise<any> {
     const codigo = String(factura?.fa_codFact || factura?.fa_codfact || '').trim();
     if (!codigo) throw new Error('La factura no tiene numero.');
-    const scope = { empresa: this.empresaActiva() };
+    // Empresa y sucursal de la FACTURA (no de la sesion): desde Facturas
+    // pendientes se envian facturas de cualquier empresa/sucursal.
+    const emisor = await this.datosEmisor(factura);
+    const scope = { empresa: emisor.codEmpresa, sucursal: emisor.sucursal };
 
     progreso?.('Validando y cargando la factura...');
     const facturaResp = await firstValueFrom(
@@ -70,9 +73,9 @@ export class FacturaDgiiService {
     }
 
     progreso?.('Generando comprobante electronico...');
-    const escenario = await this.construirEscenario(lista, detalles);
-    const rnc = this.rnc(localStorage.getItem('rnc_empresa'));
-    if (!rnc) throw new Error('No se encontro el RNC emisor activo.');
+    const escenario = await this.construirEscenario(lista, detalles, emisor);
+    const rnc = emisor.rnc;
+    if (!rnc) throw new Error(`No se encontro el RNC de la empresa ${emisor.codEmpresa}.`);
 
     const actualizada = await this.despacharEscenario(
       lista,
@@ -95,7 +98,8 @@ export class FacturaDgiiService {
   ): Promise<any> {
     const codigo = String(factura?.fa_codFact || factura?.fa_codfact || '').trim();
     if (!codigo) throw new Error('La factura no tiene numero.');
-    const scope = { empresa: this.empresaActiva() };
+    const emisor = await this.datosEmisor(factura);
+    const scope = { empresa: emisor.codEmpresa, sucursal: emisor.sucursal };
 
     progreso?.('Cargando factura rechazada...');
     const [facturaResp, detalleResp] = await Promise.all([
@@ -127,9 +131,9 @@ export class FacturaDgiiService {
     }
 
     progreso?.('Reconstruyendo comprobante electronico...');
-    const escenario = await this.construirEscenario(completa, detalles);
-    const rnc = this.rnc(localStorage.getItem('rnc_empresa'));
-    if (!rnc) throw new Error('No se encontro el RNC emisor activo.');
+    const escenario = await this.construirEscenario(completa, detalles, emisor);
+    const rnc = emisor.rnc;
+    if (!rnc) throw new Error(`No se encontro el RNC de la empresa ${emisor.codEmpresa}.`);
 
     return this.despacharEscenario(
       completa,
@@ -197,8 +201,11 @@ export class FacturaDgiiService {
       this.configuracion.obtenerConfiguracionGlobal(),
     );
     const modo = String(configuracion?.data?.dgiiModoEnvio || 'COLA').toUpperCase();
+    // Empresa en ambiente simulado: nunca a la cola (el trabajador de la cola
+    // si enviaria a la DGII); se responde al momento como aceptada.
+    const simulado = await this.configuracion.esEnvioSimulado(rncEmisor, empresa);
 
-    if (modo !== 'DIRECTO') {
+    if (modo !== 'DIRECTO' && !simulado) {
       progreso?.(
         tipoOperacion === 'REENVIO'
           ? 'Agregando reenvío a la cola DGII...'
@@ -391,20 +398,88 @@ export class FacturaDgiiService {
     return row?.fechaencf ? this.fecha(row.fechaencf) : '';
   }
 
-  private async construirEscenario(factura: any, items: any[]): Promise<any> {
+  /**
+   * Datos del emisor segun la empresa y sucursal de la factura. Si es la
+   * misma empresa/sucursal de la sesion se usan los datos guardados al
+   * iniciar sesion; si no, se leen de empresas y sucursales.
+   */
+  private async datosEmisor(factura: any): Promise<{
+    codEmpresa: string;
+    sucursal: number | null;
+    rnc: string;
+    nombre: string;
+    direccion: string;
+    nombreSucursal: string;
+  }> {
+    const empresaSesion = this.empresaActiva().toUpperCase();
+    const sucursalSesion = this.sucursalActiva() || Number(localStorage.getItem('idSucursal') || 0) || 0;
+    const codEmpresa = String(
+      factura?.fa_codEmpr || factura?.fa_codempr || empresaSesion,
+    ).trim().toUpperCase();
+    const sucursalNum = Number(factura?.fa_codSucu ?? factura?.fa_codsucu ?? sucursalSesion) || 0;
+    const sucursal = sucursalNum > 0 ? sucursalNum : null;
+
+    if (codEmpresa === empresaSesion && (!sucursal || sucursal === sucursalSesion)) {
+      const suc = this.storageJson(localStorage.getItem('sucursal'));
+      return {
+        codEmpresa,
+        sucursal,
+        rnc: this.rnc(localStorage.getItem('rnc_empresa')),
+        nombre: String(localStorage.getItem('nombre_empresa') || '').trim(),
+        direccion: String(localStorage.getItem('direccion_empresa') || '').trim(),
+        nombreSucursal: String(suc?.nom_sucursal || suc?.descripcion || suc?.nombre || '').trim(),
+      };
+    }
+
+    const [{ data: empresa, error: empresaError }, sucursalResp] = await Promise.all([
+      this.db
+        .from('empresas')
+        .select('cod_empre,nom_empre,rnc_empre,dir_empre')
+        .eq('cod_empre', codEmpresa)
+        .maybeSingle(),
+      sucursal
+        ? this.db
+            .from('sucursales')
+            .select('cod_sucursal,nom_sucursal,dir_sucursal')
+            .eq('cod_sucursal', sucursal)
+            .maybeSingle()
+        : Promise.resolve({ data: null, error: null }),
+    ]);
+    if (empresaError) throw empresaError;
+    if (!empresa) throw new Error(`No se encontro la empresa ${codEmpresa} de la factura.`);
+    const suc: any = sucursalResp?.data || null;
+
+    return {
+      codEmpresa,
+      sucursal,
+      rnc: this.rnc(empresa?.rnc_empre),
+      nombre: String(empresa?.nom_empre || '').trim(),
+      // Igual que al iniciar sesion: direccion de la sucursal o de la empresa.
+      direccion: String(suc?.dir_sucursal || empresa?.dir_empre || '').trim(),
+      nombreSucursal: String(suc?.nom_sucursal || '').trim(),
+    };
+  }
+
+  private async construirEscenario(
+    factura: any,
+    items: any[],
+    emisorFactura?: {
+      codEmpresa: string;
+      rnc: string;
+      nombre: string;
+      direccion: string;
+      nombreSucursal: string;
+    },
+  ): Promise<any> {
     const encf = String(factura?.fa_ncfFact || factura?.fa_ncffact || '').trim();
     if (!encf) throw new Error('La factura no tiene ENCF.');
     const tipo = encf.startsWith('E') ? encf.substring(1, 3) : '';
-    const rncEmisor = this.rnc(localStorage.getItem('rnc_empresa'));
-    const nombreEmisor = String(localStorage.getItem('nombre_empresa') || '').trim();
-    const direccion = String(
-      localStorage.getItem('direccion_empresa') || '',
-    ).trim();
-    const codEmpresa = this.empresaActiva().toUpperCase();
-    const sucursal = this.storageJson(localStorage.getItem('sucursal'));
-    const nombreSucursal = String(
-      sucursal?.nom_sucursal || sucursal?.descripcion || sucursal?.nombre || '',
-    ).trim();
+    const emisor = emisorFactura || (await this.datosEmisor(factura));
+    const rncEmisor = emisor.rnc;
+    const nombreEmisor = emisor.nombre;
+    const direccion = emisor.direccion;
+    const codEmpresa = emisor.codEmpresa.toUpperCase();
+    const nombreSucursal = emisor.nombreSucursal;
     const rncComprador = this.rnc(factura?.fa_rncFact);
     const nombreComprador = String(factura?.fa_nomClie || '').trim();
     const fechaVencimiento = await this.vencimiento(codEmpresa, tipo);
