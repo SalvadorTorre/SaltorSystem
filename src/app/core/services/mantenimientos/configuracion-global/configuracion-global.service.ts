@@ -50,10 +50,100 @@ export class ServicioConfiguracionGlobal {
     return `${y}-${m}-${d}`;
   }
 
-  private normalizeAmbiente(input: any): 'test' | 'prod' {
-    return String(input || 'test').trim().toLowerCase() === 'prod'
-      ? 'prod'
-      : 'test';
+  private normalizeAmbiente(input: any): 'test' | 'prod' | 'simulado' {
+    const valor = String(input || 'test').trim().toLowerCase();
+    if (valor === 'prod') return 'prod';
+    if (valor === 'simulado') return 'simulado';
+    return 'test';
+  }
+
+  /**
+   * true si la empresa esta en ambiente DGII "simulado": no se envia nada a
+   * la DGII y se responde como aceptado. Se busca la empresa por el RNC
+   * emisor, por el codigo indicado o por la empresa de la sesion.
+   */
+  async esEnvioSimulado(rncEmisor?: string | null, codEmpre?: string | null): Promise<boolean> {
+    try {
+      let codigo = String(codEmpre || '').trim();
+      const rnc = String(rncEmisor || '').replace(/\D/g, '');
+      if (!codigo && rnc) {
+        const { data: empresas } = await this.db
+          .from('empresas')
+          .select('cod_empre,rnc_empre')
+          .limit(2000);
+        const empresa = (empresas || []).find(
+          (e: any) => String(e?.rnc_empre || '').replace(/\D/g, '') === rnc,
+        );
+        codigo = String(empresa?.cod_empre || '').trim();
+      }
+      if (!codigo) {
+        codigo = String(
+          localStorage.getItem('cod_empre') || localStorage.getItem('codigoempresa') || '',
+        ).trim();
+      }
+      if (!codigo) return false;
+
+      const { data, error } = await this.db
+        .from('configuracion_dgii_empresa')
+        .select('dgii_ambiente,activo')
+        .eq('cod_empre', codigo)
+        .maybeSingle();
+      if (error || !data) return false;
+      return data.activo !== false &&
+        String(data.dgii_ambiente || '').trim().toLowerCase() === 'simulado';
+    } catch {
+      return false;
+    }
+  }
+
+  /** Respuesta con la misma forma que send-dgii-direct-cert, marcada como simulada. */
+  private respuestaDgiiSimulada(escenarios: any[], rncEmisor?: string | null): any {
+    const ahora = new Date();
+    const p2 = (n: number) => String(n).padStart(2, '0');
+    const fechaFirma =
+      `${p2(ahora.getDate())}-${p2(ahora.getMonth() + 1)}-${ahora.getFullYear()} ` +
+      `${p2(ahora.getHours())}:${p2(ahora.getMinutes())}:${p2(ahora.getSeconds())}`;
+    const rnc = String(rncEmisor || '').replace(/\D/g, '');
+    const letras = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    const codigo = () =>
+      Array.from({ length: 6 }, () => letras[Math.floor(Math.random() * letras.length)]).join('');
+    const mensaje = 'SIMULACIÓN: empresa en ambiente simulado, no se envió a la DGII.';
+
+    const results = (escenarios || []).map((esc: any) => {
+      const encf = String(esc?.ENCF || esc?.encf || '').trim();
+      const codSeg = codigo();
+      const trackId = `SIM-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+      const qr =
+        `https://simulacion.saltorsystem.local/ConsultaTimbre?RncEmisor=${encodeURIComponent(rnc)}` +
+        `&ENCF=${encodeURIComponent(encf)}&CodigoSeguridad=${codSeg}&simulado=1`;
+      return {
+        ok: true,
+        simulado: true,
+        encf,
+        ENCF: encf,
+        estado: 'Aceptado',
+        estado_dgii: 'Aceptado',
+        estado_envio_dgii: 'Aceptado',
+        status: 'Aceptado',
+        trackId,
+        codigo: '1',
+        codigoSeguridad: codSeg,
+        codseguridad: codSeg,
+        qrUrl: qr,
+        qr_link: qr,
+        fechaHoraFirma: fechaFirma,
+        fec_firma: fechaFirma,
+        mensajes: [mensaje],
+      };
+    });
+
+    return {
+      ok: true,
+      simulado: true,
+      message: mensaje,
+      ambiente: 'simulado',
+      results,
+    };
   }
 
   private isMissingColumnError(error: any, column: string): boolean {
@@ -514,6 +604,11 @@ export class ServicioConfiguracionGlobal {
         const escenariosNormalizados = (scenarios || []).map((scenario) =>
           this.normalizarEscenarioDgii(scenario)
         );
+
+        // Empresa en ambiente "simulado": no se envia a la DGII.
+        if (await this.esEnvioSimulado(rncEmisor)) {
+          return this.respuestaDgiiSimulada(escenariosNormalizados, rncEmisor);
+        }
 
         const client: any = this.supabase.client;
         if (!client?.functions?.invoke) {

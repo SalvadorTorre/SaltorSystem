@@ -156,9 +156,15 @@
         </label>
 
         <label class="form-field">
+          <span>Tipo de pago (DGII)</span>
+          <input class="form-control" value="1 - Contado" disabled />
+        </label>
+
+        <label class="form-field">
           <span>Forma de pago</span>
-          <select class="form-select" name="paymentType" [(ngModel)]="form.paymentType">
-            <option *ngFor="let item of paymentTypes" [value]="item.value">{{ item.label }}</option>
+          <select class="form-select" name="formaPago" [(ngModel)]="form.formaPago">
+            <option value="">Seleccione</option>
+            <option *ngFor="let fp of formasPago" [value]="'' + fp.fp_codfpago">{{ fp.fp_codfpago }} - {{ fp.fp_descfpago }}</option>
           </select>
         </label>
 

@@ -349,6 +349,58 @@ Deno.serve(async (req: Request) => {
       }
     }
 
+    // Empresa en ambiente "simulado": no se envia nada a la DGII. Se responde
+    // como aceptado con datos de simulacion (track id, codigo de seguridad y QR).
+    if (
+      empresaAmbiente &&
+      String(empresaAmbiente.dgii_ambiente || "").trim().toLowerCase() === "simulado"
+    ) {
+      const ahora = new Date();
+      const p2 = (n: number) => String(n).padStart(2, "0");
+      const fechaFirma =
+        `${p2(ahora.getDate())}-${p2(ahora.getMonth() + 1)}-${ahora.getFullYear()} ` +
+        `${p2(ahora.getHours())}:${p2(ahora.getMinutes())}:${p2(ahora.getSeconds())}`;
+      const letras = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+      const mensaje = "SIMULACIÓN: empresa en ambiente simulado, no se envió a la DGII.";
+      const results = scenarios.map((esc: Record<string, unknown>) => {
+        const encf = String(esc?.ENCF || "").trim();
+        const codSeg = Array.from(
+          { length: 6 },
+          () => letras[Math.floor(Math.random() * letras.length)],
+        ).join("");
+        const qr =
+          `https://simulacion.saltorsystem.local/ConsultaTimbre?RncEmisor=${certRnc}` +
+          `&ENCF=${encodeURIComponent(encf)}&CodigoSeguridad=${codSeg}&simulado=1`;
+        return {
+          ok: true,
+          simulado: true,
+          encf,
+          estado: "Aceptado",
+          estado_dgii: "Aceptado",
+          estado_envio_dgii: "Aceptado",
+          status: "Aceptado",
+          trackId: `SIM-${crypto.randomUUID()}`,
+          codigo: "1",
+          codigoSeguridad: codSeg,
+          codseguridad: codSeg,
+          qrUrl: qr,
+          qr_link: qr,
+          fechaHoraFirma: fechaFirma,
+          fec_firma: fechaFirma,
+          mensajes: [mensaje],
+        };
+      });
+      return jsonResponse(200, {
+        ok: true,
+        simulado: true,
+        message: mensaje,
+        data: { results },
+        ambiente: "simulado",
+        empresa: empresa?.cod_empre || null,
+        ambiente_origen: "empresa",
+      });
+    }
+
     const payload = { scenarios };
     const endpointCandidates = buildEndpointCandidates(dgiiBaseUrl, dgiiAmbiente);
     if (!endpointCandidates.length) {

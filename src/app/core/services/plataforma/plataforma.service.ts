@@ -63,6 +63,11 @@ export interface PreparacionPendientePlataforma {
   conduces: ConducePendientePlataforma[];
 }
 
+export interface DisponibilidadPendientePlataforma {
+  cantidad_disponible: number;
+  monto_disponible: number;
+}
+
 export interface AlertaConducesPlataforma {
   activa: boolean;
   fecha_desde: string;
@@ -274,12 +279,16 @@ export class ServicioPlataforma {
   prepararPendiente(params: {
     empresa: string;
     sucursal: number;
+    fechaDesde: string;
+    fechaHasta: string;
     monto: number;
   }): Observable<PreparacionPendientePlataforma> {
     return from((async () => {
       const { data, error } = await this.db.rpc('plataforma_preparar_pendiente', {
         p_empresa: String(params.empresa || '').trim(),
         p_sucursal: Number(params.sucursal),
+        p_fecha_desde: params.fechaDesde,
+        p_fecha_hasta: params.fechaHasta,
         p_monto: Number(params.monto),
       });
       if (error) throw this.errorPlataforma(error);
@@ -287,15 +296,40 @@ export class ServicioPlataforma {
     })());
   }
 
+  consultarDisponibilidadPendiente(params: {
+    empresa: string;
+    sucursal: number;
+    fechaDesde: string;
+    fechaHasta: string;
+  }): Observable<DisponibilidadPendientePlataforma> {
+    return from((async () => {
+      const { data, error } = await this.db.rpc('plataforma_disponibilidad_pendiente', {
+        p_empresa: String(params.empresa || '').trim(),
+        p_sucursal: Number(params.sucursal),
+        p_fecha_desde: params.fechaDesde,
+        p_fecha_hasta: params.fechaHasta,
+      });
+      if (error) throw this.errorPlataforma(error);
+      return {
+        cantidad_disponible: Number(data?.cantidad_disponible || 0),
+        monto_disponible: Number(data?.monto_disponible || 0),
+      };
+    })());
+  }
+
   confirmarPendiente(params: {
     empresa: string;
     sucursal: number;
+    fechaDesde: string;
+    fechaHasta: string;
     monto: number;
   }): Observable<any> {
     return from((async () => {
       const { data, error } = await this.db.rpc('plataforma_confirmar_pendiente', {
         p_empresa: String(params.empresa || '').trim(),
         p_sucursal: Number(params.sucursal),
+        p_fecha_desde: params.fechaDesde,
+        p_fecha_hasta: params.fechaHasta,
         p_monto: Number(params.monto),
       });
       if (error) throw this.errorPlataforma(error);

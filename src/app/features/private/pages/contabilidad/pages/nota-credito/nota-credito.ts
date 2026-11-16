@@ -32,6 +32,8 @@ interface CreditNoteForm {
   modificationCode: string;
   reason: string;
   paymentType: string;
+  /** Forma de pago de la factura (codigo de fpago: efectivo, transferencia...). */
+  formaPago: string;
   incomeType: string;
   issuerRnc: string;
   issuerName: string;
@@ -43,6 +45,8 @@ interface CreditNoteForm {
   buyerAddress: string;
   notes: string;
 }
+
+import { ServicioFpago } from 'src/app/core/services/mantenimientos/fpago/fpago.service';
 
 @Component({
   selector: 'app-nota-credito',
@@ -80,11 +84,8 @@ export class NotaCreditoComponent implements OnInit {
     { value: '5', label: '5 - Referencia a factura de consumo electronica' },
   ];
 
-  readonly paymentTypes = [
-    { value: '1', label: 'Contado' },
-    { value: '2', label: 'Credito' },
-    { value: '3', label: 'Gratuito' },
-  ];
+  /** Formas de pago (tabla fpago). */
+  formasPago: any[] = [];
 
   readonly incomeTypes = [
     { value: '01', label: '01 - Ingresos por operaciones' },
@@ -100,9 +101,20 @@ export class NotaCreditoComponent implements OnInit {
     private servicioFacturacion: ServicioFacturacion,
     private notaCreditoService: NotaCreditoService,
     private servicioItbis: ServicioItbis,
+    private servicioFpago: ServicioFpago,
   ) {}
 
+  private cargarFormasPago(): void {
+    this.servicioFpago.obtenerTodosFpago().subscribe({
+      next: (resp: any) => {
+        this.formasPago = Array.isArray(resp?.data) ? resp.data : [];
+      },
+      error: () => (this.formasPago = []),
+    });
+  }
+
   ngOnInit(): void {
+    this.cargarFormasPago();
     if (this.soloConsulta) {
       this.activeSection = 'consultar';
       this.consultarNotas();
@@ -369,7 +381,8 @@ export class NotaCreditoComponent implements OnInit {
       sequenceExpiration: header.nc_vencimiento ? this.toDateInput(header.nc_vencimiento) : '',
       modifiedNcf: String(header.nc_ncf_modificado || ''), modifiedDate: this.toDateInput(header.nc_fecha_modificada),
       modificationCode: String(header.nc_codigo_modificacion || '3'), reason: String(header.nc_motivo || ''),
-      paymentType: String(header.nc_tipo_pago || '1'), incomeType: String(header.nc_tipo_ingreso || '01'),
+      // TipoPago DGII siempre 1; la forma de pago real va en nc_forma_pago.
+      paymentType: '1', formaPago: String(header.nc_forma_pago ?? ''), incomeType: String(header.nc_tipo_ingreso || '01'),
       issuerRnc: String(header.emisor_rnc || ''), issuerName: String(header.emisor_nombre || ''),
       issuerCommercialName: String(header.emisor_nombre_comercial || ''), issuerAddress: String(header.emisor_direccion || ''),
       buyerRnc: String(header.comprador_rnc || ''), buyerName: String(header.comprador_nombre || ''),
@@ -610,7 +623,10 @@ export class NotaCreditoComponent implements OnInit {
       this.form.buyerName = String(invoice?.fa_nomClie || invoice?.fa_nomclie || '').trim();
       this.form.buyerEmail = String(invoice?.fa_correo || '').trim();
       this.form.buyerAddress = String(invoice?.fa_dirClie || invoice?.fa_dirclie || '').trim();
-      this.form.paymentType = String(invoice?.fa_codfpago || invoice?.fa_fpago || this.form.paymentType || '1').trim().startsWith('2') ? '2' : '1';
+      // La forma de pago de la factura (2 = transferencia, etc.) NO es el
+      // TipoPago de la DGII: la nota siempre se envia como contado (1).
+      this.form.paymentType = '1';
+      this.form.formaPago = String(invoice?.fa_codfpago ?? invoice?.fa_codFpago ?? '').trim();
 
       const details = Array.isArray(detailResponse?.data) ? detailResponse.data : [];
       if (details.length) {
@@ -752,6 +768,7 @@ export class NotaCreditoComponent implements OnInit {
       modificationCode: '3',
       reason: '',
       paymentType: '1',
+      formaPago: '',
       incomeType: '01',
       issuerRnc: this.cleanRnc(localStorage.getItem('rnc_empresa')),
       issuerName: String(localStorage.getItem('nombre_empresa') || '').trim(),
@@ -891,7 +908,7 @@ export class NotaCreditoComponent implements OnInit {
       IndicadorNotaCredito: this.indicadorNotaCredito(),
       IndicadorMontoGravado: '0',
       TipoIngresos: this.form.incomeType,
-      TipoPago: this.form.paymentType,
+      TipoPago: '1',
       RNCEmisor: this.cleanRnc(this.form.issuerRnc),
       RazonSocialEmisor: this.form.issuerName.trim(),
       NombreComercial: this.form.issuerCommercialName.trim() || this.form.issuerName.trim(),
@@ -993,7 +1010,8 @@ export class NotaCreditoComponent implements OnInit {
         nc_motivo: this.form.reason.trim() || null,
         // Guardar el tipo de pago real (1 contado, 2 credito). Antes se guardaba
         // siempre 1 y al reenviar la nota cambiaba de credito a contado.
-        nc_tipo_pago: Number(this.form.paymentType) === 2 ? 2 : 1,
+        nc_tipo_pago: 1,
+        nc_forma_pago: Number(this.form.formaPago) || null,
         nc_tipo_ingreso: this.form.incomeType || null,
         emisor_rnc: this.cleanRnc(this.form.issuerRnc) || null,
         emisor_nombre: this.form.issuerName.trim() || null,

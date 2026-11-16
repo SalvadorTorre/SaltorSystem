@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import Swal from 'sweetalert2';
 import {
   DetalleVentasPlataforma,
+  DisponibilidadPendientePlataforma,
   EmpresaPlataforma,
   PreparacionPendientePlataforma,
   ResumenVentasPlataforma,
@@ -60,6 +61,9 @@ export class PlataformaComponent implements OnInit {
   preparandoPendiente = false;
   confirmandoPendiente = false;
   preparacionPendiente: PreparacionPendientePlataforma | null = null;
+  disponibilidadPendiente: DisponibilidadPendientePlataforma | null = null;
+  cargandoDisponibilidadPendiente = false;
+  errorDisponibilidadPendiente = '';
   errorPendiente = '';
   private temporizadorPendiente: ReturnType<typeof setTimeout> | null = null;
   private secuenciaPendiente = 0;
@@ -155,10 +159,29 @@ export class PlataformaComponent implements OnInit {
       );
       return;
     }
+    if (!this.filtrosVentas.fechaDesde || !this.filtrosVentas.fechaHasta) {
+      Swal.fire(
+        'Período requerido',
+        'Seleccione la fecha inicial y la fecha final antes de crear el pendiente.',
+        'warning',
+      );
+      return;
+    }
+    if (this.filtrosVentas.fechaDesde > this.filtrosVentas.fechaHasta) {
+      Swal.fire(
+        'Período incorrecto',
+        'La fecha inicial no puede ser mayor que la fecha final.',
+        'warning',
+      );
+      return;
+    }
     this.montoPendiente = null;
     this.preparacionPendiente = null;
+    this.disponibilidadPendiente = null;
+    this.errorDisponibilidadPendiente = '';
     this.errorPendiente = '';
     this.mostrarCrearPendiente = true;
+    this.cargarDisponibilidadPendiente();
   }
 
   cerrarCrearPendiente(): void {
@@ -168,7 +191,32 @@ export class PlataformaComponent implements OnInit {
     this.mostrarCrearPendiente = false;
     this.preparandoPendiente = false;
     this.preparacionPendiente = null;
+    this.disponibilidadPendiente = null;
+    this.cargandoDisponibilidadPendiente = false;
+    this.errorDisponibilidadPendiente = '';
     this.errorPendiente = '';
+  }
+
+  private cargarDisponibilidadPendiente(): void {
+    const empresa = this.filtrosVentas.empresa;
+    const sucursal = Number(this.filtrosVentas.sucursal || 0);
+    const fechaDesde = this.filtrosVentas.fechaDesde;
+    const fechaHasta = this.filtrosVentas.fechaHasta;
+    if (!empresa || !sucursal || !fechaDesde || !fechaHasta || fechaDesde > fechaHasta) return;
+
+    this.cargandoDisponibilidadPendiente = true;
+    this.errorDisponibilidadPendiente = '';
+    this.plataforma.consultarDisponibilidadPendiente({ empresa, sucursal, fechaDesde, fechaHasta }).subscribe({
+      next: (resultado) => {
+        this.disponibilidadPendiente = resultado;
+        this.cargandoDisponibilidadPendiente = false;
+      },
+      error: (err) => {
+        this.disponibilidadPendiente = null;
+        this.cargandoDisponibilidadPendiente = false;
+        this.errorDisponibilidadPendiente = String(err?.message || 'No se pudo calcular la disponibilidad.');
+      },
+    });
   }
 
   programarPreparacionPendiente(): void {
@@ -186,19 +234,21 @@ export class PlataformaComponent implements OnInit {
   prepararPendiente(): void {
     const empresa = this.filtrosVentas.empresa;
     const sucursal = Number(this.filtrosVentas.sucursal || 0);
+    const fechaDesde = this.filtrosVentas.fechaDesde;
+    const fechaHasta = this.filtrosVentas.fechaHasta;
     const monto = Number(this.montoPendiente || 0);
-    if (!empresa || !sucursal || monto <= 0) return;
+    if (!empresa || !sucursal || !fechaDesde || !fechaHasta || fechaDesde > fechaHasta || monto <= 0) return;
 
     const secuencia = ++this.secuenciaPendiente;
     this.preparandoPendiente = true;
     this.errorPendiente = '';
-    this.plataforma.prepararPendiente({ empresa, sucursal, monto }).subscribe({
+    this.plataforma.prepararPendiente({ empresa, sucursal, fechaDesde, fechaHasta, monto }).subscribe({
       next: (resultado) => {
         if (secuencia !== this.secuenciaPendiente) return;
         this.preparacionPendiente = resultado;
         this.preparandoPendiente = false;
         if (!resultado.cantidad) {
-          this.errorPendiente = 'No hay conduces en efectivo disponibles para esta sucursal.';
+          this.errorPendiente = 'No hay conduces NCF 32 pagados en efectivo dentro del período seleccionado.';
         }
       },
       error: (err) => {
@@ -214,8 +264,10 @@ export class PlataformaComponent implements OnInit {
     const seleccion = this.preparacionPendiente;
     const empresa = this.filtrosVentas.empresa;
     const sucursal = Number(this.filtrosVentas.sucursal || 0);
+    const fechaDesde = this.filtrosVentas.fechaDesde;
+    const fechaHasta = this.filtrosVentas.fechaHasta;
     const monto = Number(this.montoPendiente || 0);
-    if (!seleccion?.cantidad || !empresa || !sucursal || monto <= 0) return;
+    if (!seleccion?.cantidad || !empresa || !sucursal || !fechaDesde || !fechaHasta || fechaDesde > fechaHasta || monto <= 0) return;
 
     const confirmacion = await Swal.fire({
       title: 'Cambiar conduces a pendiente',
@@ -229,7 +281,7 @@ export class PlataformaComponent implements OnInit {
 
     this.confirmandoPendiente = true;
     this.errorPendiente = '';
-    this.plataforma.confirmarPendiente({ empresa, sucursal, monto }).subscribe({
+    this.plataforma.confirmarPendiente({ empresa, sucursal, fechaDesde, fechaHasta, monto }).subscribe({
       next: async (resultado) => {
         this.confirmandoPendiente = false;
         this.mostrarCrearPendiente = false;

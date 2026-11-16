@@ -26,7 +26,7 @@ export interface ConfiguracionDgiiEmpresaData {
   codEmpre: string;
   nombreEmpresa: string;
   rncEmpresa?: string | null;
-  dgiiAmbiente: 'test' | 'prod';
+  dgiiAmbiente: 'test' | 'prod' | 'simulado';
   activo: boolean;
   notas?: string | null;
   updatedAt?: string | null;

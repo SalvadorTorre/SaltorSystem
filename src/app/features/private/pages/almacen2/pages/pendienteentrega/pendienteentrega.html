@@ -39,40 +39,117 @@
         </div>
       </form>
 
-      <div class="table-responsive rounded-3 shadow-sm border" style="background: white; min-height: 300px;">
-        <table class="table table-hover table-sm mb-0">
-          <thead>
-            <tr>
-              <th style="width: 15%">Numero</th>
-              <th style="width: 35%">Nombre</th>
-              <th class="text-center" style="width: 15%">Fecha</th>
-              <th class="text-end" style="width: 15%">Valor</th>
-              <th class="text-center" style="width: 20%">Opciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let item of listaPendientes">
-              <td class="fw-bold text-primary">{{ item.fa_codFact }}</td>
-              <td>{{ item.fa_nomClie }}</td>
-              <td class="text-center">{{ formatearFecha(item.fa_fecFact) }}</td>
-              <td class="text-end">{{ item.fa_valFact | currency:'DOP':'symbol-narrow' }}</td>
-              <td class="text-center">
-                <button class="btn btn-sm btn-success me-1" title="Marcar entregada" (click)="marcarEntregada(item)">
-                  <i class="bi bi-check2-circle"></i>
-                </button>
-                <button class="btn btn-sm btn-outline-primary me-1" title="Imprimir" (click)="imprimir(item)">
-                  <i class="bi bi-printer"></i>
-                </button>
-                <button class="btn btn-sm btn-info" title="Consultar" (click)="abrirModalConsulta(item)">
-                  <i class="bi bi-eye"></i>
-                </button>
-              </td>
-            </tr>
-            <tr *ngIf="listaPendientes.length === 0">
-              <td colspan="5" class="text-center text-muted">Sin resultados</td>
-            </tr>
-          </tbody>
-        </table>
+      <div class="row g-3">
+        <!-- Izquierda: facturas pendientes (mas estrecha) -->
+        <div class="col-12 col-lg-5">
+          <div class="table-responsive rounded-3 shadow-sm border" style="background: white; min-height: 300px;">
+            <table class="table table-hover table-sm mb-0 tabla-pendientes">
+              <thead>
+                <tr>
+                  <th>Número</th>
+                  <th>Nombre</th>
+                  <th class="text-center">Fecha</th>
+                  <th class="text-end">Valor</th>
+                  <th class="text-center">Opciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  *ngFor="let item of listaPendientes"
+                  (click)="seleccionarFactura(item)"
+                  [class.table-active]="esSeleccionada(item)"
+                  style="cursor: pointer;"
+                >
+                  <td class="fw-bold text-primary text-nowrap">{{ item.fa_codFact }}</td>
+                  <td class="nombre-cliente">{{ item.fa_nomClie }}</td>
+                  <td class="text-center text-nowrap">{{ formatearFecha(item.fa_fecFact) }}</td>
+                  <td class="text-end text-nowrap">{{ item.fa_valFact | currency:'DOP':'symbol-narrow' }}</td>
+                  <td class="text-center text-nowrap" (click)="$event.stopPropagation()">
+                    <button class="btn btn-sm btn-success me-1" title="Marcar entregada" (click)="marcarEntregada(item)">
+                      <i class="bi bi-check2-circle"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-primary me-1" title="Imprimir" (click)="imprimir(item)">
+                      <i class="bi bi-printer"></i>
+                    </button>
+                    <button class="btn btn-sm btn-info" title="Consultar" (click)="abrirModalConsulta(item)">
+                      <i class="bi bi-eye"></i>
+                    </button>
+                  </td>
+                </tr>
+                <tr *ngIf="listaPendientes.length === 0">
+                  <td colspan="5" class="text-center text-muted">Sin resultados</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Derecha: detalle pendiente de la factura seleccionada -->
+        <div class="col-12 col-lg-7">
+          <div class="rounded-3 shadow-sm border bg-white h-100" style="min-height: 300px;">
+            <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom bg-light rounded-top">
+              <div>
+                <strong>Detalle pendiente</strong>
+                <span *ngIf="facturaSeleccionada" class="text-muted">
+                  · Factura {{ facturaSeleccionada.fa_codFact }} · {{ facturaSeleccionada.fa_nomClie }}
+                </span>
+              </div>
+              <span class="badge bg-danger" *ngIf="facturaSeleccionada && !cargandoDetalle">
+                {{ detalleSeleccionado.length }} línea(s)
+              </span>
+            </div>
+            <div class="table-responsive">
+              <table class="table table-hover table-sm mb-0">
+                <thead>
+                  <tr>
+                    <th>Código</th>
+                    <th>Descripción</th>
+                    <th class="text-center">Unidad</th>
+                    <th class="text-end">Cant. facturada</th>
+                    <th class="text-end">Cant. pendiente</th>
+                    <th class="text-center">Entregar</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngIf="!facturaSeleccionada">
+                    <td colspan="6" class="text-center text-muted py-4">Seleccione una factura para ver lo pendiente.</td>
+                  </tr>
+                  <tr *ngIf="facturaSeleccionada && cargandoDetalle">
+                    <td colspan="6" class="text-center text-muted py-4">Cargando detalle…</td>
+                  </tr>
+                  <tr *ngIf="facturaSeleccionada && !cargandoDetalle && detalleSeleccionado.length === 0">
+                    <td colspan="6" class="text-center text-muted py-4">Esta factura no tiene líneas pendientes.</td>
+                  </tr>
+                  <tr *ngFor="let d of detalleSeleccionado">
+                    <td class="text-nowrap">{{ d.cod }}</td>
+                    <td>{{ d.des }}</td>
+                    <td class="text-center">{{ d.unidad }}</td>
+                    <td class="text-end">{{ d.cantidad | number:'1.0-2' }}</td>
+                    <td class="text-end fw-bold text-danger">{{ d.canpend | number:'1.0-2' }}</td>
+                    <td class="text-center">
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-success"
+                        title="Marcar este producto como entregado"
+                        (click)="entregarItem(d)"
+                        [disabled]="!!itemEntregando"
+                      >
+                        <i class="bi" [class.bi-check2-circle]="itemEntregando !== d.cod" [class.bi-arrow-clockwise]="itemEntregando === d.cod"></i>
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+                <tfoot *ngIf="detalleSeleccionado.length">
+                  <tr>
+                    <td colspan="4" class="text-end fw-semibold">Total pendiente</td>
+                    <td class="text-end fw-bold text-danger">{{ totalPendienteSeleccionado | number:'1.0-2' }}</td>
+                    <td></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div class="d-flex justify-content-end mt-3" *ngIf="totalPages > 1">

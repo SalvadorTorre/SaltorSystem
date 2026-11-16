@@ -1,0 +1,330 @@
+<section class="orden-compra">
+  <div class="oc-header">
+    <div class="oc-header__icon"><i class="bi bi-clipboard-check"></i></div>
+    <div>
+      <h4 class="mb-0">Orden de compra</h4>
+      <small>Pedidos a suplidores para cualquier empresa y sucursal.</small>
+    </div>
+  </div>
+
+  <ul class="nav nav-tabs oc-tabs">
+    <li class="nav-item">
+      <button type="button" class="nav-link" [class.active]="tab === 'nueva'" (click)="tab = 'nueva'">
+        <i class="bi bi-plus-circle me-1"></i>{{ orden.codorden ? 'Orden ' + orden.codorden : 'Nueva orden' }}
+      </button>
+    </li>
+    <li class="nav-item">
+      <button type="button" class="nav-link" [class.active]="tab === 'consulta'" (click)="tab = 'consulta'">
+        <i class="bi bi-search me-1"></i>Consulta orden
+      </button>
+    </li>
+  </ul>
+
+  <!-- ===================== NUEVA / EDITAR ===================== -->
+  <div class="oc-card" *ngIf="tab === 'nueva'">
+    <div class="alert alert-secondary py-2" *ngIf="soloLectura">
+      Esta orden está <b>{{ estadoTexto(orden.status) }}</b> y no se puede modificar.
+    </div>
+
+    <div class="oc-encabezado" (keydown.enter)="onEnter($event)">
+      <!-- Primera linea: Empresa 40% · Sucursal 30% · No. orden 15% · Fecha 15% -->
+      <div class="oc-fila oc-fila-1">
+        <div>
+          <label class="form-label">Empresa <span class="text-danger">*</span></label>
+          <select class="form-select" id="ocEmpresa" [(ngModel)]="orden.codempresa" (ngModelChange)="onEmpresaOrden()" [disabled]="destinoBloqueado">
+            <option value="">Seleccione la empresa</option>
+            <option *ngFor="let e of empresas" [value]="e.cod_empre">{{ e.cod_empre }} - {{ e.nom_empre }}</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Sucursal <span class="text-danger">*</span></label>
+          <select class="form-select" id="ocSucursal" [(ngModel)]="orden.codsucursal" (ngModelChange)="onSucursalOrden()" [disabled]="destinoBloqueado || !orden.codempresa">
+            <option [ngValue]="null">Seleccione la sucursal</option>
+            <option *ngFor="let s of sucursalesDe(orden.codempresa)" [ngValue]="+s.cod_sucursal">{{ s.cod_sucursal }} - {{ s.nom_sucursal }}</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">No. orden</label>
+          <input class="form-control" [value]="orden.codorden || 'Al guardar'" disabled />
+        </div>
+        <div>
+          <label class="form-label">Fecha</label>
+          <input class="form-control" [value]="formatearFecha(orden.fecorden)" disabled />
+        </div>
+      </div>
+
+      <!-- Segunda linea: Suplidor 40% · RNC 15% · Condicion 15% · Usuario 30% -->
+      <div class="oc-fila oc-fila-2">
+        <div class="position-relative">
+          <label class="form-label">Suplidor <span class="text-danger">*</span></label>
+          <input
+            class="form-control"
+            id="ocSuplidor"
+            data-enter="suplidor"
+            (keydown)="onFlechas($event, 'suplidor')"
+            [(ngModel)]="textoSuplidor"
+            (ngModelChange)="onTextoSuplidor()"
+            placeholder="Escriba el nombre del suplidor"
+            [disabled]="soloLectura"
+            autocomplete="off"
+          />
+          <div class="oc-dropdown" *ngIf="suplidores.length">
+            <button
+              type="button"
+              tabindex="-1"
+              *ngFor="let s of suplidores; let i = index"
+              [attr.data-fila]="'suplidor-' + i"
+              [class.activo]="i === indiceSuplidor"
+              (mouseenter)="indiceSuplidor = i"
+              (click)="seleccionarSuplidor(s, true)"
+            >
+              <b>{{ s.su_codsupl }}</b> · {{ s.su_nomsupl }}
+              <small class="text-muted d-block">{{ s.su_rncsupl || 'Sin RNC' }}</small>
+            </button>
+          </div>
+          <small class="text-muted" *ngIf="buscandoSuplidor">Buscando…</small>
+        </div>
+        <div>
+          <label class="form-label">RNC</label>
+          <input class="form-control" id="ocRnc" [(ngModel)]="orden.rncsuplidor" [disabled]="soloLectura" />
+        </div>
+        <div>
+          <label class="form-label">Condición de pago</label>
+          <select class="form-select" id="ocCondicion" [(ngModel)]="orden.condicionpago" [disabled]="soloLectura">
+            <option *ngFor="let c of condicionesPago" [value]="c">{{ c }}</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Usuario</label>
+          <input class="form-control" [value]="usuarioTexto" disabled />
+        </div>
+      </div>
+
+      <div class="oc-fila oc-fila-3">
+        <div>
+          <label class="form-label">Observación</label>
+          <input class="form-control" data-enter="ultimo-encabezado" [(ngModel)]="orden.observacion" maxlength="300" [disabled]="soloLectura" />
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Captura de producto -->
+    <div class="oc-captura" *ngIf="!soloLectura" [class.oc-deshabilitado]="!destinoElegido" (keydown.enter)="onEnter($event)">
+      <div class="oc-editando-aviso" *ngIf="lineaEditandoUid !== null">
+        <span><i class="bi bi-pencil-square me-1"></i>Editando item: Enter en Costo guarda el cambio.</span>
+        <button type="button" class="btn btn-sm btn-link" (click)="cancelarEdicionLinea()">Cancelar</button>
+      </div>
+      <div class="row g-2 align-items-end">
+        <div class="col-6 col-md-2 position-relative">
+          <label class="form-label">Código</label>
+          <input class="form-control" id="ocCapturaCodigo" data-enter="producto-codigo" (keydown)="onFlechas($event, 'producto')" [(ngModel)]="capturaCodigo" (ngModelChange)="onBuscarProducto('codigo')" autocomplete="off" [disabled]="!destinoElegido" />
+          <div class="oc-dropdown oc-dropdown--ancho" *ngIf="productos.length && campoProducto === 'codigo'">
+            <button
+              type="button"
+              tabindex="-1"
+              *ngFor="let p of productos; let i = index"
+              [attr.data-fila]="'producto-' + i"
+              [class.activo]="i === indiceProducto"
+              (mouseenter)="indiceProducto = i"
+              (click)="seleccionarProducto(p, true)"
+            >
+              <b>{{ p.in_codmerc }}</b> · {{ p.in_desmerc }}
+              <small class="text-muted d-block">Costo {{ p.in_cosmerc | number:'1.2-2' }}</small>
+            </button>
+          </div>
+        </div>
+        <div class="col-6 col-md-6 position-relative">
+          <label class="form-label">Descripción</label>
+          <input class="form-control" id="ocCapturaDescripcion" data-enter="producto-descripcion" (keydown)="onFlechas($event, 'producto')" (keydown.escape)="productos = []" [(ngModel)]="capturaDescripcion" (ngModelChange)="onBuscarProducto('descripcion')" autocomplete="off" [disabled]="!destinoElegido" />
+          <div class="oc-dropdown" *ngIf="productos.length && campoProducto === 'descripcion'">
+            <button
+              type="button"
+              tabindex="-1"
+              *ngFor="let p of productos; let i = index"
+              [attr.data-fila]="'producto-' + i"
+              [class.activo]="i === indiceProducto"
+              (mouseenter)="indiceProducto = i"
+              (click)="seleccionarProducto(p, true)"
+            >
+              <b>{{ p.in_codmerc }}</b> · {{ p.in_desmerc }}
+              <small class="text-muted d-block">Costo {{ p.in_cosmerc | number:'1.2-2' }}</small>
+            </button>
+          </div>
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label">Cantidad</label>
+          <input type="number" min="0" id="ocCapturaCantidad" class="form-control text-end" (focus)="seleccionarTexto($event)" (mouseup)="$event.preventDefault()" [(ngModel)]="capturaCantidad" />
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label">Costo (ITBIS incl.)</label>
+          <input type="number" min="0" step="0.01" class="form-control text-end" data-enter="agregar" (focus)="seleccionarTexto($event)" (mouseup)="$event.preventDefault()" [(ngModel)]="capturaCosto" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabla fija de 9 items; con mas items se desplaza dentro del recuadro -->
+    <div class="table-responsive mt-3 oc-lineas">
+      <table class="table table-sm align-middle oc-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Código</th>
+            <th>Descripción</th>
+            <th class="text-end">Cantidad</th>
+            <th class="text-end">Costo</th>
+            <th class="text-end">Total</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngIf="!lineas.length">
+            <td colspan="7" class="text-center text-muted py-3">Agregue los productos de la orden.</td>
+          </tr>
+          <tr *ngFor="let l of lineas; let i = index" [class.oc-editando]="l.uid === lineaEditandoUid">
+            <td>{{ i + 1 }}</td>
+            <td>{{ l.codproducto }}</td>
+            <td>{{ l.descripcion }}</td>
+            <td class="text-end">{{ l.cantidad | number:'1.0-2' }}</td>
+            <td class="text-end">{{ l.costo | number:'1.2-2' }}</td>
+            <td class="text-end fw-semibold">{{ subtotalLinea(l) | number:'1.2-2' }}</td>
+            <td class="text-end text-nowrap">
+              <button type="button" class="btn btn-sm btn-outline-primary me-1" (click)="editarLinea(l)" *ngIf="!soloLectura" title="Editar item">
+                <i class="bi bi-pencil"></i>
+              </button>
+              <button type="button" class="btn btn-sm btn-outline-danger" (click)="quitarLinea(l)" *ngIf="!soloLectura" title="Quitar">
+                <i class="bi bi-trash"></i>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="oc-footer">
+      <div class="oc-totales">
+        <div class="total"><span>Total (ITBIS incluido)</span><b>{{ total | currency:'DOP':'symbol':'1.2-2' }}</b></div>
+      </div>
+      <div class="oc-acciones">
+        <button type="button" class="btn btn-outline-secondary" (click)="nuevaOrden()">
+          <i class="bi bi-file-earmark-plus me-1"></i>Nueva
+        </button>
+        <button type="button" class="btn btn-outline-primary" (click)="imprimir()" [disabled]="!orden.codorden">
+          <i class="bi bi-printer me-1"></i>Imprimir
+        </button>
+        <button type="button" class="btn btn-primary" (click)="guardar()" [disabled]="guardando || soloLectura">
+          <i class="bi me-1" [class.bi-save]="!guardando" [class.bi-arrow-clockwise]="guardando"></i>
+          {{ orden.codorden ? 'Guardar cambios' : 'Guardar orden' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== CONSULTA ===================== -->
+  <div class="oc-card" *ngIf="tab === 'consulta'">
+    <div class="row g-2 align-items-end mb-2">
+      <div class="col-12 col-md-4">
+        <label class="form-label">Empresa</label>
+        <select class="form-select" [(ngModel)]="filtroEmpresa" (ngModelChange)="filtroSucursal = ''">
+          <option value="">Todas</option>
+          <option *ngFor="let e of empresas" [value]="e.cod_empre">{{ e.cod_empre }} - {{ e.nom_empre }}</option>
+        </select>
+      </div>
+      <div class="col-12 col-md-4">
+        <label class="form-label">Sucursal</label>
+        <select class="form-select" [(ngModel)]="filtroSucursal" [disabled]="!filtroEmpresa">
+          <option value="">Todas</option>
+          <option *ngFor="let s of sucursalesDe(filtroEmpresa)" [ngValue]="+s.cod_sucursal">{{ s.cod_sucursal }} - {{ s.nom_sucursal }}</option>
+        </select>
+      </div>
+    </div>
+    <div class="row g-2 align-items-end">
+      <div class="col-6 col-md-2">
+        <label class="form-label">Desde</label>
+        <input type="date" class="form-control" [(ngModel)]="filtroDesde" />
+      </div>
+      <div class="col-6 col-md-2">
+        <label class="form-label">Hasta</label>
+        <input type="date" class="form-control" [(ngModel)]="filtroHasta" />
+      </div>
+      <div class="col-12 col-md-4">
+        <label class="form-label">No. orden, suplidor o RNC</label>
+        <input class="form-control" [(ngModel)]="filtroTexto" (keyup.enter)="consultar()" />
+      </div>
+      <div class="col-6 col-md-2">
+        <label class="form-label">Estado</label>
+        <select class="form-select" [(ngModel)]="filtroStatus">
+          <option value="">Todos</option>
+          <option value="P">Pendiente</option>
+          <option value="R">Recibida</option>
+          <option value="A">Anulada</option>
+        </select>
+      </div>
+      <div class="col-6 col-md-2">
+        <button type="button" class="btn btn-primary w-100" (click)="consultar()" [disabled]="cargandoConsulta">
+          <i class="bi bi-search me-1"></i>Consultar
+        </button>
+      </div>
+    </div>
+
+    <div class="table-responsive mt-3">
+      <table class="table table-sm table-hover align-middle oc-table">
+        <thead>
+          <tr>
+            <th>No. orden</th>
+            <th>Fecha</th>
+            <th>Empresa / Sucursal</th>
+            <th>Suplidor</th>
+            <th>RNC</th>
+            <th>Condición</th>
+            <th class="text-end">Valor</th>
+            <th class="text-center">Estado</th>
+            <th class="text-center">CxP</th>
+            <th class="text-end">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngIf="cargandoConsulta">
+            <td colspan="10" class="text-center text-muted py-3">Consultando…</td>
+          </tr>
+          <tr *ngIf="!cargandoConsulta && consultaRealizada && !ordenes.length">
+            <td colspan="10" class="text-center text-muted py-3">No hay órdenes para los filtros seleccionados.</td>
+          </tr>
+          <tr *ngIf="!consultaRealizada">
+            <td colspan="10" class="text-center text-muted py-3">Elija los filtros y pulse Consultar.</td>
+          </tr>
+          <tr *ngFor="let o of ordenes">
+            <td class="fw-semibold">{{ o.codorden }}</td>
+            <td>{{ formatearFecha(o.fecorden) }}</td>
+            <td>
+              {{ nombreEmpresa(o.codempresa) }}
+              <small class="text-muted d-block">{{ nombreSucursal(o.codsucursal) }}</small>
+            </td>
+            <td>{{ o.nomsuplidor }}</td>
+            <td>{{ o.rncsuplidor }}</td>
+            <td>{{ o.condicionpago }}</td>
+            <td class="text-end">{{ o.valorden | currency:'DOP':'symbol':'1.2-2' }}</td>
+            <td class="text-center"><span [class]="estadoClase(o.status)">{{ estadoTexto(o.status) }}</span></td>
+            <td class="text-center"><small>{{ o.estadocxp }}</small></td>
+            <td class="text-end text-nowrap">
+              <button type="button" class="btn btn-sm btn-outline-primary me-1" (click)="abrirOrden(o)"
+                [title]="o.status === 'P' ? 'Ver / editar' : 'Ver'">
+                <i class="bi" [class.bi-pencil-square]="o.status === 'P'" [class.bi-eye]="o.status !== 'P'"></i>
+              </button>
+              <button type="button" class="btn btn-sm btn-outline-danger" (click)="anular(o)" *ngIf="o.status === 'P'" title="Anular">
+                <i class="bi bi-x-circle"></i>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+        <tfoot *ngIf="ordenes.length">
+          <tr>
+            <td colspan="6" class="text-end fw-semibold">Total (sin anuladas)</td>
+            <td class="text-end fw-bold">{{ totalConsulta | currency:'DOP':'symbol':'1.2-2' }}</td>
+            <td colspan="3"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+</section>
