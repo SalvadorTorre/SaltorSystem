@@ -7,6 +7,7 @@ import {
   RangoConcurso,
 } from 'src/app/core/services/mantenimientos/concurso';
 import { ServicioConcurso } from 'src/app/core/services/mantenimientos/concurso/concurso.service';
+import { PrintingService } from 'src/app/core/services/utils/printing.service';
 
 @Component({
   selector: 'app-concursos',
@@ -32,7 +33,74 @@ export class ConcursosPage implements OnInit {
     minimumFractionDigits: 2,
   });
 
-  constructor(private concursoSrv: ServicioConcurso) {}
+  /** Generar / reimprimir boletos de una factura ya cobrada. */
+  facturaBoletos = '';
+  procesandoBoletos = false;
+
+  constructor(
+    private concursoSrv: ServicioConcurso,
+    private printingService: PrintingService,
+  ) {}
+
+  generarBoletosDeFactura(): void {
+    const codfact = String(this.facturaBoletos || '').trim();
+    if (!codfact) {
+      Swal.fire('Factura requerida', 'Escriba el número de la factura.', 'warning');
+      return;
+    }
+    this.procesandoBoletos = true;
+    this.concursoSrv.generarBoletosFactura(codfact).subscribe({
+      next: async (resultado) => {
+        this.procesandoBoletos = false;
+        const concursos = (resultado.concursos || []).filter((c) => c.numeros.length > 0);
+        if (!concursos.length) {
+          Swal.fire(
+            'Sin boletos',
+            'Esta factura no cumple las condiciones de ningún concurso activo y vigente.',
+            'info',
+          );
+          return;
+        }
+        const detalle = concursos
+          .map((c) => {
+            const nums = c.numeros.map((n) => String(n).padStart(6, '0')).join(', ');
+            return `<b>${this.escape(c.nombre)}</b>: ${nums}${c.nuevos ? '' : ' <small>(ya entregados, reimpresión)</small>'}`;
+          })
+          .join('<br>');
+        const res = await Swal.fire({
+          title: 'Boletos de la factura',
+          html: detalle,
+          icon: 'success',
+          showCancelButton: true,
+          confirmButtonText: 'Imprimir',
+          cancelButtonText: 'Cerrar',
+        });
+        this.cargar();
+        if (res.isConfirmed) {
+          // Abrir la ventana en el mismo clic para que el navegador no la bloquee.
+          this.printingService.reservarVentanaImpresion();
+          try {
+            await this.printingService.imprimirBoletosConcurso80mm({ ...resultado, concursos });
+          } catch (error) {
+            Swal.fire('No se pudo imprimir', this.extraerError(error), 'error');
+          }
+        }
+        this.facturaBoletos = '';
+      },
+      error: (err) => {
+        this.procesandoBoletos = false;
+        Swal.fire('Error', this.extraerError(err), 'error');
+      },
+    });
+  }
+
+  private escape(value: any): string {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
 
   ngOnInit(): void {
     this.cargar();

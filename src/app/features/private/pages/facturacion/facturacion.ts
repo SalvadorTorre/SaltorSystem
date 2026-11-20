@@ -2958,9 +2958,7 @@ export class Facturacion implements OnInit, OnDestroy {
         const fecha = this.parseFechaLocal(factura?.fa_fecFact ?? factura?.fa_fecfact);
         const vencimiento = this.parseFechaLocal(factura?.fa_expFact ?? factura?.fa_expfact);
         const dias = fecha ? Math.max(0, this.diferenciaDias(fecha, hoy)) : 0;
-        const vencida = vencimiento
-          ? hoy.getTime() > vencimiento.getTime()
-          : this.diasCreditoCliente > 0 && dias > this.diasCreditoCliente;
+        const vencida = this.facturaCreditoVencida(dias, vencimiento, hoy, this.diasCreditoCliente);
         const numero = this.escaparHtml(factura?.fa_codFact ?? factura?.fa_codfact ?? '');
         const fechaTexto = this.formatearFechaEstadoCuenta(fecha);
         const vencimientoTexto = this.formatearFechaEstadoCuenta(vencimiento);
@@ -3059,9 +3057,7 @@ export class Facturacion implements OnInit, OnDestroy {
       const fecha = this.parseFechaLocal(factura?.fa_fecFact ?? factura?.fa_fecfact);
       const vencimiento = this.parseFechaLocal(factura?.fa_expFact ?? factura?.fa_expfact);
       const dias = fecha ? Math.max(0, this.diferenciaDias(fecha, hoy)) : 0;
-      const vencida = vencimiento
-        ? hoy.getTime() > vencimiento.getTime()
-        : this.diasCreditoCliente > 0 && dias > this.diasCreditoCliente;
+      const vencida = this.facturaCreditoVencida(dias, vencimiento, hoy, this.diasCreditoCliente);
       return [
         String(factura?.fa_codFact ?? factura?.fa_codfact ?? ''),
         this.formatearFechaEstadoCuenta(fecha),
@@ -3137,12 +3133,9 @@ export class Facturacion implements OnInit, OnDestroy {
           if (!fechaFactura) return null;
 
           const diasTranscurridos = Math.max(0, this.diferenciaDias(fechaFactura, hoy));
-          const diasEntreFacturaYExpiracion = fechaExpira
-            ? Math.max(0, this.diferenciaDias(fechaFactura, fechaExpira))
-            : diasTranscurridos;
-          const vencioPorFecha = !!fechaExpira && hoy.getTime() > fechaExpira.getTime();
-          const excedeDias = diasEntreFacturaYExpiracion > diasPermitidos;
-          if (!vencioPorFecha && !excedeDias) return null;
+          if (!this.facturaCreditoVencida(diasTranscurridos, fechaExpira, hoy, diasPermitidos)) {
+            return null;
+          }
 
           return {
             numero: String(factura?.fa_codFact ?? factura?.fa_codfact ?? '').trim(),
@@ -3191,6 +3184,30 @@ export class Facturacion implements OnInit, OnDestroy {
       );
       return false;
     }
+  }
+
+  /**
+   * Una factura a credito esta fuera de plazo cuando sus dias transcurridos
+   * superan los dias de credito del cliente (ej. 120). La fecha de
+   * vencimiento guardada (fa_expfact) solo se usa si el cliente no tiene dias
+   * de credito configurados; antes siempre se guardaba a 30 dias y bloqueaba
+   * clientes con plazos mayores.
+   */
+  private facturaCreditoVencida(
+    diasTranscurridos: number,
+    fechaExpira: Date | null,
+    hoy: Date,
+    diasPermitidos: number,
+  ): boolean {
+    const plazo = Math.max(Number(diasPermitidos || 0), 0);
+    if (plazo > 0) return diasTranscurridos > plazo;
+    return !!fechaExpira && hoy.getTime() > fechaExpira.getTime();
+  }
+
+  /** Dias de credito para calcular el vencimiento de una factura nueva. */
+  private diasVencimientoCredito(): number {
+    const dias = Math.max(Number(this.diasCreditoCliente || 0), 0);
+    return dias > 0 ? dias : 30;
   }
 
   private parseFechaLocal(value: any): Date | null {
@@ -3804,7 +3821,7 @@ export class Facturacion implements OnInit, OnDestroy {
     const esCredito = tipo === 2 && this.clientePermiteCredito;
     const tipoVenta = esCredito ? 2 : 1;
     const fechaFactura = this.formularioFacturacion.get('fa_fecFact')?.value || new Date();
-    const vencimiento = this.calcularFechaExpiracionCredito(fechaFactura, 30);
+    const vencimiento = this.calcularFechaExpiracionCredito(fechaFactura, this.diasVencimientoCredito());
     this.formularioFacturacion.patchValue(
       { fa_tipopago: tipoVenta, fa_expFact: vencimiento },
       { emitEvent: false },
@@ -4165,7 +4182,7 @@ export class Facturacion implements OnInit, OnDestroy {
     facturaPayload.fa_fecFact = this.toPrismaDate(facturaPayload.fa_fecFact);
     facturaPayload.fa_expFact = this.calcularFechaExpiracionCredito(
       facturaPayload.fa_fecFact,
-      30,
+      this.diasVencimientoCredito(),
     );
     this.formularioFacturacion.patchValue(
       { fa_expFact: facturaPayload.fa_expFact },

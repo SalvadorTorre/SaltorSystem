@@ -373,3 +373,20 @@
     </div>
   </div>
 </div>
+<div *ngIf="boletosPendientesImpresion" class="boletos-pendientes shadow">
+  <div class="boletos-pendientes-head">
+    <i class="bi bi-ticket-perforated"></i>
+    <strong>¡Boletos ganados!</strong>
+    <button type="button" class="btn-close btn-close-white ms-auto" title="Cerrar sin imprimir" (click)="descartarBoletosPendientes()"></button>
+  </div>
+  <div class="boletos-pendientes-body">
+    <div class="small mb-1">Factura {{ boletosPendientesImpresion.codfact }} · {{ totalBoletosPendientes }} boleto{{ totalBoletosPendientes === 1 ? '' : 's' }}</div>
+    <div *ngFor="let c of boletosPendientesImpresion.concursos" class="small">
+      <b>{{ c.nombre }}:</b>
+      <span *ngFor="let n of c.numeros; let last = last">{{ numeroBoleto(n) }}{{ last ? '' : ', ' }}</span>
+    </div>
+    <button type="button" class="btn btn-warning fw-bold w-100 mt-2" (click)="imprimirBoletosPendientes()" [disabled]="imprimiendoBoletos">
+      <i class="bi bi-printer me-1"></i>{{ imprimiendoBoletos ? 'Imprimiendo...' : 'Imprimir boletos' }}
+    </button>
+  </div>
+</div>

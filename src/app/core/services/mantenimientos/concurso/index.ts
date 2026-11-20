@@ -28,8 +28,29 @@ export interface ConcursoData {
   aplica_contado: boolean;
   aplica_credito: boolean;
   solo_pagadas: boolean;
+  ultimo_boleto?: number;
   created_at?: string;
   updated_at?: string;
+}
+
+/** Boletos de una factura en un concurso (respuesta de generar_boletos_factura). */
+export interface BoletosConcursoFactura {
+  concurso_id: number;
+  nombre: string;
+  tipo: TipoConcurso;
+  premios?: string | null;
+  descripcion?: string | null;
+  fecha_fin: string;
+  numeros: number[];
+  nuevos: boolean;
+}
+
+export interface BoletosFactura {
+  codfact: string;
+  fecha: string;
+  cliente?: string | null;
+  telefono?: string | null;
+  concursos: BoletosConcursoFactura[];
 }
 
 export type EstadoConcurso = 'INACTIVO' | 'PROGRAMADO' | 'VIGENTE' | 'FINALIZADO';

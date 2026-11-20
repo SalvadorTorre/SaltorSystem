@@ -46,6 +46,8 @@ import { SupabaseService } from 'src/app/core/services/supabase/supabase.service
 import { AuthService } from 'src/app/core/services/auth/auth.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ServicioSucursal } from 'src/app/core/services/mantenimientos/sucursal/sucursal.service';
+import { ServicioConcurso } from 'src/app/core/services/mantenimientos/concurso/concurso.service';
+import { BoletosFactura } from 'src/app/core/services/mantenimientos/concurso';
 
 declare var $: any;
 
@@ -610,6 +612,7 @@ export class CobroFact implements OnInit {
     private router: Router,
     private readonly route: ActivatedRoute,
     private readonly servicioSucursal: ServicioSucursal,
+    private readonly servicioConcurso: ServicioConcurso,
   ) {
     this.form = this.fb.group({
       fa_codVend: ['', Validators.required], // El campo es requerido
@@ -2148,7 +2151,93 @@ export class CobroFact implements OnInit {
       datosParaImprimir,
       itemsImpresion,
     );
+    const codFactura = String(
+      datosParaImprimir?.fa_codFact || datosParaImprimir?.fa_codfact || '',
+    ).trim();
     this.limpia();
+    await this.imprimirBoletosConcurso(codFactura);
+  }
+
+  /**
+   * Rifa / Sorteo: si la factura cumple las condiciones de un concurso activo
+   * y vigente, genera sus boletos numerados y los imprime en otro ticket.
+   * Nunca bloquea el cobro: cualquier error solo se registra en consola.
+   */
+  private async imprimirBoletosConcurso(codFactura: string): Promise<void> {
+    if (!codFactura) return;
+    try {
+      const resultado = await firstValueFrom(
+        this.servicioConcurso.generarBoletosFactura(codFactura),
+      );
+      const concursos = (resultado?.concursos || []).filter(
+        (c) => (c.numeros || []).length > 0,
+      );
+      if (!concursos.length) return;
+
+      // Se deja un aviso fijo en pantalla con el boton "Imprimir boletos".
+      // La impresion sale del clic del cajero (el navegador no la bloquea) y
+      // ningun otro mensaje de la caja puede taparlo.
+      this.boletosPendientesImpresion = { ...resultado, concursos };
+      console.log('[Boletos] Boletos listos para imprimir', codFactura, concursos);
+    } catch (error: any) {
+      console.error('No se pudieron generar los boletos del concurso:', error);
+      const detalle = String(error?.message || error?.details || error || '');
+      const faltaFuncion =
+        error?.code === 'PGRST202' || /generar_boletos_factura/i.test(detalle);
+      void Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'warning',
+        title: 'No se generaron boletos de la rifa',
+        text: faltaFuncion
+          ? 'Falta ejecutar en la base de datos la migración de boletos del concurso.'
+          : detalle,
+        timer: 6000,
+        showConfirmButton: false,
+      });
+    }
+  }
+
+  boletosPendientesImpresion: BoletosFactura | null = null;
+  imprimiendoBoletos = false;
+
+  get totalBoletosPendientes(): number {
+    return (this.boletosPendientesImpresion?.concursos || []).reduce(
+      (sum, c) => sum + (c.numeros || []).length,
+      0,
+    );
+  }
+
+  numeroBoleto(numero: number): string {
+    return String(numero).padStart(6, '0');
+  }
+
+  async imprimirBoletosPendientes(): Promise<void> {
+    const datos = this.boletosPendientesImpresion;
+    if (!datos || this.imprimiendoBoletos) return;
+    // Abrir la ventana en el mismo clic para que el navegador no la bloquee.
+    this.printingService.reservarVentanaImpresion();
+    this.imprimiendoBoletos = true;
+    try {
+      await this.printingService.imprimirBoletosConcurso80mm(datos);
+      this.boletosPendientesImpresion = null;
+    } catch (error) {
+      Swal.fire('No se pudieron imprimir los boletos', this.extraerMensajeError(error), 'error');
+    } finally {
+      this.imprimiendoBoletos = false;
+    }
+  }
+
+  descartarBoletosPendientes(): void {
+    this.boletosPendientesImpresion = null;
+  }
+
+  private escaparHtml(valor: any): string {
+    return String(valor ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
   }
 
   private tieneRespuestaDgiiParaImprimir(payload: any): boolean {
