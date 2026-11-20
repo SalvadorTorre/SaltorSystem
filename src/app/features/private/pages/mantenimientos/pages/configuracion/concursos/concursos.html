@@ -168,7 +168,7 @@
         </label>
         <label class="soft-check">
           <input type="checkbox" name="solo_pagadas" [(ngModel)]="actual.solo_pagadas" />
-          <span>Solo facturas cobradas</span>
+          <span>Contado: solo si está cobrada</span>
         </label>
         <label class="soft-check check-activo">
           <input type="checkbox" name="activo" [(ngModel)]="actual.activo" />
@@ -214,6 +214,19 @@
         </div>
       </div>
 
+      <div class="boletos-factura">
+        <span><i class="bi bi-printer"></i> Boletos de una factura ya cobrada</span>
+        <input
+          type="text"
+          [(ngModel)]="facturaBoletos"
+          (keydown.enter)="generarBoletosDeFactura()"
+          placeholder="No. de factura"
+        />
+        <button type="button" class="btn-save" (click)="generarBoletosDeFactura()" [disabled]="procesandoBoletos">
+          {{ procesandoBoletos ? 'Procesando...' : 'Generar / reimprimir' }}
+        </button>
+      </div>
+
       <div class="table-wrap">
         <table>
           <thead>
@@ -234,6 +247,7 @@
               <td>
                 <strong>{{ c.nombre }}</strong>
                 <small>{{ c.tipo === 'SORTEO' ? 'Sorteo' : 'Rifa' }} · {{ alcance(c) }}</small>
+                <small class="emitidos"><i class="bi bi-ticket-perforated"></i> {{ c.ultimo_boleto || 0 }} boleto{{ c.ultimo_boleto === 1 ? '' : 's' }} entregado{{ c.ultimo_boleto === 1 ? '' : 's' }}</small>
               </td>
               <td class="nowrap">
                 {{ fechaCorta(c.fecha_inicio) }}<br />

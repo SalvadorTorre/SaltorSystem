@@ -1404,6 +1404,192 @@ items.forEach((it: any) => {
     } catch {}
   }
 
+  /**
+   * Boletos de rifa/sorteo en ticket de 80mm. Cada boleto lleva la parte del
+   * cliente y, despues de la linea de corte, el talon para la tombola.
+   */
+  async imprimirBoletosConcurso80mm(datos: {
+    codfact: string;
+    fecha?: string;
+    cliente?: string | null;
+    telefono?: string | null;
+    concursos: Array<{
+      nombre: string;
+      tipo?: string;
+      premios?: string | null;
+      fecha_fin?: string;
+      numeros: number[];
+    }>;
+  }): Promise<void> {
+    const boletos: Array<{ concurso: any; numero: number }> = [];
+    (datos?.concursos || []).forEach((concurso) =>
+      (concurso.numeros || []).forEach((numero) => boletos.push({ concurso, numero })),
+    );
+    if (!boletos.length) {
+      this.cancelarVentanaImpresionReservada();
+      return;
+    }
+
+    let empresa = '';
+    try {
+      const raw = localStorage.getItem('empresa');
+      if (raw && raw !== '[object Object]') {
+        let parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) parsed = parsed[0];
+        empresa = typeof parsed === 'string' ? parsed : String(parsed?.nom_empre || '');
+      }
+    } catch {}
+
+    const pageWidth = 74;
+    const leftMargin = 2;
+    const rightMargin = 8;
+    const ancho = pageWidth - leftMargin - rightMargin;
+    const centerX = (leftMargin + (pageWidth - rightMargin)) / 2;
+    const fechaCorta = (iso?: string) => {
+      const [y, m, d] = String(iso || '').slice(0, 10).split('-');
+      return y && m && d ? `${d}/${m}/${y}` : '';
+    };
+    const numeroTxt = (n: number) => String(n).padStart(6, '0');
+    const cliente = String(datos.cliente || '').trim();
+    const telefono = String(datos.telefono || '').trim();
+
+    const dibujar = (
+      doc: any,
+      pintar: boolean,
+      lista: Array<{ concurso: any; numero: number }>,
+    ): number => {
+      let y = 5;
+      const texto = (t: string | string[], x: number, yy: number, opt?: any) => {
+        if (pintar) doc.text(t, x, yy, opt);
+      };
+      const centro = (t: string, yy: number) => texto(t, centerX, yy, { align: 'center' });
+      const lineaCorte = (yy: number) => {
+        if (!pintar) return;
+        doc.setLineWidth(0.1);
+        for (let x = leftMargin; x < pageWidth - rightMargin; x += 3) {
+          doc.line(x, yy, x + 1.5, yy);
+        }
+      };
+      const lineaLlenar = (etiqueta: string, valor: string, yy: number) => {
+        texto(`${etiqueta}:`, leftMargin, yy);
+        const xValor = leftMargin + doc.getTextWidth(`${etiqueta}: `);
+        if (valor) {
+          const recortado = doc.splitTextToSize(valor, pageWidth - rightMargin - xValor)[0];
+          texto(recortado, xValor, yy);
+        } else if (pintar) {
+          doc.setLineWidth(0.1);
+          doc.line(xValor, yy + 0.5, pageWidth - rightMargin, yy + 0.5);
+        }
+      };
+
+      lista.forEach(({ concurso, numero }, index) => {
+        // --- Parte del cliente ---
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        if (empresa) {
+          const lineas = doc.splitTextToSize(empresa, ancho);
+          lineas.forEach((l: string) => { centro(l, y); y += 4; });
+        }
+        doc.setFontSize(10);
+        const titulo = doc.splitTextToSize(
+          `${concurso.tipo === 'SORTEO' ? 'SORTEO' : 'RIFA'}: ${String(concurso.nombre || '').toUpperCase()}`,
+          ancho,
+        );
+        titulo.forEach((l: string) => { centro(l, y); y += 4.5; });
+        y += 2;
+        doc.setFontSize(9);
+        centro('BOLETO No.', y);
+        y += 8;
+        doc.setFontSize(24);
+        centro(numeroTxt(numero), y);
+        y += 7;
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        texto(`Factura: ${datos.codfact}`, leftMargin, y);
+        texto(fechaCorta(datos.fecha), pageWidth - rightMargin, y, { align: 'right' });
+        y += 4;
+        lineaLlenar('Cliente', cliente, y);
+        y += 4;
+        if (telefono) {
+          lineaLlenar('Tel.', telefono, y);
+          y += 4;
+        }
+        const premios = String(concurso.premios || '').trim();
+        if (premios) {
+          doc.setFont('helvetica', 'bold');
+          texto('Premios:', leftMargin, y);
+          y += 4;
+          doc.setFont('helvetica', 'normal');
+          const lineas = doc.splitTextToSize(premios, ancho);
+          lineas.forEach((l: string) => { texto(l, leftMargin, y); y += 3.6; });
+        }
+        if (concurso.fecha_fin) {
+          y += 1;
+          texto(`Participa hasta el ${fechaCorta(concurso.fecha_fin)}`, leftMargin, y);
+          y += 4;
+        }
+        doc.setFontSize(7);
+        centro('Conserve este boleto para reclamar su premio.', y);
+        y += 4;
+
+        // --- Linea de corte ---
+        lineaCorte(y);
+        doc.setFontSize(6.5);
+        centro('cortar aqui - talon para la tombola', y + 3);
+        y += 7;
+
+        // --- Talon para la tombola ---
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8);
+        centro(`TALON - ${String(concurso.nombre || '').toUpperCase()}`.slice(0, 48), y);
+        y += 6;
+        doc.setFontSize(18);
+        centro(numeroTxt(numero), y);
+        y += 6;
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        texto(`Factura: ${datos.codfact}`, leftMargin, y);
+        y += 5;
+        lineaLlenar('Nombre', cliente, y);
+        y += 5;
+        lineaLlenar('Telefono', telefono, y);
+        y += 5;
+        lineaLlenar('Cedula', '', y);
+        y += 5;
+
+        if (index < lista.length - 1) {
+          lineaCorte(y);
+          y += 6;
+        } else {
+          y += 8;
+        }
+      });
+      texto('.', leftMargin, y);
+      return y + 2;
+    };
+
+    try {
+      // Paginas de hasta 10 boletos para no exceder el alto maximo del PDF.
+      const grupos: Array<Array<{ concurso: any; numero: number }>> = [];
+      for (let i = 0; i < boletos.length; i += 10) grupos.push(boletos.slice(i, i + 10));
+      const medida = new jsPDF({ orientation: 'p', unit: 'mm', format: [80, 297] });
+      const altos = grupos.map((g) => Math.max(dibujar(medida, false, g), 60));
+      const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: [80, altos[0]] });
+      grupos.forEach((g, i) => {
+        if (i > 0) (doc as any).addPage([80, altos[i]], 'p');
+        dibujar(doc, true, g);
+      });
+      doc.autoPrint();
+      const pdfBlob = doc.output('blob');
+      // Misma impresora que la factura (termica de 80mm de la caja).
+      await this.printBlob(pdfBlob, 'factura');
+    } catch (error) {
+      console.error('Error imprimiendo boletos del concurso:', error);
+      this.cancelarVentanaImpresionReservada();
+      throw error;
+    }
+  }
+
   async imprimirDevolucion80mm(entradaData: any, entradaItems: any[], salidaData: any, salidaItems: any[], extras?: { facturaNumero?: string, cliente?: string, fechaFactura?: any, entradaCodigo?: string, salidaCodigo?: string, usuario?: string }) {
     try {
       const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: [80, 297] });

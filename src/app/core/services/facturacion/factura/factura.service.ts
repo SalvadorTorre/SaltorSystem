@@ -652,7 +652,7 @@ export class ServicioFacturacion {
       fa_desfact: this.toNumberOrNull(input?.fa_desFact),
       fa_cosfact: this.toNumberOrNull(input?.fa_cosFact),
       fa_abofact: this.toNumberOrNull(input?.fa_aboFact),
-      fa_expfact: this.fechaMasDias(fechaFactura, 30),
+      fa_expfact: this.normalizeDate(input?.fa_expFact) || this.fechaMasDias(fechaFactura, 30),
       fa_codclie: this.toNumberOrNull(input?.fa_codClie),
       fa_nomclie: this.toStringMax(input?.fa_nomClie, 39),
       fa_telclie: this.telefonoFactura(input),

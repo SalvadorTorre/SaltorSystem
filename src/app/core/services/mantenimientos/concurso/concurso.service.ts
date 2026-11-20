@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { Observable, from } from 'rxjs';
 import { SupabaseService } from '../../supabase/supabase.service';
 import {
+  BoletosFactura,
   ConcursoData,
   EstadoConcurso,
   RangoConcurso,
@@ -97,6 +98,36 @@ export class ServicioConcurso {
       const { error } = await this.db.from('concurso').delete().eq('id', Number(id));
       if (error) throw error;
       return true;
+    })());
+  }
+
+  /**
+   * Genera (o devuelve si ya existen) los boletos de una factura en los
+   * concursos activos y vigentes. Lo usa Caja al cobrar.
+   */
+  generarBoletosFactura(codfact: string): Observable<BoletosFactura> {
+    return from((async () => {
+      const { data, error } = await this.db.rpc('generar_boletos_factura', {
+        p_codfact: String(codfact || '').trim(),
+      });
+      if (error) throw error;
+      const res: any = data || {};
+      return {
+        codfact: String(res.codfact || codfact || ''),
+        fecha: String(res.fecha || '').slice(0, 10),
+        cliente: res.cliente ?? '',
+        telefono: res.telefono ?? '',
+        concursos: (Array.isArray(res.concursos) ? res.concursos : []).map((c: any) => ({
+          concurso_id: Number(c.concurso_id),
+          nombre: String(c.nombre || ''),
+          tipo: c.tipo === 'SORTEO' ? 'SORTEO' : 'RIFA',
+          premios: c.premios ?? '',
+          descripcion: c.descripcion ?? '',
+          fecha_fin: String(c.fecha_fin || '').slice(0, 10),
+          numeros: (Array.isArray(c.numeros) ? c.numeros : []).map((n: any) => Number(n)),
+          nuevos: !!c.nuevos,
+        })),
+      } as BoletosFactura;
     })());
   }
 
@@ -214,6 +245,7 @@ export class ServicioConcurso {
       aplica_contado: row?.aplica_contado !== false,
       aplica_credito: row?.aplica_credito !== false,
       solo_pagadas: row?.solo_pagadas !== false,
+      ultimo_boleto: Number(row?.ultimo_boleto) || 0,
       created_at: row?.created_at,
       updated_at: row?.updated_at,
     };
