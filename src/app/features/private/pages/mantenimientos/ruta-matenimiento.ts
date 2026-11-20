@@ -209,6 +209,15 @@ const routes: Routes = [
           ).then((m) => m.CuentasBancariasModulo),
       },
       {
+        path: 'concursos',
+        canActivate: [permissionGuard],
+        data: { accessPath: '/private/mantenimientos/concursos' },
+        loadChildren: () =>
+          import('./pages/configuracion/concursos/concursos-modulo').then(
+            (m) => m.ConcursosModulo,
+          ),
+      },
+      {
         path: 'rnc',
         canActivate: [permissionGuard],
         data: { accessPath: '/private/mantenimientos/rnc' },

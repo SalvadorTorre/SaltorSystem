@@ -40,6 +40,7 @@
                   id="input1"
                   (keydown.enter)="buscarRnc($event,input2)"
                   (keydown.tab)="buscarRnc($event,input2)"
+                  (blur)="validarRncAlSalir()"
                   formControlName="fa_rncFact"
                   class="form-control"
                 />
@@ -157,7 +158,6 @@
                 <div class="position-relative">
                   <input
                     type="text"
-                    formControlName="fa_sector"
                     (keydown)="handleKeydownSector($event, input7)"
                     (focus)="onFocusSector()"
                     (blur)="onBlurSector()"

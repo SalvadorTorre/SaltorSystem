@@ -252,6 +252,7 @@
                         #input1
                         id="input1"
                         (keydown.enter)="buscarRnc($event,input2)"
+                        (keydown.tab)="buscarRnc($event,input2)"
                         formControlName="ct_rnc"
                         class="form-control"
                         placeholder="Ingrese RNC o cédula"
@@ -271,12 +272,11 @@
                           (keydown)="handleKeydown($event)"
                           #input2
                           id="input2"
-                          [formControl]="buscarNombre"
                           formControlName="ct_nomclie"
                           placeholder="Buscar cliente..."
                         />
                         <div
-                          [ngClass]="{ 'show': resultadoNombre.length > 0 }"
+                          [style.display]="resultadoNombre.length > 0 ? 'block' : 'none'"
                           class="dropdown-menu shadow-sm w-100"
                           style="
                             margin-top: 2px;
@@ -299,6 +299,13 @@
                           </a>
                         </div>
                       </div>
+                      <small
+                        *ngIf="clienteRncNoExiste"
+                        class="text-warning-emphasis d-block mt-1"
+                      >
+                        <i class="bi bi-exclamation-triangle me-1"></i>Este RNC
+                        no existe en tus clientes; se usará el nombre de la DGII.
+                      </small>
                     </div>
                     <div class="col-2">
                       <label class="form-label small text-muted fw-semibold"
