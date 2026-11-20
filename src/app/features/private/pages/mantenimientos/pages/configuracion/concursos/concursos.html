@@ -1,0 +1,267 @@
+<div class="bank-page">
+  <header class="bank-hero">
+    <div class="bank-title">
+      <div class="bank-icon"><i class="bi bi-ticket-perforated"></i></div>
+      <div>
+        <span>Configuración de promociones</span>
+        <h1>Rifa / Sorteo</h1>
+        <p>Concursos donde las facturas ganan boletos según su valor.</p>
+      </div>
+    </div>
+
+    <div class="bank-summary">
+      <div>
+        <small>Concursos</small>
+        <strong>{{ concursos.length }}</strong>
+      </div>
+      <div>
+        <small>Activos</small>
+        <strong>{{ totalActivos }}</strong>
+      </div>
+      <div class="summary-default">
+        <small>Vigentes hoy</small>
+        <strong>{{ totalVigentes }}</strong>
+      </div>
+    </div>
+  </header>
+
+  <section class="bank-grid">
+    <form class="bank-form-card" #concursoForm="ngForm" (ngSubmit)="guardar(concursoForm)">
+      <div class="form-head">
+        <div>
+          <h2>{{ editando ? 'Editar concurso' : 'Nuevo concurso' }}</h2>
+          <p>Defina la vigencia y las condiciones para ganar boletos.</p>
+        </div>
+        <span class="mode-pill" [class.edit]="editando">{{ editando ? 'Editando' : 'Nuevo' }}</span>
+      </div>
+
+      <!-- Datos generales -->
+      <h3 class="section-title"><i class="bi bi-info-circle"></i> Datos del concurso</h3>
+      <div class="form-grid">
+        <label class="field-notes">
+          Nombre del concurso
+          <input #nombreInput type="text" name="nombre" [(ngModel)]="actual.nombre" required maxlength="120" placeholder="Ej. Gran rifa de Navidad" />
+        </label>
+
+        <label>
+          Tipo
+          <select name="tipo" [(ngModel)]="actual.tipo">
+            <option value="RIFA">Rifa</option>
+            <option value="SORTEO">Sorteo</option>
+          </select>
+        </label>
+
+        <label>
+          Empresa
+          <input type="text" name="codempresa" [(ngModel)]="actual.codempresa" required placeholder="Ej. H0002" />
+        </label>
+
+        <label>
+          Fecha de inicio
+          <input type="date" name="fecha_inicio" [(ngModel)]="actual.fecha_inicio" required />
+        </label>
+
+        <label>
+          Fecha de fin
+          <input type="date" name="fecha_fin" [(ngModel)]="actual.fecha_fin" [min]="actual.fecha_inicio" required />
+        </label>
+
+        <label>
+          Alcance de sucursal
+          <select name="alcanceSucursal" [(ngModel)]="alcanceSucursal" (ngModelChange)="onAlcanceSucursalChange()">
+            <option value="todas">Todas las sucursales</option>
+            <option value="sucursal">Una sucursal específica</option>
+          </select>
+        </label>
+
+        <label *ngIf="alcanceSucursal === 'sucursal'">
+          Código de sucursal
+          <input type="number" min="1" name="codsucursal" [(ngModel)]="actual.codsucursal" placeholder="Ej. 1" />
+        </label>
+
+        <label class="field-notes">
+          Premios
+          <textarea name="premios" rows="2" [(ngModel)]="actual.premios" placeholder="Ej. 1er premio: nevera; 2do premio: televisor..."></textarea>
+        </label>
+
+        <label class="field-notes">
+          Descripción / bases del concurso
+          <textarea name="descripcion" rows="2" [(ngModel)]="actual.descripcion" placeholder="Reglas, fecha del sorteo, observaciones"></textarea>
+        </label>
+      </div>
+
+      <!-- Reglas de boletos -->
+      <h3 class="section-title"><i class="bi bi-ticket-detailed"></i> ¿Cómo se ganan los boletos?</h3>
+      <div class="mode-options">
+        <label class="mode-option" [class.selected]="actual.modo === 'MULTIPLO'">
+          <input type="radio" name="modo" value="MULTIPLO" [(ngModel)]="actual.modo" (ngModelChange)="onModoChange()" />
+          <span>
+            <b>Por cada monto</b>
+            <small>1 boleto por cada X pesos. Ej. cada RD$5,000 = 1 boleto.</small>
+          </span>
+        </label>
+        <label class="mode-option" [class.selected]="actual.modo === 'RANGO'">
+          <input type="radio" name="modo" value="RANGO" [(ngModel)]="actual.modo" (ngModelChange)="onModoChange()" />
+          <span>
+            <b>Por rango de monto</b>
+            <small>Desde cierto valor se ganan N boletos. Ej. desde RD$5,000 = 2 boletos.</small>
+          </span>
+        </label>
+      </div>
+
+      <div class="form-grid" *ngIf="actual.modo === 'MULTIPLO'">
+        <label>
+          1 boleto por cada (RD$)
+          <input type="number" min="1" step="0.01" name="monto_por_boleto" [(ngModel)]="actual.monto_por_boleto" required />
+        </label>
+      </div>
+
+      <div *ngIf="actual.modo === 'RANGO'" class="rangos">
+        <div class="rango-row rango-head">
+          <span>Factura desde (RD$)</span>
+          <span>Boletos</span>
+          <span></span>
+        </div>
+        <div class="rango-row" *ngFor="let rango of actual.rangos; let i = index; trackBy: trackRango">
+          <input type="number" min="1" step="0.01" [name]="'rango_desde_' + i" [(ngModel)]="rango.desde" />
+          <input type="number" min="1" step="1" [name]="'rango_boletos_' + i" [(ngModel)]="rango.boletos" />
+          <button type="button" class="btn-icon-trash" (click)="quitarRango(i)" title="Quitar rango">
+            <i class="bi bi-trash3"></i>
+          </button>
+        </div>
+        <button type="button" class="btn-add-rango" (click)="agregarRango()">
+          <i class="bi bi-plus-circle"></i> Agregar rango
+        </button>
+        <small class="hint">Se usa el rango más alto que alcance el valor de la factura.</small>
+      </div>
+
+      <!-- Condiciones -->
+      <h3 class="section-title"><i class="bi bi-sliders"></i> Condiciones</h3>
+      <div class="form-grid">
+        <label>
+          Factura mínima para participar (RD$)
+          <input type="number" min="0" step="0.01" name="monto_minimo" [(ngModel)]="actual.monto_minimo" placeholder="0 = sin mínimo" />
+        </label>
+
+        <label>
+          Máximo de boletos por factura
+          <input type="number" min="0" step="1" name="max_boletos_factura" [(ngModel)]="actual.max_boletos_factura" placeholder="Vacío = sin tope" />
+        </label>
+
+        <label>
+          Calcular sobre
+          <select name="base_calculo" [(ngModel)]="actual.base_calculo">
+            <option value="TOTAL">Total de la factura (con ITBIS)</option>
+            <option value="SUBTOTAL">Subtotal (sin ITBIS)</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="switch-row">
+        <label class="soft-check">
+          <input type="checkbox" name="aplica_contado" [(ngModel)]="actual.aplica_contado" />
+          <span>Facturas de contado</span>
+        </label>
+        <label class="soft-check">
+          <input type="checkbox" name="aplica_credito" [(ngModel)]="actual.aplica_credito" />
+          <span>Facturas a crédito</span>
+        </label>
+        <label class="soft-check">
+          <input type="checkbox" name="solo_pagadas" [(ngModel)]="actual.solo_pagadas" />
+          <span>Solo facturas cobradas</span>
+        </label>
+        <label class="soft-check check-activo">
+          <input type="checkbox" name="activo" [(ngModel)]="actual.activo" />
+          <span>Concurso activo</span>
+        </label>
+      </div>
+
+      <!-- Simulador -->
+      <div class="simulador">
+        <div class="sim-input">
+          <span><i class="bi bi-calculator"></i> Probar con una factura de</span>
+          <input type="number" min="0" step="0.01" name="montoPrueba" [(ngModel)]="montoPrueba" />
+        </div>
+        <div class="sim-result">
+          <strong>{{ boletosPrueba }}</strong>
+          <small>boleto{{ boletosPrueba === 1 ? '' : 's' }}</small>
+        </div>
+        <div class="sim-ejemplos" *ngIf="ejemplosRegla.length">
+          <span *ngFor="let e of ejemplosRegla">{{ dinero(e.monto) }} → <b>{{ e.boletos }}</b></span>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button type="submit" class="btn-save" [disabled]="guardando">
+          <i class="bi bi-floppy"></i> {{ guardando ? 'Guardando...' : 'Guardar' }}
+        </button>
+        <button type="button" class="btn-new" (click)="nuevo(concursoForm)"><i class="bi bi-plus-lg"></i> Nuevo</button>
+        <button type="button" class="btn-cancel" (click)="nuevo(concursoForm)"><i class="bi bi-x-lg"></i> Cancelar</button>
+      </div>
+    </form>
+
+    <section class="list-card">
+      <div class="list-head">
+        <div>
+          <h2><i class="bi bi-trophy"></i> Concursos</h2>
+          <p>Active o desactive un concurso con el interruptor.</p>
+        </div>
+        <div class="list-tools">
+          <label class="search-box">
+            <i class="bi bi-search"></i>
+            <input type="text" [(ngModel)]="busqueda" placeholder="Buscar concurso o premio..." />
+          </label>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Concurso</th>
+              <th>Vigencia</th>
+              <th>Regla</th>
+              <th>Estado</th>
+              <th>Activo</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngIf="cargando">
+              <td colspan="6" class="empty-row">Cargando concursos...</td>
+            </tr>
+            <tr *ngFor="let c of filtrados" [class.row-selected]="actual.id === c.id">
+              <td>
+                <strong>{{ c.nombre }}</strong>
+                <small>{{ c.tipo === 'SORTEO' ? 'Sorteo' : 'Rifa' }} · {{ alcance(c) }}</small>
+              </td>
+              <td class="nowrap">
+                {{ fechaCorta(c.fecha_inicio) }}<br />
+                <small>al {{ fechaCorta(c.fecha_fin) }}</small>
+              </td>
+              <td><small class="regla">{{ describirRegla(c) }}</small></td>
+              <td>
+                <span class="estado" [ngClass]="'estado-' + estado(c).toLowerCase()">{{ etiquetaEstado(c) }}</span>
+              </td>
+              <td>
+                <label class="toggle" [title]="c.activo ? 'Desactivar' : 'Activar'">
+                  <input type="checkbox" [checked]="c.activo" (click)="$event.preventDefault(); cambiarActivo(c)" />
+                  <span class="slider"></span>
+                </label>
+              </td>
+              <td>
+                <div class="row-actions">
+                  <button type="button" class="edit" (click)="editar(c)" title="Editar"><i class="bi bi-pencil-fill"></i></button>
+                  <button type="button" class="trash" (click)="eliminar(c)" title="Eliminar"><i class="bi bi-trash3-fill"></i></button>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="!cargando && filtrados.length === 0">
+              <td colspan="6" class="empty-row">No hay concursos registrados.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </section>
+</div>

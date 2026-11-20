@@ -279,6 +279,7 @@ export class Facturacion implements OnInit, OnDestroy {
 
   selectedIndex = 1;
   selectedIndexsector = -1;
+  private sectorElegidoConFlechas = false;
   buscarcodmerc = new FormControl();
   buscardescripcionmerc = new FormControl();
   // buscarcodmercElement = new FormControl();
@@ -455,6 +456,18 @@ export class Facturacion implements OnInit, OnDestroy {
         distinctUntilChanged(),
       )
       .subscribe((query: string) => this.filtrarSectores(query));
+    // El texto visible del sector es la fuente de verdad: al escribir, el
+    // formulario guarda lo digitado y se descarta el código del sector previo.
+    this.buscarSector.valueChanges.subscribe((valor: any) => {
+      this.sectorElegidoConFlechas = false;
+      this.formularioFacturacion?.patchValue(
+        {
+          fa_sector: String(valor || '').toUpperCase(),
+          fa_codSect: null,
+        },
+        { emitEvent: false },
+      );
+    });
 
     // Inicializar los totales visibles en la vista (0.00) al cargar
     this.actualizarTotales();
@@ -600,6 +613,7 @@ export class Facturacion implements OnInit, OnDestroy {
       fa_nomVend: [''],
       fa_status: ['C'],
       fa_sector: [''],
+      fa_codSect: [null],
       fa_codZona: [null],
       fa_desZona: [''],
       fa_fpago: [''],
@@ -616,6 +630,9 @@ export class Facturacion implements OnInit, OnDestroy {
     this.formularioFacturacion.get('fa_tipoNcf')?.valueChanges.subscribe(() => {
       this.actualizarItbisPorComprobante();
     });
+    // El sector visible no debe arrastrarse de la factura anterior.
+    this.buscarSector?.setValue('', { emitEvent: false });
+    this.sectorElegidoConFlechas = false;
     this.conectarBusquedaCliente();
   }
 
@@ -774,6 +791,9 @@ export class Facturacion implements OnInit, OnDestroy {
     this.formularioFacturacion.enable();
     this.setControlesPagoEntregaActivos(true);
     this.formularioFacturacion.patchValue(Factura);
+    this.buscarSector.setValue(String((Factura as any).fa_sector || ''), {
+      emitEvent: false,
+    });
     this.sincronizarControlesPagoEntrega(Factura);
     await this.cargarItbisDeFactura(Factura);
     this.facturaOriginalEdicion = {
@@ -2064,11 +2084,42 @@ export class Facturacion implements OnInit, OnDestroy {
       this.validandoVendedor = false;
     }
   }
-  buscarRnc(event: Event, nextElement: HTMLInputElement | null): void {
+  /** Último RNC ya validado (por Enter/Tab, blur o al cargar un cliente). */
+  private rncValidadoValor = '';
+
+  /**
+   * Valida el RNC al salir del campo con el ratón (sin Enter/Tab), para que
+   * un RNC digitado nunca quede sin validar ni se facture como E32.
+   */
+  validarRncAlSalir(): void {
+    if (this.mensagePantalla || Swal.isVisible()) return;
+    const rnc = String(
+      this.formularioFacturacion.get('fa_rncFact')?.value || '',
+    ).replace(/\D/g, '').trim();
+    const nombre = String(
+      this.formularioFacturacion.get('fa_nomClie')?.value || '',
+    ).trim();
+    // Ya validado (Enter/Tab o cliente cargado): no repetir la consulta.
+    if (rnc && rnc === this.rncValidadoValor && nombre) return;
+    if (!rnc) {
+      this.rncValidadoValor = '';
+      this.clienteRncNoExiste = false;
+      this.seleccionarTipoNcfConsumidorFinal();
+      return;
+    }
+    this.buscarRnc(new Event('blur'), null, false);
+  }
+
+  buscarRnc(
+    event: Event,
+    nextElement: HTMLInputElement | null,
+    moverFoco = true,
+  ): void {
     event.preventDefault();
     const rncRaw = this.formularioFacturacion.get('fa_rncFact')?.value;
     const rnc = String(rncRaw || '').replace(/\D/g, '').trim();
     this.clienteRncNoExiste = false;
+    this.rncValidadoValor = rnc;
     this.rncApiNombre = '';
     this.rncApiValor = '';
 
@@ -2082,7 +2133,7 @@ export class Facturacion implements OnInit, OnDestroy {
 
     // Validar longitud del RNC
     if (rnc.length !== 9 && rnc.length !== 11) {
-      this.mostrarMensajeError('RNC inválido.');
+      this.rncInvalidoAlValidar('RNC inválido.');
       return;
     }
 
@@ -2095,7 +2146,7 @@ export class Facturacion implements OnInit, OnDestroy {
           // Si se encuentra el RNC en API, asignar razón social
           const nombreEmpresa = String(response.data.rason || '').trim();
           if (!nombreEmpresa) {
-            this.mostrarMensajeError('RNC no encontrado.');
+            this.rncInvalidoAlValidar('RNC no encontrado.');
             this.isDisabled = true;
             return;
           }
@@ -2111,13 +2162,13 @@ export class Facturacion implements OnInit, OnDestroy {
 
           // Habilitar campos
           this.isDisabled = false;
-          this.validarClienteLocalPorRnc(rnc, nombreEmpresa, nextElement);
+          this.validarClienteLocalPorRnc(rnc, nombreEmpresa, nextElement, moverFoco);
         } else {
           this.formularioFacturacion.patchValue({
             fa_nomClie: '',
             fa_codClie: '',
           });
-          this.mostrarMensajeError('RNC no encontrado.');
+          this.rncInvalidoAlValidar('RNC no encontrado.');
           this.isDisabled = true;
         }
       },
@@ -2126,9 +2177,24 @@ export class Facturacion implements OnInit, OnDestroy {
           fa_nomClie: '',
           fa_codClie: '',
         });
-        this.mostrarMensajeError('RNC no encontrado.');
+        this.rncInvalidoAlValidar('RNC no encontrado.');
         this.isDisabled = true;
       },
+    });
+  }
+
+  /** RNC con error: queda como no validado, sin E31, y el foco vuelve al RNC. */
+  private rncInvalidoAlValidar(mensaje: string): void {
+    this.rncValidadoValor = '';
+    this.seleccionarTipoNcfConsumidorFinal();
+    this.mensagePantalla = true;
+    Swal.fire({
+      icon: 'error',
+      title: 'A V I S O',
+      text: mensaje,
+    }).then(() => {
+      this.mensagePantalla = false;
+      this.enfocarCampoFactura('input1');
     });
   }
 
@@ -2136,6 +2202,7 @@ export class Facturacion implements OnInit, OnDestroy {
     rnc: string,
     nombreEmpresaApi: string,
     nextElement: HTMLInputElement | null,
+    moverFoco = true,
   ): void {
     this.servicioCliente.buscarPorRnc(rnc, true).subscribe({
       next: (clienteResp) => {
@@ -2157,9 +2224,11 @@ export class Facturacion implements OnInit, OnDestroy {
             { emitEvent: false },
           );
         }
-        $('#input3').focus();
-        $('#input3').select();
-        nextElement?.focus();
+        if (moverFoco) {
+          $('#input3').focus();
+          $('#input3').select();
+          nextElement?.focus();
+        }
       },
       error: (error) => {
         console.error('Error buscando cliente en Supabase por RNC:', error);
@@ -2171,9 +2240,11 @@ export class Facturacion implements OnInit, OnDestroy {
           },
           { emitEvent: false },
         );
-        $('#input3').focus();
-        $('#input3').select();
-        nextElement?.focus();
+        if (moverFoco) {
+          $('#input3').focus();
+          $('#input3').select();
+          nextElement?.focus();
+        }
       },
     });
   }
@@ -2431,11 +2502,65 @@ export class Facturacion implements OnInit, OnDestroy {
     const termino = this.normalizarBusquedaSector(query);
     this.resultadoSector = this.listaSectores.slice();
     this.selectedIndexsector = termino
-      ? this.resultadoSector.findIndex((sector) =>
-          this.normalizarBusquedaSector(sector.se_desSect).includes(termino),
-        )
+      ? this.indiceSectorParecido(termino)
       : (this.resultadoSector.length ? 0 : -1);
     this.desplazarSectorSeleccionado();
+  }
+
+  /** Sector con la descripción exacta (sin acentos/mayúsculas) o undefined. */
+  private sectorExacto(texto: any): ModeloSectorData | undefined {
+    const termino = this.normalizarBusquedaSector(texto);
+    if (!termino) return undefined;
+    return this.listaSectores.find(
+      (sector) => this.normalizarBusquedaSector(sector.se_desSect) === termino,
+    );
+  }
+
+  private indiceSectorParecido(termino: string): number {
+    const nombres = this.resultadoSector.map((sector) =>
+      this.normalizarBusquedaSector(sector.se_desSect),
+    );
+    let idx = nombres.findIndex((n) => n === termino);
+    if (idx < 0) idx = nombres.findIndex((n) => n.startsWith(termino));
+    if (idx < 0) idx = nombres.findIndex((n) => n.includes(termino));
+    return idx;
+  }
+
+  private descripcionSectorCliente(cliente: ModeloClienteData): string {
+    const descripcion = String(cliente?.cl_sector || '').trim();
+    if (descripcion) return descripcion.toUpperCase();
+    const codigo = Number(cliente?.cl_codSect || 0);
+    if (codigo > 0) {
+      const sector = this.listaSectores.find(
+        (s) => Number(s.se_codSect) === codigo,
+      );
+      return String(sector?.se_desSect || '').trim();
+    }
+    return '';
+  }
+
+  private codigoSectorCliente(cliente: ModeloClienteData): number | null {
+    const sector = this.sectorExacto(this.descripcionSectorCliente(cliente));
+    if (sector) return Number(sector.se_codSect);
+    const codigo = Number(cliente?.cl_codSect || 0);
+    return codigo > 0 ? codigo : null;
+  }
+
+  /**
+   * Al salir del sector: si lo digitado existe en la base de datos se toma
+   * ese sector (código y descripción); si no existe se deja tal cual.
+   */
+  private resolverSectorDigitado(): void {
+    const digitado = String(this.buscarSector.value || '').trim();
+    const sector = this.sectorExacto(digitado);
+    if (sector) {
+      this.cargarDatosSector(sector);
+      return;
+    }
+    this.formularioFacturacion.patchValue(
+      { fa_sector: digitado.toUpperCase(), fa_codSect: null },
+      { emitEvent: false },
+    );
   }
 
   onFocusSector(): void {
@@ -2449,6 +2574,7 @@ export class Facturacion implements OnInit, OnDestroy {
   onBlurSector(): void {
     this.temporizadorOcultarSectores = setTimeout(() => {
       this.mostrarListaSectores = false;
+      this.resolverSectorDigitado();
     }, 180);
   }
 
@@ -2469,6 +2595,7 @@ export class Facturacion implements OnInit, OnDestroy {
     const maxIndex = this.resultadoSector.length - 1;
     if (key === 'ArrowDown') {
       if (maxIndex < 0) return;
+      this.sectorElegidoConFlechas = true;
       this.selectedIndexsector = this.selectedIndexsector < maxIndex
         ? this.selectedIndexsector + 1
         : 0;
@@ -2476,18 +2603,26 @@ export class Facturacion implements OnInit, OnDestroy {
       event.preventDefault();
     } else if (key === 'ArrowUp') {
       if (maxIndex < 0) return;
+      this.sectorElegidoConFlechas = true;
       this.selectedIndexsector = this.selectedIndexsector > 0
         ? this.selectedIndexsector - 1
         : maxIndex;
       this.desplazarSectorSeleccionado();
       event.preventDefault();
     } else if (key === 'Enter') {
+      // Solo se toma el sector resaltado si el usuario lo eligió con las
+      // flechas; si escribió el sector se busca exacto y, si no existe, se
+      // conserva lo digitado (antes se tomaba el primer sector "parecido").
       if (
+        this.sectorElegidoConFlechas &&
         this.selectedIndexsector >= 0 &&
         this.selectedIndexsector <= maxIndex
       ) {
         this.cargarDatosSector(this.resultadoSector[this.selectedIndexsector]);
+      } else {
+        this.resolverSectorDigitado();
       }
+      this.mostrarListaSectores = false;
       event.preventDefault();
       nextElement?.focus();
     }
@@ -2735,6 +2870,7 @@ export class Facturacion implements OnInit, OnDestroy {
   async cargarDatosCliente(cliente: ModeloClienteData) {
     this.resultadoNombre = [];
     if (cliente.cl_nomClie !== '') {
+      this.rncValidadoValor = String(cliente.cl_rnc || '').replace(/\D/g, '').trim();
       console.log(this.resultadoNombre);
       this.formularioFacturacion.patchValue(
         {
@@ -2744,10 +2880,14 @@ export class Facturacion implements OnInit, OnDestroy {
           fa_telClie: cliente.cl_telClie,
           fa_dirClie: cliente.cl_dirClie,
           fa_codZona: cliente.cl_codZona,
-          fa_sector: cliente.cl_sector || cliente.cl_codSect,
+          fa_sector: this.descripcionSectorCliente(cliente),
+          fa_codSect: this.codigoSectorCliente(cliente),
         },
         { emitEvent: false },
       );
+      this.buscarSector.setValue(this.descripcionSectorCliente(cliente), {
+        emitEvent: false,
+      });
       this.esClienteCreditoSeleccionado = String(cliente.cl_tipo || '').trim().toUpperCase() === 'C';
       this.clientePermiteCredito = this.esClienteCreditoSeleccionado;
       this.diasCreditoCliente = Math.max(Number(cliente.cl_diasCredito || 0), 0);
@@ -3127,6 +3267,7 @@ export class Facturacion implements OnInit, OnDestroy {
   }
 
   cargarDatosSector(sector: ModeloSectorData) {
+    this.sectorElegidoConFlechas = false;
     this.resultadoSector = [];
     this.mostrarListaSectores = false;
     this.selectedIndexsector = -1;
@@ -3708,6 +3849,17 @@ export class Facturacion implements OnInit, OnDestroy {
         this.enfocarCampoFactura('input1');
         return false;
       }
+      this.rncValidadoValor = rnc;
+      const tipoActual = String(
+        this.formularioFacturacion.getRawValue()?.fa_tipoNcf ?? '',
+      ).trim();
+      const tipoE32 = this.ncflist.find(
+        (ncf) => String(ncf.tipo || '').trim().toUpperCase() === 'E32',
+      );
+      if (!tipoActual || tipoActual === String(tipoE32?.codigo || '32')) {
+        // Un RNC válido no puede salir como consumidor final.
+        this.seleccionarTipoNcfRnc();
+      }
       return true;
     } catch (error) {
       console.error('Error validando RNC antes de guardar:', error);
@@ -4020,32 +4172,35 @@ export class Facturacion implements OnInit, OnDestroy {
       { emitEvent: false },
     );
 
-    const codigoSectorActual = Number(facturaPayload.fa_codSect);
-    const descripcionSectorActual = String(
-      this.buscarSector.value || facturaPayload.fa_sector || '',
-    ).trim();
-    const sectorSeleccionado = this.listaSectores.find((sector) =>
-      (Number.isFinite(codigoSectorActual) && codigoSectorActual > 0 &&
-        Number(sector.se_codSect) === codigoSectorActual) ||
-      this.normalizarBusquedaSector(sector.se_desSect) ===
-        this.normalizarBusquedaSector(descripcionSectorActual),
-    );
+    // Sector: se guarda exactamente lo que el usuario ve en pantalla. Si
+    // existe en la base de datos se usa su descripción y código; si no
+    // existe, se guarda lo digitado sin código.
+    if (!this.listaSectores.length) {
+      try {
+        const resp = await firstValueFrom(this.ServicioSector.obtenerTodosSector());
+        this.listaSectores = Array.isArray(resp?.data) ? resp.data : [];
+      } catch (error) {
+        console.error('No se pudieron cargar los sectores al guardar:', error);
+      }
+    }
+    const descripcionSectorActual = String(this.buscarSector.value || '')
+      .trim()
+      .toUpperCase();
+    const sectorSeleccionado = this.sectorExacto(descripcionSectorActual);
     if (sectorSeleccionado) {
       facturaPayload.fa_codSect = Number(sectorSeleccionado.se_codSect);
       facturaPayload.fa_sector = String(sectorSeleccionado.se_desSect || '').trim();
-      this.formularioFacturacion.patchValue(
-        {
-          fa_codSect: facturaPayload.fa_codSect,
-          fa_sector: facturaPayload.fa_sector,
-        },
-        { emitEvent: false },
-      );
     } else {
-      facturaPayload.fa_codSect = Number.isFinite(codigoSectorActual) && codigoSectorActual > 0
-        ? codigoSectorActual
-        : null;
+      facturaPayload.fa_codSect = null;
       facturaPayload.fa_sector = descripcionSectorActual;
     }
+    this.formularioFacturacion.patchValue(
+      {
+        fa_codSect: facturaPayload.fa_codSect,
+        fa_sector: facturaPayload.fa_sector,
+      },
+      { emitEvent: false },
+    );
     facturaPayload.fa_rncFact = facturaPayload.fa_rncFact || '';
     const detalleParaGuardar = this.crearDetalleParaGuardar();
     const detalleModificado =

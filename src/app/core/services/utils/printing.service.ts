@@ -292,6 +292,34 @@ export class PrintingService {
    * @param facturaData The invoice header data.
    * @param items The list of items in the invoice.
    */
+  /**
+   * Tipo de comprobante normalizado a la numeración e-CF (31, 32, 44, 45...).
+   * B01→31, B02→32, B14→44, B15→45, etc. Devuelve 0 si no se puede determinar.
+   */
+  private tipoComprobanteImpresion(f: any, facturaData?: any): number {
+    const ncf = String(
+      f?.fa_ncfFact ?? f?.fa_ncffact ?? facturaData?.fa_ncfFact ??
+        facturaData?.fa_ncffact ?? f?.ncf ?? '',
+    ).trim().toUpperCase();
+    const desdeNcf = ncf.match(/^([EB])(\d{2})/);
+    if (desdeNcf) {
+      const n = Number(desdeNcf[2]);
+      return desdeNcf[1] === 'B' && n < 30 ? n + 30 : n;
+    }
+    const tipo = String(
+      f?.fa_tipoNcf ?? f?.fa_tiponcf ?? facturaData?.fa_tipoNcf ??
+        facturaData?.fa_tiponcf ?? '',
+    ).trim().toUpperCase().replace(/^[EB]/, '');
+    const n = Number(tipo);
+    if (!Number.isFinite(n) || n <= 0) return 0;
+    return n < 30 ? n + 30 : n;
+  }
+
+  /** Regímenes especiales (E44/B14) no llevan ITBIS. */
+  private comprobanteSinItbis(f: any, facturaData?: any): boolean {
+    return this.tipoComprobanteImpresion(f, facturaData) === 44;
+  }
+
   async imprimirFactura80mm(facturaData: any, items: any[]): Promise<number | void> {
     try {
       console.log('Iniciando impresión de factura...', facturaData);
@@ -540,40 +568,21 @@ export class PrintingService {
       };
 
       // Title logic
-      const tipoNcf = String(
-        f.fa_tipoNcf ?? f.fa_tiponcf ?? facturaData?.fa_tipoNcf ?? facturaData?.fa_tiponcf ?? '',
-      ).trim().toUpperCase();
-      const ncfUpper = String(ncf).trim().toUpperCase();
-      const esCreditoFiscal =
-        ncfUpper.startsWith('B01') ||
-        ncfUpper.startsWith('E31') ||
-        tipoNcf === '1' ||
-        tipoNcf === '01' ||
-        tipoNcf === '31' ||
-        tipoNcf === 'B01' ||
-        tipoNcf === 'E31';
-      const esGubernamental =
-        ncfUpper.startsWith('B14') ||
-        ncfUpper.startsWith('B15') ||
-        ncfUpper.startsWith('E14') ||
-        ncfUpper.startsWith('E45') ||
-        tipoNcf === '14' ||
-        tipoNcf === '15' ||
-        tipoNcf === '45' ||
-        tipoNcf === 'B14' ||
-        tipoNcf === 'B15' ||
-        tipoNcf === 'E14' ||
-        tipoNcf === 'E45';
+      const tipoComprobante = this.tipoComprobanteImpresion(f, facturaData);
+      const ncfElectronico = String(ncf).trim().toUpperCase().startsWith('E');
       let tituloFactura = String(
         facturaData?.__invoiceTitle ?? f.__invoiceTitle ?? '',
       ).trim();
-      if (!tituloFactura) {
-        tituloFactura = 'FACTURA PARA CONSUMIDOR FINAL';
-      }
-      if (esGubernamental) {
+      if (tipoComprobante === 44) {
+        tituloFactura = ncfElectronico
+          ? 'REGIMEN ESPECIAL ELECTRONICO'
+          : 'REGIMEN ESPECIAL';
+      } else if (tipoComprobante === 45) {
         tituloFactura = 'FACTURA GUBERNAMENTAL';
-      } else if (esCreditoFiscal && !facturaData?.__invoiceTitle && !f.__invoiceTitle) {
-        tituloFactura = 'FACTURA DE CREDITO FISCAL';
+      } else if (!tituloFactura) {
+        tituloFactura = tipoComprobante === 31
+          ? 'FACTURA DE CREDITO FISCAL'
+          : 'FACTURA PARA CONSUMIDOR FINAL';
       }
 
       doc.setFont('helvetica', 'bold');
@@ -714,7 +723,8 @@ export class PrintingService {
           f.fa_porcentaje_menos ??
           0
       );
-      const tasaRestar = porcentajeMenos / 100;
+      const sinItbis = this.comprobanteSinItbis(f, facturaData);
+      const tasaRestar = sinItbis ? 0 : porcentajeMenos / 100;
       let subtotalImpresion = 0;
       let itbisImpresion = 0;
       let totalImpresion = 0;
@@ -735,11 +745,13 @@ export class PrintingService {
           item.precio ?? item.df_preMerc ?? item.df_premerc ?? 0
         );
         const totalItbisFactura = Number(f.fa_itbiFact ?? f.fa_itbifact ?? 0);
-        const itbisItem = (tasaRestar > 0 ? precioOriginal * tasaRestar * Number(cant || 0) : 0) ||
-          itbisGuardado ||
-          (totalDetalle > 0 && totalItbisFactura > 0
-            ? totalItbisFactura * (totalItem / totalDetalle)
-            : 0);
+        const itbisItem = sinItbis
+          ? 0
+          : (tasaRestar > 0 ? precioOriginal * tasaRestar * Number(cant || 0) : 0) ||
+            itbisGuardado ||
+            (totalDetalle > 0 && totalItbisFactura > 0
+              ? totalItbisFactura * (totalItem / totalDetalle)
+              : 0);
         const precioSinItbis = Number(cant || 0) > 0
           ? (tasaRestar > 0
             ? precioOriginal - (precioOriginal * tasaRestar)
@@ -790,7 +802,7 @@ export class PrintingService {
 
       // --- 5. TOTALS ---
       const subTotal = subtotalImpresion || f.fa_subFact || 0;
-      const totalItbis = itbisImpresion || f.fa_itbiFact || 0;
+      const totalItbis = sinItbis ? 0 : itbisImpresion || f.fa_itbiFact || 0;
       const totalGral = totalImpresion || f.fa_valFact || 0;
 
       const labelX = 35 + shiftX;
@@ -2210,7 +2222,8 @@ items.forEach((it: any) => {
           f.fa_porcentaje_menos ??
           0
       );
-      const tasaRestar = porcentajeMenos / 100;
+      const sinItbis = this.comprobanteSinItbis(f, facturaData);
+      const tasaRestar = sinItbis ? 0 : porcentajeMenos / 100;
       let subtotalImpresion = 0;
       let itbisImpresion = 0;
       let totalImpresion = 0;
@@ -2231,11 +2244,13 @@ items.forEach((it: any) => {
           item.precio ?? item.df_preMerc ?? item.df_premerc ?? 0
         );
         const totalItbisFactura = Number(f.fa_itbiFact ?? f.fa_itbifact ?? 0);
-        const itbisItem = (tasaRestar > 0 ? precioOriginal * tasaRestar * Number(cant || 0) : 0) ||
-          itbisGuardado ||
-          (totalDetalle > 0 && totalItbisFactura > 0
-            ? totalItbisFactura * (totalItem / totalDetalle)
-            : 0);
+        const itbisItem = sinItbis
+          ? 0
+          : (tasaRestar > 0 ? precioOriginal * tasaRestar * Number(cant || 0) : 0) ||
+            itbisGuardado ||
+            (totalDetalle > 0 && totalItbisFactura > 0
+              ? totalItbisFactura * (totalItem / totalDetalle)
+              : 0);
         const precioSinItbis = Number(cant || 0) > 0
           ? (tasaRestar > 0
             ? precioOriginal - (precioOriginal * tasaRestar)
@@ -2276,7 +2291,9 @@ items.forEach((it: any) => {
       drawDashedLine(yPos);
       yPos += 5;
       const subTotal = subtotalImpresion || Number(f.fa_subFact ?? f.fa_subfact ?? 0);
-      const totalItbis = itbisImpresion || Number(f.fa_itbiFact ?? f.fa_itbifact ?? 0);
+      const totalItbis = sinItbis
+        ? 0
+        : itbisImpresion || Number(f.fa_itbiFact ?? f.fa_itbifact ?? 0);
       const totalGral = totalImpresion || Number(f.fa_valFact ?? f.fa_valfact ?? 0);
       const labelX = 35 + shiftX;
       const valueX = pageWidth - rightMargin;

@@ -119,6 +119,10 @@
           <i class="bi bi-bank"></i>
           <span>Cuentas bancarias</span>
         </a>
+        <a *ngIf="canView('/private/mantenimientos/concursos')" class="maintenance-sublink" routerLinkActive="active" [routerLink]="['concursos']">
+          <i class="bi bi-ticket-perforated"></i>
+          <span>Rifa / Sorteo</span>
+        </a>
         <a *ngIf="canView('/private/mantenimientos/rnc')" class="maintenance-sublink" routerLinkActive="active" [routerLink]="['rnc']">
           <i class="bi bi-card-heading"></i>
           <span>RNC</span>
@@ -276,6 +280,10 @@
           <a *ngIf="canView('/private/mantenimientos/cuentas-bancarias')" class="maintenance-sublink" routerLinkActive="active" [routerLink]="['cuentas-bancarias']" data-bs-dismiss="offcanvas">
             <i class="bi bi-bank"></i>
             <span>Cuentas bancarias</span>
+          </a>
+          <a *ngIf="canView('/private/mantenimientos/concursos')" class="maintenance-sublink" routerLinkActive="active" [routerLink]="['concursos']" data-bs-dismiss="offcanvas">
+            <i class="bi bi-ticket-perforated"></i>
+            <span>Rifa / Sorteo</span>
           </a>
           <a *ngIf="canView('/private/mantenimientos/rnc')" class="maintenance-sublink" routerLinkActive="active" [routerLink]="['rnc']" data-bs-dismiss="offcanvas">
             <i class="bi bi-card-heading"></i>

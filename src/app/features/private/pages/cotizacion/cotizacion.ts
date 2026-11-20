@@ -11,10 +11,13 @@ import {
 } from '@angular/forms';
 import {
   BehaviorSubject,
+  catchError,
   debounceTime,
   distinctUntilChanged,
   filter,
   firstValueFrom,
+  of,
+  Subscription,
   switchMap,
   tap,
 } from 'rxjs';
@@ -335,28 +338,6 @@ export class Cotizacion implements OnInit {
           console.log('2');
         }
       });
-    this.buscarNombre.valueChanges
-      .pipe(
-        debounceTime(500),
-        distinctUntilChanged(),
-        tap(() => {
-          this.resultadoNombre = [];
-        }),
-        filter((query: string) => query !== ''),
-        switchMap((query: string) =>
-          this.http.GetRequest<ModeloCliente>(`/cliente-nombre/${query}`),
-        ),
-      )
-      .subscribe((results: ModeloCliente) => {
-        console.log(results.data);
-        if (results) {
-          if (Array.isArray(results.data)) {
-            this.resultadoNombre = results.data;
-          }
-        } else {
-          this.resultadoNombre = [];
-        }
-      });
   }
 
   crearFormularioCotizacion() {
@@ -378,6 +359,7 @@ export class Cotizacion implements OnInit {
       ct_status: [''],
       ct_codzona: [''],
     });
+    this.conectarBusquedaCliente();
 
     console.log(this.formularioCotizacion.value);
   }
@@ -1275,28 +1257,65 @@ export class Cotizacion implements OnInit {
     return '';
   }
 
+  clienteRncNoExiste = false;
+  private clienteSearchSubscription?: Subscription;
+
+  /** Misma búsqueda de clientes por nombre que Facturación (Supabase). */
+  private conectarBusquedaCliente(): void {
+    this.clienteSearchSubscription?.unsubscribe();
+    this.resultadoNombre = [];
+    this.clienteSearchSubscription = this.formularioCotizacion
+      .get('ct_nomclie')
+      ?.valueChanges.pipe(
+        debounceTime(500),
+        distinctUntilChanged(),
+        tap(() => {
+          this.resultadoNombre = [];
+          this.selectedIndex = -1;
+        }),
+        filter((query: string) => String(query || '').trim() !== ''),
+        switchMap((query: string) =>
+          this.servicioCliente.buscarporNombre(String(query).trim(), true).pipe(
+            catchError((error) => {
+              console.error('Error en busqueda de cliente (Supabase):', error);
+              return of({ data: [] } as any);
+            }),
+          ),
+        ),
+      )
+      .subscribe((results: ModeloCliente) => {
+        this.resultadoNombre =
+          results && Array.isArray(results.data) ? results.data : [];
+      });
+  }
+
   cargarDatosCliente(cliente: ModeloClienteData) {
     this.resultadoNombre = [];
-    this.buscarNombre.reset();
-    if (cliente.cl_nomClie !== '') {
-      console.log('dd');
-      this.formularioCotizacion.patchValue({
-        ct_codclie: cliente.cl_codClie,
-        ct_nomclie: cliente.cl_nomClie,
-        ct_rnc: cliente.cl_rnc,
-        ct_telclie: cliente.cl_telClie,
-        ct_dirclie: cliente.cl_dirClie,
-        ct_codzona: cliente.cl_codZona,
-      });
+    this.selectedIndex = -1;
+    if (cliente && cliente.cl_nomClie !== '') {
+      this.clienteRncNoExiste = false;
+      this.formularioCotizacion.patchValue(
+        {
+          ct_codclie: cliente.cl_codClie,
+          ct_nomclie: cliente.cl_nomClie,
+          ct_rnc: cliente.cl_rnc,
+          ct_telclie: cliente.cl_telClie,
+          ct_dirclie: cliente.cl_dirClie,
+          ct_codzona: cliente.cl_codZona,
+        },
+        { emitEvent: false },
+      );
     }
   }
 
   handleKeydown(event: KeyboardEvent): void {
     const key = event.key;
     const maxIndex = this.resultadoNombre.length - 1; // Ajustamos el límite máximo
+    if (this.resultadoNombre.length === 1) {
+      this.selectedIndex = 0;
+    }
 
     if (key === 'ArrowDown') {
-      console.log('paso 56');
 
       // Mueve la selección hacia abajo
       if (this.selectedIndex < maxIndex) {
@@ -1541,50 +1560,107 @@ export class Cotizacion implements OnInit {
       return;
     }
   }
+  private mostrarAvisoRnc(texto: string): void {
+    this.mensagePantalla = true;
+    Swal.fire({
+      icon: 'error',
+      title: 'A V I S O',
+      text: texto,
+    }).then(() => {
+      this.mensagePantalla = false;
+    });
+  }
+
+  /** Misma lógica de RNC/cédula que Facturación: API DGII + cliente local. */
   buscarRnc(event: Event, nextElement: HTMLInputElement | null): void {
     event.preventDefault();
-    const rnc = this.formularioCotizacion.get('ct_rnc')?.value;
-    if (rnc) {
-      if (rnc.length === 9 || rnc.length === 11) {
-        this.ServicioRnc.buscarRncPorrncId(rnc).subscribe((response) => {
-          const registro = Array.isArray(response?.data)
-            ? response.data[0]
-            : response?.data;
-          if (registro) {
-            this.formularioCotizacion.patchValue({
-              ct_nomclie: registro.rason,
-            });
-            nextElement?.focus();
-          } else {
-            this.mensagePantalla = true;
+    const rncRaw = this.formularioCotizacion.get('ct_rnc')?.value;
+    const rnc = String(rncRaw || '').replace(/\D/g, '').trim();
+    this.clienteRncNoExiste = false;
 
-            Swal.fire({
-              icon: 'error',
-              title: 'A V I S O',
-              text: 'Rnc invalido.',
-            }).then(() => {
-              this.mensagePantalla = false;
-            });
-            return;
-          }
-        });
-      } else {
-        this.mensagePantalla = true;
-        Swal.fire({
-          icon: 'error',
-          title: 'A V I S O',
-          text: 'Rnc invalido.',
-        }).then(() => {
-          this.mensagePantalla = false;
-        });
-        return;
-      }
-      this.mensagePantalla = false;
-    } else {
+    if (!rnc) {
       nextElement?.focus();
+      return;
     }
-    this.mensagePantalla = false;
+
+    if (rnc.length !== 9 && rnc.length !== 11) {
+      this.mostrarAvisoRnc('RNC inválido.');
+      return;
+    }
+
+    this.formularioCotizacion.patchValue({ ct_rnc: rnc }, { emitEvent: false });
+
+    this.ServicioRnc.buscarRncPorrncId(rnc).subscribe({
+      next: (response) => {
+        const registro: any = Array.isArray(response?.data)
+          ? response.data[0]
+          : response?.data;
+        const nombreEmpresa = String(registro?.rason || '').trim();
+        if (!nombreEmpresa) {
+          this.formularioCotizacion.patchValue(
+            { ct_nomclie: '', ct_codclie: '' },
+            { emitEvent: false },
+          );
+          this.mostrarAvisoRnc('RNC no encontrado.');
+          return;
+        }
+        this.formularioCotizacion.patchValue(
+          { ct_nomclie: nombreEmpresa, ct_codclie: '' },
+          { emitEvent: false },
+        );
+        this.validarClienteLocalPorRnc(rnc, nombreEmpresa, nextElement);
+      },
+      error: () => {
+        this.formularioCotizacion.patchValue(
+          { ct_nomclie: '', ct_codclie: '' },
+          { emitEvent: false },
+        );
+        this.mostrarAvisoRnc('RNC no encontrado.');
+      },
+    });
   }
+
+  private validarClienteLocalPorRnc(
+    rnc: string,
+    nombreEmpresaApi: string,
+    nextElement: HTMLInputElement | null,
+  ): void {
+    const finalizar = () => {
+      this.resultadoNombre = [];
+      nextElement?.focus();
+      nextElement?.select();
+    };
+    this.servicioCliente.buscarPorRnc(rnc, true).subscribe({
+      next: (clienteResp) => {
+        const cliente = clienteResp?.data as ModeloClienteData | null;
+        if (cliente && Number(cliente.cl_codClie || 0) > 0) {
+          this.cargarDatosCliente(cliente);
+          this.clienteRncNoExiste = false;
+          this.formularioCotizacion.patchValue(
+            { ct_nomclie: nombreEmpresaApi, ct_rnc: rnc },
+            { emitEvent: false },
+          );
+        } else {
+          this.clienteRncNoExiste = true;
+          this.formularioCotizacion.patchValue(
+            { ct_codclie: '', ct_nomclie: nombreEmpresaApi },
+            { emitEvent: false },
+          );
+        }
+        finalizar();
+      },
+      error: (error) => {
+        console.error('Error buscando cliente en Supabase por RNC:', error);
+        this.clienteRncNoExiste = true;
+        this.formularioCotizacion.patchValue(
+          { ct_codclie: '', ct_nomclie: nombreEmpresaApi },
+          { emitEvent: false },
+        );
+        finalizar();
+      },
+    });
+  }
+
 
   moveFocuscodmerc(event: KeyboardEvent, nextInput: HTMLInputElement) {
     if (event.key === 'Enter' || event.key === 'Tab') {
