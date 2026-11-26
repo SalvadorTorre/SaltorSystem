@@ -75,7 +75,62 @@ export class ServicioCierreCaja {
       tcheque: this.toNumber(row.tcheque),
       tcredito: this.toNumber(row.tcredito),
       tpendiente: this.toNumber(row.tpendiente),
+      total_contado: row.total_contado == null ? null : this.toNumber(row.total_contado),
+      total_ajustes: row.total_ajustes == null ? null : this.toNumber(row.total_ajustes),
     };
+  }
+
+  /** Conceptos de ajuste del cuadre (Nota de credito, Cambio de cheque, ...). */
+  listarConceptosCierre(): Observable<Array<{ idconcepto: number; descripcion: string }>> {
+    return from((async () => {
+      if (!this.useSupabase) return [];
+      const { data, error } = await this.db
+        .from('cierrecaja_concepto')
+        .select('idconcepto,descripcion')
+        .eq('activo', true)
+        .order('descripcion', { ascending: true });
+      if (error) throw error;
+      return (data || []).map((r: any) => ({
+        idconcepto: Number(r.idconcepto),
+        descripcion: String(r.descripcion || '').trim(),
+      }));
+    })());
+  }
+
+  crearConceptoCierre(descripcion: string): Observable<{ idconcepto: number; descripcion: string }> {
+    const texto = String(descripcion || '').trim().slice(0, 80);
+    return from((async () => {
+      if (!texto) throw new Error('Escriba el nombre del concepto.');
+      const { data, error } = await this.db
+        .from('cierrecaja_concepto')
+        .insert({ descripcion: texto })
+        .select('idconcepto,descripcion')
+        .single();
+      if (error) {
+        if (String(error?.code || '') === '23505') {
+          throw new Error('Ese concepto ya existe.');
+        }
+        throw error;
+      }
+      return { idconcepto: Number(data.idconcepto), descripcion: String(data.descripcion || '') };
+    })());
+  }
+
+  /** Ajustes guardados de un cierre. */
+  ajustesDeCierre(idCierre: number | string): Observable<Array<{ concepto: string; valor: number }>> {
+    return from((async () => {
+      if (!this.useSupabase) return [];
+      const { data, error } = await this.db
+        .from('cierrecaja_ajuste')
+        .select('concepto,valor')
+        .eq('idcierre', Number(idCierre))
+        .order('id', { ascending: true });
+      if (error) return [];
+      return (data || []).map((r: any) => ({
+        concepto: String(r.concepto || ''),
+        valor: this.toNumber(r.valor),
+      }));
+    })());
   }
 
   obtenerUltimoCierre(sucursalId?: number | string | null): Observable<any> {
@@ -131,7 +186,21 @@ export class ServicioCierreCaja {
       codsucursal: codsucursal > 0 ? codsucursal : null,
       cajera: data?.cajera ?? localStorage.getItem('nombreusuario') ?? null,
       nota: data?.nota ?? null,
-    };
+    } as any;
+    // Cuadre: montos contados por el cajero y ajustes (se validan en la BD).
+    if (data?.contado) {
+      const valores = data.contado.valores || {};
+      cierre.contado_efectivo = this.toNumber(valores.efectivo);
+      cierre.contado_tarjeta = this.toNumber(valores.tarjeta);
+      cierre.contado_deposito = this.toNumber(valores.deposito);
+      cierre.contado_cheque = this.toNumber(valores.cheque);
+      cierre.total_contado = this.toNumber(data.contado.total);
+      cierre.ajustes = (data.contado.ajustes || []).map((a: any) => ({
+        idconcepto: a?.idconcepto ?? null,
+        concepto: String(a?.concepto || '').trim(),
+        valor: this.toNumber(a?.valor),
+      }));
+    }
     const pendientes = (facturasPendientes || [])
       .filter((f) => String(f?.factura || '').trim())
       .map((f) => ({
@@ -318,10 +387,7 @@ export class ServicioCierreCaja {
     return from((async () => {
       let query = this.db
         .from('cierrecaja')
-        .select(
-          'idcierre,feccierre,tefectivo,ttarjeta,tdeposito,totalcierre,tcheque,tcredito,tpendiente,factini,factfin,cajera,nota,codsucursal',
-          { count: 'exact' },
-        )
+        .select('*', { count: 'exact' })
         .order('idcierre', { ascending: false })
         .range(desde, hasta);
 

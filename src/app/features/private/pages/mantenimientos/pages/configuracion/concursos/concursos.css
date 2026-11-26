@@ -634,3 +634,77 @@ td small {
   border-radius: 8px;
   padding: 6px 14px;
 }
+
+/* ---- Fuentes mas grandes en Rifa / Sorteo ---- */
+.bank-page {
+  font-size: 1.2rem;
+}
+.bank-page .form-grid label,
+.bank-page .rango-head span {
+  font-size: 1.08rem;
+}
+.bank-page input,
+.bank-page select,
+.bank-page textarea {
+  font-size: 1.18rem;
+}
+.bank-page .section-title {
+  font-size: 1.3rem;
+}
+.bank-page .mode-option b {
+  font-size: 1.18rem;
+}
+.bank-page .mode-option small,
+.bank-page .hint,
+.bank-page .regla,
+.bank-page td small,
+.bank-page .emitidos {
+  font-size: 1.02rem;
+}
+.bank-page .soft-check span {
+  font-size: 1.12rem;
+}
+.bank-page table {
+  font-size: 1.12rem;
+}
+.bank-page th {
+  font-size: 0.98rem;
+}
+.bank-page .estado,
+.bank-page .mode-pill {
+  font-size: 0.98rem;
+}
+.bank-page .sim-input span,
+.bank-page .boletos-factura span {
+  font-size: 1.14rem;
+}
+.bank-page .sim-ejemplos span {
+  font-size: 1.02rem;
+}
+.bank-page .actions button {
+  font-size: 1.15rem;
+}
+.bank-page .form-head h2,
+.bank-page .list-head h2 {
+  font-size: 1.6rem;
+}
+.bank-page .form-head p,
+.bank-page .list-head p {
+  font-size: 1.1rem;
+}
+
+.empresa-campo {
+  display: flex;
+  gap: 8px;
+}
+.empresa-campo .empresa-codigo {
+  flex: 0 0 120px;
+  width: 120px;
+}
+.empresa-campo .empresa-nombre {
+  flex: 1 1 auto;
+  min-width: 0;
+  background: #f1f5f9;
+  color: #1e3a5f;
+  font-weight: 700;
+}

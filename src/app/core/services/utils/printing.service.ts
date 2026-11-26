@@ -320,6 +320,27 @@ export class PrintingService {
     return this.tipoComprobanteImpresion(f, facturaData) === 44;
   }
 
+  /** Datos para el ticket de boletos a partir de la factura que se imprime. */
+  private datosBoletosDeFactura(facturaData: any): any {
+    const f = this.datosFacturaImpresion(facturaData) || {};
+    const b = facturaData?.__boletosConcurso || {};
+    return {
+      codfact: String(b.codfact || f.fa_codFact || f.fa_codfact || ''),
+      fecha: b.fecha || '',
+      cliente: b.cliente || f.fa_nomClie || f.fa_nomclie || '',
+      telefono: b.telefono || f.fa_telClie || f.fa_telclie || '',
+      concursos: this.boletosConcursoFactura(facturaData),
+    };
+  }
+
+  /** Concursos con boletos que la caja adjunta a la factura (__boletosConcurso). */
+  private boletosConcursoFactura(facturaData: any): any[] {
+    const concursos = facturaData?.__boletosConcurso?.concursos;
+    return (Array.isArray(concursos) ? concursos : []).filter(
+      (c: any) => Array.isArray(c?.numeros) && c.numeros.length > 0,
+    );
+  }
+
   async imprimirFactura80mm(facturaData: any, items: any[]): Promise<number | void> {
     try {
       console.log('Iniciando impresión de factura...', facturaData);
@@ -334,8 +355,16 @@ export class PrintingService {
       const facturaEnvio = this.facturaEsEnvio(facturaRoot);
       const facturaRetiro = this.facturaEsRetiro(facturaRoot);
 
-      if ((facturaPagada || facturaEnvio || facturaRetiro) && !facturaData?.__singlePrintCopy) {
-        const copias = facturaRetiro
+      const tieneBoletos = this.boletosConcursoFactura(facturaData).length > 0;
+      if (
+        (facturaPagada || facturaEnvio || facturaRetiro || tieneBoletos) &&
+        !facturaData?.__singlePrintCopy
+      ) {
+        const copias: Array<{ label: string; hideDetails: boolean }> = !(
+          facturaPagada || facturaEnvio || facturaRetiro
+        )
+          ? [{ label: '', hideDetails: false }]
+          : facturaRetiro
           ? [
               { label: 'CLIENTE', hideDetails: false },
               { label: 'CAJA', hideDetails: true },
@@ -355,6 +384,9 @@ export class PrintingService {
               { label: 'CONDUCTOR', hideDetails: false },
               { label: 'CAJA', hideDetails: true },
             ];
+        // Rifa / Sorteo: despues de las copias de la factura se imprimen los
+        // boletos (mismo formato que la reimpresion de Rifa / Sorteo).
+        const datosBoletos = tieneBoletos ? this.datosBoletosDeFactura(facturaData) : null;
 
         if (this.usarTrabajosSeparadosParaCorte()) {
           for (const [index, copia] of copias.entries()) {
@@ -370,6 +402,10 @@ export class PrintingService {
             if (index < copias.length - 1) {
               await this.esperarEntreTrabajosImpresion();
             }
+          }
+          if (datosBoletos) {
+            await this.esperarEntreTrabajosImpresion();
+            await this.imprimirBoletosConcurso80mm(datosBoletos);
           }
           return;
         }
@@ -400,6 +436,10 @@ export class PrintingService {
             },
             items,
           );
+        }
+
+        if (datosBoletos) {
+          await this.imprimirBoletosConcurso80mm(datosBoletos, doc);
         }
 
         doc.autoPrint();
@@ -1003,6 +1043,33 @@ export class PrintingService {
         });
       }
 
+      // --- RIFA / SORTEO ---
+      const boletosConcurso = this.boletosConcursoFactura(facturaData);
+      if (boletosConcurso.length) {
+        const anchoTexto = pageWidth - (leftMargin + rightMargin);
+        const numeroBoleto = (n: number) => String(n).padStart(6, '0');
+        const fechaCortaIso = (iso: any) => {
+          const [y, m, d] = String(iso || '').slice(0, 10).split('-');
+          return y && m && d ? `${d}/${m}/${y}` : '';
+        };
+        if (!hideInvoiceDetails) {
+          // En la copia del cliente se indican los numeros ganados.
+          drawDashedLine(yPos);
+          yPos += 5;
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(8);
+          boletosConcurso.forEach((concurso: any) => {
+            const lineas = doc.splitTextToSize(
+              `Boletos ${String(concurso.nombre || '')}: ${concurso.numeros.map(numeroBoleto).join(', ')}`,
+              anchoTexto,
+            );
+            doc.text(lineas, leftMargin, yPos);
+            yPos += lineas.length * 4;
+          });
+          doc.setFont('helvetica', 'normal');
+        }
+      }
+
       // Espacio adicional al final para el corte de papel
       yPos += 25;
       doc.text('.', leftMargin, yPos, { align: 'left' }); // Un punto casi invisible para forzar el largo
@@ -1420,13 +1487,13 @@ items.forEach((it: any) => {
       fecha_fin?: string;
       numeros: number[];
     }>;
-  }): Promise<void> {
+  }, docCompartido?: any): Promise<void> {
     const boletos: Array<{ concurso: any; numero: number }> = [];
     (datos?.concursos || []).forEach((concurso) =>
       (concurso.numeros || []).forEach((numero) => boletos.push({ concurso, numero })),
     );
     if (!boletos.length) {
-      this.cancelarVentanaImpresionReservada();
+      if (!docCompartido) this.cancelarVentanaImpresionReservada();
       return;
     }
 
@@ -1532,11 +1599,12 @@ items.forEach((it: any) => {
         centro('Conserve este boleto para reclamar su premio.', y);
         y += 4;
 
-        // --- Linea de corte ---
+        // --- Linea de corte (con espacio para cortar el talon de la urna) ---
+        y += 8;
         lineaCorte(y);
         doc.setFontSize(6.5);
-        centro('cortar aqui - talon para la tombola', y + 3);
-        y += 7;
+        centro('cortar aqui - talon para la urna', y + 3.5);
+        y += 14;
 
         // --- Talon para la tombola ---
         doc.setFont('helvetica', 'bold');
@@ -1555,11 +1623,32 @@ items.forEach((it: any) => {
         lineaLlenar('Telefono', telefono, y);
         y += 5;
         lineaLlenar('Cedula', '', y);
-        y += 5;
+        y += 4;
+
+        // Codigo de barras del numero del boleto, al pie del talon.
+        const altoBarra = 14;
+        if (pintar) {
+          try {
+            const canvas = document.createElement('canvas');
+            JsBarcode(canvas, numeroTxt(numero), {
+              format: 'CODE128',
+              width: 2,
+              height: 40,
+              displayValue: true,
+              fontSize: 12,
+              margin: 0,
+            });
+            doc.addImage(canvas.toDataURL('image/png'), 'PNG', centerX - 22, y, 44, altoBarra);
+          } catch (error) {
+            console.error('No se pudo generar el codigo de barras del boleto:', error);
+          }
+        }
+        y += altoBarra + 4;
 
         if (index < lista.length - 1) {
-          lineaCorte(y);
           y += 6;
+          lineaCorte(y);
+          y += 10;
         } else {
           y += 8;
         }
@@ -1574,6 +1663,14 @@ items.forEach((it: any) => {
       for (let i = 0; i < boletos.length; i += 10) grupos.push(boletos.slice(i, i + 10));
       const medida = new jsPDF({ orientation: 'p', unit: 'mm', format: [80, 297] });
       const altos = grupos.map((g) => Math.max(dibujar(medida, false, g), 60));
+      if (docCompartido) {
+        // Paginas agregadas al mismo PDF de la factura.
+        grupos.forEach((g, i) => {
+          docCompartido.addPage([80, altos[i]], 'p');
+          dibujar(docCompartido, true, g);
+        });
+        return;
+      }
       const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: [80, altos[0]] });
       grupos.forEach((g, i) => {
         if (i > 0) (doc as any).addPage([80, altos[i]], 'p');
@@ -1585,7 +1682,7 @@ items.forEach((it: any) => {
       await this.printBlob(pdfBlob, 'factura');
     } catch (error) {
       console.error('Error imprimiendo boletos del concurso:', error);
-      this.cancelarVentanaImpresionReservada();
+      if (!docCompartido) this.cancelarVentanaImpresionReservada();
       throw error;
     }
   }
@@ -2091,8 +2188,18 @@ items.forEach((it: any) => {
       const conduceEnvio = this.facturaEsEnvio(facturaRoot);
       const conduceRetiro = this.facturaEsRetiro(facturaRoot);
 
-      if ((conducePagado || conduceEnvio || conduceRetiro) && !facturaData?.__singlePrintCopy) {
-        const copias = conduceRetiro
+      const conduceTieneBoletos = this.boletosConcursoFactura(facturaData).length > 0;
+      if (
+        (conducePagado || conduceEnvio || conduceRetiro || conduceTieneBoletos) &&
+        !facturaData?.__singlePrintCopy
+      ) {
+        // Rifa / Sorteo: los boletos se imprimen despues de las copias.
+        const datosBoletos = conduceTieneBoletos ? this.datosBoletosDeFactura(facturaData) : null;
+        const copias: Array<{ label: string; hideDetails: boolean }> = !(
+          conducePagado || conduceEnvio || conduceRetiro
+        )
+          ? [{ label: '', hideDetails: false }]
+          : conduceRetiro
           ? [
               { label: 'CLIENTE', hideDetails: false },
               { label: 'CAJA', hideDetails: true },
@@ -2128,6 +2235,10 @@ items.forEach((it: any) => {
               await this.esperarEntreTrabajosImpresion();
             }
           }
+          if (datosBoletos) {
+            await this.esperarEntreTrabajosImpresion();
+            await this.imprimirBoletosConcurso80mm(datosBoletos);
+          }
           return;
         }
 
@@ -2157,6 +2268,10 @@ items.forEach((it: any) => {
             },
             items,
           );
+        }
+
+        if (datosBoletos) {
+          await this.imprimirBoletosConcurso80mm(datosBoletos, doc);
         }
 
         doc.autoPrint();

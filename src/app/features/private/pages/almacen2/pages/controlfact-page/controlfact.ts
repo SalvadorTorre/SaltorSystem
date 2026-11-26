@@ -1931,7 +1931,13 @@ export class ControlFact implements OnInit, OnDestroy {
         fa_telClie: cliente.cl_telClie,
         fa_dirClie: cliente.cl_dirClie,
         fa_codZona: cliente.cl_codZona,
-        fa_sector: cliente.cl_codSect,
+        // Antes se guardaba el CODIGO del sector del cliente como texto del
+        // sector (ej. "12"). Ahora se usa la descripcion del sector del
+        // cliente y, si no tiene, se conserva el sector que ya traia la factura.
+        fa_sector:
+          String(cliente.cl_sector || '').trim().toUpperCase() ||
+          this.formularioFacturacion.get('fa_sector')?.value ||
+          '',
       });
       console.log(cliente);
       console.log('Formulario actualizado:', this.formularioFacturacion.value);

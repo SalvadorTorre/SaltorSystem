@@ -542,30 +542,3 @@
   }
 }
 
-.boletos-pendientes {
-  position: fixed;
-  right: 16px;
-  bottom: 16px;
-  width: 300px;
-  max-width: calc(100vw - 32px);
-  z-index: 1080;
-  border-radius: 12px;
-  overflow: hidden;
-  background: #fff;
-  border: 2px solid #f59e0b;
-}
-
-.boletos-pendientes-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  background: #d97706;
-  color: #fff;
-}
-
-.boletos-pendientes-body {
-  padding: 10px 12px;
-  max-height: 260px;
-  overflow-y: auto;
-}

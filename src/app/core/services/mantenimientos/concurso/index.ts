@@ -28,6 +28,8 @@ export interface ConcursoData {
   aplica_contado: boolean;
   aplica_credito: boolean;
   solo_pagadas: boolean;
+  /** true = solo facturas con un cliente registrado; false = todos los clientes. */
+  solo_clientes_registrados: boolean;
   ultimo_boleto?: number;
   created_at?: string;
   updated_at?: string;
