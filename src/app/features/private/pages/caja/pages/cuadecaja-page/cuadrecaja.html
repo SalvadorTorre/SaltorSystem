@@ -253,6 +253,8 @@
                 <th class="text-end">Crédito pendiente</th>
                 <th class="text-end">Pendiente de pago</th>
                 <th class="text-end">Total</th>
+                <th class="text-end">Contado</th>
+                <th class="text-end">Ajustes</th>
                 <th>Nota</th>
                 <th class="text-center">Acción</th>
               </tr>
@@ -271,6 +273,8 @@
                 <td class="text-end text-nowrap text-danger">{{ cierre.tcredito | number:'1.2-2' }}</td>
                 <td class="text-end text-nowrap text-warning-emphasis">{{ cierre.tpendiente | number:'1.2-2' }}</td>
                 <td class="text-end text-nowrap fw-bold">{{ cierre.totalcierre | number:'1.2-2' }}</td>
+                <td class="text-end text-nowrap">{{ cierre.total_contado != null ? (cierre.total_contado | number:'1.2-2') : '-' }}</td>
+                <td class="text-end text-nowrap" [class.text-danger]="(cierre.total_ajustes || 0) > 0">{{ cierre.total_ajustes != null ? (cierre.total_ajustes | number:'1.2-2') : '-' }}</td>
                 <td class="nota-cierre-cell" [title]="cierre.nota || ''">{{ cierre.nota || '-' }}</td>
                 <td class="text-center">
                   <div class="acciones-cierre" role="group" aria-label="Acciones del cierre">
@@ -284,7 +288,7 @@
                 </td>
               </tr>
               <tr *ngIf="!cargandoCierres && cierresConsulta.length === 0">
-                <td colspan="14" class="text-center py-5 text-muted">
+                <td colspan="16" class="text-center py-5 text-muted">
                   <i class="fas fa-inbox fa-3x mb-3"></i>
                   <p class="mb-0">No se encontraron cierres con los filtros seleccionados.</p>
                 </td>

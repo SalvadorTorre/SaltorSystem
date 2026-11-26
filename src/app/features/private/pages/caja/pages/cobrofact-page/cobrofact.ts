@@ -643,6 +643,7 @@ export class CobroFact implements OnInit {
   selectedIndexdescripcionmerc = 1;
 
   ngOnInit(): void {
+    console.warn('[Caja] Version con boletos de Rifa/Sorteo en la factura (20/11 13:00)');
     if (this.modoAuditoria) this.cargarSucursalesAuditoria();
     this.buscarFacturasNoImpresas();
     this.obtenerNcf();
@@ -2146,25 +2147,33 @@ export class CobroFact implements OnInit {
       __drawStampBox: true,
     };
 
+    // Rifa / Sorteo: si la factura gana boletos, la impresion agrega una
+    // copia "RIFA" de la factura con los boletos (y los numeros en la copia
+    // del cliente). Va en el mismo trabajo de impresion de la factura.
+    const codFactura = String(
+      datosParaImprimir?.fa_codFact || datosParaImprimir?.fa_codfact || '',
+    ).trim();
+    const boletos = await this.obtenerBoletosConcurso(codFactura);
+    if (boletos) {
+      (datosParaImprimir as any).__boletosConcurso = boletos;
+    }
+
     const itemsImpresion = this.deduplicarItemsImpresion([...(itemsActuales || [])]);
     await this.printingService.imprimirFactura80mm(
       datosParaImprimir,
       itemsImpresion,
     );
-    const codFactura = String(
-      datosParaImprimir?.fa_codFact || datosParaImprimir?.fa_codfact || '',
-    ).trim();
     this.limpia();
-    await this.imprimirBoletosConcurso(codFactura);
   }
 
   /**
    * Rifa / Sorteo: si la factura cumple las condiciones de un concurso activo
-   * y vigente, genera sus boletos numerados y los imprime en otro ticket.
-   * Nunca bloquea el cobro: cualquier error solo se registra en consola.
+   * y vigente, genera sus boletos numerados (o devuelve los ya generados).
+   * Nunca bloquea el cobro: ante un error se avisa y la factura se imprime
+   * normal.
    */
-  private async imprimirBoletosConcurso(codFactura: string): Promise<void> {
-    if (!codFactura) return;
+  private async obtenerBoletosConcurso(codFactura: string): Promise<BoletosFactura | null> {
+    if (!codFactura) return null;
     try {
       const resultado = await firstValueFrom(
         this.servicioConcurso.generarBoletosFactura(codFactura),
@@ -2172,13 +2181,45 @@ export class CobroFact implements OnInit {
       const concursos = (resultado?.concursos || []).filter(
         (c) => (c.numeros || []).length > 0,
       );
-      if (!concursos.length) return;
+      if (!concursos.length) {
+        console.warn('[Boletos] La factura', codFactura, 'no gano boletos.', resultado);
+        try {
+          const diagnostico = await firstValueFrom(
+            this.servicioConcurso.diagnosticarBoletosFactura(codFactura),
+          );
+          console.warn('[Boletos] Diagnostico', diagnostico);
+          // Solo se avisa cuando hay un concurso activo y vigente que la
+          // factura no cumplio (no molesta si no hay concursos en curso).
+          const motivos = (diagnostico || [])
+            .map((d: any) => String(d?.motivo || ''))
+            .filter((m) => m && !/inactivo|fuera de la vigencia|empresa del concurso/i.test(m));
+          if (motivos.length) {
+            void Swal.fire({
+              toast: true,
+              position: 'top-end',
+              icon: 'info',
+              title: 'Esta factura no ganó boletos',
+              text: motivos.join(' | '),
+              timer: 7000,
+              showConfirmButton: false,
+            });
+          }
+        } catch {}
+        return null;
+      }
 
-      // Se deja un aviso fijo en pantalla con el boton "Imprimir boletos".
-      // La impresion sale del clic del cajero (el navegador no la bloquea) y
-      // ningun otro mensaje de la caja puede taparlo.
-      this.boletosPendientesImpresion = { ...resultado, concursos };
-      console.log('[Boletos] Boletos listos para imprimir', codFactura, concursos);
+      const totalBoletos = concursos.reduce((sum, c) => sum + c.numeros.length, 0);
+      console.warn('[Boletos] Boletos ganados', codFactura, concursos);
+      void Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'success',
+        title: `Boletos ganados: ${totalBoletos}`,
+        text: 'Se imprimen después de la factura.',
+        timer: 5000,
+        showConfirmButton: false,
+      });
+      return { ...resultado, concursos };
     } catch (error: any) {
       console.error('No se pudieron generar los boletos del concurso:', error);
       const detalle = String(error?.message || error?.details || error || '');
@@ -2195,49 +2236,8 @@ export class CobroFact implements OnInit {
         timer: 6000,
         showConfirmButton: false,
       });
+      return null;
     }
-  }
-
-  boletosPendientesImpresion: BoletosFactura | null = null;
-  imprimiendoBoletos = false;
-
-  get totalBoletosPendientes(): number {
-    return (this.boletosPendientesImpresion?.concursos || []).reduce(
-      (sum, c) => sum + (c.numeros || []).length,
-      0,
-    );
-  }
-
-  numeroBoleto(numero: number): string {
-    return String(numero).padStart(6, '0');
-  }
-
-  async imprimirBoletosPendientes(): Promise<void> {
-    const datos = this.boletosPendientesImpresion;
-    if (!datos || this.imprimiendoBoletos) return;
-    // Abrir la ventana en el mismo clic para que el navegador no la bloquee.
-    this.printingService.reservarVentanaImpresion();
-    this.imprimiendoBoletos = true;
-    try {
-      await this.printingService.imprimirBoletosConcurso80mm(datos);
-      this.boletosPendientesImpresion = null;
-    } catch (error) {
-      Swal.fire('No se pudieron imprimir los boletos', this.extraerMensajeError(error), 'error');
-    } finally {
-      this.imprimiendoBoletos = false;
-    }
-  }
-
-  descartarBoletosPendientes(): void {
-    this.boletosPendientesImpresion = null;
-  }
-
-  private escaparHtml(valor: any): string {
-    return String(valor ?? '')
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
   }
 
   private tieneRespuestaDgiiParaImprimir(payload: any): boolean {
@@ -2655,9 +2655,13 @@ export class CobroFact implements OnInit {
         );
         this.sincronizarSalidaCaja(facturaActualizada, async () => {
           try {
+            // Rifa / Sorteo: un conduce pagado tambien gana boletos (el
+            // servidor exige que la factura este pagada segun el concurso).
+            const boletos = await this.obtenerBoletosConcurso(String(cod || '').trim());
             await this.printingService.imprimirConduceFactura80mm(
               {
                 ...facturaActualizada,
+                ...(boletos ? { __boletosConcurso: boletos } : {}),
                 __combineDescriptionCode: true,
                 __detailFontSize: 9,
                 __thermalShiftX: -4,

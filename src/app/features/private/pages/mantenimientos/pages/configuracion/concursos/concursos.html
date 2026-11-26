@@ -51,9 +51,15 @@
           </select>
         </label>
 
-        <label>
+        <label class="field-notes">
           Empresa
-          <input type="text" name="codempresa" [(ngModel)]="actual.codempresa" required placeholder="Ej. H0002" />
+          <div class="empresa-campo">
+            <input type="text" name="codempresa" class="empresa-codigo" [(ngModel)]="actual.codempresa"
+              (blur)="actualizarNombreEmpresa()" (keydown.enter)="$event.preventDefault(); actualizarNombreEmpresa()"
+              required placeholder="Ej. H0002" />
+            <input type="text" class="empresa-nombre" [value]="nombreDeEmpresa(actual.codempresa) || 'Empresa no encontrada'"
+              readonly tabindex="-1" />
+          </div>
         </label>
 
         <label>
@@ -146,6 +152,14 @@
         <label>
           Máximo de boletos por factura
           <input type="number" min="0" step="1" name="max_boletos_factura" [(ngModel)]="actual.max_boletos_factura" placeholder="Vacío = sin tope" />
+        </label>
+
+        <label>
+          Participan
+          <select name="solo_clientes_registrados" [(ngModel)]="actual.solo_clientes_registrados">
+            <option [ngValue]="false">Todos los clientes</option>
+            <option [ngValue]="true">Solo clientes registrados</option>
+          </select>
         </label>
 
         <label>

@@ -205,7 +205,30 @@ export class CuadreCaja implements OnInit {
 
   async imprimirCierreConsultado(cierre: any): Promise<void> {
     try {
-      await this.printingService.printHtmlContent(this.construirTicketCierre(cierre), 'ticket');
+      let datos = cierre;
+      // Cierres con cuadre: incluir lo contado y los ajustes en la reimpresion.
+      if (cierre?.total_contado != null) {
+        const ajustes = await firstValueFrom(this.cierreService.ajustesDeCierre(cierre.idcierre)).catch(() => []);
+        const totalCobrado =
+          (Number(cierre?.tefectivo) || 0) + (Number(cierre?.ttarjeta) || 0) +
+          (Number(cierre?.tdeposito) || 0) + (Number(cierre?.tcheque) || 0);
+        datos = {
+          ...cierre,
+          contado: {
+            valores: {
+              efectivo: Number(cierre?.contado_efectivo) || 0,
+              tarjeta: Number(cierre?.contado_tarjeta) || 0,
+              deposito: Number(cierre?.contado_deposito) || 0,
+              cheque: Number(cierre?.contado_cheque) || 0,
+            },
+            total: Number(cierre?.total_contado) || 0,
+            diferencia: (Number(cierre?.total_contado) || 0) - totalCobrado,
+            ajustes,
+            totalAjustes: Number(cierre?.total_ajustes) || 0,
+          },
+        };
+      }
+      await this.printingService.printHtmlContent(this.construirTicketCierre(datos), 'ticket');
     } catch (error: any) {
       console.error('Error imprimiendo cierre consultado', error);
       await Swal.fire('Error', error?.message || 'No se pudo imprimir el cierre.', 'error');
@@ -794,12 +817,9 @@ export class CuadreCaja implements OnInit {
             ${fila('Facturas', String(datos.cantidad))}
           </div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 22px;margin-bottom:14px;">
+        <div style="display:grid;grid-template-columns:1.25fr 1fr;gap:0 22px;margin-bottom:14px;align-items:start;">
           <div>
-            ${fila('Efectivo', dinero(this.totales.efectivo))}
-            ${fila('Tarjetas', dinero(this.totales.tarjeta))}
-            ${fila('Depósito/transferencia', dinero(this.totales.deposito))}
-            ${fila('Cheques', dinero(this.totales.cheque))}
+            ${this.tablaCobradoContado()}
           </div>
           <div>
             ${fila('Crédito pendiente', dinero(this.totales.credito))}
@@ -808,6 +828,7 @@ export class CuadreCaja implements OnInit {
             ${fila('Valores no cobrados', dinero(this.totales.valoresNoCobrados))}
           </div>
         </div>
+        ${this.seccionAjustesCierre()}
         <div style="display:flex;justify-content:space-between;padding:10px;background:#eef6ff;border-radius:6px;font-size:17px;">
           <strong>TOTAL DEL CIERRE</strong><strong>${this.escapeHtml(dinero(this.totales.total))}</strong>
         </div>
@@ -818,11 +839,254 @@ export class CuadreCaja implements OnInit {
       </div>`;
   }
 
+  /** Formas de pago cobradas que se cuadran en el modal de cierre. */
+  private formasCuadre(): Array<{ clave: string; titulo: string; valor: number }> {
+    return [
+      { clave: 'efectivo', titulo: 'Efectivo', valor: Number(this.totales.efectivo) || 0 },
+      { clave: 'tarjeta', titulo: 'Tarjetas', valor: Number(this.totales.tarjeta) || 0 },
+      { clave: 'deposito', titulo: 'Depósito/transferencia', valor: Number(this.totales.deposito) || 0 },
+      { clave: 'cheque', titulo: 'Cheques', valor: Number(this.totales.cheque) || 0 },
+    ];
+  }
+
+  /**
+   * Tabla del modal: lo cobrado segun el sistema y, al lado, una columna
+   * editable con lo contado por el cajero. Ambas con su total y la diferencia.
+   */
+  private tablaCobradoContado(): string {
+    const dinero = (valor: number) => `RD$${this.formatoMoneda(Number(valor) || 0)}`;
+    const formas = this.formasCuadre();
+    const totalSistema = formas.reduce((sum, f) => sum + f.valor, 0);
+    const celda = 'padding:5px 4px;border-bottom:1px solid #edf1f5;';
+    const filas = formas
+      .map(
+        (f) => `
+        <tr>
+          <td style="${celda}color:#64748b;">${this.escapeHtml(f.titulo)}</td>
+          <td style="${celda}text-align:right;font-weight:700;white-space:nowrap;">${this.escapeHtml(dinero(f.valor))}</td>
+          <td style="${celda}text-align:right;">
+            <input id="contado-${f.clave}" class="contado-cierre" type="number" min="0" step="0.01"
+              value="${(Math.round(f.valor * 100) / 100).toFixed(2)}"
+              style="width:120px;text-align:right;padding:3px 6px;border:1px solid #cbd5e1;border-radius:4px;font-size:14px;" />
+          </td>
+        </tr>`,
+      )
+      .join('');
+    return `
+      <table style="width:100%;border-collapse:collapse;font-size:14px;">
+        <thead>
+          <tr style="color:#334155;">
+            <th style="text-align:left;padding:4px;border-bottom:2px solid #cbd5e1;">Forma de pago</th>
+            <th style="text-align:right;padding:4px;border-bottom:2px solid #cbd5e1;">Cobrado</th>
+            <th style="text-align:right;padding:4px;border-bottom:2px solid #cbd5e1;">Contado</th>
+          </tr>
+        </thead>
+        <tbody>${filas}</tbody>
+        <tfoot>
+          <tr style="background:#f8fafc;">
+            <td style="padding:6px 4px;font-weight:700;">Total</td>
+            <td style="padding:6px 4px;text-align:right;font-weight:700;white-space:nowrap;">${this.escapeHtml(dinero(totalSistema))}</td>
+            <td id="total-contado-cierre" style="padding:6px 10px 6px 4px;text-align:right;font-weight:700;white-space:nowrap;">${this.escapeHtml(dinero(totalSistema))}</td>
+          </tr>
+          <tr>
+            <td colspan="2" style="padding:4px;color:#64748b;">Diferencia (contado - cobrado)</td>
+            <td id="diferencia-cierre" style="padding:4px 10px 4px 4px;text-align:right;font-weight:700;white-space:nowrap;">${this.escapeHtml(dinero(0))}</td>
+          </tr>
+        </tfoot>
+      </table>`;
+  }
+
+  /** Conceptos de ajuste disponibles para el modal de cierre. */
+  conceptosCierre: Array<{ idconcepto: number; descripcion: string }> = [];
+
+  private seccionAjustesCierre(): string {
+    return `
+      <div id="ajustes-cierre-box" style="display:none;margin:0 0 14px;padding:12px;border:1px solid #fcd34d;background:#fffbeb;border-radius:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;">
+          <strong style="font-size:15px;">Ajustes para cuadrar la diferencia</strong>
+          <button type="button" id="btn-agregar-ajuste" style="border:1px solid #2563eb;background:#fff;color:#2563eb;border-radius:6px;padding:4px 10px;font-weight:600;">+ Agregar ajuste</button>
+        </div>
+        <div id="ajustes-lista"></div>
+        <datalist id="conceptos-cierre-list">
+          ${this.conceptosCierre.map((c) => `<option value="${this.escapeHtml(c.descripcion)}"></option>`).join('')}
+        </datalist>
+        <div style="color:#64748b;font-size:12px;margin-top:4px;">Escriba el concepto: se busca en la lista y, si no existe, se acepta lo escrito.</div>
+        <div style="display:flex;justify-content:space-between;margin-top:10px;font-size:14px;">
+          <span>Total ajustes</span><strong id="total-ajustes-cierre">RD$0.00</strong>
+        </div>
+      </div>
+      <div id="estado-cuadre-cierre" style="margin:0 0 12px;padding:8px 10px;border-radius:6px;font-weight:700;font-size:14px;"></div>`;
+  }
+
+  private agregarFilaAjusteCierre(): void {
+    const lista = document.getElementById('ajustes-lista');
+    if (!lista) return;
+    const fila = document.createElement('div');
+    fila.className = 'ajuste-cierre-fila';
+    fila.style.cssText = 'display:flex;gap:8px;align-items:center;margin-bottom:6px;';
+    fila.innerHTML = `
+      <input class="ajuste-concepto" type="text" list="conceptos-cierre-list" maxlength="80" placeholder="Concepto"
+        autocomplete="off"
+        style="flex:1 1 auto;padding:5px 6px;border:1px solid #cbd5e1;border-radius:6px;font-size:14px;" />
+      <input class="ajuste-valor" type="number" min="0" step="0.01" placeholder="Valor"
+        style="width:130px;text-align:right;padding:5px 6px;border:1px solid #cbd5e1;border-radius:6px;font-size:14px;" />
+      <button type="button" class="ajuste-quitar" title="Quitar ajuste"
+        style="border:none;background:#fee2e2;color:#b91c1c;border-radius:6px;padding:4px 9px;font-weight:700;">&times;</button>`;
+    lista.appendChild(fila);
+    const valor = fila.querySelector<HTMLInputElement>('.ajuste-valor');
+    // Sugerir lo que falta por cuadrar.
+    const { faltante } = this.leerContadoCierre();
+    if (valor && faltante > 0) valor.value = faltante.toFixed(2);
+    const concepto = fila.querySelector<HTMLInputElement>('.ajuste-concepto');
+    concepto?.addEventListener('input', () => this.actualizarTotalesContadoCierre());
+    concepto?.addEventListener('focus', () => setTimeout(() => concepto.select(), 0));
+    // Al salir, si coincide con un concepto de la lista se usa su nombre exacto.
+    concepto?.addEventListener('blur', () => {
+      const existente = this.buscarConceptoCierre(concepto.value);
+      if (existente) concepto.value = existente.descripcion;
+      this.actualizarTotalesContadoCierre();
+    });
+    concepto?.addEventListener('keydown', (ev) => this.enterSiguienteCampoCierre(ev));
+    valor?.addEventListener('input', () => this.actualizarTotalesContadoCierre());
+    valor?.addEventListener('focus', () => setTimeout(() => valor.select(), 0));
+    valor?.addEventListener('mouseup', (ev) => ev.preventDefault());
+    valor?.addEventListener('keydown', (ev) => this.enterSiguienteCampoCierre(ev));
+    fila.querySelector('.ajuste-quitar')?.addEventListener('click', () => {
+      fila.remove();
+      this.actualizarTotalesContadoCierre();
+    });
+    concepto?.focus();
+    this.actualizarTotalesContadoCierre();
+  }
+
+  /** Concepto de la lista que coincide con lo escrito (sin acentos ni mayusculas). */
+  private buscarConceptoCierre(texto: string): { idconcepto: number; descripcion: string } | null {
+    const norm = (v: string) =>
+      String(v || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toUpperCase();
+    const buscado = norm(texto);
+    if (!buscado) return null;
+    return this.conceptosCierre.find((c) => norm(c.descripcion) === buscado) || null;
+  }
+
+  /** Enter en un campo del modal de cierre pasa al siguiente campo. */
+  private enterSiguienteCampoCierre(ev: KeyboardEvent): void {
+    if (ev.key !== 'Enter') return;
+    ev.preventDefault();
+    const campos = Array.from(
+      document.querySelectorAll<HTMLElement>(
+        '.contado-cierre, #btn-agregar-ajuste, .ajuste-concepto, .ajuste-valor, #nota-cierre',
+      ),
+    ).filter((el) => el.offsetParent !== null);
+    const actual = ev.target as HTMLElement;
+    const idx = campos.indexOf(actual);
+    const siguiente = idx >= 0 ? campos[idx + 1] : null;
+    if (siguiente) {
+      siguiente.focus();
+    } else {
+      Swal.getConfirmButton()?.focus();
+    }
+  }
+
+  private leerAjustesCierre(): Array<{ idconcepto: number | null; concepto: string; valor: number; valido: boolean }> {
+    return Array.from(document.querySelectorAll<HTMLElement>('.ajuste-cierre-fila')).map((fila) => {
+      const texto = String(fila.querySelector<HTMLInputElement>('.ajuste-concepto')?.value || '').trim();
+      const existente = this.buscarConceptoCierre(texto);
+      const idconcepto = existente ? existente.idconcepto : null;
+      const concepto = (existente ? existente.descripcion : texto).slice(0, 80);
+      const valor = Math.round((Number(fila.querySelector<HTMLInputElement>('.ajuste-valor')?.value || 0) || 0) * 100) / 100;
+      return { idconcepto, concepto, valor, valido: !!concepto && valor > 0 };
+    });
+  }
+
+  /** Lee los montos contados y los ajustes del modal. */
+  private leerContadoCierre(): {
+    valores: Record<string, number>;
+    total: number;
+    diferencia: number;
+    ajustes: Array<{ idconcepto: number | null; concepto: string; valor: number }>;
+    totalAjustes: number;
+    faltante: number;
+    ajustesValidos: boolean;
+  } {
+    const formas = this.formasCuadre();
+    const valores: Record<string, number> = {};
+    let total = 0;
+    formas.forEach((f) => {
+      const input = document.getElementById(`contado-${f.clave}`) as HTMLInputElement | null;
+      const monto = Math.max(Number(input?.value || 0) || 0, 0);
+      valores[f.clave] = Math.round(monto * 100) / 100;
+      total += valores[f.clave];
+    });
+    total = Math.round(total * 100) / 100;
+    const totalSistema = Math.round(formas.reduce((sum, f) => sum + f.valor, 0) * 100) / 100;
+    const filas = this.leerAjustesCierre();
+    const totalAjustes = Math.round(filas.reduce((sum, a) => sum + (a.valor > 0 ? a.valor : 0), 0) * 100) / 100;
+    return {
+      valores,
+      total,
+      diferencia: Math.round((total - totalSistema) * 100) / 100,
+      ajustes: filas.map(({ idconcepto, concepto, valor }) => ({ idconcepto, concepto, valor })),
+      totalAjustes,
+      faltante: Math.round((totalSistema - total - totalAjustes) * 100) / 100,
+      ajustesValidos: filas.every((a) => a.valido),
+    };
+  }
+
+  /**
+   * Recalcula el cuadre: contado + ajustes debe ser igual a lo cobrado y el
+   * contado no puede pasarse. El boton Confirmar solo se habilita si cuadra.
+   */
+  private actualizarTotalesContadoCierre(): void {
+    const datos = this.leerContadoCierre();
+    const dinero = (valor: number) => `RD$${this.formatoMoneda(Number(valor) || 0)}`;
+    const conSigno = (valor: number) => `${valor < 0 ? '-' : ''}${dinero(Math.abs(valor))}`;
+
+    const totalEl = document.getElementById('total-contado-cierre');
+    if (totalEl) totalEl.textContent = dinero(datos.total);
+    const difEl = document.getElementById('diferencia-cierre');
+    if (difEl) {
+      difEl.textContent = conSigno(datos.diferencia);
+      difEl.style.color = datos.diferencia === 0 ? '#15803d' : '#b91c1c';
+    }
+    const totalAjEl = document.getElementById('total-ajustes-cierre');
+    if (totalAjEl) totalAjEl.textContent = dinero(datos.totalAjustes);
+
+    const sobra = datos.diferencia > 0;
+    const hayAjustes = datos.ajustes.length > 0;
+    const box = document.getElementById('ajustes-cierre-box');
+    if (box) box.style.display = !sobra && (datos.diferencia < 0 || hayAjustes) ? 'block' : 'none';
+
+    let mensaje = '';
+    let ok = false;
+    if (sobra) {
+      mensaje = `El contado no puede ser mayor que lo cobrado (sobran ${dinero(datos.diferencia)}). Corrija los montos contados.`;
+    } else if (hayAjustes && !datos.ajustesValidos) {
+      mensaje = 'Cada ajuste debe tener un concepto y un valor mayor que cero.';
+    } else if (datos.faltante > 0) {
+      mensaje = `Faltan ${dinero(datos.faltante)} por cuadrar. Agregue ajustes hasta que la diferencia sea cero.`;
+    } else if (datos.faltante < 0) {
+      mensaje = `Los ajustes pasan lo cobrado por ${dinero(Math.abs(datos.faltante))}. Corrija los valores.`;
+    } else {
+      ok = true;
+      mensaje = hayAjustes ? 'Cuadrado con ajustes. Ya puede confirmar el cierre.' : 'Cuadrado. Ya puede confirmar el cierre.';
+    }
+
+    const estado = document.getElementById('estado-cuadre-cierre');
+    if (estado) {
+      estado.textContent = mensaje;
+      estado.style.background = ok ? '#dcfce7' : '#fee2e2';
+      estado.style.color = ok ? '#166534' : '#991b1b';
+    }
+    const confirmar = Swal.getConfirmButton();
+    if (confirmar) confirmar.disabled = !ok;
+  }
+
   private construirTicketCierre(cierre: any): string {
     const valor = (numero: any) => this.formatoMoneda(Number(numero) || 0);
     const linea = (titulo: string, numero: any) => `
       <div class="row"><span>${this.escapeHtml(titulo)}</span><strong>${this.escapeHtml(valor(numero))}</strong></div>`;
     const nota = String(cierre?.nota || '').trim();
+    const contado = cierre?.contado || null;
     const totalCobrado =
       (Number(cierre?.tefectivo) || 0) +
       (Number(cierre?.ttarjeta) || 0) +
@@ -869,10 +1133,19 @@ export class CuadreCaja implements OnInit {
         ${linea('Cheques', cierre?.tcheque)}
         ${linea('Crédito pendiente', cierre?.tcredito ?? cierre?.credito)}
         ${linea('Pendiente de pago', cierre?.tpendiente ?? cierre?.pendiente)}
-        ${linea('Total cobrado', totalCobrado)}
-        ${linea('Total no cobrado', totalNoCobrado)}
+        ${contado ? `<div class="sep"></div><strong>CONTADO POR EL CAJERO</strong>
+        ${linea('Efectivo', contado.valores?.efectivo)}
+        ${linea('Tarjetas', contado.valores?.tarjeta)}
+        ${linea('Depósito/Transf.', contado.valores?.deposito)}
+        ${linea('Cheques', contado.valores?.cheque)}
+        ${linea('Total contado', contado.total)}
+        ${(contado.ajustes || []).length ? `<div class="sep"></div><strong>AJUSTES</strong>
+        ${(contado.ajustes || []).map((a: any) => linea(a.concepto, a.valor)).join('')}
+        ${linea('Total ajustes', contado.totalAjustes)}` : ''}` : ''}
         <div class="sep"></div>
-        <div class="row total"><span>TOTAL:</span><strong>${this.escapeHtml(valor(cierre?.totalcierre))}</strong></div>
+        <div class="row total"><span>TOTAL VENTAS:</span><strong>${this.escapeHtml(valor(cierre?.totalcierre))}</strong></div>
+        <div class="row"><span>Total pendiente:</span><strong>${this.escapeHtml(valor(totalNoCobrado))}</strong></div>
+        <div class="row"><span>Total cobrado:</span><strong>${this.escapeHtml(valor(totalCobrado))}</strong></div>
         ${nota ? `<div class="sep"></div><strong>NOTA:</strong><div class="nota">${this.escapeHtml(nota)}</div>` : ''}
         <div class="firma">Firma del cajero</div>
       </body></html>`;
@@ -957,6 +1230,13 @@ export class CuadreCaja implements OnInit {
         valor: Number(f?.fa_valFact) || 0,
       }));
 
+    try {
+      this.conceptosCierre = await firstValueFrom(this.cierreService.listarConceptosCierre());
+    } catch (error) {
+      console.warn('No se pudieron cargar los conceptos de ajuste del cierre:', error);
+      this.conceptosCierre = [];
+    }
+
     const confirmacion = await Swal.fire({
       title: 'Confirmar cierre de caja',
       html: this.detalleModalCierre({
@@ -966,21 +1246,53 @@ export class CuadreCaja implements OnInit {
         cantidadCobradas: codigosFacturasCierre.length,
       }),
       icon: 'warning',
-      width: 760,
+      width: 900,
       showCancelButton: true,
       confirmButtonText: '<i class="fas fa-print"></i> Confirmar e imprimir 80 mm',
       cancelButtonText: 'Cancelar',
       focusConfirm: false,
       allowOutsideClick: false,
+      didOpen: () => {
+        document.querySelectorAll<HTMLInputElement>('.contado-cierre').forEach((input) => {
+          input.addEventListener('input', () => this.actualizarTotalesContadoCierre());
+          input.addEventListener('focus', () => setTimeout(() => input.select(), 0));
+          input.addEventListener('mouseup', (ev) => ev.preventDefault());
+          input.addEventListener('keydown', (ev) => this.enterSiguienteCampoCierre(ev));
+        });
+        document.getElementById('btn-agregar-ajuste')?.addEventListener('click', () => this.agregarFilaAjusteCierre());
+        const nota = document.getElementById('nota-cierre') as HTMLTextAreaElement | null;
+        nota?.addEventListener('focus', () => nota.select());
+        this.actualizarTotalesContadoCierre();
+        // SweetAlert mueve el foco al terminar de abrir; se enfoca Efectivo
+        // despues y se selecciona su valor para escribir encima.
+        setTimeout(() => {
+          const efectivo = document.querySelector('.contado-cierre') as HTMLInputElement | null;
+          efectivo?.focus();
+          efectivo?.select();
+        }, 80);
+      },
       preConfirm: () => {
+        const contado = this.leerContadoCierre();
+        if (contado.diferencia > 0) {
+          Swal.showValidationMessage('El contado no puede ser mayor que lo cobrado.');
+          return false;
+        }
+        if (!contado.ajustesValidos || contado.faltante !== 0) {
+          Swal.showValidationMessage('El contado más los ajustes debe ser igual a lo cobrado.');
+          return false;
+        }
         const textarea = document.getElementById('nota-cierre') as HTMLTextAreaElement | null;
-        return String(textarea?.value || '').trim().slice(0, 255);
+        return {
+          nota: String(textarea?.value || '').trim().slice(0, 255),
+          contado,
+        };
       },
     });
 
     if (!confirmacion.isConfirmed) return;
 
-    const notaCierre = String(confirmacion.value || '').trim();
+    const notaCierre = String(confirmacion.value?.nota || '').trim();
+    const contadoCierre = confirmacion.value?.contado || null;
     const dataCierre = {
       feccierre: this.fechaLocalHoy(),
       factini: String(primeraDeEsteCierre || '').trim(),
@@ -994,6 +1306,7 @@ export class CuadreCaja implements OnInit {
       tpendiente: this.totales.pendiente,
       codsucursal: this.sucursalUsuarioActual(),
       nota: notaCierre || null,
+      contado: contadoCierre,
     };
 
     this.isLoading = true;
@@ -1061,6 +1374,7 @@ export class CuadreCaja implements OnInit {
         valoresCobrados: this.totales.valoresCobrados,
         valoresNoCobrados: this.totales.valoresNoCobrados,
         nota: notaCierre,
+        contado: contadoCierre,
       };
 
       try {

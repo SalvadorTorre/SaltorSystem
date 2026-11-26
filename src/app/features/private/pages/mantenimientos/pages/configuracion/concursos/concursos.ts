@@ -104,6 +104,27 @@ export class ConcursosPage implements OnInit {
 
   ngOnInit(): void {
     this.cargar();
+    this.actualizarNombreEmpresa();
+  }
+
+  /** Nombres de empresa por codigo (para el formulario y el listado). */
+  nombresEmpresa: Record<string, string> = {};
+
+  nombreDeEmpresa(codigo: string | null | undefined): string {
+    const cod = String(codigo || '').trim().toUpperCase();
+    if (!cod) return '';
+    if (!(cod in this.nombresEmpresa)) {
+      this.nombresEmpresa[cod] = '';
+      this.concursoSrv.nombreEmpresa(cod).subscribe((nombre) => {
+        this.nombresEmpresa = { ...this.nombresEmpresa, [cod]: nombre };
+      });
+    }
+    return this.nombresEmpresa[cod] || '';
+  }
+
+  actualizarNombreEmpresa(): void {
+    this.actual.codempresa = String(this.actual.codempresa || '').trim().toUpperCase();
+    this.nombreDeEmpresa(this.actual.codempresa);
   }
 
   get editando(): boolean {
@@ -195,6 +216,7 @@ export class ConcursosPage implements OnInit {
     }
     if (c.monto_minimo > 0) texto += ` · mínimo ${this.dinero(c.monto_minimo)}`;
     if (c.max_boletos_factura) texto += ` · máx. ${c.max_boletos_factura} por factura`;
+    texto += c.solo_clientes_registrados ? ' · solo clientes registrados' : ' · todos los clientes';
     return texto + base;
   }
 
@@ -325,7 +347,8 @@ export class ConcursosPage implements OnInit {
   }
 
   alcance(c: ConcursoData): string {
-    return `${c.codempresa}${c.codsucursal ? ` / Sucursal ${c.codsucursal}` : ' / Todas las sucursales'}`;
+    const nombre = this.nombreDeEmpresa(c.codempresa);
+    return `${c.codempresa}${nombre ? ` - ${nombre}` : ''}${c.codsucursal ? ` / Sucursal ${c.codsucursal}` : ' / Todas las sucursales'}`;
   }
 
   private validar(): string {
@@ -380,6 +403,7 @@ export class ConcursosPage implements OnInit {
       aplica_contado: true,
       aplica_credito: true,
       solo_pagadas: true,
+      solo_clientes_registrados: false,
     };
   }
 

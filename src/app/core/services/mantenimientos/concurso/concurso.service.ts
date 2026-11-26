@@ -49,6 +49,22 @@ export class ServicioConcurso {
     };
   }
 
+  /** Nombre de una empresa por su codigo (vacio si no se encuentra). */
+  nombreEmpresa(codigo: string): Observable<string> {
+    const cod = String(codigo || '').trim().toUpperCase();
+    return from((async () => {
+      if (!cod) return '';
+      const { data, error } = await this.db
+        .from('empresas')
+        .select('cod_empre,nom_empre')
+        .eq('cod_empre', cod)
+        .limit(1)
+        .maybeSingle();
+      if (error) return '';
+      return String(data?.nom_empre || '').trim();
+    })());
+  }
+
   listar(): Observable<ConcursoData[]> {
     return from((async () => {
       const { data, error } = await this.db
@@ -128,6 +144,17 @@ export class ServicioConcurso {
           nuevos: !!c.nuevos,
         })),
       } as BoletosFactura;
+    })());
+  }
+
+  /** Explica por concurso por que una factura gana o no gana boletos. */
+  diagnosticarBoletosFactura(codfact: string): Observable<any[]> {
+    return from((async () => {
+      const { data, error } = await this.db.rpc('diagnostico_boletos_factura', {
+        p_codfact: String(codfact || '').trim(),
+      });
+      if (error) throw error;
+      return Array.isArray(data) ? data : [];
     })());
   }
 
@@ -220,6 +247,7 @@ export class ServicioConcurso {
       aplica_contado: !!c.aplica_contado,
       aplica_credito: !!c.aplica_credito,
       solo_pagadas: !!c.solo_pagadas,
+      solo_clientes_registrados: !!c.solo_clientes_registrados,
     };
   }
 
@@ -245,6 +273,7 @@ export class ServicioConcurso {
       aplica_contado: row?.aplica_contado !== false,
       aplica_credito: row?.aplica_credito !== false,
       solo_pagadas: row?.solo_pagadas !== false,
+      solo_clientes_registrados: row?.solo_clientes_registrados === true,
       ultimo_boleto: Number(row?.ultimo_boleto) || 0,
       created_at: row?.created_at,
       updated_at: row?.updated_at,
