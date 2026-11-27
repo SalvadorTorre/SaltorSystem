@@ -1506,6 +1506,16 @@ items.forEach((it: any) => {
         empresa = typeof parsed === 'string' ? parsed : String(parsed?.nom_empre || '');
       }
     } catch {}
+    let sucursal = '';
+    try {
+      const raw = localStorage.getItem('sucursal');
+      const parsed = raw ? JSON.parse(raw) : null;
+      sucursal = String(parsed?.nom_sucursal || parsed?.descripcion || parsed?.nombre || '').trim();
+    } catch {}
+    if (!sucursal) {
+      const id = String(localStorage.getItem('idSucursal') || '').trim();
+      sucursal = id ? `Sucursal ${id}` : '';
+    }
 
     const pageWidth = 74;
     const leftMargin = 2;
@@ -1549,20 +1559,30 @@ items.forEach((it: any) => {
         }
       };
 
-      lista.forEach(({ concurso, numero }, index) => {
-        // --- Parte del cliente ---
+      // Empresa, sucursal y nombre del concurso: van en las dos partes del
+      // boleto (la del cliente y el talon que se deposita en la urna).
+      const encabezado = (concurso: any, prefijo = '') => {
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(9);
         if (empresa) {
-          const lineas = doc.splitTextToSize(empresa, ancho);
-          lineas.forEach((l: string) => { centro(l, y); y += 4; });
+          doc.splitTextToSize(empresa, ancho).forEach((l: string) => { centro(l, y); y += 4; });
+        }
+        if (sucursal) {
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(8);
+          doc.splitTextToSize(sucursal, ancho).forEach((l: string) => { centro(l, y); y += 3.8; });
+          doc.setFont('helvetica', 'bold');
         }
         doc.setFontSize(10);
-        const titulo = doc.splitTextToSize(
-          `${concurso.tipo === 'SORTEO' ? 'SORTEO' : 'RIFA'}: ${String(concurso.nombre || '').toUpperCase()}`,
+        doc.splitTextToSize(
+          `${prefijo}${concurso.tipo === 'SORTEO' ? 'SORTEO' : 'RIFA'}: ${String(concurso.nombre || '').toUpperCase()}`,
           ancho,
-        );
-        titulo.forEach((l: string) => { centro(l, y); y += 4.5; });
+        ).forEach((l: string) => { centro(l, y); y += 4.5; });
+      };
+
+      lista.forEach(({ concurso, numero }, index) => {
+        // --- Parte del cliente ---
+        encabezado(concurso);
         y += 2;
         doc.setFontSize(9);
         centro('BOLETO No.', y);
@@ -1606,11 +1626,10 @@ items.forEach((it: any) => {
         centro('cortar aqui - talon para la urna', y + 3.5);
         y += 14;
 
-        // --- Talon para la tombola ---
+        // --- Talon para la urna ---
+        encabezado(concurso, 'TALON - ');
+        y += 5;
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(8);
-        centro(`TALON - ${String(concurso.nombre || '').toUpperCase()}`.slice(0, 48), y);
-        y += 6;
         doc.setFontSize(18);
         centro(numeroTxt(numero), y);
         y += 6;

@@ -3567,6 +3567,24 @@ export class ServicioFacturacion {
     })());
   }
 
+  /**
+   * Despacho: marca entregados (df_pendiente = 'N', df_canpend = 0) los items
+   * del rol que imprime (H = Hierro/almacen, F = Forjas). Si ya no queda nada
+   * pendiente de ningun rol, la factura queda fa_pendiente = 'N'.
+   */
+  marcarItemsDespachoEntregados(cod: string, tipoDespachador: string) {
+    const codigo = String(cod || '').trim();
+    const tipo = String(tipoDespachador || '').trim().toUpperCase();
+    return from((async () => {
+      const { data, error } = await this.db.rpc('despacho_marcar_items_entregados', {
+        p_codfact: codigo,
+        p_tipo: tipo,
+      });
+      if (error) throw error;
+      return { status: 'success', code: 200, data };
+    })());
+  }
+
   registrarImpresionDespacho(
     cod: string,
     tipoDespachador: string,

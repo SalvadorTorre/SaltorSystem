@@ -299,6 +299,18 @@ export class DespachoComponent {
         } else {
           this.mensaje = 'El conduce se imprimio, pero no se pudo confirmar la marca en factura.';
         }
+        // Items del rol entregados; si no queda nada pendiente, la factura
+        // deja de estar pendiente de entrega.
+        this.serviciofacturacion
+          .marcarItemsDespachoEntregados(codigoFactura, tipoDespacho)
+          .subscribe({
+            error: (error: any) => {
+              console.error('No se pudieron marcar los items como entregados:', error);
+              this.mensaje = `${this.mensaje} (No se pudo quitar el pendiente de los items: ${
+                error?.message || 'error desconocido'
+              })`;
+            },
+          });
       },
       error: (error) => {
         this.mensaje = error?.message || 'El conduce se imprimio, pero no se marco la factura';
